@@ -1,0 +1,123 @@
+name: GriefPrevention
+main: me.ryanhamshire.GriefPrevention.GriefPrevention
+softdepend: [Vault]
+version: 3.2
+commands:
+   abandonclaim:
+      description: Deletes a claim.
+      usage: /abandonclaim
+   abandonallclaims:
+      description: Deletes ALL your claims.
+      usage: /AbandonAllClaims
+   trust:
+      description: Grants a player full access to your claim(s).
+      usage: /Trust <player>  See also /UnTrust, /ContainerTrust, /AccessTrust, and /PermissionTrust.
+      aliases: t 
+   untrust:
+      description: Revokes a player's access to your claim(s).
+      usage: /UnTrust <player>
+      aliases: ut
+   containertrust:
+      description: Grants a player access to your containers.
+      usage: /ContainerTrust <player>
+      aliases: ct
+   accesstrust:
+      description: Grants a player entry to your claim(s) and use of your bed.
+      usage: /AccessTrust <player>
+      aliases: at
+   permissiontrust:
+      description: Grants a player permission to grant his level of permission to others.
+      usage: /PermissionTrust <player>
+      aliases: pt
+   subdivideclaims:
+      description: Switches the shovel tool to subdivision mode, used to subdivide your claims.
+      usage: /SubdivideClaims
+      aliases: sc
+   adjustbonusclaimblocks:
+      description: Adds or subtracts bonus claim blocks for a player.
+      usage: /AdjustBonusClaimBlocks <player> <amount>
+      permission: griefprevention.adjustclaimblocks
+      aliases: acb
+   deleteclaim:
+      description: Deletes the claim you're standing in, even if it's not your claim.
+      usage: /DeleteClaim
+      permission: griefprevention.deleteclaims
+      aliases: dc   
+   deleteallclaims:
+      description: Deletes all of another player's claims.
+      usage: /DeleteAllClaims <player>
+      permission: griefprevention.deleteclaims
+   adminclaims:
+      description: Switches the shovel tool to administrative claims mode.
+      usage: /AdminClaims
+      permission: griefprevention.adminclaims
+      aliases: ac
+   restorenature:
+      description: Switches the shovel tool to restoration mode.
+      usage: /RestoreNature 
+      permission: griefprevention.restorenature
+      aliases: rn
+   basicclaims:
+      description: Switches the shovel tool back to basic claims mode.
+      usage: /BasicClaims
+      aliases: bc
+   buyclaimblocks:
+      description: Purchases additional claim blocks with server money.  Doesn't work on servers without a Vault-compatible economy plugin.
+      usage: /BuyClaimBlocks <numberOfBlocks>
+      aliases: buyclaim     
+   sellclaimblocks:
+      description: Sells your claim blocks for server money.  Doesn't work on servers without a Vault-compatible economy plugin.
+      usage: /SellClaimBlocks <numberOfBlocks>
+      aliases: sellclaim
+   trapped:
+      description: Ejects you to nearby unclaimed land.  Usable once per 8 hours.
+      usage: /Trapped
+   trustlist:
+      description: Lists permissions for the claim you're standing in.
+      usage: /TrustList
+   siege:
+      description: Initiates a siege versus another player.
+      usage: /Siege <playerName>
+   ignoreclaims:
+      description: Toggles ignore claims mode.
+      usage: /IgnoreClaims
+      permission: griefprevention.ignoreclaims
+      aliases: ic
+   deletealladminclaims:
+      description: Deletes all administrative claims.
+      usage: /DeleteAllAdminClaims
+      permission: adminclaims      
+permissions:
+    griefprevention.createclaims:
+        description: Grants permission to create claims.
+        default: op
+    griefprevention.admin.*:
+        description: Grants all administrative functionality.
+        children:
+            griefprevention.restorenature: true
+            griefprevention.ignoreclaims: true
+            griefprevention.adminclaims: true
+            griefprevention.adjustclaimblocks: true
+            griefprevention.deleteclaims: true
+            griefprevention.spam: true
+    griefprevention.restorenature:
+        description: Grants permission to use /RestoreNature.
+        default: op
+    griefprevention.ignoreclaims:
+        description: Grants permission to use /IgnoreClaims.
+        default: op
+    griefprevention.adminclaims:
+        description: Grants permission to create administrative claims.
+        default: op
+    griefprevention.deleteclaims:
+        description: Grants permission to delete other players' claims.
+        default: op
+    griefprevention.adjustclaimblocks:
+        description: Grants permission to add or remove bonus blocks from a player's account.
+        default: op
+    griefprevention.spam:
+        description: Grants permission to log in, send messages, and send commands rapidly.
+        default: op
+    griefprevention.lava:
+        description: Grants permission to place lava near the surface and outside of claims.
+        default: op
