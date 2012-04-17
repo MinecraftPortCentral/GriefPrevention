@@ -97,6 +97,9 @@ public class GriefPrevention extends JavaPlugin
 	
 	public boolean config_creepersDontDestroySurface;				//whether creeper explosions near or above the surface destroy blocks
 	
+	public boolean config_fireSpreads;								//whether fire spreads outside of claims
+	public boolean config_fireDestroys;								//whether fire destroys blocks outside of claims
+	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
 	
@@ -183,6 +186,9 @@ public class GriefPrevention extends JavaPlugin
 		
 		this.config_creepersDontDestroySurface = config.getBoolean("GriefPrevention.CreepersDontDestroySurface", true);
 		
+		this.config_fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
+		this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
+		
 		//default for claims worlds list
 		ArrayList<String> defaultSiegeWorldNames = new ArrayList<String>();
 		
@@ -218,6 +224,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_siege_blocks.add(Material.GRAVEL);
 		this.config_siege_blocks.add(Material.SAND);
 		this.config_siege_blocks.add(Material.GLASS);
+		this.config_siege_blocks.add(Material.THIN_GLASS);
 		this.config_siege_blocks.add(Material.WOOD);
 		this.config_siege_blocks.add(Material.WOOL);
 		this.config_siege_blocks.add(Material.SNOW);
@@ -286,7 +293,10 @@ public class GriefPrevention extends JavaPlugin
 		
 		config.set("GriefPrevention.CreepersDontDestroySurface", this.config_creepersDontDestroySurface);
 		
-		config.set("GriefPrevention.Siege.Enabled", siegeEnabledWorldNames);
+		config.set("GriefPrevention.FireSpreads", this.config_fireSpreads);
+		config.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
+		
+		config.set("GriefPrevention.Siege.Worlds", siegeEnabledWorldNames);
 		config.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
 
 		try
@@ -311,8 +321,11 @@ public class GriefPrevention extends JavaPlugin
 		
 		//unless claim block accrual is disabled, start the recurring per 5 minute event to give claim blocks to online players
 		//20L ~ 1 second
-		DeliverClaimBlocksTask task = new DeliverClaimBlocksTask();
-		this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 5, 20L * 60 * 5);
+		if(this.config_claims_blocksAccruedPerHour > 0)
+		{
+			DeliverClaimBlocksTask task = new DeliverClaimBlocksTask();
+			this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 5, 20L * 60 * 5);
+		}
 		
 		//register for events
 		PluginManager pluginManager = this.getServer().getPluginManager();
@@ -378,35 +391,14 @@ public class GriefPrevention extends JavaPlugin
 		//abandonclaim
 		if(cmd.getName().equalsIgnoreCase("abandonclaim") && player != null)
 		{
-			//which claim is being abandoned?
-			Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
-			if(claim == null)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Instr, "Stand in the claim you want to delete, or consider /AbandonAllClaims.");
-			}			
-			
-			//verify ownership
-			else if(claim.allowEdit(player) != null)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, "This isn't your claim.");
-			}
-			
-			else
-			{
-				//delete it
-				this.dataStore.deleteClaim(claim);
-				
-				//tell the player how many claim blocks he has left
-				PlayerData playerData = this.dataStore.getPlayerData(player.getName());
-				int remainingBlocks = playerData.getRemainingClaimBlocks();
-				GriefPrevention.sendMessage(player, TextMode.Success, "Claim abandoned.  You now have " + String.valueOf(remainingBlocks) + " available claim blocks.");
-				
-				//revert any current visualization
-				Visualization.Revert(player);
-			}
-			
-			return true;
-		} 
+			this.abandonClaimHandler(player, false);
+		}		
+		
+		//abandontoplevelclaim
+		if(cmd.getName().equalsIgnoreCase("abandontoplevelclaim") && player != null)
+		{
+			return this.abandonClaimHandler(player, true);
+		}
 		
 		//ignoreclaims
 		if(cmd.getName().equalsIgnoreCase("ignoreclaims") && player != null)
@@ -1014,7 +1006,7 @@ public class GriefPrevention extends JavaPlugin
 		else if(cmd.getName().equalsIgnoreCase("siege") && player != null)
 		{
 			//error message for when siege mode is disabled
-			if(this.siegeEnabledForWorld(player.getWorld()))
+			if(!this.siegeEnabledForWorld(player.getWorld()))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, "Siege is disabled here.");
 				return true;
@@ -1070,7 +1062,21 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
+			//victim must not be pvp immune
+			if(defenderData.pvpImmune)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, defender.getName() + " is defenseless.  Go pick on somebody else.");
+				return true;
+			}
+			
 			Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, null);
+			
+			//defender must have some level of permission there to be protected
+			if(defenderClaim == null || defenderClaim.allowAccess(defender) != null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, defender.getName() + " isn't protected there.");
+				return true;
+			}									
 			
 			//attacker must be close to the claim he wants to siege
 			if(!defenderClaim.isNear(attacker.getLocation(), 25))
@@ -1093,13 +1099,6 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
-			//defender must have some level of permission there to be protected
-			if(defenderClaim == null || defenderClaim.allowAccess(defender) != null)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, defender.getName() + " isn't protected there.");
-				return true;
-			}						
-			
 			//can't be on cooldown
 			if(dataStore.onCooldown(attacker, defender, defenderClaim))
 			{
@@ -1111,13 +1110,53 @@ public class GriefPrevention extends JavaPlugin
 			dataStore.startSiege(attacker, defender, defenderClaim);			
 
 			//confirmation message for attacker, warning message for defender
-			GriefPrevention.sendMessage(player, TextMode.Warn, "You're under siege!  If you log out now, you will die.  You must defeat " + attacker.getName() + ", wait for him to give up, or escape.");
+			GriefPrevention.sendMessage(defender, TextMode.Warn, "You're under siege!  If you log out now, you will die.  You must defeat " + attacker.getName() + ", wait for him to give up, or escape.");
 			GriefPrevention.sendMessage(player, TextMode.Success, "The siege has begun!  If you log out now, you will die.  You must defeat " + defender.getName() + ", chase him away, or admit defeat and walk away.");			
 		}
 		
 		return false; 
 	}
 	
+	private boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) 
+	{
+		//which claim is being abandoned?
+		Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
+		if(claim == null)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Instr, "Stand in the claim you want to delete, or consider /AbandonAllClaims.");
+		}			
+		
+		//verify ownership
+		else if(claim.allowEdit(player) != null)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, "This isn't your claim.");
+		}
+		
+		//warn if has children and we're not explicitly deleting a top level claim
+		else if(claim.children.size() > 0 && !deleteTopLevelClaim)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Instr, "To delete a subdivision, stand inside it.  Otherwise, use /AbandonTopLevelClaim to delete this claim and all subdivisions.");
+			return true;
+		}
+		
+		else
+		{
+			//delete it
+			this.dataStore.deleteClaim(claim);
+			
+			//tell the player how many claim blocks he has left
+			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			int remainingBlocks = playerData.getRemainingClaimBlocks();
+			GriefPrevention.sendMessage(player, TextMode.Success, "Claim abandoned.  You now have " + String.valueOf(remainingBlocks) + " available claim blocks.");
+			
+			//revert any current visualization
+			Visualization.Revert(player);
+		}
+		
+		return true;
+		
+	}
+
 	//helper method keeps the trust commands consistent and eliminates duplicate code
 	private void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) 
 	{
@@ -1314,8 +1353,7 @@ public class GriefPrevention extends JavaPlugin
 		playerData.pvpImmune = true;
 		
 		//inform the player
-		GriefPrevention.sendMessage(player, TextMode.Info, "You have one minute of PvP protection, starting now.");		
-		GriefPrevention.sendMessage(player, TextMode.Info, "After the minute, you can pick up items, but doing so will drop your PvP protection.");
+		GriefPrevention.sendMessage(player, TextMode.Success, "You're protected from attack by other players as long as your inventory is empty.");
 	}
 	
 	//checks whether players can create claims in a world

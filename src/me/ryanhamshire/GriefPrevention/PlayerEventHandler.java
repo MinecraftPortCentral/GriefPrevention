@@ -40,6 +40,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.*;
 import org.bukkit.event.player.PlayerLoginEvent.Result;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
@@ -314,6 +315,36 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
+	//when a player teleports
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerTeleport(PlayerTeleportEvent event)
+	{
+		//FEATURE: prevent teleport abuse to win sieges
+		
+		//these rules only apply to non-ender-pearl teleportation
+		if(event.getCause() == TeleportCause.ENDER_PEARL) return;
+		
+		Player player = event.getPlayer();
+		
+		Location source = event.getFrom();
+		Claim sourceClaim = this.dataStore.getClaimAt(source, false, null);
+		if(sourceClaim != null && sourceClaim.siegeData != null)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, "You can't teleport out of a besieged area.");
+			event.setCancelled(true);
+			return;
+		}
+		
+		Location destination = event.getTo();
+		Claim destinationClaim = this.dataStore.getClaimAt(destination, false, null);
+		if(destinationClaim != null && destinationClaim.siegeData != null)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, "You can't teleport into a besieged area.");
+			event.setCancelled(true);
+			return;
+		}
+	}
+	
 	//when a player interacts with an entity...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onPlayerInteractEntity(PlayerInteractEntityEvent event)
@@ -397,10 +428,10 @@ class PlayerEventHandler implements Listener
 			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
 			if(playerData.pvpImmune)
 			{
-				//if it's been at least a minute since the last time he spawned, don't pick up the item
+				//if it's been less than 10 seconds since the last time he spawned, don't pick up the item
 				long now = Calendar.getInstance().getTimeInMillis();
 				long elapsedSinceLastSpawn = now - playerData.lastSpawn;
-				if(elapsedSinceLastSpawn < 60000)
+				if(elapsedSinceLastSpawn < 10000)
 				{
 					event.setCancelled(true);
 					return;
@@ -408,7 +439,7 @@ class PlayerEventHandler implements Listener
 				
 				//otherwise take away his immunity. he may be armed now.  at least, he's worth killing for some loot
 				playerData.pvpImmune = false;
-				GriefPrevention.sendMessage(player, TextMode.Warn, "You're now vulnerable to damage from other players.");
+				GriefPrevention.sendMessage(player, TextMode.Warn, "Now you can fight with other players.");
 			}			
 		}
 	}
@@ -481,7 +512,7 @@ class PlayerEventHandler implements Listener
 	public void onPlayerBucketEmpty (PlayerBucketEmptyEvent bucketEvent)
 	{
 		Player player = bucketEvent.getPlayer();
-		Block block = bucketEvent.getBlockClicked();
+		Block block = bucketEvent.getBlockClicked().getRelative(bucketEvent.getBlockFace());
 		int minLavaDistance = 10;
 		
 		//if the bucket is being used in a claim
@@ -520,7 +551,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//lava buckets can't be dumped near other players unless pvp is on
-		if(!block.getWorld().getPVP())
+		if(!block.getWorld().getPVP() && !player.hasPermission("griefprevention.lava"))
 		{
 			if(bucketEvent.getBucket() == Material.LAVA_BUCKET)
 			{
@@ -531,8 +562,6 @@ class PlayerEventHandler implements Listener
 					Location location = otherPlayer.getLocation();
 					if(!otherPlayer.equals(player) && block.getY() >= location.getBlockY() - 1 && location.distanceSquared(block.getLocation()) < minLavaDistance * minLavaDistance)
 					{
-						player.sendMessage(block.getY() + " " + otherPlayer.getLocation().getBlockY());
-						
 						GriefPrevention.sendMessage(player, TextMode.Err, "You can't place lava this close to " + otherPlayer.getName() + ".");
 						bucketEvent.setCancelled(true);
 						return;
@@ -611,6 +640,7 @@ class PlayerEventHandler implements Listener
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
 						clickedBlock.getState() instanceof InventoryHolder || 
 						clickedBlockType == Material.BREWING_STAND || 
+						clickedBlockType == Material.WORKBENCH || 
 						clickedBlockType == Material.JUKEBOX || 
 						clickedBlockType == Material.ENCHANTMENT_TABLE)))
 		{			
@@ -639,12 +669,20 @@ class PlayerEventHandler implements Listener
 				if(noContainersReason != null)
 				{
 					event.setCancelled(true);
-					player.sendMessage(noContainersReason);
+					GriefPrevention.sendMessage(player, TextMode.Err, noContainersReason);
 				}
+			}
+			
+			//if the event hasn't been cancelled, then the player is allowed to use the container
+			//so drop any pvp protection
+			if(playerData.pvpImmune)
+			{
+				playerData.pvpImmune = false;
+				GriefPrevention.sendMessage(player, TextMode.Warn, "Now you can fight with other players.");
 			}
 		}
 		
-		//apply rule for players trampling dirt (never allow it)
+		//apply rule for players trampling tilled soil back to dirt (never allow it)
 		//NOTE: that this event applies only to players.  monsters and animals can still trample.
 		else if(event.getAction() == Action.PHYSICAL && clickedBlockType == Material.SOIL)
 		{

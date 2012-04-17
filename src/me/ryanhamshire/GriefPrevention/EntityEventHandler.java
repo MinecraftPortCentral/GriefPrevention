@@ -236,20 +236,12 @@ class EntityEventHandler implements Listener
 				return;
 			}
 			
-			//FEATURE: prevent players who very recently participated in pvp combat from hiding inventory to protect it from looting
-			//FEATURE: prevent players who are in pvp combat from logging out to avoid being defeated
+			//FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
+			
 			Player defender = (Player)(event.getEntity());
-					
+			
 			PlayerData defenderData = this.dataStore.getPlayerData(((Player)event.getEntity()).getName());
 			PlayerData attackerData = this.dataStore.getPlayerData(attacker.getName());
-			
-			long now = Calendar.getInstance().getTimeInMillis();
-			defenderData.lastPvpTimestamp = now;
-			defenderData.lastPvpPlayer = attacker.getName();
-			attackerData.lastPvpTimestamp = now;
-			attackerData.lastPvpPlayer = defender.getName();
-			
-			//FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
 			
 			//otherwise if protecting spawning players
 			if(GriefPrevention.instance.config_pvp_protectFreshSpawns)
@@ -257,15 +249,26 @@ class EntityEventHandler implements Listener
 				if(defenderData.pvpImmune)
 				{
 					event.setCancelled(true);
+					GriefPrevention.sendMessage(attacker, TextMode.Err, "You can't injure defenseless players.");
 					return;
 				}
 				
 				if(attackerData.pvpImmune)
 				{
 					event.setCancelled(true);
+					GriefPrevention.sendMessage(attacker, TextMode.Err, "You can't fight someone while you're protected from PvP.");
 					return;
 				}		
 			}
+			
+			//FEATURE: prevent players who very recently participated in pvp combat from hiding inventory to protect it from looting
+			//FEATURE: prevent players who are in pvp combat from logging out to avoid being defeated
+			
+			long now = Calendar.getInstance().getTimeInMillis();
+			defenderData.lastPvpTimestamp = now;
+			defenderData.lastPvpPlayer = attacker.getName();
+			attackerData.lastPvpTimestamp = now;
+			attackerData.lastPvpPlayer = defender.getName();
 		}
 		
 		//FEATURE: protect claimed animals, boats, minecarts

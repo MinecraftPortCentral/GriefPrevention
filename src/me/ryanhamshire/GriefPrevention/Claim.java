@@ -515,6 +515,8 @@ public class Claim
 		//NOTE:  if trying to understand this makes your head hurt, don't feel bad - it hurts mine too.  
 		//try drawing pictures to visualize test cases.
 		
+		if(!this.lesserBoundaryCorner.getWorld().equals(otherClaim.getLesserBoundaryCorner().getWorld())) return false;
+		
 		//first, check the corners of this claim aren't inside any existing claims
 		if(otherClaim.contains(this.lesserBoundaryCorner, true, false)) return true;
 		if(otherClaim.contains(this.greaterBoundaryCorner, true, false)) return true;

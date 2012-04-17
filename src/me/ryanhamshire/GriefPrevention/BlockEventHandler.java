@@ -186,20 +186,18 @@ public class BlockEventHandler implements Listener
 		Player player = placeEvent.getPlayer();
 		Block block = placeEvent.getBlock();
 		
-		//FEATURE: limit fire placement, to prevent PvP-by-fire and general fiery messes
+		//FEATURE: limit fire placement, to prevent PvP-by-fire
 		
-		//if placed block is fire and pvp is off, block it apply limitations based on the block it's placed on 
-		if(block.getType() == Material.FIRE && !block.getWorld().getPVP())
+		//if placed block is fire and pvp is off, apply rules for proximity to other players 
+		if(block.getType() == Material.FIRE && !block.getWorld().getPVP() && !player.hasPermission("griefprevention.lava"))
 		{
 			List<Player> players = block.getWorld().getPlayers();
 			for(int i = 0; i < players.size(); i++)
 			{
 				Player otherPlayer = players.get(i);
 				Location location = otherPlayer.getLocation();
-				if(!otherPlayer.equals(player) && block.getY() <= location.getBlockY() - 1 && location.distanceSquared(block.getLocation()) < 9)
+				if(!otherPlayer.equals(player) && location.distanceSquared(block.getLocation()) < 9)
 				{
-					player.sendMessage(block.getY() + " " + otherPlayer.getLocation().getBlockY());
-					
 					GriefPrevention.sendMessage(player, TextMode.Err, "You can't start a fire this close to " + otherPlayer.getName() + ".");
 					placeEvent.setCancelled(true);
 					return;
@@ -349,25 +347,34 @@ public class BlockEventHandler implements Listener
 		}		
 	}
 	
-	//blocks are ignited ONLY by flint and steel (not by being near lava, open flames, etc)
+	//blocks are ignited ONLY by flint and steel (not by being near lava, open flames, etc), unless configured otherwise
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockIgnite (BlockIgniteEvent igniteEvent)
 	{
-		if(igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL) igniteEvent.setCancelled(true);
+		if(igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL  && !GriefPrevention.instance.config_fireSpreads) igniteEvent.setCancelled(true);
 	}
 	
-	//fire doesn't spread, but other blocks still do (mushrooms and vines, for example)
+	//fire doesn't spread unless configured to, but other blocks still do (mushrooms and vines, for example)
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockSpread (BlockSpreadEvent spreadEvent)
 	{
-		if(spreadEvent.getSource().getType() == Material.FIRE) spreadEvent.setCancelled(true);
+		if(spreadEvent.getSource().getType() == Material.FIRE && !GriefPrevention.instance.config_fireSpreads) spreadEvent.setCancelled(true);
 	}
 	
-	//blocks are not destroyed by fire
+	//blocks are not destroyed by fire, unless configured to do so
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockBurn (BlockBurnEvent burnEvent)
 	{
-		burnEvent.setCancelled(true);
+		if(!GriefPrevention.instance.config_fireDestroys)
+		{
+			burnEvent.setCancelled(true);
+		}
+		
+		//never burn claimed blocks, regardless of settings
+		if(this.dataStore.getClaimAt(burnEvent.getBlock().getLocation(), false, null) != null)
+		{
+			burnEvent.setCancelled(true);
+		}
 	}
 	
 	//ensures fluids don't flow into claims, unless out of another claim where the owner is trusted to build in the receiving claim

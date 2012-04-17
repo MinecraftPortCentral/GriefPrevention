@@ -1,17 +1,20 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
 softdepend: [Vault]
-version: 3.2
+version: 3.3.2
 commands:
    abandonclaim:
       description: Deletes a claim.
-      usage: /abandonclaim
+      usage: /AbandonClaim
+   abandontoplevelclaim:
+      description: Deletes a claim and all its subdivisions.
+      usage: /AbandonTopLevelClaim
    abandonallclaims:
       description: Deletes ALL your claims.
       usage: /AbandonAllClaims
    trust:
       description: Grants a player full access to your claim(s).
-      usage: /Trust <player>  See also /UnTrust, /ContainerTrust, /AccessTrust, and /PermissionTrust.
+      usage: /Trust <player>  Graants a player permission to build.  See also /UnTrust, /ContainerTrust, /AccessTrust, and /PermissionTrust.
       aliases: t 
    untrust:
       description: Revokes a player's access to your claim(s).
@@ -19,15 +22,15 @@ commands:
       aliases: ut
    containertrust:
       description: Grants a player access to your containers.
-      usage: /ContainerTrust <player>
+      usage: /ContainerTrust <player>.  Grants a player access to your inventory, bed, and buttons/levers.
       aliases: ct
    accesstrust:
       description: Grants a player entry to your claim(s) and use of your bed.
-      usage: /AccessTrust <player>
+      usage: /AccessTrust <player>.  Grants a player access to your bed, buttons, and levers.
       aliases: at
    permissiontrust:
       description: Grants a player permission to grant his level of permission to others.
-      usage: /PermissionTrust <player>
+      usage: /PermissionTrust <player>.  Permits a player to share his permission level with others.
       aliases: pt
    subdivideclaims:
       description: Switches the shovel tool to subdivision mode, used to subdivide your claims.
@@ -100,6 +103,7 @@ permissions:
             griefprevention.adjustclaimblocks: true
             griefprevention.deleteclaims: true
             griefprevention.spam: true
+            griefprevention.lava: true
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
         default: op
