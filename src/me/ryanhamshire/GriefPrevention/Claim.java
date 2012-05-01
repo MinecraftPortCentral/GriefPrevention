@@ -31,7 +31,7 @@ import org.bukkit.entity.Player;
 //represents a player claim
 //creating an instance doesn't make an effective claim
 //only claims which have been added to the datastore have any effect
-public class Claim 
+public class Claim
 {
 	//two locations, which together define the boundaries of the claim
 	//note that the upper Y value is always ignored, because claims ALWAYS extend up to the sky
@@ -552,5 +552,22 @@ public class Claim
 			return true;
 		
 		return false;
+	}
+	
+	//implements a strict ordering of claims, used to keep the claims collection sorted for faster searching
+	boolean greaterThan(Claim otherClaim)
+	{
+		Location thisCorner = this.getLesserBoundaryCorner();
+		Location otherCorner = otherClaim.getLesserBoundaryCorner();
+		
+		if(thisCorner.getBlockX() > otherCorner.getBlockX()) return true;
+		
+		if(thisCorner.getBlockX() < otherCorner.getBlockX()) return false;
+		
+		if(thisCorner.getBlockZ() > otherCorner.getBlockZ()) return true;
+		
+		if(thisCorner.getBlockZ() < otherCorner.getBlockZ()) return false;
+		
+		return thisCorner.getWorld().getName().compareTo(otherCorner.getWorld().getName()) < 0;
 	}
 }

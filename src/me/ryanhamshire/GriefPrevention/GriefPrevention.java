@@ -469,6 +469,56 @@ public class GriefPrevention extends JavaPlugin
 			return true;
 		}
 		
+		//transferclaim <player>
+		else if(cmd.getName().equalsIgnoreCase("transferclaim") && player != null)
+		{
+			//requires exactly one parameter, the other player's name
+			if(args.length != 1) return false;
+			
+			//check additional permission
+			if(!player.hasPermission("griefprevention.adminclaims"))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, "That command requires the administrative claims permission.");
+				return true;
+			}
+			
+			//which claim is the user in?
+			Claim claim = this.dataStore.getClaimAt(player.getLocation(), true, null);
+			if(claim == null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Instr, "There's no claim here.  Stand in the administrative claim you want to transfer.");
+				return true;
+			}
+			else if(!claim.isAdminClaim())
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, "Only administrative claims may be transferred to a player.");
+				return true;
+			}
+			
+			OfflinePlayer targetPlayer = this.resolvePlayer(args[0]);
+			if(targetPlayer == null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, "Player not found.");
+				return true;
+			}
+			
+			//change ownerhsip
+			try
+			{
+				this.dataStore.changeClaimOwner(claim, targetPlayer.getName());
+			}
+			catch(Exception e)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Instr, "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.");
+				return true;
+			}
+			
+			//confirm
+			GriefPrevention.sendMessage(player, TextMode.Success, "Claim transferred.");
+			
+			return true;
+		}
+		
 		//trustlist
 		else if(cmd.getName().equalsIgnoreCase("trustlist") && player != null)
 		{

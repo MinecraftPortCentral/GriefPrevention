@@ -62,6 +62,7 @@ class RestoreNatureProcessingTask implements Runnable
 		this.notAllowedToHang = new ArrayList<Integer>();
 		this.notAllowedToHang.add(Material.DIRT.getId());
 		this.notAllowedToHang.add(Material.GRASS.getId());
+		this.notAllowedToHang.add(Material.LONG_GRASS.getId());
 		this.notAllowedToHang.add(Material.SNOW.getId());
 		this.notAllowedToHang.add(Material.LOG.getId());
 		
@@ -454,7 +455,7 @@ class RestoreNatureProcessingTask implements Runnable
 	private int highestY(int x, int z)
 	{
 		int y;
-		for(y = snapshots[0].length - 1; y >= 0; y--)
+		for(y = snapshots[0].length - 1; y > 0; y--)
 		{
 			BlockSnapshot block = this.snapshots[x][y][z];
 			if(block.typeId != Material.AIR.getId() && 

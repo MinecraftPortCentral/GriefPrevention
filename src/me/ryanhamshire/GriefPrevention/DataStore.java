@@ -26,6 +26,7 @@ import java.util.*;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 //singleton class which manages all GriefPrevention data (except for config options)
 public class DataStore 
@@ -125,8 +126,13 @@ public class DataStore
 							else
 							{
 								topLevelClaim.modifiedDate = new Date(files[i].lastModified());
-								this.claims.add(topLevelClaim);
-								topLevelClaim.inDataStore = true;
+								int j = 0;
+								while(j < this.claims.size() && !this.claims.get(j).greaterThan(topLevelClaim)) j++;
+								if(j < this.claims.size())
+									this.claims.add(j, topLevelClaim);
+								else
+									this.claims.add(this.claims.size(), topLevelClaim);
+								topLevelClaim.inDataStore = true;								
 							}
 						}
 						
@@ -277,7 +283,12 @@ public class DataStore
 		}
 		
 		//add it and mark it as added
-		this.claims.add(newClaim);
+		int j = 0;
+		while(j < this.claims.size() && !this.claims.get(j).greaterThan(newClaim)) j++;
+		if(j < this.claims.size())
+			this.claims.add(j, newClaim);
+		else
+			this.claims.add(this.claims.size(), newClaim);
 		newClaim.inDataStore = true;
 		
 		//except for administrative claims (which have no owner), update the owner's playerData with the new claim
@@ -619,10 +630,19 @@ public class DataStore
 		//check cachedClaim guess first.  if it's in the datastore and the location is inside it, we're done
 		if(cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) return cachedClaim;
 		
+		//the claims list is ordered by greater boundary corner
+		//create a temporary "fake" claim in memory for comparison purposes		
+		Claim tempClaim = new Claim();
+		tempClaim.lesserBoundaryCorner = location;
+		
 		//otherwise, search all existing claims until we find the right claim
 		for(int i = 0; i < this.claims.size(); i++)
 		{
 			Claim claim = this.claims.get(i);
+			
+			//if we reach a claim which is greater than the temp claim created above, there's definitely no claim
+			//in the collection which includes our location
+			if(claim.greaterThan(tempClaim)) return null;
 			
 			//find a top level claim
 			if(claim.contains(location, ignoreHeight, false))
@@ -848,7 +868,7 @@ public class DataStore
 	
 	//ends a siege
 	//either winnerName or loserName can be null, but not both
-	public void endSiege(SiegeData siegeData, String winnerName, String loserName)
+	public void endSiege(SiegeData siegeData, String winnerName, String loserName, boolean death)
 	{
 		boolean grantAccess = false;
 		
@@ -928,6 +948,36 @@ public class DataStore
 				//schedule a task to secure the claims in about 5 minutes
 				SecureClaimTask task = new SecureClaimTask(siegeData);
 				GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 60 * 5);
+			}
+		}
+		
+		//if the siege ended due to death, transfer inventory to winner
+		if(death)
+		{
+			Player winner = GriefPrevention.instance.getServer().getPlayer(winnerName);
+			Player loser = GriefPrevention.instance.getServer().getPlayer(loserName);
+			if(winner != null && loser != null)
+			{
+				//get loser's inventory, then clear it
+				ItemStack [] loserItems = loser.getInventory().getContents();
+				loser.getInventory().clear();
+				
+				//try to add it to the winner's inventory
+				for(int j = 0; j < loserItems.length; j++)
+				{
+					if(loserItems[j] == null || loserItems[j].getType() == Material.AIR || loserItems[j].getAmount() == 0) continue;
+					
+					HashMap<Integer, ItemStack> wontFitItems = winner.getInventory().addItem(loserItems[j]);
+					
+					//drop any remainder on the ground at his feet
+					Object [] keys = wontFitItems.keySet().toArray();
+					Location winnerLocation = winner.getLocation(); 
+					for(int i = 0; i < keys.length; i++)
+					{
+						Integer key = (Integer)keys[i];
+						winnerLocation.getWorld().dropItemNaturally(winnerLocation, wontFitItems.get(key));
+					}
+				}
 			}
 		}
 	}

@@ -1,7 +1,7 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
-softdepend: [Vault]
-version: 3.3.2
+softdepend: [Vault, Multiverse-Core]
+version: 3.4.1
 commands:
    abandonclaim:
       description: Deletes a claim.
@@ -89,7 +89,11 @@ commands:
    deletealladminclaims:
       description: Deletes all administrative claims.
       usage: /DeleteAllAdminClaims
-      permission: adminclaims      
+      permission: griefprevention.adminclaims
+   transferclaim:
+      description: Converts an administrative claim to a private claim.
+      usage: /TransferClaim <player>
+      permission: griefprevention.adjustclaimblocks
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.

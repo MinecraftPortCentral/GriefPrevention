@@ -73,6 +73,12 @@ class PlayerEventHandler implements Listener
 		
 		if(!GriefPrevention.instance.config_spam_enabled) return;
 		
+		//remedy any CAPS SPAM without bothering to fault the player for it
+		if(message.length() > 4 && !player.hasPermission("griefprevention.spam") && message.toUpperCase().equals(message))
+		{
+			event.setMessage(message.toLowerCase());
+		}
+		
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		
 		boolean spam = false;
@@ -166,7 +172,8 @@ class PlayerEventHandler implements Listener
 			{
 				GriefPrevention.sendMessage(player, TextMode.Warn, GriefPrevention.instance.config_spam_warningMessage);
 				event.setCancelled(true);
-				GriefPrevention.AddLogEntry("Muted spam from " + player.getName() + ".");
+				GriefPrevention.AddLogEntry("Warned " + player.getName() + " about spam penalties.");
+				GriefPrevention.AddLogEntry("Muted spam from " + player.getName() + ": " + message);
 			}
 		}
 		
@@ -273,17 +280,12 @@ class PlayerEventHandler implements Listener
 			player.setHealth(0);
 		}
 		
-		//FEATURE: on logout or kick, give player the any claim blocks he may have earned for this play session
-		//NOTE: not all kicks are bad, for example an AFK kick or a kick to make room for an admin to log in
-		//that's why even kicked players get their claim blocks
-		
 		//FEATURE: during a siege, any player who logs out dies and forfeits the siege
 		
 		//if player was involved in a siege, he forfeits
 		if(playerData.siegeData != null)
 		{
-			player.setHealth(0);
-			this.dataStore.endSiege(playerData.siegeData, null, player.getName());
+			if(player.getHealth() > 0) player.setHealth(0);  //might already be zero from above, this avoids a double death message
 		}
 		
 		//disable ignore claims mode
@@ -773,7 +775,7 @@ class PlayerEventHandler implements Listener
 			if(playerData.shovelMode == ShovelMode.RestoreNature)
 			{
 				//if the clicked block is in a claim, visualize that claim and deliver an error message
-				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), true, playerData.lastClaim);
+				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 				if(claim != null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, claim.getOwnerName() + " claimed that block.");
