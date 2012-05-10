@@ -70,6 +70,7 @@ class RestoreNatureProcessingTask implements Runnable
 		//answer: better to leave a few player blocks than to remove too many natural blocks.  remember we're "restoring nature"
 		//a few extra player blocks can be manually removed, but it will be impossible to guess exactly which natural materials to use in replacements
 		this.playerBlocks = new ArrayList<Integer>();
+		this.playerBlocks.add(Material.FIRE.getId());
 		this.playerBlocks.add(Material.BED_BLOCK.getId());
 		this.playerBlocks.add(Material.WOOD.getId());
 		this.playerBlocks.add(Material.BOOKSHELF.getId());
@@ -319,6 +320,7 @@ class RestoreNatureProcessingTask implements Runnable
 		fillableBlocks.add(Material.AIR.getId());
 		fillableBlocks.add(Material.STATIONARY_WATER.getId());
 		fillableBlocks.add(Material.STATIONARY_LAVA.getId());
+		fillableBlocks.add(Material.LONG_GRASS.getId());
 		
 		ArrayList<Integer> notSuitableForFillBlocks = new ArrayList<Integer>();
 		notSuitableForFillBlocks.add(Material.LONG_GRASS.getId());

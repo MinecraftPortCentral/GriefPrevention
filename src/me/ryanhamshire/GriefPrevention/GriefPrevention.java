@@ -88,6 +88,8 @@ public class GriefPrevention extends JavaPlugin
 	
 	public boolean config_pvp_protectFreshSpawns;					//whether to make newly spawned players immune until they pick up an item
 	public boolean config_pvp_punishLogout;						    //whether to kill players who log out during PvP combat
+	public int config_pvp_combatTimeoutSeconds;						//how long combat is considered to continue after the most recent damage
+	public boolean config_pvp_allowCombatItemDrop;					//whether a player can drop items during combat to hide them
 	
 	public boolean config_trees_removeFloatingTreetops;				//whether to automatically remove partially cut trees
 	public boolean config_trees_regrowGriefedTrees;					//whether to automatically replant partially cut trees
@@ -99,6 +101,8 @@ public class GriefPrevention extends JavaPlugin
 	
 	public boolean config_fireSpreads;								//whether fire spreads outside of claims
 	public boolean config_fireDestroys;								//whether fire destroys blocks outside of claims
+	
+	public boolean config_addItemsToClaimedChests;					//whether players may add items to claimed chests by left-clicking them
 	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
@@ -177,6 +181,8 @@ public class GriefPrevention extends JavaPlugin
 		
 		this.config_pvp_protectFreshSpawns = config.getBoolean("GriefPrevention.PvP.ProtectFreshSpawns", true);
 		this.config_pvp_punishLogout = config.getBoolean("GriefPrevention.PvP.PunishLogout", true);
+		this.config_pvp_combatTimeoutSeconds = config.getInt("GriefPrevention.PvP.CombatTimeoutSeconds", 15);
+		this.config_pvp_allowCombatItemDrop = config.getBoolean("GriefPrevention.PvP.AllowCombatItemDrop", false);
 		
 		this.config_trees_removeFloatingTreetops = config.getBoolean("GriefPrevention.Trees.RemoveFloatingTreetops", true);
 		this.config_trees_regrowGriefedTrees = config.getBoolean("GriefPrevention.Trees.RegrowGriefedTrees", true);
@@ -188,6 +194,8 @@ public class GriefPrevention extends JavaPlugin
 		
 		this.config_fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
 		this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
+		
+		this.config_addItemsToClaimedChests = config.getBoolean("GriefPrevention.AddItemsToClaimedChests", true);
 		
 		//default for claims worlds list
 		ArrayList<String> defaultSiegeWorldNames = new ArrayList<String>();
@@ -284,6 +292,8 @@ public class GriefPrevention extends JavaPlugin
 		
 		config.set("GriefPrevention.PvP.ProtectFreshSpawns", this.config_pvp_protectFreshSpawns);
 		config.set("GriefPrevention.PvP.PunishLogout", this.config_pvp_punishLogout);
+		config.set("GriefPrevention.PvP.CombatTimeoutSeconds", this.config_pvp_combatTimeoutSeconds);
+		config.set("GriefPrevention.PvP.AllowCombatItemDrop", this.config_pvp_allowCombatItemDrop);
 		
 		config.set("GriefPrevention.Trees.RemoveFloatingTreetops", this.config_trees_removeFloatingTreetops);
 		config.set("GriefPrevention.Trees.RegrowGriefedTrees", this.config_trees_regrowGriefedTrees);
@@ -295,6 +305,8 @@ public class GriefPrevention extends JavaPlugin
 		
 		config.set("GriefPrevention.FireSpreads", this.config_fireSpreads);
 		config.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
+		
+		config.set("GriefPrevention.AddItemsToClaimedChests", this.config_addItemsToClaimedChests);
 		
 		config.set("GriefPrevention.Siege.Worlds", siegeEnabledWorldNames);
 		config.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
@@ -515,6 +527,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			//confirm
 			GriefPrevention.sendMessage(player, TextMode.Success, "Claim transferred.");
+			GriefPrevention.AddLogEntry(player.getName() + " transferred a claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + targetPlayer.getName() + ".");
 			
 			return true;
 		}
@@ -918,6 +931,7 @@ public class GriefPrevention extends JavaPlugin
 				{
 					this.dataStore.deleteClaim(claim);
 					GriefPrevention.sendMessage(player, TextMode.Success, "Claim deleted.");
+					GriefPrevention.AddLogEntry(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
 					
 					//revert any current visualization
 					Visualization.Revert(player);
@@ -1007,6 +1021,7 @@ public class GriefPrevention extends JavaPlugin
 			this.dataStore.savePlayerData(targetPlayer.getName(), playerData);
 			
 			GriefPrevention.sendMessage(player, TextMode.Success, "Adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".  New total bonus blocks: " + playerData.bonusClaimBlocks + ".");
+			GriefPrevention.AddLogEntry(player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".");
 			
 			return true;			
 		}
@@ -1167,6 +1182,11 @@ public class GriefPrevention extends JavaPlugin
 		return false; 
 	}
 	
+	public static String getfriendlyLocationString(Location location) 
+	{
+		return location.getWorld().getName() + "(" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ() + ")";
+	}
+
 	private boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) 
 	{
 		//which claim is being abandoned?

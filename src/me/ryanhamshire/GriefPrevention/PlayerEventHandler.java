@@ -290,6 +290,9 @@ class PlayerEventHandler implements Listener
 		
 		//disable ignore claims mode
 		playerData.ignoreClaims = false;
+		
+		//drop player data from memory
+		this.dataStore.clearCachedPlayerData(playerName);
 	}
 
 	//when a player drops an item
@@ -303,7 +306,7 @@ class PlayerEventHandler implements Listener
 		//them or give them away to other players before they are defeated
 		
 		//if in combat, don't let him drop it
-		if(playerData.inPvpCombat())
+		if(!GriefPrevention.instance.config_pvp_allowCombatItemDrop && playerData.inPvpCombat())
 		{
 			GriefPrevention.sendMessage(player, TextMode.Err, "You can't drop items while in PvP combat.");
 			event.setCancelled(true);			
@@ -456,34 +459,8 @@ class PlayerEventHandler implements Listener
 		ItemStack newItemStack = player.getInventory().getItem(event.getNewSlot());
 		if(newItemStack != null && newItemStack.getType() == Material.GOLD_SPADE)
 		{
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
-			
-			//reset any work he might have been doing
-			playerData.lastShovelLocation = null;
-			playerData.claimResizing = null;
-			
-			//always reset to basic claims mode
-			if(playerData.shovelMode != ShovelMode.Basic)
-			{			
-				playerData.shovelMode = ShovelMode.Basic;
-				GriefPrevention.sendMessage(player, TextMode.Info, "Shovel returned to basic claims mode.");
-			}
-			
-			int remainingBlocks = playerData.getRemainingClaimBlocks();
-			
-			//if he doesn't have enough blocks to create a new claim, tell him so and offer advice
-			if(remainingBlocks < GriefPrevention.instance.config_claims_minSize * GriefPrevention.instance.config_claims_minSize)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, "You don't have enough available claim blocks to create a new claim (each new claim must be at least " + GriefPrevention.instance.config_claims_minSize + " x " + GriefPrevention.instance.config_claims_minSize + ").  Consider /AbandonClaim to delete an existing claim.");
-				return;
-			}
-			
-			//otherwise instruct him in the steps to create a claim
-			else
-			{
-				GriefPrevention.sendMessage(player, TextMode.Instr, "To start creating a claim, right-click at one corner of the claim area.  You may claim up to " + String.valueOf(remainingBlocks) + " more blocks.");
-				GriefPrevention.sendMessage(player, TextMode.Instr, "Need a demonstration?  Watch the \"Grief Prevention Basics\" YouTube video.");
-			}
+			EquipShovelProcessingTask task = new EquipShovelProcessingTask(player);
+			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 15L);  //15L is approx. 3/4 of a second
 		}
 	}
 	
@@ -925,7 +902,13 @@ class PlayerEventHandler implements Listener
 					//inform and show the player
 					GriefPrevention.sendMessage(player, TextMode.Success, "Claim resized.  You now have " + playerData.getRemainingClaimBlocks() + " available claim blocks.");
 					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim);
-					Visualization.Apply(player, visualization);						
+					Visualization.Apply(player, visualization);
+					
+					//if resizing someone else's claim, make a log entry
+					if(!playerData.claimResizing.ownerName.equals(playerName))
+					{
+						GriefPrevention.AddLogEntry(playerName + " resized " + playerData.claimResizing.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(playerData.claimResizing.lesserBoundaryCorner) + ".");
+					}
 					
 					//clean up
 					playerData.claimResizing = null;
@@ -1082,7 +1065,7 @@ class PlayerEventHandler implements Listener
 				
 				if(playerData.shovelMode != ShovelMode.Admin && (newClaimWidth < GriefPrevention.instance.config_claims_minSize || newClaimHeight < GriefPrevention.instance.config_claims_minSize))
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, "Stopping your claim here would create a too-small claim.  A claim must be at least " + GriefPrevention.instance.config_claims_minSize + " x " + GriefPrevention.instance.config_claims_minSize + ".");
+					GriefPrevention.sendMessage(player, TextMode.Err, "This claim would be too small.  Any claim must be at least " + GriefPrevention.instance.config_claims_minSize + " x " + GriefPrevention.instance.config_claims_minSize + ".");
 					return;
 				}
 				
@@ -1094,7 +1077,7 @@ class PlayerEventHandler implements Listener
 					if(newClaimArea > remainingBlocks)
 					{
 						GriefPrevention.sendMessage(player, TextMode.Err, "You don't have enough blocks to claim that entire area.  You need " + (newClaimArea - remainingBlocks) + " more blocks.");
-						GriefPrevention.sendMessage(player, TextMode.Instr, "To delete another claim and free up some blocks, use /abandonclaim.");
+						GriefPrevention.sendMessage(player, TextMode.Instr, "To delete another claim and free up some blocks, use /AbandonClaim.");
 						return;
 					}
 				}					

@@ -106,7 +106,7 @@ public class PlayerData
 		
 		long elapsed = now - this.lastPvpTimestamp;
 		
-		if(elapsed > 15000) //15 seconds
+		if(elapsed > GriefPrevention.instance.config_pvp_combatTimeoutSeconds * 1000) //X seconds
 		{
 			this.lastPvpTimestamp = 0;
 			return false;

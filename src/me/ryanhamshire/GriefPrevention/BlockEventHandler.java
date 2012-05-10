@@ -25,6 +25,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -40,6 +41,7 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -60,6 +62,9 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true)
 	public void onBlockDamaged(BlockDamageEvent event)
 	{
+		//if placing items in protected chests isn't enabled, none of this code needs to run
+		if(!GriefPrevention.instance.config_addItemsToClaimedChests) return;
+		
 		Block block = event.getBlock();
 		Player player = event.getPlayer(); 
 		
@@ -406,6 +411,42 @@ public class BlockEventHandler implements Listener
 			if(fromOwner == null || fromOwner.getPlayer() == null || toClaim.allowBuild(fromOwner.getPlayer()) != null)
 			{
 				spreadEvent.setCancelled(true);
+			}
+		}
+	}
+	
+	@EventHandler(ignoreCancelled = true)
+	public void onTreeGrow (StructureGrowEvent growEvent)
+	{
+		Location rootLocation = growEvent.getLocation();
+		Claim rootClaim = this.dataStore.getClaimAt(rootLocation, false, null);
+		
+		//who owns the root, if anyone?
+		//who owns the spreading block, if anyone?
+		OfflinePlayer fromOwner = null;			
+		if(rootClaim != null)
+		{
+			//if an administrative claim, just let the tree grow where it wants
+			if(rootClaim.isAdminClaim()) return;
+			
+			//otherwise, note the owner of the claim
+			fromOwner = GriefPrevention.instance.getServer().getOfflinePlayer(rootClaim.ownerName);
+		}
+		
+		//for each block growing
+		for(int i = 0; i < growEvent.getBlocks().size(); i++)
+		{
+			BlockState block = growEvent.getBlocks().get(i);
+			Claim blockClaim = this.dataStore.getClaimAt(block.getLocation(), false, rootClaim);
+			
+			//if it's growing into a claim
+			if(blockClaim != null)
+			{
+				//if there's no owner for the new tree, or the owner doesn't have permission to build in the claim, don't grow this block
+				if(fromOwner == null  || fromOwner.getPlayer() == null || blockClaim.allowBuild(fromOwner.getPlayer()) != null)
+				{
+					growEvent.getBlocks().remove(i--);
+				}
 			}
 		}
 	}

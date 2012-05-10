@@ -107,17 +107,6 @@ public class Claim
 		this.lesserBoundaryCorner = lesserBoundaryCorner;
 		this.greaterBoundaryCorner = greaterBoundaryCorner;
 		
-		//if trying to create a claim under the max depth, auto-correct y values
-		if(this.lesserBoundaryCorner.getBlockY() < GriefPrevention.instance.config_claims_maxDepth)
-		{
-			this.lesserBoundaryCorner.setY(GriefPrevention.instance.config_claims_maxDepth);
-		}
-		
-		if(this.greaterBoundaryCorner.getBlockY() < GriefPrevention.instance.config_claims_maxDepth)
-		{
-			this.greaterBoundaryCorner.setY(GriefPrevention.instance.config_claims_maxDepth);
-		}
-		
 		//owner
 		this.ownerName = ownerName;
 		
