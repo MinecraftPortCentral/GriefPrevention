@@ -1,7 +1,7 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
 softdepend: [Vault, Multiverse-Core]
-version: 3.6
+version: 3.8
 commands:
    abandonclaim:
       description: Deletes a claim.
@@ -108,6 +108,7 @@ permissions:
             griefprevention.deleteclaims: true
             griefprevention.spam: true
             griefprevention.lava: true
+            griefprevention.eavesdrop: true
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
         default: op
@@ -128,4 +129,7 @@ permissions:
         default: op
     griefprevention.lava:
         description: Grants permission to place lava near the surface and outside of claims.
+        default: op
+    griefprevention.eavesdrop:
+        description: Allows a player to see whispered chat messages (/tell).
         default: op

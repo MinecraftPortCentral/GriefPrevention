@@ -35,11 +35,14 @@ import org.bukkit.entity.Vehicle;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.painting.PaintingBreakByEntityEvent;
 import org.bukkit.event.painting.PaintingBreakEvent;
 import org.bukkit.event.painting.PaintingPlaceEvent;
@@ -73,6 +76,12 @@ class EntityEventHandler implements Listener
 			}
 		}
 		
+		//special rule for creative worlds: explosions don't destroy anything
+		if(GriefPrevention.instance.creativeRulesApply(entity.getLocation()))
+		{
+			blocks.clear();
+		}
+		
 		//FEATURE: creating an explosion near a claim doesn't damage any of the claimed blocks
 	
 		Claim claim = null;
@@ -96,14 +105,59 @@ class EntityEventHandler implements Listener
 		}
 	}
 	
+	//when an item spawns...
+	@EventHandler
+	public void onItemSpawn(ItemSpawnEvent event)
+	{
+		//if in a creative world, cancel the event (don't drop items on the ground)
+		if(GriefPrevention.instance.creativeRulesApply(event.getLocation()))
+		{
+			event.setCancelled(true);
+		}
+	}
+	
+	//when a creature spawns...
+	@EventHandler
+	public void onEntitySpawn(CreatureSpawnEvent event)
+	{
+		LivingEntity entity = event.getEntity();
+		
+		//these rules apply only to creative worlds
+		if(!GriefPrevention.instance.creativeRulesApply(entity.getLocation())) return;
+		
+		//chicken eggs and breeding could potentially make a mess in the wilderness, once griefers get involved
+		SpawnReason reason = event.getSpawnReason();
+		if(reason == SpawnReason.EGG || reason == SpawnReason.BREEDING)
+		{
+			event.setCancelled(true);
+			return;
+		}
+		
+		//otherwise, just apply the limit on total entities per claim
+		Claim claim = this.dataStore.getClaimAt(event.getLocation(), false, null);
+		if(claim != null && claim.allowMoreEntities() != null)
+		{
+			event.setCancelled(true);
+			return;
+		}
+	}
+	
 	//when an entity dies...
 	@EventHandler
 	public void onEntityDeath(EntityDeathEvent event)
 	{
+		LivingEntity entity = event.getEntity();
+		
+		//special rule for creative worlds: killed entities don't drop items or experience orbs
+		if(GriefPrevention.instance.creativeRulesApply(entity.getLocation()))
+		{
+			event.setDroppedExp(0);
+			event.getDrops().clear();			
+		}
+		
 		//FEATURE: when a player is involved in a siege (attacker or defender role)
 		//his death will end the siege
 		
-		LivingEntity entity = event.getEntity();
 		if(!(entity instanceof Player)) return;  //only tracking players
 		
 		Player player = (Player)entity;
@@ -153,10 +207,6 @@ class EntityEventHandler implements Listener
         
         PaintingBreakByEntityEvent entityEvent = (PaintingBreakByEntityEvent)event;
         
-        //which claim is the painting in?
-        Claim claim = this.dataStore.getClaimAt(event.getPainting().getLocation(), false, null);
-        if(claim == null) return;
-        
         //who is removing it?
 		Entity remover = entityEvent.getRemover();
         
@@ -166,15 +216,19 @@ class EntityEventHandler implements Listener
         	event.setCancelled(true);
         	return;
         }
+		
+		//make sure the player has build permission here
+        Claim claim = this.dataStore.getClaimAt(event.getPainting().getLocation(), false, null);
+        if(claim == null) return;
         
         //if the player doesn't have build permission, don't allow the breakage
 		Player playerRemover = (Player)entityEvent.getRemover();
-        String noBuildReason = claim.allowBuild(playerRemover);
+        String noBuildReason = GriefPrevention.instance.allowBuild(playerRemover, event.getPainting().getLocation());
         if(noBuildReason != null)
         {
         	event.setCancelled(true);
         	GriefPrevention.sendMessage(playerRemover, TextMode.Err, noBuildReason);
-        }		
+        }
     }
 	
 	//when a painting is placed...
@@ -183,17 +237,13 @@ class EntityEventHandler implements Listener
 	{
 		//FEATURE: similar to above, placing a painting requires build permission in the claim
 	
-		//which claim is the painting in?
-        Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, null);
-        if(claim == null) return;
-        
-        //if the player doesn't have permission, don't allow the placement
-		String noBuildReason = claim.allowBuild(event.getPlayer());
+		//if the player doesn't have permission, don't allow the placement
+		String noBuildReason = GriefPrevention.instance.allowBuild(event.getPlayer(), event.getPainting().getLocation());
         if(noBuildReason != null)
         {
         	event.setCancelled(true);
         	GriefPrevention.sendMessage(event.getPlayer(), TextMode.Err, noBuildReason);
-        }	
+        }		
 	}
 	
 	//when an entity is damaged

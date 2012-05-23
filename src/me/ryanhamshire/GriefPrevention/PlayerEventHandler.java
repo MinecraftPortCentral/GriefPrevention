@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -111,7 +112,7 @@ class PlayerEventHandler implements Listener
 		long millisecondsSinceLastMessage = (new Date()).getTime() - playerData.lastMessageTimestamp.getTime();
 		
 		//if the message came too close to the last one
-		if(millisecondsSinceLastMessage < 3000)
+		if(millisecondsSinceLastMessage < 2000)
 		{
 			//increment the spam counter
 			playerData.spamCount++;
@@ -122,6 +123,7 @@ class PlayerEventHandler implements Listener
 		if(message.equals(playerData.lastMessage))
 		{
 			playerData.spamCount++;
+			event.setCancelled(true);
 			spam = true;
 		}
 		
@@ -164,7 +166,11 @@ class PlayerEventHandler implements Listener
 					
 					//kick
 					player.kickPlayer(GriefPrevention.instance.config_spam_banMessage);
-				}				
+				}	
+				else
+				{
+					player.kickPlayer("");
+				}
 			}
 			
 			//cancel any messages while at or above the third spam level and issue warnings
@@ -197,6 +203,31 @@ class PlayerEventHandler implements Listener
 		//if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
 		String [] args = event.getMessage().split(" ");
 		if(GriefPrevention.instance.config_spam_monitorSlashCommands.contains(args[0])) this.onPlayerChat(event);
+		
+		if(GriefPrevention.instance.config_eavesdrop && args[0].equalsIgnoreCase("/tell") && !event.getPlayer().hasPermission("griefprevention.eavesdrop") && args.length > 2)
+		{			
+			StringBuilder logMessageBuilder = new StringBuilder();
+			logMessageBuilder.append("[").append(event.getPlayer().getName()).append(" > ").append(args[1]).append("] ");			
+			
+			for(int i = 2; i < args.length; i++)
+			{
+				logMessageBuilder.append(args[i]).append(" ");
+			}
+			
+			String logMessage = logMessageBuilder.toString();
+			
+			GriefPrevention.AddLogEntry(logMessage.toString());
+			
+			Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
+			for(int i = 0; i < players.length; i++)
+			{
+				Player player = players[i];
+				if(player.hasPermission("griefprevention.eavesdrop") && !player.getName().equalsIgnoreCase(args[1]))
+				{
+					player.sendMessage(ChatColor.GRAY + logMessage);
+				}
+			}
+		}
 	}
 	
 	//when a player attempts to join the server...
@@ -300,6 +331,14 @@ class PlayerEventHandler implements Listener
 	public void onPlayerDropItem(PlayerDropItemEvent event)
 	{
 		Player player = event.getPlayer();
+		
+		//in creative worlds, dropping items is blocked
+		if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
+		{
+			event.setCancelled(true);
+			return;
+		}
+		
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		
 		//FEATURE: players under siege or in PvP combat, can't throw items on the ground to hide 
@@ -494,18 +533,19 @@ class PlayerEventHandler implements Listener
 		Block block = bucketEvent.getBlockClicked().getRelative(bucketEvent.getBlockFace());
 		int minLavaDistance = 10;
 		
+		//make sure the player is allowed to build at the location
+		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
+		if(noBuildReason != null)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+			bucketEvent.setCancelled(true);
+			return;
+		}
+		
 		//if the bucket is being used in a claim
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, null);
 		if(claim != null)
 		{
-			//the player must have build permission to use it
-			if(claim.allowBuild(player) != null)
-			{
-				bucketEvent.setCancelled(true);
-				GriefPrevention.sendMessage(player, TextMode.Err, "You don't have " + claim.getOwnerName() + "'s permission to use your bucket here.");
-				return;
-			}
-			
 			//the claim must be at least an hour old
 			long now = Calendar.getInstance().getTimeInMillis();
 			long lastModified = claim.modifiedDate.getTime();
@@ -526,6 +566,7 @@ class PlayerEventHandler implements Listener
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, "You may only dump lava inside your claim(s) or underground.");
 				bucketEvent.setCancelled(true);
+				return;
 			}			
 		}
 		
@@ -557,15 +598,14 @@ class PlayerEventHandler implements Listener
 		Player player = bucketEvent.getPlayer();
 		Block block = bucketEvent.getBlockClicked();
 		
-		Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, null);
-		if(claim != null)
+		//make sure the player is allowed to build at the location
+		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
+		if(noBuildReason != null)
 		{
-			if(claim.allowBuild(player) != null)
-			{
-				bucketEvent.setCancelled(true);
-				GriefPrevention.sendMessage(player, TextMode.Err, "You don't have permission to use your bucket here.");
-			}
-		}		
+			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+			bucketEvent.setCancelled(true);
+			return;
+		}
 	}
 	
 	//when a player interacts with the world
@@ -681,14 +721,39 @@ class PlayerEventHandler implements Listener
 			//if it's bonemeal, check for build permission (ink sac == bone meal, must be a Bukkit bug?)
 			if(materialInHand == Material.INK_SACK)
 			{
-				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
+				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation());
+				if(noBuildReason != null)
+				{
+					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+					event.setCancelled(true);
+				}
+				
+				return;
+			}
+			
+			//if it's a spawn egg or minecart and this is a creative world, apply special rules
+			else if((materialInHand == Material.MONSTER_EGG || materialInHand == Material.MINECART || materialInHand == Material.POWERED_MINECART || materialInHand == Material.STORAGE_MINECART) && GriefPrevention.instance.creativeRulesApply(clickedBlock.getLocation()))
+			{
+				//player needs build permission at this location
+				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation());
+				if(noBuildReason != null)
+				{
+					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+					event.setCancelled(true);
+					return;
+				}
+			
+				//enforce limit on total number of entities in this claim
+				PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 				if(claim == null) return;
 				
-				String noBuildReason = claim.allowBuild(player); 
-				if(claim != null && noBuildReason != null)
+				String noEntitiesReason = claim.allowMoreEntities();
+				if(noEntitiesReason != null)
 				{
-					player.sendMessage(noBuildReason);
-					event.setCancelled(true);					
+					GriefPrevention.sendMessage(player, TextMode.Err, noEntitiesReason);
+					event.setCancelled(true);
+					return;
 				}
 				
 				return;
@@ -885,7 +950,7 @@ class PlayerEventHandler implements Listener
 					{
 						int newArea =  newWidth * newHeight;
 						int blocksRemainingAfter = playerData.getRemainingClaimBlocks() + playerData.claimResizing.getArea() - newArea;
-					
+						
 						if(blocksRemainingAfter < 0)
 						{
 							GriefPrevention.sendMessage(player, TextMode.Err, "You don't have enough blocks for this size.  You need " + Math.abs(blocksRemainingAfter) + " more.");
@@ -894,7 +959,28 @@ class PlayerEventHandler implements Listener
 					}
 				}
 				
-				//ask the datastore to try and resize the claim
+				//in creative mode, top-level claims can't be moved or resized smaller.
+				//to check this, verifying the old claim's corners are inside the new claim's boundaries.
+				if(!player.hasPermission("griefprevention.deleteclaims") && GriefPrevention.instance.creativeRulesApply(player.getLocation()) && playerData.claimResizing.parent == null)
+				{
+					Claim oldClaim = playerData.claimResizing;
+					
+					//temporary claim instance, just for checking contains()
+					Claim newClaim = new Claim(
+							new Location(oldClaim.getLesserBoundaryCorner().getWorld(), newx1, newy1, newz1), 
+							new Location(oldClaim.getLesserBoundaryCorner().getWorld(), newx2, newy2, newz2),
+							"", new String[]{}, new String[]{}, new String[]{}, new String[]{});
+					
+					//both greater and lesser boundary corners of the old claim must be inside the new claim
+					if(!newClaim.contains(oldClaim.getLesserBoundaryCorner(), true, false) || !newClaim.contains(oldClaim.getGreaterBoundaryCorner(), true, false))
+					{
+						//otherwise, show an error message and stop here
+						GriefPrevention.sendMessage(player, TextMode.Err, "You can't un-claim creative mode land.  You can only make this claim larger or create additional claims.");
+						return;
+					}
+				}
+				
+				//ask the datastore to try and resize the claim, this checks for conflicts with other claims
 				CreateClaimResult result = GriefPrevention.instance.dataStore.resizeClaim(playerData.claimResizing, newx1, newx2, newy1, newy2, newz1, newz2);
 				
 				if(result.succeeded)

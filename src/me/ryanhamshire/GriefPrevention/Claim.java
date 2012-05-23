@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.bukkit.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 //represents a player claim
@@ -182,6 +183,9 @@ public class Claim
 	//all of these return NULL when a player has permission, or a String error message when the player doesn't have permission
 	public String allowEdit(Player player)
 	{
+		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
+		if(player == null) return "";
+		
 		//special cases...
 		
 		//admin claims need adminclaims permission only.
@@ -219,6 +223,9 @@ public class Claim
 	//build permission check
 	public String allowBuild(Player player)
 	{
+		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
+		if(player == null) return "";
+		
 		//when a player tries to build in a claim, if he's under siege, the siege may extend to include the new claim
 		GriefPrevention.instance.dataStore.tryExtendSiege(player, this);
 		
@@ -263,6 +270,9 @@ public class Claim
 	//break permission check
 	public String allowBreak(Player player, Material material)
 	{
+		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
+		if(player == null) return "";
+		
 		//if under siege, some blocks will be breakable
 		if(this.siegeData != null)
 		{
@@ -301,6 +311,9 @@ public class Claim
 	//access permission check
 	public String allowAccess(Player player)
 	{
+		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
+		if(player == null) return "";
+		
 		//everyone always has access to admin claims
 		if(this.isAdminClaim()) return null;
 		
@@ -329,6 +342,9 @@ public class Claim
 	//inventory permission check
 	public String allowContainers(Player player)
 	{		
+		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
+		if(player == null) return "";
+		
 		//trying to access inventory in a claim may extend an existing siege to include this claim
 		GriefPrevention.instance.dataStore.tryExtendSiege(player, this);
 		
@@ -363,6 +379,9 @@ public class Claim
 	//grant permission check, relatively simple
 	public String allowGrantPermission(Player player)
 	{
+		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
+		if(player == null) return "";
+		
 		//anyone who can modify the claim, or who's explicitly in the managers (/PermissionTrust) list can do this
 		if(this.allowEdit(player) == null || this.managers.contains(player.getName())) return null;
 		
@@ -541,6 +560,40 @@ public class Claim
 			return true;
 		
 		return false;
+	}
+	
+	//whether more entities may be added to a claim
+	public String allowMoreEntities()
+	{
+		if(this.parent != null) return this.parent.allowMoreEntities();
+		
+		//this rule only applies to creative mode worlds
+		if(!GriefPrevention.instance.creativeRulesApply(this.getLesserBoundaryCorner())) return null;
+		
+		//determine maximum allowable entity count, based on claim size
+		int maxEntities = this.getArea() / 50;		
+		if(maxEntities == 0) return "This claim isn't big enough for that.  Try enlarging it.";
+		
+		//count current entities (ignoring players)
+		Chunk lesserChunk = this.getLesserBoundaryCorner().getChunk();
+		Chunk greaterChunk = this.getGreaterBoundaryCorner().getChunk();
+		
+		int totalEntities = 0;
+		for(int x = lesserChunk.getX(); x <= greaterChunk.getX(); x++)
+			for(int z = lesserChunk.getZ(); z <= greaterChunk.getZ(); z++)
+			{
+				Chunk chunk = lesserChunk.getWorld().getChunkAt(x, z);
+				Entity [] entities = chunk.getEntities();
+				for(int i = 0; i < entities.length; i++)
+				{
+					Entity entity = entities[i];
+					if(!(entity instanceof Player) && this.contains(entity.getLocation(), false, false)) totalEntities++;
+				}
+			}
+
+		if(totalEntities > maxEntities) return "This claim has too many entities already.  Try enlarging the claim or removing some animals, monsters, or minecarts.";
+		
+		return null;
 	}
 	
 	//implements a strict ordering of claims, used to keep the claims collection sorted for faster searching

@@ -144,34 +144,27 @@ public class BlockEventHandler implements Listener
 	{
 		Player player = breakEvent.getPlayer();
 		Block block = breakEvent.getBlock();		
+		
+		//make sure the player is allowed to break at the location
+		String noBuildReason = GriefPrevention.instance.allowBreak(player, block.getLocation());
+		if(noBuildReason != null)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+			breakEvent.setCancelled(true);
+			return;
+		}
+		
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		
 		//if there's a claim here
 		if(claim != null)
 		{
-			//cache the claim for later reference
-			playerData.lastClaim = claim;
-			
-			//check permissions
-			String noBuildReason = claim.allowBreak(player, block.getType());
-			
-			//if permission to break and breaking UNDER the claim
+			//if breaking UNDER the claim
 			if(block.getY() < claim.lesserBoundaryCorner.getBlockY())
 			{
-				if(noBuildReason == null)
-				{
-					//extend the claim downward beyond the breakage point
-					this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
-				}
-			}
-			
-			//otherwise if not allowed to break blocks here, tell the player why
-			else if(noBuildReason != null)
-			{
-				breakEvent.setCancelled(true);
-				GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
-				return;
+				//extend the claim downward beyond the breakage point
+				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
 			}
 		}
 		
@@ -210,30 +203,26 @@ public class BlockEventHandler implements Listener
 			}
 		}
 		
+		//make sure the player is allowed to build at the location
+		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
+		if(noBuildReason != null)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+			placeEvent.setCancelled(true);
+			return;
+		}
+		
 		//if the block is being placed within an existing claim
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		if(claim != null)
 		{
-			playerData.lastClaim = claim;
-			String noBuildReason = claim.allowBuild(player);
-			
 			//if the player has permission for the claim and he's placing UNDER the claim
 			if(block.getY() < claim.lesserBoundaryCorner.getBlockY())
 			{
-				if(noBuildReason == null)
-				{
-					//extend the claim downward
-					this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
-				}
+				//extend the claim downward
+				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
 			}
-			
-			//otherwise if he doesn't have permission, tell him why
-			else if(noBuildReason != null)
-			{
-				placeEvent.setCancelled(true);
-				GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
-			}			
 		}
 		
 		//FEATURE: automatically create a claim when a player who has no claims places a chest
@@ -304,7 +293,7 @@ public class BlockEventHandler implements Listener
 	
 	//blocks "pushing" other players' blocks around (pistons)
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onBlockPistonExtend (BlockPistonExtendEvent event) 
+	public void onBlockPistonExtend (BlockPistonExtendEvent event)
 	{		
 		//who owns the piston, if anyone?
 		String pistonClaimOwnerName = "_";
@@ -389,6 +378,13 @@ public class BlockEventHandler implements Listener
 		//where to?
 		Block toBlock = spreadEvent.getToBlock();
 		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, null);
+		
+		//if in a creative world, block any spread into the wilderness
+		if(GriefPrevention.instance.creativeRulesApply(toBlock.getLocation()) && toClaim == null)
+		{
+			spreadEvent.setCancelled(true);
+			return;
+		}
 		
 		//if spreading into a claim
 		if(toClaim != null)

@@ -140,6 +140,9 @@ public class DataStore
 						else
 						{
 							Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, "--subdivision--", builderNames, containerNames, accessorNames, managerNames);
+							
+							//make sure there are no other subdivisions overlapping this one
+							
 							subdivision.modifiedDate = new Date(files[i].lastModified());
 							subdivision.parent = topLevelClaim;
 							topLevelClaim.children.add(subdivision);
@@ -509,8 +512,10 @@ public class DataStore
 					//convert that to a number and store it										
 					playerData.bonusClaimBlocks = Integer.parseInt(bonusBlocksString);
 					
-					//fourth line is a double-semicolon-delimited list of claims
-					String claimsString = inStream.readLine();
+					//fourth line is a double-semicolon-delimited list of claims, which is currently ignored
+					//String claimsString = inStream.readLine();
+					inStream.readLine();
+					/*
 					if(claimsString != null && claimsString.length() > 0)
 					{
 						String [] claimsStrings = claimsString.split(";;");
@@ -522,7 +527,7 @@ public class DataStore
 							String claimID = claimsStrings[i];
 							if(claimID != null)
 							{
-								Claim claim = this.getClaimAt(this.locationFromString(claimID), true /*ignore height*/, null);
+								Claim claim = this.getClaimAt(this.locationFromString(claimID), true, null);
 								
 								//if the referenced claim exists, add it to the player data instance for later reference
 								if(claim != null)
@@ -542,6 +547,17 @@ public class DataStore
 						if(missingClaim)
 						{
 							this.savePlayerData(playerName, playerData);
+						}
+					}
+					*/
+					
+					//find all the claims belonging to this player and note them for future reference
+					for(int i = 0; i < this.claims.size(); i++)
+					{
+						Claim claim = this.claims.get(i);
+						if(claim.ownerName.equals(playerName))
+						{
+							playerData.claims.add(claim);
 						}
 					}
 					
@@ -1044,14 +1060,14 @@ public class DataStore
 	}		
 	
 	//deletes all claims owned by a player
-	public void deleteClaimsForPlayer(String playerName)
+	public void deleteClaimsForPlayer(String playerName, boolean deleteCreativeClaims)
 	{
 		//make a list of the player's claims
 		ArrayList<Claim> claimsToDelete = new ArrayList<Claim>();
 		for(int i = 0; i < this.claims.size(); i++)
 		{
 			Claim claim = this.claims.get(i);
-			if(claim.ownerName.equals(playerName))
+			if(claim.ownerName.equals(playerName) && (deleteCreativeClaims || !GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())))
 				claimsToDelete.add(claim);
 		}
 		

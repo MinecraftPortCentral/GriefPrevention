@@ -30,6 +30,7 @@ import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -59,6 +60,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	//configuration variables, loaded/saved from a config.yml
 	public ArrayList<World> config_claims_enabledWorlds;			//list of worlds where players can create GriefPrevention claims
+	public ArrayList<World> config_claims_enabledCreativeWorlds;	//list of worlds where additional creative mode anti-grief rules apply
 	
 	public boolean config_claims_preventTheft;						//whether containers and crafting blocks are protectable
 	public boolean config_claims_preventButtonsSwitches;			//whether buttons and switches are protectable
@@ -103,6 +105,7 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_fireDestroys;								//whether fire destroys blocks outside of claims
 	
 	public boolean config_addItemsToClaimedChests;					//whether players may add items to claimed chests by left-clicking them
+	public boolean config_eavesdrop; 								//whether whispered messages will be visible to administrators
 	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
@@ -159,6 +162,41 @@ public class GriefPrevention extends JavaPlugin
 			}
 		}
 		
+		//default creative claim world names
+		List<String> defaultCreativeWorldNames = new ArrayList<String>();
+		
+		//if default game mode for the server is creative, creative rules will apply to all worlds unless the config specifies otherwise
+		if(this.getServer().getDefaultGameMode() == GameMode.CREATIVE)
+		{
+			for(int i = 0; i < defaultClaimsWorldNames.size(); i++)
+			{
+				defaultCreativeWorldNames.add(defaultClaimsWorldNames.get(i));
+			}			
+		}
+		
+		//get creative world names from the config file
+		List<String> creativeClaimsEnabledWorldNames = config.getStringList("GriefPrevention.Claims.CreativeRulesWorlds");
+		if(creativeClaimsEnabledWorldNames == null || creativeClaimsEnabledWorldNames.size() == 0)
+		{			
+			creativeClaimsEnabledWorldNames = defaultCreativeWorldNames;
+		}
+		
+		//validate that list
+		this.config_claims_enabledCreativeWorlds = new ArrayList<World>();
+		for(int i = 0; i < creativeClaimsEnabledWorldNames.size(); i++)
+		{
+			String worldName = creativeClaimsEnabledWorldNames.get(i);
+			World world = this.getServer().getWorld(worldName);
+			if(world == null)
+			{
+				AddLogEntry("Error: Claims Configuration: There's no world named \"" + worldName + "\".  Please update your config.yml.");
+			}
+			else
+			{
+				this.config_claims_enabledCreativeWorlds.add(world);
+			}
+		}
+		
 		this.config_claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
 		this.config_claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);		
 		this.config_claims_initialBlocks = config.getInt("GriefPrevention.Claims.InitialBlocks", 100);
@@ -196,8 +234,9 @@ public class GriefPrevention extends JavaPlugin
 		this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
 		
 		this.config_addItemsToClaimedChests = config.getBoolean("GriefPrevention.AddItemsToClaimedChests", true);
+		this.config_eavesdrop = config.getBoolean("GriefPrevention.EavesdropEnabled", false);
 		
-		//default for claims worlds list
+		//default for siege worlds list
 		ArrayList<String> defaultSiegeWorldNames = new ArrayList<String>();
 		
 		//get siege world names from the config file
@@ -270,6 +309,7 @@ public class GriefPrevention extends JavaPlugin
 		}
 		
 		config.set("GriefPrevention.Claims.Worlds", claimsEnabledWorldNames);
+		config.set("GriefPrevention.Claims.CreativeRulesWorlds", creativeClaimsEnabledWorldNames);
 		config.set("GriefPrevention.Claims.PreventTheft", this.config_claims_preventTheft);
 		config.set("GriefPrevention.Claims.PreventButtonsSwitches", this.config_claims_preventButtonsSwitches);
 		config.set("GriefPrevention.Claims.InitialBlocks", this.config_claims_initialBlocks);
@@ -307,6 +347,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
 		
 		config.set("GriefPrevention.AddItemsToClaimedChests", this.config_addItemsToClaimedChests);
+		config.set("GriefPrevention.EavesdropEnabled", this.config_eavesdrop);
 		
 		config.set("GriefPrevention.Siege.Worlds", siegeEnabledWorldNames);
 		config.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
@@ -403,7 +444,7 @@ public class GriefPrevention extends JavaPlugin
 		//abandonclaim
 		if(cmd.getName().equalsIgnoreCase("abandonclaim") && player != null)
 		{
-			this.abandonClaimHandler(player, false);
+			return this.abandonClaimHandler(player, false);
 		}		
 		
 		//abandontoplevelclaim
@@ -435,6 +476,14 @@ public class GriefPrevention extends JavaPlugin
 		//abandonallclaims
 		else if(cmd.getName().equalsIgnoreCase("abandonallclaims") && player != null)
 		{
+			if(args.length != 0) return false;
+			
+			if(creativeRulesApply(player.getLocation()))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, "Creative mode claims can't be abandoned.");
+				return true;
+			}
+			
 			//count claims
 			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 			int originalClaimCount = playerData.claims.size();
@@ -447,11 +496,11 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//delete them
-			this.dataStore.deleteClaimsForPlayer(player.getName());
+			this.dataStore.deleteClaimsForPlayer(player.getName(), false);
 			
 			//inform the player
 			int remainingBlocks = playerData.getRemainingClaimBlocks();
-			GriefPrevention.sendMessage(player, TextMode.Success, originalClaimCount + " claims abandoned.  You now have " + String.valueOf(remainingBlocks) + " available claim blocks.");
+			GriefPrevention.sendMessage(player, TextMode.Success, "Claims abandoned.  You now have " + String.valueOf(remainingBlocks) + " available claim blocks.");
 			
 			//revert any current visualization
 			Visualization.Revert(player);
@@ -960,7 +1009,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//delete all that player's claims
-			this.dataStore.deleteClaimsForPlayer(otherPlayer.getName());
+			this.dataStore.deleteClaimsForPlayer(otherPlayer.getName(), true);
 			
 			GriefPrevention.sendMessage(player, TextMode.Success, "Deleted all of " + otherPlayer.getName() + "'s claims.");
 			
@@ -980,7 +1029,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//delete all admin claims
-			this.dataStore.deleteClaimsForPlayer("");  //empty string for owner name indicates an administrative claim
+			this.dataStore.deleteClaimsForPlayer("", true);  //empty string for owner name indicates an administrative claim
 			
 			GriefPrevention.sendMessage(player, TextMode.Success, "Deleted all administrative claims.");
 			
@@ -1194,7 +1243,12 @@ public class GriefPrevention extends JavaPlugin
 		if(claim == null)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Instr, "Stand in the claim you want to delete, or consider /AbandonAllClaims.");
-		}			
+		}
+		
+		else if(this.creativeRulesApply(player.getLocation()))
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, "Creative-mode claims can't be abandoned.");
+		}
 		
 		//verify ownership
 		else if(claim.allowEdit(player) != null)
@@ -1672,5 +1726,73 @@ public class GriefPrevention extends JavaPlugin
 	static void sendMessage(Player player, ChatColor color, String message)
 	{
 		player.sendMessage(color + message);
+	}
+	
+	//determines whether creative anti-grief rules apply at a location
+	boolean creativeRulesApply(Location location)
+	{
+		return this.config_claims_enabledCreativeWorlds.contains(location.getWorld());
+	}
+	
+	public String allowBuild(Player player, Location location)
+	{
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
+		
+		//wilderness rules
+		if(claim == null)
+		{
+			//no building in the wilderness in creative mode
+			if(this.creativeRulesApply(location))
+			{
+				//exception: administrators in ignore claims mode
+				if(playerData.ignoreClaims) return null;
+				
+				return "You can't build here.  Use the golden shovel to claim some land first.";
+			}
+			
+			//but it's fine in survival mode
+			else
+			{
+				//cache the claim for later reference
+				playerData.lastClaim = claim;
+			
+				return null;
+			}
+		}
+		
+		//if not in the wilderness, then apply claim rules (permissions, etc)
+		return claim.allowBuild(player);
+	}
+	
+	public String allowBreak(Player player, Location location)
+	{
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
+		
+		//wilderness rules
+		if(claim == null)
+		{
+			//no building in the wilderness in creative mode
+			if(this.creativeRulesApply(location))
+			{
+				//exception: administrators in ignore claims mode
+				if(playerData.ignoreClaims) return null;
+				
+				return "You can't build here.  Use the golden shovel to claim some land first.";
+			}
+			
+			//but it's fine in survival mode
+			else
+			{
+				//cache the claim for later reference
+				playerData.lastClaim = claim;
+			
+				return null;
+			}
+		}
+		
+		//if not in the wilderness, then apply claim rules (permissions, etc)
+		return claim.allowBreak(player, location.getBlock().getType());
 	}
 }
