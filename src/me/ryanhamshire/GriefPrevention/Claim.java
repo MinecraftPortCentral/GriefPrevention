@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.bukkit.*;
+import org.bukkit.World.Environment;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -96,6 +98,44 @@ public class Claim
 		if(this.allowAccess(defender) != null) return false;
 		
 		return true;
+	}
+	
+	//removes any fluids above sea level in a claim
+	//exclusionClaim is another claim indicating an sub-area to be excluded from this operation
+	//it may be null
+	public void removeSurfaceFluids(Claim exclusionClaim)
+	{
+		//don't do this automatically for administrative claims
+		if(this.isAdminClaim()) return;
+		
+		Location lesser = this.getLesserBoundaryCorner();
+		Location greater = this.getGreaterBoundaryCorner();
+
+		if(lesser.getWorld().getEnvironment() == Environment.NETHER) return;  //don't clean up lava in the nether
+		
+		int seaLevel = 0;  //clean up all fluids in the end
+		
+		//respect sea level in normal worlds
+		if(lesser.getWorld().getEnvironment() == Environment.NORMAL) seaLevel = lesser.getWorld().getSeaLevel();
+		
+		for(int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
+		{
+			for(int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++)
+			{
+				for(int y = seaLevel - 1; y <= lesser.getWorld().getMaxHeight(); y++)
+				{
+					//dodge the exclusion claim
+					Block block = lesser.getWorld().getBlockAt(x, y, z);
+					if(exclusionClaim != null && exclusionClaim.contains(block.getLocation(), true, false)) continue;
+					
+					if(block.getType() == Material.STATIONARY_WATER || block.getType() == Material.STATIONARY_LAVA || block.getType() == Material.LAVA || block.getType() == Material.WATER)
+					{
+						block.setType(Material.AIR);
+					}
+				}
+			}
+		}
+		
 	}
 	
 	//main constructor.  note that only creating a claim instance does nothing - a claim must be added to the data store to be effective

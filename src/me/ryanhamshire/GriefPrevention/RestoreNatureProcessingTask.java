@@ -43,12 +43,13 @@ class RestoreNatureProcessingTask implements Runnable
 	private Player player;			//absolutely must not be accessed.  not thread safe.
 	private Biome biome;
 	private int seaLevel;
+	private boolean aggressiveMode;
 	
 	//two lists of materials
 	private ArrayList<Integer> notAllowedToHang;    //natural blocks which don't naturally hang in their air
 	private ArrayList<Integer> playerBlocks;		//a "complete" list of player-placed blocks.  MUST BE MAINTAINED as patches introduce more
 	
-	public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, Environment environment, Biome biome, Location lesserBoundaryCorner, Location greaterBoundaryCorner, int seaLevel, Player player)
+	public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, Environment environment, Biome biome, Location lesserBoundaryCorner, Location greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, Player player)
 	{
 		this.snapshots = snapshots;
 		this.miny = miny;
@@ -57,18 +58,24 @@ class RestoreNatureProcessingTask implements Runnable
 		this.greaterBoundaryCorner = greaterBoundaryCorner;
 		this.biome = biome;
 		this.seaLevel = seaLevel;
+		this.aggressiveMode = aggressiveMode;
 		this.player = player;
 		
 		this.notAllowedToHang = new ArrayList<Integer>();
 		this.notAllowedToHang.add(Material.DIRT.getId());
-		this.notAllowedToHang.add(Material.GRASS.getId());
 		this.notAllowedToHang.add(Material.LONG_GRASS.getId());
 		this.notAllowedToHang.add(Material.SNOW.getId());
 		this.notAllowedToHang.add(Material.LOG.getId());
 		
+		if(this.aggressiveMode)
+		{
+			this.notAllowedToHang.add(Material.GRASS.getId());			
+			this.notAllowedToHang.add(Material.STONE.getId());
+		}
+		
 		//NOTE on this list.  why not make a list of natural blocks?
 		//answer: better to leave a few player blocks than to remove too many natural blocks.  remember we're "restoring nature"
-		//a few extra player blocks can be manually removed, but it will be impossible to guess exactly which natural materials to use in replacements
+		//a few extra player blocks can be manually removed, but it will be impossible to guess exactly which natural materials to use in manual repair of an overzealous block removal
 		this.playerBlocks = new ArrayList<Integer>();
 		this.playerBlocks.add(Material.FIRE.getId());
 		this.playerBlocks.add(Material.BED_BLOCK.getId());
@@ -155,10 +162,22 @@ class RestoreNatureProcessingTask implements Runnable
 		}
 		
 		//these are unnatural in sandy biomes, but not elsewhere
-		if(this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH)
+		if(this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH || this.aggressiveMode)
 		{
 			this.playerBlocks.add(Material.LEAVES.getId());
 			this.playerBlocks.add(Material.LOG.getId());
+		}
+		
+		//in aggressive mode, also treat these blocks as user placed, to be removed
+		//this is helpful in the few cases where griefers intentionally use natural blocks to grief,
+		//like a single-block tower of iron ore or a giant penis constructed with logs
+		if(this.aggressiveMode)
+		{
+			this.playerBlocks.add(Material.IRON_ORE.getId());			
+			this.playerBlocks.add(Material.PUMPKIN.getId());
+			this.playerBlocks.add(Material.PUMPKIN_STEM.getId());
+			this.playerBlocks.add(Material.MELON_BLOCK.getId());
+			this.playerBlocks.add(Material.MELON_STEM.getId());
 		}
 	}
 	
@@ -185,6 +204,9 @@ class RestoreNatureProcessingTask implements Runnable
 		//fill water depressions and fix unnatural surface ripples
 		this.fixWater();
 		
+		//remove water/lava above sea level
+		this.removeDumpedFluids();
+		
 		//schedule main thread task to apply the result to the world
 		RestoreNatureExecutionTask task = new RestoreNatureExecutionTask(this.snapshots, this.miny, this.lesserBoundaryCorner, this.greaterBoundaryCorner, this.player);
 		GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task);
@@ -195,6 +217,7 @@ class RestoreNatureProcessingTask implements Runnable
 		int miny = this.miny;
 		if(miny < 1) miny = 1;
 		
+		//remove all player blocks
 		for(int x = 1; x < snapshots.length - 1; x++)
 		{
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
@@ -208,7 +231,7 @@ class RestoreNatureProcessingTask implements Runnable
 					}
 				}
 			}
-		}
+		}				
 	}
 	
 	private void removeHanging()
@@ -225,7 +248,7 @@ class RestoreNatureProcessingTask implements Runnable
 					BlockSnapshot block = snapshots[x][y][z];
 					BlockSnapshot underBlock = snapshots[x][y - 1][z];
 					
-					if(underBlock.typeId == Material.AIR.getId() || underBlock.typeId == Material.WATER.getId())
+					if(underBlock.typeId == Material.AIR.getId() || underBlock.typeId == Material.STATIONARY_WATER.getId() || underBlock.typeId == Material.STATIONARY_LAVA.getId() || underBlock.typeId == Material.LEAVES.getId())
 					{
 						if(this.notAllowedToHang.contains(block.typeId))
 						{
@@ -267,19 +290,19 @@ class RestoreNatureProcessingTask implements Runnable
 			{
 				for(int z = 1; z < snapshots[0][0].length - 1; z++)
 				{
-					int thisy = this.highestY(x, z);
+					int thisy = this.highestY(x, z, false);
 					if(excludedBlocks.contains(this.snapshots[x][thisy][z].typeId)) continue;
 						
-					int righty = this.highestY(x + 1, z);
-					int lefty = this.highestY(x - 1, z);
+					int righty = this.highestY(x + 1, z, false);
+					int lefty = this.highestY(x - 1, z, false);
 					while(lefty < thisy && righty < thisy)
 					{
 						this.snapshots[x][thisy--][z].typeId = Material.AIR.getId();
 						changed = true;
 					}
 					
-					int upy = this.highestY(x, z + 1);
-					int downy = this.highestY(x, z - 1);
+					int upy = this.highestY(x, z + 1, false);
+					int downy = this.highestY(x, z - 1, false);
 					while(upy < thisy && downy < thisy)
 					{
 						this.snapshots[x][thisy--][z].typeId = Material.AIR.getId();
@@ -296,7 +319,7 @@ class RestoreNatureProcessingTask implements Runnable
 		{
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
 			{
-				int y = this.highestY(x, z);
+				int y = this.highestY(x, z, true);
 				BlockSnapshot block = snapshots[x][y][z];
 				
 				if(block.typeId == Material.STONE.getId() || block.typeId == Material.GRAVEL.getId() || block.typeId == Material.DIRT.getId())
@@ -454,13 +477,36 @@ class RestoreNatureProcessingTask implements Runnable
 		}while(changed);
 	}
 	
-	private int highestY(int x, int z)
+	private void removeDumpedFluids()
+	{
+		//remove any surface water or lava above sea level, presumed to be placed by players
+		//sometimes, this is naturally generated.  but replacing it is very easy with a bucket, so overall this is a good plan
+		if(this.environment == Environment.NETHER) return;
+		for(int x = 1; x < snapshots.length - 1; x++)
+		{
+			for(int z = 1; z < snapshots[0][0].length - 1; z++)
+			{
+				for(int y = this.seaLevel - 1; y < snapshots[0].length - 1; y++)
+				{
+					BlockSnapshot block = snapshots[x][y][z];
+					if(block.typeId == Material.STATIONARY_WATER.getId() || block.typeId == Material.STATIONARY_LAVA.getId() ||
+					   block.typeId == Material.WATER.getId() || block.typeId == Material.LAVA.getId())
+					{
+						block.typeId = Material.AIR.getId();
+					}
+				}
+			}
+		}
+	}
+	
+	private int highestY(int x, int z, boolean ignoreLeaves)
 	{
 		int y;
 		for(y = snapshots[0].length - 1; y > 0; y--)
 		{
 			BlockSnapshot block = this.snapshots[x][y][z];
-			if(block.typeId != Material.AIR.getId() && 
+			if(block.typeId != Material.AIR.getId() &&
+			!(ignoreLeaves && block.typeId == Material.LEAVES.getId()) &&
 			!(block.typeId == Material.STATIONARY_WATER.getId() && block.data != 0) &&
 			!(block.typeId == Material.STATIONARY_LAVA.getId() && block.data != 0))
 			{

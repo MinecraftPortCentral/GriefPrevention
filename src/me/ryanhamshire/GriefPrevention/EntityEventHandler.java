@@ -21,11 +21,12 @@ package me.ryanhamshire.GriefPrevention;
 import java.util.Calendar;
 import java.util.List;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Arrow;
-import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -34,6 +35,7 @@ import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Vehicle;
 
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
@@ -59,17 +61,17 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when an entity explodes...
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityExplode(EntityExplodeEvent explodeEvent)
 	{		
 		List<Block> blocks = explodeEvent.blockList();
-		Entity entity = explodeEvent.getEntity();
+		Location location = explodeEvent.getLocation();
 		
-		//FEATURE: creepers don't destroy blocks when they explode near or above sea level
+		//FEATURE: explosions don't destroy blocks when they explode near or above sea level in standard worlds
 		
-		if(GriefPrevention.instance.config_creepersDontDestroySurface && entity instanceof Creeper)
+		if(GriefPrevention.instance.config_blockSurfaceExplosions && location.getWorld().getEnvironment() == Environment.NORMAL)
 		{
-			if(entity.getLocation().getBlockY() > entity.getLocation().getWorld().getSeaLevel() - 7)
+			if(location.getBlockY() >location.getWorld().getSeaLevel() - 7)
 			{
 				blocks.clear();  //explosion still happens, can damage creatures/players, but no blocks will be destroyed
 				return;
@@ -77,7 +79,7 @@ class EntityEventHandler implements Listener
 		}
 		
 		//special rule for creative worlds: explosions don't destroy anything
-		if(GriefPrevention.instance.creativeRulesApply(entity.getLocation()))
+		if(GriefPrevention.instance.creativeRulesApply(explodeEvent.getLocation()))
 		{
 			blocks.clear();
 		}
@@ -106,7 +108,7 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when an item spawns...
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onItemSpawn(ItemSpawnEvent event)
 	{
 		//if in a creative world, cancel the event (don't drop items on the ground)
@@ -117,7 +119,7 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when a creature spawns...
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onEntitySpawn(CreatureSpawnEvent event)
 	{
 		LivingEntity entity = event.getEntity();
@@ -175,7 +177,7 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when an entity picks up an item
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onEntityPickup(EntityChangeBlockEvent event)
 	{
 		//FEATURE: endermen don't steal claimed blocks
@@ -193,7 +195,7 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when a painting is broken
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPaintingBreak(PaintingBreakEvent event)
     {
         //FEATURE: claimed paintings are protected from breakage
@@ -217,11 +219,7 @@ class EntityEventHandler implements Listener
         	return;
         }
 		
-		//make sure the player has build permission here
-        Claim claim = this.dataStore.getClaimAt(event.getPainting().getLocation(), false, null);
-        if(claim == null) return;
-        
-        //if the player doesn't have build permission, don't allow the breakage
+		//if the player doesn't have build permission, don't allow the breakage
 		Player playerRemover = (Player)entityEvent.getRemover();
         String noBuildReason = GriefPrevention.instance.allowBuild(playerRemover, event.getPainting().getLocation());
         if(noBuildReason != null)
@@ -232,7 +230,7 @@ class EntityEventHandler implements Listener
     }
 	
 	//when a painting is placed...
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPaintingPlace(PaintingPlaceEvent event)
 	{
 		//FEATURE: similar to above, placing a painting requires build permission in the claim
@@ -247,7 +245,7 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when an entity is damaged
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityDamage (EntityDamageEvent event)
 	{
 		//only actually interested in entities damaging entities (ignoring environmental damage)

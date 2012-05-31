@@ -61,7 +61,7 @@ class PlayerRescueTask implements Runnable
 		Location destination = GriefPrevention.instance.ejectPlayer(this.player);
 		
 		//log entry, in case admins want to investigate the "trap"
-		GriefPrevention.AddLogEntry("Rescued trapped player " + player.getName() + " from " + this.location.toString() + " to " + destination.toString() + ".");
+		GriefPrevention.AddLogEntry("Rescued trapped player " + player.getName() + " from " + GriefPrevention.getfriendlyLocationString(this.location) + " to " + GriefPrevention.getfriendlyLocationString(destination) + ".");
 		
 		//timestamp this successful save so that he can't use /trapped again for a while		
 		playerData.lastTrappedUsage = Calendar.getInstance().getTime();		

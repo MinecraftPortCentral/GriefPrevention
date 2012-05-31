@@ -24,5 +24,7 @@ enum ShovelMode
 	Basic,
 	Admin,
 	Subdivide,
-	RestoreNature
+	RestoreNature,
+	RestoreNatureAggressive,
+	RestoreNatureFill
 }

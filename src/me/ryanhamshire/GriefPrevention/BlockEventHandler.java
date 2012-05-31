@@ -25,6 +25,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
@@ -41,6 +42,7 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -139,7 +141,7 @@ public class BlockEventHandler implements Listener
 	}
 	
 	//when a player breaks a block...
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockBreak(BlockBreakEvent breakEvent)
 	{
 		Player player = breakEvent.getPlayer();
@@ -177,8 +179,36 @@ public class BlockEventHandler implements Listener
 		}
 	}
 	
+	//when a player places a sign...
+	@EventHandler(ignoreCancelled = true)
+	public void onSignChanged(SignChangeEvent event)
+	{
+		Player player = event.getPlayer();
+		if(player == null) return;
+		
+		StringBuilder lines = new StringBuilder();
+		boolean notEmpty = false;
+		for(int i = 0; i < event.getLines().length; i++)
+		{
+			if(event.getLine(i).length() != 0) notEmpty = true;
+			lines.append(event.getLine(i) + ";");
+		}
+		
+		String signMessage = lines.toString();
+		
+		//if not empty and wasn't the same as the last sign, log it and remember it for later
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		if(notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage))
+		{		
+			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + lines.toString());
+			GriefPrevention.AddLogEntry("Location: " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()));
+			
+			playerData.lastMessage = signMessage;
+		}
+	}
+	
 	//when a player places a block...
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPlace(BlockPlaceEvent placeEvent)
 	{
 		Player player = placeEvent.getPlayer();
@@ -200,6 +230,20 @@ public class BlockEventHandler implements Listener
 					placeEvent.setCancelled(true);
 					return;
 				}					
+			}
+		}
+		
+		//FEATURE: limit tree planting to grass, and dirt with more earth beneath it
+		if(block.getType() == Material.SAPLING)
+		{
+			Block earthBlock = placeEvent.getBlockAgainst();
+			if(earthBlock.getType() != Material.GRASS)
+			{
+				if(earthBlock.getRelative(BlockFace.DOWN).getType() == Material.AIR || 
+				   earthBlock.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN).getType() == Material.AIR)
+				{
+					placeEvent.setCancelled(true);
+				}
 			}
 		}
 		
@@ -292,7 +336,7 @@ public class BlockEventHandler implements Listener
 	}
 	
 	//blocks "pushing" other players' blocks around (pistons)
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonExtend (BlockPistonExtendEvent event)
 	{		
 		//who owns the piston, if anyone?
@@ -316,7 +360,7 @@ public class BlockEventHandler implements Listener
 	}
 	
 	//blocks theft by pulling blocks out of a claim (again pistons)
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonRetract (BlockPistonRetractEvent event)
 	{
 		//we only care about sticky pistons
@@ -342,21 +386,21 @@ public class BlockEventHandler implements Listener
 	}
 	
 	//blocks are ignited ONLY by flint and steel (not by being near lava, open flames, etc), unless configured otherwise
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockIgnite (BlockIgniteEvent igniteEvent)
 	{
 		if(igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL  && !GriefPrevention.instance.config_fireSpreads) igniteEvent.setCancelled(true);
 	}
 	
 	//fire doesn't spread unless configured to, but other blocks still do (mushrooms and vines, for example)
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockSpread (BlockSpreadEvent spreadEvent)
 	{
 		if(spreadEvent.getSource().getType() == Material.FIRE && !GriefPrevention.instance.config_fireSpreads) spreadEvent.setCancelled(true);
 	}
 	
 	//blocks are not destroyed by fire, unless configured to do so
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockBurn (BlockBurnEvent burnEvent)
 	{
 		if(!GriefPrevention.instance.config_fireDestroys)
@@ -371,28 +415,28 @@ public class BlockEventHandler implements Listener
 		}
 	}
 	
-	//ensures fluids don't flow into claims, unless out of another claim where the owner is trusted to build in the receiving claim
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	//ensures fluids don't flow out of claims, unless into another claim where the owner is trusted to build
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockFromTo (BlockFromToEvent spreadEvent)
 	{
-		//where to?
-		Block toBlock = spreadEvent.getToBlock();
-		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, null);
+		//from where?
+		Block fromBlock = spreadEvent.getBlock();
+		Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, null);
 		
-		//if in a creative world, block any spread into the wilderness
-		if(GriefPrevention.instance.creativeRulesApply(toBlock.getLocation()) && toClaim == null)
+		//where to?
+		Block toBlock = spreadEvent.getToBlock();		
+		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
+		
+		//block any spread into the wilderness
+		if(fromClaim != null && toClaim == null)
 		{
 			spreadEvent.setCancelled(true);
 			return;
 		}
 		
 		//if spreading into a claim
-		if(toClaim != null)
+		else if(toClaim != null)
 		{		
-			//from where?
-			Block fromBlock = spreadEvent.getBlock();
-			Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, null);
-						
 			//who owns the spreading block, if anyone?
 			OfflinePlayer fromOwner = null;			
 			if(fromClaim != null)

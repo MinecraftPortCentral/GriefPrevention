@@ -54,7 +54,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	//for logging to the console and log file
 	private static Logger log = Logger.getLogger("Minecraft");
-		
+	
 	//this handles data storage, like player and region data
 	public DataStore dataStore;
 	
@@ -69,6 +69,7 @@ public class GriefPrevention extends JavaPlugin
 	public int config_claims_blocksAccruedPerHour;					//how many additional blocks players get each hour of play (can be zero)
 	public int config_claims_maxAccruedBlocks;						//the limit on accrued blocks (over time).  doesn't limit purchased or admin-gifted blocks 
 	public int config_claims_maxDepth;								//limit on how deep claims can go
+	public int config_claims_expirationDays;						//how many days of inactivity before a player loses his claims
 	
 	public int config_claims_automaticClaimsForNewPlayersRadius;	//how big automatic new player claims (when they place a chest) should be.  0 to disable
 	public boolean config_claims_creationRequiresPermission;		//whether creating claims with the shovel requires a permission
@@ -99,7 +100,7 @@ public class GriefPrevention extends JavaPlugin
 	public double config_economy_claimBlocksPurchaseCost;			//cost to purchase a claim block.  set to zero to disable purchase.
 	public double config_economy_claimBlocksSellValue;				//return on a sold claim block.  set to zero to disable sale.
 	
-	public boolean config_creepersDontDestroySurface;				//whether creeper explosions near or above the surface destroy blocks
+	public boolean config_blockSurfaceExplosions;					//whether creeper/TNT explosions near or above the surface destroy blocks
 	
 	public boolean config_fireSpreads;								//whether fire spreads outside of claims
 	public boolean config_fireDestroys;								//whether fire destroys blocks outside of claims
@@ -107,11 +108,16 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_addItemsToClaimedChests;					//whether players may add items to claimed chests by left-clicking them
 	public boolean config_eavesdrop; 								//whether whispered messages will be visible to administrators
 	
+	public boolean config_smartBan;									//whether to ban accounts which very likely owned by a banned player
+	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
 	
 	//how far away to search from a tree trunk for its branch blocks
 	public static final int TREE_RADIUS = 5;
+	
+	//how long to wait before deciding a player is staying online or staying offline, for notication messages
+	public static final int NOTIFICATION_SECONDS = 20;
 	
 	//adds a server log entry
 	public static void AddLogEntry(String entry)
@@ -207,11 +213,12 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_creationRequiresPermission = config.getBoolean("GriefPrevention.Claims.CreationRequiresPermission", false);
 		this.config_claims_minSize = config.getInt("GriefPrevention.Claims.MinimumSize", 10);
 		this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", 0);
+		this.config_claims_expirationDays = config.getInt("GriefPrevention.Claims.IdleLimitDays", 0);
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
 		
 		this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
-		this.config_spam_loginCooldownMinutes = config.getInt("GriefPrevention.Spam.LoginCooldownMinutes", 5);
-		this.config_spam_warningMessage = config.getString("GriefPrevention.Spam.WarningMessage", "Please reduce your message speed.  Spammers will be banned.");
+		this.config_spam_loginCooldownMinutes = config.getInt("GriefPrevention.Spam.LoginCooldownMinutes", 2);
+		this.config_spam_warningMessage = config.getString("GriefPrevention.Spam.WarningMessage", "Please reduce your noise level.  Spammers will be banned.");
 		this.config_spam_allowedIpAddresses = config.getString("GriefPrevention.Spam.AllowedIpAddresses", "1.2.3.4; 5.6.7.8");
 		this.config_spam_banOffenders = config.getBoolean("GriefPrevention.Spam.BanOffenders", true);		
 		this.config_spam_banMessage = config.getString("GriefPrevention.Spam.BanMessage", "Banned for spam.");
@@ -228,13 +235,15 @@ public class GriefPrevention extends JavaPlugin
 		this.config_economy_claimBlocksPurchaseCost = config.getDouble("GriefPrevention.Economy.ClaimBlocksPurchaseCost", 0);
 		this.config_economy_claimBlocksSellValue = config.getDouble("GriefPrevention.Economy.ClaimBlocksSellValue", 0);
 		
-		this.config_creepersDontDestroySurface = config.getBoolean("GriefPrevention.CreepersDontDestroySurface", true);
+		this.config_blockSurfaceExplosions = config.getBoolean("GriefPrevention.BlockSurfaceExplosions", true);
 		
 		this.config_fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
 		this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
 		
 		this.config_addItemsToClaimedChests = config.getBoolean("GriefPrevention.AddItemsToClaimedChests", true);
 		this.config_eavesdrop = config.getBoolean("GriefPrevention.EavesdropEnabled", false);
+		
+		this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
 		
 		//default for siege worlds list
 		ArrayList<String> defaultSiegeWorldNames = new ArrayList<String>();
@@ -320,6 +329,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Claims.CreationRequiresPermission", this.config_claims_creationRequiresPermission);
 		config.set("GriefPrevention.Claims.MinimumSize", this.config_claims_minSize);
 		config.set("GriefPrevention.Claims.MaximumDepth", this.config_claims_maxDepth);
+		config.set("GriefPrevention.Claims.IdleLimitDays", this.config_claims_expirationDays);
 		config.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
 		
 		config.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
@@ -341,13 +351,15 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Economy.ClaimBlocksPurchaseCost", this.config_economy_claimBlocksPurchaseCost);
 		config.set("GriefPrevention.Economy.ClaimBlocksSellValue", this.config_economy_claimBlocksSellValue);
 		
-		config.set("GriefPrevention.CreepersDontDestroySurface", this.config_creepersDontDestroySurface);
+		config.set("GriefPrevention.BlockSurfaceExplosions", this.config_blockSurfaceExplosions);
 		
 		config.set("GriefPrevention.FireSpreads", this.config_fireSpreads);
 		config.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
 		
 		config.set("GriefPrevention.AddItemsToClaimedChests", this.config_addItemsToClaimedChests);
 		config.set("GriefPrevention.EavesdropEnabled", this.config_eavesdrop);
+		
+		config.set("GriefPrevention.SmartBan", this.config_smartBan);
 		
 		config.set("GriefPrevention.Siege.Worlds", siegeEnabledWorldNames);
 		config.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
@@ -515,6 +527,40 @@ public class GriefPrevention extends JavaPlugin
 			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 			playerData.shovelMode = ShovelMode.RestoreNature;
 			GriefPrevention.sendMessage(player, TextMode.Instr, "Ready to restore some nature!  Right click to restore nature, and use /BasicClaims to stop.");
+			return true;
+		}
+		
+		//restore nature aggressive mode
+		else if(cmd.getName().equalsIgnoreCase("restorenatureaggressive") && player != null)
+		{
+			//change shovel mode
+			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			playerData.shovelMode = ShovelMode.RestoreNatureAggressive;
+			GriefPrevention.sendMessage(player, TextMode.Warn, "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and use /BasicClaims to stop.");
+			return true;
+		}
+		
+		//restore nature fill mode
+		else if(cmd.getName().equalsIgnoreCase("restorenaturefill") && player != null)
+		{
+			//change shovel mode
+			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			playerData.shovelMode = ShovelMode.RestoreNatureFill;
+			
+			//set radius based on arguments
+			playerData.fillRadius = 2;
+			if(args.length > 0)
+			{
+				try
+				{
+					playerData.fillRadius = Integer.parseInt(args[0]);
+				}
+				catch(Exception exception){ }
+			}
+			
+			if(playerData.fillRadius < 0) playerData.fillRadius = 2;
+			
+			GriefPrevention.sendMessage(player, TextMode.Success, "Fill mode activated with radius " + playerData.fillRadius + ".  Right-click an area to fill.");
 			return true;
 		}
 		
@@ -833,6 +879,17 @@ public class GriefPrevention extends JavaPlugin
 			
 			else
 			{
+				//determine max purchasable blocks
+				PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+				int maxPurchasable = GriefPrevention.instance.config_claims_maxAccruedBlocks - playerData.accruedClaimBlocks;
+				
+				//if the player is at his max, tell him so
+				if(maxPurchasable <= 0)
+				{
+					GriefPrevention.sendMessage(player, TextMode.Err, "You've reached your claim block limit.  You can't purchase more.");
+					return true;
+				}
+				
 				//try to parse number of blocks
 				int blockCount;
 				try
@@ -842,6 +899,12 @@ public class GriefPrevention extends JavaPlugin
 				catch(NumberFormatException numberFormatException)
 				{
 					return false;  //causes usage to be displayed
+				}
+				
+				//correct block count to max allowed
+				if(blockCount > maxPurchasable)
+				{
+					blockCount = maxPurchasable;
 				}
 				
 				//if the player can't afford his purchase, send error message
@@ -859,8 +922,7 @@ public class GriefPrevention extends JavaPlugin
 					economy.withdrawPlayer(player.getName(), totalCost);
 					
 					//add blocks
-					PlayerData playerData = this.dataStore.getPlayerData(player.getName());
-					playerData.bonusClaimBlocks += blockCount;
+					playerData.accruedClaimBlocks += blockCount;
 					this.dataStore.savePlayerData(player.getName(), playerData);
 					
 					//inform player
@@ -920,7 +982,7 @@ public class GriefPrevention extends JavaPlugin
 				economy.depositPlayer(player.getName(), totalValue);
 				
 				//subtract blocks
-				playerData.bonusClaimBlocks -= blockCount;
+				playerData.accruedClaimBlocks -= blockCount;
 				this.dataStore.savePlayerData(player.getName(), playerData);
 				
 				//inform player
@@ -978,12 +1040,24 @@ public class GriefPrevention extends JavaPlugin
 				//deleting an admin claim additionally requires the adminclaims permission
 				if(!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims"))
 				{
-					this.dataStore.deleteClaim(claim);
-					GriefPrevention.sendMessage(player, TextMode.Success, "Claim deleted.");
-					GriefPrevention.AddLogEntry(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
-					
-					//revert any current visualization
-					Visualization.Revert(player);
+					PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+					if(claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion)
+					{
+						GriefPrevention.sendMessage(player, TextMode.Warn, "This claim includes subdivisions.  If you're sure you want to delete it, use /DeleteClaim again.");
+						playerData.warnedAboutMajorDeletion = true;
+					}
+					else
+					{
+						claim.removeSurfaceFluids(null);
+						this.dataStore.deleteClaim(claim);
+						GriefPrevention.sendMessage(player, TextMode.Success, "Claim deleted.");
+						GriefPrevention.AddLogEntry(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+						
+						//revert any current visualization
+						Visualization.Revert(player);
+						
+						playerData.warnedAboutMajorDeletion = false;
+					}
 				}
 				else
 				{
@@ -1266,6 +1340,7 @@ public class GriefPrevention extends JavaPlugin
 		else
 		{
 			//delete it
+			claim.removeSurfaceFluids(null);
 			this.dataStore.deleteClaim(claim);
 			
 			//tell the player how many claim blocks he has left
@@ -1619,8 +1694,8 @@ public class GriefPrevention extends JavaPlugin
 			//schedule a cleanup task for later, in case the player leaves part of this tree hanging in the air		
 			TreeCleanupTask cleanupTask = new TreeCleanupTask(block, rootBlock, treeBlocks);
 			
-			//20L ~ 1 second, so 5 mins = 300 seconds ~ 6000L 
-			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, cleanupTask, 6000L);
+			//20L ~ 1 second, so 2 mins = 120 seconds ~ 2400L 
+			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, cleanupTask, 2400L);
 		}
 	}
 	

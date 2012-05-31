@@ -1,7 +1,7 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
 softdepend: [Vault, Multiverse-Core]
-version: 3.8
+version: 4.2
 commands:
    abandonclaim:
       description: Deletes a claim.
@@ -60,6 +60,16 @@ commands:
       usage: /RestoreNature 
       permission: griefprevention.restorenature
       aliases: rn
+   restorenatureaggressive:
+      description: Switches the shovel tool to aggressive restoration mode.
+      usage: /RestoreNatureAggressive 
+      permission: griefprevention.restorenatureaggressive
+      aliases: rna
+   restorenaturefill:
+      description: Switches the shovel tool to fill mode.
+      usage: /RestoreNatureFill <radius> 
+      permission: griefprevention.restorenatureaggressive
+      aliases: rnf
    basicclaims:
       description: Switches the shovel tool back to basic claims mode.
       usage: /BasicClaims
@@ -102,6 +112,7 @@ permissions:
         description: Grants all administrative functionality.
         children:
             griefprevention.restorenature: true
+            griefprevention.restorenatureaggressive: true
             griefprevention.ignoreclaims: true
             griefprevention.adminclaims: true
             griefprevention.adjustclaimblocks: true
@@ -132,4 +143,7 @@ permissions:
         default: op
     griefprevention.eavesdrop:
         description: Allows a player to see whispered chat messages (/tell).
+        default: op
+    griefprevention.restorenatureaggressive:
+        description: Grants access to /RestoreNatureAggressive and /RestoreNatureFill.
         default: op
