@@ -94,7 +94,7 @@ public class BlockEventHandler implements Listener
 			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
 			if(playerData.siegeData != null)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, "You can't give away items while involved in a siege.");
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoDrop);
 				event.setCancelled(true);
 				return;
 			}
@@ -109,7 +109,7 @@ public class BlockEventHandler implements Listener
 				playerData.lastChestDamageLocation = block.getLocation();
 				
 				//give the player instructions
-				GriefPrevention.sendMessage(player, TextMode.Instr, "To give away the item(s) in your hand, left-click the chest again.");
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DonateItemsInstruction);
 			}
 			
 			//otherwise, try to donate the item stack in hand
@@ -124,7 +124,7 @@ public class BlockEventHandler implements Listener
 				if(availableSlot < 0)
 				{
 					//tell the player and stop here
-					GriefPrevention.sendMessage(player, TextMode.Err, "This chest is full.");
+					GriefPrevention.sendMessage(player, TextMode.Err, Messages.ChestFull);
 					
 					return;
 				}
@@ -135,7 +135,7 @@ public class BlockEventHandler implements Listener
 				playerInventory.setItemInHand(new ItemStack(Material.AIR));
 				
 				//and confirm for the player
-				GriefPrevention.sendMessage(player, TextMode.Success, "Item(s) transferred to chest!");
+				GriefPrevention.sendMessage(player, TextMode.Success, Messages.DonationSuccess);
 			}
 		}
 	}
@@ -162,8 +162,8 @@ public class BlockEventHandler implements Listener
 		//if there's a claim here
 		if(claim != null)
 		{
-			//if breaking UNDER the claim
-			if(block.getY() < claim.lesserBoundaryCorner.getBlockY())
+			//if breaking UNDER the claim and the player has permission to build in the claim
+			if(block.getY() < claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
 			{
 				//extend the claim downward beyond the breakage point
 				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
@@ -226,24 +226,10 @@ public class BlockEventHandler implements Listener
 				Location location = otherPlayer.getLocation();
 				if(!otherPlayer.equals(player) && location.distanceSquared(block.getLocation()) < 9)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, "You can't start a fire this close to " + otherPlayer.getName() + ".");
+					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerTooCloseForFire, otherPlayer.getName());
 					placeEvent.setCancelled(true);
 					return;
 				}					
-			}
-		}
-		
-		//FEATURE: limit tree planting to grass, and dirt with more earth beneath it
-		if(block.getType() == Material.SAPLING)
-		{
-			Block earthBlock = placeEvent.getBlockAgainst();
-			if(earthBlock.getType() != Material.GRASS)
-			{
-				if(earthBlock.getRelative(BlockFace.DOWN).getType() == Material.AIR || 
-				   earthBlock.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN).getType() == Material.AIR)
-				{
-					placeEvent.setCancelled(true);
-				}
 			}
 		}
 		
@@ -262,7 +248,7 @@ public class BlockEventHandler implements Listener
 		if(claim != null)
 		{
 			//if the player has permission for the claim and he's placing UNDER the claim
-			if(block.getY() < claim.lesserBoundaryCorner.getBlockY())
+			if(block.getY() < claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
 			{
 				//extend the claim downward
 				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
@@ -277,7 +263,7 @@ public class BlockEventHandler implements Listener
 			//if the chest is too deep underground, don't create the claim and explain why
 			if(GriefPrevention.instance.config_claims_preventTheft && block.getY() < GriefPrevention.instance.config_claims_maxDepth)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Warn, "This chest can't be protected because it's too deep underground.  Consider moving it.");
+				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.TooDeepToClaim);
 				return;
 			}
 			
@@ -290,7 +276,7 @@ public class BlockEventHandler implements Listener
 				if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == 0)
 				{					
 					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getName(), null);
-					GriefPrevention.sendMessage(player, TextMode.Success, "This chest is protected.");						
+					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ChestClaimConfirmation);						
 				}
 				
 				//otherwise, create a claim in the area around the chest
@@ -309,7 +295,7 @@ public class BlockEventHandler implements Listener
 					}
 					
 					//notify and explain to player
-					GriefPrevention.sendMessage(player, TextMode.Success, "This chest and nearby blocks are protected from breakage and theft.  The gold and glowstone blocks mark the protected area.");
+					GriefPrevention.sendMessage(player, TextMode.Success, Messages.AutomaticClaimNotification);
 					
 					//show the player the protected area
 					Claim newClaim = this.dataStore.getClaimAt(block.getLocation(), false, null);
@@ -318,21 +304,35 @@ public class BlockEventHandler implements Listener
 				}
 				
 				//instructions for using /trust
-				GriefPrevention.sendMessage(player, TextMode.Instr, "Use the /trust command to grant other players access.");
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TrustCommandAdvertisement);
 				
 				//unless special permission is required to create a claim with the shovel, educate the player about the shovel
 				if(!GriefPrevention.instance.config_claims_creationRequiresPermission)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Instr, "To claim more land, use a golden shovel.");
+					GriefPrevention.sendMessage(player, TextMode.Instr, Messages.GoldenShovelAdvertisement);
 				}
 			}
 			
 			//check to see if this chest is in a claim, and warn when it isn't
 			if(GriefPrevention.instance.config_claims_preventTheft && this.dataStore.getClaimAt(block.getLocation(), false, playerData.lastClaim) == null)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Warn, "This chest is NOT protected.  Consider expanding an existing claim or creating a new one.");				
+				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnprotectedChestWarning);				
 			}
 		}
+		
+		//FEATURE: limit wilderness tree planting to grass, or dirt with more blocks beneath it
+		else if(block.getType() == Material.SAPLING && GriefPrevention.instance.config_blockSkyTrees)
+		{
+			Block earthBlock = placeEvent.getBlockAgainst();
+			if(earthBlock.getType() != Material.GRASS)
+			{
+				if(earthBlock.getRelative(BlockFace.DOWN).getType() == Material.AIR || 
+				   earthBlock.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN).getType() == Material.AIR)
+				{
+					placeEvent.setCancelled(true);
+				}
+			}
+		}		
 	}
 	
 	//blocks "pushing" other players' blocks around (pistons)
@@ -416,18 +416,29 @@ public class BlockEventHandler implements Listener
 	}
 	
 	//ensures fluids don't flow out of claims, unless into another claim where the owner is trusted to build
+	private Claim lastSpreadClaim = null;
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockFromTo (BlockFromToEvent spreadEvent)
 	{
+		//always allow fluids to flow straight down
+		if(spreadEvent.getFace() == BlockFace.DOWN) return;
+		
 		//from where?
 		Block fromBlock = spreadEvent.getBlock();
-		Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, null);
+		Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, this.lastSpreadClaim);
+		if(fromClaim != null)
+		{
+			this.lastSpreadClaim = fromClaim;
+		}
 		
 		//where to?
 		Block toBlock = spreadEvent.getToBlock();		
 		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
 		
-		//block any spread into the wilderness
+		//if it's within the same claim or wilderness to wilderness, allow it
+		if(fromClaim == toClaim) return;
+		
+		//block any spread into the wilderness from a claim
 		if(fromClaim != null && toClaim == null)
 		{
 			spreadEvent.setCancelled(true);
@@ -440,10 +451,7 @@ public class BlockEventHandler implements Listener
 			//who owns the spreading block, if anyone?
 			OfflinePlayer fromOwner = null;			
 			if(fromClaim != null)
-			{
-				//if it's within the same claim, allow it
-				if(fromClaim == toClaim) return;				
-				
+			{				
 				fromOwner = GriefPrevention.instance.getServer().getOfflinePlayer(fromClaim.ownerName);
 			}
 			

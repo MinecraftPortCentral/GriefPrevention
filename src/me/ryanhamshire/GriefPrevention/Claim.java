@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.*;
 import org.bukkit.World.Environment;
@@ -105,7 +106,7 @@ public class Claim
 	//it may be null
 	public void removeSurfaceFluids(Claim exclusionClaim)
 	{
-		//don't do this automatically for administrative claims
+		//don't do this for administrative claims
 		if(this.isAdminClaim()) return;
 		
 		Location lesser = this.getLesserBoundaryCorner();
@@ -134,8 +135,46 @@ public class Claim
 					}
 				}
 			}
+		}		
+	}
+	
+	//determines whether or not a claim has surface fluids (lots of water blocks, or any lava blocks)
+	//used to warn players when they abandon their claims about automatic fluid cleanup
+	boolean hasSurfaceFluids()
+	{
+		Location lesser = this.getLesserBoundaryCorner();
+		Location greater = this.getGreaterBoundaryCorner();
+
+		int seaLevel = 0;  //clean up all fluids in the end
+		
+		//respect sea level in normal worlds
+		if(lesser.getWorld().getEnvironment() == Environment.NORMAL) seaLevel = lesser.getWorld().getSeaLevel();
+		
+		int waterCount = 0;
+		for(int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
+		{
+			for(int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++)
+			{
+				for(int y = seaLevel - 1; y <= lesser.getWorld().getMaxHeight(); y++)
+				{
+					//dodge the exclusion claim
+					Block block = lesser.getWorld().getBlockAt(x, y, z);
+					
+					if(block.getType() == Material.STATIONARY_WATER || block.getType() == Material.WATER)
+					{
+						waterCount++;
+						if(waterCount > 10) return true;
+					}
+					
+					else if(block.getType() == Material.STATIONARY_LAVA || block.getType() == Material.LAVA)
+					{
+						return true;
+					}
+				}
+			}
 		}
 		
+		return false;
 	}
 	
 	//main constructor.  note that only creating a claim instance does nothing - a claim must be added to the data store to be effective
@@ -245,7 +284,7 @@ public class Claim
 		{
 			if(this.siegeData != null)
 			{
-				return "Claims can't be modified while under siege.";
+				return GriefPrevention.instance.dataStore.getMessage(Messages.NoModifyDuringSiege);
 			}
 			
 			//otherwise, owners can do whatever
@@ -257,7 +296,7 @@ public class Claim
 			return this.parent.allowBuild(player);
 		
 		//error message if all else fails
-		return "Only " + this.getOwnerName() + " can modify this claim.";
+		return GriefPrevention.instance.dataStore.getMessage(Messages.OnlyOwnersModifyClaims, this.getOwnerName());
 	}
 	
 	//build permission check
@@ -278,25 +317,24 @@ public class Claim
 		//no building while under siege
 		if(this.siegeData != null)
 		{
-			return "This claim is under siege by " + this.siegeData.attacker.getName() + ".  No one can build here.";
+			return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildUnderSiege, this.siegeData.attacker.getName());
 		}
 		
 		//no building while in pvp combat
 		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getName());
 		if(playerData.inPvpCombat())
 		{
-			return "You can't build in claims during PvP combat.";			
+			return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPvP);			
 		}
 		
 		//owners can make changes, or admins with ignore claims mode enabled
 		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
 		
 		//anyone with explicit build permission can make changes
-		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get(player.getName().toLowerCase());
-		if(ClaimPermission.Build == permissionLevel) return null;
+		if(this.hasExplicitPermission(player, ClaimPermission.Build)) return null;
 		
 		//also everyone is a member of the "public", so check for public permission
-		permissionLevel = this.playerNameToClaimPermissionMap.get("public");
+		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get("public");
 		if(ClaimPermission.Build == permissionLevel) return null;
 		
 		//subdivision permission inheritance
@@ -304,15 +342,38 @@ public class Claim
 			return this.parent.allowBuild(player);
 		
 		//failure message for all other cases
-		return "You don't have " + this.getOwnerName() + "'s permission to build here.";
+		return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
+	}
+	
+	private boolean hasExplicitPermission(Player player, ClaimPermission level)
+	{
+		String playerName = player.getName();
+		Set<String> keys = this.playerNameToClaimPermissionMap.keySet();
+		Iterator<String> iterator = keys.iterator();
+		while(iterator.hasNext())
+		{
+			String identifier = iterator.next();
+			if(playerName.equalsIgnoreCase(identifier) && this.playerNameToClaimPermissionMap.get(identifier) == level) return true;
+			
+			else if(identifier.startsWith("[") && identifier.endsWith("]"))
+			{
+				//drop the brackets
+				String permissionIdentifier = identifier.substring(1, identifier.length() - 1);
+				
+				//defensive coding
+				if(permissionIdentifier == null || permissionIdentifier.isEmpty()) continue;
+				
+				//check permission
+				if(player.hasPermission(permissionIdentifier) && this.playerNameToClaimPermissionMap.get(identifier) == level) return true;
+			}
+		}
+		
+		return false;			
 	}
 	
 	//break permission check
 	public String allowBreak(Player player, Material material)
 	{
-		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
-		if(player == null) return "";
-		
 		//if under siege, some blocks will be breakable
 		if(this.siegeData != null)
 		{
@@ -332,11 +393,11 @@ public class Claim
 			//custom error messages for siege mode
 			if(!breakable)
 			{
-				return "That material is too tough to break.";
+				return GriefPrevention.instance.dataStore.getMessage(Messages.NonSiegeMaterial);
 			}
 			else if(this.ownerName.equals(player.getName()))
 			{
-				return "You can't make changes while under siege.";
+				return GriefPrevention.instance.dataStore.getMessage(Messages.NoOwnerBuildUnderSiege);
 			}
 			else
 			{
@@ -351,9 +412,6 @@ public class Claim
 	//access permission check
 	public String allowAccess(Player player)
 	{
-		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
-		if(player == null) return "";
-		
 		//everyone always has access to admin claims
 		if(this.isAdminClaim()) return null;
 		
@@ -364,19 +422,20 @@ public class Claim
 		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
 		
 		//look for explicit individual access, inventory, or build permission
-		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get(player.getName().toLowerCase());
-		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Access == permissionLevel) return null;
+		if(this.hasExplicitPermission(player, ClaimPermission.Access)) return null;
+		if(this.hasExplicitPermission(player, ClaimPermission.Inventory)) return null;
+		if(this.hasExplicitPermission(player, ClaimPermission.Build)) return null;
 		
 		//also check for public permission
-		permissionLevel = this.playerNameToClaimPermissionMap.get("public");
-		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Access == permissionLevel) return null;
+		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get("public");
+		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Inventory == permissionLevel) return null;		
 		
 		//permission inheritance for subdivisions
 		if(this.parent != null)
 			return this.parent.allowAccess(player);
 		
 		//catch-all error message for all other cases
-		return "You don't have " + this.getOwnerName() + "'s permission to use that.";
+		return GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
 	}
 	
 	//inventory permission check
@@ -391,7 +450,7 @@ public class Claim
 		//if under siege, nobody accesses containers
 		if(this.siegeData != null)
 		{
-			return "This claim is under siege by " + siegeData.attacker.getName() + ".  No one can access containers here right now.";
+			return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersSiege, siegeData.attacker.getName());
 		}
 		
 		//containers are always accessible in admin claims
@@ -401,11 +460,11 @@ public class Claim
 		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
 		
 		//check for explicit individual container or build permission 
-		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get(player.getName().toLowerCase());
-		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel) return null;
+		if(this.hasExplicitPermission(player, ClaimPermission.Inventory)) return null;
+		if(this.hasExplicitPermission(player, ClaimPermission.Build)) return null;
 		
 		//check for public container or build permission
-		permissionLevel = this.playerNameToClaimPermissionMap.get("public");
+		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get("public");
 		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel) return null;
 		
 		//permission inheritance for subdivisions
@@ -413,7 +472,7 @@ public class Claim
 			return this.parent.allowContainers(player);
 		
 		//error message for all other cases
-		return "You don't have " + this.getOwnerName() + "'s permission to use that.";
+		return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
 	}
 	
 	//grant permission check, relatively simple
@@ -422,15 +481,29 @@ public class Claim
 		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
 		if(player == null) return "";
 		
-		//anyone who can modify the claim, or who's explicitly in the managers (/PermissionTrust) list can do this
-		if(this.allowEdit(player) == null || this.managers.contains(player.getName())) return null;
+		//anyone who can modify the claim can do this
+		if(this.allowEdit(player) == null) return null;
+		
+		//anyone who's in the managers (/PermissionTrust) list can do this
+		for(int i = 0; i < this.managers.size(); i++)
+		{
+			String managerID = this.managers.get(i);
+			if(player.getName().equalsIgnoreCase(managerID)) return null;
+			
+			else if(managerID.startsWith("[") && managerID.endsWith("]"))
+			{
+				managerID = managerID.substring(1, managerID.length() - 1);
+				if(managerID == null || managerID.isEmpty()) continue;
+				if(player.hasPermission(managerID)) return null;
+			}
+		}
 		
 		//permission inheritance for subdivisions
 		if(this.parent != null)
 			return this.parent.allowGrantPermission(player);
 		
 		//generic error message
-		return "You don't have " + this.getOwnerName() + "'s permission to grant permission here.";
+		return GriefPrevention.instance.dataStore.getMessage(Messages.NoPermissionTrust, this.getOwnerName());
 	}
 	
 	//grants a permission for a player or the public
@@ -503,7 +576,7 @@ public class Claim
 			return this.parent.getOwnerName();
 		
 		if(this.ownerName.length() == 0)
-			return "an administrator";
+			return GriefPrevention.instance.dataStore.getMessage(Messages.OwnerNameForAdminClaims);
 		
 		return this.ownerName;
 	}	
@@ -612,7 +685,7 @@ public class Claim
 		
 		//determine maximum allowable entity count, based on claim size
 		int maxEntities = this.getArea() / 50;		
-		if(maxEntities == 0) return "This claim isn't big enough for that.  Try enlarging it.";
+		if(maxEntities == 0) return GriefPrevention.instance.dataStore.getMessage(Messages.ClaimTooSmallForEntities);
 		
 		//count current entities (ignoring players)
 		Chunk lesserChunk = this.getLesserBoundaryCorner().getChunk();
@@ -627,11 +700,15 @@ public class Claim
 				for(int i = 0; i < entities.length; i++)
 				{
 					Entity entity = entities[i];
-					if(!(entity instanceof Player) && this.contains(entity.getLocation(), false, false)) totalEntities++;
+					if(!(entity instanceof Player) && this.contains(entity.getLocation(), false, false))
+					{
+						totalEntities++;
+						if(totalEntities > maxEntities) entity.remove();
+					}
 				}
 			}
 
-		if(totalEntities > maxEntities) return "This claim has too many entities already.  Try enlarging the claim or removing some animals, monsters, or minecarts.";
+		if(totalEntities > maxEntities) return GriefPrevention.instance.dataStore.getMessage(Messages.TooManyEntitiesInClaim);
 		
 		return null;
 	}

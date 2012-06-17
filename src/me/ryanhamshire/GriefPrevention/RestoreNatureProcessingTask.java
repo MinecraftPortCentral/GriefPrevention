@@ -84,7 +84,6 @@ class RestoreNatureProcessingTask implements Runnable
 		this.playerBlocks.add(Material.BREWING_STAND.getId());
 		this.playerBlocks.add(Material.BRICK.getId());
 		this.playerBlocks.add(Material.COBBLESTONE.getId());
-		this.playerBlocks.add(Material.OBSIDIAN.getId());
 		this.playerBlocks.add(Material.GLASS.getId());
 		this.playerBlocks.add(Material.LAPIS_BLOCK.getId());
 		this.playerBlocks.add(Material.DISPENSER.getId());
@@ -148,7 +147,9 @@ class RestoreNatureProcessingTask implements Runnable
 		this.playerBlocks.add(Material.BREWING_STAND.getId());
 		this.playerBlocks.add(Material.CAULDRON.getId());
 		this.playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
-		this.playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
+		this.playerBlocks.add(Material.DIODE_BLOCK_ON.getId());		
+		this.playerBlocks.add(Material.WEB.getId());
+		this.playerBlocks.add(Material.SPONGE.getId());
 		
 		//these are unnatural in the standard world, but not in the nether
 		if(this.environment != Environment.NETHER)
@@ -159,6 +160,12 @@ class RestoreNatureProcessingTask implements Runnable
 			this.playerBlocks.add(Material.NETHER_BRICK.getId());
 			this.playerBlocks.add(Material.NETHER_FENCE.getId());
 			this.playerBlocks.add(Material.NETHER_BRICK_STAIRS.getId());
+		}
+		
+		//these are unnatural in the standard and nether worlds, but not in the end
+		if(this.environment != Environment.THE_END)
+		{
+			this.playerBlocks.add(Material.OBSIDIAN.getId());			
 		}
 		
 		//these are unnatural in sandy biomes, but not elsewhere
@@ -178,6 +185,9 @@ class RestoreNatureProcessingTask implements Runnable
 			this.playerBlocks.add(Material.PUMPKIN_STEM.getId());
 			this.playerBlocks.add(Material.MELON_BLOCK.getId());
 			this.playerBlocks.add(Material.MELON_STEM.getId());
+			this.playerBlocks.add(Material.BEDROCK.getId());
+			this.playerBlocks.add(Material.GRAVEL.getId());
+			this.playerBlocks.add(Material.SANDSTONE.getId());
 		}
 	}
 	

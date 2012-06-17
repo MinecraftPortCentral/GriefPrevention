@@ -27,6 +27,9 @@ import org.bukkit.Location;
 //holds all of GriefPrevention's player-tied data
 public class PlayerData 
 {
+	//the player's name
+	public String playerName;
+	
 	//the player's claims
 	public Vector<Claim> claims = new Vector<Claim>();
 	
@@ -70,9 +73,6 @@ public class PlayerData
 	public Date lastMessageTimestamp = new Date();	//last time the player sent a chat message or used a monitored slash command
 	public int spamCount = 0;						//number of consecutive "spams"
 	public boolean spamWarned = false;				//whether the player recently received a warning
-	
-	//last logout timestamp, default to long enough to trigger a join message, see player join event
-	public long lastLogout = Calendar.getInstance().getTimeInMillis() - GriefPrevention.NOTIFICATION_SECONDS * 2000;
 	
 	//visualization
 	public Visualization currentVisualization = null;
@@ -137,6 +137,9 @@ public class PlayerData
 			Claim claim = this.claims.get(i);
 			remainingBlocks -= claim.getArea();
 		}
+		
+		//add any blocks this player might have based on group membership (permissions)
+		remainingBlocks += GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerName);
 		
 		return remainingBlocks;
 	}

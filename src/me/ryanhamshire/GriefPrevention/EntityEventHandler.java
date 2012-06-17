@@ -25,11 +25,12 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Animals;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Creature;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Vehicle;
@@ -44,6 +45,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ExpBottleEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.painting.PaintingBreakByEntityEvent;
 import org.bukkit.event.painting.PaintingBreakEvent;
@@ -118,6 +120,17 @@ class EntityEventHandler implements Listener
 		}
 	}
 	
+	//when an experience bottle explodes...
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void onExpBottle(ExpBottleEvent event)
+	{
+		//if in a creative world, cancel the event (don't drop exp on the ground)
+		if(GriefPrevention.instance.creativeRulesApply(event.getEntity().getLocation()))
+		{
+			event.setExperience(0);
+		}
+	}
+	
 	//when a creature spawns...
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onEntitySpawn(CreatureSpawnEvent event)
@@ -129,7 +142,7 @@ class EntityEventHandler implements Listener
 		
 		//chicken eggs and breeding could potentially make a mess in the wilderness, once griefers get involved
 		SpawnReason reason = event.getSpawnReason();
-		if(reason == SpawnReason.EGG || reason == SpawnReason.BREEDING)
+		if(reason != SpawnReason.SPAWNER_EGG && reason != SpawnReason.BUILD_IRONGOLEM && reason != SpawnReason.BUILD_SNOWMAN)
 		{
 			event.setCancelled(true);
 			return;
@@ -241,7 +254,24 @@ class EntityEventHandler implements Listener
         {
         	event.setCancelled(true);
         	GriefPrevention.sendMessage(event.getPlayer(), TextMode.Err, noBuildReason);
-        }		
+			return;
+        }
+		
+		//otherwise, apply entity-count limitations for creative worlds
+		else if(GriefPrevention.instance.creativeRulesApply(event.getPainting().getLocation()))
+		{
+			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
+			Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, playerData.lastClaim);
+			if(claim == null) return;
+			
+			String noEntitiesReason = claim.allowMoreEntities();
+			if(noEntitiesReason != null)
+			{
+				GriefPrevention.sendMessage(event.getPlayer(), TextMode.Err, noEntitiesReason);
+				event.setCancelled(true);
+				return;
+			}
+		}
 	}
 	
 	//when an entity is damaged
@@ -250,6 +280,9 @@ class EntityEventHandler implements Listener
 	{
 		//only actually interested in entities damaging entities (ignoring environmental damage)
 		if(!(event instanceof EntityDamageByEntityEvent)) return;
+		
+		//monsters are never protected
+		if(event.getEntity() instanceof Monster) return;
 		
 		EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
 		
@@ -300,14 +333,14 @@ class EntityEventHandler implements Listener
 				if(defenderData.pvpImmune)
 				{
 					event.setCancelled(true);
-					GriefPrevention.sendMessage(attacker, TextMode.Err, "You can't injure defenseless players.");
+					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.ThatPlayerPvPImmune);
 					return;
 				}
 				
 				if(attackerData.pvpImmune)
 				{
 					event.setCancelled(true);
-					GriefPrevention.sendMessage(attacker, TextMode.Err, "You can't fight someone while you're protected from PvP.");
+					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
 					return;
 				}		
 			}
@@ -327,12 +360,21 @@ class EntityEventHandler implements Listener
 		//so unless precautions are taken by the owner, a resourceful thief might find ways to steal anyway
 		
 		//if theft protection is enabled
-		if(GriefPrevention.instance.config_claims_preventTheft && event instanceof EntityDamageByEntityEvent)
+		if(event instanceof EntityDamageByEntityEvent)
 		{
-			//if the entity is an animal or a vehicle
-			if (subEvent.getEntity() instanceof Animals || subEvent.getEntity() instanceof Vehicle)
+			//if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
+			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures) ||
+				(subEvent.getEntity() instanceof Vehicle && GriefPrevention.instance.config_claims_preventTheft))
 			{
-				Claim claim = this.dataStore.getClaimAt(event.getEntity().getLocation(), false, null);
+				Claim cachedClaim = null;
+				PlayerData playerData = null;
+				if(attacker != null)
+				{
+					playerData = this.dataStore.getPlayerData(attacker.getName());
+					cachedClaim = playerData.lastClaim;
+				}
+				
+				Claim claim = this.dataStore.getClaimAt(event.getEntity().getLocation(), false, cachedClaim);
 				
 				//if it's claimed
 				if(claim != null)
@@ -350,8 +392,14 @@ class EntityEventHandler implements Listener
 						if(noContainersReason != null)
 						{
 							event.setCancelled(true);
-							GriefPrevention.sendMessage(attacker, TextMode.Err, "That belongs to " + claim.getOwnerName() + ".");
+							GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.NoDamageClaimedEntity, claim.getOwnerName());
 						}
+						
+						//cache claim for later
+						if(playerData != null)
+						{
+							playerData.lastClaim = claim;
+						}						
 					}
 				}
 			}

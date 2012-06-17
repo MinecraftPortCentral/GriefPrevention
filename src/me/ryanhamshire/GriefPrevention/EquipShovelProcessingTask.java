@@ -53,13 +53,22 @@ class EquipShovelProcessingTask implements Runnable
 		if(playerData.shovelMode != ShovelMode.Basic)
 		{			
 			playerData.shovelMode = ShovelMode.Basic;
-			GriefPrevention.sendMessage(player, TextMode.Info, "Shovel returned to basic claims mode.");
+			GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShovelBasicClaimMode);
 		}
 		
 		int remainingBlocks = playerData.getRemainingClaimBlocks();
 		
 		//instruct him in the steps to create a claim
-		GriefPrevention.sendMessage(player, TextMode.Instr, "You may claim up to " + String.valueOf(remainingBlocks) + " more blocks.");
-		GriefPrevention.sendMessage(player, TextMode.Instr, "Want a demonstration?  http://tinyurl.com/6nkwegj");
+		GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RemainingBlocks, String.valueOf(remainingBlocks));
+		
+		//demo link changes based on game mode
+		if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
+		{
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsDemoAdvertisement);			
+		}
+		else
+		{
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsDemoAdvertisement);
+		}
 	}
 }

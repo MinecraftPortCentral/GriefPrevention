@@ -47,7 +47,7 @@ class SecureClaimTask implements Runnable
 				Player player = onlinePlayers[j];
 				if(claim.contains(player.getLocation(), false, false) && claim.allowAccess(player) != null)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, "Looting time is up!  Ejected from the claim.");
+					GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeDoorsLockedEjection);
 					GriefPrevention.instance.ejectPlayer(player);
 				}
 			}

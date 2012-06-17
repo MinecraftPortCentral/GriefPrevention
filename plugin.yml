@@ -1,7 +1,7 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
 softdepend: [Vault, Multiverse-Core]
-version: 4.5
+version: 4.6
 commands:
    abandonclaim:
       description: Deletes a claim.
@@ -83,7 +83,7 @@ commands:
       usage: /SellClaimBlocks <numberOfBlocks>
       aliases: sellclaim
    trapped:
-      description: Ejects you to nearby unclaimed land.  Usable once per 8 hours.
+      description: Ejects you to nearby unclaimed land.  Has a substantial cooldown period.
       usage: /Trapped
    trustlist:
       description: Lists permissions for the claim you're standing in.
@@ -104,6 +104,10 @@ commands:
       description: Converts an administrative claim to a private claim.
       usage: /TransferClaim <player>
       permission: griefprevention.adjustclaimblocks
+   deathblow:
+      description: Kills a player, optionally giving his inventory to another player.
+      usage: /DeathBlow <player> [recipientPlayer]
+      permission: griefprevention.deathblow
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.
@@ -120,6 +124,7 @@ permissions:
             griefprevention.spam: true
             griefprevention.lava: true
             griefprevention.eavesdrop: true
+            griefprevention.deathblow: true
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
         default: op
@@ -146,4 +151,7 @@ permissions:
         default: op
     griefprevention.restorenatureaggressive:
         description: Grants access to /RestoreNatureAggressive and /RestoreNatureFill.
+        default: op
+    griefprevention.deathblow:
+        description: Grants access to /DeathBlow.
         default: op

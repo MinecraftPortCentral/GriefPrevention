@@ -53,7 +53,7 @@ class PlayerRescueTask implements Runnable
 		//if the player moved three or more blocks from where he used /trapped, admonish him and don't save him
 		if(player.getLocation().distance(this.location) > 3)
 		{
-			GriefPrevention.sendMessage(player, TextMode.Err, "You moved!  Rescue cancelled.");
+			GriefPrevention.sendMessage(player, TextMode.Err, Messages.RescueAbortedMoved);
 			return;
 		}
 		

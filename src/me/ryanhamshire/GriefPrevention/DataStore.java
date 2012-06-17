@@ -25,6 +25,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.bukkit.*;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -34,14 +36,21 @@ public class DataStore
 	//in-memory cache for player data
 	private HashMap<String, PlayerData> playerNameToPlayerDataMap = new HashMap<String, PlayerData>();
 	
+	//in-memory cache for group (permission-based) data
+	private HashMap<String, Integer> permissionToBonusBlocksMap = new HashMap<String, Integer>();
+	
 	//in-memory cache for claim data
-	private ArrayList<Claim> claims = new ArrayList<Claim>();
+	ArrayList<Claim> claims = new ArrayList<Claim>();
+	
+	//in-memory cache for messages
+	private String [] messages;
 	
 	//path information, for where stuff stored on disk is well...  stored
 	private final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
 	private final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
 	private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
 	final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
+	final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
 	
 	//initialization!
 	DataStore()
@@ -50,9 +59,45 @@ public class DataStore
 		new File(playerDataFolderPath).mkdirs();
 		new File(claimDataFolderPath).mkdirs();
 		
+		//load group data into memory
+		File playerDataFolder = new File(playerDataFolderPath);
+		File [] files = playerDataFolder.listFiles();
+		for(int i = 0; i < files.length; i++)
+		{
+			File file = files[i];
+			if(!file.isFile()) continue;  //avoids folders
+			
+			//all group data files start with an underscore.  ignoring the rest, which are player data files.			
+			if(!file.getName().startsWith("_")) continue;
+			
+			String groupName = file.getName().substring(1);
+			if(groupName == null || groupName.isEmpty()) continue;  //defensive coding, avoid unlikely cases
+			
+			BufferedReader inStream = null;
+			try
+			{
+				inStream = new BufferedReader(new FileReader(file.getAbsolutePath()));
+				String line = inStream.readLine();
+				
+				int groupBonusBlocks = Integer.parseInt(line);
+				
+				this.permissionToBonusBlocksMap.put(groupName, groupBonusBlocks);
+			}
+			catch(Exception e)
+			{
+				 GriefPrevention.AddLogEntry("Unable to load group bonus block data from file \"" + file.getName() + "\": " + e.getMessage());
+			}
+			
+			try
+			{
+				if(inStream != null) inStream.close();					
+			}
+			catch(IOException exception) {}
+		}
+		
 		//load claims data into memory		
 		File claimDataFolder = new File(claimDataFolderPath);
-		File [] files = claimDataFolder.listFiles();
+		files = claimDataFolder.listFiles();
 		
 		int loadedClaimCount = 0;
 		
@@ -239,6 +284,9 @@ public class DataStore
 			this.clearCachedPlayerData(playerName);
 		}
 		
+		//load up all the messages from messages.yml
+		this.loadMessages();
+		
 		//collect garbage, since lots of stuff was loaded into memory and then tossed out
 		System.gc();
 	}
@@ -247,6 +295,67 @@ public class DataStore
 	void clearCachedPlayerData(String playerName)
 	{
 		this.playerNameToPlayerDataMap.remove(playerName);
+	}
+	
+	//gets the number of bonus blocks a player has from his permissions
+	int getGroupBonusBlocks(String playerName)
+	{
+		int bonusBlocks = 0;
+		Set<String> keys = permissionToBonusBlocksMap.keySet();
+		Iterator<String> iterator = keys.iterator();
+		while(iterator.hasNext())
+		{
+			String groupName = iterator.next();
+			Player player = GriefPrevention.instance.getServer().getPlayer(playerName);
+			if(player.hasPermission(groupName))
+			{
+				bonusBlocks += this.permissionToBonusBlocksMap.get(groupName);
+			}
+		}
+		
+		return bonusBlocks;
+	}
+	
+	//grants a group (players with a specific permission) bonus claim blocks as long as they're still members of the group
+	public int adjustGroupBonusBlocks(String groupName, int amount)
+	{
+		Integer currentValue = this.permissionToBonusBlocksMap.get(groupName);
+		if(currentValue == null) currentValue = 0;
+		
+		currentValue += amount;
+		this.permissionToBonusBlocksMap.put(groupName, currentValue);
+		
+		//write changes to file to ensure they don't get lost
+		BufferedWriter outStream = null;
+		try
+		{
+			//open the group's file
+			File groupDataFile = new File(playerDataFolderPath + File.separator + "_" + groupName);
+			groupDataFile.createNewFile();
+			outStream = new BufferedWriter(new FileWriter(groupDataFile));
+			
+			//first line is number of bonus blocks
+			outStream.write(currentValue.toString());
+			outStream.newLine();			
+		}		
+		
+		//if any problem, log it
+		catch(Exception e)
+		{
+			GriefPrevention.AddLogEntry("Unexpected exception saving data for group \"" + groupName + "\": " + e.getMessage());
+		}
+		
+		try
+		{
+			//close the file
+			if(outStream != null)
+			{
+				outStream.close();
+			}
+		}
+		catch(IOException exception){}
+		
+		return currentValue;		
 	}
 	
 	public void changeClaimOwner(Claim claim, String newOwnerName) throws Exception
@@ -482,6 +591,7 @@ public class DataStore
 			File playerFile = new File(playerDataFolderPath + File.separator + playerName);
 					
 			playerData = new PlayerData();
+			playerData.playerName = playerName;
 			
 			//if it doesn't exist as a file
 			if(!playerFile.exists())
@@ -741,6 +851,12 @@ public class DataStore
 			bigz = z1;
 		}
 		
+		//creative mode claims always go to bedrock
+		if(GriefPrevention.instance.config_claims_enabledCreativeWorlds.contains(world))
+		{
+			smally = 2;
+		}
+		
 		//create a new claim instance (but don't save it, yet)
 		Claim newClaim = new Claim(
 			new Location(world, smallx, smally, smallz),
@@ -972,7 +1088,7 @@ public class DataStore
 			if(winner != null)
 			{
 				//notify the winner
-				GriefPrevention.sendMessage(winner, TextMode.Success, "Congratulations!  Buttons and levers are temporarily unlocked (five minutes).");
+				GriefPrevention.sendMessage(winner, TextMode.Success, Messages.SiegeWinDoorsOpen);
 				
 				//schedule a task to secure the claims in about 5 minutes
 				SecureClaimTask task = new SecureClaimTask(siegeData);
@@ -1145,5 +1261,224 @@ public class DataStore
 		}
 		
 		return result;
+	}
+	
+	private void loadMessages() 
+	{
+		Messages [] messageIDs = Messages.values();
+		this.messages = new String[Messages.values().length];
+		
+		HashMap<String, CustomizableMessage> defaults = new HashMap<String, CustomizableMessage>();
+		
+		//initialize defaults
+		this.addDefault(defaults, Messages.RespectingClaims, "Now respecting claims.", null);
+		this.addDefault(defaults, Messages.IgnoringClaims, "Now ignoring claims.", null);
+		this.addDefault(defaults, Messages.NoCreativeUnClaim, "You can't unclaim this land.  You can only make this claim larger or create additional claims.", null);
+		this.addDefault(defaults, Messages.SuccessfulAbandon, "Claims abandoned.  You now have {0} available claim blocks.", "0: remaining blocks");
+		this.addDefault(defaults, Messages.RestoreNatureActivate, "Ready to restore some nature!  Right click to restore nature, and use /BasicClaims to stop.", null);
+		this.addDefault(defaults, Messages.RestoreNatureAggressiveActivate, "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and use /BasicClaims to stop.", null);
+		this.addDefault(defaults, Messages.FillModeActive, "Fill mode activated with radius {0}.  Right click an area to fill.", "0: fill radius");
+		this.addDefault(defaults, Messages.TransferClaimPermission, "That command requires the administrative claims permission.", null);
+		this.addDefault(defaults, Messages.TransferClaimMissing, "There's no claim here.  Stand in the administrative claim you want to transfer.", null);
+		this.addDefault(defaults, Messages.TransferClaimAdminOnly, "Only administrative claims may be transferred to a player.", null);
+		this.addDefault(defaults, Messages.PlayerNotFound, "Player not found.", null);
+		this.addDefault(defaults, Messages.TransferTopLevel, "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.", null);
+		this.addDefault(defaults, Messages.TransferSuccess, "Claim transferred.", null);
+		this.addDefault(defaults, Messages.TrustListNoClaim, "Stand inside the claim you're curious about.", null);
+		this.addDefault(defaults, Messages.ClearPermsOwnerOnly, "Only the claim owner can clear all permissions.", null);
+		this.addDefault(defaults, Messages.UntrustIndividualAllClaims, "Revoked {0}'s access to ALL your claims.  To set permissions for a single claim, stand inside it.", "0: untrusted player");
+		this.addDefault(defaults, Messages.UntrustEveryoneAllClaims, "Cleared permissions in ALL your claims.  To set permissions for a single claim, stand inside it.", null);
+		this.addDefault(defaults, Messages.NoPermissionTrust, "You don't have {0}'s permission to manage permissions here.", "0: claim owner's name");
+		this.addDefault(defaults, Messages.ClearPermissionsOneClaim, "Cleared permissions in this claim.  To set permission for ALL your claims, stand outside them.", null);
+		this.addDefault(defaults, Messages.UntrustIndividualSingleClaim, "Revoked {0}'s access to this claim.  To set permissions for a ALL your claims, stand outside them.", "0: untrusted player");
+		this.addDefault(defaults, Messages.OnlySellBlocks, "Claim blocks may only be sold, not purchased.", null);
+		this.addDefault(defaults, Messages.BlockPurchaseCost, "Each claim block costs {0}.  Your balance is {1}.", "0: cost of one block; 1: player's account balance");
+		this.addDefault(defaults, Messages.ClaimBlockLimit, "You've reached your claim block limit.  You can't purchase more.", null);
+		this.addDefault(defaults, Messages.InsufficientFunds, "You don't have enough money.  You need {0}, but you only have {1}.", "0: total cost; 1: player's account balance");
+		this.addDefault(defaults, Messages.PurchaseConfirmation, "Withdrew {0} from your account.  You now have {1} available claim blocks.", "0: total cost; 1: remaining blocks");
+		this.addDefault(defaults, Messages.OnlyPurchaseBlocks, "Claim blocks may only be purchased, not sold.", null);
+		this.addDefault(defaults, Messages.BlockSaleValue, "Each claim block is worth {0}.  You have {1} available for sale.", "0: block value; 1: available blocks");
+		this.addDefault(defaults, Messages.NotEnoughBlocksForSale, "You don't have that many claim blocks available for sale.", null);
+		this.addDefault(defaults, Messages.BlockSaleConfirmation, "Deposited {0} in your account.  You now have {1} available claim blocks.", "0: amount deposited; 1: remaining blocks");
+		this.addDefault(defaults, Messages.AdminClaimsMode, "Administrative claims mode active.  Any claims created will be free and editable by other administrators.", null);
+		this.addDefault(defaults, Messages.BasicClaimsMode, "Returned to basic claim creation mode.", null);
+		this.addDefault(defaults, Messages.SubdivisionMode, "Subdivision mode.  Use your shovel to create subdivisions in your existing claims.  Use /basicclaims to exit.", null);
+		this.addDefault(defaults, Messages.SubdivisionDemo, "Want a demonstration?  http://tinyurl.com/7urdtue", null);
+		this.addDefault(defaults, Messages.DeleteClaimMissing, "There's no claim here.", null);
+		this.addDefault(defaults, Messages.DeletionSubdivisionWarning, "This claim includes subdivisions.  If you're sure you want to delete it, use /DeleteClaim again.", null);
+		this.addDefault(defaults, Messages.DeleteSuccess, "Claim deleted.", null);
+		this.addDefault(defaults, Messages.CantDeleteAdminClaim, "You don't have permission to delete administrative claims.", null);
+		this.addDefault(defaults, Messages.DeleteAllSuccess, "Deleted all of {0}'s claims.", "0: owner's name");
+		this.addDefault(defaults, Messages.NoDeletePermission, "You don't have permission to delete claims.", null);
+		this.addDefault(defaults, Messages.AllAdminDeleted, "Deleted all administrative claims.", null);
+		this.addDefault(defaults, Messages.AdjustBlocksSuccess, "Adjusted {0}'s bonus claim blocks by {1}.  New total bonus blocks: {2}.", "0: player; 1: adjustment; 2: new total");
+		this.addDefault(defaults, Messages.NotTrappedHere, "You can build here.  Save yourself.", null);
+		this.addDefault(defaults, Messages.TrappedOnCooldown, "You used /trapped within the last {0} hours.  You have to wait about {1} more minutes before using it again.", "0: default cooldown hours; 1: remaining minutes");
+		this.addDefault(defaults, Messages.RescuePending, "If you stay put for 10 seconds, you'll be teleported out.  Please wait.", null);
+		this.addDefault(defaults, Messages.NonSiegeWorld, "Siege is disabled here.", null);
+		this.addDefault(defaults, Messages.AlreadySieging, "You're already involved in a siege.", null);
+		this.addDefault(defaults, Messages.AlreadyUnderSiegePlayer, "{0} is already under siege.  Join the party!", "0: defending player");
+		this.addDefault(defaults, Messages.NotSiegableThere, "{0} isn't protected there.", "0: defending player");
+		this.addDefault(defaults, Messages.SiegeTooFarAway, "You're too far away to siege.", null);
+		this.addDefault(defaults, Messages.NoSiegeDefenseless, "That player is defenseless.  Go pick on somebody else.", null);
+		this.addDefault(defaults, Messages.AlreadyUnderSiegeArea, "That area is already under siege.  Join the party!", null);
+		this.addDefault(defaults, Messages.NoSiegeAdminClaim, "Siege is disabled in this area.", null);
+		this.addDefault(defaults, Messages.SiegeOnCooldown, "You're still on siege cooldown for this defender or claim.  Find another victim.", null);
+		this.addDefault(defaults, Messages.SiegeAlert, "You're under siege!  If you log out now, you will die.  You must defeat {0}, wait for him to give up, or escape.", "0: attacker name");
+		this.addDefault(defaults, Messages.SiegeConfirmed, "The siege has begun!  If you log out now, you will die.  You must defeat {0}, chase him away, or admit defeat and walk away.", "0: defender name");
+		this.addDefault(defaults, Messages.AbandonClaimMissing, "Stand in the claim you want to delete, or consider /AbandonAllClaims.", null);
+		this.addDefault(defaults, Messages.NotYourClaim, "This isn't your claim.", null);
+		this.addDefault(defaults, Messages.DeleteTopLevelClaim, "To delete a subdivision, stand inside it.  Otherwise, use /AbandonTopLevelClaim to delete this claim and all subdivisions.", null);		
+		this.addDefault(defaults, Messages.AbandonSuccess, "Claim abandoned.  You now have {0} available claim blocks.", "0: remaining claim blocks");
+		this.addDefault(defaults, Messages.CantGrantThatPermission, "You can't grant a permission you don't have yourself.", null);
+		this.addDefault(defaults, Messages.GrantPermissionNoClaim, "Stand inside the claim where you want to grant permission.", null);
+		this.addDefault(defaults, Messages.GrantPermissionConfirmation, "Granted {0} permission to {1} {2}.", "0: target player; 1: permission description; 2: scope (changed claims)");
+		this.addDefault(defaults, Messages.ManageUniversalPermissionsInstruction, "To manage permissions for ALL your claims, stand outside them.", null);
+		this.addDefault(defaults, Messages.ManageOneClaimPermissionsInstruction, "To manage permissions for a specific claim, stand inside it.", null);
+		this.addDefault(defaults, Messages.CollectivePublic, "the public", "as in 'granted the public permission to...'");
+		this.addDefault(defaults, Messages.BuildPermission, "build", null);
+		this.addDefault(defaults, Messages.ContainersPermission, "access containers and animals", null);
+		this.addDefault(defaults, Messages.AccessPermission, "use buttons and levers", null);
+		this.addDefault(defaults, Messages.PermissionsPermission, "manage permissions", null);
+		this.addDefault(defaults, Messages.LocationCurrentClaim, "in this claim", null);
+		this.addDefault(defaults, Messages.LocationAllClaims, "in all your claims", null);
+		this.addDefault(defaults, Messages.PvPImmunityStart, "You're protected from attack by other players as long as your inventory is empty.", null);
+		this.addDefault(defaults, Messages.SiegeNoDrop, "You can't give away items while involved in a siege.", null);
+		this.addDefault(defaults, Messages.DonateItemsInstruction, "To give away the item(s) in your hand, left-click the chest again.", null);
+		this.addDefault(defaults, Messages.ChestFull, "This chest is full.", null);
+		this.addDefault(defaults, Messages.DonationSuccess, "Item(s) transferred to chest!", null);
+		this.addDefault(defaults, Messages.PlayerTooCloseForFire, "You can't start a fire this close to {0}.", "0: other player's name");
+		this.addDefault(defaults, Messages.TooDeepToClaim, "This chest can't be protected because it's too deep underground.  Consider moving it.", null);
+		this.addDefault(defaults, Messages.ChestClaimConfirmation, "This chest is protected.", null);
+		this.addDefault(defaults, Messages.AutomaticClaimNotification, "This chest and nearby blocks are protected from breakage and theft.  The gold and glowstone blocks mark the protected area.", null);
+		this.addDefault(defaults, Messages.TrustCommandAdvertisement, "Use the /trust command to grant other players access.", null);
+		this.addDefault(defaults, Messages.GoldenShovelAdvertisement, "To claim more land, use a golden shovel.", null);
+		this.addDefault(defaults, Messages.UnprotectedChestWarning, "This chest is NOT protected.  Consider expanding an existing claim or creating a new one.", null);
+		this.addDefault(defaults, Messages.ThatPlayerPvPImmune, "You can't injure defenseless players.", null);
+		this.addDefault(defaults, Messages.CantFightWhileImmune, "You can't fight someone while you're protected from PvP.", null);
+		this.addDefault(defaults, Messages.NoDamageClaimedEntity, "That belongs to {0}.", "0: owner name");
+		this.addDefault(defaults, Messages.ShovelBasicClaimMode, "Shovel returned to basic claims mode.", null);
+		this.addDefault(defaults, Messages.RemainingBlocks, "You may claim up to {0} more blocks.", "0: remaining blocks");
+		this.addDefault(defaults, Messages.CreativeBasicsDemoAdvertisement, "Want a demonstration?  http://tinyurl.com/c7bajb8", null);
+		this.addDefault(defaults, Messages.SurvivalBasicsDemoAdvertisement, "Want a demonstration?  http://tinyurl.com/6nkwegj", null);
+		this.addDefault(defaults, Messages.TrappedChatKeyword, "trapped", "When mentioned in chat, players get information about the /trapped command.");
+		this.addDefault(defaults, Messages.TrappedInstructions, "Are you trapped in someone's claim?  Consider the /trapped command.", null);
+		this.addDefault(defaults, Messages.PvPNoDrop, "You can't drop items while in PvP combat.", null);
+		this.addDefault(defaults, Messages.SiegeNoTeleport, "You can't teleport out of a besieged area.", null);
+		this.addDefault(defaults, Messages.BesiegedNoTeleport, "You can't teleport into a besieged area.", null);
+		this.addDefault(defaults, Messages.SiegeNoContainers, "You can't access containers while involved in a siege.", null);
+		this.addDefault(defaults, Messages.PvPNoContainers, "You can't access containers during PvP combat.", null);
+		this.addDefault(defaults, Messages.PvPImmunityEnd, "Now you can fight with other players.", null);
+		this.addDefault(defaults, Messages.NoBedPermission, "{0} hasn't given you permission to sleep here.", "0: claim owner");
+		this.addDefault(defaults, Messages.NoWildernessBuckets, "You may only dump buckets inside your claim(s) or underground.", null);
+		this.addDefault(defaults, Messages.NoLavaNearOtherPlayer, "You can't place lava this close to {0}.", "0: nearby player");
+		this.addDefault(defaults, Messages.TooFarAway, "That's too far away.", null);
+		this.addDefault(defaults, Messages.BlockNotClaimed, "No one has claimed this block.", null);
+		this.addDefault(defaults, Messages.BlockClaimed, "That block has been claimed by {0}.", "0: claim owner");
+		this.addDefault(defaults, Messages.SiegeNoShovel, "You can't use your shovel tool while involved in a siege.", null);
+		this.addDefault(defaults, Messages.RestoreNaturePlayerInChunk, "Unable to restore.  {0} is in that chunk.", "0: nearby player");
+		this.addDefault(defaults, Messages.NoCreateClaimPermission, "You don't have permission to claim land.", null);
+		this.addDefault(defaults, Messages.ResizeClaimTooSmall, "This new size would be too small.  Claims must be at least {0} x {0}.", "0: minimum claim size");
+		this.addDefault(defaults, Messages.ResizeNeedMoreBlocks, "You don't have enough blocks for this size.  You need {0} more.", "0: how many needed");
+		this.addDefault(defaults, Messages.ClaimResizeSuccess, "Claim resized.  You now have {0} available claim blocks.", "0: remaining blocks");
+		this.addDefault(defaults, Messages.ResizeFailOverlap, "Can't resize here because it would overlap another nearby claim.", null);
+		this.addDefault(defaults, Messages.ResizeStart, "Resizing claim.  Use your shovel again at the new location for this corner.", null);
+		this.addDefault(defaults, Messages.ResizeFailOverlapSubdivision, "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use your shovel at a corner to resize it.", null);
+		this.addDefault(defaults, Messages.SubdivisionStart, "Subdivision corner set!  Use your shovel at the location for the opposite corner of this new subdivision.", null);
+		this.addDefault(defaults, Messages.CreateSubdivisionOverlap, "Your selected area overlaps another subdivision.", null);
+		this.addDefault(defaults, Messages.SubdivisionSuccess, "Subdivision created!  Use /trust to share it with friends.", null);
+		this.addDefault(defaults, Messages.CreateClaimFailOverlap, "You can't create a claim here because it would overlap your other claim.  Use /abandonclaim to delete it, or use your shovel at a corner to resize it.", null);
+		this.addDefault(defaults, Messages.CreateClaimFailOverlapOtherPlayer, "You can't create a claim here because it would overlap {0}'s claim.", "0: other claim owner");
+		this.addDefault(defaults, Messages.ClaimsDisabledWorld, "Land claims are disabled in this world.", null);
+		this.addDefault(defaults, Messages.ClaimStart, "Claim corner set!  Use the shovel again at the opposite corner to claim a rectangle of land.  To cancel, put your shovel away.", null);
+		this.addDefault(defaults, Messages.NewClaimTooSmall, "This claim would be too small.  Any claim must be at least {0} x {0}.", "0: minimum claim size");
+		this.addDefault(defaults, Messages.CreateClaimInsufficientBlocks, "You don't have enough blocks to claim that entire area.  You need {0} more blocks.", "0: additional blocks needed");
+		this.addDefault(defaults, Messages.AbandonClaimAdvertisement, "To delete another claim and free up some blocks, use /AbandonClaim.", null);
+		this.addDefault(defaults, Messages.CreateClaimFailOverlapShort, "Your selected area overlaps an existing claim.", null);
+		this.addDefault(defaults, Messages.CreateClaimSuccess, "Claim created!  Use /trust to share it with friends.", null);
+		this.addDefault(defaults, Messages.SiegeWinDoorsOpen, "Congratulations!  Buttons and levers are temporarily unlocked (five minutes).", null);
+		this.addDefault(defaults, Messages.RescueAbortedMoved, "You moved!  Rescue cancelled.", null);
+		this.addDefault(defaults, Messages.SiegeDoorsLockedEjection, "Looting time is up!  Ejected from the claim.", null);
+		this.addDefault(defaults, Messages.NoModifyDuringSiege, "Claims can't be modified while under siege.", null);
+		this.addDefault(defaults, Messages.OnlyOwnersModifyClaims, "Only {0} can modify this claim.", "0: owner name");
+		this.addDefault(defaults, Messages.NoBuildUnderSiege, "This claim is under siege by {0}.  No one can build here.", "0: attacker name");
+		this.addDefault(defaults, Messages.NoBuildPvP, "You can't build in claims during PvP combat.", null);
+		this.addDefault(defaults, Messages.NoBuildPermission, "You don't have {0}'s permission to build here.", "0: owner name");
+		this.addDefault(defaults, Messages.NonSiegeMaterial, "That material is too tough to break.", null);
+		this.addDefault(defaults, Messages.NoOwnerBuildUnderSiege, "You can't make changes while under siege.", null);
+		this.addDefault(defaults, Messages.NoAccessPermission, "You don't have {0}'s permission to use that.", "0: owner name.  access permission controls buttons, levers, and beds");
+		this.addDefault(defaults, Messages.NoContainersSiege, "This claim is under siege by {0}.  No one can access containers here right now.", "0: attacker name");
+		this.addDefault(defaults, Messages.NoContainersPermission, "You don't have {0}'s permission to use that.", "0: owner's name.  containers also include crafting blocks");
+		this.addDefault(defaults, Messages.OwnerNameForAdminClaims, "an administrator", "as in 'You don't have an administrator's permission to build here.'");
+		this.addDefault(defaults, Messages.ClaimTooSmallForEntities, "This claim isn't big enough for that.  Try enlarging it.", null);
+		this.addDefault(defaults, Messages.TooManyEntitiesInClaim, "This claim has too many entities already.  Try enlarging the claim or removing some animals, monsters, paintings, or minecarts.", null);
+		this.addDefault(defaults, Messages.YouHaveNoClaims, "You don't have any land claims.", null);
+		this.addDefault(defaults, Messages.ConfirmFluidRemoval, "Abandoning this claim will remove all your lava and water.  If you're sure, use /AbandonClaim again.", null);
+		this.addDefault(defaults, Messages.AutoBanNotify, "Auto-banned {0}({1}).  See logs for details.", null);
+		this.addDefault(defaults, Messages.AdjustGroupBlocksSuccess, "Adjusted bonus claim blocks for players with the {0} permission by {1}.  New total: {2}.", "0: permission; 1: adjustment amount; 2: new total bonus");
+		this.addDefault(defaults, Messages.InvalidPermissionID, "Please specify a player name, or a permission in [brackets].", null);
+		this.addDefault(defaults, Messages.UntrustOwnerOnly, "Only {0} can revoke permissions here.", "0: claim owner's name");		
+		
+		//load the config file
+		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));
+		
+		//for each message ID
+		for(int i = 0; i < messageIDs.length; i++)
+		{
+			//get default for this message
+			Messages messageID = messageIDs[i];
+			CustomizableMessage messageData = defaults.get(messageID.name());
+			
+			//if default is missing, log an error and use some fake data for now so that the plugin can run
+			if(messageData == null)
+			{
+				GriefPrevention.AddLogEntry("Missing message for " + messageID.name() + ".  Please contact the developer.");
+				messageData = new CustomizableMessage(messageID, "Missing message!  ID: " + messageID.name() + ".  Please contact a server admin.", null);
+			}
+			
+			//read the message from the file, use default if necessary
+			this.messages[messageID.ordinal()] = config.getString("Messages." + messageID.name() + ".Text", messageData.text);
+			config.set("Messages." + messageID.name() + ".Text", this.messages[messageID.ordinal()]);
+			
+			if(messageData.notes != null)
+			{
+				messageData.notes = config.getString("Messages." + messageID.name() + ".Notes", messageData.notes);
+				config.set("Messages." + messageID.name() + ".Notes", messageData.notes);
+			}
+		}
+		
+		//save any changes
+		try
+		{
+			config.save(DataStore.messagesFilePath);
+		}
+		catch(IOException exception)
+		{
+			GriefPrevention.AddLogEntry("Unable to write to the configuration file at \"" + DataStore.messagesFilePath + "\"");
+		}
+		
+		defaults.clear();
+		System.gc();				
+	}
+
+	private void addDefault(HashMap<String, CustomizableMessage> defaults,
+			Messages id, String text, String notes)
+	{
+		CustomizableMessage message = new CustomizableMessage(id, text, notes);
+		defaults.put(id.name(), message);		
+	}
+
+	public String getMessage(Messages messageID, String... args)
+	{
+		String message = messages[messageID.ordinal()];
+		
+		for(int i = 0; i < args.length; i++)
+		{
+			String param = args[i];
+			message = message.replace("{" + i + "}", param);
+		}
+		
+		return message;
+		
 	}
 }
