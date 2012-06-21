@@ -68,7 +68,7 @@ public class DataStore
 			if(!file.isFile()) continue;  //avoids folders
 			
 			//all group data files start with an underscore.  ignoring the rest, which are player data files.			
-			if(!file.getName().startsWith("_")) continue;
+			if(!file.getName().startsWith("$")) continue;
 			
 			String groupName = file.getName().substring(1);
 			if(groupName == null || groupName.isEmpty()) continue;  //defensive coding, avoid unlikely cases
@@ -330,7 +330,7 @@ public class DataStore
 		try
 		{
 			//open the group's file
-			File groupDataFile = new File(playerDataFolderPath + File.separator + "_" + groupName);
+			File groupDataFile = new File(playerDataFolderPath + File.separator + "$" + groupName);
 			groupDataFile.createNewFile();
 			outStream = new BufferedWriter(new FileWriter(groupDataFile));
 			
@@ -1350,9 +1350,9 @@ public class DataStore
 		this.addDefault(defaults, Messages.PlayerTooCloseForFire, "You can't start a fire this close to {0}.", "0: other player's name");
 		this.addDefault(defaults, Messages.TooDeepToClaim, "This chest can't be protected because it's too deep underground.  Consider moving it.", null);
 		this.addDefault(defaults, Messages.ChestClaimConfirmation, "This chest is protected.", null);
-		this.addDefault(defaults, Messages.AutomaticClaimNotification, "This chest and nearby blocks are protected from breakage and theft.  The gold and glowstone blocks mark the protected area.", null);
+		this.addDefault(defaults, Messages.AutomaticClaimNotification, "This chest and nearby blocks are protected from breakage and theft.  The temporary gold and glowstone blocks mark the protected area.  To toggle them on and off, right-click with a stick.", null);
 		this.addDefault(defaults, Messages.TrustCommandAdvertisement, "Use the /trust command to grant other players access.", null);
-		this.addDefault(defaults, Messages.GoldenShovelAdvertisement, "To claim more land, use a golden shovel.", null);
+		this.addDefault(defaults, Messages.GoldenShovelAdvertisement, "To claim more land, you need a golden shovel.  When you equip one, you'll get more information.", null);
 		this.addDefault(defaults, Messages.UnprotectedChestWarning, "This chest is NOT protected.  Consider expanding an existing claim or creating a new one.", null);
 		this.addDefault(defaults, Messages.ThatPlayerPvPImmune, "You can't injure defenseless players.", null);
 		this.addDefault(defaults, Messages.CantFightWhileImmune, "You can't fight someone while you're protected from PvP.", null);
@@ -1417,7 +1417,8 @@ public class DataStore
 		this.addDefault(defaults, Messages.AutoBanNotify, "Auto-banned {0}({1}).  See logs for details.", null);
 		this.addDefault(defaults, Messages.AdjustGroupBlocksSuccess, "Adjusted bonus claim blocks for players with the {0} permission by {1}.  New total: {2}.", "0: permission; 1: adjustment amount; 2: new total bonus");
 		this.addDefault(defaults, Messages.InvalidPermissionID, "Please specify a player name, or a permission in [brackets].", null);
-		this.addDefault(defaults, Messages.UntrustOwnerOnly, "Only {0} can revoke permissions here.", "0: claim owner's name");		
+		this.addDefault(defaults, Messages.UntrustOwnerOnly, "Only {0} can revoke permissions here.", "0: claim owner's name");
+		this.addDefault(defaults, Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\Wclaim(\\W.*|$)", "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how to claim land.");	
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));

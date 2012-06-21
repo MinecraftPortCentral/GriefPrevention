@@ -63,6 +63,9 @@ class PlayerEventHandler implements Listener
 	//timestamps of login and logout notifications in the last minute
 	private ArrayList<Long> recentLoginLogoutNotifications = new ArrayList<Long>();
 	
+	//regex pattern for the "how do i claim land?" scanner
+	private Pattern howToClaimPattern = null;
+	
 	//typical constructor, yawn
 	PlayerEventHandler(DataStore dataStore, GriefPrevention plugin)
 	{
@@ -76,8 +79,26 @@ class PlayerEventHandler implements Listener
 		Player player = event.getPlayer();
 		String message = event.getMessage();
 		
-		//FEATURE: automatically educate players about the /trapped command
+		//FEATURE: automatically educate players about claiming land
+		//watching for message format how*claim*, and will send a link to the basics video
+		if(this.howToClaimPattern == null)
+		{
+			this.howToClaimPattern = Pattern.compile(this.dataStore.getMessage(Messages.HowToClaimRegex), Pattern.CASE_INSENSITIVE);
+		}
 		
+		if(this.howToClaimPattern.matcher(message).matches())
+		{
+			if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.CreativeBasicsDemoAdvertisement);
+			}
+			else
+			{
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsDemoAdvertisement);
+			}
+		}
+		
+		//FEATURE: automatically educate players about the /trapped command
 		//check for "trapped" or "stuck" to educate players about the /trapped command
 		if(message.contains("trapped") || message.contains("stuck") || message.contains(this.dataStore.getMessage(Messages.TrappedChatKeyword)))
 		{
@@ -816,6 +837,7 @@ class PlayerEventHandler implements Listener
 				HashSet<Byte> transparentMaterials = new HashSet<Byte>();
 				transparentMaterials.add(Byte.valueOf((byte)Material.AIR.getId()));
 				transparentMaterials.add(Byte.valueOf((byte)Material.SNOW.getId()));
+				transparentMaterials.add(Byte.valueOf((byte)Material.LONG_GRASS.getId()));
 				clickedBlock = player.getTargetBlock(null, 250);
 			}			
 		}
@@ -971,8 +993,8 @@ class PlayerEventHandler implements Listener
 				return;
 			}
 			
-			//if it's a string, he's investigating a claim			
-			else if(materialInHand == Material.STRING)
+			//if it's stick or arrow, he's investigating a claim			
+			else if(materialInHand == Material.STICK)
 			{
 				//air indicates too far away
 				if(clickedBlockType == Material.AIR)

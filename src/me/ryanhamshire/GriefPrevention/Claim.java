@@ -428,7 +428,7 @@ public class Claim
 		
 		//also check for public permission
 		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get("public");
-		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Inventory == permissionLevel) return null;		
+		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Access == permissionLevel) return null;		
 		
 		//permission inheritance for subdivisions
 		if(this.parent != null)
