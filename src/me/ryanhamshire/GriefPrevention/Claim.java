@@ -46,6 +46,9 @@ public class Claim
 	//modification date.  this comes from the file timestamp during load, and is updated with runtime changes
 	public Date modifiedDate;
 	
+	//id number.  unique to this claim, never changes.
+	Long id = null;
+	
 	//ownername.  for admin claims, this is the empty string
 	//use getOwnerName() to get a friendly name (will be "an administrator" for admin claims)
 	public String ownerName;
@@ -81,6 +84,12 @@ public class Claim
 	public boolean isAdminClaim()
 	{
 		return this.ownerName.isEmpty();
+	}
+	
+	//accessor for ID
+	public Long getID()
+	{
+		return new Long(this.id);
 	}
 	
 	//basic constructor, just notes the creation time
@@ -178,10 +187,13 @@ public class Claim
 	}
 	
 	//main constructor.  note that only creating a claim instance does nothing - a claim must be added to the data store to be effective
-	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, String ownerName, String [] builderNames, String [] containerNames, String [] accessorNames, String [] managerNames)
+	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, String ownerName, String [] builderNames, String [] containerNames, String [] accessorNames, String [] managerNames, Long id)
 	{
 		//modification date
 		this.modifiedDate = Calendar.getInstance().getTime();
+		
+		//id
+		this.id = id;
 		
 		//store corners
 		this.lesserBoundaryCorner = lesserBoundaryCorner;
@@ -253,7 +265,7 @@ public class Claim
 		Claim claim = new Claim
 			(new Location(this.lesserBoundaryCorner.getWorld(), this.lesserBoundaryCorner.getBlockX() - howNear, this.lesserBoundaryCorner.getBlockY(), this.lesserBoundaryCorner.getBlockZ() - howNear),
 			 new Location(this.greaterBoundaryCorner.getWorld(), this.greaterBoundaryCorner.getBlockX() + howNear, this.greaterBoundaryCorner.getBlockY(), this.greaterBoundaryCorner.getBlockZ() + howNear),
-			 "", new String[] {}, new String[] {}, new String[] {}, new String[] {});
+			 "", new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);
 		
 		return claim.contains(location, false, true);
 	}

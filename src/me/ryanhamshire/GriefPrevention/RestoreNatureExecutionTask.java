@@ -90,7 +90,7 @@ class RestoreNatureExecutionTask implements Runnable
 		}
 		
 		//show visualization to player
-		Claim claim = new Claim(lesserCorner, greaterCorner, "", new String[] {}, new String[] {}, new String[] {}, new String[] {});
+		Claim claim = new Claim(lesserCorner, greaterCorner, "", new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);
 		Visualization visualization = Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature);
 		Visualization.Apply(player, visualization);
 	}	

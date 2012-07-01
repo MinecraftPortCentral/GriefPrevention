@@ -68,7 +68,7 @@ public class BlockEventHandler implements Listener
 		if(!GriefPrevention.instance.config_addItemsToClaimedChests) return;
 		
 		Block block = event.getBlock();
-		Player player = event.getPlayer(); 
+		Player player = event.getPlayer();
 		
 		//only care about player-damaged blocks
 		if(player == null) return;
@@ -200,9 +200,7 @@ public class BlockEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		if(notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage))
 		{		
-			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + lines.toString());
-			GriefPrevention.AddLogEntry("Location: " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()));
-			
+			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + lines.toString() + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()));
 			playerData.lastMessage = signMessage;
 		}
 	}
@@ -275,7 +273,7 @@ public class BlockEventHandler implements Listener
 				//radius == 0 means protect ONLY the chest
 				if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == 0)
 				{					
-					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getName(), null);
+					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getName(), null, null);
 					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ChestClaimConfirmation);						
 				}
 				
@@ -289,7 +287,7 @@ public class BlockEventHandler implements Listener
 							block.getY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, block.getY(), 
 							block.getZ() - radius, block.getZ() + radius, 
 							player.getName(), 
-							null).succeeded)
+							null, null).succeeded)
 					{
 						radius--;
 					}
@@ -339,13 +337,17 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonExtend (BlockPistonExtendEvent event)
 	{		
+		List<Block> blocks = event.getBlocks();
+		
+		//if no blocks moving, then we don't care
+		if(blocks.size() == 0) return;
+		
 		//who owns the piston, if anyone?
 		String pistonClaimOwnerName = "_";
 		Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, null);
 		if(claim != null) pistonClaimOwnerName = claim.getOwnerName();
 		
 		//which blocks are being pushed?
-		List<Block> blocks = event.getBlocks();
 		for(int i = 0; i < blocks.size(); i++)
 		{
 			//if ANY of the pushed blocks are owned by someone other than the piston owner, cancel the event
@@ -354,7 +356,67 @@ public class BlockEventHandler implements Listener
 			if(claim != null && !claim.getOwnerName().equals(pistonClaimOwnerName))
 			{
 				event.setCancelled(true);
+				event.getBlock().getWorld().createExplosion(event.getBlock().getLocation(), 0);
+				event.getBlock().getWorld().dropItem(event.getBlock().getLocation(), new ItemStack(event.getBlock().getType()));
+				event.getBlock().setType(Material.AIR);
 				return;
+			}
+		}
+		
+		//which direction?  note we're ignoring vertical push
+		int xchange = 0;
+		int zchange = 0;
+		
+		Block piston = event.getBlock();
+		Block firstBlock = blocks.get(0);
+		
+		if(firstBlock.getX() > piston.getX())
+		{
+			xchange = 1;
+		}
+		else if(firstBlock.getX() < piston.getX())
+		{
+			xchange = -1;
+		}
+		else if(firstBlock.getZ() > piston.getZ())
+		{
+			zchange = 1;
+		}
+		else if(firstBlock.getZ() < piston.getZ())
+		{
+			zchange = -1; 
+		}
+		
+		//if horizontal movement
+		if(xchange != 0 || zchange != 0)
+		{
+			for(int i = 0; i < blocks.size(); i++)
+			{
+				Block block = blocks.get(i);
+				Claim originalClaim = this.dataStore.getClaimAt(block.getLocation(), false, null);
+				String originalOwnerName = "";
+				if(originalClaim != null)
+				{
+					originalOwnerName = originalClaim.getOwnerName();
+				}
+				
+				Claim newClaim = this.dataStore.getClaimAt(block.getLocation().add(xchange, 0, zchange), false, null);
+				String newOwnerName = "";
+				if(newClaim != null)
+				{
+					newOwnerName = newClaim.getOwnerName();
+				}
+				
+				//if pushing this block will change ownership, cancel the event and take away the piston (for performance reasons)
+				if(!newOwnerName.equals(originalOwnerName))
+				{
+					event.setCancelled(true);
+					event.getBlock().getWorld().createExplosion(event.getBlock().getLocation(), 0);
+					event.getBlock().getWorld().dropItem(event.getBlock().getLocation(), new ItemStack(event.getBlock().getType()));
+					event.getBlock().setType(Material.AIR);
+					return;
+				}
+				
 			}
 		}
 	}
@@ -469,11 +531,13 @@ public class BlockEventHandler implements Listener
 		Location rootLocation = growEvent.getLocation();
 		Claim rootClaim = this.dataStore.getClaimAt(rootLocation, false, null);
 		
-		//who owns the root, if anyone?
 		//who owns the spreading block, if anyone?
 		OfflinePlayer fromOwner = null;			
 		if(rootClaim != null)
 		{
+			//tree growth in subdivisions is dependent on who owns the top level claim
+			if(rootClaim.parent != null) rootClaim = rootClaim.parent;
+			
 			//if an administrative claim, just let the tree grow where it wants
 			if(rootClaim.isAdminClaim()) return;
 			

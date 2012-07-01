@@ -80,6 +80,8 @@ public class GriefPrevention extends JavaPlugin
 	
 	public int config_claims_trappedCooldownHours;					//number of hours between uses of the /trapped command
 	
+	public Material config_claims_investigationTool;				//which material will be used to investigate claims with a right click
+	
 	public ArrayList<World> config_siege_enabledWorlds;				//whether or not /siege is enabled on this server
 	public ArrayList<Material> config_siege_blocks;					//which blocks will be breakable in siege mode
 		
@@ -113,6 +115,9 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_eavesdrop; 								//whether whispered messages will be visible to administrators
 	
 	public boolean config_smartBan;									//whether to ban accounts which very likely owned by a banned player
+	
+	public boolean config_endermenMoveBlocks;						//whether or not endermen may move blocks around
+	public boolean config_creaturesTrampleCrops;					//whether or not non-player entities may trample crops
 	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
@@ -252,6 +257,23 @@ public class GriefPrevention extends JavaPlugin
 		
 		this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
 		
+		this.config_endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
+		this.config_creaturesTrampleCrops = config.getBoolean("GriefPrevention.CreaturesTrampleCrops", false);
+		
+		//default for claim investigation tool
+		String investigationToolMaterialName = Material.STICK.name();
+		
+		//get investigation tool from config
+		investigationToolMaterialName = config.getString("GriefPrevention.Claims.InvestigationTool", investigationToolMaterialName);
+		
+		//validate investigation tool
+		this.config_claims_investigationTool = Material.getMaterial(investigationToolMaterialName);
+		if(this.config_claims_investigationTool == null)
+		{
+			GriefPrevention.AddLogEntry("ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
+			this.config_claims_investigationTool = Material.STICK;
+		}
+		
 		//default for siege worlds list
 		ArrayList<String> defaultSiegeWorldNames = new ArrayList<String>();
 		
@@ -339,6 +361,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Claims.MaximumDepth", this.config_claims_maxDepth);
 		config.set("GriefPrevention.Claims.IdleLimitDays", this.config_claims_expirationDays);
 		config.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
+		config.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
 		
 		config.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
 		config.set("GriefPrevention.Spam.LoginCooldownMinutes", this.config_spam_loginCooldownMinutes);
@@ -367,13 +390,16 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
 		
 		config.set("GriefPrevention.AddItemsToClaimedChests", this.config_addItemsToClaimedChests);
-		config.set("GriefPrevention.EavesdropEnabled", this.config_eavesdrop);
 		
+		config.set("GriefPrevention.EavesdropEnabled", this.config_eavesdrop);		
 		config.set("GriefPrevention.SmartBan", this.config_smartBan);
 		
 		config.set("GriefPrevention.Siege.Worlds", siegeEnabledWorldNames);
 		config.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
-
+		
+		config.set("GriefPrevention.EndermenMoveBlocks", this.config_endermenMoveBlocks);
+		config.set("GriefPrevention.CreaturesTrampleCrops", this.config_creaturesTrampleCrops);
+		
 		try
 		{
 			config.save(DataStore.configFilePath);
@@ -1654,6 +1680,9 @@ public class GriefPrevention extends JavaPlugin
 	{
 		//if pvp is disabled, do nothing
 		if(!player.getWorld().getPVP()) return;
+		
+		//if player is in creative mode, do nothing
+		if(player.getGameMode() == GameMode.CREATIVE) return;
 		
 		//if anti spawn camping feature is not enabled, do nothing
 		if(!this.config_pvp_protectFreshSpawns) return;

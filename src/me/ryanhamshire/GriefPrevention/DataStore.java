@@ -45,12 +45,16 @@ public class DataStore
 	//in-memory cache for messages
 	private String [] messages;
 	
+	//next claim ID
+	Long nextClaimID = (long)0;
+	
 	//path information, for where stuff stored on disk is well...  stored
 	private final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
 	private final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
 	private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
 	final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
 	final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
+	final static String nextClaimIdFilePath = claimDataFolderPath + File.separator + "_nextClaimID";
 	
 	//initialization!
 	DataStore()
@@ -97,6 +101,32 @@ public class DataStore
 		
 		//load claims data into memory		
 		File claimDataFolder = new File(claimDataFolderPath);
+		
+		//load next claim number from file
+		File nextClaimIdFile = new File(nextClaimIdFilePath);
+		if(nextClaimIdFile.exists())
+		{
+			BufferedReader inStream = null;
+			try
+			{
+				inStream = new BufferedReader(new FileReader(nextClaimIdFile.getAbsolutePath()));
+				
+				//read the id
+				String line = inStream.readLine();
+				
+				//try to parse into a long value
+				this.nextClaimID = Long.parseLong(line); 				
+			}
+			catch(Exception e){ }
+			
+			try
+			{
+				if(inStream != null) inStream.close();					
+			}
+			catch(IOException exception) {}
+		}
+		
+		//get a list of all the files in the claims data folder
 		files = claimDataFolder.listFiles();
 		
 		int loadedClaimCount = 0;
@@ -105,6 +135,28 @@ public class DataStore
 		{			
 			if(files[i].isFile())  //avoids folders
 			{
+				//skip any file starting with an underscore, to avoid the _nextClaimID file.
+				if(files[i].getName().startsWith("_")) continue;
+				
+				//the filename is the claim ID.  try to parse it
+				long claimID;
+				
+				try
+				{
+					claimID = Long.parseLong(files[i].getName());
+				}
+				
+				//because some older versions used a different file name pattern before claim IDs were introduced,
+				//those files need to be "converted" by renaming them to a unique ID
+				catch(Exception e)
+				{
+					claimID = this.nextClaimID;
+					this.incrementNextClaimID();
+					File newFile = new File(claimDataFolderPath + File.separator + String.valueOf(this.nextClaimID));
+					files[i].renameTo(newFile);
+					files[i] = newFile;
+				}
+				
 				BufferedReader inStream = null;
 				try
 				{					
@@ -153,7 +205,7 @@ public class DataStore
 						if(topLevelClaim == null)
 						{
 							//instantiate
-							topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames);
+							topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, claimID);
 							
 							//search for another claim overlapping this one
 							Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
@@ -184,7 +236,7 @@ public class DataStore
 						//otherwise there's already a top level claim, so this must be a subdivision of that top level claim
 						else
 						{
-							Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, "--subdivision--", builderNames, containerNames, accessorNames, managerNames);
+							Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, "--subdivision--", builderNames, containerNames, accessorNames, managerNames, null);
 							
 							//make sure there are no other subdivisions overlapping this one
 							
@@ -487,7 +539,13 @@ public class DataStore
 		}
 		
 		//otherwise get a unique identifier for the claim which will be used to name the file on disk
-		String claimID = this.getClaimID(claim);
+		if(claim.id == null)
+		{
+			claim.id = this.nextClaimID;
+			this.incrementNextClaimID();
+		}
+		
+		String claimID = String.valueOf(claim.id);
 		
 		BufferedWriter outStream = null;
 		
@@ -521,13 +579,41 @@ public class DataStore
 		catch(IOException exception) {}
 	}
 	
+	private void incrementNextClaimID()
+	{
+		this.nextClaimID++;
+		
+		BufferedWriter outStream = null;
+		
+		try
+		{
+			//open the claim's file						
+			File nextClaimIdFile = new File(nextClaimIdFilePath);
+			nextClaimIdFile.createNewFile();
+			outStream = new BufferedWriter(new FileWriter(nextClaimIdFile));
+			
+			outStream.write(String.valueOf(this.nextClaimID));
+		}		
+		
+		//if any problem, log it
+		catch(Exception e)
+		{
+			GriefPrevention.AddLogEntry("Unexpected exception saving next claim ID: " + e.getMessage());
+		}
+		
+		//close the file
+		try
+		{
+			if(outStream != null) outStream.close();
+		}
+		catch(IOException exception) {} 
+	}
+
 	//actually writes claim data to an output stream
 	private void writeClaimData(Claim claim, BufferedWriter outStream) throws IOException
 	{
-		String claimID = this.getClaimID(claim);
-		
 		//first line is lesser boundary corner location
-		outStream.write(claimID);
+		outStream.write(this.locationToString(claim.getLesserBoundaryCorner()));
 		outStream.newLine();
 		
 		//second line is greater boundary corner location
@@ -721,12 +807,12 @@ public class DataStore
 		}
 		
 		//otherwise, need to update the data store and ensure the claim's file is deleted		
-		String claimID = this.getClaimID(claim);
+		String claimID = String.valueOf(claim.id);
 		
 		//remove from memory
 		for(int i = 0; i < this.claims.size(); i++)
 		{
-			if(this.getClaimID(this.claims.get(i)).equals(claimID))
+			if(claims.get(i).id.equals(claim.id))
 			{
 				this.claims.remove(i);
 				claim.inDataStore = false;
@@ -751,7 +837,7 @@ public class DataStore
 			PlayerData ownerData = this.getPlayerData(claim.getOwnerName());
 			for(int i = 0; i < ownerData.claims.size(); i++)
 			{
-				if(this.getClaimID(ownerData.claims.get(i)).equals(claimID))
+				if(ownerData.claims.get(i).id.equals(claim.id))
 				{
 					ownerData.claims.remove(i);
 					break;
@@ -811,7 +897,7 @@ public class DataStore
 	//does NOT check a player has permission to create a claim, or enough claim blocks.
 	//does NOT check minimum claim size constraints
 	//does NOT visualize the new claim for any players	
-	public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, String ownerName, Claim parent)
+	public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, String ownerName, Claim parent, Long id)
 	{
 		CreateClaimResult result = new CreateClaimResult();
 		
@@ -865,7 +951,8 @@ public class DataStore
 			new String [] {}, 
 			new String [] {},
 			new String [] {},
-			new String [] {});
+			new String [] {},
+			id);
 		
 		newClaim.parent = parent;
 		
@@ -960,12 +1047,6 @@ public class DataStore
 		catch(IOException exception){}
 	}
 	
-	//gets a unique identifier for a claim
-	private String getClaimID(Claim claim)
-	{
-		return this.locationToString(claim.getLesserBoundaryCorner());
-	}
-
 	//extends a claim to a new depth
 	//respects the max depth config variable
 	public void extendClaim(Claim claim, int newDepth) 
@@ -1216,7 +1297,7 @@ public class DataStore
 		this.deleteClaim(claim);					
 		
 		//try to create this new claim, ignoring the original when checking for overlap
-		CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2, claim.ownerName, claim.parent);
+		CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2, claim.ownerName, claim.parent, claim.id);
 		
 		//if succeeded
 		if(result.succeeded)
@@ -1418,7 +1499,7 @@ public class DataStore
 		this.addDefault(defaults, Messages.AdjustGroupBlocksSuccess, "Adjusted bonus claim blocks for players with the {0} permission by {1}.  New total: {2}.", "0: permission; 1: adjustment amount; 2: new total bonus");
 		this.addDefault(defaults, Messages.InvalidPermissionID, "Please specify a player name, or a permission in [brackets].", null);
 		this.addDefault(defaults, Messages.UntrustOwnerOnly, "Only {0} can revoke permissions here.", "0: claim owner's name");
-		this.addDefault(defaults, Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\Wclaim(\\W.*|$)", "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how to claim land.");	
+		this.addDefault(defaults, Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\W(claim|protect)(\\W.*|$)", "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how to claim land.");	
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));

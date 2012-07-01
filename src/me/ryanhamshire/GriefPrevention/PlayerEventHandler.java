@@ -126,6 +126,14 @@ class PlayerEventHandler implements Listener
 		boolean spam = false;
 		boolean muted = false;
 		
+		//single-character messages will not be sent
+		if(message.length() == 1)
+		{
+			playerData.spamCount++;
+			spam = true;
+			muted = true;
+		}
+		
 		//check message content and timing		
 		long millisecondsSinceLastMessage = (new Date()).getTime() - playerData.lastMessageTimestamp.getTime();
 		
@@ -137,8 +145,8 @@ class PlayerEventHandler implements Listener
 			spam = true;
 		}
 		
-		//if it's very similar to the last message
-		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage))
+		//if it's very similar to the last message and less than 10 seconds have passed
+		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage) && millisecondsSinceLastMessage < 10000)
 		{
 			playerData.spamCount++;
 			spam = true;
@@ -148,7 +156,7 @@ class PlayerEventHandler implements Listener
 		//filter IP addresses
 		if(!muted && !(event instanceof PlayerCommandPreprocessEvent))
 		{
-			Pattern ipAddressPattern = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.\\d+");
+			Pattern ipAddressPattern = Pattern.compile("\\d{1,4}\\D{1,3}\\d{1,4}\\D{1,3}\\d{1,4}\\D{1,3}\\d{1,4}");
 			Matcher matcher = ipAddressPattern.matcher(event.getMessage());
 			
 			//if it looks like an IP address
@@ -515,6 +523,9 @@ class PlayerEventHandler implements Listener
 		{
 			if(player.getHealth() > 0) player.setHealth(0);  //might already be zero from above, this avoids a double death message
 		}
+		
+		//drop data about this player
+		this.dataStore.clearCachedPlayerData(player.getName());
 	}
 	
 	//determines whether or not a login or logout notification should be silenced, depending on how many there have been in the last minute
@@ -993,8 +1004,8 @@ class PlayerEventHandler implements Listener
 				return;
 			}
 			
-			//if it's stick or arrow, he's investigating a claim			
-			else if(materialInHand == Material.STICK)
+			//if he's investigating a claim			
+			else if(materialInHand == GriefPrevention.instance.config_claims_investigationTool)
 			{
 				//air indicates too far away
 				if(clickedBlockType == Material.AIR)
@@ -1316,7 +1327,7 @@ class PlayerEventHandler implements Listener
 					Claim newClaim = new Claim(
 							new Location(oldClaim.getLesserBoundaryCorner().getWorld(), newx1, newy1, newz1), 
 							new Location(oldClaim.getLesserBoundaryCorner().getWorld(), newx2, newy2, newz2),
-							"", new String[]{}, new String[]{}, new String[]{}, new String[]{});
+							"", new String[]{}, new String[]{}, new String[]{}, new String[]{}, null);
 					
 					//if the new claim is smaller
 					if(!newClaim.contains(oldClaim.getLesserBoundaryCorner(), true, false) || !newClaim.contains(oldClaim.getGreaterBoundaryCorner(), true, false))
@@ -1423,7 +1434,8 @@ class PlayerEventHandler implements Listener
 									playerData.lastShovelLocation.getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, 
 									playerData.lastShovelLocation.getBlockZ(), clickedBlock.getZ(), 
 									"--subdivision--",  //owner name is not used for subdivisions
-									playerData.claimSubdividing);
+									playerData.claimSubdividing,
+									null);
 							
 							//if it didn't succeed, tell the player why
 							if(!result.succeeded)
@@ -1532,7 +1544,7 @@ class PlayerEventHandler implements Listener
 						lastShovelLocation.getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, 
 						lastShovelLocation.getBlockZ(), clickedBlock.getZ(), 
 						playerName,
-						null);
+						null, null);
 				
 				//if it didn't succeed, tell the player why
 				if(!result.succeeded)

@@ -29,11 +29,11 @@ import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
-import org.bukkit.entity.Vehicle;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -45,11 +45,13 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.ExpBottleEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.painting.PaintingBreakByEntityEvent;
 import org.bukkit.event.painting.PaintingBreakEvent;
 import org.bukkit.event.painting.PaintingPlaceEvent;
+import org.bukkit.event.vehicle.VehicleDamageEvent;
 
 //handles events related to entities
 class EntityEventHandler implements Listener
@@ -60,6 +62,26 @@ class EntityEventHandler implements Listener
 	public EntityEventHandler(DataStore dataStore)
 	{
 		this.dataStore = dataStore;
+	}
+	
+	//don't allow endermen to change blocks
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	public void onEntityChangeBLock(EntityChangeBlockEvent event)
+	{
+		if(!GriefPrevention.instance.config_endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN)
+		{
+			event.setCancelled(true);
+		}
+	}
+	
+	//don't allow entities to trample crops
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	public void onEntityInteract(EntityInteractEvent event)
+	{
+		if(!GriefPrevention.instance.config_creaturesTrampleCrops && event.getBlock().getType() == Material.SOIL)
+		{
+			event.setCancelled(true);
+		}
 	}
 	
 	//when an entity explodes...
@@ -147,10 +169,10 @@ class EntityEventHandler implements Listener
 			event.setCancelled(true);
 			return;
 		}
-		
-		//otherwise, just apply the limit on total entities per claim
+
+		//otherwise, just apply the limit on total entities per claim (and no spawning in the wilderness!)
 		Claim claim = this.dataStore.getClaimAt(event.getLocation(), false, null);
-		if(claim != null && claim.allowMoreEntities() != null)
+		if(claim == null || claim.allowMoreEntities() != null)
 		{
 			event.setCancelled(true);
 			return;
@@ -363,8 +385,7 @@ class EntityEventHandler implements Listener
 		if(event instanceof EntityDamageByEntityEvent)
 		{
 			//if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
-			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures) ||
-				(subEvent.getEntity() instanceof Vehicle && GriefPrevention.instance.config_claims_preventTheft))
+			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures))
 			{
 				Claim cachedClaim = null;
 				PlayerData playerData = null;
@@ -402,6 +423,77 @@ class EntityEventHandler implements Listener
 						}						
 					}
 				}
+			}
+		}
+	}
+	
+	//when a vehicle is damaged
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	public void onVehicleDamage (VehicleDamageEvent event)
+	{
+		//all of this is anti theft code
+		if(!GriefPrevention.instance.config_claims_preventTheft) return;		
+		
+		//determine which player is attacking, if any
+		Player attacker = null;
+		Entity damageSource = event.getAttacker();
+		if(damageSource instanceof Player)
+		{
+			attacker = (Player)damageSource;
+		}
+		else if(damageSource instanceof Arrow)
+		{
+			Arrow arrow = (Arrow)damageSource;
+			if(arrow.getShooter() instanceof Player)
+			{
+				attacker = (Player)arrow.getShooter();
+			}
+		}
+		else if(damageSource instanceof ThrownPotion)
+		{
+			ThrownPotion potion = (ThrownPotion)damageSource;
+			if(potion.getShooter() instanceof Player)
+			{
+				attacker = (Player)potion.getShooter();
+			}
+		}
+		
+		//NOTE: vehicles can be pushed around.
+		//so unless precautions are taken by the owner, a resourceful thief might find ways to steal anyway
+		Claim cachedClaim = null;
+		PlayerData playerData = null;
+		if(attacker != null)
+		{
+			playerData = this.dataStore.getPlayerData(attacker.getName());
+			cachedClaim = playerData.lastClaim;
+		}
+		
+		Claim claim = this.dataStore.getClaimAt(event.getVehicle().getLocation(), false, cachedClaim);
+		
+		//if it's claimed
+		if(claim != null)
+		{
+			//if damaged by anything other than a player, cancel the event
+			if(attacker == null)
+			{
+				event.setCancelled(true);
+			}
+			
+			//otherwise the player damaging the entity must have permission
+			else
+			{		
+				String noContainersReason = claim.allowContainers(attacker);
+				if(noContainersReason != null)
+				{
+					event.setCancelled(true);
+					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.NoDamageClaimedEntity, claim.getOwnerName());
+				}
+				
+				//cache claim for later
+				if(playerData != null)
+				{
+					playerData.lastClaim = claim;
+				}						
 			}
 		}
 	}
