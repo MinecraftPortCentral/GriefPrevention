@@ -335,14 +335,11 @@ class EntityEventHandler implements Listener
 		//if the attacker is a player and defender is a player (pvp combat)
 		if(attacker != null && event.getEntity() instanceof Player)
 		{
-			//if pvp is disabled, cancel the event
-			if(!event.getEntity().getWorld().getPVP())
-			{
-				event.setCancelled(true);
-				return;
-			}
-			
 			//FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
+			
+			//doesn't apply when the attacker has the no pvp immunity permission
+			//this rule is here to allow server owners to have a world with no spawn camp protection by assigning permissions based on the player's world
+			if(attacker.hasPermission("griefprevention.nopvpimmunity")) return;
 			
 			Player defender = (Player)(event.getEntity());
 			

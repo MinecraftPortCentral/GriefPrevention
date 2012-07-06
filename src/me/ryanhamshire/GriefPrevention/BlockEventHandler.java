@@ -554,8 +554,8 @@ public class BlockEventHandler implements Listener
 			//if it's growing into a claim
 			if(blockClaim != null)
 			{
-				//if there's no owner for the new tree, or the owner doesn't have permission to build in the claim, don't grow this block
-				if(fromOwner == null  || fromOwner.getPlayer() == null || blockClaim.allowBuild(fromOwner.getPlayer()) != null)
+				//if there's no owner for the new tree, or the owner for the new tree is different from the owner of the claim
+				if(fromOwner == null  || !fromOwner.getName().equals(blockClaim.ownerName))
 				{
 					growEvent.getBlocks().remove(i--);
 				}

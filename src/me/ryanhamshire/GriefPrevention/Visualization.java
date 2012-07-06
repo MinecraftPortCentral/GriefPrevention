@@ -135,7 +135,7 @@ public class Visualization
 		
 		else
 		{
-			cornerMaterial = Material.LAVA;
+			cornerMaterial = Material.GLOWING_REDSTONE_ORE;
 			accentMaterial = Material.NETHERRACK;
 		}
 		

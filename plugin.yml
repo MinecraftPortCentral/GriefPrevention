@@ -1,7 +1,7 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
 softdepend: [Vault, Multiverse-Core]
-version: 4.9
+version: 5.0
 commands:
    abandonclaim:
       description: Deletes a claim.

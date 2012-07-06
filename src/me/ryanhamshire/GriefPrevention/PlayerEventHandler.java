@@ -126,19 +126,11 @@ class PlayerEventHandler implements Listener
 		boolean spam = false;
 		boolean muted = false;
 		
-		//single-character messages will not be sent
-		if(message.length() == 1)
-		{
-			playerData.spamCount++;
-			spam = true;
-			muted = true;
-		}
-		
 		//check message content and timing		
 		long millisecondsSinceLastMessage = (new Date()).getTime() - playerData.lastMessageTimestamp.getTime();
 		
 		//if the message came too close to the last one
-		if(millisecondsSinceLastMessage < 3000)
+		if(millisecondsSinceLastMessage < 2000)
 		{
 			//increment the spam counter
 			playerData.spamCount++;
@@ -209,7 +201,7 @@ class PlayerEventHandler implements Listener
 		if(!player.hasPermission("griefprevention.spam") && spam)
 		{		
 			//anything above level 4 for a player which has received a warning...  kick or if enabled, ban 
-			if(playerData.spamCount > 4 && playerData.spamWarned)
+			if(playerData.spamCount > 8 && playerData.spamWarned)
 			{
 				if(GriefPrevention.instance.config_spam_banOffenders)
 				{
@@ -913,6 +905,22 @@ class PlayerEventHandler implements Listener
 			}
 		}
 		
+		//otherwise apply rules for doors, if configured that way
+		else if(GriefPrevention.instance.config_claims_lockAllDoors && (clickedBlockType == Material.WOOD_DOOR || clickedBlockType == Material.WOODEN_DOOR || clickedBlockType == Material.TRAP_DOOR || clickedBlockType == Material.FENCE_GATE))
+		{
+			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
+			if(claim != null)
+			{
+				String noAccessReason = claim.allowAccess(player);
+				if(noAccessReason != null)
+				{
+					event.setCancelled(true);
+					GriefPrevention.sendMessage(player, TextMode.Err, noAccessReason);
+					return;
+				}
+			}	
+		}
+		
 		//otherwise apply rules for buttons and switches
 		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.LEVER))
 		{
@@ -937,8 +945,8 @@ class PlayerEventHandler implements Listener
 			return;
 		}
 		
-		//apply rule for note blocks
-		else if(clickedBlockType == Material.NOTE_BLOCK)
+		//apply rule for note blocks and repeaters
+		else if(clickedBlockType == Material.NOTE_BLOCK || clickedBlockType == Material.DIODE_BLOCK_ON || clickedBlockType == Material.DIODE_BLOCK_OFF)
 		{
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
 			if(claim != null)

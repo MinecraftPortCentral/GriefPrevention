@@ -66,6 +66,7 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_claims_preventTheft;						//whether containers and crafting blocks are protectable
 	public boolean config_claims_protectCreatures;					//whether claimed animals may be injured by players without permission
 	public boolean config_claims_preventButtonsSwitches;			//whether buttons and switches are protectable
+	public boolean config_claims_lockAllDoors;						//whether wooden doors, trap doors, fence gates, etc require permission to use
 	
 	public int config_claims_initialBlocks;							//the number of claim blocks a new player starts with
 	public int config_claims_blocksAccruedPerHour;					//how many additional blocks players get each hour of play (can be zero)
@@ -214,7 +215,8 @@ public class GriefPrevention extends JavaPlugin
 		
 		this.config_claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
 		this.config_claims_protectCreatures = config.getBoolean("GriefPrevention.Claims.ProtectCreatures", true);
-		this.config_claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);		
+		this.config_claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);
+		this.config_claims_lockAllDoors = config.getBoolean("GriefPrevention.Claims.LockAllDoors", false);
 		this.config_claims_initialBlocks = config.getInt("GriefPrevention.Claims.InitialBlocks", 100);
 		this.config_claims_blocksAccruedPerHour = config.getInt("GriefPrevention.Claims.BlocksAccruedPerHour", 100);
 		this.config_claims_maxAccruedBlocks = config.getInt("GriefPrevention.Claims.MaxAccruedBlocks", 80000);
@@ -351,6 +353,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Claims.PreventTheft", this.config_claims_preventTheft);
 		config.set("GriefPrevention.Claims.ProtectCreatures", this.config_claims_protectCreatures);
 		config.set("GriefPrevention.Claims.PreventButtonsSwitches", this.config_claims_preventButtonsSwitches);
+		config.set("GriefPrevention.Claims.LockAllDoors", this.config_claims_lockAllDoors);
 		config.set("GriefPrevention.Claims.InitialBlocks", this.config_claims_initialBlocks);
 		config.set("GriefPrevention.Claims.BlocksAccruedPerHour", this.config_claims_blocksAccruedPerHour);
 		config.set("GriefPrevention.Claims.MaxAccruedBlocks", this.config_claims_maxAccruedBlocks);
@@ -948,6 +951,11 @@ public class GriefPrevention extends JavaPlugin
 					return false;  //causes usage to be displayed
 				}
 				
+				if(blockCount <= 0)
+				{
+					return false;
+				}
+				
 				//correct block count to max allowed
 				if(blockCount > maxPurchasable)
 				{
@@ -1013,6 +1021,11 @@ public class GriefPrevention extends JavaPlugin
 			catch(NumberFormatException numberFormatException)
 			{
 				return false;  //causes usage to be displayed
+			}
+			
+			if(blockCount <= 0)
+			{
+				return false;
 			}
 			
 			//if he doesn't have enough blocks, tell him so
@@ -1686,6 +1699,9 @@ public class GriefPrevention extends JavaPlugin
 		
 		//if anti spawn camping feature is not enabled, do nothing
 		if(!this.config_pvp_protectFreshSpawns) return;
+		
+		//if the player has the damage any player permission enabled, do nothing
+		if(player.hasPermission("griefprevention.nopvpimmunity")) return;
 		
 		//check inventory for well, anything
 		PlayerInventory inventory = player.getInventory();
