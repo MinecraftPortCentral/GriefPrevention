@@ -79,9 +79,12 @@ public class GriefPrevention extends JavaPlugin
 	public int config_claims_claimsExtendIntoGroundDistance;		//how far below the shoveled block a new claim will reach
 	public int config_claims_minSize;								//minimum width and height for non-admin claims
 	
+	public boolean config_claims_noBuildOutsideClaims;				//whether players can build in survival worlds outside their claimed areas
+	
 	public int config_claims_trappedCooldownHours;					//number of hours between uses of the /trapped command
 	
 	public Material config_claims_investigationTool;				//which material will be used to investigate claims with a right click
+	public Material config_claims_modificationTool;	  				//which material will be used to create/resize claims with a right click
 	
 	public ArrayList<World> config_siege_enabledWorlds;				//whether or not /siege is enabled on this server
 	public ArrayList<Material> config_siege_blocks;					//which blocks will be breakable in siege mode
@@ -227,6 +230,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", 0);
 		this.config_claims_expirationDays = config.getInt("GriefPrevention.Claims.IdleLimitDays", 0);
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
+		this.config_claims_noBuildOutsideClaims = config.getBoolean("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", false);
 		
 		this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
 		this.config_spam_loginCooldownMinutes = config.getInt("GriefPrevention.Spam.LoginCooldownMinutes", 2);
@@ -274,6 +278,20 @@ public class GriefPrevention extends JavaPlugin
 		{
 			GriefPrevention.AddLogEntry("ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
 			this.config_claims_investigationTool = Material.STICK;
+		}
+		
+		//default for claim creation/modification tool
+		String modificationToolMaterialName = Material.GOLD_SPADE.name();
+		
+		//get modification tool from config
+		modificationToolMaterialName = config.getString("GriefPrevention.Claims.ModificationTool", modificationToolMaterialName);
+		
+		//validate modification tool
+		this.config_claims_modificationTool = Material.getMaterial(modificationToolMaterialName);
+		if(this.config_claims_modificationTool == null)
+		{
+			GriefPrevention.AddLogEntry("ERROR: Material " + modificationToolMaterialName + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
+			this.config_claims_modificationTool = Material.GOLD_SPADE;
 		}
 		
 		//default for siege worlds list
@@ -365,6 +383,8 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Claims.IdleLimitDays", this.config_claims_expirationDays);
 		config.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
 		config.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
+		config.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
+		config.set("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", this.config_claims_noBuildOutsideClaims);		
 		
 		config.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
 		config.set("GriefPrevention.Spam.LoginCooldownMinutes", this.config_spam_loginCooldownMinutes);
@@ -421,7 +441,7 @@ public class GriefPrevention extends JavaPlugin
 		}
 		
 		//when datastore initializes, it loads player and claim data, and posts some stats to the log
-		this.dataStore = new DataStore();
+		this.dataStore = new FlatFileDataStore();
 		
 		//unless claim block accrual is disabled, start the recurring per 5 minute event to give claim blocks to online players
 		//20L ~ 1 second
@@ -1685,6 +1705,16 @@ public class GriefPrevention extends JavaPlugin
 
 	public void onDisable()
 	{ 
+		//save data for any online players
+		Player [] players = this.getServer().getOnlinePlayers();
+		for(int i = 0; i < players.length; i++)
+		{
+			Player player = players[i];
+			String playerName = player.getName();
+			PlayerData playerData = this.dataStore.getPlayerData(playerName);
+			this.dataStore.savePlayerData(playerName, playerData);
+		}
+		
 		AddLogEntry("GriefPrevention disabled.");
 	}
 	
@@ -2001,17 +2031,25 @@ public class GriefPrevention extends JavaPlugin
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 		
+		//exception: administrators in ignore claims mode
+		if(playerData.ignoreClaims) return null;
+		
 		//wilderness rules
 		if(claim == null)
 		{
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				//exception: administrators in ignore claims mode
-				if(playerData.ignoreClaims) return null;
-				
-				return "You can't build here.  Use the golden shovel to claim some land first.";
+				return  this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
+						
 			}
+			
+			//no building in survival wilderness when that is configured
+			else if(this.config_claims_noBuildOutsideClaims && this.config_claims_enabledWorlds.contains(location.getWorld()))
+			{
+				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsDemoAdvertisement);
+			}
+			
 			else
 			{
 				//but it's fine in survival mode
@@ -2033,16 +2071,21 @@ public class GriefPrevention extends JavaPlugin
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 		
+		//exception: administrators in ignore claims mode
+		if(playerData.ignoreClaims) return null;
+		
 		//wilderness rules
 		if(claim == null)
 		{
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				//exception: administrators in ignore claims mode
-				if(playerData.ignoreClaims) return null;
-				
-				return "You can only build where you have claimed land.  To claim, watch this: http://tinyurl.com/c7bajb8";
+				return  this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
+			}
+			
+			else if(this.config_claims_noBuildOutsideClaims && this.config_claims_enabledWorlds.contains(location.getWorld()))
+			{
+				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsDemoAdvertisement);
 			}
 			
 			//but it's fine in survival mode

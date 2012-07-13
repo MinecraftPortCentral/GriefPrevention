@@ -297,7 +297,7 @@ public class BlockEventHandler implements Listener
 					
 					//show the player the protected area
 					Claim newClaim = this.dataStore.getClaimAt(block.getLocation(), false, null);
-					Visualization visualization = Visualization.FromClaim(newClaim, block.getY(), VisualizationType.Claim);
+					Visualization visualization = Visualization.FromClaim(newClaim, block.getY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 				}
 				

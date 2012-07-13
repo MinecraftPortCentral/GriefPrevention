@@ -56,7 +56,9 @@ class DeliverClaimBlocksTask implements Runnable
 						playerData.accruedClaimBlocks = GriefPrevention.instance.config_claims_maxAccruedBlocks; 
 					}
 					
-					dataStore.savePlayerData(player.getName(), playerData);
+					//intentionally NOT saving data here to reduce overall secondary storage access frequency
+					//many other operations will cause this players data to save, including his eventual logout
+					//dataStore.savePlayerData(player.getName(), playerData);
 				}
 			}
 			catch(Exception e) { }

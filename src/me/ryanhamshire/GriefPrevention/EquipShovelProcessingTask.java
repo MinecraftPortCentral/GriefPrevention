@@ -18,7 +18,6 @@
  
 package me.ryanhamshire.GriefPrevention;
 
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 //tells a player about how many claim blocks he has, etc
@@ -41,7 +40,7 @@ class EquipShovelProcessingTask implements Runnable
 		if(!player.isOnline()) return;
 		
 		//if he's not holding the golden shovel anymore, do nothing
-		if(player.getItemInHand().getType() != Material.GOLD_SPADE) return;
+		if(player.getItemInHand().getType() != GriefPrevention.instance.config_claims_modificationTool) return;
 		
 		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getName());
 		

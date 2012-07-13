@@ -118,6 +118,9 @@ public class Claim
 		//don't do this for administrative claims
 		if(this.isAdminClaim()) return;
 		
+		//don't do it for very large claims
+		if(this.getArea() > 10000) return;
+		
 		Location lesser = this.getLesserBoundaryCorner();
 		Location greater = this.getGreaterBoundaryCorner();
 
@@ -154,6 +157,9 @@ public class Claim
 		Location lesser = this.getLesserBoundaryCorner();
 		Location greater = this.getGreaterBoundaryCorner();
 
+		//don't bother for very large claims, too expensive
+		if(this.getArea() > 10000) return false;
+		
 		int seaLevel = 0;  //clean up all fluids in the end
 		
 		//respect sea level in normal worlds
@@ -694,6 +700,9 @@ public class Claim
 		
 		//this rule only applies to creative mode worlds
 		if(!GriefPrevention.instance.creativeRulesApply(this.getLesserBoundaryCorner())) return null;
+		
+		//admin claims aren't restricted
+		if(this.isAdminClaim()) return null;
 		
 		//determine maximum allowable entity count, based on claim size
 		int maxEntities = this.getArea() / 50;		

@@ -137,8 +137,8 @@ class PlayerEventHandler implements Listener
 			spam = true;
 		}
 		
-		//if it's very similar to the last message and less than 10 seconds have passed
-		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage) && millisecondsSinceLastMessage < 10000)
+		//if it's very similar to the last message and less than 15 seconds have passed
+		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage) && millisecondsSinceLastMessage < 15000)
 		{
 			playerData.spamCount++;
 			spam = true;
@@ -197,10 +197,18 @@ class PlayerEventHandler implements Listener
 			}
 		}
 		
+		//very short messages close together are spam
+		if(!muted && message.length() < 5 && millisecondsSinceLastMessage < 5000)
+		{
+			spam = true;
+			if(playerData.spamCount > 4) muted = true;
+			playerData.spamCount++;
+		}
+		
 		//if the message was determined to be a spam, consider taking action		
 		if(!player.hasPermission("griefprevention.spam") && spam)
 		{		
-			//anything above level 4 for a player which has received a warning...  kick or if enabled, ban 
+			//anything above level 8 for a player which has received a warning...  kick or if enabled, ban 
 			if(playerData.spamCount > 8 && playerData.spamWarned)
 			{
 				if(GriefPrevention.instance.config_spam_banOffenders)
@@ -463,8 +471,11 @@ class PlayerEventHandler implements Listener
 		playerData.lastLogin = new Date();
 		this.dataStore.savePlayerData(playerName, playerData);
 		
-		//check inventory, may need pvp protection
-		GriefPrevention.instance.checkPvpProtectionNeeded(event.getPlayer());
+		//if player has never played on the server before, may need pvp protection
+		if(!event.getPlayer().hasPlayedBefore())
+		{
+			GriefPrevention.instance.checkPvpProtectionNeeded(event.getPlayer());
+		}
 		
 		//silence notifications when they're coming too fast
 		if(event.getJoinMessage() != null && this.shouldSilenceNotification())
@@ -492,6 +503,9 @@ class PlayerEventHandler implements Listener
 		{
 			event.setQuitMessage(null);
 		}
+		
+		//make sure his data is all saved - he might have accrued some claim blocks while playing that were not saved immediately
+		this.dataStore.savePlayerData(player.getName(), playerData);		
 		
 		this.onPlayerDisconnect(event.getPlayer(), event.getQuitMessage());
 	}
@@ -717,7 +731,7 @@ class PlayerEventHandler implements Listener
 		
 		//if he's switching to the golden shovel
 		ItemStack newItemStack = player.getInventory().getItem(event.getNewSlot());
-		if(newItemStack != null && newItemStack.getType() == Material.GOLD_SPADE)
+		if(newItemStack != null && newItemStack.getType() == GriefPrevention.instance.config_claims_modificationTool)
 		{
 			EquipShovelProcessingTask task = new EquipShovelProcessingTask(player);
 			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 15L);  //15L is approx. 3/4 of a second
@@ -1037,7 +1051,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
 					
 					//visualize boundary
-					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.Claim);
+					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 				}
 				
@@ -1045,7 +1059,7 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//if it's a golden shovel
-			else if(materialInHand != Material.GOLD_SPADE) return;
+			else if(materialInHand != GriefPrevention.instance.config_claims_modificationTool) return;
 			
 			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 			
@@ -1074,7 +1088,7 @@ class PlayerEventHandler implements Listener
 				if(claim != null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockClaimed, claim.getOwnerName());
-					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.ErrorClaim);
+					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					
 					return;
@@ -1359,7 +1373,7 @@ class PlayerEventHandler implements Listener
 				{
 					//inform and show the player
 					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ClaimResizeSuccess, String.valueOf(playerData.getRemainingClaimBlocks()));
-					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim);
+					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					
 					//if resizing someone else's claim, make a log entry
@@ -1378,7 +1392,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlap);
 					
 					//show the player the conflicting claim
-					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim);
+					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
 					Visualization.Apply(player, visualization);
 				}
 				
@@ -1450,7 +1464,7 @@ class PlayerEventHandler implements Listener
 							{
 								GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateSubdivisionOverlap);
 																				
-								Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim);
+								Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
 								Visualization.Apply(player, visualization);
 								
 								return;
@@ -1460,7 +1474,7 @@ class PlayerEventHandler implements Listener
 							else
 							{					
 								GriefPrevention.sendMessage(player, TextMode.Success, Messages.SubdivisionSuccess);
-								Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim);
+								Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 								Visualization.Apply(player, visualization);
 								playerData.lastShovelLocation = null;
 								playerData.claimSubdividing = null;
@@ -1473,7 +1487,7 @@ class PlayerEventHandler implements Listener
 					else
 					{						
 						GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlap);
-						Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.Claim);
+						Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 						Visualization.Apply(player, visualization);
 					}
 				}
@@ -1482,7 +1496,7 @@ class PlayerEventHandler implements Listener
 				else
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapOtherPlayer, claim.getOwnerName());
-					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.ErrorClaim);
+					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
 					Visualization.Apply(player, visualization);						
 				}
 				
@@ -1559,7 +1573,7 @@ class PlayerEventHandler implements Listener
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapShort);
 					
-					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim);
+					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					
 					return;
@@ -1569,7 +1583,7 @@ class PlayerEventHandler implements Listener
 				else
 				{					
 					GriefPrevention.sendMessage(player, TextMode.Success, Messages.CreateClaimSuccess);
-					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim);
+					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					playerData.lastShovelLocation = null;
 				}

@@ -77,12 +77,12 @@ public class Visualization
 	
 	//convenience method to build a visualization from a claim
 	//visualizationType determines the style (gold blocks, silver, red, diamond, etc)
-	public static Visualization FromClaim(Claim claim, int height, VisualizationType visualizationType)
+	public static Visualization FromClaim(Claim claim, int height, VisualizationType visualizationType, Location locality)
 	{
 		//visualize only top level claims
 		if(claim.parent != null)
 		{
-			return FromClaim(claim.parent, height, visualizationType);
+			return FromClaim(claim.parent, height, visualizationType, locality);
 		}
 		
 		Visualization visualization = new Visualization();
@@ -90,18 +90,19 @@ public class Visualization
 		//add subdivisions first
 		for(int i = 0; i < claim.children.size(); i++)
 		{
-			visualization.addClaimElements(claim.children.get(i), height, VisualizationType.Subdivision);
+			visualization.addClaimElements(claim.children.get(i), height, VisualizationType.Subdivision, locality);
 		}
 		
 		//add top level last so that it takes precedence (it shows on top when the child claim boundaries overlap with its boundaries)
-		visualization.addClaimElements(claim, height, visualizationType);
+		visualization.addClaimElements(claim, height, visualizationType, locality);
 		
 		return visualization;
 	}
 	
 	//adds a claim's visualization to the current visualization
 	//handy for combining several visualizations together, as when visualization a top level claim with several subdivisions inside
-	private void addClaimElements(Claim claim, int height, VisualizationType visualizationType)
+	//locality is a performance consideration.  only create visualization blocks for around 100 blocks of the locality
+	private void addClaimElements(Claim claim, int height, VisualizationType visualizationType, Location locality)
 	{
 		Location smallXsmallZ = claim.getLesserBoundaryCorner();
 		Location bigXbigZ = claim.getGreaterBoundaryCorner();
@@ -159,28 +160,38 @@ public class Visualization
 		this.elements.add(new VisualizationElement(getVisibleLocation(world, smallx + 1, height, bigz), accentMaterial, (byte)0));
 		this.elements.add(new VisualizationElement(getVisibleLocation(world, smallx, height, bigz - 1), accentMaterial, (byte)0));
 		
+		//locality
+		int minx = locality.getBlockX() - 100;
+		int minz = locality.getBlockZ() - 100;
+		int maxx = locality.getBlockX() + 100;
+		int maxz = locality.getBlockZ() + 100;
+		
 		//top line		
 		for(int x = smallx + 10; x < bigx - 10; x += 10)
 		{
-			this.elements.add(new VisualizationElement(getVisibleLocation(world, x, height, bigz), accentMaterial, (byte)0));
+			if(x > minx && x < maxx)
+				this.elements.add(new VisualizationElement(getVisibleLocation(world, x, height, bigz), accentMaterial, (byte)0));
 		}
 		
 		//bottom line
 		for(int x = smallx + 10; x < bigx - 10; x += 10)
 		{
-			this.elements.add(new VisualizationElement(getVisibleLocation(world, x, height, smallz), accentMaterial, (byte)0));
+			if(x > minx && x < maxx)
+				this.elements.add(new VisualizationElement(getVisibleLocation(world, x, height, smallz), accentMaterial, (byte)0));
 		}
 		
 		//left line
 		for(int z = smallz + 10; z < bigz - 10; z += 10)
 		{
-			this.elements.add(new VisualizationElement(getVisibleLocation(world, smallx, height, z), accentMaterial, (byte)0));
+			if(z > minz && z < maxz)
+				this.elements.add(new VisualizationElement(getVisibleLocation(world, smallx, height, z), accentMaterial, (byte)0));
 		}
 		
 		//right line
 		for(int z = smallz + 10; z < bigz - 10; z += 10)
 		{
-			this.elements.add(new VisualizationElement(getVisibleLocation(world, bigx, height, z), accentMaterial, (byte)0));
+			if(z > minz && z < maxz)
+				this.elements.add(new VisualizationElement(getVisibleLocation(world, bigx, height, z), accentMaterial, (byte)0));
 		}
 	}
 	
