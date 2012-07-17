@@ -366,6 +366,11 @@ public class GriefPrevention extends JavaPlugin
 			}
 		}
 		
+		//optional database settings
+		String databaseUrl = config.getString("GriefPrevention.Database.URL", "");
+		String databaseUserName = config.getString("GriefPrevention.Database.UserName", "");
+		String databasePassword = config.getString("GriefPrevention.Database.Password", "");
+		
 		config.set("GriefPrevention.Claims.Worlds", claimsEnabledWorldNames);
 		config.set("GriefPrevention.Claims.CreativeRulesWorlds", creativeClaimsEnabledWorldNames);
 		config.set("GriefPrevention.Claims.PreventTheft", this.config_claims_preventTheft);
@@ -423,6 +428,10 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.EndermenMoveBlocks", this.config_endermenMoveBlocks);
 		config.set("GriefPrevention.CreaturesTrampleCrops", this.config_creaturesTrampleCrops);
 		
+		config.set("GriefPrevention.Database.URL", databaseUrl);
+		config.set("GriefPrevention.Database.UserName", databaseUserName);
+		config.set("GriefPrevention.Database.Password", databasePassword);		
+		
 		try
 		{
 			config.save(DataStore.configFilePath);
@@ -441,7 +450,45 @@ public class GriefPrevention extends JavaPlugin
 		}
 		
 		//when datastore initializes, it loads player and claim data, and posts some stats to the log
-		this.dataStore = new FlatFileDataStore();
+		if(databaseUrl.length() > 0)
+		{
+			try
+			{
+				DatabaseDataStore databaseStore = new DatabaseDataStore(databaseUrl, databaseUserName, databasePassword);
+			
+				if(FlatFileDataStore.hasData())
+				{
+					GriefPrevention.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
+					FlatFileDataStore flatFileStore = new FlatFileDataStore();
+					flatFileStore.migrateData(databaseStore);
+					GriefPrevention.AddLogEntry("Data migration process complete.  Reloading data from the database...");
+					databaseStore.close();
+					databaseStore = new DatabaseDataStore(databaseUrl, databaseUserName, databasePassword);
+				}
+				
+				this.dataStore = databaseStore;
+			}
+			catch(Exception e)
+			{
+				GriefPrevention.AddLogEntry("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
+				return;
+			}			
+		}
+		
+		//if not using the database because it's not configured or because there was a problem, use the file system to store data
+		//this is the preferred method, as it's simpler than the database scenario
+		if(this.dataStore == null)
+		{
+			try
+			{
+				this.dataStore = new FlatFileDataStore();
+			}
+			catch(Exception e)
+			{
+				GriefPrevention.AddLogEntry("Unable to initialize the file system data store.  Details:");
+				GriefPrevention.AddLogEntry(e.getMessage());
+			}
+		}
 		
 		//unless claim block accrual is disabled, start the recurring per 5 minute event to give claim blocks to online players
 		//20L ~ 1 second
@@ -1714,6 +1761,8 @@ public class GriefPrevention extends JavaPlugin
 			PlayerData playerData = this.dataStore.getPlayerData(playerName);
 			this.dataStore.savePlayerData(playerName, playerData);
 		}
+		
+		this.dataStore.close();
 		
 		AddLogEntry("GriefPrevention disabled.");
 	}

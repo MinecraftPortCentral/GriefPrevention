@@ -42,13 +42,13 @@ public class FlatFileDataStore extends DataStore
 	}
 	
 	//initialization!
-	FlatFileDataStore()
+	FlatFileDataStore() throws Exception
 	{
-		super();
+		this.initialize();
 	}
 	
 	@Override
-	void initialize()
+	void initialize() throws Exception
 	{
 		//ensure data folders exist
 		new File(playerDataFolderPath).mkdirs();
@@ -226,8 +226,6 @@ public class FlatFileDataStore extends DataStore
 						{
 							Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, "--subdivision--", builderNames, containerNames, accessorNames, managerNames, null);
 							
-							//make sure there are no other subdivisions overlapping this one
-							
 							subdivision.modifiedDate = new Date(files[i].lastModified());
 							subdivision.parent = topLevelClaim;
 							topLevelClaim.children.add(subdivision);
@@ -254,6 +252,8 @@ public class FlatFileDataStore extends DataStore
 				catch(IOException exception) {}
 			}
 		}
+		
+		super.initialize();
 	}
 	
 	@Override
@@ -571,4 +571,73 @@ public class FlatFileDataStore extends DataStore
 		}
 		catch(IOException exception){}		
 	}
+	
+	void migrateData(DatabaseDataStore databaseStore)
+	{
+		//migrate claims
+		for(int i = 0; i < this.claims.size(); i++)
+		{
+			Claim claim = this.claims.get(i);
+			databaseStore.addClaim(claim);
+		}
+		
+		//migrate groups
+		Iterator<String> groupNamesEnumerator = this.permissionToBonusBlocksMap.keySet().iterator();
+		while(groupNamesEnumerator.hasNext())
+		{
+			String groupName = groupNamesEnumerator.next();
+			databaseStore.saveGroupBonusBlocks(groupName, this.permissionToBonusBlocksMap.get(groupName));
+		}
+		
+		//migrate players
+		File playerDataFolder = new File(playerDataFolderPath);
+		File [] files = playerDataFolder.listFiles();
+		for(int i = 0; i < files.length; i++)
+		{
+			File file = files[i];
+			if(!file.isFile()) continue;  //avoids folders
+			
+			//all group data files start with a dollar sign.  ignoring those, already handled above
+			if(file.getName().startsWith("$")) continue;
+			
+			String playerName = file.getName();
+			databaseStore.savePlayerData(playerName, this.getPlayerData(playerName));
+			this.clearCachedPlayerData(playerName);
+		}
+		
+		//migrate next claim ID
+		if(this.nextClaimID > databaseStore.nextClaimID)
+		{
+			databaseStore.setNextClaimID(this.nextClaimID);
+		}
+		
+		//rename player and claim data folders so the migration won't run again
+		int i = 0;
+		File claimsBackupFolder;
+		File playersBackupFolder;
+		do
+		{
+			String claimsFolderBackupPath = claimDataFolderPath;
+			if(i > 0) claimsFolderBackupPath += String.valueOf(i);
+			claimsBackupFolder = new File(claimsFolderBackupPath);
+			
+			String playersFolderBackupPath = playerDataFolderPath;
+			if(i > 0) playersFolderBackupPath += String.valueOf(i);
+			playersBackupFolder = new File(playersFolderBackupPath);
+			i++;
+		} while(claimsBackupFolder.exists() || playersBackupFolder.exists());
+		
+		File claimsFolder = new File(claimDataFolderPath);
+		File playersFolder = new File(playerDataFolderPath);
+		
+		claimsFolder.renameTo(claimsBackupFolder);
+		playersFolder.renameTo(playersBackupFolder);			
+		
+		GriefPrevention.AddLogEntry("Backed your file system data up to " + claimsBackupFolder.getName() + " and " + playersBackupFolder.getName() + ".");
+		GriefPrevention.AddLogEntry("If your migration encountered any problems, you can restore those data with a quick copy/paste.");
+		GriefPrevention.AddLogEntry("When you're satisfied that all your data have been safely migrated, consider deleting those folders.");
+	}
+
+	@Override
+	void close() { }
 }

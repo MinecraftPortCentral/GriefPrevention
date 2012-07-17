@@ -51,12 +51,8 @@ public abstract class DataStore
 	final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
 	
 	//initialization!
-	abstract void initialize();
-	
-	DataStore()
+	void initialize() throws Exception
 	{
-		this.initialize();
-		
 		GriefPrevention.AddLogEntry(this.claims.size() + " total claims loaded.");
 		
 		//make a list of players who own claims
@@ -328,6 +324,16 @@ public abstract class DataStore
 		{
 			playerData = this.getPlayerDataFromStorage(playerName);
 			playerData.playerName = playerName;
+			
+			//find all the claims belonging to this player and note them for future reference
+			for(int i = 0; i < this.claims.size(); i++)
+			{
+				Claim claim = this.claims.get(i);
+				if(claim.ownerName.equals(playerName))
+				{
+					playerData.claims.add(claim);
+				}
+			}
 			
 			//shove that new player data into the hash map cache
 			this.playerNameToPlayerDataMap.put(playerName, playerData);
@@ -1047,7 +1053,8 @@ public abstract class DataStore
 			message = message.replace("{" + i + "}", param);
 		}
 		
-		return message;
-		
+		return message;		
 	}
+	
+	abstract void close();	
 }
