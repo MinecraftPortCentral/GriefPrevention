@@ -1,41 +1,50 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
-softdepend: [Vault, Multiverse-Core]
-version: 5.2
+softdepend: [Vault, Multiverse-Core, My Worlds]
+version: 5.3
 commands:
    abandonclaim:
       description: Deletes a claim.
       usage: /AbandonClaim
+      permission: griefprevention.claims
    abandontoplevelclaim:
       description: Deletes a claim and all its subdivisions.
       usage: /AbandonTopLevelClaim
+      permission: griefprevention.claims
    abandonallclaims:
       description: Deletes ALL your claims.
       usage: /AbandonAllClaims
+      permission: griefprevention.claims
    trust:
       description: Grants a player full access to your claim(s).
       usage: /Trust <player>  Graants a player permission to build.  See also /UnTrust, /ContainerTrust, /AccessTrust, and /PermissionTrust.
       aliases: t 
+      permission: griefprevention.claims
    untrust:
       description: Revokes a player's access to your claim(s).
       usage: /UnTrust <player>
       aliases: ut
+      permission: griefprevention.claims
    containertrust:
       description: Grants a player access to your containers.
       usage: /ContainerTrust <player>.  Grants a player access to your inventory, bed, and buttons/levers.
       aliases: ct
+      permission: griefprevention.claims
    accesstrust:
       description: Grants a player entry to your claim(s) and use of your bed.
       usage: /AccessTrust <player>.  Grants a player access to your bed, buttons, and levers.
       aliases: at
+      permission: griefprevention.claims
    permissiontrust:
       description: Grants a player permission to grant his level of permission to others.
       usage: /PermissionTrust <player>.  Permits a player to share his permission level with others.
       aliases: pt
+      permission: griefprevention.claims
    subdivideclaims:
       description: Switches the shovel tool to subdivision mode, used to subdivide your claims.
       usage: /SubdivideClaims
       aliases: sc
+      permission: griefprevention.claims
    adjustbonusclaimblocks:
       description: Adds or subtracts bonus claim blocks for a player.
       usage: /AdjustBonusClaimBlocks <player> <amount>
@@ -74,20 +83,24 @@ commands:
       description: Switches the shovel tool back to basic claims mode.
       usage: /BasicClaims
       aliases: bc
+      permission: griefprevention.claims
    buyclaimblocks:
       description: Purchases additional claim blocks with server money.  Doesn't work on servers without a Vault-compatible economy plugin.
       usage: /BuyClaimBlocks <numberOfBlocks>
-      aliases: buyclaim     
+      aliases: buyclaim   
+      permission: griefprevention.claims  
    sellclaimblocks:
       description: Sells your claim blocks for server money.  Doesn't work on servers without a Vault-compatible economy plugin.
       usage: /SellClaimBlocks <numberOfBlocks>
       aliases: sellclaim
+      permission: griefprevention.claims
    trapped:
       description: Ejects you to nearby unclaimed land.  Has a substantial cooldown period.
       usage: /Trapped
    trustlist:
       description: Lists permissions for the claim you're standing in.
       usage: /TrustList
+      permission: griefprevention.claims
    siege:
       description: Initiates a siege versus another player.
       usage: /Siege <playerName>
@@ -155,3 +168,6 @@ permissions:
     griefprevention.deathblow:
         description: Grants access to /DeathBlow.
         default: op
+    griefprevention.claims:
+        description: Grants access to claim-related slash commands.
+        default: true

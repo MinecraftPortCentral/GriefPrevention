@@ -297,7 +297,7 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when an entity is damaged
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onEntityDamage (EntityDamageEvent event)
 	{
 		//only actually interested in entities damaging entities (ignoring environmental damage)

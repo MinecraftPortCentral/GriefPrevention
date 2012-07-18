@@ -704,6 +704,9 @@ public class Claim
 		//admin claims aren't restricted
 		if(this.isAdminClaim()) return null;
 		
+		//don't apply this rule to very large claims
+		if(this.getArea() > 10000) return null;
+		
 		//determine maximum allowable entity count, based on claim size
 		int maxEntities = this.getArea() / 50;		
 		if(maxEntities == 0) return GriefPrevention.instance.dataStore.getMessage(Messages.ClaimTooSmallForEntities);

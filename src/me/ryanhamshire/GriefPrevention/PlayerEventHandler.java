@@ -308,22 +308,20 @@ class PlayerEventHandler implements Listener
 		return false;
 	}
 
-	//when a player uses a slash command, monitor for spam
+	//when a player uses a slash command...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	void onPlayerCommandPreprocess (PlayerCommandPreprocessEvent event)
 	{
-		if(!GriefPrevention.instance.config_spam_enabled) return;
-		
-		//if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
 		String [] args = event.getMessage().split(" ");
-		if(GriefPrevention.instance.config_spam_monitorSlashCommands.contains(args[0])) this.onPlayerChat(event);
 		
-		if(GriefPrevention.instance.config_eavesdrop && args[0].equalsIgnoreCase("/tell") && !event.getPlayer().hasPermission("griefprevention.eavesdrop") && args.length > 2)
+		//if eavesdrop enabled, eavesdrop
+		String command = args[0].toLowerCase();
+		if(GriefPrevention.instance.config_eavesdrop && GriefPrevention.instance.config_eavesdrop_whisperCommands.contains(command) && !event.getPlayer().hasPermission("griefprevention.eavesdrop") && args.length > 1)
 		{			
 			StringBuilder logMessageBuilder = new StringBuilder();
-			logMessageBuilder.append("[").append(event.getPlayer().getName()).append(" > ").append(args[1]).append("] ");			
+			logMessageBuilder.append("[[").append(event.getPlayer().getName()).append("]] ");
 			
-			for(int i = 2; i < args.length; i++)
+			for(int i = 1; i < args.length; i++)
 			{
 				logMessageBuilder.append(args[i]).append(" ");
 			}
@@ -342,6 +340,12 @@ class PlayerEventHandler implements Listener
 				}
 			}
 		}
+		
+		//if anti spam enabled, check for spam
+		if(!GriefPrevention.instance.config_spam_enabled) return;
+		
+		//if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
+		if(GriefPrevention.instance.config_spam_monitorSlashCommands.contains(args[0])) this.onPlayerChat(event);		
 	}
 	
 	//when a player attempts to join the server...
@@ -878,7 +882,8 @@ class PlayerEventHandler implements Listener
 						clickedBlockType == Material.BREWING_STAND || 
 						clickedBlockType == Material.WORKBENCH || 
 						clickedBlockType == Material.JUKEBOX || 
-						clickedBlockType == Material.ENCHANTMENT_TABLE)))
+						clickedBlockType == Material.ENCHANTMENT_TABLE ||
+						GriefPrevention.instance.config_mods_containerTrustIds.contains(clickedBlock.getTypeId()))))
 		{			
 			//block container use while under siege, so players can't hide items from attackers
 			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
@@ -936,7 +941,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise apply rules for buttons and switches
-		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.LEVER))
+		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.contains(clickedBlock.getTypeId())))
 		{
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
 			if(claim != null)
