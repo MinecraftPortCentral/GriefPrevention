@@ -418,16 +418,6 @@ public class FlatFileDataStore extends DataStore
 				//String claimsString = inStream.readLine();
 				inStream.readLine();
 				
-				//find all the claims belonging to this player and note them for future reference
-				for(int i = 0; i < this.claims.size(); i++)
-				{
-					Claim claim = this.claims.get(i);
-					if(claim.ownerName.equals(playerName))
-					{
-						playerData.claims.add(claim);
-					}
-				}
-				
 				inStream.close();
 			}
 				

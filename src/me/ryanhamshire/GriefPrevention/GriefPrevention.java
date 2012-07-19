@@ -1253,6 +1253,35 @@ public class GriefPrevention extends JavaPlugin
 			return true;
 		}
 		
+		//claimslist <player>
+		else if(cmd.getName().equalsIgnoreCase("claimslist"))
+		{
+			//requires exactly one parameter, the other player's name
+			if(args.length != 1) return false;
+			
+			//try to find that player
+			OfflinePlayer otherPlayer = this.resolvePlayer(args[0]);
+			if(otherPlayer == null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+				return true;
+			}
+			
+			//load the player's data
+			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getName());
+			player.sendMessage(playerData.accruedClaimBlocks + "(+" + playerData.bonusClaimBlocks + ")=" + playerData.accruedClaimBlocks + playerData.bonusClaimBlocks);
+			for(int i = 0; i < playerData.claims.size(); i++)
+			{
+				Claim claim = playerData.claims.get(i);
+				player.sendMessage("(-" + claim.getArea() + ") " + getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+			}
+			
+			if(playerData.claims.size() > 0)
+				player.sendMessage("=" + playerData.getRemainingClaimBlocks());
+			
+			return true;
+		}
+		
 		//deathblow <player> [recipientPlayer]
 		else if(cmd.getName().equalsIgnoreCase("deathblow"))
 		{
