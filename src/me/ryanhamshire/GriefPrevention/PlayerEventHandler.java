@@ -859,7 +859,7 @@ class PlayerEventHandler implements Listener
 				transparentMaterials.add(Byte.valueOf((byte)Material.AIR.getId()));
 				transparentMaterials.add(Byte.valueOf((byte)Material.SNOW.getId()));
 				transparentMaterials.add(Byte.valueOf((byte)Material.LONG_GRASS.getId()));
-				clickedBlock = player.getTargetBlock(null, 250);
+				clickedBlock = player.getTargetBlock(transparentMaterials, 250);
 			}			
 		}
 		catch(Exception e)  //an exception intermittently comes from getTargetBlock().  when it does, just ignore the event
@@ -1058,6 +1058,27 @@ class PlayerEventHandler implements Listener
 					//visualize boundary
 					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
+					
+					//if can resize this claim, tell about the boundaries
+					if(claim.allowEdit(player) == null)
+					{
+						GriefPrevention.sendMessage(player, TextMode.Info, "  " + claim.getWidth() + "x" + claim.getHeight() + "=" + claim.getArea());
+					}
+					
+					//if deleteclaims permission, tell about the player's offline time
+					if(!claim.isAdminClaim() && player.hasPermission("griefprevention.deleteclaims"))
+					{
+						PlayerData otherPlayerData = this.dataStore.getPlayerData(claim.getOwnerName());
+						Date lastLogin = otherPlayerData.lastLogin;
+						Date now = new Date();
+						long daysElapsed = (now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24); 
+						
+						GriefPrevention.sendMessage(player, TextMode.Info, Messages.PlayerOfflineTime, String.valueOf(daysElapsed));
+						
+						//drop the data we just loaded, if the player isn't online
+						if(GriefPrevention.instance.getServer().getPlayerExact(claim.getOwnerName()) == null)
+							this.dataStore.clearCachedPlayerData(claim.getOwnerName());
+					}
 				}
 				
 				return;
@@ -1181,12 +1202,6 @@ class PlayerEventHandler implements Listener
 				
 				Block centerBlock = clickedBlock;
 				
-				//sink through a snow layer
-				if(centerBlock.getType() == Material.SNOW)
-				{
-					centerBlock = centerBlock.getRelative(BlockFace.DOWN);
-				}
-				
 				int maxHeight = centerBlock.getY();
 				int minx = centerBlock.getX() - playerData.fillRadius;
 				int maxx = centerBlock.getX() + playerData.fillRadius;
@@ -1217,8 +1232,8 @@ class PlayerEventHandler implements Listener
 								break;
 							}
 							
-							//only replace air, spilling water, snow
-							if(block.getType() == Material.AIR || block.getType() == Material.SNOW || (block.getType() == Material.STATIONARY_WATER && block.getData() != 0))
+							//only replace air, spilling water, snow, long grass
+							if(block.getType() == Material.AIR || block.getType() == Material.SNOW || (block.getType() == Material.STATIONARY_WATER && block.getData() != 0) || block.getType() == Material.LONG_GRASS)
 							{							
 								//look to neighbors for an appropriate fill block
 								Block eastBlock = block.getRelative(BlockFace.EAST);

@@ -95,26 +95,38 @@ class EntityEventHandler implements Listener
 		
 		if(GriefPrevention.instance.config_blockSurfaceExplosions && location.getWorld().getEnvironment() == Environment.NORMAL)
 		{
-			if(location.getBlockY() >location.getWorld().getSeaLevel() - 7)
+			for(int i = 0; i < blocks.size(); i++)
 			{
-				blocks.clear();  //explosion still happens, can damage creatures/players, but no blocks will be destroyed
-				return;
-			}
+				Block block = blocks.get(i);
+				if(GriefPrevention.instance.config_mods_explodableIds.contains(block.getTypeId())) continue;
+				
+				if(block.getLocation().getBlockY() > location.getWorld().getSeaLevel() - 7)
+				{
+					blocks.remove(i--);
+				}
+			}			
 		}
 		
 		//special rule for creative worlds: explosions don't destroy anything
 		if(GriefPrevention.instance.creativeRulesApply(explodeEvent.getLocation()))
 		{
-			blocks.clear();
+			for(int i = 0; i < blocks.size(); i++)
+			{
+				Block block = blocks.get(i);
+				if(GriefPrevention.instance.config_mods_explodableIds.contains(block.getTypeId())) continue;
+				
+				blocks.remove(i--);
+			}
 		}
 		
-		//FEATURE: creating an explosion near a claim doesn't damage any of the claimed blocks
-	
+		//FEATURE: explosions don't damage claimed blocks	
 		Claim claim = null;
 		for(int i = 0; i < blocks.size(); i++)  //for each destroyed block
 		{
 			Block block = blocks.get(i);
 			if(block.getType() == Material.AIR) continue;  //if it's air, we don't care
+			
+			if(GriefPrevention.instance.config_mods_explodableIds.contains(block.getTypeId())) continue;
 			
 			claim = this.dataStore.getClaimAt(block.getLocation(), false, claim); 
 			//if the block is claimed, remove it from the list of destroyed blocks

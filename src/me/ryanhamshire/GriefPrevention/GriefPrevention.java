@@ -127,6 +127,7 @@ public class GriefPrevention extends JavaPlugin
 	public List<Integer> config_mods_accessTrustIds;				//list of block IDs which should require /accesstrust for player interaction
 	public List<Integer> config_mods_containerTrustIds;				//list of block IDs which should require /containertrust for player interaction
 	public List<String> config_mods_ignoreClaimsAccounts;			//list of player names which ALWAYS ignore claims
+	public List<Integer> config_mods_explodableIds;					//list of block IDs which can be destroyed by explosions, even in claimed areas
 	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
@@ -280,6 +281,9 @@ public class GriefPrevention extends JavaPlugin
 		
 		this.config_mods_ignoreClaimsAccounts = config.getStringList("GriefPrevention.Mods.PlayersIgnoringAllClaims");
 		if(this.config_mods_ignoreClaimsAccounts == null) this.config_mods_ignoreClaimsAccounts = new ArrayList<String>();
+		
+		this.config_mods_explodableIds = config.getIntegerList("GriefPrevention.Mods.BlockIdsExplodable");
+		if(this.config_mods_explodableIds == null) this.config_mods_explodableIds = new ArrayList<Integer>();
 		
 		//default for claim investigation tool
 		String investigationToolMaterialName = Material.STICK.name();
@@ -450,6 +454,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		config.set("GriefPrevention.Mods.BlockIdsRequiringAccessTrust", this.config_mods_accessTrustIds);
 		config.set("GriefPrevention.Mods.BlockIdsRequiringContainerTrust", this.config_mods_containerTrustIds);
+		config.set("GriefPrevention.Mods.BlockIdsExplodable", this.config_mods_explodableIds);
 		config.set("GriefPrevention.Mods.PlayersIgnoringAllClaims", this.config_mods_ignoreClaimsAccounts);
 		
 		try
@@ -1269,15 +1274,19 @@ public class GriefPrevention extends JavaPlugin
 			
 			//load the player's data
 			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getName());
-			player.sendMessage(playerData.accruedClaimBlocks + "(+" + playerData.bonusClaimBlocks + ")=" + playerData.accruedClaimBlocks + playerData.bonusClaimBlocks);
+			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + playerData.bonusClaimBlocks + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks));
 			for(int i = 0; i < playerData.claims.size(); i++)
 			{
 				Claim claim = playerData.claims.get(i);
-				player.sendMessage("(-" + claim.getArea() + ") " + getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+				GriefPrevention.sendMessage(player, TextMode.Instr, "  (-" + claim.getArea() + ") " + getfriendlyLocationString(claim.getLesserBoundaryCorner()));
 			}
 			
 			if(playerData.claims.size() > 0)
-				player.sendMessage("=" + playerData.getRemainingClaimBlocks());
+				GriefPrevention.sendMessage(player, TextMode.Instr, "   =" + playerData.getRemainingClaimBlocks());
+			
+			//drop the data we just loaded, if the player isn't online
+			if(!otherPlayer.isOnline())
+				this.dataStore.clearCachedPlayerData(otherPlayer.getName());
 			
 			return true;
 		}
