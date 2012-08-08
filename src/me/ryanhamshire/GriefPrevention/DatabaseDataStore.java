@@ -236,7 +236,7 @@ public class DatabaseDataStore extends DataStore
 	}
 	
 	@Override
-	void writeClaimToStorage(Claim claim)  //see datastore.cs.  this will ALWAYS be a top level claim
+	synchronized void writeClaimToStorage(Claim claim)  //see datastore.cs.  this will ALWAYS be a top level claim
 	{
 		try
 		{
@@ -261,7 +261,7 @@ public class DatabaseDataStore extends DataStore
 	}
 	
 	//actually writes claim data to the database
-	private void writeClaimData(Claim claim) throws SQLException
+	synchronized private void writeClaimData(Claim claim) throws SQLException
 	{
 		String lesserCornerString = this.locationToString(claim.getLesserBoundaryCorner());
 		String greaterCornerString = this.locationToString(claim.getGreaterBoundaryCorner());
@@ -342,7 +342,7 @@ public class DatabaseDataStore extends DataStore
 	
 	//deletes a top level claim from the database
 	@Override
-	void deleteClaimFromSecondaryStorage(Claim claim)
+	synchronized void deleteClaimFromSecondaryStorage(Claim claim)
 	{
 		try
 		{
@@ -358,7 +358,7 @@ public class DatabaseDataStore extends DataStore
 	}
 	
 	@Override
-	PlayerData getPlayerDataFromStorage(String playerName)
+	synchronized PlayerData getPlayerDataFromStorage(String playerName)
 	{
 		PlayerData playerData = new PlayerData();
 		playerData.playerName = playerName;
@@ -393,7 +393,7 @@ public class DatabaseDataStore extends DataStore
 	
 	//saves changes to player data.  MUST be called after you're done making changes, otherwise a reload will lose them
 	@Override
-	public void savePlayerData(String playerName, PlayerData playerData)
+	synchronized public void savePlayerData(String playerName, PlayerData playerData)
 	{
 		//never save data for the "administrative" account.  an empty string for player name indicates administrative account
 		if(playerName.length() == 0) return;
@@ -415,13 +415,13 @@ public class DatabaseDataStore extends DataStore
 	}
 	
 	@Override
-	void incrementNextClaimID()
+	synchronized void incrementNextClaimID()
 	{
 		this.setNextClaimID(this.nextClaimID + 1);
 	}
 	
 	//sets the next claim ID.  used by incrementNextClaimID() above, and also while migrating data from a flat file data store
-	void setNextClaimID(long nextID)
+	synchronized void setNextClaimID(long nextID)
 	{
 		this.nextClaimID = nextID;
 		
@@ -440,7 +440,7 @@ public class DatabaseDataStore extends DataStore
 	
 	//updates the database with a group's bonus blocks
 	@Override
-	void saveGroupBonusBlocks(String groupName, int currentValue)
+	synchronized void saveGroupBonusBlocks(String groupName, int currentValue)
 	{
 		//group bonus blocks are stored in the player data table, with player name = $groupName
 		String playerName = "$" + groupName;
@@ -451,7 +451,7 @@ public class DatabaseDataStore extends DataStore
 	}
 	
 	@Override
-	void close()
+	synchronized void close()
 	{
 		if(this.databaseConnection != null)
 		{

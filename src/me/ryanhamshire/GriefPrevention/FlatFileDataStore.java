@@ -257,7 +257,7 @@ public class FlatFileDataStore extends DataStore
 	}
 	
 	@Override
-	void writeClaimToStorage(Claim claim)
+	synchronized void writeClaimToStorage(Claim claim)
 	{
 		String claimID = String.valueOf(claim.id);
 		
@@ -296,7 +296,7 @@ public class FlatFileDataStore extends DataStore
 	}
 	
 	//actually writes claim data to an output stream
-	private void writeClaimData(Claim claim, BufferedWriter outStream) throws IOException
+	synchronized private void writeClaimData(Claim claim, BufferedWriter outStream) throws IOException
 	{
 		//first line is lesser boundary corner location
 		outStream.write(this.locationToString(claim.getLesserBoundaryCorner()));
@@ -352,7 +352,7 @@ public class FlatFileDataStore extends DataStore
 	
 	//deletes a top level claim from the file system
 	@Override
-	void deleteClaimFromSecondaryStorage(Claim claim)
+	synchronized void deleteClaimFromSecondaryStorage(Claim claim)
 	{
 		String claimID = String.valueOf(claim.id);
 		
@@ -365,7 +365,7 @@ public class FlatFileDataStore extends DataStore
 	}
 	
 	@Override
-	PlayerData getPlayerDataFromStorage(String playerName)
+	synchronized PlayerData getPlayerDataFromStorage(String playerName)
 	{
 		File playerFile = new File(playerDataFolderPath + File.separator + playerName);
 					
@@ -439,7 +439,7 @@ public class FlatFileDataStore extends DataStore
 	
 	//saves changes to player data.  MUST be called after you're done making changes, otherwise a reload will lose them
 	@Override
-	public void savePlayerData(String playerName, PlayerData playerData)
+	synchronized public void savePlayerData(String playerName, PlayerData playerData)
 	{
 		//never save data for the "administrative" account.  an empty string for claim owner indicates administrative account
 		if(playerName.length() == 0) return;
@@ -496,7 +496,7 @@ public class FlatFileDataStore extends DataStore
 	}
 	
 	@Override
-	void incrementNextClaimID()
+	synchronized void incrementNextClaimID()
 	{
 		//increment in memory
 		this.nextClaimID++;
@@ -529,7 +529,7 @@ public class FlatFileDataStore extends DataStore
 	
 	//grants a group (players with a specific permission) bonus claim blocks as long as they're still members of the group
 	@Override
-	void saveGroupBonusBlocks(String groupName, int currentValue)
+	synchronized void saveGroupBonusBlocks(String groupName, int currentValue)
 	{
 		//write changes to file to ensure they don't get lost
 		BufferedWriter outStream = null;
@@ -562,7 +562,7 @@ public class FlatFileDataStore extends DataStore
 		catch(IOException exception){}		
 	}
 	
-	void migrateData(DatabaseDataStore databaseStore)
+	synchronized void migrateData(DatabaseDataStore databaseStore)
 	{
 		//migrate claims
 		for(int i = 0; i < this.claims.size(); i++)
@@ -629,5 +629,5 @@ public class FlatFileDataStore extends DataStore
 	}
 
 	@Override
-	void close() { }
+	synchronized void close() { }
 }

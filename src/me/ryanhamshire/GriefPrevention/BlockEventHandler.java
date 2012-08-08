@@ -18,6 +18,7 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.GameMode;
@@ -35,6 +36,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
@@ -47,6 +49,7 @@ import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.util.Vector;
 
 //event handlers related to blocks
 public class BlockEventHandler implements Listener 
@@ -54,10 +57,23 @@ public class BlockEventHandler implements Listener
 	//convenience reference to singleton datastore
 	private DataStore dataStore;
 	
-	//boring typical constructor
+	private ArrayList<Material> trashBlocks;
+	
+	//constructor
 	public BlockEventHandler(DataStore dataStore)
 	{
 		this.dataStore = dataStore;
+		
+		//create the list of blocks which will not trigger a warning when they're placed outside of land claims
+		this.trashBlocks = new ArrayList<Material>();
+		this.trashBlocks.add(Material.COBBLESTONE);
+		this.trashBlocks.add(Material.TORCH);
+		this.trashBlocks.add(Material.DIRT);
+		this.trashBlocks.add(Material.SAPLING);
+		this.trashBlocks.add(Material.GRAVEL);
+		this.trashBlocks.add(Material.SAND);
+		this.trashBlocks.add(Material.TNT);
+		this.trashBlocks.add(Material.WORKBENCH);
 	}
 	
 	//when a block is damaged...
@@ -251,6 +267,9 @@ public class BlockEventHandler implements Listener
 				//extend the claim downward
 				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
 			}
+			
+			//reset the counter for warning the player when he places outside his claims
+			playerData.unclaimedBlockPlacementsUntilWarning = 1;
 		}
 		
 		//FEATURE: automatically create a claim when a player who has no claims places a chest
@@ -330,7 +349,23 @@ public class BlockEventHandler implements Listener
 					placeEvent.setCancelled(true);
 				}
 			}
-		}		
+		}	
+		
+		//FEATURE: warn players when they're placing non-trash blocks outside of their claimed areas
+		else if(GriefPrevention.instance.config_claims_warnOnBuildOutside && !this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
+		{
+			if(--playerData.unclaimedBlockPlacementsUntilWarning <= 0)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
+				playerData.unclaimedBlockPlacementsUntilWarning = 15;
+				
+				if(playerData.lastClaim != null && playerData.lastClaim.allowBuild(player) == null)
+				{
+					Visualization visualization = Visualization.FromClaim(playerData.lastClaim, block.getY(), VisualizationType.Claim, player.getLocation());
+					Visualization.Apply(player, visualization);
+				}
+			}
+		}
 	}
 	
 	//blocks "pushing" other players' blocks around (pistons)
@@ -339,8 +374,21 @@ public class BlockEventHandler implements Listener
 	{		
 		List<Block> blocks = event.getBlocks();
 		
-		//if no blocks moving, then we don't care
-		if(blocks.size() == 0) return;
+		//if no blocks moving, then only check to make sure we're not pushing into a claim from outside
+		//this avoids pistons breaking non-solids just inside a claim, like torches, doors, and touchplates
+		if(blocks.size() == 0)
+		{
+			Block pistonBlock = event.getBlock();
+			Block invadedBlock = pistonBlock.getRelative(event.getDirection());
+			
+			if(	this.dataStore.getClaimAt(pistonBlock.getLocation(), false, null) == null && 
+				this.dataStore.getClaimAt(invadedBlock.getLocation(), false, null) != null)
+			{
+				event.setCancelled(true);				
+			}
+			
+			return;
+		}
 		
 		//who owns the piston, if anyone?
 		String pistonClaimOwnerName = "_";
@@ -524,6 +572,50 @@ public class BlockEventHandler implements Listener
 			}
 		}
 	}
+	
+	//ensures dispensers can't be used to dispense a block(like water or lava) or item across a claim boundary
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	public void onDispense(BlockDispenseEvent dispenseEvent)
+	{
+		//from where?
+		Block fromBlock = dispenseEvent.getBlock();
+		
+		//to where?
+		Vector velocity = dispenseEvent.getVelocity();
+		int xChange = 0;
+		int zChange = 0;
+		if(Math.abs(velocity.getX()) > Math.abs(velocity.getZ()))
+		{
+			if(velocity.getX() > 0) xChange = 1;
+			else xChange = -1;				
+		}
+		else
+		{
+			if(velocity.getZ() > 0) zChange = 1;
+			else zChange = -1;
+		}
+		
+		Block toBlock = fromBlock.getRelative(xChange, 0, zChange);
+		
+		Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, null);
+		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
+		
+		//into wilderness is NOT OK when surface buckets are limited
+		if(GriefPrevention.instance.config_blockWildernessWaterBuckets && toClaim == null)
+		{
+			dispenseEvent.setCancelled(true);
+			return;
+		}
+		
+		//wilderness to wilderness is OK
+		if(fromClaim == null && toClaim == null) return;
+		
+		//within claim is OK
+		if(fromClaim == toClaim) return;
+		
+		//everything else is NOT OK
+		dispenseEvent.setCancelled(true);
+	}		
 	
 	@EventHandler(ignoreCancelled = true)
 	public void onTreeGrow (StructureGrowEvent growEvent)

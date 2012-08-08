@@ -1,7 +1,8 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
 softdepend: [Vault, Multiverse-Core, My Worlds]
-version: 5.5
+dev-url: http://dev.bukkit.org/server-mods/grief-prevention
+version: 5.9
 commands:
    abandonclaim:
       description: Deletes a claim.
@@ -124,7 +125,7 @@ commands:
    claimslist:
       description: Lists information about a player's claim blocks and claims.
       usage: /ClaimsList <player>
-      permission: griefprevention.adjustbonusclaimblocks
+      permission: griefprevention.adjustclaimblocks
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.

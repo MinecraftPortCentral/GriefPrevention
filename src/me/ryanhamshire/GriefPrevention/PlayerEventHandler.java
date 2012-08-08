@@ -74,11 +74,17 @@ class PlayerEventHandler implements Listener
 	
 	//when a player chats, monitor for spam
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	void onPlayerChat (PlayerChatEvent event)
+	void onPlayerChat (AsyncPlayerChatEvent event)
 	{		
 		Player player = event.getPlayer();
 		String message = event.getMessage();
 		
+		event.setCancelled(this.handlePlayerChat(player, message, event));
+	}
+	
+	//returns true if the message should be sent, false if it should be muted 
+	private boolean handlePlayerChat(Player player, String message, PlayerEvent event)
+	{
 		//FEATURE: automatically educate players about claiming land
 		//watching for message format how*claim*, and will send a link to the basics video
 		if(this.howToClaimPattern == null)
@@ -90,11 +96,11 @@ class PlayerEventHandler implements Listener
 		{
 			if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.CreativeBasicsDemoAdvertisement);
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.CreativeBasicsDemoAdvertisement, 10L);
 			}
 			else
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsDemoAdvertisement);
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsDemoAdvertisement, 10L);
 			}
 		}
 		
@@ -102,23 +108,26 @@ class PlayerEventHandler implements Listener
 		//check for "trapped" or "stuck" to educate players about the /trapped command
 		if(message.contains("trapped") || message.contains("stuck") || message.contains(this.dataStore.getMessage(Messages.TrappedChatKeyword)))
 		{
-			GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrappedInstructions);
+			GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrappedInstructions, 10L);
 		}
 		
 		//FEATURE: monitor for chat and command spam
 		
-		if(!GriefPrevention.instance.config_spam_enabled) return;
+		if(!GriefPrevention.instance.config_spam_enabled) return false;
 		
 		//if the player has permission to spam, don't bother even examining the message
-		if(player.hasPermission("griefprevention.spam")) return;
+		if(player.hasPermission("griefprevention.spam")) return false;
 		
 		//remedy any CAPS SPAM without bothering to fault the player for it
-		if(message.length() > 4 && message.toUpperCase().equals(message))
+		if(message.length() > 4 && this.stringsAreSimilar(message.toUpperCase(), message))
 		{
-			event.setMessage(message.toLowerCase());
+			if(event instanceof AsyncPlayerChatEvent)
+			{
+				((AsyncPlayerChatEvent)event).setMessage(message.toLowerCase());
+			}
 		}
 		
-		//where spam is concerned, casing isn't significant
+		//where other types of spam are concerned, casing isn't significant
 		message = message.toLowerCase();
 		
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
@@ -137,8 +146,8 @@ class PlayerEventHandler implements Listener
 			spam = true;
 		}
 		
-		//if it's very similar to the last message and less than 15 seconds have passed
-		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage) && millisecondsSinceLastMessage < 15000)
+		//if it's very similar to the last message
+		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage))
 		{
 			playerData.spamCount++;
 			spam = true;
@@ -146,10 +155,10 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//filter IP addresses
-		if(!muted && !(event instanceof PlayerCommandPreprocessEvent))
+		if(!muted)
 		{
 			Pattern ipAddressPattern = Pattern.compile("\\d{1,4}\\D{1,3}\\d{1,4}\\D{1,3}\\d{1,4}\\D{1,3}\\d{1,4}");
-			Matcher matcher = ipAddressPattern.matcher(event.getMessage());
+			Matcher matcher = ipAddressPattern.matcher(message);
 			
 			//if it looks like an IP address
 			while(matcher.find())
@@ -158,7 +167,7 @@ class PlayerEventHandler implements Listener
 				if(!GriefPrevention.instance.config_spam_allowedIpAddresses.contains(matcher.group()))
 				{
 					//log entry
-					GriefPrevention.AddLogEntry("Muted IP address from " + player.getName() + ": " + event.getMessage());
+					GriefPrevention.AddLogEntry("Muted IP address from " + player.getName() + ": " + message);
 					
 					//spam notation
 					playerData.spamCount++;
@@ -201,7 +210,6 @@ class PlayerEventHandler implements Listener
 		if(!muted && message.length() < 5 && millisecondsSinceLastMessage < 5000)
 		{
 			spam = true;
-			if(playerData.spamCount > 4) muted = true;
 			playerData.spamCount++;
 		}
 		
@@ -235,7 +243,7 @@ class PlayerEventHandler implements Listener
 				muted = true;
 				if(!playerData.spamWarned)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Warn, GriefPrevention.instance.config_spam_warningMessage);
+					GriefPrevention.sendMessage(player, TextMode.Warn, GriefPrevention.instance.config_spam_warningMessage, 10L);
 					GriefPrevention.AddLogEntry("Warned " + player.getName() + " about spam penalties.");
 					playerData.spamWarned = true;
 				}
@@ -243,14 +251,15 @@ class PlayerEventHandler implements Listener
 			
 			if(muted)
 			{
-				//cancel the event and make a log entry
-				//cancelling the event guarantees players don't receive the message
-				event.setCancelled(true);
+				//make a log entry
 				GriefPrevention.AddLogEntry("Muted spam from " + player.getName() + ": " + message);
 				
 				//send a fake message so the player doesn't realize he's muted
 				//less information for spammers = less effective spam filter dodging
-				player.sendMessage("<" + player.getName() + "> " + event.getMessage());
+				player.sendMessage("<" + player.getName() + "> " + message);
+				
+				//cancelling the event guarantees other players don't receive the message
+				return true;
 			}		
 		}
 		
@@ -263,7 +272,9 @@ class PlayerEventHandler implements Listener
 		
 		//in any case, record the timestamp of this message and also its content for next time
 		playerData.lastMessageTimestamp = new Date();
-		playerData.lastMessage = message;	
+		playerData.lastMessage = message;
+		
+		return false;
 	}
 	
 	//if two strings are 75% identical, they're too close to follow each other in the chat
@@ -345,7 +356,10 @@ class PlayerEventHandler implements Listener
 		if(!GriefPrevention.instance.config_spam_enabled) return;
 		
 		//if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
-		if(GriefPrevention.instance.config_spam_monitorSlashCommands.contains(args[0])) this.onPlayerChat(event);		
+		if(GriefPrevention.instance.config_spam_monitorSlashCommands.contains(args[0]))
+		{
+			event.setCancelled(this.handlePlayerChat(event.getPlayer(), event.getMessage(), event));		
+		}
 	}
 	
 	//when a player attempts to join the server...
@@ -878,9 +892,11 @@ class PlayerEventHandler implements Listener
 		//apply rules for containers and crafting blocks
 		if(	GriefPrevention.instance.config_claims_preventTheft && (
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
-						clickedBlock.getState() instanceof InventoryHolder || 
-						clickedBlockType == Material.BREWING_STAND || 
+						clickedBlock.getState() instanceof InventoryHolder ||
 						clickedBlockType == Material.WORKBENCH || 
+						clickedBlockType == Material.ENDER_CHEST ||
+						clickedBlockType == Material.DISPENSER ||
+						clickedBlockType == Material.BREWING_STAND || 
 						clickedBlockType == Material.JUKEBOX || 
 						clickedBlockType == Material.ENCHANTMENT_TABLE ||
 						GriefPrevention.instance.config_mods_containerTrustIds.contains(clickedBlock.getTypeId()))))
@@ -925,7 +941,9 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise apply rules for doors, if configured that way
-		else if(GriefPrevention.instance.config_claims_lockAllDoors && (clickedBlockType == Material.WOOD_DOOR || clickedBlockType == Material.WOODEN_DOOR || clickedBlockType == Material.TRAP_DOOR || clickedBlockType == Material.FENCE_GATE))
+		else if((GriefPrevention.instance.config_claims_lockWoodenDoors && clickedBlockType == Material.WOOD_DOOR) ||
+				(GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
+				(GriefPrevention.instance.config_claims_lockFenceGates && clickedBlockType == Material.FENCE_GATE))
 		{
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
 			if(claim != null)
@@ -1346,7 +1364,7 @@ class PlayerEventHandler implements Listener
 					}
 					
 					//make sure player has enough blocks to make up the difference
-					if(!playerData.claimResizing.isAdminClaim())
+					if(!playerData.claimResizing.isAdminClaim() && player.getName().equals(playerData.claimResizing.getOwnerName()))
 					{
 						int newArea =  newWidth * newHeight;
 						int blocksRemainingAfter = playerData.getRemainingClaimBlocks() + playerData.claimResizing.getArea() - newArea;

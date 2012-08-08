@@ -66,7 +66,9 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_claims_preventTheft;						//whether containers and crafting blocks are protectable
 	public boolean config_claims_protectCreatures;					//whether claimed animals may be injured by players without permission
 	public boolean config_claims_preventButtonsSwitches;			//whether buttons and switches are protectable
-	public boolean config_claims_lockAllDoors;						//whether wooden doors, trap doors, fence gates, etc require permission to use
+	public boolean config_claims_lockWoodenDoors;					//whether wooden doors should be locked by default (require /accesstrust)
+	public boolean config_claims_lockTrapDoors;						//whether trap doors should be locked by default (require /accesstrust)
+	public boolean config_claims_lockFenceGates;					//whether fence gates should be locked by default (require /accesstrust)
 	
 	public int config_claims_initialBlocks;							//the number of claim blocks a new player starts with
 	public int config_claims_blocksAccruedPerHour;					//how many additional blocks players get each hour of play (can be zero)
@@ -108,7 +110,8 @@ public class GriefPrevention extends JavaPlugin
 	public double config_economy_claimBlocksPurchaseCost;			//cost to purchase a claim block.  set to zero to disable purchase.
 	public double config_economy_claimBlocksSellValue;				//return on a sold claim block.  set to zero to disable sale.
 	
-	public boolean config_blockSurfaceExplosions;					//whether creeper/TNT explosions near or above the surface destroy blocks
+	public boolean config_blockSurfaceCreeperExplosions;			//whether creeper explosions near or above the surface destroy blocks
+	public boolean config_blockSurfaceOtherExplosions;				//whether non-creeper explosions near or above the surface destroy blocks
 	public boolean config_blockWildernessWaterBuckets;				//whether players can dump water buckets outside their claims
 	public boolean config_blockSkyTrees;							//whether players can build trees on platforms in the sky
 	
@@ -128,6 +131,8 @@ public class GriefPrevention extends JavaPlugin
 	public List<Integer> config_mods_containerTrustIds;				//list of block IDs which should require /containertrust for player interaction
 	public List<String> config_mods_ignoreClaimsAccounts;			//list of player names which ALWAYS ignore claims
 	public List<Integer> config_mods_explodableIds;					//list of block IDs which can be destroyed by explosions, even in claimed areas
+
+	public boolean config_claims_warnOnBuildOutside;				//whether players should be warned when they're building in an unclaimed area
 	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
@@ -225,7 +230,9 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
 		this.config_claims_protectCreatures = config.getBoolean("GriefPrevention.Claims.ProtectCreatures", true);
 		this.config_claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);
-		this.config_claims_lockAllDoors = config.getBoolean("GriefPrevention.Claims.LockAllDoors", false);
+		this.config_claims_lockWoodenDoors = config.getBoolean("GriefPrevention.Claims.LockWoodenDoors", false);
+		this.config_claims_lockTrapDoors = config.getBoolean("GriefPrevention.Claims.LockTrapDoors", false);
+		this.config_claims_lockFenceGates = config.getBoolean("GriefPrevention.Claims.LockFenceGates", false);
 		this.config_claims_initialBlocks = config.getInt("GriefPrevention.Claims.InitialBlocks", 100);
 		this.config_claims_blocksAccruedPerHour = config.getInt("GriefPrevention.Claims.BlocksAccruedPerHour", 100);
 		this.config_claims_maxAccruedBlocks = config.getInt("GriefPrevention.Claims.MaxAccruedBlocks", 80000);
@@ -237,6 +244,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_expirationDays = config.getInt("GriefPrevention.Claims.IdleLimitDays", 0);
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
 		this.config_claims_noBuildOutsideClaims = config.getBoolean("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", false);
+		this.config_claims_warnOnBuildOutside = config.getBoolean("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims");
 		
 		this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
 		this.config_spam_loginCooldownMinutes = config.getInt("GriefPrevention.Spam.LoginCooldownMinutes", 2);
@@ -257,7 +265,8 @@ public class GriefPrevention extends JavaPlugin
 		this.config_economy_claimBlocksPurchaseCost = config.getDouble("GriefPrevention.Economy.ClaimBlocksPurchaseCost", 0);
 		this.config_economy_claimBlocksSellValue = config.getDouble("GriefPrevention.Economy.ClaimBlocksSellValue", 0);
 		
-		this.config_blockSurfaceExplosions = config.getBoolean("GriefPrevention.BlockSurfaceExplosions", true);
+		this.config_blockSurfaceCreeperExplosions = config.getBoolean("GriefPrevention.BlockSurfaceCreeperExplosions", true);
+		this.config_blockSurfaceOtherExplosions = config.getBoolean("GriefPrevention.BlockSurfaceOtherExplosions", true);
 		this.config_blockWildernessWaterBuckets = config.getBoolean("GriefPrevention.LimitSurfaceWaterBuckets", true);
 		this.config_blockSkyTrees = config.getBoolean("GriefPrevention.LimitSkyTrees", true);
 				
@@ -276,7 +285,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_mods_accessTrustIds = config.getIntegerList("GriefPrevention.Mods.BlockIdsRequiringAccessTrust");
 		if(this.config_mods_accessTrustIds == null) this.config_mods_accessTrustIds = new ArrayList<Integer>();
 		
-		this.config_mods_accessTrustIds = config.getIntegerList("GriefPrevention.Mods.BlockIdsRequiringContainerTrust");
+		this.config_mods_containerTrustIds = config.getIntegerList("GriefPrevention.Mods.BlockIdsRequiringContainerTrust");
 		if(this.config_mods_containerTrustIds == null) this.config_mods_containerTrustIds = new ArrayList<Integer>();
 		
 		this.config_mods_ignoreClaimsAccounts = config.getStringList("GriefPrevention.Mods.PlayersIgnoringAllClaims");
@@ -395,7 +404,9 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Claims.PreventTheft", this.config_claims_preventTheft);
 		config.set("GriefPrevention.Claims.ProtectCreatures", this.config_claims_protectCreatures);
 		config.set("GriefPrevention.Claims.PreventButtonsSwitches", this.config_claims_preventButtonsSwitches);
-		config.set("GriefPrevention.Claims.LockAllDoors", this.config_claims_lockAllDoors);
+		config.set("GriefPrevention.Claims.LockWoodenDoors", this.config_claims_lockWoodenDoors);
+		config.set("GriefPrevention.Claims.LockTrapDoors", this.config_claims_lockTrapDoors);
+		config.set("GriefPrevention.Claims.LockFenceGates", this.config_claims_lockFenceGates);
 		config.set("GriefPrevention.Claims.InitialBlocks", this.config_claims_initialBlocks);
 		config.set("GriefPrevention.Claims.BlocksAccruedPerHour", this.config_claims_blocksAccruedPerHour);
 		config.set("GriefPrevention.Claims.MaxAccruedBlocks", this.config_claims_maxAccruedBlocks);
@@ -408,7 +419,8 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
 		config.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
 		config.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
-		config.set("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", this.config_claims_noBuildOutsideClaims);		
+		config.set("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", this.config_claims_noBuildOutsideClaims);
+		config.set("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", this.config_claims_warnOnBuildOutside);
 		
 		config.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
 		config.set("GriefPrevention.Spam.LoginCooldownMinutes", this.config_spam_loginCooldownMinutes);
@@ -429,7 +441,8 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Economy.ClaimBlocksPurchaseCost", this.config_economy_claimBlocksPurchaseCost);
 		config.set("GriefPrevention.Economy.ClaimBlocksSellValue", this.config_economy_claimBlocksSellValue);
 		
-		config.set("GriefPrevention.BlockSurfaceExplosions", this.config_blockSurfaceExplosions);
+		config.set("GriefPrevention.BlockSurfaceCreeperExplosions", this.config_blockSurfaceCreeperExplosions);
+		config.set("GriefPrevention.BlockSurfaceOtherExplosions", this.config_blockSurfaceOtherExplosions);
 		config.set("GriefPrevention.LimitSurfaceWaterBuckets", this.config_blockWildernessWaterBuckets);
 		config.set("GriefPrevention.LimitSkyTrees", this.config_blockSkyTrees);
 		
@@ -2118,8 +2131,14 @@ public class GriefPrevention extends JavaPlugin
 	//sends a color-coded message to a player
 	static void sendMessage(Player player, ChatColor color, Messages messageID, String... args)
 	{
+		sendMessage(player, color, messageID, 0, args);
+	}
+	
+	//sends a color-coded message to a player
+	static void sendMessage(Player player, ChatColor color, Messages messageID, long delayInTicks, String... args)
+	{
 		String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
-		sendMessage(player, color, message);
+		sendMessage(player, color, message, delayInTicks);
 	}
 	
 	//sends a color-coded message to a player
@@ -2132,6 +2151,19 @@ public class GriefPrevention extends JavaPlugin
 		else
 		{
 			player.sendMessage(color + message);
+		}
+	}
+	
+	static void sendMessage(Player player, ChatColor color, String message, long delayInTicks)
+	{
+		SendPlayerMessageTask task = new SendPlayerMessageTask(player, color, message);
+		if(delayInTicks > 0)
+		{
+			GriefPrevention.instance.getServer().getScheduler().scheduleAsyncDelayedTask(GriefPrevention.instance, task, delayInTicks);
+		}
+		else
+		{
+			task.run();
 		}
 	}
 	

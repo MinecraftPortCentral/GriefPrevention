@@ -67,6 +67,9 @@ public class PlayerData
 	//last place the player damaged a chest
 	public Location lastChestDamageLocation = null;
 	
+	//number of blocks placed outside claims before next warning
+	int unclaimedBlockPlacementsUntilWarning = 1;
+	
 	//spam
 	public Date lastLogin;							//when the player last logged into the server
 	public String lastMessage = "";					//the player's last chat message, or slash command complete with parameters 

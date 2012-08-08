@@ -128,13 +128,13 @@ public abstract class DataStore
 	}
 	
 	//removes cached player data from memory
-	void clearCachedPlayerData(String playerName)
+	synchronized void clearCachedPlayerData(String playerName)
 	{
 		this.playerNameToPlayerDataMap.remove(playerName);
 	}
 	
 	//gets the number of bonus blocks a player has from his permissions
-	int getGroupBonusBlocks(String playerName)
+	synchronized int getGroupBonusBlocks(String playerName)
 	{
 		int bonusBlocks = 0;
 		Set<String> keys = permissionToBonusBlocksMap.keySet();
@@ -153,7 +153,7 @@ public abstract class DataStore
 	}
 	
 	//grants a group (players with a specific permission) bonus claim blocks as long as they're still members of the group
-	public int adjustGroupBonusBlocks(String groupName, int amount)
+	synchronized public int adjustGroupBonusBlocks(String groupName, int amount)
 	{
 		Integer currentValue = this.permissionToBonusBlocksMap.get(groupName);
 		if(currentValue == null) currentValue = 0;
@@ -169,7 +169,7 @@ public abstract class DataStore
 	
 	abstract void saveGroupBonusBlocks(String groupName, int amount);
 	
-	public void changeClaimOwner(Claim claim, String newOwnerName) throws Exception
+	synchronized public void changeClaimOwner(Claim claim, String newOwnerName) throws Exception
 	{
 		//if it's a subdivision, throw an exception
 		if(claim.parent != null)
@@ -207,7 +207,7 @@ public abstract class DataStore
 	}
 
 	//adds a claim to the datastore, making it an effective claim
-	void addClaim(Claim newClaim)
+	synchronized void addClaim(Claim newClaim)
 	{
 		//subdivisions are easy
 		if(newClaim.parent != null)
@@ -287,7 +287,7 @@ public abstract class DataStore
 	}	
 
 	//saves any changes to a claim to secondary storage
-	public void saveClaim(Claim claim)
+	synchronized public void saveClaim(Claim claim)
 	{
 		//subdivisions don't save to their own files, but instead live in their parent claim's file
 		//so any attempt to save a subdivision will save its parent (and thus the subdivision)
@@ -314,7 +314,7 @@ public abstract class DataStore
 	
 	//retrieves player data from memory or secondary storage, as necessary
 	//if the player has never been on the server before, this will return a fresh player data with default values
-	public PlayerData getPlayerData(String playerName)
+	synchronized public PlayerData getPlayerData(String playerName)
 	{
 		//first, look in memory
 		PlayerData playerData = this.playerNameToPlayerDataMap.get(playerName);
@@ -346,7 +346,7 @@ public abstract class DataStore
 	abstract PlayerData getPlayerDataFromStorage(String playerName);
 	
 	//deletes a claim or subdivision
-	public void deleteClaim(Claim claim)
+	synchronized public void deleteClaim(Claim claim)
 	{
 		//subdivisions are simple - just remove them from their parent claim and save that claim
 		if(claim.parent != null)
@@ -396,7 +396,7 @@ public abstract class DataStore
 	//gets the claim at a specific location
 	//ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
 	//cachedClaim can be NULL, but will help performance if you have a reasonable guess about which claim the location is in
-	public Claim getClaimAt(Location location, boolean ignoreHeight, Claim cachedClaim)
+	synchronized public Claim getClaimAt(Location location, boolean ignoreHeight, Claim cachedClaim)
 	{
 		//check cachedClaim guess first.  if it's in the datastore and the location is inside it, we're done
 		if(cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) return cachedClaim;
@@ -443,7 +443,7 @@ public abstract class DataStore
 	//does NOT check a player has permission to create a claim, or enough claim blocks.
 	//does NOT check minimum claim size constraints
 	//does NOT visualize the new claim for any players	
-	public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, String ownerName, Claim parent, Long id)
+	synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, String ownerName, Claim parent, Long id)
 	{
 		CreateClaimResult result = new CreateClaimResult();
 		
@@ -541,7 +541,7 @@ public abstract class DataStore
 	
 	//extends a claim to a new depth
 	//respects the max depth config variable
-	public void extendClaim(Claim claim, int newDepth) 
+	synchronized public void extendClaim(Claim claim, int newDepth) 
 	{
 		if(newDepth < GriefPrevention.instance.config_claims_maxDepth) newDepth = GriefPrevention.instance.config_claims_maxDepth;
 		
@@ -567,7 +567,7 @@ public abstract class DataStore
 
 	//starts a siege on a claim
 	//does NOT check siege cooldowns, see onCooldown() below
-	public void startSiege(Player attacker, Player defender, Claim defenderClaim)
+	synchronized public void startSiege(Player attacker, Player defender, Claim defenderClaim)
 	{
 		//fill-in the necessary SiegeData instance
 		SiegeData siegeData = new SiegeData(attacker, defender, defenderClaim);
@@ -586,7 +586,7 @@ public abstract class DataStore
 	
 	//ends a siege
 	//either winnerName or loserName can be null, but not both
-	public void endSiege(SiegeData siegeData, String winnerName, String loserName, boolean death)
+	synchronized public void endSiege(SiegeData siegeData, String winnerName, String loserName, boolean death)
 	{
 		boolean grantAccess = false;
 		
@@ -704,7 +704,7 @@ public abstract class DataStore
 	private HashMap<String, Long> siegeCooldownRemaining = new HashMap<String, Long>();
 
 	//whether or not a sieger can siege a particular victim or claim, considering only cooldowns
-	public boolean onCooldown(Player attacker, Player defender, Claim defenderClaim)
+	synchronized public boolean onCooldown(Player attacker, Player defender, Claim defenderClaim)
 	{
 		Long cooldownEnd = null;
 		
@@ -740,7 +740,7 @@ public abstract class DataStore
 	}
 
 	//extend a siege, if it's possible to do so
-	void tryExtendSiege(Player player, Claim claim)
+	synchronized void tryExtendSiege(Player player, Claim claim)
 	{
 		PlayerData playerData = this.getPlayerData(player.getName());
 		
@@ -762,7 +762,7 @@ public abstract class DataStore
 	}		
 	
 	//deletes all claims owned by a player
-	public void deleteClaimsForPlayer(String playerName, boolean deleteCreativeClaims)
+	synchronized public void deleteClaimsForPlayer(String playerName, boolean deleteCreativeClaims)
 	{
 		//make a list of the player's claims
 		ArrayList<Claim> claimsToDelete = new ArrayList<Claim>();
@@ -783,7 +783,7 @@ public abstract class DataStore
 
 	//tries to resize a claim
 	//see CreateClaim() for details on return value
-	public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2)
+	synchronized public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2)
 	{
 		//remove old claim
 		this.deleteClaim(claim);					
@@ -993,7 +993,8 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.UntrustOwnerOnly, "Only {0} can revoke permissions here.", "0: claim owner's name");
 		this.addDefault(defaults, Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\W(claim|protect)(\\W.*|$)", "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how to claim land.");
 		this.addDefault(defaults, Messages.NoBuildOutsideClaims, "You can't build here unless you claim some land first.", null);
-		this.addDefault(defaults, Messages.PlayerOfflineTime, "  Last login: {0} days ago.", "0: number of full days since last login");		
+		this.addDefault(defaults, Messages.PlayerOfflineTime, "  Last login: {0} days ago.", "0: number of full days since last login");
+		this.addDefault(defaults, Messages.BuildingOutsideClaims, "Other players can undo your work here!  Consider claiming this area to protect your work.", null);		
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));
@@ -1044,7 +1045,7 @@ public abstract class DataStore
 		defaults.put(id.name(), message);		
 	}
 
-	public String getMessage(Messages messageID, String... args)
+	synchronized public String getMessage(Messages messageID, String... args)
 	{
 		String message = messages[messageID.ordinal()];
 		

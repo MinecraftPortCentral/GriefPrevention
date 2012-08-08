@@ -27,6 +27,7 @@ import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Creature;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -92,8 +93,8 @@ class EntityEventHandler implements Listener
 		Location location = explodeEvent.getLocation();
 		
 		//FEATURE: explosions don't destroy blocks when they explode near or above sea level in standard worlds
-		
-		if(GriefPrevention.instance.config_blockSurfaceExplosions && location.getWorld().getEnvironment() == Environment.NORMAL)
+		boolean isCreeper = (explodeEvent.getEntity() != null && explodeEvent.getEntity() instanceof Creeper);
+		if( location.getWorld().getEnvironment() == Environment.NORMAL && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions)))			
 		{
 			for(int i = 0; i < blocks.size(); i++)
 			{
