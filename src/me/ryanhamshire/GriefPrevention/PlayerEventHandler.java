@@ -941,7 +941,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise apply rules for doors, if configured that way
-		else if((GriefPrevention.instance.config_claims_lockWoodenDoors && clickedBlockType == Material.WOOD_DOOR) ||
+		else if((GriefPrevention.instance.config_claims_lockWoodenDoors && clickedBlockType == Material.WOODEN_DOOR) ||
 				(GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
 				(GriefPrevention.instance.config_claims_lockFenceGates && clickedBlockType == Material.FENCE_GATE))
 		{
@@ -1140,18 +1140,6 @@ class PlayerEventHandler implements Listener
 				
 				//figure out which chunk to repair
 				Chunk chunk = player.getWorld().getChunkAt(clickedBlock.getLocation());
-				
-				//check it for players, and cancel if there are any
-				Entity [] entities = chunk.getEntities();
-				for(int i = 0; i < entities.length; i++)
-				{
-					if(entities[i] instanceof Player)
-					{
-						Player otherPlayer = (Player)entities[i];
-						GriefPrevention.sendMessage(player, TextMode.Err, Messages.RestoreNaturePlayerInChunk, otherPlayer.getName());
-						return;
-					}
-				}
 				
 				//build a snapshot of this chunk, including 1 block boundary outside of the chunk all the way around
 				int maxHeight = chunk.getWorld().getMaxHeight();

@@ -20,7 +20,9 @@ package me.ryanhamshire.GriefPrevention;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -80,13 +82,22 @@ class RestoreNatureExecutionTask implements Runnable
 			}
 		}
 		
-		//clean up any entities in the chunk
+		//clean up any entities in the chunk, ensure no players are suffocated
 		Chunk chunk = this.lesserCorner.getChunk();
 		Entity [] entities = chunk.getEntities();
 		for(int i = 0; i < entities.length; i++)
 		{
 			Entity entity = entities[i];
-			if(!(entity instanceof Player)) entity.remove();			
+			if(!(entity instanceof Player))
+			{
+				entity.remove();			
+			}
+			else
+			{
+				Block feetBlock = entity.getLocation().getBlock();
+				feetBlock.setType(Material.AIR);
+				feetBlock.getRelative(BlockFace.UP).setType(Material.AIR);
+			}
 		}
 		
 		//show visualization to player

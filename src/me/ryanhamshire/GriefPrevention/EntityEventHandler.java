@@ -323,6 +323,7 @@ class EntityEventHandler implements Listener
 		
 		//determine which player is attacking, if any
 		Player attacker = null;
+		Arrow arrow = null;
 		Entity damageSource = subEvent.getDamager();
 		if(damageSource instanceof Player)
 		{
@@ -330,7 +331,7 @@ class EntityEventHandler implements Listener
 		}
 		else if(damageSource instanceof Arrow)
 		{
-			Arrow arrow = (Arrow)damageSource;
+			arrow = (Arrow)damageSource;
 			if(arrow.getShooter() instanceof Player)
 			{
 				attacker = (Player)arrow.getShooter();
@@ -423,6 +424,10 @@ class EntityEventHandler implements Listener
 						if(noContainersReason != null)
 						{
 							event.setCancelled(true);
+							
+							//kill the arrow to avoid infinite bounce between crowded together animals
+							if(arrow != null) arrow.remove();
+							
 							GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.NoDamageClaimedEntity, claim.getOwnerName());
 						}
 						
