@@ -352,6 +352,15 @@ class PlayerEventHandler implements Listener
 			}
 		}
 		
+		//if in pvp, block any pvp-banned slash commands
+		PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
+		if(playerData.inPvpCombat() && GriefPrevention.instance.config_pvp_blockedCommands.contains(command))
+		{
+			event.setCancelled(true);
+			GriefPrevention.sendMessage(event.getPlayer(), TextMode.Err, Messages.CommandBannedInPvP);
+			return;
+		}
+		
 		//if anti spam enabled, check for spam
 		if(!GriefPrevention.instance.config_spam_enabled) return;
 		
@@ -461,6 +470,8 @@ class PlayerEventHandler implements Listener
 									GriefPrevention.sendMessage(players[k], TextMode.Success, Messages.AutoBanNotify, player.getName(), info.bannedAccountName);
 								}
 							}
+							
+							break;
 						}
 					}
 				}

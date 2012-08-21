@@ -622,9 +622,9 @@ public class BlockEventHandler implements Listener
 	{
 		Location rootLocation = growEvent.getLocation();
 		Claim rootClaim = this.dataStore.getClaimAt(rootLocation, false, null);
+		String rootOwnerName = null;
 		
 		//who owns the spreading block, if anyone?
-		OfflinePlayer fromOwner = null;			
 		if(rootClaim != null)
 		{
 			//tree growth in subdivisions is dependent on who owns the top level claim
@@ -634,7 +634,7 @@ public class BlockEventHandler implements Listener
 			if(rootClaim.isAdminClaim()) return;
 			
 			//otherwise, note the owner of the claim
-			fromOwner = GriefPrevention.instance.getServer().getOfflinePlayer(rootClaim.ownerName);
+			rootOwnerName = rootClaim.getOwnerName();
 		}
 		
 		//for each block growing
@@ -647,7 +647,7 @@ public class BlockEventHandler implements Listener
 			if(blockClaim != null)
 			{
 				//if there's no owner for the new tree, or the owner for the new tree is different from the owner of the claim
-				if(fromOwner == null  || !fromOwner.getName().equals(blockClaim.ownerName))
+				if(rootOwnerName == null  || !rootOwnerName.equals(blockClaim.getOwnerName()))
 				{
 					growEvent.getBlocks().remove(i--);
 				}

@@ -103,6 +103,7 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_pvp_punishLogout;						    //whether to kill players who log out during PvP combat
 	public int config_pvp_combatTimeoutSeconds;						//how long combat is considered to continue after the most recent damage
 	public boolean config_pvp_allowCombatItemDrop;					//whether a player can drop items during combat to hide them
+	public ArrayList<String> config_pvp_blockedCommands;			//list of commands which may not be used during pvp combat
 	
 	public boolean config_trees_removeFloatingTreetops;				//whether to automatically remove partially cut trees
 	public boolean config_trees_regrowGriefedTrees;					//whether to automatically replant partially cut trees
@@ -258,6 +259,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_pvp_punishLogout = config.getBoolean("GriefPrevention.PvP.PunishLogout", true);
 		this.config_pvp_combatTimeoutSeconds = config.getInt("GriefPrevention.PvP.CombatTimeoutSeconds", 15);
 		this.config_pvp_allowCombatItemDrop = config.getBoolean("GriefPrevention.PvP.AllowCombatItemDrop", false);
+		String bannedPvPCommandsList = config.getString("GriefPrevention.PvP.BlockedSlashCommands", "/home;/vanish;/spawn;/tpa");
 		
 		this.config_trees_removeFloatingTreetops = config.getBoolean("GriefPrevention.Trees.RemoveFloatingTreetops", true);
 		this.config_trees_regrowGriefedTrees = config.getBoolean("GriefPrevention.Trees.RegrowGriefedTrees", true);
@@ -434,6 +436,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.PvP.PunishLogout", this.config_pvp_punishLogout);
 		config.set("GriefPrevention.PvP.CombatTimeoutSeconds", this.config_pvp_combatTimeoutSeconds);
 		config.set("GriefPrevention.PvP.AllowCombatItemDrop", this.config_pvp_allowCombatItemDrop);
+		config.set("GriefPrevention.PvP.BlockedSlashCommands", bannedPvPCommandsList);
 		
 		config.set("GriefPrevention.Trees.RemoveFloatingTreetops", this.config_trees_removeFloatingTreetops);
 		config.set("GriefPrevention.Trees.RegrowGriefedTrees", this.config_trees_regrowGriefedTrees);
@@ -487,13 +490,21 @@ public class GriefPrevention extends JavaPlugin
 			this.config_spam_monitorSlashCommands.add(commands[i].trim());
 		}
 		
-		//try to parse the list of commands which should be monitored for spam
+		//try to parse the list of commands which should be included in eavesdropping
 		this.config_eavesdrop_whisperCommands  = new ArrayList<String>();
 		commands = whisperCommandsToMonitor.split(";");
 		for(int i = 0; i < commands.length; i++)
 		{
 			this.config_eavesdrop_whisperCommands.add(commands[i].trim());
 		}		
+		
+		//try to parse the list of commands which should be banned during pvp combat
+		this.config_pvp_blockedCommands = new ArrayList<String>();
+		commands = bannedPvPCommandsList.split(";");
+		for(int i = 0; i < commands.length; i++)
+		{
+			this.config_pvp_blockedCommands.add(commands[i].trim());
+		}
 		
 		//when datastore initializes, it loads player and claim data, and posts some stats to the log
 		if(databaseUrl.length() > 0)
@@ -1454,6 +1465,13 @@ public class GriefPrevention extends JavaPlugin
 			if(claim == null || claim.allowBuild(player) == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotTrappedHere);				
+				return true;
+			}
+			
+			//if the player is in the nether or end, he's screwed (there's no way to programmatically find a safe place for him)
+			if(player.getWorld().getEnvironment() != Environment.NORMAL)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.TrappedWontWorkHere);				
 				return true;
 			}
 			
