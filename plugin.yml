@@ -2,7 +2,7 @@ name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
 softdepend: [Vault, Multiverse-Core, My Worlds]
 dev-url: http://dev.bukkit.org/server-mods/grief-prevention
-version: 6.1
+version: 6.3
 commands:
    abandonclaim:
       description: Deletes a claim.

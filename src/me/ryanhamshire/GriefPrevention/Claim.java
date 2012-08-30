@@ -121,6 +121,9 @@ public class Claim
 		//don't do it for very large claims
 		if(this.getArea() > 10000) return;
 		
+		//don't do it when surface fluids are allowed to be dumped
+		if(!GriefPrevention.instance.config_blockWildernessWaterBuckets) return;
+		
 		Location lesser = this.getLesserBoundaryCorner();
 		Location greater = this.getGreaterBoundaryCorner();
 
@@ -430,9 +433,6 @@ public class Claim
 	//access permission check
 	public String allowAccess(Player player)
 	{
-		//everyone always has access to admin claims
-		if(this.isAdminClaim()) return null;
-		
 		//following a siege where the defender lost, the claim will allow everyone access for a time
 		if(this.doorsOpen) return null;
 		
@@ -470,9 +470,6 @@ public class Claim
 		{
 			return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersSiege, siegeData.attacker.getName());
 		}
-		
-		//containers are always accessible in admin claims
-		if(this.isAdminClaim()) return null;
 		
 		//owner and administrators in ignoreclaims mode have access
 		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;

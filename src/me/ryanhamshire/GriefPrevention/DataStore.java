@@ -100,6 +100,13 @@ public abstract class DataStore
 				{
 					claim.removeSurfaceFluids(null);
 					this.deleteClaim(claim);
+					
+					//if in a creative mode world, delete the claim
+					if(GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()))
+					{
+						GriefPrevention.instance.restoreClaim(claim, 0);
+					}
+					
 					GriefPrevention.AddLogEntry(" " + playerName + "'s new player claim expired.");
 				}
 			}
@@ -776,8 +783,16 @@ public abstract class DataStore
 		//delete them one by one
 		for(int i = 0; i < claimsToDelete.size(); i++)
 		{
-			claimsToDelete.get(i).removeSurfaceFluids(null);
-			this.deleteClaim(claimsToDelete.get(i));
+			Claim claim = claimsToDelete.get(i); 
+			claim.removeSurfaceFluids(null);
+			
+			this.deleteClaim(claim);
+			
+			//if in a creative mode world, delete the claim
+			if(GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()))
+			{
+				GriefPrevention.instance.restoreClaim(claim, 0);
+			}
 		}					
 	}
 
@@ -996,7 +1011,8 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.PlayerOfflineTime, "  Last login: {0} days ago.", "0: number of full days since last login");
 		this.addDefault(defaults, Messages.BuildingOutsideClaims, "Other players can undo your work here!  Consider claiming this area to protect your work.", null);
 		this.addDefault(defaults, Messages.TrappedWontWorkHere, "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.", null);
-		this.addDefault(defaults, Messages.CommandBannedInPvP, "You can't use that command while in PvP combat.", null);		
+		this.addDefault(defaults, Messages.CommandBannedInPvP, "You can't use that command while in PvP combat.", null);
+		this.addDefault(defaults, Messages.UnclaimCleanupWarning, "The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you want to keep, you should reclaim it.", null);
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));

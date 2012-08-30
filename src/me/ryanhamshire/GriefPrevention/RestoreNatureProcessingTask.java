@@ -42,6 +42,7 @@ class RestoreNatureProcessingTask implements Runnable
 	private Location greaterBoundaryCorner;
 	private Player player;			//absolutely must not be accessed.  not thread safe.
 	private Biome biome;
+	private boolean creativeMode;
 	private int seaLevel;
 	private boolean aggressiveMode;
 	
@@ -49,7 +50,7 @@ class RestoreNatureProcessingTask implements Runnable
 	private ArrayList<Integer> notAllowedToHang;    //natural blocks which don't naturally hang in their air
 	private ArrayList<Integer> playerBlocks;		//a "complete" list of player-placed blocks.  MUST BE MAINTAINED as patches introduce more
 	
-	public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, Environment environment, Biome biome, Location lesserBoundaryCorner, Location greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, Player player)
+	public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, Environment environment, Biome biome, Location lesserBoundaryCorner, Location greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, boolean creativeMode, Player player)
 	{
 		this.snapshots = snapshots;
 		this.miny = miny;
@@ -60,6 +61,7 @@ class RestoreNatureProcessingTask implements Runnable
 		this.seaLevel = seaLevel;
 		this.aggressiveMode = aggressiveMode;
 		this.player = player;
+		this.creativeMode = creativeMode;
 		
 		this.notAllowedToHang = new ArrayList<Integer>();
 		this.notAllowedToHang.add(Material.DIRT.getId());
@@ -150,6 +152,9 @@ class RestoreNatureProcessingTask implements Runnable
 		this.playerBlocks.add(Material.DIODE_BLOCK_ON.getId());		
 		this.playerBlocks.add(Material.WEB.getId());
 		this.playerBlocks.add(Material.SPONGE.getId());
+		this.playerBlocks.add(Material.GRAVEL.getId());
+		this.playerBlocks.add(Material.EMERALD_BLOCK.getId());
+		this.playerBlocks.add(Material.SANDSTONE.getId());
 		
 		//these are unnatural in the standard world, but not in the nether
 		if(this.environment != Environment.NETHER)
@@ -169,25 +174,33 @@ class RestoreNatureProcessingTask implements Runnable
 		}
 		
 		//these are unnatural in sandy biomes, but not elsewhere
-		if(this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH || this.aggressiveMode)
+		if(this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH || this.environment != Environment.NORMAL || this.aggressiveMode)
 		{
 			this.playerBlocks.add(Material.LEAVES.getId());
 			this.playerBlocks.add(Material.LOG.getId());
 		}
 		
-		//in aggressive mode, also treat these blocks as user placed, to be removed
+		//in aggressive or creative world mode, also treat these blocks as user placed, to be removed
 		//this is helpful in the few cases where griefers intentionally use natural blocks to grief,
-		//like a single-block tower of iron ore or a giant penis constructed with logs
-		if(this.aggressiveMode)
+		//like a single-block tower of iron ore or a giant penis constructed with melons
+		if(this.aggressiveMode || this.creativeMode)
 		{
-			this.playerBlocks.add(Material.IRON_ORE.getId());			
-			this.playerBlocks.add(Material.PUMPKIN.getId());
-			this.playerBlocks.add(Material.PUMPKIN_STEM.getId());
+			this.playerBlocks.add(Material.IRON_ORE.getId());
+			this.playerBlocks.add(Material.GOLD_ORE.getId());
+			this.playerBlocks.add(Material.DIAMOND_ORE.getId());
 			this.playerBlocks.add(Material.MELON_BLOCK.getId());
 			this.playerBlocks.add(Material.MELON_STEM.getId());
 			this.playerBlocks.add(Material.BEDROCK.getId());
-			this.playerBlocks.add(Material.GRAVEL.getId());
-			this.playerBlocks.add(Material.SANDSTONE.getId());
+			this.playerBlocks.add(Material.COAL_ORE.getId());
+			this.playerBlocks.add(Material.PUMPKIN.getId());
+			this.playerBlocks.add(Material.PUMPKIN_STEM.getId());
+			this.playerBlocks.add(Material.MELON.getId());
+		}
+		
+		if(this.aggressiveMode)
+		{
+			this.playerBlocks.add(Material.LEAVES.getId());
+			this.playerBlocks.add(Material.VINE.getId());
 		}
 	}
 	
@@ -196,17 +209,23 @@ class RestoreNatureProcessingTask implements Runnable
 	{
 		//order is important!
 		
+		//remove sandstone which appears to be unnatural
+		this.removeSandstone();
+		
 		//remove any blocks which are definitely player placed
 		this.removePlayerBlocks();
 		
 		//remove natural blocks which are unnaturally hanging in the air
 		this.removeHanging();
 		
+		//reduce large outcroppings of stone, sandstone
+		this.reduceStone();
+		
+		//reduce logs, except in jungle biomes
+		this.reduceLogs();
+		
 		//remove natural blocks which are unnaturally stacked high
 		this.removeWallsAndTowers();
-		
-		//cover surface stone and gravel with sand or grass, as the biome requires
-		this.coverSurfaceStone();
 		
 		//fill unnatural thin trenches and single-block potholes
 		this.fillHolesAndTrenches();
@@ -217,9 +236,159 @@ class RestoreNatureProcessingTask implements Runnable
 		//remove water/lava above sea level
 		this.removeDumpedFluids();
 		
+		//cover over any gaping holes in creative mode worlds
+		if(this.creativeMode && this.environment == Environment.NORMAL)
+		{
+			this.fillBigHoles();
+		}
+		
+		//cover surface stone and gravel with sand or grass, as the biome requires
+		this.coverSurfaceStone();
+		
 		//schedule main thread task to apply the result to the world
 		RestoreNatureExecutionTask task = new RestoreNatureExecutionTask(this.snapshots, this.miny, this.lesserBoundaryCorner, this.greaterBoundaryCorner, this.player);
 		GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task);
+	}
+	
+	private void fillBigHoles()
+	{
+		for(int x = 1; x < snapshots.length - 1; x++)
+		{
+			for(int z = 1; z < snapshots[0][0].length - 1; z++)
+			{
+				//replace air, lava, or running water at sea level with stone
+				if(this.snapshots[x][this.seaLevel - 3][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel][z].data != 0))
+				{
+					this.snapshots[x][this.seaLevel - 3][z].typeId = Material.STONE.getId();
+				}
+				
+				//do the same for one layer beneath that (because a future restoration step may convert surface stone to sand, which falls down)
+				if(this.snapshots[x][this.seaLevel - 4][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel][z].data != 0))
+				{
+					this.snapshots[x][this.seaLevel - 4][z].typeId = Material.STONE.getId();
+				}
+			}
+		}
+	}
+	
+	//converts sandstone adjacent to sand to sand, and any other sandstone to air
+	private void removeSandstone()
+	{
+		for(int x = 1; x < snapshots.length - 1; x++)
+		{
+			for(int z = 1; z < snapshots[0][0].length - 1; z++)
+			{
+				for(int y = snapshots[0].length - 2; y > miny; y--)
+				{
+					if(snapshots[x][y][z].typeId != Material.SANDSTONE.getId()) continue;
+					
+					BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
+					BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
+					BlockSnapshot upBlock = this.snapshots[x][y][z + 1];
+					BlockSnapshot downBlock = this.snapshots[x][y][z - 1];
+					BlockSnapshot underBlock = this.snapshots[x][y - 1][z];
+					BlockSnapshot aboveBlock = this.snapshots[x][y + 1][z];
+					
+					//skip blocks which may cause a cave-in
+					if(aboveBlock.typeId == Material.SAND.getId() && underBlock.typeId == Material.AIR.getId()) continue;
+					
+					//count adjacent non-air/non-leaf blocks
+					if(	leftBlock.typeId == Material.SAND.getId() || 
+						rightBlock.typeId == Material.SAND.getId() ||
+						upBlock.typeId == Material.SAND.getId() ||
+						downBlock.typeId == Material.SAND.getId() ||
+						aboveBlock.typeId == Material.SAND.getId() ||
+						underBlock.typeId == Material.SAND.getId())
+					{
+						snapshots[x][y][z].typeId = Material.SAND.getId();
+					}
+					else
+					{
+						snapshots[x][y][z].typeId = Material.AIR.getId();
+					}					
+				}				
+			}
+		}
+	}
+	
+	private void reduceStone()
+	{
+		for(int x = 1; x < snapshots.length - 1; x++)
+		{
+			for(int z = 1; z < snapshots[0][0].length - 1; z++)
+			{
+				int thisy = this.highestY(x, z, true);
+				
+				while(thisy > this.seaLevel - 2 && (this.snapshots[x][thisy][z].typeId == Material.STONE.getId() || this.snapshots[x][thisy][z].typeId == Material.SANDSTONE.getId()))
+				{
+					BlockSnapshot leftBlock = this.snapshots[x + 1][thisy][z];
+					BlockSnapshot rightBlock = this.snapshots[x - 1][thisy][z];
+					BlockSnapshot upBlock = this.snapshots[x][thisy][z + 1];
+					BlockSnapshot downBlock = this.snapshots[x][thisy][z - 1];
+					
+					//count adjacent non-air/non-leaf blocks
+					byte adjacentBlockCount = 0;
+					if(leftBlock.typeId != Material.AIR.getId() && leftBlock.typeId != Material.LEAVES.getId() && leftBlock.typeId != Material.VINE.getId())
+					{
+						adjacentBlockCount++;
+					}
+					if(rightBlock.typeId != Material.AIR.getId() && rightBlock.typeId != Material.LEAVES.getId() && rightBlock.typeId != Material.VINE.getId())
+					{
+						adjacentBlockCount++;
+					}
+					if(downBlock.typeId != Material.AIR.getId() && downBlock.typeId != Material.LEAVES.getId() && downBlock.typeId != Material.VINE.getId())
+					{
+						adjacentBlockCount++;
+					}
+					if(upBlock.typeId != Material.AIR.getId() && upBlock.typeId != Material.LEAVES.getId() && upBlock.typeId != Material.VINE.getId())
+					{
+						adjacentBlockCount++;
+					}
+					
+					if(adjacentBlockCount < 3)
+					{
+						this.snapshots[x][thisy][z].typeId = Material.AIR.getId();
+					}
+
+					thisy--;
+				}				
+			}
+		}
+	}
+	
+	private void reduceLogs()
+	{
+		boolean jungleBiome = this.biome == Biome.JUNGLE || this.biome == Biome.JUNGLE_HILLS;
+		
+		//scan all blocks above sea level
+		for(int x = 1; x < snapshots.length - 1; x++)
+		{
+			for(int z = 1; z < snapshots[0][0].length - 1; z++)
+			{
+				for(int y = this.seaLevel - 2; y < snapshots[0].length; y++)
+				{
+					BlockSnapshot block = snapshots[x][y][z];
+					
+					//skip non-logs
+					if(block.typeId != Material.LOG.getId()) continue;
+					
+					//if in jungle biome, skip jungle logs
+					if(jungleBiome && block.data == 3) continue;
+				
+					//examine adjacent blocks for logs
+					BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
+					BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
+					BlockSnapshot upBlock = this.snapshots[x][y][z + 1];
+					BlockSnapshot downBlock = this.snapshots[x][y][z - 1];
+					
+					//if any, remove the log
+					if(leftBlock.typeId == Material.LOG.getId() || rightBlock.typeId == Material.LOG.getId() || upBlock.typeId == Material.LOG.getId() || downBlock.typeId == Material.LOG.getId())
+					{
+						this.snapshots[x][y][z].typeId = Material.AIR.getId();
+					}
+				}				
+			}
+		}
 	}
 	
 	private void removePlayerBlocks()
@@ -332,7 +501,7 @@ class RestoreNatureProcessingTask implements Runnable
 				int y = this.highestY(x, z, true);
 				BlockSnapshot block = snapshots[x][y][z];
 				
-				if(block.typeId == Material.STONE.getId() || block.typeId == Material.GRAVEL.getId() || block.typeId == Material.DIRT.getId())
+				if(block.typeId == Material.STONE.getId() || block.typeId == Material.GRAVEL.getId() || block.typeId == Material.DIRT.getId() || block.typeId == Material.SANDSTONE.getId())
 				{
 					if(this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH)
 					{
@@ -516,6 +685,7 @@ class RestoreNatureProcessingTask implements Runnable
 		{
 			BlockSnapshot block = this.snapshots[x][y][z];
 			if(block.typeId != Material.AIR.getId() &&
+			!(ignoreLeaves && block.typeId == Material.SNOW.getId()) &&
 			!(ignoreLeaves && block.typeId == Material.LEAVES.getId()) &&
 			!(block.typeId == Material.STATIONARY_WATER.getId() && block.data != 0) &&
 			!(block.typeId == Material.STATIONARY_LAVA.getId() && block.data != 0))

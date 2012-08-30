@@ -807,10 +807,11 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//if the bucket is being used in a claim, allow for dumping lava closer to other players
-		Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, null);
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, playerData.lastClaim);
 		if(claim != null)
 		{
-			minLavaDistance = 3;			
+			minLavaDistance = 3;
 		}
 		
 		//otherwise no wilderness dumping (unless underground) in worlds where claims are enabled
@@ -900,6 +901,25 @@ class PlayerEventHandler implements Listener
 		
 		Material clickedBlockType = clickedBlock.getType();
 		
+		//apply rules for putting out fires (requires build permission)
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		if(event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
+		{
+			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+			if(claim != null)
+			{
+				playerData.lastClaim = claim;
+				
+				String noBuildReason = claim.allowBuild(player);
+				if(noBuildReason != null)
+				{
+					event.setCancelled(true);
+					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+					return;
+				}
+			}
+		}
+		
 		//apply rules for containers and crafting blocks
 		if(	GriefPrevention.instance.config_claims_preventTheft && (
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
@@ -913,7 +933,6 @@ class PlayerEventHandler implements Listener
 						GriefPrevention.instance.config_mods_containerTrustIds.contains(clickedBlock.getTypeId()))))
 		{			
 			//block container use while under siege, so players can't hide items from attackers
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 			if(playerData.siegeData != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
@@ -930,9 +949,11 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//otherwise check permissions for the claim the player is in
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
+			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
+				playerData.lastClaim = claim;
+				
 				String noContainersReason = claim.allowContainers(player);
 				if(noContainersReason != null)
 				{
@@ -956,9 +977,11 @@ class PlayerEventHandler implements Listener
 				(GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
 				(GriefPrevention.instance.config_claims_lockFenceGates && clickedBlockType == Material.FENCE_GATE))
 		{
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
+			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
+				playerData.lastClaim = claim;
+				
 				String noAccessReason = claim.allowAccess(player);
 				if(noAccessReason != null)
 				{
@@ -972,9 +995,11 @@ class PlayerEventHandler implements Listener
 		//otherwise apply rules for buttons and switches
 		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.contains(clickedBlock.getTypeId())))
 		{
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
+			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
+				playerData.lastClaim = claim;
+				
 				String noAccessReason = claim.allowAccess(player);
 				if(noAccessReason != null)
 				{
@@ -996,7 +1021,7 @@ class PlayerEventHandler implements Listener
 		//apply rule for note blocks and repeaters
 		else if(clickedBlockType == Material.NOTE_BLOCK || clickedBlockType == Material.DIODE_BLOCK_ON || clickedBlockType == Material.DIODE_BLOCK_OFF)
 		{
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, null);
+			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
 				String noBuildReason = claim.allowBuild(player);
@@ -1045,7 +1070,6 @@ class PlayerEventHandler implements Listener
 				}
 			
 				//enforce limit on total number of entities in this claim
-				PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 				if(claim == null) return;
 				
@@ -1070,7 +1094,7 @@ class PlayerEventHandler implements Listener
 					return;
 				}
 				
-				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false /*ignore height*/, null);
+				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false /*ignore height*/, playerData.lastClaim);
 				
 				//no claim case
 				if(claim == null)
@@ -1082,6 +1106,7 @@ class PlayerEventHandler implements Listener
 				//claim case
 				else
 				{
+					playerData.lastClaim = claim;
 					GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
 					
 					//visualize boundary
@@ -1115,8 +1140,6 @@ class PlayerEventHandler implements Listener
 			
 			//if it's a golden shovel
 			else if(materialInHand != GriefPrevention.instance.config_claims_modificationTool) return;
-			
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 			
 			//disable golden shovel while under siege
 			if(playerData.siegeData != null)
@@ -1152,24 +1175,7 @@ class PlayerEventHandler implements Listener
 				//figure out which chunk to repair
 				Chunk chunk = player.getWorld().getChunkAt(clickedBlock.getLocation());
 				
-				//build a snapshot of this chunk, including 1 block boundary outside of the chunk all the way around
-				int maxHeight = chunk.getWorld().getMaxHeight();
-				BlockSnapshot[][][] snapshots = new BlockSnapshot[18][maxHeight][18];
-				Block startBlock = chunk.getBlock(0, 0, 0);
-				Location startLocation = new Location(chunk.getWorld(), startBlock.getX() - 1, 0, startBlock.getZ() - 1);
-				for(int x = 0; x < snapshots.length; x++)
-				{
-					for(int z = 0; z < snapshots[0][0].length; z++)
-					{
-						for(int y = 0; y < snapshots[0].length; y++)
-						{
-							Block block = chunk.getWorld().getBlockAt(startLocation.getBlockX() + x, startLocation.getBlockY() + y, startLocation.getBlockZ() + z);
-							snapshots[x][y][z] = new BlockSnapshot(block.getLocation(), block.getTypeId(), block.getData());
-						}
-					}
-				}
-				
-				//create task to process those data in another thread
+				//start the repair process
 				
 				//set boundaries for processing
 				int miny = clickedBlock.getY();
@@ -1183,13 +1189,7 @@ class PlayerEventHandler implements Listener
 					}
 				}
 				
-				Location lesserBoundaryCorner = chunk.getBlock(0,  0, 0).getLocation();
-				Location greaterBoundaryCorner = chunk.getBlock(15, 0, 15).getLocation();
-				
-				//create task
-				//when done processing, this task will create a main thread task to actually update the world with processing results
-				RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), chunk.getWorld().getBiome(lesserBoundaryCorner.getBlockX(), lesserBoundaryCorner.getBlockZ()), lesserBoundaryCorner, greaterBoundaryCorner, chunk.getWorld().getSeaLevel(), playerData.shovelMode == ShovelMode.RestoreNatureAggressive, player);
-				GriefPrevention.instance.getServer().getScheduler().scheduleAsyncDelayedTask(GriefPrevention.instance, task);
+				GriefPrevention.instance.restoreChunk(chunk, miny, playerData.shovelMode == ShovelMode.RestoreNatureAggressive, 0, player);
 				
 				return;
 			}
@@ -1209,11 +1209,11 @@ class PlayerEventHandler implements Listener
 				}			
 				else
 				{
+					allowedFillBlocks.add(Material.GRASS);
+					allowedFillBlocks.add(Material.DIRT);
 					allowedFillBlocks.add(Material.STONE);
 					allowedFillBlocks.add(Material.SAND);
 					allowedFillBlocks.add(Material.SANDSTONE);
-					allowedFillBlocks.add(Material.DIRT);
-					allowedFillBlocks.add(Material.GRASS);
 					allowedFillBlocks.add(Material.ICE);
 				}
 				
@@ -1236,6 +1236,29 @@ class PlayerEventHandler implements Listener
 						Location location = new Location(centerBlock.getWorld(), x, centerBlock.getY(), z);
 						if(location.distance(centerBlock.getLocation()) > playerData.fillRadius) continue;
 						
+						//default fill block is initially the first from the allowed fill blocks list above
+						Material defaultFiller = allowedFillBlocks.get(0);
+						
+						//prefer to use the block the player clicked on, if it's an acceptable fill block
+						if(allowedFillBlocks.contains(centerBlock.getType()))
+						{
+							defaultFiller = centerBlock.getType();
+						}
+						
+						//if the player clicks on water, try to sink through the water to find something underneath that's useful for a filler
+						else if(centerBlock.getType() == Material.WATER || centerBlock.getType() == Material.STATIONARY_WATER)
+						{
+							Block block = centerBlock.getWorld().getBlockAt(centerBlock.getLocation());
+							while(!allowedFillBlocks.contains(block.getType()) && block.getY() > centerBlock.getY() - 10)
+							{
+								block = block.getRelative(BlockFace.DOWN);
+							}
+							if(allowedFillBlocks.contains(block.getType()))
+							{
+								defaultFiller = block.getType();
+							}
+						}
+						
 						//fill bottom to top
 						for(int y = minHeight; y <= maxHeight; y++)
 						{
@@ -1252,41 +1275,43 @@ class PlayerEventHandler implements Listener
 							//only replace air, spilling water, snow, long grass
 							if(block.getType() == Material.AIR || block.getType() == Material.SNOW || (block.getType() == Material.STATIONARY_WATER && block.getData() != 0) || block.getType() == Material.LONG_GRASS)
 							{							
-								//look to neighbors for an appropriate fill block
-								Block eastBlock = block.getRelative(BlockFace.EAST);
-								Block westBlock = block.getRelative(BlockFace.WEST);
-								Block northBlock = block.getRelative(BlockFace.NORTH);
-								Block southBlock = block.getRelative(BlockFace.SOUTH);
-								Block underBlock = block.getRelative(BlockFace.DOWN);
-								
-								//first, check lateral neighbors (ideally, want to keep natural layers)
-								if(allowedFillBlocks.contains(eastBlock.getType()))
+								//if the top level, always use the default filler picked above
+								if(y == maxHeight)
 								{
-									block.setType(eastBlock.getType());
-								}
-								else if(allowedFillBlocks.contains(westBlock.getType()))
-								{
-									block.setType(westBlock.getType());
-								}
-								else if(allowedFillBlocks.contains(northBlock.getType()))
-								{
-									block.setType(northBlock.getType());
-								}
-								else if(allowedFillBlocks.contains(southBlock.getType()))
-								{
-									block.setType(southBlock.getType());
+									block.setType(defaultFiller);
 								}
 								
-								//then check underneath
-								else if(allowedFillBlocks.contains(underBlock.getType()))
-								{
-									block.setType(underBlock.getType());
-								}
-								
-								//if all else fails, use the first material listed in the acceptable fill blocks above
+								//otherwise look to neighbors for an appropriate fill block
 								else
 								{
-									block.setType(allowedFillBlocks.get(0));
+									Block eastBlock = block.getRelative(BlockFace.EAST);
+									Block westBlock = block.getRelative(BlockFace.WEST);
+									Block northBlock = block.getRelative(BlockFace.NORTH);
+									Block southBlock = block.getRelative(BlockFace.SOUTH);
+									
+									//first, check lateral neighbors (ideally, want to keep natural layers)
+									if(allowedFillBlocks.contains(eastBlock.getType()))
+									{
+										block.setType(eastBlock.getType());
+									}
+									else if(allowedFillBlocks.contains(westBlock.getType()))
+									{
+										block.setType(westBlock.getType());
+									}
+									else if(allowedFillBlocks.contains(northBlock.getType()))
+									{
+										block.setType(northBlock.getType());
+									}
+									else if(allowedFillBlocks.contains(southBlock.getType()))
+									{
+										block.setType(southBlock.getType());
+									}
+									
+									//if all else fails, use the default filler selected above
+									else
+									{
+										block.setType(defaultFiller);
+									}
 								}
 							}
 						}
@@ -1380,6 +1405,7 @@ class PlayerEventHandler implements Listener
 				//rule1: in creative mode, top-level claims can't be moved or resized smaller.
 				//rule2: in any mode, shrinking a claim removes any surface fluids
 				Claim oldClaim = playerData.claimResizing;
+				boolean smaller = false;
 				if(oldClaim.parent == null)
 				{				
 					//temporary claim instance, just for checking contains()
@@ -1391,8 +1417,10 @@ class PlayerEventHandler implements Listener
 					//if the new claim is smaller
 					if(!newClaim.contains(oldClaim.getLesserBoundaryCorner(), true, false) || !newClaim.contains(oldClaim.getGreaterBoundaryCorner(), true, false))
 					{
+						smaller = true;
+						
 						//enforce creative mode rule
-						if(!player.hasPermission("griefprevention.deleteclaims") && GriefPrevention.instance.creativeRulesApply(player.getLocation()))
+						if(!GriefPrevention.instance.config_claims_allowUnclaimInCreative && !player.hasPermission("griefprevention.deleteclaims") && GriefPrevention.instance.creativeRulesApply(player.getLocation()))
 						{
 							GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoCreativeUnClaim);
 							return;
@@ -1417,6 +1445,14 @@ class PlayerEventHandler implements Listener
 					if(!playerData.claimResizing.ownerName.equals(playerName))
 					{
 						GriefPrevention.AddLogEntry(playerName + " resized " + playerData.claimResizing.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(playerData.claimResizing.lesserBoundaryCorner) + ".");
+					}
+					
+					//if in a creative mode world and shrinking an existing claim, restore any unclaimed area
+					if(smaller && GriefPrevention.instance.creativeRulesApply(oldClaim.getLesserBoundaryCorner()))
+					{
+						GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
+						GriefPrevention.instance.restoreClaim(oldClaim, 20L * 60 * 2);  //2 minutes
+						GriefPrevention.AddLogEntry(player.getName() + " shrank a claim @ " + GriefPrevention.getfriendlyLocationString(playerData.claimResizing.getLesserBoundaryCorner()));
 					}
 					
 					//clean up

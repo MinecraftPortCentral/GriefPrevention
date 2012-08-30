@@ -23,6 +23,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Animals;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -88,7 +89,7 @@ class RestoreNatureExecutionTask implements Runnable
 		for(int i = 0; i < entities.length; i++)
 		{
 			Entity entity = entities[i];
-			if(!(entity instanceof Player))
+			if(!(entity instanceof Player || entity instanceof Animals))
 			{
 				entity.remove();			
 			}
@@ -101,8 +102,11 @@ class RestoreNatureExecutionTask implements Runnable
 		}
 		
 		//show visualization to player
-		Claim claim = new Claim(lesserCorner, greaterCorner, "", new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);
-		Visualization visualization = Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation());
-		Visualization.Apply(player, visualization);
+		if(player != null)
+		{
+			Claim claim = new Claim(lesserCorner, greaterCorner, "", new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);
+			Visualization visualization = Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation());
+			Visualization.Apply(player, visualization);
+		}
 	}	
 }

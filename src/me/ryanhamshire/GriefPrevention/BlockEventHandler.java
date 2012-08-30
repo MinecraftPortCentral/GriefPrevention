@@ -352,7 +352,7 @@ public class BlockEventHandler implements Listener
 		}	
 		
 		//FEATURE: warn players when they're placing non-trash blocks outside of their claimed areas
-		else if(GriefPrevention.instance.config_claims_warnOnBuildOutside && !this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
+		else if(GriefPrevention.instance.config_claims_warnOnBuildOutside && !this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()) && playerData.claims.size() > 0)
 		{
 			if(--playerData.unclaimedBlockPlacementsUntilWarning <= 0)
 			{
@@ -601,7 +601,8 @@ public class BlockEventHandler implements Listener
 		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
 		
 		//into wilderness is NOT OK when surface buckets are limited
-		if(GriefPrevention.instance.config_blockWildernessWaterBuckets && toClaim == null)
+		Material materialDispensed = dispenseEvent.getItem().getType();
+		if((materialDispensed == Material.WATER_BUCKET || materialDispensed == Material.LAVA_BUCKET) && GriefPrevention.instance.config_blockWildernessWaterBuckets && toClaim == null)
 		{
 			dispenseEvent.setCancelled(true);
 			return;

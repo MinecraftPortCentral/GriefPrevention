@@ -41,6 +41,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.entity.EntityBreakDoorEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -73,6 +74,13 @@ class EntityEventHandler implements Listener
 		{
 			event.setCancelled(true);
 		}
+	}
+	
+	//don't allow zombies to break down doors
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	public void onZombieBreakDoor(EntityBreakDoorEvent event)
+	{		
+		if(!GriefPrevention.instance.config_zombiesBreakDoors) event.setCancelled(true);
 	}
 	
 	//don't allow entities to trample crops
