@@ -75,110 +75,8 @@ class RestoreNatureProcessingTask implements Runnable
 			this.notAllowedToHang.add(Material.STONE.getId());
 		}
 		
-		//NOTE on this list.  why not make a list of natural blocks?
-		//answer: better to leave a few player blocks than to remove too many natural blocks.  remember we're "restoring nature"
-		//a few extra player blocks can be manually removed, but it will be impossible to guess exactly which natural materials to use in manual repair of an overzealous block removal
 		this.playerBlocks = new ArrayList<Integer>();
-		this.playerBlocks.add(Material.FIRE.getId());
-		this.playerBlocks.add(Material.BED_BLOCK.getId());
-		this.playerBlocks.add(Material.WOOD.getId());
-		this.playerBlocks.add(Material.BOOKSHELF.getId());
-		this.playerBlocks.add(Material.BREWING_STAND.getId());
-		this.playerBlocks.add(Material.BRICK.getId());
-		this.playerBlocks.add(Material.COBBLESTONE.getId());
-		this.playerBlocks.add(Material.GLASS.getId());
-		this.playerBlocks.add(Material.LAPIS_BLOCK.getId());
-		this.playerBlocks.add(Material.DISPENSER.getId());
-		this.playerBlocks.add(Material.NOTE_BLOCK.getId());
-		this.playerBlocks.add(Material.POWERED_RAIL.getId());
-		this.playerBlocks.add(Material.DETECTOR_RAIL.getId());
-		this.playerBlocks.add(Material.PISTON_STICKY_BASE.getId());
-		this.playerBlocks.add(Material.PISTON_BASE.getId());
-		this.playerBlocks.add(Material.PISTON_EXTENSION.getId());
-		this.playerBlocks.add(Material.WOOL.getId());
-		this.playerBlocks.add(Material.PISTON_MOVING_PIECE.getId());
-		this.playerBlocks.add(Material.GOLD_BLOCK.getId());
-		this.playerBlocks.add(Material.IRON_BLOCK.getId());
-		this.playerBlocks.add(Material.DOUBLE_STEP.getId());
-		this.playerBlocks.add(Material.STEP.getId());
-		this.playerBlocks.add(Material.CROPS.getId());
-		this.playerBlocks.add(Material.TNT.getId());
-		this.playerBlocks.add(Material.MOSSY_COBBLESTONE.getId());
-		this.playerBlocks.add(Material.TORCH.getId());
-		this.playerBlocks.add(Material.FIRE.getId());
-		this.playerBlocks.add(Material.WOOD_STAIRS.getId());
-		this.playerBlocks.add(Material.CHEST.getId());
-		this.playerBlocks.add(Material.REDSTONE_WIRE.getId());
-		this.playerBlocks.add(Material.DIAMOND_BLOCK.getId());
-		this.playerBlocks.add(Material.WORKBENCH.getId());
-		this.playerBlocks.add(Material.SOIL.getId());
-		this.playerBlocks.add(Material.FURNACE.getId());
-		this.playerBlocks.add(Material.BURNING_FURNACE.getId());
-		this.playerBlocks.add(Material.WOODEN_DOOR.getId());
-		this.playerBlocks.add(Material.SIGN_POST.getId());
-		this.playerBlocks.add(Material.LADDER.getId());
-		this.playerBlocks.add(Material.RAILS.getId());
-		this.playerBlocks.add(Material.COBBLESTONE_STAIRS.getId());
-		this.playerBlocks.add(Material.WALL_SIGN.getId());
-		this.playerBlocks.add(Material.STONE_PLATE.getId());
-		this.playerBlocks.add(Material.LEVER.getId());
-		this.playerBlocks.add(Material.IRON_DOOR_BLOCK.getId());
-		this.playerBlocks.add(Material.WOOD_PLATE.getId());
-		this.playerBlocks.add(Material.REDSTONE_TORCH_ON.getId());
-		this.playerBlocks.add(Material.REDSTONE_TORCH_OFF.getId());
-		this.playerBlocks.add(Material.STONE_BUTTON.getId());
-		this.playerBlocks.add(Material.SNOW_BLOCK.getId());
-		this.playerBlocks.add(Material.JUKEBOX.getId());
-		this.playerBlocks.add(Material.FENCE.getId());
-		this.playerBlocks.add(Material.PORTAL.getId());
-		this.playerBlocks.add(Material.JACK_O_LANTERN.getId());
-		this.playerBlocks.add(Material.CAKE_BLOCK.getId());
-		this.playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
-		this.playerBlocks.add(Material.DIODE_BLOCK_OFF.getId());
-		this.playerBlocks.add(Material.TRAP_DOOR.getId());
-		this.playerBlocks.add(Material.SMOOTH_BRICK.getId());
-		this.playerBlocks.add(Material.HUGE_MUSHROOM_1.getId());
-		this.playerBlocks.add(Material.HUGE_MUSHROOM_2.getId());
-		this.playerBlocks.add(Material.IRON_FENCE.getId());
-		this.playerBlocks.add(Material.THIN_GLASS.getId());
-		this.playerBlocks.add(Material.MELON_STEM.getId());
-		this.playerBlocks.add(Material.FENCE_GATE.getId());
-		this.playerBlocks.add(Material.BRICK_STAIRS.getId());
-		this.playerBlocks.add(Material.SMOOTH_STAIRS.getId());
-		this.playerBlocks.add(Material.ENCHANTMENT_TABLE.getId());
-		this.playerBlocks.add(Material.BREWING_STAND.getId());
-		this.playerBlocks.add(Material.CAULDRON.getId());
-		this.playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
-		this.playerBlocks.add(Material.DIODE_BLOCK_ON.getId());		
-		this.playerBlocks.add(Material.WEB.getId());
-		this.playerBlocks.add(Material.SPONGE.getId());
-		this.playerBlocks.add(Material.GRAVEL.getId());
-		this.playerBlocks.add(Material.EMERALD_BLOCK.getId());
-		this.playerBlocks.add(Material.SANDSTONE.getId());
-		
-		//these are unnatural in the standard world, but not in the nether
-		if(this.environment != Environment.NETHER)
-		{
-			this.playerBlocks.add(Material.NETHERRACK.getId());
-			this.playerBlocks.add(Material.SOUL_SAND.getId());
-			this.playerBlocks.add(Material.GLOWSTONE.getId());
-			this.playerBlocks.add(Material.NETHER_BRICK.getId());
-			this.playerBlocks.add(Material.NETHER_FENCE.getId());
-			this.playerBlocks.add(Material.NETHER_BRICK_STAIRS.getId());
-		}
-		
-		//these are unnatural in the standard and nether worlds, but not in the end
-		if(this.environment != Environment.THE_END)
-		{
-			this.playerBlocks.add(Material.OBSIDIAN.getId());			
-		}
-		
-		//these are unnatural in sandy biomes, but not elsewhere
-		if(this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH || this.environment != Environment.NORMAL || this.aggressiveMode)
-		{
-			this.playerBlocks.add(Material.LEAVES.getId());
-			this.playerBlocks.add(Material.LOG.getId());
-		}
+		this.playerBlocks.addAll(RestoreNatureProcessingTask.getPlayerBlocks(this.environment, this.biome));
 		
 		//in aggressive or creative world mode, also treat these blocks as user placed, to be removed
 		//this is helpful in the few cases where griefers intentionally use natural blocks to grief,
@@ -200,6 +98,8 @@ class RestoreNatureProcessingTask implements Runnable
 		if(this.aggressiveMode)
 		{
 			this.playerBlocks.add(Material.LEAVES.getId());
+			this.playerBlocks.add(Material.LOG.getId());
+			this.playerBlocks.add(Material.LEAVES.getId());
 			this.playerBlocks.add(Material.VINE.getId());
 		}
 	}
@@ -215,14 +115,14 @@ class RestoreNatureProcessingTask implements Runnable
 		//remove any blocks which are definitely player placed
 		this.removePlayerBlocks();
 		
-		//remove natural blocks which are unnaturally hanging in the air
-		this.removeHanging();
-		
 		//reduce large outcroppings of stone, sandstone
 		this.reduceStone();
 		
 		//reduce logs, except in jungle biomes
 		this.reduceLogs();
+		
+		//remove natural blocks which are unnaturally hanging in the air
+		this.removeHanging();
 		
 		//remove natural blocks which are unnaturally stacked high
 		this.removeWallsAndTowers();
@@ -257,13 +157,13 @@ class RestoreNatureProcessingTask implements Runnable
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
 			{
 				//replace air, lava, or running water at sea level with stone
-				if(this.snapshots[x][this.seaLevel - 3][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel][z].data != 0))
+				if(this.snapshots[x][this.seaLevel - 3][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 3][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 3][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 3][z].data != 0))
 				{
 					this.snapshots[x][this.seaLevel - 3][z].typeId = Material.STONE.getId();
 				}
 				
 				//do the same for one layer beneath that (because a future restoration step may convert surface stone to sand, which falls down)
-				if(this.snapshots[x][this.seaLevel - 4][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel][z].data != 0))
+				if(this.snapshots[x][this.seaLevel - 4][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 4][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 4][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 4][z].data != 0))
 				{
 					this.snapshots[x][this.seaLevel - 4][z].typeId = Material.STONE.getId();
 				}
@@ -695,5 +595,120 @@ class RestoreNatureProcessingTask implements Runnable
 		}
 		
 		return y;
+	}
+	
+	static ArrayList<Integer> getPlayerBlocks(Environment environment, Biome biome) 
+	{
+		//NOTE on this list.  why not make a list of natural blocks?
+		//answer: better to leave a few player blocks than to remove too many natural blocks.  remember we're "restoring nature"
+		//a few extra player blocks can be manually removed, but it will be impossible to guess exactly which natural materials to use in manual repair of an overzealous block removal
+		ArrayList<Integer> playerBlocks = new ArrayList<Integer>();
+		playerBlocks.add(Material.FIRE.getId());
+		playerBlocks.add(Material.BED_BLOCK.getId());
+		playerBlocks.add(Material.WOOD.getId());
+		playerBlocks.add(Material.BOOKSHELF.getId());
+		playerBlocks.add(Material.BREWING_STAND.getId());
+		playerBlocks.add(Material.BRICK.getId());
+		playerBlocks.add(Material.COBBLESTONE.getId());
+		playerBlocks.add(Material.GLASS.getId());
+		playerBlocks.add(Material.LAPIS_BLOCK.getId());
+		playerBlocks.add(Material.DISPENSER.getId());
+		playerBlocks.add(Material.NOTE_BLOCK.getId());
+		playerBlocks.add(Material.POWERED_RAIL.getId());
+		playerBlocks.add(Material.DETECTOR_RAIL.getId());
+		playerBlocks.add(Material.PISTON_STICKY_BASE.getId());
+		playerBlocks.add(Material.PISTON_BASE.getId());
+		playerBlocks.add(Material.PISTON_EXTENSION.getId());
+		playerBlocks.add(Material.WOOL.getId());
+		playerBlocks.add(Material.PISTON_MOVING_PIECE.getId());
+		playerBlocks.add(Material.GOLD_BLOCK.getId());
+		playerBlocks.add(Material.IRON_BLOCK.getId());
+		playerBlocks.add(Material.DOUBLE_STEP.getId());
+		playerBlocks.add(Material.STEP.getId());
+		playerBlocks.add(Material.CROPS.getId());
+		playerBlocks.add(Material.TNT.getId());
+		playerBlocks.add(Material.MOSSY_COBBLESTONE.getId());
+		playerBlocks.add(Material.TORCH.getId());
+		playerBlocks.add(Material.FIRE.getId());
+		playerBlocks.add(Material.WOOD_STAIRS.getId());
+		playerBlocks.add(Material.CHEST.getId());
+		playerBlocks.add(Material.REDSTONE_WIRE.getId());
+		playerBlocks.add(Material.DIAMOND_BLOCK.getId());
+		playerBlocks.add(Material.WORKBENCH.getId());
+		playerBlocks.add(Material.SOIL.getId());
+		playerBlocks.add(Material.FURNACE.getId());
+		playerBlocks.add(Material.BURNING_FURNACE.getId());
+		playerBlocks.add(Material.WOODEN_DOOR.getId());
+		playerBlocks.add(Material.SIGN_POST.getId());
+		playerBlocks.add(Material.LADDER.getId());
+		playerBlocks.add(Material.RAILS.getId());
+		playerBlocks.add(Material.COBBLESTONE_STAIRS.getId());
+		playerBlocks.add(Material.WALL_SIGN.getId());
+		playerBlocks.add(Material.STONE_PLATE.getId());
+		playerBlocks.add(Material.LEVER.getId());
+		playerBlocks.add(Material.IRON_DOOR_BLOCK.getId());
+		playerBlocks.add(Material.WOOD_PLATE.getId());
+		playerBlocks.add(Material.REDSTONE_TORCH_ON.getId());
+		playerBlocks.add(Material.REDSTONE_TORCH_OFF.getId());
+		playerBlocks.add(Material.STONE_BUTTON.getId());
+		playerBlocks.add(Material.SNOW_BLOCK.getId());
+		playerBlocks.add(Material.JUKEBOX.getId());
+		playerBlocks.add(Material.FENCE.getId());
+		playerBlocks.add(Material.PORTAL.getId());
+		playerBlocks.add(Material.JACK_O_LANTERN.getId());
+		playerBlocks.add(Material.CAKE_BLOCK.getId());
+		playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
+		playerBlocks.add(Material.DIODE_BLOCK_OFF.getId());
+		playerBlocks.add(Material.TRAP_DOOR.getId());
+		playerBlocks.add(Material.SMOOTH_BRICK.getId());
+		playerBlocks.add(Material.HUGE_MUSHROOM_1.getId());
+		playerBlocks.add(Material.HUGE_MUSHROOM_2.getId());
+		playerBlocks.add(Material.IRON_FENCE.getId());
+		playerBlocks.add(Material.THIN_GLASS.getId());
+		playerBlocks.add(Material.MELON_STEM.getId());
+		playerBlocks.add(Material.FENCE_GATE.getId());
+		playerBlocks.add(Material.BRICK_STAIRS.getId());
+		playerBlocks.add(Material.SMOOTH_STAIRS.getId());
+		playerBlocks.add(Material.ENCHANTMENT_TABLE.getId());
+		playerBlocks.add(Material.BREWING_STAND.getId());
+		playerBlocks.add(Material.CAULDRON.getId());
+		playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
+		playerBlocks.add(Material.DIODE_BLOCK_ON.getId());		
+		playerBlocks.add(Material.WEB.getId());
+		playerBlocks.add(Material.SPONGE.getId());
+		playerBlocks.add(Material.GRAVEL.getId());
+		playerBlocks.add(Material.EMERALD_BLOCK.getId());
+		playerBlocks.add(Material.SANDSTONE.getId());
+		playerBlocks.add(Material.WOOD_STEP.getId());
+		playerBlocks.add(Material.WOOD_DOUBLE_STEP.getId());
+		playerBlocks.add(Material.ENDER_CHEST.getId());
+		
+		//these are unnatural in the standard world, but not in the nether
+		if(environment != Environment.NETHER)
+		{
+			playerBlocks.add(Material.NETHERRACK.getId());
+			playerBlocks.add(Material.SOUL_SAND.getId());
+			playerBlocks.add(Material.GLOWSTONE.getId());
+			playerBlocks.add(Material.NETHER_BRICK.getId());
+			playerBlocks.add(Material.NETHER_FENCE.getId());
+			playerBlocks.add(Material.NETHER_BRICK_STAIRS.getId());
+		}
+		
+		//these are unnatural in the standard and nether worlds, but not in the end
+		if(environment != Environment.THE_END)
+		{
+			playerBlocks.add(Material.OBSIDIAN.getId());
+			playerBlocks.add(Material.ENDER_STONE.getId());
+			playerBlocks.add(Material.ENDER_PORTAL_FRAME.getId());
+		}
+		
+		//these are unnatural in sandy biomes, but not elsewhere
+		if(biome == Biome.DESERT || biome == Biome.DESERT_HILLS || biome == Biome.BEACH || environment != Environment.NORMAL)
+		{
+			playerBlocks.add(Material.LEAVES.getId());
+			playerBlocks.add(Material.LOG.getId());
+		}
+		
+		return playerBlocks;
 	}
 }

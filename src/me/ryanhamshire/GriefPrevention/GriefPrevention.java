@@ -565,6 +565,10 @@ public class GriefPrevention extends JavaPlugin
 		EntityCleanupTask task = new EntityCleanupTask(0);
 		this.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L);
 		
+		//start recurring cleanup scan for unused claims belonging to inactive players
+		CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
+		this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60 * 2, 20L * 60 * 5);
+		
 		//register for events
 		PluginManager pluginManager = this.getServer().getPluginManager();
 		
@@ -614,7 +618,7 @@ public class GriefPrevention extends JavaPlugin
 			{
 				GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
 			}
-		}		
+		}
 	}
 	
 	//handles slash commands
@@ -1041,7 +1045,11 @@ public class GriefPrevention extends JavaPlugin
 		else if(cmd.getName().equalsIgnoreCase("buyclaimblocks") && player != null)
 		{
 			//if economy is disabled, don't do anything
-			if(GriefPrevention.economy == null) return true;
+			if(GriefPrevention.economy == null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
+				return true;
+			}
 			
 			//if purchase disabled, send error message
 			if(GriefPrevention.instance.config_economy_claimBlocksPurchaseCost == 0)
@@ -1122,7 +1130,11 @@ public class GriefPrevention extends JavaPlugin
 		else if(cmd.getName().equalsIgnoreCase("sellclaimblocks") && player != null)
 		{
 			//if economy is disabled, don't do anything
-			if(GriefPrevention.economy == null) return true;
+			if(GriefPrevention.economy == null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
+				return true;
+			}
 			
 			//if disabled, error message
 			if(GriefPrevention.instance.config_economy_claimBlocksSellValue == 0)
@@ -2337,7 +2349,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		//create task
 		//when done processing, this task will create a main thread task to actually update the world with processing results
-		RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), chunk.getWorld().getBiome(lesserBoundaryCorner.getBlockX(), lesserBoundaryCorner.getBlockZ()), lesserBoundaryCorner, greaterBoundaryCorner, chunk.getWorld().getSeaLevel() + 1, aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
+		RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, chunk.getWorld().getSeaLevel() + 1, aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
 		GriefPrevention.instance.getServer().getScheduler().scheduleAsyncDelayedTask(GriefPrevention.instance, task, delayInTicks);
 	}
 }

@@ -39,7 +39,6 @@ public class Claim
 {
 	//two locations, which together define the boundaries of the claim
 	//note that the upper Y value is always ignored, because claims ALWAYS extend up to the sky
-	//IF MODIFIED, THE CLAIM DATA FILE'S NAME WILL CHANGE.  ANY MODIFICATIONS MUST BE HANDLED VERY CAREFULLY
 	Location lesserBoundaryCorner;
 	Location greaterBoundaryCorner;
 	
@@ -436,6 +435,12 @@ public class Claim
 		//following a siege where the defender lost, the claim will allow everyone access for a time
 		if(this.doorsOpen) return null;
 		
+		//admin claims need adminclaims permission only.
+		if(this.isAdminClaim())
+		{
+			if(player.hasPermission("griefprevention.adminclaims")) return null;
+		}
+		
 		//claim owner and admins in ignoreclaims mode have access
 		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
 		
@@ -473,6 +478,12 @@ public class Claim
 		
 		//owner and administrators in ignoreclaims mode have access
 		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
+		
+		//admin claims need adminclaims permission only.
+		if(this.isAdminClaim())
+		{
+			if(player.hasPermission("griefprevention.adminclaims")) return null;
+		}
 		
 		//check for explicit individual container or build permission 
 		if(this.hasExplicitPermission(player, ClaimPermission.Inventory)) return null;
@@ -749,5 +760,62 @@ public class Claim
 		if(thisCorner.getBlockZ() < otherCorner.getBlockZ()) return false;
 		
 		return thisCorner.getWorld().getName().compareTo(otherCorner.getWorld().getName()) < 0;
+	}
+	
+	long getPlayerInvestmentScore()
+	{
+		//decide which blocks will be considered player placed
+		Location lesserBoundaryCorner = this.getLesserBoundaryCorner();
+		ArrayList<Integer> playerBlocks = RestoreNatureProcessingTask.getPlayerBlocks(lesserBoundaryCorner.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome());
+		
+		//scan the claim for player placed blocks
+		double score = 0;
+		
+		boolean creativeMode = GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner);
+		
+		for(int x = this.lesserBoundaryCorner.getBlockX(); x <= this.greaterBoundaryCorner.getBlockX(); x++)
+		{
+			for(int z = this.lesserBoundaryCorner.getBlockZ(); z <= this.greaterBoundaryCorner.getBlockZ(); z++)
+			{
+				int y = this.lesserBoundaryCorner.getBlockY();
+				for(; y < this.lesserBoundaryCorner.getWorld().getSeaLevel(); y++)
+				{
+					Block block = this.lesserBoundaryCorner.getWorld().getBlockAt(x, y, z);
+					if(playerBlocks.contains(block.getTypeId()))
+					{
+						if(block.getType() == Material.CHEST && !creativeMode)
+						{
+							score += 10;
+						}
+						else
+						{
+							score += .2;
+						}						
+					}
+				}
+				
+				for(; y < this.lesserBoundaryCorner.getWorld().getMaxHeight(); y++)
+				{
+					Block block = this.lesserBoundaryCorner.getWorld().getBlockAt(x, y, z);
+					if(playerBlocks.contains(block.getTypeId()))
+					{
+						if(block.getType() == Material.CHEST && !creativeMode)
+						{
+							score += 10;
+						}
+						else if(creativeMode && (block.getType() == Material.LAVA || block.getType() == Material.STATIONARY_LAVA))
+						{
+							score -= 10;
+						}
+						else 
+						{
+							score += 1;
+						}						
+					}
+				}
+			}
+		}
+		
+		return (long)score;
 	}
 }

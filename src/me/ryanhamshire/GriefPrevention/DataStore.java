@@ -70,63 +70,6 @@ public abstract class DataStore
 		
 		GriefPrevention.AddLogEntry(playerNames.size() + " players have staked claims.");
 		
-		//load each of these players and determine whether his claims should be cleaned up
-		for(int i = 0; i < playerNames.size(); i++)
-		{
-			String playerName = playerNames.get(i);
-			
-			PlayerData playerData = this.getPlayerData(playerName);
-			
-			int areaOfDefaultClaim = 0;
-			
-			//determine area of the default chest claim
-			if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius >= 0)
-			{
-				areaOfDefaultClaim = (int)Math.pow(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius * 2 + 1, 2);  
-			}
-			
-			//figure out how long the player has been away
-			Calendar sevenDaysAgo = Calendar.getInstance();
-			sevenDaysAgo.add(Calendar.DATE, -7);
-			boolean claimsExpired = sevenDaysAgo.getTime().after(playerData.lastLogin);
-			
-			//if only one claim, and the player hasn't played in a week
-			if(claimsExpired && playerData.claims.size() == 1)
-			{
-				Claim claim = playerData.claims.get(0);
-				
-				//if that's a chest claim, delete it
-				if(claim.getArea() <= areaOfDefaultClaim)
-				{
-					claim.removeSurfaceFluids(null);
-					this.deleteClaim(claim);
-					
-					//if in a creative mode world, delete the claim
-					if(GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()))
-					{
-						GriefPrevention.instance.restoreClaim(claim, 0);
-					}
-					
-					GriefPrevention.AddLogEntry(" " + playerName + "'s new player claim expired.");
-				}
-			}
-			
-			if(GriefPrevention.instance.config_claims_expirationDays > 0)
-			{
-				Calendar earliestPermissibleLastLogin = Calendar.getInstance();
-				earliestPermissibleLastLogin.add(Calendar.DATE, -GriefPrevention.instance.config_claims_expirationDays);
-				
-				if(earliestPermissibleLastLogin.getTime().after(playerData.lastLogin))
-				{
-					this.deleteClaimsForPlayer(playerName, true);
-					GriefPrevention.AddLogEntry(" All of " + playerName + "'s claims have expired.");
-				}
-			}
-			
-			//toss that player data out of the cache, it's not needed in memory right now
-			this.clearCachedPlayerData(playerName);
-		}
-		
 		//load up all the messages from messages.yml
 		this.loadMessages();
 		
@@ -1013,6 +956,7 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.TrappedWontWorkHere, "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.", null);
 		this.addDefault(defaults, Messages.CommandBannedInPvP, "You can't use that command while in PvP combat.", null);
 		this.addDefault(defaults, Messages.UnclaimCleanupWarning, "The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you want to keep, you should reclaim it.", null);
+		this.addDefault(defaults, Messages.BuySellNotConfigured, "Sorry, buying anhd selling claim blocks is disabled.", null);		
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));

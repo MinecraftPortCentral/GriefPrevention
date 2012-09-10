@@ -234,6 +234,8 @@ class PlayerEventHandler implements Listener
 				{
 					player.kickPlayer("");
 				}
+				
+				return true;
 			}
 			
 			//cancel any messages while at or above the third spam level and issue warnings
@@ -521,7 +523,7 @@ class PlayerEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		
 		//if banned, add IP to the temporary IP ban list
-		if(player.isBanned())
+		if(player.isBanned() && playerData.ipAddress != null)
 		{
 			long now = Calendar.getInstance().getTimeInMillis(); 
 			this.tempBannedIps.add(new IpBanInfo(playerData.ipAddress, now + this.MILLISECONDS_IN_DAY, player.getName()));
@@ -534,7 +536,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//make sure his data is all saved - he might have accrued some claim blocks while playing that were not saved immediately
-		this.dataStore.savePlayerData(player.getName(), playerData);		
+		this.dataStore.savePlayerData(player.getName(), playerData);
 		
 		this.onPlayerDisconnect(event.getPlayer(), event.getQuitMessage());
 	}
@@ -762,6 +764,20 @@ class PlayerEventHandler implements Listener
 		ItemStack newItemStack = player.getInventory().getItem(event.getNewSlot());
 		if(newItemStack != null && newItemStack.getType() == GriefPrevention.instance.config_claims_modificationTool)
 		{
+			PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getName());
+		
+			//always reset to basic claims mode
+			if(playerData.shovelMode != ShovelMode.Basic)
+			{			
+				playerData.shovelMode = ShovelMode.Basic;
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShovelBasicClaimMode);
+			}
+		
+			//reset any work he might have been doing
+			playerData.lastShovelLocation = null;
+			playerData.claimResizing = null;
+			
+			//give the player his available claim blocks count and claiming instructions, but only if he keeps the shovel equipped for a minimum time, to avoid mouse wheel spam
 			EquipShovelProcessingTask task = new EquipShovelProcessingTask(player);
 			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 15L);  //15L is approx. 3/4 of a second
 		}
@@ -878,7 +894,7 @@ class PlayerEventHandler implements Listener
 		try
 		{
 			clickedBlock = event.getClickedBlock();  //null returned here means interacting with air			
-			if(clickedBlock == null)
+			if(clickedBlock == null || clickedBlock.getType() == Material.SNOW)
 			{
 				//try to find a far away non-air block along line of sight
 				HashSet<Byte> transparentMaterials = new HashSet<Byte>();
@@ -1570,7 +1586,7 @@ class PlayerEventHandler implements Listener
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapOtherPlayer, claim.getOwnerName());
 					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
-					Visualization.Apply(player, visualization);						
+					Visualization.Apply(player, visualization);
 				}
 				
 				return;
@@ -1592,6 +1608,10 @@ class PlayerEventHandler implements Listener
 				//remember it, and start him on the new claim
 				playerData.lastShovelLocation = clickedBlock.getLocation();
 				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimStart);
+				
+				//show him where he's working
+				Visualization visualization = Visualization.FromClaim(new Claim(clickedBlock.getLocation(), clickedBlock.getLocation(), "", new String[]{}, new String[]{}, new String[]{}, new String[]{}, null), clickedBlock.getY(), VisualizationType.RestoreNature, player.getLocation());
+				Visualization.Apply(player, visualization);
 			}
 			
 			//otherwise, he's trying to finish creating a claim by setting the other boundary corner

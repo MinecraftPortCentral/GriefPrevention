@@ -44,30 +44,23 @@ class EquipShovelProcessingTask implements Runnable
 		
 		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getName());
 		
-		//reset any work he might have been doing
-		playerData.lastShovelLocation = null;
-		playerData.claimResizing = null;
-		
-		//always reset to basic claims mode
-		if(playerData.shovelMode != ShovelMode.Basic)
-		{			
-			playerData.shovelMode = ShovelMode.Basic;
-			GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShovelBasicClaimMode);
-		}
-		
 		int remainingBlocks = playerData.getRemainingClaimBlocks();
 		
-		//instruct him in the steps to create a claim
-		GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RemainingBlocks, String.valueOf(remainingBlocks));
-		
-		//demo link changes based on game mode
-		if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
+		//if in basic claims mode...
+		if(playerData.shovelMode == ShovelMode.Basic)
 		{
-			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsDemoAdvertisement);			
-		}
-		else
-		{
-			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsDemoAdvertisement);
+			//tell him how many claim blocks he has available
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RemainingBlocks, String.valueOf(remainingBlocks));
+			
+			//link to a video demo of land claiming, based on world type
+			if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsDemoAdvertisement);			
+			}
+			else
+			{
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsDemoAdvertisement);
+			}
 		}
 	}
 }
