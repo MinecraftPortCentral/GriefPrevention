@@ -33,7 +33,7 @@ class DeliverClaimBlocksTask implements Runnable
 		
 		//ensure players get at least 1 block (if accrual is totally disabled, this task won't even be scheduled)
 		int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
-		if(accruedBlocks == 0) accruedBlocks = 1;
+		if(accruedBlocks < 0) accruedBlocks = 1;
 		
 		//for each online player
 		for(int i = 0; i < players.length; i++)
@@ -48,6 +48,11 @@ class DeliverClaimBlocksTask implements Runnable
 				//if he's not in a vehicle and has moved at least three blocks since the last check
 				if(!player.isInsideVehicle() && (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 9))
 				{					
+					//if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
+					//in that case, leave his blocks where they are
+					if(playerData.accruedClaimBlocks > GriefPrevention.instance.config_claims_maxAccruedBlocks) continue;
+					
+					//add blocks
 					playerData.accruedClaimBlocks += accruedBlocks;
 					
 					//respect limits

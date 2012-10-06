@@ -166,7 +166,10 @@ class CleanupUnusedClaimsTask implements Runnable
 		}
 		
 		//toss that player data out of the cache, it's probably not needed in memory right now
-		GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerName);
+		if(!GriefPrevention.instance.getServer().getOfflinePlayer(claim.ownerName).isOnline())
+		{
+			GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerName);
+		}
 		
 		//since we're potentially loading a lot of chunks to scan parts of the world where there are no players currently playing, be mindful of memory usage
 		//unfortunately, java/minecraft don't do a good job of clearing unused memory, leading to out of memory errors from this type of world scanning

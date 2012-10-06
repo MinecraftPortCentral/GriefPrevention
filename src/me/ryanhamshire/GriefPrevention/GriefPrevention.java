@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
@@ -130,12 +131,14 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_creaturesTrampleCrops;					//whether or not non-player entities may trample crops
 	public boolean config_zombiesBreakDoors;						//whether or not hard-mode zombies may break down wooden doors
 	
-	public List<Integer> config_mods_accessTrustIds;				//list of block IDs which should require /accesstrust for player interaction
-	public List<Integer> config_mods_containerTrustIds;				//list of block IDs which should require /containertrust for player interaction
+	public MaterialCollection config_mods_accessTrustIds;			//list of block IDs which should require /accesstrust for player interaction
+	public MaterialCollection config_mods_containerTrustIds;		//list of block IDs which should require /containertrust for player interaction
 	public List<String> config_mods_ignoreClaimsAccounts;			//list of player names which ALWAYS ignore claims
-	public List<Integer> config_mods_explodableIds;					//list of block IDs which can be destroyed by explosions, even in claimed areas
+	public MaterialCollection config_mods_explodableIds;			//list of block IDs which can be destroyed by explosions, even in claimed areas
 
 	public boolean config_claims_warnOnBuildOutside;				//whether players should be warned when they're building in an unclaimed area
+	
+	public HashMap<String, Integer> config_seaLevelOverride;		//override for sea level, because bukkit doesn't report the right value for all situations
 	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
@@ -230,6 +233,15 @@ public class GriefPrevention extends JavaPlugin
 			}
 		}
 		
+		//sea level
+		this.config_seaLevelOverride = new HashMap<String, Integer>();
+		for(int i = 0; i < worlds.size(); i++)
+		{
+			int seaLevelOverride = config.getInt("GriefPrevention.SeaLevelOverrides." + worlds.get(i).getName(), -1);
+			config.set("GriefPrevention.SeaLevelOverrides." + worlds.get(i).getName(), seaLevelOverride);
+			this.config_seaLevelOverride.put(worlds.get(i).getName(), seaLevelOverride);
+		}
+		
 		this.config_claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
 		this.config_claims_protectCreatures = config.getBoolean("GriefPrevention.Claims.ProtectCreatures", true);
 		this.config_claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);
@@ -288,17 +300,74 @@ public class GriefPrevention extends JavaPlugin
 		this.config_creaturesTrampleCrops = config.getBoolean("GriefPrevention.CreaturesTrampleCrops", false);
 		this.config_zombiesBreakDoors = config.getBoolean("GriefPrevention.HardModeZombiesBreakDoors", false);
 		
-		this.config_mods_accessTrustIds = config.getIntegerList("GriefPrevention.Mods.BlockIdsRequiringAccessTrust");
-		if(this.config_mods_accessTrustIds == null) this.config_mods_accessTrustIds = new ArrayList<Integer>();
-		
-		this.config_mods_containerTrustIds = config.getIntegerList("GriefPrevention.Mods.BlockIdsRequiringContainerTrust");
-		if(this.config_mods_containerTrustIds == null) this.config_mods_containerTrustIds = new ArrayList<Integer>();
-		
 		this.config_mods_ignoreClaimsAccounts = config.getStringList("GriefPrevention.Mods.PlayersIgnoringAllClaims");
+		
 		if(this.config_mods_ignoreClaimsAccounts == null) this.config_mods_ignoreClaimsAccounts = new ArrayList<String>();
 		
-		this.config_mods_explodableIds = config.getIntegerList("GriefPrevention.Mods.BlockIdsExplodable");
-		if(this.config_mods_explodableIds == null) this.config_mods_explodableIds = new ArrayList<Integer>();
+		this.config_mods_accessTrustIds = new MaterialCollection();
+		List<String> accessTrustStrings = config.getStringList("GriefPrevention.Mods.BlockIdsRequiringAccessTrust");
+		
+		//default values for access trust mod blocks
+		if(accessTrustStrings == null || accessTrustStrings.size() == 0)
+		{
+			//none by default
+		}
+		
+		this.parseMaterialListFromConfig(accessTrustStrings, this.config_mods_accessTrustIds);
+		
+		this.config_mods_containerTrustIds = new MaterialCollection();
+		List<String> containerTrustStrings = config.getStringList("GriefPrevention.Mods.BlockIdsRequiringContainerTrust");
+		
+		//default values for container trust mod blocks
+		if(containerTrustStrings == null || containerTrustStrings.size() == 0)
+		{
+			containerTrustStrings.add(new MaterialInfo(227, "Battery Box").toString());
+			containerTrustStrings.add(new MaterialInfo(130, "Transmutation Tablet").toString());
+			containerTrustStrings.add(new MaterialInfo(128, "Alchemical Chest and Energy Condenser").toString());
+			containerTrustStrings.add(new MaterialInfo(181, "Various Chests").toString());
+			containerTrustStrings.add(new MaterialInfo(178, "Ender Chest").toString());
+			containerTrustStrings.add(new MaterialInfo(150, "Various BuildCraft Gadgets").toString());
+			containerTrustStrings.add(new MaterialInfo(155, "Filler").toString());
+			containerTrustStrings.add(new MaterialInfo(157, "Builder").toString());
+			containerTrustStrings.add(new MaterialInfo(158, "Template Drawing Table").toString());
+			containerTrustStrings.add(new MaterialInfo(126, "Various EE Gadgets").toString());
+			containerTrustStrings.add(new MaterialInfo(138, "Various RedPower Gadgets").toString());
+			containerTrustStrings.add(new MaterialInfo(137, "BuildCraft Project Table and Furnaces").toString());
+			containerTrustStrings.add(new MaterialInfo(250, "Various IC2 Machines").toString());
+			containerTrustStrings.add(new MaterialInfo(161, "BuildCraft Engines").toString());
+			containerTrustStrings.add(new MaterialInfo(169, "Automatic Crafting Table").toString());
+			containerTrustStrings.add(new MaterialInfo(177, "Wireless Components").toString());
+			containerTrustStrings.add(new MaterialInfo(183, "Solar Arrays").toString());
+			containerTrustStrings.add(new MaterialInfo(187, "Charging Benches").toString());
+			containerTrustStrings.add(new MaterialInfo(188, "More IC2 Machines").toString());
+			containerTrustStrings.add(new MaterialInfo(190, "Generators, Fabricators, Strainers").toString());
+			containerTrustStrings.add(new MaterialInfo(194, "More Gadgets").toString());
+			containerTrustStrings.add(new MaterialInfo(207, "Computer").toString());
+			containerTrustStrings.add(new MaterialInfo(208, "Computer Peripherals").toString());
+			containerTrustStrings.add(new MaterialInfo(246, "IC2 Generators").toString());
+			containerTrustStrings.add(new MaterialInfo(24303, "Teleport Pipe").toString());
+			containerTrustStrings.add(new MaterialInfo(24304, "Waterproof Teleport Pipe").toString());
+			containerTrustStrings.add(new MaterialInfo(24305, "Power Teleport Pipe").toString());
+			containerTrustStrings.add(new MaterialInfo(4311, "Diamond Sorting Pipe").toString());
+			containerTrustStrings.add(new MaterialInfo(216, "Turtle").toString());
+			
+		}
+		
+		//parse the strings from the config file
+		this.parseMaterialListFromConfig(containerTrustStrings, this.config_mods_containerTrustIds);
+		
+		this.config_mods_explodableIds = new MaterialCollection();
+		List<String> explodableStrings = config.getStringList("GriefPrevention.Mods.BlockIdsExplodable");
+		
+		//default values for explodable mod blocks
+		if(explodableStrings == null || explodableStrings.size() == 0)
+		{
+			explodableStrings.add(new MaterialInfo(161, "BuildCraft Engines").toString());			
+			explodableStrings.add(new MaterialInfo(246, (byte)5 ,"Nuclear Reactor").toString());
+		}
+		
+		//parse the strings from the config file
+		this.parseMaterialListFromConfig(explodableStrings, this.config_mods_explodableIds);
 		
 		//default for claim investigation tool
 		String investigationToolMaterialName = Material.STICK.name();
@@ -478,6 +547,9 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Mods.BlockIdsRequiringContainerTrust", this.config_mods_containerTrustIds);
 		config.set("GriefPrevention.Mods.BlockIdsExplodable", this.config_mods_explodableIds);
 		config.set("GriefPrevention.Mods.PlayersIgnoringAllClaims", this.config_mods_ignoreClaimsAccounts);
+		config.set("GriefPrevention.Mods.BlockIdsRequiringAccessTrust", accessTrustStrings);
+		config.set("GriefPrevention.Mods.BlockIdsRequiringContainerTrust", containerTrustStrings);
+		config.set("GriefPrevention.Mods.BlockIdsExplodable", explodableStrings);
 		
 		try
 		{
@@ -2349,7 +2421,51 @@ public class GriefPrevention extends JavaPlugin
 		
 		//create task
 		//when done processing, this task will create a main thread task to actually update the world with processing results
-		RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, chunk.getWorld().getSeaLevel() + 1, aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
+		RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, chunk.getWorld().getSeaLevel(), aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
 		GriefPrevention.instance.getServer().getScheduler().scheduleAsyncDelayedTask(GriefPrevention.instance, task, delayInTicks);
+	}
+	
+	private void parseMaterialListFromConfig(List<String> stringsToParse, MaterialCollection materialCollection)
+	{
+		materialCollection.clear();
+		
+		//for each string in the list
+		for(int i = 0; i < stringsToParse.size(); i++)
+		{
+			//try to parse the string value into a material info
+			MaterialInfo materialInfo = MaterialInfo.fromString(stringsToParse.get(i));
+			
+			//null value returned indicates an error parsing the string from the config file
+			if(materialInfo == null)
+			{
+				//show error in log
+				GriefPrevention.AddLogEntry("ERROR: Unable to read a material entry from the config file.  Please update your config.yml.");
+				
+				//update string, which will go out to config file to help user find the error entry
+				if(!stringsToParse.get(i).contains("can't"))
+				{
+					stringsToParse.set(i, stringsToParse.get(i) + "     <-- can't understand this entry, see BukkitDev documentation");
+				}
+			}
+			
+			//otherwise store the valid entry in config data
+			else
+			{
+				materialCollection.Add(materialInfo);
+			}
+		}		
+	}
+	
+	public int getSeaLevel(World world)
+	{
+		Integer overrideValue = this.config_seaLevelOverride.get(world.getName());
+		if(overrideValue == null || overrideValue == -1)
+		{
+			return world.getSeaLevel();
+		}
+		else
+		{
+			return overrideValue;
+		}		
 	}
 }

@@ -1,8 +1,8 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
-softdepend: [Vault, Multiverse-Core, My Worlds]
+softdepend: [Vault, Multiverse-Core, My Worlds, MystCraft, Transporter]
 dev-url: http://dev.bukkit.org/server-mods/grief-prevention
-version: 6.4
+version: 6.7
 commands:
    abandonclaim:
       description: Deletes a claim.
@@ -19,7 +19,7 @@ commands:
    trust:
       description: Grants a player full access to your claim(s).
       usage: /Trust <player>  Graants a player permission to build.  See also /UnTrust, /ContainerTrust, /AccessTrust, and /PermissionTrust.
-      aliases: t 
+      aliases: tr
       permission: griefprevention.claims
    untrust:
       description: Revokes a player's access to your claim(s).

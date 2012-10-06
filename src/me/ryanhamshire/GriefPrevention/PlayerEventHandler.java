@@ -77,6 +77,12 @@ class PlayerEventHandler implements Listener
 	void onPlayerChat (AsyncPlayerChatEvent event)
 	{		
 		Player player = event.getPlayer();
+		if(!player.isOnline())
+		{
+			event.setCancelled(true);
+			return;
+		}
+		
 		String message = event.getMessage();
 		
 		event.setCancelled(this.handlePlayerChat(player, message, event));
@@ -636,6 +642,14 @@ class PlayerEventHandler implements Listener
 		
 		Player player = event.getPlayer();
 		
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		if(playerData.inPvpCombat())
+		{
+			GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoTeleportPvPCombat);
+			event.setCancelled(true);
+			return;
+		}
+		
 		Location source = event.getFrom();
 		Claim sourceClaim = this.dataStore.getClaimAt(source, false, null);
 		if(sourceClaim != null && sourceClaim.siegeData != null)
@@ -778,8 +792,11 @@ class PlayerEventHandler implements Listener
 			playerData.claimResizing = null;
 			
 			//give the player his available claim blocks count and claiming instructions, but only if he keeps the shovel equipped for a minimum time, to avoid mouse wheel spam
-			EquipShovelProcessingTask task = new EquipShovelProcessingTask(player);
-			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 15L);  //15L is approx. 3/4 of a second
+			if(GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()))
+			{
+				EquipShovelProcessingTask task = new EquipShovelProcessingTask(player);
+				GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 15L);  //15L is approx. 3/4 of a second
+			}
 		}
 	}
 	
@@ -946,7 +963,7 @@ class PlayerEventHandler implements Listener
 						clickedBlockType == Material.BREWING_STAND || 
 						clickedBlockType == Material.JUKEBOX || 
 						clickedBlockType == Material.ENCHANTMENT_TABLE ||
-						GriefPrevention.instance.config_mods_containerTrustIds.contains(clickedBlock.getTypeId()))))
+						GriefPrevention.instance.config_mods_containerTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))))
 		{			
 			//block container use while under siege, so players can't hide items from attackers
 			if(playerData.siegeData != null)
@@ -1009,7 +1026,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise apply rules for buttons and switches
-		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.contains(clickedBlock.getTypeId())))
+		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null))))
 		{
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)

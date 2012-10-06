@@ -25,6 +25,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -261,6 +262,12 @@ public class BlockEventHandler implements Listener
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		if(claim != null)
 		{
+			//warn about TNT not destroying claimed blocks
+			if(block.getType() == Material.TNT)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageClaims);
+			}
+			
 			//if the player has permission for the claim and he's placing UNDER the claim
 			if(block.getY() < claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
 			{
@@ -338,7 +345,7 @@ public class BlockEventHandler implements Listener
 		}
 		
 		//FEATURE: limit wilderness tree planting to grass, or dirt with more blocks beneath it
-		else if(block.getType() == Material.SAPLING && GriefPrevention.instance.config_blockSkyTrees)
+		else if(block.getType() == Material.SAPLING && GriefPrevention.instance.config_blockSkyTrees && GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()))
 		{
 			Block earthBlock = placeEvent.getBlockAgainst();
 			if(earthBlock.getType() != Material.GRASS)
@@ -366,6 +373,14 @@ public class BlockEventHandler implements Listener
 				}
 			}
 		}
+		
+		//warn players when they place TNT above sea level, since it doesn't destroy blocks there
+		if(	GriefPrevention.instance.config_blockSurfaceOtherExplosions && block.getType() == Material.TNT &&
+			block.getWorld().getEnvironment() != Environment.NETHER &&
+			block.getY() > block.getWorld().getSeaLevel() - 5)
+		{
+			GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageAboveSeaLevel);
+		}			
 	}
 	
 	//blocks "pushing" other players' blocks around (pistons)
@@ -499,14 +514,40 @@ public class BlockEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockIgnite (BlockIgniteEvent igniteEvent)
 	{
-		if(igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL  && !GriefPrevention.instance.config_fireSpreads) igniteEvent.setCancelled(true);
+		if(!GriefPrevention.instance.config_fireSpreads &&
+		   igniteEvent.getBlock().getWorld().getEnvironment() == Environment.NORMAL &&
+		   igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL &&
+		   igniteEvent.getCause() != IgniteCause.LIGHTNING &&
+		   igniteEvent.getCause() != IgniteCause.LAVA)
+		{	
+			igniteEvent.setCancelled(true);
+		}
 	}
 	
 	//fire doesn't spread unless configured to, but other blocks still do (mushrooms and vines, for example)
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockSpread (BlockSpreadEvent spreadEvent)
 	{
-		if(spreadEvent.getSource().getType() == Material.FIRE && !GriefPrevention.instance.config_fireSpreads) spreadEvent.setCancelled(true);
+		if(spreadEvent.getSource().getType() != Material.FIRE) return;
+		
+		if(!GriefPrevention.instance.config_fireSpreads)
+		{
+			spreadEvent.setCancelled(true);
+			return;
+		}
+		
+		//never spread into a claimed area, regardless of settings
+		if(this.dataStore.getClaimAt(spreadEvent.getBlock().getLocation(), false, null) != null)
+		{
+			spreadEvent.setCancelled(true);
+			
+			//if the source of the spread is not fire on netherrack, put out that source fire to save cpu cycles
+			Block source = spreadEvent.getSource();
+			if(source.getType() == Material.FIRE && source.getRelative(BlockFace.DOWN).getType() != Material.NETHERRACK)
+			{
+				source.setType(Material.AIR);
+			}			
+		}
 	}
 	
 	//blocks are not destroyed by fire, unless configured to do so
@@ -516,6 +557,7 @@ public class BlockEventHandler implements Listener
 		if(!GriefPrevention.instance.config_fireDestroys)
 		{
 			burnEvent.setCancelled(true);
+			return;
 		}
 		
 		//never burn claimed blocks, regardless of settings
@@ -530,6 +572,9 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockFromTo (BlockFromToEvent spreadEvent)
 	{
+		//don't track fluid movement in worlds where claims are not enabled
+		if(!GriefPrevention.instance.config_claims_enabledWorlds.contains(spreadEvent.getBlock().getWorld())) return;
+		
 		//always allow fluids to flow straight down
 		if(spreadEvent.getFace() == BlockFace.DOWN) return;
 		
@@ -602,7 +647,7 @@ public class BlockEventHandler implements Listener
 		
 		//into wilderness is NOT OK when surface buckets are limited
 		Material materialDispensed = dispenseEvent.getItem().getType();
-		if((materialDispensed == Material.WATER_BUCKET || materialDispensed == Material.LAVA_BUCKET) && GriefPrevention.instance.config_blockWildernessWaterBuckets && toClaim == null)
+		if((materialDispensed == Material.WATER_BUCKET || materialDispensed == Material.LAVA_BUCKET) && GriefPrevention.instance.config_blockWildernessWaterBuckets && GriefPrevention.instance.claimsEnabledForWorld(fromBlock.getWorld()) && toClaim == null)
 		{
 			dispenseEvent.setCancelled(true);
 			return;

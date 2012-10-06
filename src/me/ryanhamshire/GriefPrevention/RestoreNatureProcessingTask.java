@@ -99,7 +99,6 @@ class RestoreNatureProcessingTask implements Runnable
 		{
 			this.playerBlocks.add(Material.LEAVES.getId());
 			this.playerBlocks.add(Material.LOG.getId());
-			this.playerBlocks.add(Material.LEAVES.getId());
 			this.playerBlocks.add(Material.VINE.getId());
 		}
 	}
@@ -145,11 +144,37 @@ class RestoreNatureProcessingTask implements Runnable
 		//cover surface stone and gravel with sand or grass, as the biome requires
 		this.coverSurfaceStone();
 		
+		//reset leaves to NOT player placed so that they may decay as usual
+		this.resetLeaves();
+		
 		//schedule main thread task to apply the result to the world
 		RestoreNatureExecutionTask task = new RestoreNatureExecutionTask(this.snapshots, this.miny, this.lesserBoundaryCorner, this.greaterBoundaryCorner, this.player);
 		GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task);
 	}
 	
+	private void resetLeaves()
+	{
+		for(int x = 1; x < snapshots.length - 1; x++)
+		{
+			for(int z = 1; z < snapshots[0][0].length - 1; z++)
+			{
+				for(int y = this.seaLevel - 1; y < snapshots[0].length; y++)
+				{
+					//note: see minecraft wiki data values for leaves
+					BlockSnapshot block = snapshots[x][y][z];
+					if(block.typeId == Material.LEAVES.getId())
+					{
+						//clear "player placed" bit
+						block.data = (byte)(block.data & ~(1<<2));
+						
+						//set the "check for natural decay" bit
+						block.data = (byte)(block.data | (1<<3));
+					}
+				}
+			}
+		}		
+	}
+
 	private void fillBigHoles()
 	{
 		for(int x = 1; x < snapshots.length - 1; x++)
@@ -157,15 +182,15 @@ class RestoreNatureProcessingTask implements Runnable
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
 			{
 				//replace air, lava, or running water at sea level with stone
-				if(this.snapshots[x][this.seaLevel - 3][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 3][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 3][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 3][z].data != 0))
+				if(this.snapshots[x][this.seaLevel - 2][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 2][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 2][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 2][z].data != 0))
 				{
-					this.snapshots[x][this.seaLevel - 3][z].typeId = Material.STONE.getId();
+					this.snapshots[x][this.seaLevel - 2][z].typeId = Material.STONE.getId();
 				}
 				
 				//do the same for one layer beneath that (because a future restoration step may convert surface stone to sand, which falls down)
-				if(this.snapshots[x][this.seaLevel - 4][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 4][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 4][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 4][z].data != 0))
+				if(this.snapshots[x][this.seaLevel - 3][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 3][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 3][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 3][z].data != 0))
 				{
-					this.snapshots[x][this.seaLevel - 4][z].typeId = Material.STONE.getId();
+					this.snapshots[x][this.seaLevel - 3][z].typeId = Material.STONE.getId();
 				}
 			}
 		}
@@ -219,7 +244,7 @@ class RestoreNatureProcessingTask implements Runnable
 			{
 				int thisy = this.highestY(x, z, true);
 				
-				while(thisy > this.seaLevel - 2 && (this.snapshots[x][thisy][z].typeId == Material.STONE.getId() || this.snapshots[x][thisy][z].typeId == Material.SANDSTONE.getId()))
+				while(thisy > this.seaLevel - 1 && (this.snapshots[x][thisy][z].typeId == Material.STONE.getId() || this.snapshots[x][thisy][z].typeId == Material.SANDSTONE.getId()))
 				{
 					BlockSnapshot leftBlock = this.snapshots[x + 1][thisy][z];
 					BlockSnapshot rightBlock = this.snapshots[x - 1][thisy][z];
@@ -265,7 +290,7 @@ class RestoreNatureProcessingTask implements Runnable
 		{
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
 			{
-				for(int y = this.seaLevel - 2; y < snapshots[0].length; y++)
+				for(int y = this.seaLevel - 1; y < snapshots[0].length; y++)
 				{
 					BlockSnapshot block = snapshots[x][y][z];
 					
@@ -401,7 +426,7 @@ class RestoreNatureProcessingTask implements Runnable
 				int y = this.highestY(x, z, true);
 				BlockSnapshot block = snapshots[x][y][z];
 				
-				if(block.typeId == Material.STONE.getId() || block.typeId == Material.GRAVEL.getId() || block.typeId == Material.DIRT.getId() || block.typeId == Material.SANDSTONE.getId())
+				if(block.typeId == Material.STONE.getId() || block.typeId == Material.GRAVEL.getId() || block.typeId == Material.SOIL.getId() || block.typeId == Material.DIRT.getId() || block.typeId == Material.SANDSTONE.getId())
 				{
 					if(this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH)
 					{
@@ -587,8 +612,10 @@ class RestoreNatureProcessingTask implements Runnable
 			if(block.typeId != Material.AIR.getId() &&
 			!(ignoreLeaves && block.typeId == Material.SNOW.getId()) &&
 			!(ignoreLeaves && block.typeId == Material.LEAVES.getId()) &&
-			!(block.typeId == Material.STATIONARY_WATER.getId() && block.data != 0) &&
-			!(block.typeId == Material.STATIONARY_LAVA.getId() && block.data != 0))
+			!(block.typeId == Material.STATIONARY_WATER.getId()) &&
+			!(block.typeId == Material.WATER.getId()) &&
+			!(block.typeId == Material.LAVA.getId()) &&
+			!(block.typeId == Material.STATIONARY_LAVA.getId()))
 			{
 				return y;
 			}
@@ -635,7 +662,6 @@ class RestoreNatureProcessingTask implements Runnable
 		playerBlocks.add(Material.REDSTONE_WIRE.getId());
 		playerBlocks.add(Material.DIAMOND_BLOCK.getId());
 		playerBlocks.add(Material.WORKBENCH.getId());
-		playerBlocks.add(Material.SOIL.getId());
 		playerBlocks.add(Material.FURNACE.getId());
 		playerBlocks.add(Material.BURNING_FURNACE.getId());
 		playerBlocks.add(Material.WOODEN_DOOR.getId());

@@ -102,12 +102,12 @@ class EntityEventHandler implements Listener
 		
 		//FEATURE: explosions don't destroy blocks when they explode near or above sea level in standard worlds
 		boolean isCreeper = (explodeEvent.getEntity() != null && explodeEvent.getEntity() instanceof Creeper);
-		if( location.getWorld().getEnvironment() == Environment.NORMAL && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions)))			
+		if( location.getWorld().getEnvironment() == Environment.NORMAL && GriefPrevention.instance.config_claims_enabledWorlds.contains(location.getWorld()) && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions)))			
 		{
 			for(int i = 0; i < blocks.size(); i++)
 			{
 				Block block = blocks.get(i);
-				if(GriefPrevention.instance.config_mods_explodableIds.contains(block.getTypeId())) continue;
+				if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
 				
 				if(block.getLocation().getBlockY() > location.getWorld().getSeaLevel() - 7)
 				{
@@ -122,7 +122,7 @@ class EntityEventHandler implements Listener
 			for(int i = 0; i < blocks.size(); i++)
 			{
 				Block block = blocks.get(i);
-				if(GriefPrevention.instance.config_mods_explodableIds.contains(block.getTypeId())) continue;
+				if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
 				
 				blocks.remove(i--);
 			}
@@ -135,7 +135,7 @@ class EntityEventHandler implements Listener
 			Block block = blocks.get(i);
 			if(block.getType() == Material.AIR) continue;  //if it's air, we don't care
 			
-			if(GriefPrevention.instance.config_mods_explodableIds.contains(block.getTypeId())) continue;
+			if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
 			
 			claim = this.dataStore.getClaimAt(block.getLocation(), false, claim); 
 			//if the block is claimed, remove it from the list of destroyed blocks
