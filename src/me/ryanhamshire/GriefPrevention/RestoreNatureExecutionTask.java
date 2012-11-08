@@ -25,6 +25,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Player;
 
 //this main thread task takes the output from the RestoreNatureProcessingTask\
@@ -91,8 +92,15 @@ class RestoreNatureExecutionTask implements Runnable
 			Entity entity = entities[i];
 			if(!(entity instanceof Player || entity instanceof Animals))
 			{
-				entity.remove();			
+				//hanging entities (paintings, item frames) are protected when they're in land claims
+				if(!(entity instanceof Hanging) || GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null) == null)
+				{
+					//everything else is removed
+					entity.remove();
+				}				
 			}
+			
+			//for players, always ensure there's air where the player is standing
 			else
 			{
 				Block feetBlock = entity.getLocation().getBlock();
@@ -101,7 +109,7 @@ class RestoreNatureExecutionTask implements Runnable
 			}
 		}
 		
-		//show visualization to player
+		//show visualization to player who started the restoration
 		if(player != null)
 		{
 			Claim claim = new Claim(lesserCorner, greaterCorner, "", new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);

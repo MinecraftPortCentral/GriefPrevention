@@ -220,6 +220,8 @@ public class Visualization
 					block.getType() == Material.LEAVES ||
 					block.getType() == Material.RED_ROSE ||
 					block.getType() == Material.CHEST ||
+					block.getType() == Material.TORCH ||
+					block.getType() == Material.VINE ||
 					block.getType() == Material.YELLOW_FLOWER );
 	}
 }

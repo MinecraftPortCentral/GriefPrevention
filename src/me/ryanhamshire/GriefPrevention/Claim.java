@@ -131,7 +131,7 @@ public class Claim
 		int seaLevel = 0;  //clean up all fluids in the end
 		
 		//respect sea level in normal worlds
-		if(lesser.getWorld().getEnvironment() == Environment.NORMAL) seaLevel = lesser.getWorld().getSeaLevel();
+		if(lesser.getWorld().getEnvironment() == Environment.NORMAL) seaLevel = GriefPrevention.instance.getSeaLevel(lesser.getWorld());
 		
 		for(int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
 		{
@@ -165,7 +165,7 @@ public class Claim
 		int seaLevel = 0;  //clean up all fluids in the end
 		
 		//respect sea level in normal worlds
-		if(lesser.getWorld().getEnvironment() == Environment.NORMAL) seaLevel = lesser.getWorld().getSeaLevel();
+		if(lesser.getWorld().getEnvironment() == Environment.NORMAL) seaLevel = GriefPrevention.instance.getSeaLevel(lesser.getWorld());
 		
 		int waterCount = 0;
 		for(int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
@@ -362,7 +362,10 @@ public class Claim
 			return this.parent.allowBuild(player);
 		
 		//failure message for all other cases
-		return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
+		String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
+		if(player.hasPermission("griefprevention.ignoreclaims"))
+				reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+		return reason;
 	}
 	
 	private boolean hasExplicitPermission(Player player, ClaimPermission level)
@@ -458,7 +461,10 @@ public class Claim
 			return this.parent.allowAccess(player);
 		
 		//catch-all error message for all other cases
-		return GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
+		String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
+		if(player.hasPermission("griefprevention.ignoreclaims"))
+			reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+		return reason;
 	}
 	
 	//inventory permission check
@@ -498,7 +504,10 @@ public class Claim
 			return this.parent.allowContainers(player);
 		
 		//error message for all other cases
-		return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
+		String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
+		if(player.hasPermission("griefprevention.ignoreclaims"))
+			reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+		return reason;
 	}
 	
 	//grant permission check, relatively simple
@@ -529,7 +538,10 @@ public class Claim
 			return this.parent.allowGrantPermission(player);
 		
 		//generic error message
-		return GriefPrevention.instance.dataStore.getMessage(Messages.NoPermissionTrust, this.getOwnerName());
+		String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoPermissionTrust, this.getOwnerName());
+		if(player.hasPermission("griefprevention.ignoreclaims"))
+			reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+		return reason;
 	}
 	
 	//grants a permission for a player or the public
@@ -778,7 +790,7 @@ public class Claim
 			for(int z = this.lesserBoundaryCorner.getBlockZ(); z <= this.greaterBoundaryCorner.getBlockZ(); z++)
 			{
 				int y = this.lesserBoundaryCorner.getBlockY();
-				for(; y < this.lesserBoundaryCorner.getWorld().getSeaLevel(); y++)
+				for(; y < GriefPrevention.instance.getSeaLevel(this.lesserBoundaryCorner.getWorld()) - 5; y++)
 				{
 					Block block = this.lesserBoundaryCorner.getWorld().getBlockAt(x, y, z);
 					if(playerBlocks.contains(block.getTypeId()))
@@ -789,7 +801,7 @@ public class Claim
 						}
 						else
 						{
-							score += .2;
+							score += .5;
 						}						
 					}
 				}

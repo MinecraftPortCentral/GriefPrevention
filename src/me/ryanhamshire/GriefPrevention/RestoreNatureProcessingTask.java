@@ -144,15 +144,15 @@ class RestoreNatureProcessingTask implements Runnable
 		//cover surface stone and gravel with sand or grass, as the biome requires
 		this.coverSurfaceStone();
 		
-		//reset leaves to NOT player placed so that they may decay as usual
-		this.resetLeaves();
+		//remove any player-placed leaves
+		this.removePlayerLeaves();
 		
 		//schedule main thread task to apply the result to the world
 		RestoreNatureExecutionTask task = new RestoreNatureExecutionTask(this.snapshots, this.miny, this.lesserBoundaryCorner, this.greaterBoundaryCorner, this.player);
 		GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task);
 	}
 	
-	private void resetLeaves()
+	private void removePlayerLeaves()
 	{
 		for(int x = 1; x < snapshots.length - 1; x++)
 		{
@@ -162,13 +162,9 @@ class RestoreNatureProcessingTask implements Runnable
 				{
 					//note: see minecraft wiki data values for leaves
 					BlockSnapshot block = snapshots[x][y][z];
-					if(block.typeId == Material.LEAVES.getId())
+					if(block.typeId == Material.LEAVES.getId() && (block.data & 0x4) != 0)
 					{
-						//clear "player placed" bit
-						block.data = (byte)(block.data & ~(1<<2));
-						
-						//set the "check for natural decay" bit
-						block.data = (byte)(block.data | (1<<3));
+						block.typeId = Material.AIR.getId();
 					}
 				}
 			}
@@ -708,6 +704,19 @@ class RestoreNatureProcessingTask implements Runnable
 		playerBlocks.add(Material.WOOD_STEP.getId());
 		playerBlocks.add(Material.WOOD_DOUBLE_STEP.getId());
 		playerBlocks.add(Material.ENDER_CHEST.getId());
+		playerBlocks.add(Material.SANDSTONE_STAIRS.getId());
+		playerBlocks.add(Material.SPRUCE_WOOD_STAIRS.getId());
+		playerBlocks.add(Material.JUNGLE_WOOD_STAIRS.getId());
+		playerBlocks.add(Material.COMMAND.getId());
+		playerBlocks.add(Material.BEACON.getId());
+		playerBlocks.add(Material.COBBLE_WALL.getId());
+		playerBlocks.add(Material.FLOWER_POT.getId());
+		playerBlocks.add(Material.CARROT.getId());
+		playerBlocks.add(Material.POTATO.getId());
+		playerBlocks.add(Material.WOOD_BUTTON.getId());
+		playerBlocks.add(Material.SKULL.getId());
+		playerBlocks.add(Material.ANVIL.getId());
+		
 		
 		//these are unnatural in the standard world, but not in the nether
 		if(environment != Environment.NETHER)

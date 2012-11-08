@@ -30,7 +30,10 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -46,6 +49,7 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -75,6 +79,36 @@ public class BlockEventHandler implements Listener
 		this.trashBlocks.add(Material.SAND);
 		this.trashBlocks.add(Material.TNT);
 		this.trashBlocks.add(Material.WORKBENCH);
+	}
+	
+	//when a wooden button is triggered by an arrow...
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	public void onProjectileHit(ProjectileHitEvent event)
+	{
+		Projectile projectile = event.getEntity();
+		Location location = projectile.getLocation();
+		Block block = location.getBlock();
+		
+		//only care about wooden buttons
+		if(block.getType() != Material.WOOD_BUTTON) return;
+		
+		//only care about arrows
+		if(projectile instanceof Arrow)
+		{
+			Arrow arrow = (Arrow)projectile;
+			LivingEntity shooterEntity = arrow.getShooter();
+			
+			//player arrows only trigger buttons when they have permission
+			if(shooterEntity instanceof Player)
+			{
+				//Player player = (Player)shooterEntity;
+			}
+			
+			//other arrows don't trigger buttons, could be used as a workaround to get access to areas without permission 
+			else
+			{
+			}
+		}
 	}
 	
 	//when a block is damaged...
@@ -377,7 +411,7 @@ public class BlockEventHandler implements Listener
 		//warn players when they place TNT above sea level, since it doesn't destroy blocks there
 		if(	GriefPrevention.instance.config_blockSurfaceOtherExplosions && block.getType() == Material.TNT &&
 			block.getWorld().getEnvironment() != Environment.NETHER &&
-			block.getY() > block.getWorld().getSeaLevel() - 5)
+			block.getY() > GriefPrevention.instance.getSeaLevel(block.getWorld()) - 5)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageAboveSeaLevel);
 		}			
@@ -514,11 +548,7 @@ public class BlockEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockIgnite (BlockIgniteEvent igniteEvent)
 	{
-		if(!GriefPrevention.instance.config_fireSpreads &&
-		   igniteEvent.getBlock().getWorld().getEnvironment() == Environment.NORMAL &&
-		   igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL &&
-		   igniteEvent.getCause() != IgniteCause.LIGHTNING &&
-		   igniteEvent.getCause() != IgniteCause.LAVA)
+		if(!GriefPrevention.instance.config_fireSpreads && igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL &&  igniteEvent.getCause() != IgniteCause.LIGHTNING)
 		{	
 			igniteEvent.setCancelled(true);
 		}

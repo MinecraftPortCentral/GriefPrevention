@@ -50,9 +50,9 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.ExpBottleEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
-import org.bukkit.event.painting.PaintingBreakByEntityEvent;
-import org.bukkit.event.painting.PaintingBreakEvent;
-import org.bukkit.event.painting.PaintingPlaceEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 
 //handles events related to entities
@@ -71,6 +71,12 @@ class EntityEventHandler implements Listener
 	public void onEntityChangeBLock(EntityChangeBlockEvent event)
 	{
 		if(!GriefPrevention.instance.config_endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN)
+		{
+			event.setCancelled(true);
+		}
+		
+		//don't allow the wither to break blocks, when the wither is determined, too expensive to constantly check for claimed blocks
+		else if(event.getEntityType() == EntityType.WITHER)
 		{
 			event.setCancelled(true);
 		}
@@ -109,7 +115,7 @@ class EntityEventHandler implements Listener
 				Block block = blocks.get(i);
 				if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
 				
-				if(block.getLocation().getBlockY() > location.getWorld().getSeaLevel() - 7)
+				if(block.getLocation().getBlockY() > GriefPrevention.instance.getSeaLevel(location.getWorld()) - 7)
 				{
 					blocks.remove(i--);
 				}
@@ -252,18 +258,18 @@ class EntityEventHandler implements Listener
 	
 	//when a painting is broken
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	public void onPaintingBreak(PaintingBreakEvent event)
+	public void onHangingBreak(HangingBreakEvent event)
     {
         //FEATURE: claimed paintings are protected from breakage
 		
 		//only allow players to break paintings, not anything else (like water and explosions)
-		if(!(event instanceof PaintingBreakByEntityEvent))
+		if(!(event instanceof HangingBreakByEntityEvent))
     	{
         	event.setCancelled(true);
         	return;
     	}
         
-        PaintingBreakByEntityEvent entityEvent = (PaintingBreakByEntityEvent)event;
+        HangingBreakByEntityEvent entityEvent = (HangingBreakByEntityEvent)event;
         
         //who is removing it?
 		Entity remover = entityEvent.getRemover();
@@ -277,7 +283,7 @@ class EntityEventHandler implements Listener
 		
 		//if the player doesn't have build permission, don't allow the breakage
 		Player playerRemover = (Player)entityEvent.getRemover();
-        String noBuildReason = GriefPrevention.instance.allowBuild(playerRemover, event.getPainting().getLocation());
+        String noBuildReason = GriefPrevention.instance.allowBuild(playerRemover, event.getEntity().getLocation());
         if(noBuildReason != null)
         {
         	event.setCancelled(true);
@@ -287,12 +293,12 @@ class EntityEventHandler implements Listener
 	
 	//when a painting is placed...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	public void onPaintingPlace(PaintingPlaceEvent event)
+	public void onPaintingPlace(HangingPlaceEvent event)
 	{
 		//FEATURE: similar to above, placing a painting requires build permission in the claim
 	
 		//if the player doesn't have permission, don't allow the placement
-		String noBuildReason = GriefPrevention.instance.allowBuild(event.getPlayer(), event.getPainting().getLocation());
+		String noBuildReason = GriefPrevention.instance.allowBuild(event.getPlayer(), event.getEntity().getLocation());
         if(noBuildReason != null)
         {
         	event.setCancelled(true);
@@ -301,7 +307,7 @@ class EntityEventHandler implements Listener
         }
 		
 		//otherwise, apply entity-count limitations for creative worlds
-		else if(GriefPrevention.instance.creativeRulesApply(event.getPainting().getLocation()))
+		else if(GriefPrevention.instance.creativeRulesApply(event.getEntity().getLocation()))
 		{
 			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
 			Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, playerData.lastClaim);

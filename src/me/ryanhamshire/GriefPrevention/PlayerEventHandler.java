@@ -36,6 +36,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Hanging;
 import org.bukkit.entity.PoweredMinecart;
 import org.bukkit.entity.StorageMinecart;
 import org.bukkit.entity.Player;
@@ -675,9 +676,21 @@ class PlayerEventHandler implements Listener
 	{
 		Player player = event.getPlayer();
 		Entity entity = event.getRightClicked();
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		
+		//don't allow interaction with item frames in claimed areas without build permission
+		if(entity instanceof Hanging)
+		{
+			String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation()); 
+			if(noBuildReason != null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+				event.setCancelled(true);
+				return;
+			}			
+		}
 		
 		//don't allow container access during pvp combat
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		if((entity instanceof StorageMinecart || entity instanceof PoweredMinecart))
 		{
 			if(playerData.siegeData != null)
@@ -850,7 +863,7 @@ class PlayerEventHandler implements Listener
 		//otherwise no wilderness dumping (unless underground) in worlds where claims are enabled
 		else if(GriefPrevention.instance.config_claims_enabledWorlds.contains(block.getWorld()))
 		{
-			if(block.getY() >= block.getWorld().getSeaLevel() - 5 && !player.hasPermission("griefprevention.lava"))
+			if(block.getY() >= GriefPrevention.instance.getSeaLevel(block.getWorld()) - 5 && !player.hasPermission("griefprevention.lava"))
 			{
 				if(bucketEvent.getBucket() == Material.LAVA_BUCKET || GriefPrevention.instance.config_blockWildernessWaterBuckets)
 				{
@@ -960,6 +973,7 @@ class PlayerEventHandler implements Listener
 						clickedBlockType == Material.WORKBENCH || 
 						clickedBlockType == Material.ENDER_CHEST ||
 						clickedBlockType == Material.DISPENSER ||
+						clickedBlockType == Material.ANVIL ||
 						clickedBlockType == Material.BREWING_STAND || 
 						clickedBlockType == Material.JUKEBOX || 
 						clickedBlockType == Material.ENCHANTMENT_TABLE ||
@@ -1026,7 +1040,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise apply rules for buttons and switches
-		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null))))
+		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.WOOD_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null))))
 		{
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
@@ -1216,9 +1230,9 @@ class PlayerEventHandler implements Listener
 				//if not in aggressive mode, extend the selection down to a little below sea level
 				if(!(playerData.shovelMode == ShovelMode.RestoreNatureAggressive))
 				{
-					if(miny > chunk.getWorld().getSeaLevel() - 10)
+					if(miny > GriefPrevention.instance.getSeaLevel(chunk.getWorld()) - 10)
 					{
-						miny = chunk.getWorld().getSeaLevel() - 10;
+						miny = GriefPrevention.instance.getSeaLevel(chunk.getWorld()) - 10;
 					}
 				}
 				

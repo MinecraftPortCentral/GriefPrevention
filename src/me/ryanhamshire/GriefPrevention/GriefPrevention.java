@@ -1,6 +1,6 @@
 /*
     GriefPrevention Server Plugin for Minecraft
-    Copyright (C) 2011 Ryan Hamshire
+    Copyright (C) 2012 Ryan Hamshire
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -84,6 +84,11 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_claims_allowUnclaimInCreative;			//whether players may unclaim land (resize or abandon) in creative mode
 	
 	public boolean config_claims_noBuildOutsideClaims;				//whether players can build in survival worlds outside their claimed areas
+	
+	public int config_claims_chestClaimExpirationDays;				//number of days of inactivity before an automatic chest claim will be deleted
+	public int config_claims_unusedClaimExpirationDays;				//number of days of inactivity before an unused (nothing build) claim will be deleted
+	public boolean config_claims_survivalAutoNatureRestoration;		//whether survival claims will be automatically restored to nature when auto-deleted
+	public boolean config_claims_creativeAutoNatureRestoration;		//whether creative claims will be automatically restored to nature when auto-deleted
 	
 	public int config_claims_trappedCooldownHours;					//number of hours between uses of the /trapped command
 	
@@ -256,11 +261,25 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_creationRequiresPermission = config.getBoolean("GriefPrevention.Claims.CreationRequiresPermission", false);
 		this.config_claims_minSize = config.getInt("GriefPrevention.Claims.MinimumSize", 10);
 		this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", 0);
-		this.config_claims_expirationDays = config.getInt("GriefPrevention.Claims.IdleLimitDays", 0);
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
 		this.config_claims_noBuildOutsideClaims = config.getBoolean("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", false);
 		this.config_claims_warnOnBuildOutside = config.getBoolean("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", true);
 		this.config_claims_allowUnclaimInCreative = config.getBoolean("GriefPrevention.Claims.AllowUnclaimingCreativeModeLand", true);
+
+		this.config_claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
+		config.set("GriefPrevention.Claims.Expiration.ChestClaimDays", this.config_claims_chestClaimExpirationDays);
+		
+		this.config_claims_unusedClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.UnusedClaimDays", 14);
+		config.set("GriefPrevention.Claims.Expiration.UnusedClaimDays", this.config_claims_unusedClaimExpirationDays);		
+		
+		this.config_claims_expirationDays = config.getInt("GriefPrevention.Claims.Expiration.AllClaimDays", 0);
+		config.set("GriefPrevention.Claims.Expiration.AllClaimDays", this.config_claims_expirationDays);
+		
+		this.config_claims_survivalAutoNatureRestoration = config.getBoolean("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", false);
+		config.set("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", this.config_claims_survivalAutoNatureRestoration);		
+		
+		this.config_claims_creativeAutoNatureRestoration = config.getBoolean("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.CreativeWorlds", true);
+		config.set("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.CreativeWorlds", this.config_claims_creativeAutoNatureRestoration);		
 		
 		this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
 		this.config_spam_loginCooldownMinutes = config.getInt("GriefPrevention.Spam.LoginCooldownMinutes", 2);
@@ -960,6 +979,12 @@ public class GriefPrevention extends JavaPlugin
 			
 			//determine which claim the player is standing in
 			Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
+			
+			//bracket any permissions
+			if(args[0].contains("."))
+			{
+				args[0] = "[" + args[0] + "]";
+			}
 			
 			//determine whether a single player or clearing permissions entirely
 			boolean clearPermissions = false;
@@ -1796,6 +1821,11 @@ public class GriefPrevention extends JavaPlugin
 			}
 		}
 		
+		else if(recipientName.contains("."))
+		{
+			permission = recipientName;
+		}
+		
 		else
 		{		
 			otherPlayer = this.resolvePlayer(recipientName);
@@ -2310,8 +2340,10 @@ public class GriefPrevention extends JavaPlugin
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				return  this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
-						
+				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
+				if(player.hasPermission("griefprevention.ignoreclaims"))
+					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+				return reason;
 			}
 			
 			//no building in survival wilderness when that is configured
@@ -2350,7 +2382,10 @@ public class GriefPrevention extends JavaPlugin
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				return  this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
+				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
+				if(player.hasPermission("griefprevention.ignoreclaims"))
+					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+				return reason;
 			}
 			
 			else if(this.config_claims_noBuildOutsideClaims && this.config_claims_enabledWorlds.contains(location.getWorld()))
@@ -2392,7 +2427,7 @@ public class GriefPrevention extends JavaPlugin
 			for(int z = lesserChunk.getZ(); z <= greaterChunk.getZ(); z++)
 			{
 				Chunk chunk = lesserChunk.getWorld().getChunkAt(x, z);
-				this.restoreChunk(chunk, chunk.getWorld().getSeaLevel() - 15, false, delayInTicks, null);
+				this.restoreChunk(chunk, this.getSeaLevel(chunk.getWorld()) - 15, false, delayInTicks, null);
 			}
 	}
 	
@@ -2421,7 +2456,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		//create task
 		//when done processing, this task will create a main thread task to actually update the world with processing results
-		RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, chunk.getWorld().getSeaLevel(), aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
+		RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()), aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
 		GriefPrevention.instance.getServer().getScheduler().scheduleAsyncDelayedTask(GriefPrevention.instance, task, delayInTicks);
 	}
 	

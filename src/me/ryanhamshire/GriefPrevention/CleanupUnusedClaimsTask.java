@@ -20,6 +20,7 @@
 
 import java.util.Calendar;
 import java.util.Random;
+import java.util.Vector;
 
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -63,6 +64,9 @@ class CleanupUnusedClaimsTask implements Runnable
 		//skip administrative claims
 		if(claim.isAdminClaim()) return;
 		
+		//track whether we do any important work which would require cleanup afterward
+		boolean cleanupChunks = false;
+		
 		//get data for the player, especially last login timestamp
 		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.ownerName);
 		
@@ -75,20 +79,21 @@ class CleanupUnusedClaimsTask implements Runnable
 		
 		//if he's been gone at least a week, if he has ONLY the new player claim, it will be removed
 		Calendar sevenDaysAgo = Calendar.getInstance();
-		sevenDaysAgo.add(Calendar.DATE, -7);
+		sevenDaysAgo.add(Calendar.DATE, -GriefPrevention.instance.config_claims_chestClaimExpirationDays);
 		boolean newPlayerClaimsExpired = sevenDaysAgo.getTime().after(playerData.lastLogin);
 		
 		//if only one claim, and the player hasn't played in a week
 		if(newPlayerClaimsExpired && playerData.claims.size() == 1)
 		{
-			//if that's a chest claim, delete it
-			if(claim.getArea() <= areaOfDefaultClaim)
+			//if that's a chest claim and those are set to expire
+			if(claim.getArea() <= areaOfDefaultClaim && GriefPrevention.instance.config_claims_chestClaimExpirationDays > 0)
 			{
 				claim.removeSurfaceFluids(null);
 				GriefPrevention.instance.dataStore.deleteClaim(claim);
+				cleanupChunks = true;
 				
-				//if in a creative mode world, delete the claim
-				if(GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()))
+				//if configured to do so, restore the land to natural
+				if((GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) && GriefPrevention.instance.config_claims_creativeAutoNatureRestoration) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
 				{
 					GriefPrevention.instance.restoreClaim(claim, 0);
 				}
@@ -105,18 +110,35 @@ class CleanupUnusedClaimsTask implements Runnable
 			
 			if(earliestPermissibleLastLogin.getTime().after(playerData.lastLogin))
 			{
+				//make a copy of this player's claim list
+				Vector<Claim> claims = new Vector<Claim>();
+				for(int i = 0; i < playerData.claims.size(); i++)
+				{
+					claims.add(playerData.claims.get(i));
+				}
+				
+				//delete them
 				GriefPrevention.instance.dataStore.deleteClaimsForPlayer(claim.getOwnerName(), true);
 				GriefPrevention.AddLogEntry(" All of " + claim.getOwnerName() + "'s claims have expired.");
+				
+				for(int i = 0; i < claims.size(); i++)
+				{
+					//if configured to do so, restore the land to natural
+					if((GriefPrevention.instance.creativeRulesApply(claims.get(i).getLesserBoundaryCorner()) && GriefPrevention.instance.config_claims_creativeAutoNatureRestoration) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
+					{
+						GriefPrevention.instance.restoreClaim(claims.get(i), 0);
+						cleanupChunks = true;				
+					}
+				}
 			}
 		}
 		
-		else
-		{
-		
+		else if(GriefPrevention.instance.config_claims_unusedClaimExpirationDays > 0)
+		{		
 			//if the player has been gone two weeks, scan claim content to assess player investment
-			Calendar fourteenDaysAgo = Calendar.getInstance();
-			fourteenDaysAgo.add(Calendar.DATE, -14);
-			boolean needsInvestmentScan = fourteenDaysAgo.getTime().after(playerData.lastLogin);
+			Calendar earliestAllowedLoginDate = Calendar.getInstance();
+			earliestAllowedLoginDate.add(Calendar.DATE, -GriefPrevention.instance.config_claims_unusedClaimExpirationDays);
+			boolean needsInvestmentScan = earliestAllowedLoginDate.getTime().after(playerData.lastLogin);
 			
 			//avoid scanning large claims and administrative claims
 			if(claim.isAdminClaim() || claim.getWidth() > 25 || claim.getHeight() > 25) return;
@@ -131,10 +153,11 @@ class CleanupUnusedClaimsTask implements Runnable
 				}
 				else
 				{
-					minInvestment = 200;
+					minInvestment = 100;
 				}
 				
 				long investmentScore = claim.getPlayerInvestmentScore();
+				cleanupChunks = true;
 				boolean removeClaim = false;
 				
 				//in creative mode, a build which is almost entirely lava above sea level will be automatically removed, even if the owner is an active player
@@ -156,8 +179,8 @@ class CleanupUnusedClaimsTask implements Runnable
 					GriefPrevention.instance.dataStore.deleteClaim(claim);
 					GriefPrevention.AddLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
 					
-					//if in a creative mode world, restore the claim area
-					if(GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()))
+					//if configured to do so, restore the claim area to natural state
+					if((GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) && GriefPrevention.instance.config_claims_creativeAutoNatureRestoration) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
 					{
 						GriefPrevention.instance.restoreClaim(claim, 0);
 					}
@@ -172,8 +195,7 @@ class CleanupUnusedClaimsTask implements Runnable
 		}
 		
 		//since we're potentially loading a lot of chunks to scan parts of the world where there are no players currently playing, be mindful of memory usage
-		//unfortunately, java/minecraft don't do a good job of clearing unused memory, leading to out of memory errors from this type of world scanning
-		if(this.nextClaimIndex % 20 == 0)
+		if(cleanupChunks)
 		{
 			World world = claim.getLesserBoundaryCorner().getWorld();
 			Chunk [] chunks = world.getLoadedChunks();
@@ -182,7 +204,11 @@ class CleanupUnusedClaimsTask implements Runnable
 				Chunk chunk = chunks[i];
 				chunk.unload(true, true);
 			}
-			
+		}
+		
+		//unfortunately, java/minecraft don't do a good job of clearing unused memory, leading to out of memory errors from this type of world scanning
+		if(this.nextClaimIndex % 10 == 0)
+		{		
 			System.gc();
 		}
 	}
