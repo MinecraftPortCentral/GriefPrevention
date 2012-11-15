@@ -125,22 +125,25 @@ class PlayerEventHandler implements Listener
 		//if the player has permission to spam, don't bother even examining the message
 		if(player.hasPermission("griefprevention.spam")) return false;
 		
-		//remedy any CAPS SPAM without bothering to fault the player for it
+		boolean spam = false;
+		boolean muted = false;
+		
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		
+		//remedy any CAPS SPAM, exception for very short messages which could be emoticons like =D or XD
 		if(message.length() > 4 && this.stringsAreSimilar(message.toUpperCase(), message))
 		{
-			if(event instanceof AsyncPlayerChatEvent)
+			//exception for strings containing forward slash to avoid changing a case-sensitive URL
+			if(event instanceof AsyncPlayerChatEvent && !message.contains("/"))
 			{
 				((AsyncPlayerChatEvent)event).setMessage(message.toLowerCase());
+				playerData.spamCount++;
+				spam = true;				
 			}
 		}
 		
 		//where other types of spam are concerned, casing isn't significant
 		message = message.toLowerCase();
-		
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
-		
-		boolean spam = false;
-		boolean muted = false;
 		
 		//check message content and timing		
 		long millisecondsSinceLastMessage = (new Date()).getTime() - playerData.lastMessageTimestamp.getTime();
@@ -363,7 +366,7 @@ class PlayerEventHandler implements Listener
 		
 		//if in pvp, block any pvp-banned slash commands
 		PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
-		if(playerData.inPvpCombat() && GriefPrevention.instance.config_pvp_blockedCommands.contains(command))
+		if((playerData.inPvpCombat() || playerData.siegeData != null) && GriefPrevention.instance.config_pvp_blockedCommands.contains(command))
 		{
 			event.setCancelled(true);
 			GriefPrevention.sendMessage(event.getPlayer(), TextMode.Err, Messages.CommandBannedInPvP);
@@ -642,17 +645,10 @@ class PlayerEventHandler implements Listener
 		if(event.getCause() == TeleportCause.ENDER_PEARL) return;
 		
 		Player player = event.getPlayer();
-		
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
-		if(playerData.inPvpCombat())
-		{
-			GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoTeleportPvPCombat);
-			event.setCancelled(true);
-			return;
-		}
 		
 		Location source = event.getFrom();
-		Claim sourceClaim = this.dataStore.getClaimAt(source, false, null);
+		Claim sourceClaim = this.dataStore.getClaimAt(source, false, playerData.lastClaim);
 		if(sourceClaim != null && sourceClaim.siegeData != null)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoTeleport);
@@ -875,7 +871,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//lava buckets can't be dumped near other players unless pvp is on
-		if(!block.getWorld().getPVP() && !player.hasPermission("griefprevention.lava"))
+		if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(block.getWorld()) && !player.hasPermission("griefprevention.lava"))
 		{
 			if(bucketEvent.getBucket() == Material.LAVA_BUCKET)
 			{

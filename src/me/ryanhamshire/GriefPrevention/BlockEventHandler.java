@@ -150,6 +150,9 @@ public class BlockEventHandler implements Listener
 				return;
 			}
 			
+			//if a player is in pvp combat, he can't give away items
+			if(playerData.inPvpCombat()) return;
+			
 			//NOTE: to eliminate accidental give-aways, first hit on a chest displays a confirmation message
 			//subsequent hits donate item to the chest
 			
@@ -266,7 +269,7 @@ public class BlockEventHandler implements Listener
 		//FEATURE: limit fire placement, to prevent PvP-by-fire
 		
 		//if placed block is fire and pvp is off, apply rules for proximity to other players 
-		if(block.getType() == Material.FIRE && !block.getWorld().getPVP() && !player.hasPermission("griefprevention.lava"))
+		if(block.getType() == Material.FIRE && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(block.getWorld()) && !player.hasPermission("griefprevention.lava"))
 		{
 			List<Player> players = block.getWorld().getPlayers();
 			for(int i = 0; i < players.size(); i++)

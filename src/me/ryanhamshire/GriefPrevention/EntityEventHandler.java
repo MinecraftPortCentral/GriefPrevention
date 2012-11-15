@@ -35,6 +35,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
+import org.bukkit.entity.Villager;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -361,7 +362,7 @@ class EntityEventHandler implements Listener
 		}
 		
 		//if the attacker is a player and defender is a player (pvp combat)
-		if(attacker != null && event.getEntity() instanceof Player)
+		if(attacker != null && event.getEntity() instanceof Player && GriefPrevention.instance.config_pvp_enabledWorlds.contains(attacker.getWorld()))
 		{
 			//FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
 			
@@ -425,10 +426,21 @@ class EntityEventHandler implements Listener
 				//if it's claimed
 				if(claim != null)
 				{
-					//if damaged by anything other than a player, cancel the event
+					//if damaged by anything other than a player (exception villagers injured by zombies in admin claims), cancel the event
+					//why exception?  so admins can set up a village which can't be CHANGED by players, but must be "protected" by players.
 					if(attacker == null)
 					{
-						event.setCancelled(true);
+						//exception case
+						if(event.getEntity() instanceof Villager && damageSource instanceof Monster && claim.isAdminClaim())
+						{
+							return;
+						}
+						
+						//all other cases
+						else
+						{
+							event.setCancelled(true);
+						}						
 					}
 					
 					//otherwise the player damaging the entity must have permission

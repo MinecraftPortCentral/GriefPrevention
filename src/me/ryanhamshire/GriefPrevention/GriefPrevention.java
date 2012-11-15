@@ -106,6 +106,7 @@ public class GriefPrevention extends JavaPlugin
 	public String config_spam_warningMessage;						//message to show a player who is close to spam level
 	public String config_spam_allowedIpAddresses;					//IP addresses which will not be censored
 	
+	public ArrayList<World> config_pvp_enabledWorlds;				//list of worlds where pvp anti-grief rules apply
 	public boolean config_pvp_protectFreshSpawns;					//whether to make newly spawned players immune until they pick up an item
 	public boolean config_pvp_punishLogout;						    //whether to kill players who log out during PvP combat
 	public int config_pvp_combatTimeoutSeconds;						//how long combat is considered to continue after the most recent damage
@@ -235,6 +236,40 @@ public class GriefPrevention extends JavaPlugin
 			else
 			{
 				this.config_claims_enabledCreativeWorlds.add(world);
+			}
+		}
+		
+		//default for pvp worlds list
+		ArrayList<String> defaultPvpWorldNames = new ArrayList<String>();
+		for(int i = 0; i < worlds.size(); i++)			
+		{
+			World world = worlds.get(i); 
+			if(world.getPVP())
+			{
+				defaultPvpWorldNames.add(world.getName());
+			}
+		}
+		
+		//get pvp world names from the config file
+		List<String> pvpEnabledWorldNames = config.getStringList("GriefPrevention.PvP.Worlds");
+		if(pvpEnabledWorldNames == null || pvpEnabledWorldNames.size() == 0)
+		{			
+			pvpEnabledWorldNames = defaultPvpWorldNames;
+		}
+		
+		//validate that list
+		this.config_pvp_enabledWorlds = new ArrayList<World>();
+		for(int i = 0; i < pvpEnabledWorldNames.size(); i++)
+		{
+			String worldName = pvpEnabledWorldNames.get(i);
+			World world = this.getServer().getWorld(worldName);
+			if(world == null)
+			{
+				AddLogEntry("Error: PvP Configuration: There's no world named \"" + worldName + "\".  Please update your config.yml.");
+			}
+			else
+			{
+				this.config_pvp_enabledWorlds.add(world);
 			}
 		}
 		
@@ -525,6 +560,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Spam.BanMessage", this.config_spam_banMessage);
 		config.set("GriefPrevention.Spam.AllowedIpAddresses", this.config_spam_allowedIpAddresses);
 		
+		config.set("GriefPrevention.PvP.Worlds", pvpEnabledWorldNames);
 		config.set("GriefPrevention.PvP.ProtectFreshSpawns", this.config_pvp_protectFreshSpawns);
 		config.set("GriefPrevention.PvP.PunishLogout", this.config_pvp_punishLogout);
 		config.set("GriefPrevention.PvP.CombatTimeoutSeconds", this.config_pvp_combatTimeoutSeconds);
@@ -1148,6 +1184,12 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
+			if(!player.hasPermission("griefprevention.buysellclaimblocks"))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoPermissionForCommand);
+				return true;
+			}
+			
 			//if purchase disabled, send error message
 			if(GriefPrevention.instance.config_economy_claimBlocksPurchaseCost == 0)
 			{
@@ -1230,6 +1272,12 @@ public class GriefPrevention extends JavaPlugin
 			if(GriefPrevention.economy == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
+				return true;
+			}
+			
+			if(!player.hasPermission("griefprevention.buysellclaimblocks"))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoPermissionForCommand);
 				return true;
 			}
 			
@@ -1404,21 +1452,40 @@ public class GriefPrevention extends JavaPlugin
 			return true;
 		}
 		
-		//claimslist <player>
+		//claimslist or claimslist <player>
 		else if(cmd.getName().equalsIgnoreCase("claimslist"))
 		{
-			//requires exactly one parameter, the other player's name
-			if(args.length != 1) return false;
+			//at most one parameter
+			if(args.length > 1) return false;
 			
-			//try to find that player
-			OfflinePlayer otherPlayer = this.resolvePlayer(args[0]);
-			if(otherPlayer == null)
+			//player whose claims will be listed
+			OfflinePlayer otherPlayer;
+			
+			//if another player isn't specified, assume current player
+			if(args.length < 1)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
-				return true;
+				otherPlayer = player;
 			}
 			
-			//load the player's data
+			//otherwise if no permission to delve into another player's claims data
+			else if(!player.hasPermission("griefprevention.deleteclaims"))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimsListNoPermission);
+				return true;
+			}
+						
+			//otherwise try to find the specified player
+			else
+			{
+				otherPlayer = this.resolvePlayer(args[0]);
+				if(otherPlayer == null)
+				{
+					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+					return true;
+				}
+			}
+			
+			//load the target player's data
 			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getName());
 			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + playerData.bonusClaimBlocks + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks));
 			for(int i = 0; i < playerData.claims.size(); i++)
@@ -1594,6 +1661,13 @@ public class GriefPrevention extends JavaPlugin
 			if(player.getWorld().getEnvironment() != Environment.NORMAL)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.TrappedWontWorkHere);				
+				return true;
+			}
+			
+			//if the player is in an administrative claim, he should contact an admin
+			if(claim.isAdminClaim())
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.TrappedWontWorkHere);
 				return true;
 			}
 			
@@ -2003,7 +2077,7 @@ public class GriefPrevention extends JavaPlugin
 	public void checkPvpProtectionNeeded(Player player)
 	{
 		//if pvp is disabled, do nothing
-		if(!player.getWorld().getPVP()) return;
+		if(!this.config_pvp_enabledWorlds.contains(player.getWorld())) return;
 		
 		//if player is in creative mode, do nothing
 		if(player.getGameMode() == GameMode.CREATIVE) return;
