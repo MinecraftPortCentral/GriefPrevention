@@ -1464,7 +1464,10 @@ public class GriefPrevention extends JavaPlugin
 			//if another player isn't specified, assume current player
 			if(args.length < 1)
 			{
-				otherPlayer = player;
+				if(player != null)
+					otherPlayer = player;
+				else
+					return false;
 			}
 			
 			//otherwise if no permission to delve into another player's claims data

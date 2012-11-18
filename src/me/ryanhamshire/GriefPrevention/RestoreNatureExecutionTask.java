@@ -62,7 +62,7 @@ class RestoreNatureExecutionTask implements Runnable
 		Claim cachedClaim = null;
 		for(int x = 1; x < this.snapshots.length - 1; x++)
 		{
-			for(int z = 1; z < this.snapshots[0][0].length; z++)
+			for(int z = 1; z < this.snapshots[0][0].length - 1; z++)
 			{
 				for(int y = this.miny; y < this.snapshots[0].length; y++)
 				{

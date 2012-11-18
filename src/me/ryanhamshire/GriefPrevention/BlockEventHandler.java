@@ -554,6 +554,12 @@ public class BlockEventHandler implements Listener
 		if(!GriefPrevention.instance.config_fireSpreads && igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL &&  igniteEvent.getCause() != IgniteCause.LIGHTNING)
 		{	
 			igniteEvent.setCancelled(true);
+			
+			Block underBlock = igniteEvent.getBlock().getRelative(BlockFace.DOWN);
+			if(underBlock.getType() != Material.NETHERRACK)
+			{
+				igniteEvent.getBlock().setType(Material.AIR);
+			}
 		}
 	}
 	
@@ -566,6 +572,13 @@ public class BlockEventHandler implements Listener
 		if(!GriefPrevention.instance.config_fireSpreads)
 		{
 			spreadEvent.setCancelled(true);
+			
+			Block underBlock = spreadEvent.getBlock().getRelative(BlockFace.DOWN);
+			if(underBlock.getType() != Material.NETHERRACK)
+			{
+				spreadEvent.getBlock().setType(Material.AIR);
+			}
+			
 			return;
 		}
 		
@@ -590,6 +603,13 @@ public class BlockEventHandler implements Listener
 		if(!GriefPrevention.instance.config_fireDestroys)
 		{
 			burnEvent.setCancelled(true);
+			
+			Block underBlock = burnEvent.getBlock().getRelative(BlockFace.DOWN);
+			if(underBlock.getType() != Material.NETHERRACK)
+			{
+				burnEvent.getBlock().setType(Material.AIR);
+			}
+			
 			return;
 		}
 		
