@@ -46,7 +46,10 @@ class DeliverClaimBlocksTask implements Runnable
 			try  //distance squared will throw an exception if the player has changed worlds
 			{
 				//if he's not in a vehicle and has moved at least three blocks since the last check
-				if(!player.isInsideVehicle() && (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 9))
+				//and he's not being pushed around by fluids
+				if(!player.isInsideVehicle() && 
+				   (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 9) &&
+				   !player.getLocation().getBlock().isLiquid())
 				{					
 					//if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
 					//in that case, leave his blocks where they are

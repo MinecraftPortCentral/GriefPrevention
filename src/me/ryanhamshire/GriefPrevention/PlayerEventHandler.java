@@ -1087,14 +1087,30 @@ class PlayerEventHandler implements Listener
 			//what's the player holding?
 			Material materialInHand = player.getItemInHand().getType();		
 			
-			//if it's bonemeal or a boat, check for build permission (ink sac == bone meal, must be a Bukkit bug?)
-			if(materialInHand == Material.INK_SACK || materialInHand == Material.BOAT)
+			//if it's bonemeal, check for build permission (ink sac == bone meal, must be a Bukkit bug?)
+			if(materialInHand == Material.INK_SACK)
 			{
 				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation());
 				if(noBuildReason != null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
 					event.setCancelled(true);
+				}
+				
+				return;
+			}
+			
+			else if(materialInHand ==  Material.BOAT)
+			{
+				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+				if(claim != null)
+				{
+					String noAccessReason = claim.allowAccess(player);
+					if(noAccessReason != null)
+					{
+						GriefPrevention.sendMessage(player, TextMode.Err, noAccessReason);
+						event.setCancelled(true);
+					}
 				}
 				
 				return;

@@ -134,6 +134,7 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_smartBan;									//whether to ban accounts which very likely owned by a banned player
 	
 	public boolean config_endermenMoveBlocks;						//whether or not endermen may move blocks around
+	public boolean config_silverfishBreakBlocks;					//whether silverfish may break blocks
 	public boolean config_creaturesTrampleCrops;					//whether or not non-player entities may trample crops
 	public boolean config_zombiesBreakDoors;						//whether or not hard-mode zombies may break down wooden doors
 	
@@ -351,6 +352,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
 		
 		this.config_endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
+		this.config_silverfishBreakBlocks = config.getBoolean("GriefPrevention.SilverfishBreakBlocks", false);
 		this.config_creaturesTrampleCrops = config.getBoolean("GriefPrevention.CreaturesTrampleCrops", false);
 		this.config_zombiesBreakDoors = config.getBoolean("GriefPrevention.HardModeZombiesBreakDoors", false);
 		
@@ -591,6 +593,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
 		
 		config.set("GriefPrevention.EndermenMoveBlocks", this.config_endermenMoveBlocks);
+		config.set("GriefPrevention.SilverfishBreakBlocks", this.config_silverfishBreakBlocks);		
 		config.set("GriefPrevention.CreaturesTrampleCrops", this.config_creaturesTrampleCrops);
 		config.set("GriefPrevention.HardModeZombiesBreakDoors", this.config_zombiesBreakDoors);		
 		
@@ -1471,7 +1474,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//otherwise if no permission to delve into another player's claims data
-			else if(!player.hasPermission("griefprevention.deleteclaims"))
+			else if(player != null && !player.hasPermission("griefprevention.deleteclaims"))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimsListNoPermission);
 				return true;

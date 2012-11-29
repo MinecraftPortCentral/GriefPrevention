@@ -76,6 +76,11 @@ class EntityEventHandler implements Listener
 			event.setCancelled(true);
 		}
 		
+		else if(!GriefPrevention.instance.config_silverfishBreakBlocks && event.getEntityType() == EntityType.SILVERFISH)
+		{
+			event.setCancelled(true);
+		}
+		
 		//don't allow the wither to break blocks, when the wither is determined, too expensive to constantly check for claimed blocks
 		else if(event.getEntityType() == EntityType.WITHER)
 		{
