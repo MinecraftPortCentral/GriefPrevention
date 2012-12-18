@@ -1493,7 +1493,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			//load the target player's data
 			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getName());
-			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + playerData.bonusClaimBlocks + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks));
+			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName()) + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName())));
 			for(int i = 0; i < playerData.claims.size(); i++)
 			{
 				Claim claim = playerData.claims.get(i);
