@@ -93,7 +93,7 @@ public abstract class DataStore
 		{
 			String groupName = iterator.next();
 			Player player = GriefPrevention.instance.getServer().getPlayer(playerName);
-			if(player.hasPermission(groupName))
+			if(player != null && player.hasPermission(groupName))
 			{
 				bonusBlocks += this.permissionToBonusBlocksMap.get(groupName);
 			}

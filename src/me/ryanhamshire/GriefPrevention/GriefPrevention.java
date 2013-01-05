@@ -105,6 +105,7 @@ public class GriefPrevention extends JavaPlugin
 	public String config_spam_banMessage;							//message to show an automatically banned player
 	public String config_spam_warningMessage;						//message to show a player who is close to spam level
 	public String config_spam_allowedIpAddresses;					//IP addresses which will not be censored
+	public int config_spam_deathMessageCooldownSeconds;				//cooldown period for death messages (per player) in seconds
 	
 	public ArrayList<World> config_pvp_enabledWorlds;				//list of worlds where pvp anti-grief rules apply
 	public boolean config_pvp_protectFreshSpawns;					//whether to make newly spawned players immune until they pick up an item
@@ -324,6 +325,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_spam_banOffenders = config.getBoolean("GriefPrevention.Spam.BanOffenders", true);		
 		this.config_spam_banMessage = config.getString("GriefPrevention.Spam.BanMessage", "Banned for spam.");
 		String slashCommandsToMonitor = config.getString("GriefPrevention.Spam.MonitorSlashCommands", "/me;/tell;/global;/local");
+		this.config_spam_deathMessageCooldownSeconds = config.getInt("GriefPrevention.Spam.DeathMessageCooldownSeconds", 60);		
 		
 		this.config_pvp_protectFreshSpawns = config.getBoolean("GriefPrevention.PvP.ProtectFreshSpawns", true);
 		this.config_pvp_punishLogout = config.getBoolean("GriefPrevention.PvP.PunishLogout", true);
@@ -561,6 +563,7 @@ public class GriefPrevention extends JavaPlugin
 		config.set("GriefPrevention.Spam.BanOffenders", this.config_spam_banOffenders);		
 		config.set("GriefPrevention.Spam.BanMessage", this.config_spam_banMessage);
 		config.set("GriefPrevention.Spam.AllowedIpAddresses", this.config_spam_allowedIpAddresses);
+		config.set("GriefPrevention.Spam.DeathMessageCooldownSeconds", this.config_spam_deathMessageCooldownSeconds);
 		
 		config.set("GriefPrevention.PvP.Worlds", pvpEnabledWorldNames);
 		config.set("GriefPrevention.PvP.ProtectFreshSpawns", this.config_pvp_protectFreshSpawns);
@@ -901,11 +904,6 @@ public class GriefPrevention extends JavaPlugin
 			if(claim == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferClaimMissing);
-				return true;
-			}
-			else if(!claim.isAdminClaim())
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.TransferClaimAdminOnly);
 				return true;
 			}
 			
@@ -1493,7 +1491,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			//load the target player's data
 			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getName());
-			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName()) + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName())));
+			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + (playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName())) + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName())));
 			for(int i = 0; i < playerData.claims.size(); i++)
 			{
 				Claim claim = playerData.claims.get(i);
@@ -2392,7 +2390,7 @@ public class GriefPrevention extends JavaPlugin
 		SendPlayerMessageTask task = new SendPlayerMessageTask(player, color, message);
 		if(delayInTicks > 0)
 		{
-			GriefPrevention.instance.getServer().getScheduler().scheduleAsyncDelayedTask(GriefPrevention.instance, task, delayInTicks);
+			GriefPrevention.instance.getServer().getScheduler().runTaskLater(GriefPrevention.instance, task, delayInTicks);
 		}
 		else
 		{
@@ -2537,7 +2535,7 @@ public class GriefPrevention extends JavaPlugin
 		//create task
 		//when done processing, this task will create a main thread task to actually update the world with processing results
 		RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()), aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
-		GriefPrevention.instance.getServer().getScheduler().scheduleAsyncDelayedTask(GriefPrevention.instance, task, delayInTicks);
+		GriefPrevention.instance.getServer().getScheduler().runTaskLaterAsynchronously(GriefPrevention.instance, task, delayInTicks);
 	}
 	
 	private void parseMaterialListFromConfig(List<String> stringsToParse, MaterialCollection materialCollection)

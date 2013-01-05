@@ -70,6 +70,9 @@ public class PlayerData
 	//number of blocks placed outside claims before next warning
 	int unclaimedBlockPlacementsUntilWarning = 1;
 	
+	//timestamp of last death, for use in preventing death message spam
+	long lastDeathTimeStamp = 0;
+	
 	//spam
 	public Date lastLogin;							//when the player last logged into the server
 	public String lastMessage = "";					//the player's last chat message, or slash command complete with parameters 

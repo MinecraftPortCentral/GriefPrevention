@@ -45,6 +45,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.player.PlayerLoginEvent.Result;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
@@ -75,7 +76,7 @@ class PlayerEventHandler implements Listener
 	
 	//when a player chats, monitor for spam
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	void onPlayerChat (AsyncPlayerChatEvent event)
+	synchronized void onPlayerChat (AsyncPlayerChatEvent event)
 	{		
 		Player player = event.getPlayer();
 		if(!player.isOnline())
@@ -113,7 +114,7 @@ class PlayerEventHandler implements Listener
 		
 		//FEATURE: automatically educate players about the /trapped command
 		//check for "trapped" or "stuck" to educate players about the /trapped command
-		if(message.contains("trapped") || message.contains("stuck") || message.contains(this.dataStore.getMessage(Messages.TrappedChatKeyword)))
+		if(!message.contains("/trapped") && (message.contains("trapped") || message.contains("stuck") || message.contains(this.dataStore.getMessage(Messages.TrappedChatKeyword))))
 		{
 			GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrappedInstructions, 10L);
 		}
@@ -333,7 +334,7 @@ class PlayerEventHandler implements Listener
 
 	//when a player uses a slash command...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	void onPlayerCommandPreprocess (PlayerCommandPreprocessEvent event)
+	synchronized void onPlayerCommandPreprocess (PlayerCommandPreprocessEvent event)
 	{
 		String [] args = event.getMessage().split(" ");
 		
@@ -523,6 +524,21 @@ class PlayerEventHandler implements Listener
 		{
 			event.setJoinMessage(null);
 		}
+	}
+	
+	//when a player dies...
+	@EventHandler(priority = EventPriority.LOWEST)
+	void onPlayerDeath(PlayerDeathEvent event)
+	{
+		//FEATURE: prevent death message spam by implementing a "cooldown period" for death messages
+		PlayerData playerData = this.dataStore.getPlayerData(event.getEntity().getName());
+		long now = Calendar.getInstance().getTimeInMillis(); 
+		if(now - playerData.lastDeathTimeStamp < GriefPrevention.instance.config_spam_deathMessageCooldownSeconds * 1000)
+		{
+			event.setDeathMessage("");
+		}
+		
+		playerData.lastDeathTimeStamp = now;
 	}
 	
 	//when a player quits...
