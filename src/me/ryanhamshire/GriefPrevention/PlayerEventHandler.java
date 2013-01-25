@@ -235,15 +235,18 @@ class PlayerEventHandler implements Listener
 					//log entry
 					GriefPrevention.AddLogEntry("Banning " + player.getName() + " for spam.");
 					
-					//ban
-					GriefPrevention.instance.getServer().getOfflinePlayer(player.getName()).setBanned(true);
-					
-					//kick
-					player.kickPlayer(GriefPrevention.instance.config_spam_banMessage);
-				}	
+					//kick and ban
+					PlayerKickBanTask task = new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage);
+					GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 1L);
+				}
 				else
 				{
-					player.kickPlayer("");
+					//log entry
+					GriefPrevention.AddLogEntry("Banning " + player.getName() + " for spam.");
+					
+					//just kick
+					PlayerKickBanTask task = new PlayerKickBanTask(player, null);
+					GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 1L);					
 				}
 				
 				return true;

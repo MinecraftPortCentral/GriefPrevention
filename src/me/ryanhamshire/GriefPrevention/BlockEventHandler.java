@@ -597,6 +597,32 @@ public class BlockEventHandler implements Listener
 		if(!GriefPrevention.instance.config_fireDestroys)
 		{
 			burnEvent.setCancelled(true);
+			Block block = burnEvent.getBlock();
+			Block [] adjacentBlocks = new Block []
+			{
+				block.getRelative(BlockFace.UP),
+				block.getRelative(BlockFace.DOWN),
+				block.getRelative(BlockFace.NORTH),
+				block.getRelative(BlockFace.SOUTH),
+				block.getRelative(BlockFace.EAST),
+				block.getRelative(BlockFace.WEST)
+			};
+			
+			//pro-actively put out any fires adjacent the burning block, to reduce future processing here
+			for(int i = 0; i < adjacentBlocks.length; i++)
+			{
+				Block adjacentBlock = adjacentBlocks[i];
+				if(adjacentBlock.getType() == Material.FIRE && adjacentBlock.getRelative(BlockFace.DOWN).getType() != Material.NETHERRACK)
+				{
+					adjacentBlock.setType(Material.AIR);
+				}
+			}
+			
+			Block aboveBlock = block.getRelative(BlockFace.UP);
+			if(aboveBlock.getType() == Material.FIRE)
+			{
+				aboveBlock.setType(Material.AIR);
+			}
 			return;
 		}
 		

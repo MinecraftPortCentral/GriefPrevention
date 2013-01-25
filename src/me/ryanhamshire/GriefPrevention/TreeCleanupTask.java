@@ -34,13 +34,15 @@ class TreeCleanupTask implements Runnable
 {
 	private Block originalChoppedBlock;          //first block chopped in the tree
 	private Block originalRootBlock;             //where the root of the tree used to be
+	private byte originalRootBlockData;			 //data value of that root block (TYPE of log)
 	private ArrayList<Block> originalTreeBlocks; //a list of other log blocks determined to be part of this tree
 	
-	public TreeCleanupTask(Block originalChoppedBlock, Block originalRootBlock, ArrayList<Block> originalTreeBlocks)
+	public TreeCleanupTask(Block originalChoppedBlock, Block originalRootBlock, ArrayList<Block> originalTreeBlocks, byte originalRootBlockData)
 	{
 		this.originalChoppedBlock = originalChoppedBlock;
 		this.originalRootBlock = originalRootBlock;
 		this.originalTreeBlocks = originalTreeBlocks;
+		this.originalRootBlockData = originalRootBlockData;
 	}
 	
 	@Override
@@ -93,7 +95,7 @@ class TreeCleanupTask implements Runnable
 			if(currentBlock.getType() == Material.AIR && (currentBlock.getRelative(BlockFace.DOWN).getType() == Material.DIRT || currentBlock.getRelative(BlockFace.DOWN).getType() == Material.GRASS))
 			{
 				currentBlock.setType(Material.SAPLING);
-				currentBlock.setData(this.originalRootBlock.getData());  //makes the sapling type match the original tree type
+				currentBlock.setData(this.originalRootBlockData);  //makes the sapling type match the original tree type
 			}
 		}
 	}

@@ -2254,8 +2254,8 @@ public class GriefPrevention extends JavaPlugin
 		if(hasLeaves)
 		{		
 			//schedule a cleanup task for later, in case the player leaves part of this tree hanging in the air		
-			TreeCleanupTask cleanupTask = new TreeCleanupTask(block, rootBlock, treeBlocks);
-			
+			TreeCleanupTask cleanupTask = new TreeCleanupTask(block, rootBlock, treeBlocks, rootBlock.getData());
+
 			//20L ~ 1 second, so 2 mins = 120 seconds ~ 2400L 
 			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, cleanupTask, 2400L);
 		}

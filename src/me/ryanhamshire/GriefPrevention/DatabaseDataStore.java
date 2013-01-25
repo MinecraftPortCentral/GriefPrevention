@@ -62,13 +62,7 @@ public class DatabaseDataStore extends DataStore
 		
 		try
 		{
-			//set username/pass properties
-			Properties connectionProps = new Properties();
-			connectionProps.put("user", this.userName);
-			connectionProps.put("password", this.password);
-			
-			//establish connection
-			this.databaseConnection = DriverManager.getConnection(this.databaseUrl, connectionProps);
+			this.refreshDataConnection();
 		}
 		catch(Exception e2)
 		{
@@ -240,6 +234,8 @@ public class DatabaseDataStore extends DataStore
 	{
 		try
 		{
+			this.refreshDataConnection();
+			
 			//wipe out any existing data about this claim
 			this.deleteClaimFromSecondaryStorage(claim);
 			
@@ -320,6 +316,8 @@ public class DatabaseDataStore extends DataStore
 		
 		try
 		{
+			this.refreshDataConnection();
+			
 			Statement statement = databaseConnection.createStatement();
 			statement.execute("INSERT INTO griefprevention_claimdata VALUES(" +
 					id + ", '" +
@@ -346,6 +344,8 @@ public class DatabaseDataStore extends DataStore
 	{
 		try
 		{
+			this.refreshDataConnection();
+			
 			Statement statement = this.databaseConnection.createStatement();
 			statement.execute("DELETE FROM griefprevention_claimdata WHERE id=" + claim.id + ";");			
 			statement.execute("DELETE FROM griefprevention_claimdata WHERE parentid=" + claim.id + ";");
@@ -365,6 +365,8 @@ public class DatabaseDataStore extends DataStore
 		
 		try
 		{
+			this.refreshDataConnection();
+			
 			Statement statement = this.databaseConnection.createStatement();
 			ResultSet results = statement.executeQuery("SELECT * FROM griefprevention_playerdata WHERE name='" + playerName + "';");
 		
@@ -400,6 +402,8 @@ public class DatabaseDataStore extends DataStore
 		
 		try
 		{
+			this.refreshDataConnection();
+			
 			SimpleDateFormat sqlFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			String dateString = sqlFormat.format(playerData.lastLogin);
 			
@@ -427,6 +431,8 @@ public class DatabaseDataStore extends DataStore
 		
 		try
 		{
+			this.refreshDataConnection();
+			
 			Statement statement = databaseConnection.createStatement();
 			statement.execute("DELETE FROM griefprevention_nextclaimid;");
 			statement.execute("INSERT INTO griefprevention_nextclaimid VALUES (" + nextID + ");");
@@ -457,11 +463,28 @@ public class DatabaseDataStore extends DataStore
 		{
 			try
 			{
-				this.databaseConnection.close();
+				if(!this.databaseConnection.isClosed())
+				{
+					this.databaseConnection.close();
+				}
 			}
 			catch(SQLException e){};
+		}
+		
+		this.databaseConnection = null;
+	}
+	
+	private void refreshDataConnection() throws SQLException
+	{
+		if(this.databaseConnection == null || this.databaseConnection.isClosed())
+		{
+			//set username/pass properties
+			Properties connectionProps = new Properties();
+			connectionProps.put("user", this.userName);
+			connectionProps.put("password", this.password);
 			
-			this.databaseConnection = null;
+			//establish connection
+			this.databaseConnection = DriverManager.getConnection(this.databaseUrl, connectionProps); 
 		}
 	}
 }

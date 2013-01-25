@@ -20,6 +20,7 @@ package me.ryanhamshire.GriefPrevention;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -31,10 +32,10 @@ import org.bukkit.inventory.ItemStack;
 public abstract class DataStore 
 {
 	//in-memory cache for player data
-	protected HashMap<String, PlayerData> playerNameToPlayerDataMap = new HashMap<String, PlayerData>();
+	protected ConcurrentHashMap<String, PlayerData> playerNameToPlayerDataMap = new ConcurrentHashMap<String, PlayerData>();
 	
 	//in-memory cache for group (permission-based) data
-	protected HashMap<String, Integer> permissionToBonusBlocksMap = new HashMap<String, Integer>();
+	protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<String, Integer>();
 	
 	//in-memory cache for claim data
 	ArrayList<Claim> claims = new ArrayList<Claim>();

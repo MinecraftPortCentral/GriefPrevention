@@ -54,6 +54,7 @@ class RestoreNatureProcessingTask implements Runnable
 	{
 		this.snapshots = snapshots;
 		this.miny = miny;
+		if(this.miny < 0) this.miny = 0;
 		this.environment = environment;
 		this.lesserBoundaryCorner = lesserBoundaryCorner;
 		this.greaterBoundaryCorner = greaterBoundaryCorner;
