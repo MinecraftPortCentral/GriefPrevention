@@ -150,7 +150,7 @@ class PlayerEventHandler implements Listener
 		long millisecondsSinceLastMessage = (new Date()).getTime() - playerData.lastMessageTimestamp.getTime();
 		
 		//if the message came too close to the last one
-		if(millisecondsSinceLastMessage < 2000)
+		if(millisecondsSinceLastMessage < 1500)
 		{
 			//increment the spam counter
 			playerData.spamCount++;
@@ -355,8 +355,6 @@ class PlayerEventHandler implements Listener
 			
 			String logMessage = logMessageBuilder.toString();
 			
-			GriefPrevention.AddLogEntry(logMessage.toString());
-			
 			Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
 			for(int i = 0; i < players.length; i++)
 			{
@@ -381,7 +379,17 @@ class PlayerEventHandler implements Listener
 		if(!GriefPrevention.instance.config_spam_enabled) return;
 		
 		//if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
-		if(GriefPrevention.instance.config_spam_monitorSlashCommands.contains(args[0]))
+		boolean isMonitoredCommand = false;
+		for(String monitoredCommand : GriefPrevention.instance.config_spam_monitorSlashCommands)
+		{
+			if(args[0].equalsIgnoreCase(monitoredCommand))
+			{
+				isMonitoredCommand = true;
+				break;
+			}
+		}
+		
+		if(isMonitoredCommand)
 		{
 			event.setCancelled(this.handlePlayerChat(event.getPlayer(), event.getMessage(), event));		
 		}
@@ -417,82 +425,18 @@ class PlayerEventHandler implements Listener
 					return;
 				}
 			}
+			
+			//if logging-in account is banned, remember IP address for later
+			long now = Calendar.getInstance().getTimeInMillis();
+			if(GriefPrevention.instance.config_smartBan && event.getResult() == Result.KICK_BANNED)
+			{
+				this.tempBannedIps.add(new IpBanInfo(event.getAddress(), now + this.MILLISECONDS_IN_DAY, player.getName()));
+			}
 		}
 		
 		//remember the player's ip address
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		playerData.ipAddress = event.getAddress();
-		
-		//FEATURE: auto-ban accounts who use an IP address which was very recently used by another banned account
-		if(GriefPrevention.instance.config_smartBan && !player.hasPlayedBefore())
-		{		
-			//if logging-in account is banned, remember IP address for later
-			long now = Calendar.getInstance().getTimeInMillis();
-			if(event.getResult() == Result.KICK_BANNED)
-			{
-				this.tempBannedIps.add(new IpBanInfo(event.getAddress(), now + this.MILLISECONDS_IN_DAY, player.getName()));
-			}
-			
-			//otherwise if not banned
-			else
-			{
-				//search temporarily banned IP addresses for this one
-				for(int i = 0; i < this.tempBannedIps.size(); i++)
-				{
-					IpBanInfo info = this.tempBannedIps.get(i);
-					String address = info.address.toString();
-					
-					//eliminate any expired entries
-					if(now > info.expirationTimestamp)
-					{
-						this.tempBannedIps.remove(i--);
-					}
-					
-					//if we find a match				
-					else if(address.equals(playerData.ipAddress.toString()))
-					{
-						//if the account associated with the IP ban has been pardoned, remove all ip bans for that ip and we're done
-						OfflinePlayer bannedPlayer = GriefPrevention.instance.getServer().getOfflinePlayer(info.bannedAccountName);
-						if(!bannedPlayer.isBanned())
-						{
-							for(int j = 0; j < this.tempBannedIps.size(); j++)
-							{
-								IpBanInfo info2 = this.tempBannedIps.get(j);
-								if(info2.address.toString().equals(address))
-								{
-									OfflinePlayer bannedAccount = GriefPrevention.instance.getServer().getOfflinePlayer(info2.bannedAccountName);
-									bannedAccount.setBanned(false);
-									this.tempBannedIps.remove(j--);
-								}
-							}
-							
-							break;
-						}
-						
-						//otherwise if that account is still banned, ban this account, too
-						else
-						{
-							player.setBanned(true);
-							event.setResult(Result.KICK_BANNED);				
-							event.disallow(event.getResult(), "");
-							GriefPrevention.AddLogEntry("Auto-banned " + player.getName() + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " (" + info.address.toString() + ").");
-							
-							//notify any online ops
-							Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
-							for(int k = 0; k < players.length; k++)
-							{
-								if(players[k].isOp())
-								{
-									GriefPrevention.sendMessage(players[k], TextMode.Success, Messages.AutoBanNotify, player.getName(), info.bannedAccountName);
-								}
-							}
-							
-							break;
-						}
-					}
-				}
-			}
-		}
 	}
 	
 	//when a player spawns, conditionally apply temporary pvp protection 
@@ -508,24 +452,90 @@ class PlayerEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	void onPlayerJoin(PlayerJoinEvent event)
 	{
-		String playerName = event.getPlayer().getName();
+		Player player = event.getPlayer();
+		String playerName = player.getName();
 		
 		//note login time
+		long now = Calendar.getInstance().getTimeInMillis();
 		PlayerData playerData = this.dataStore.getPlayerData(playerName);
-		playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
+		playerData.lastSpawn = now;
 		playerData.lastLogin = new Date();
 		this.dataStore.savePlayerData(playerName, playerData);
 		
 		//if player has never played on the server before, may need pvp protection
-		if(!event.getPlayer().hasPlayedBefore())
+		if(!player.hasPlayedBefore())
 		{
-			GriefPrevention.instance.checkPvpProtectionNeeded(event.getPlayer());
+			GriefPrevention.instance.checkPvpProtectionNeeded(player);
 		}
 		
 		//silence notifications when they're coming too fast
 		if(event.getJoinMessage() != null && this.shouldSilenceNotification())
 		{
 			event.setJoinMessage(null);
+		}
+		
+		//FEATURE: auto-ban accounts who use an IP address which was very recently used by another banned account
+		if(GriefPrevention.instance.config_smartBan && !player.hasPlayedBefore())
+		{		
+			//search temporarily banned IP addresses for this one
+			for(int i = 0; i < this.tempBannedIps.size(); i++)
+			{
+				IpBanInfo info = this.tempBannedIps.get(i);
+				String address = info.address.toString();
+				
+				//eliminate any expired entries
+				if(now > info.expirationTimestamp)
+				{
+					this.tempBannedIps.remove(i--);
+				}
+				
+				//if we find a match				
+				else if(address.equals(playerData.ipAddress.toString()))
+				{
+					//if the account associated with the IP ban has been pardoned, remove all ip bans for that ip and we're done
+					OfflinePlayer bannedPlayer = GriefPrevention.instance.getServer().getOfflinePlayer(info.bannedAccountName);
+					if(!bannedPlayer.isBanned())
+					{
+						for(int j = 0; j < this.tempBannedIps.size(); j++)
+						{
+							IpBanInfo info2 = this.tempBannedIps.get(j);
+							if(info2.address.toString().equals(address))
+							{
+								OfflinePlayer bannedAccount = GriefPrevention.instance.getServer().getOfflinePlayer(info2.bannedAccountName);
+								bannedAccount.setBanned(false);
+								this.tempBannedIps.remove(j--);
+							}
+						}
+						
+						break;
+					}
+					
+					//otherwise if that account is still banned, ban this account, too
+					else
+					{
+						GriefPrevention.AddLogEntry("Auto-banned " + player.getName() + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " (" + info.address.toString() + ").");
+						
+						//notify any online ops
+						Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
+						for(int k = 0; k < players.length; k++)
+						{
+							if(players[k].isOp())
+							{
+								GriefPrevention.sendMessage(players[k], TextMode.Success, Messages.AutoBanNotify, player.getName(), info.bannedAccountName);
+							}
+						}
+						
+						//ban player
+						PlayerKickBanTask task = new PlayerKickBanTask(player, "");
+						GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
+						
+						//silence join message
+						event.setJoinMessage("");
+						
+						break;
+					}
+				}
+			}
 		}
 	}
 	
@@ -575,6 +585,12 @@ class PlayerEventHandler implements Listener
 	{
 		String playerName = player.getName();
 		PlayerData playerData = this.dataStore.getPlayerData(playerName);
+		
+		//FEATURE: claims where players have allowed explosions will revert back to not allowing them when the owner logs out
+		for(Claim claim : playerData.claims)
+		{
+			claim.areExplosivesAllowed = false;
+		}
 		
 		//FEATURE: players in pvp combat when they log out will die
 		if(GriefPrevention.instance.config_pvp_punishLogout && playerData.inPvpCombat())
@@ -658,13 +674,29 @@ class PlayerEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerTeleport(PlayerTeleportEvent event)
 	{
+		Player player = event.getPlayer();
+		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		
+		//FEATURE: prevent players from using ender pearls to gain access to secured claims
+		if(event.getCause() == TeleportCause.ENDER_PEARL && GriefPrevention.instance.config_claims_enderPearlsRequireAccessTrust)
+		{
+			Claim toClaim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
+			if(toClaim != null)
+			{
+				playerData.lastClaim = toClaim;
+				String noAccessReason = toClaim.allowAccess(player);
+				if(noAccessReason != null)
+				{
+					GriefPrevention.sendMessage(player, TextMode.Err, noAccessReason);
+					event.setCancelled(true);
+				}
+			}
+		}
+		
 		//FEATURE: prevent teleport abuse to win sieges
 		
 		//these rules only apply to non-ender-pearl teleportation
 		if(event.getCause() == TeleportCause.ENDER_PEARL) return;
-		
-		Player player = event.getPlayer();
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		
 		Location source = event.getFrom();
 		Claim sourceClaim = this.dataStore.getClaimAt(source, false, playerData.lastClaim);
@@ -1526,7 +1558,7 @@ class PlayerEventHandler implements Listener
 					}
 					
 					//if in a creative mode world and shrinking an existing claim, restore any unclaimed area
-					if(smaller && GriefPrevention.instance.creativeRulesApply(oldClaim.getLesserBoundaryCorner()))
+					if(smaller && GriefPrevention.instance.config_claims_autoRestoreUnclaimedCreativeLand && GriefPrevention.instance.creativeRulesApply(oldClaim.getLesserBoundaryCorner()))
 					{
 						GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
 						GriefPrevention.instance.restoreClaim(oldClaim, 20L * 60 * 2);  //2 minutes

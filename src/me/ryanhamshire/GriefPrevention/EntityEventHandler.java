@@ -151,7 +151,7 @@ class EntityEventHandler implements Listener
 			
 			claim = this.dataStore.getClaimAt(block.getLocation(), false, claim); 
 			//if the block is claimed, remove it from the list of destroyed blocks
-			if(claim != null)
+			if(claim != null && !claim.areExplosivesAllowed)
 			{
 				blocks.remove(i--);
 			}
@@ -398,6 +398,32 @@ class EntityEventHandler implements Listener
 				}		
 			}
 			
+			//FEATURE: prevent players from engaging in PvP combat inside land claims (when it's disabled)
+			if(GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims || GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims)
+			{
+				Claim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, attackerData.lastClaim);
+				if(	attackerClaim != null && 
+					(attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+					!attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
+				{
+					attackerData.lastClaim = attackerClaim;
+					event.setCancelled(true);
+					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
+					return;
+				}
+				
+				Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim);
+				if( defenderClaim != null &&
+					(defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+					!defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
+				{
+					defenderData.lastClaim = defenderClaim;
+					event.setCancelled(true);
+					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
+					return;
+				}
+			}
+			
 			//FEATURE: prevent players who very recently participated in pvp combat from hiding inventory to protect it from looting
 			//FEATURE: prevent players who are in pvp combat from logging out to avoid being defeated
 			
@@ -405,7 +431,7 @@ class EntityEventHandler implements Listener
 			defenderData.lastPvpTimestamp = now;
 			defenderData.lastPvpPlayer = attacker.getName();
 			attackerData.lastPvpTimestamp = now;
-			attackerData.lastPvpPlayer = defender.getName();
+			attackerData.lastPvpPlayer = defender.getName();			
 		}
 		
 		//FEATURE: protect claimed animals, boats, minecarts

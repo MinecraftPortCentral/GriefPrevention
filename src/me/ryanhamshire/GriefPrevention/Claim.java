@@ -64,6 +64,8 @@ public class Claim
 	//ignored even though they may have references floating around
 	public boolean inDataStore = false;
 	
+	public boolean areExplosivesAllowed = false;
+	
 	//parent claim
 	//only used for claim subdivisions.  top level claims have null here
 	public Claim parent = null;
@@ -88,7 +90,7 @@ public class Claim
 	//accessor for ID
 	public Long getID()
 	{
-		return new Long(this.id);
+		return this.id;
 	}
 	
 	//basic constructor, just notes the creation time

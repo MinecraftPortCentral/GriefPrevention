@@ -21,6 +21,7 @@ package me.ryanhamshire.GriefPrevention;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -30,10 +31,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
-import org.bukkit.entity.Arrow;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -49,7 +47,6 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.block.SignChangeEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -79,36 +76,6 @@ public class BlockEventHandler implements Listener
 		this.trashBlocks.add(Material.SAND);
 		this.trashBlocks.add(Material.TNT);
 		this.trashBlocks.add(Material.WORKBENCH);
-	}
-	
-	//when a wooden button is triggered by an arrow...
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	public void onProjectileHit(ProjectileHitEvent event)
-	{
-		Projectile projectile = event.getEntity();
-		Location location = projectile.getLocation();
-		Block block = location.getBlock();
-		
-		//only care about wooden buttons
-		if(block.getType() != Material.WOOD_BUTTON) return;
-		
-		//only care about arrows
-		if(projectile instanceof Arrow)
-		{
-			Arrow arrow = (Arrow)projectile;
-			LivingEntity shooterEntity = arrow.getShooter();
-			
-			//player arrows only trigger buttons when they have permission
-			if(shooterEntity instanceof Player)
-			{
-				//Player player = (Player)shooterEntity;
-			}
-			
-			//other arrows don't trigger buttons, could be used as a workaround to get access to areas without permission 
-			else
-			{
-			}
-		}
 	}
 	
 	//when a block is damaged...
@@ -256,6 +223,19 @@ public class BlockEventHandler implements Listener
 		{		
 			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + lines.toString() + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()));
 			playerData.lastMessage = signMessage;
+			
+			if(!player.hasPermission("griefprevention.eavesdrop"))
+			{
+				Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
+				for(int i = 0; i < players.length; i++)
+				{
+					Player otherPlayer = players[i];
+					if(otherPlayer.hasPermission("griefprevention.eavesdrop"))
+					{
+						otherPlayer.sendMessage(ChatColor.GRAY + player.getName() + "(sign): " + signMessage);
+					}
+				}
+			}
 		}
 	}
 	
@@ -300,9 +280,10 @@ public class BlockEventHandler implements Listener
 		if(claim != null)
 		{
 			//warn about TNT not destroying claimed blocks
-			if(block.getType() == Material.TNT)
+			if(block.getType() == Material.TNT && !claim.areExplosivesAllowed)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageClaims);
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimExplosivesAdvertisement);
 			}
 			
 			//if the player has permission for the claim and he's placing UNDER the claim
