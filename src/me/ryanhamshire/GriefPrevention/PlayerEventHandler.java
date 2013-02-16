@@ -138,8 +138,6 @@ class PlayerEventHandler implements Listener
 			if(event instanceof AsyncPlayerChatEvent && !message.contains("/"))
 			{
 				((AsyncPlayerChatEvent)event).setMessage(message.toLowerCase());
-				playerData.spamCount++;
-				spam = true;				
 			}
 		}
 		
@@ -172,7 +170,7 @@ class PlayerEventHandler implements Listener
 			Matcher matcher = ipAddressPattern.matcher(message);
 			
 			//if it looks like an IP address
-			while(matcher.find())
+			if(matcher.find())
 			{
 				//and it's not in the list of allowed IP addresses
 				if(!GriefPrevention.instance.config_spam_allowedIpAddresses.contains(matcher.group()))
@@ -218,14 +216,14 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//very short messages close together are spam
-		if(!muted && message.length() < 5 && millisecondsSinceLastMessage < 5000)
+		if(!muted && message.length() < 5 && millisecondsSinceLastMessage < 3000)
 		{
 			spam = true;
 			playerData.spamCount++;
 		}
 		
 		//if the message was determined to be a spam, consider taking action		
-		if(!player.hasPermission("griefprevention.spam") && spam)
+		if(spam)
 		{		
 			//anything above level 8 for a player which has received a warning...  kick or if enabled, ban 
 			if(playerData.spamCount > 8 && playerData.spamWarned)
@@ -254,7 +252,7 @@ class PlayerEventHandler implements Listener
 			
 			//cancel any messages while at or above the third spam level and issue warnings
 			//anything above level 2, mute and warn
-			if(playerData.spamCount >= 3)
+			if(playerData.spamCount >= 4)
 			{
 				muted = true;
 				if(!playerData.spamWarned)

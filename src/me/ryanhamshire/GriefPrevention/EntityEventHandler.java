@@ -82,7 +82,7 @@ class EntityEventHandler implements Listener
 		}
 		
 		//don't allow the wither to break blocks, when the wither is determined, too expensive to constantly check for claimed blocks
-		else if(event.getEntityType() == EntityType.WITHER)
+		else if(event.getEntityType() == EntityType.WITHER && GriefPrevention.instance.config_claims_enabledWorlds.contains(event.getBlock().getWorld()))
 		{
 			event.setCancelled(true);
 		}
