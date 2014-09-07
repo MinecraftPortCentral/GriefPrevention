@@ -54,6 +54,7 @@ import org.bukkit.event.entity.ExpBottleEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -272,7 +273,14 @@ class EntityEventHandler implements Listener
     {
         //FEATURE: claimed paintings are protected from breakage
 		
-		//only allow players to break paintings, not anything else (like water and explosions)
+		//explosions don't destroy hangings
+	    if(event.getCause() == RemoveCause.EXPLOSION)
+	    {
+	        event.setCancelled(true);
+	        return;
+	    }
+	    
+	    //only allow players to break paintings, not anything else (like water and explosions)
 		if(!(event instanceof HangingBreakByEntityEvent))
     	{
         	event.setCancelled(true);
@@ -438,14 +446,49 @@ class EntityEventHandler implements Listener
 			attackerData.lastPvpPlayer = defender.getName();			
 		}
 		
-		//FEATURE: protect claimed animals, boats, minecarts
+		//FEATURE: protect claimed animals, boats, minecarts, and items inside item frames
 		//NOTE: animals can be lead with wheat, vehicles can be pushed around.
 		//so unless precautions are taken by the owner, a resourceful thief might find ways to steal anyway
 		
 		//if theft protection is enabled
 		if(event instanceof EntityDamageByEntityEvent)
 		{
-			//if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
+		    //if the damaged entity is a claimed item frame, the damager needs to be a player with container trust in the claim
+		    if(subEvent.getEntityType() == EntityType.ITEM_FRAME)
+		    {
+		        //decide whether it's claimed
+		        Claim cachedClaim = null;
+                PlayerData playerData = null;
+                if(attacker != null)
+                {
+                    playerData = this.dataStore.getPlayerData(attacker.getName());
+                    cachedClaim = playerData.lastClaim;
+                }
+                
+                Claim claim = this.dataStore.getClaimAt(event.getEntity().getLocation(), false, cachedClaim);
+                
+                //if it's claimed
+                if(claim != null)
+                {
+                    //if attacker isn't a player, cancel
+                    if(attacker == null)
+                    {
+                        event.setCancelled(true);
+                        return;
+                    }
+                    
+                    //otherwise player must have container trust in the claim
+                    String failureReason = claim.allowContainers(attacker);
+                    if(failureReason != null)
+                    {
+                        event.setCancelled(true);
+                        GriefPrevention.sendMessage(attacker, TextMode.Err, failureReason);
+                        return;
+                    }
+                }
+		    }
+		    
+		    //if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
 			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures))
 			{
 				Claim cachedClaim = null;
