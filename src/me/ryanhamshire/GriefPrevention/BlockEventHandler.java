@@ -274,17 +274,50 @@ public class BlockEventHandler implements Listener
 			return;
 		}
 		
-		//if the block is being placed within an existing claim
+		//if the block is being placed within or under an existing claim
 		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		if(claim != null)
 		{
-			//warn about TNT not destroying claimed blocks
-			if(block.getType() == Material.TNT && !claim.areExplosivesAllowed)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageClaims);
-				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimExplosivesAdvertisement);
-			}
+			//FEATURE: prevent theft from container using a hopper when the container is at the very bottom of a land claim
+		    
+	        if(block.getType() == Material.HOPPER)
+	        {
+	            //is the above block inside the land claim?
+	            Block aboveBlock = block.getRelative(BlockFace.UP);
+	            if(claim.contains(aboveBlock.getLocation(), false, false))
+	            {
+	                //then the player needs container trust to place the  hopper
+	                String failureMessage = claim.allowContainers(player);
+	                if(failureMessage != null)
+	                {
+	                    placeEvent.setCancelled(true);
+	                    GriefPrevention.sendMessage(player, TextMode.Err, failureMessage);
+	                    return;
+	                }
+	            }
+	        }
+	        
+	        //rails can't be placed ANYWHERE under a claim, because they could be pushed up to the 
+	        //target container using pistons
+	        if(block.getType().name().contains("RAIL"))
+	        {
+	            //then the player needs container trust to place the  hopper
+                String failureMessage = claim.allowContainers(player);
+                if(failureMessage != null)
+                {
+                    placeEvent.setCancelled(true);
+                    GriefPrevention.sendMessage(player, TextMode.Err, failureMessage);
+                    return;
+                }
+	        }
+	        
+	        //warn about TNT not destroying claimed blocks
+            if(block.getType() == Material.TNT && !claim.areExplosivesAllowed)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageClaims);
+                GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimExplosivesAdvertisement);
+            }
 			
 			//if the player has permission for the claim and he's placing UNDER the claim
 			if(block.getY() < claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
