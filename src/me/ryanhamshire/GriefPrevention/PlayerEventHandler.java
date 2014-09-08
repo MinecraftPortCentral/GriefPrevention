@@ -37,10 +37,11 @@ import org.bukkit.entity.Animals;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Hanging;
-import org.bukkit.entity.PoweredMinecart;
-import org.bukkit.entity.StorageMinecart;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
+import org.bukkit.entity.minecart.HopperMinecart;
+import org.bukkit.entity.minecart.PoweredMinecart;
+import org.bukkit.entity.minecart.StorageMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -760,8 +761,8 @@ class PlayerEventHandler implements Listener
 			Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
 			if(claim != null)
 			{
-				//for storage and powered minecarts, apply container rules (this is a potential theft)
-				if(entity instanceof StorageMinecart || entity instanceof PoweredMinecart)
+				//for storage entities, apply container rules (this is a potential theft)
+				if(entity instanceof InventoryHolder)
 				{					
 					String noContainersReason = claim.allowContainers(player);
 					if(noContainersReason != null)
