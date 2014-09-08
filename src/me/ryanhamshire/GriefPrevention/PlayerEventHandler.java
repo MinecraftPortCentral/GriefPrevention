@@ -35,6 +35,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Boat;
+import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Player;
@@ -793,6 +794,22 @@ class PlayerEventHandler implements Listener
 					}
 				}
 			}
+		}
+		
+		//if preventing theft, prevent leashing claimed creatures
+		if(GriefPrevention.instance.config_claims_preventTheft && entity instanceof Creature && player.getItemInHand().getType() == Material.LEASH)
+		{
+		    Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
+            if(claim != null)
+            {
+                String failureReason = claim.allowContainers(player);
+                if(failureReason != null)
+                {
+                    event.setCancelled(true);
+                    GriefPrevention.sendMessage(player, TextMode.Err, failureReason);
+                    return;                    
+                }
+            }
 		}
 	}
 	
