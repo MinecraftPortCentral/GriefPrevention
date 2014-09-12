@@ -23,6 +23,8 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.*;
 
@@ -32,6 +34,8 @@ public class FlatFileDataStore extends DataStore
 	private final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
 	private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
 	private final static String nextClaimIdFilePath = claimDataFolderPath + File.separator + "_nextClaimID";
+	
+	private final static Pattern uuidpattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
 	static boolean hasData()
 	{
@@ -155,6 +159,12 @@ public class FlatFileDataStore extends DataStore
 					
 					while(line != null)
 					{					
+						//Let's skip the UUID lines from previous versions
+						Matcher match = uuidpattern.matcher(line.trim());
+						if(match.find()) {
+							inStream.readLine();
+						}
+						
 						//first line is lesser boundary corner location
 						Location lesserBoundaryCorner = this.locationFromString(line);
 						

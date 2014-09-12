@@ -689,6 +689,16 @@ public class GriefPrevention extends JavaPlugin
 		//this is the preferred method, as it's simpler than the database scenario
 		if(this.dataStore == null)
 		{
+			File oldclaimdata = new File(getDataFolder(), "ClaimData");
+			if(oldclaimdata.exists()) {
+				if(!FlatFileDataStore.hasData()) {
+					File claimdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "ClaimData");
+					oldclaimdata.renameTo(claimdata);
+					File oldplayerdata = new File(getDataFolder(), "PlayerData");
+					File playerdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "PlayerData");
+					oldplayerdata.renameTo(playerdata);
+				}
+			}
 			try
 			{
 				this.dataStore = new FlatFileDataStore();
