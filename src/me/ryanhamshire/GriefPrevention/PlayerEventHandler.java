@@ -1210,7 +1210,7 @@ class PlayerEventHandler implements Listener
 				return;
 			}
 			
-			//if he's investigating a claim			
+			//if he's investigating a claim
 			else if(materialInHand == GriefPrevention.instance.config_claims_investigationTool)
 			{
 				//air indicates too far away

@@ -159,10 +159,17 @@ public class FlatFileDataStore extends DataStore
 					
 					while(line != null)
 					{					
-						//Let's skip the UUID lines from previous versions
+						//skip any SUB:### lines from previous versions
+					    if(line.startsWith("SUB:"))
+					    {
+					        line = inStream.readLine();
+					    }
+					    
+					    //skip any UUID lines from previous versions
 						Matcher match = uuidpattern.matcher(line.trim());
-						if(match.find()) {
-							inStream.readLine();
+						if(match.find())
+						{
+							line = inStream.readLine();
 						}
 						
 						//first line is lesser boundary corner location
