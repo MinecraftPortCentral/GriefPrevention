@@ -21,6 +21,7 @@ package me.ryanhamshire.GriefPrevention;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -32,7 +33,7 @@ import org.bukkit.inventory.ItemStack;
 public abstract class DataStore 
 {
 	//in-memory cache for player data
-	protected ConcurrentHashMap<String, PlayerData> playerNameToPlayerDataMap = new ConcurrentHashMap<String, PlayerData>();
+	protected ConcurrentHashMap<UUID, PlayerData> playerNameToPlayerDataMap = new ConcurrentHashMap<UUID, PlayerData>();
 	
 	//in-memory cache for group (permission-based) data
 	protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<String, Integer>();
@@ -43,6 +44,9 @@ public abstract class DataStore
 	//in-memory cache for messages
 	private String [] messages;
 	
+	//pattern for unique user identifiers (UUIDs)
+	protected final static Pattern uuidpattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+	
 	//next claim ID
 	Long nextClaimID = (long)0;
 	
@@ -50,6 +54,35 @@ public abstract class DataStore
 	protected final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
 	final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
 	final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
+
+    //the latest version of the data schema implemented here
+	protected static final int latestSchemaVersion = 1;
+	
+	//reading and writing the schema version to the data store
+	abstract int getSchemaVersionFromStorage();
+    abstract void updateSchemaVersionInStorage(int versionToSet);
+	
+	//current version of the schema of data in secondary storage
+    private int currentSchemaVersion = -1;  //-1 means not determined yet
+    
+    protected int getSchemaVersion()
+    {
+        if(this.currentSchemaVersion >= 0)
+        {
+            return this.currentSchemaVersion;
+        }
+        else
+        {
+            this.currentSchemaVersion = this.getSchemaVersionFromStorage(); 
+            return this.currentSchemaVersion;
+        }
+    }
+	
+    protected void setSchemaVersion(int versionToSet)
+    {
+        this.currentSchemaVersion = versionToSet;
+        this.updateSchemaVersionInStorage(versionToSet);
+    }
 	
 	//initialization!
 	void initialize() throws Exception
@@ -57,7 +90,7 @@ public abstract class DataStore
 		GriefPrevention.AddLogEntry(this.claims.size() + " total claims loaded.");
 		
 		//make a list of players who own claims
-		Vector<String> playerNames = new Vector<String>();
+		Vector<UUID> playerNames = new Vector<UUID>();
 		for(int i = 0; i < this.claims.size(); i++)
 		{
 			Claim claim = this.claims.get(i);
@@ -65,8 +98,8 @@ public abstract class DataStore
 			//ignore admin claims
 			if(claim.isAdminClaim()) continue;
 			
-			if(!playerNames.contains(claim.ownerName))
-				playerNames.add(claim.ownerName);
+			if(!playerNames.contains(claim.ownerID))
+				playerNames.add(claim.ownerID);
 		}
 		
 		GriefPrevention.AddLogEntry(playerNames.size() + " players have staked claims.");
@@ -74,18 +107,34 @@ public abstract class DataStore
 		//load up all the messages from messages.yml
 		this.loadMessages();
 		
+		//if converting up from an earlier schema version, write all claims back to storage using the latest format
+        if(this.getSchemaVersion() < this.latestSchemaVersion)
+        {
+            GriefPrevention.AddLogEntry("Please wait.  Updating data format.");
+            
+            for(Claim claim : this.claims)
+            {
+                this.saveClaim(claim);
+            }
+        }
+		
 		//collect garbage, since lots of stuff was loaded into memory and then tossed out
 		System.gc();
+		
+		//make a note of the data store schema version
+		this.setSchemaVersion(this.latestSchemaVersion);
 	}
 	
 	//removes cached player data from memory
-	synchronized void clearCachedPlayerData(String playerName)
+	synchronized void clearCachedPlayerData(UUID playerID)
 	{
-		this.playerNameToPlayerDataMap.remove(playerName);
+		this.playerNameToPlayerDataMap.remove(playerID);
 	}
 	
 	//gets the number of bonus blocks a player has from his permissions
-	synchronized int getGroupBonusBlocks(String playerName)
+	//Bukkit doesn't allow for checking permissions of an offline player.
+	//this will return 0 when he's offline, and the correct number when online.
+	synchronized int getGroupBonusBlocks(UUID playerID)
 	{
 		int bonusBlocks = 0;
 		Set<String> keys = permissionToBonusBlocksMap.keySet();
@@ -93,7 +142,7 @@ public abstract class DataStore
 		while(iterator.hasNext())
 		{
 			String groupName = iterator.next();
-			Player player = GriefPrevention.instance.getServer().getPlayer(playerName);
+			Player player = GriefPrevention.instance.getServer().getPlayer(playerID);
 			if(player != null && player.hasPermission(groupName))
 			{
 				bonusBlocks += this.permissionToBonusBlocksMap.get(groupName);
@@ -120,7 +169,7 @@ public abstract class DataStore
 	
 	abstract void saveGroupBonusBlocks(String groupName, int amount);
 	
-	synchronized public void changeClaimOwner(Claim claim, String newOwnerName) throws Exception
+	synchronized public void changeClaimOwner(Claim claim, UUID newOwnerID) throws Exception
 	{
 		//if it's a subdivision, throw an exception
 		if(claim.parent != null)
@@ -134,14 +183,14 @@ public abstract class DataStore
 		PlayerData ownerData = null;
 		if(!claim.isAdminClaim())
 		{
-			ownerData = this.getPlayerData(claim.ownerName);
+			ownerData = this.getPlayerData(claim.ownerID);
 		}
 		
 		//determine new owner
-		PlayerData newOwnerData = this.getPlayerData(newOwnerName);
+		PlayerData newOwnerData = this.getPlayerData(newOwnerID);
 		
 		//transfer
-		claim.ownerName = newOwnerName;
+		claim.ownerID = newOwnerID;
 		this.saveClaim(claim);
 		
 		//adjust blocks and other records
@@ -149,12 +198,12 @@ public abstract class DataStore
 		{
 			ownerData.claims.remove(claim);
 			ownerData.bonusClaimBlocks -= claim.getArea();
-			this.savePlayerData(claim.ownerName, ownerData);
+			this.savePlayerData(claim.ownerID, ownerData);
 		}
 		
 		newOwnerData.claims.add(claim);
 		newOwnerData.bonusClaimBlocks += claim.getArea();
-		this.savePlayerData(newOwnerName, newOwnerData);
+		this.savePlayerData(newOwnerID, newOwnerData);
 	}
 
 	//adds a claim to the datastore, making it an effective claim
@@ -181,9 +230,9 @@ public abstract class DataStore
 		//except for administrative claims (which have no owner), update the owner's playerData with the new claim
 		if(!newClaim.isAdminClaim())
 		{
-			PlayerData ownerData = this.getPlayerData(newClaim.getOwnerName());
+			PlayerData ownerData = this.getPlayerData(newClaim.ownerID);
 			ownerData.claims.add(newClaim);
-			this.savePlayerData(newClaim.getOwnerName(), ownerData);
+			this.savePlayerData(newClaim.ownerID, ownerData);
 		}
 		
 		//make sure the claim is saved to disk
@@ -265,36 +314,36 @@ public abstract class DataStore
 	
 	//retrieves player data from memory or secondary storage, as necessary
 	//if the player has never been on the server before, this will return a fresh player data with default values
-	synchronized public PlayerData getPlayerData(String playerName)
+	synchronized public PlayerData getPlayerData(UUID playerID)
 	{
 		//first, look in memory
-		PlayerData playerData = this.playerNameToPlayerDataMap.get(playerName);
+		PlayerData playerData = this.playerNameToPlayerDataMap.get(playerID);
 		
 		//if not there, look in secondary storage
 		if(playerData == null)
 		{
-			playerData = this.getPlayerDataFromStorage(playerName);
-			playerData.playerName = playerName;
+			playerData = this.getPlayerDataFromStorage(playerID);
+			playerData.playerID = playerID;
 			
 			//find all the claims belonging to this player and note them for future reference
 			for(int i = 0; i < this.claims.size(); i++)
 			{
 				Claim claim = this.claims.get(i);
-				if(claim.ownerName.equals(playerName))
+				if(playerID.equals(claim.ownerID))
 				{
 					playerData.claims.add(claim);
 				}
 			}
 			
 			//shove that new player data into the hash map cache
-			this.playerNameToPlayerDataMap.put(playerName, playerData);
+			this.playerNameToPlayerDataMap.put(playerID, playerData);
 		}
 		
 		//try the hash map again.  if it's STILL not there, we have a bug to fix
-		return this.playerNameToPlayerDataMap.get(playerName);
+		return this.playerNameToPlayerDataMap.get(playerID);
 	}
 	
-	abstract PlayerData getPlayerDataFromStorage(String playerName);
+	abstract PlayerData getPlayerDataFromStorage(UUID playerID);
 	
 	//deletes a claim or subdivision
 	synchronized public void deleteClaim(Claim claim)
@@ -329,7 +378,7 @@ public abstract class DataStore
 		//update player data, except for administrative claims, which have no owner
 		if(!claim.isAdminClaim())
 		{
-			PlayerData ownerData = this.getPlayerData(claim.getOwnerName());
+			PlayerData ownerData = this.getPlayerData(claim.ownerID);
 			for(int i = 0; i < ownerData.claims.size(); i++)
 			{
 				if(ownerData.claims.get(i).id.equals(claim.id))
@@ -338,7 +387,7 @@ public abstract class DataStore
 					break;
 				}
 			}
-			this.savePlayerData(claim.getOwnerName(), ownerData);
+			this.savePlayerData(claim.ownerID, ownerData);
 		}
 	}
 	
@@ -394,7 +443,7 @@ public abstract class DataStore
 	//does NOT check a player has permission to create a claim, or enough claim blocks.
 	//does NOT check minimum claim size constraints
 	//does NOT visualize the new claim for any players	
-	synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, String ownerName, Claim parent, Long id)
+	synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent, Long id)
 	{
 		CreateClaimResult result = new CreateClaimResult();
 		
@@ -444,7 +493,7 @@ public abstract class DataStore
 		Claim newClaim = new Claim(
 			new Location(world, smallx, smally, smallz),
 			new Location(world, bigx, bigy, bigz),
-			ownerName,
+			ownerID,
 			new String [] {}, 
 			new String [] {},
 			new String [] {},
@@ -488,7 +537,7 @@ public abstract class DataStore
 	}
 	
 	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
-	public abstract void savePlayerData(String playerName, PlayerData playerData);
+	public abstract void savePlayerData(UUID playerID, PlayerData playerData);
 	
 	//extends a claim to a new depth
 	//respects the max depth config variable
@@ -522,8 +571,8 @@ public abstract class DataStore
 	{
 		//fill-in the necessary SiegeData instance
 		SiegeData siegeData = new SiegeData(attacker, defender, defenderClaim);
-		PlayerData attackerData = this.getPlayerData(attacker.getName());
-		PlayerData defenderData = this.getPlayerData(defender.getName());
+		PlayerData attackerData = this.getPlayerData(attacker.getUniqueId());
+		PlayerData defenderData = this.getPlayerData(defender.getUniqueId());
 		attackerData.siegeData = siegeData;
 		defenderData.siegeData = siegeData;
 		defenderClaim.siegeData = siegeData;
@@ -571,10 +620,10 @@ public abstract class DataStore
 			grantAccess = true;
 		}
 		
-		PlayerData attackerData = this.getPlayerData(siegeData.attacker.getName());
+		PlayerData attackerData = this.getPlayerData(siegeData.attacker.getUniqueId());
 		attackerData.siegeData = null;
 		
-		PlayerData defenderData = this.getPlayerData(siegeData.defender.getName());	
+		PlayerData defenderData = this.getPlayerData(siegeData.defender.getUniqueId());	
 		defenderData.siegeData = null;
 
 		//start a cooldown for this attacker/defender pair
@@ -587,7 +636,7 @@ public abstract class DataStore
 		{
 			Claim claim = siegeData.claims.get(i);
 			claim.siegeData = null;
-			this.siegeCooldownRemaining.put(siegeData.attacker.getName() + "_" + claim.ownerName, cooldownEnd);
+			this.siegeCooldownRemaining.put(siegeData.attacker.getName() + "_" + claim.getOwnerName(), cooldownEnd);
 			
 			//if doors should be opened for looting, do that now
 			if(grantAccess)
@@ -674,9 +723,9 @@ public abstract class DataStore
 		}
 		
 		//look for an attacker/claim cooldown
-		if(cooldownEnd == null && this.siegeCooldownRemaining.get(attacker.getName() + "_" + defenderClaim.ownerName) != null)
+		if(cooldownEnd == null && this.siegeCooldownRemaining.get(attacker.getName() + "_" + defenderClaim.getOwnerName()) != null)
 		{
-			cooldownEnd = this.siegeCooldownRemaining.get(attacker.getName() + "_" + defenderClaim.ownerName);
+			cooldownEnd = this.siegeCooldownRemaining.get(attacker.getName() + "_" + defenderClaim.getOwnerName());
 			
 			if(Calendar.getInstance().getTimeInMillis() < cooldownEnd)
 			{
@@ -684,7 +733,7 @@ public abstract class DataStore
 			}
 			
 			//if found but expired, remove it
-			this.siegeCooldownRemaining.remove(attacker.getName() + "_" + defenderClaim.ownerName);			
+			this.siegeCooldownRemaining.remove(attacker.getName() + "_" + defenderClaim.getOwnerName());			
 		}
 		
 		return false;
@@ -693,7 +742,7 @@ public abstract class DataStore
 	//extend a siege, if it's possible to do so
 	synchronized void tryExtendSiege(Player player, Claim claim)
 	{
-		PlayerData playerData = this.getPlayerData(player.getName());
+		PlayerData playerData = this.getPlayerData(player.getUniqueId());
 		
 		//player must be sieged
 		if(playerData.siegeData == null) return;
@@ -713,14 +762,14 @@ public abstract class DataStore
 	}		
 	
 	//deletes all claims owned by a player
-	synchronized public void deleteClaimsForPlayer(String playerName, boolean deleteCreativeClaims)
+	synchronized public void deleteClaimsForPlayer(UUID playerID, boolean deleteCreativeClaims)
 	{
 		//make a list of the player's claims
 		ArrayList<Claim> claimsToDelete = new ArrayList<Claim>();
 		for(int i = 0; i < this.claims.size(); i++)
 		{
 			Claim claim = this.claims.get(i);
-			if(claim.ownerName.equals(playerName) && (deleteCreativeClaims || !GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())))
+			if(playerID.equals(claim.ownerID) && (deleteCreativeClaims || !GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())))
 				claimsToDelete.add(claim);
 		}
 		
@@ -748,7 +797,7 @@ public abstract class DataStore
 		this.deleteClaim(claim);					
 		
 		//try to create this new claim, ignoring the original when checking for overlap
-		CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2, claim.ownerName, claim.parent, claim.id);
+		CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2, claim.ownerID, claim.parent, claim.id);
 		
 		//if succeeded
 		if(result.succeeded)
@@ -1031,5 +1080,49 @@ public abstract class DataStore
 		return message;		
 	}
 	
-	abstract void close();	
+	//used in updating the data schema from 0 to 1.
+	//converts player names in a list to uuids
+	protected String[] convertNameListToUUIDList(String[] names)
+	{
+	    //doesn't apply after schema has been updated to version 1
+	    if(this.getSchemaVersion() >= 1) return names;
+	    
+	    //list to build results
+	    List<String> resultNames = new ArrayList<String>();
+	    
+	    for(String name : names)
+	    {
+	        //skip non-player-names (groups and "public"), leave them as-is
+	        if(name.startsWith("[") || name.equals("public"))
+            {
+	            resultNames.add(name);
+	            continue;
+            }
+	        
+	        //otherwise try to convert to a UUID
+	        UUID playerID = null;
+	        try
+	        {
+	            playerID = UUIDFetcher.getUUIDOf(name);
+	        }
+	        catch(Exception ex){ }
+	        
+	        //if successful, replace player name with corresponding UUID
+	        if(playerID != null)
+	        {
+	            resultNames.add(playerID.toString());
+	        }
+	    }
+	    
+	    //return final result of conversion
+	    String [] resultArray = new String [resultNames.size()];
+	    for(int i = 0; i < resultNames.size(); i++)
+	    {
+	        resultArray[i] = resultNames.get(i);
+	    }
+	    
+	    return resultArray;
+    }
+	
+	abstract void close();
 }

@@ -24,8 +24,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.bukkit.*;
 
 //manages data stored in the file system
@@ -34,9 +32,8 @@ public class FlatFileDataStore extends DataStore
 	private final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
 	private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
 	private final static String nextClaimIdFilePath = claimDataFolderPath + File.separator + "_nextClaimID";
+	private final static String schemaVersionFilePath = dataLayerFolderPath + File.separator + "_schemaVersion";
 	
-	private final static Pattern uuidpattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
-
 	static boolean hasData()
 	{
 		File playerDataFolder = new File(playerDataFolderPath);
@@ -55,11 +52,23 @@ public class FlatFileDataStore extends DataStore
 	void initialize() throws Exception
 	{
 		//ensure data folders exist
-		new File(playerDataFolderPath).mkdirs();
-		new File(claimDataFolderPath).mkdirs();
+		boolean newDataStore = false;
+	    File playerDataFolder = new File(playerDataFolderPath);
+		File claimDataFolder = new File(claimDataFolderPath);
+		if(!playerDataFolder.exists() || !claimDataFolder.exists())
+		{
+		    newDataStore = true;
+		    playerDataFolder.mkdirs();
+		    claimDataFolder.mkdirs();
+		}
+		
+		//if there's no data yet, then anything written will use the schema implemented by this code
+		if(newDataStore)
+		{
+		    this.setSchemaVersion(DataStore.latestSchemaVersion);
+		}
 		
 		//load group data into memory
-		File playerDataFolder = new File(playerDataFolderPath);
 		File [] files = playerDataFolder.listFiles();
 		for(int i = 0; i < files.length; i++)
 		{
@@ -120,14 +129,13 @@ public class FlatFileDataStore extends DataStore
 		
 		//load claims data into memory		
 		//get a list of all the files in the claims data folder
-		File claimDataFolder = new File(claimDataFolderPath);
 		files = claimDataFolder.listFiles();
 		
 		for(int i = 0; i < files.length; i++)
 		{			
 			if(files[i].isFile())  //avoids folders
 			{
-				//skip any file starting with an underscore, to avoid the _nextClaimID file.
+				//skip any file starting with an underscore, to avoid special files not representing land claims
 				if(files[i].getName().startsWith("_")) continue;
 				
 				//the filename is the claim ID.  try to parse it
@@ -182,23 +190,52 @@ public class FlatFileDataStore extends DataStore
 						//third line is owner name
 						line = inStream.readLine();						
 						String ownerName = line;
+						UUID ownerID = null;
+						if(ownerName.isEmpty() || ownerName.startsWith("--"))
+						{
+						    ownerID = null;  //administrative land claim or subdivision
+						}
+						else if(this.getSchemaVersion() == 0)
+						{
+						    try
+						    {
+						        ownerID = UUIDFetcher.getUUIDOf(ownerName);
+						    }
+						    catch(Exception ex){ }  //if UUID not found, use NULL
+						}
+						else
+						{
+						    try
+						    {
+						        ownerID = UUID.fromString(ownerName);
+						    }
+						    catch(Exception ex)
+						    {
+						        GriefPrevention.AddLogEntry("Failed to look up UUID for player " + ownerName + ".");
+						        GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+						    }
+						}
 						
 						//fourth line is list of builders
 						line = inStream.readLine();
 						String [] builderNames = line.split(";");
+						builderNames = this.convertNameListToUUIDList(builderNames);
 						
 						//fifth line is list of players who can access containers
 						line = inStream.readLine();
 						String [] containerNames = line.split(";");
+						containerNames = this.convertNameListToUUIDList(containerNames);
 						
 						//sixth line is list of players who can use buttons and switches
 						line = inStream.readLine();
 						String [] accessorNames = line.split(";");
+						accessorNames = this.convertNameListToUUIDList(accessorNames);
 						
 						//seventh line is list of players who can grant permissions
 						line = inStream.readLine();
 						if(line == null) line = "";
 						String [] managerNames = line.split(";");
+						managerNames = this.convertNameListToUUIDList(managerNames);
 						
 						//skip any remaining extra lines, until the "===" string, indicating the end of this claim or subdivision
 						line = inStream.readLine();
@@ -210,7 +247,7 @@ public class FlatFileDataStore extends DataStore
 						if(topLevelClaim == null)
 						{
 							//instantiate
-							topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerName, builderNames, containerNames, accessorNames, managerNames, claimID);
+							topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames, managerNames, claimID);
 							
 							//search for another claim overlapping this one
 							Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
@@ -241,7 +278,7 @@ public class FlatFileDataStore extends DataStore
 						//otherwise there's already a top level claim, so this must be a subdivision of that top level claim
 						else
 						{
-							Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, "--subdivision--", builderNames, containerNames, accessorNames, managerNames, null);
+							Claim subdivision = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, null, builderNames, containerNames, accessorNames, managerNames, null);
 							
 							subdivision.modifiedDate = new Date(files[i].lastModified());
 							subdivision.parent = topLevelClaim;
@@ -259,7 +296,7 @@ public class FlatFileDataStore extends DataStore
 				//if there's any problem with the file's content, log an error message and skip it
 				catch(Exception e)
 				{
-					 GriefPrevention.AddLogEntry("Unable to load data for claim \"" + files[i].getName() + "\": " + e.getMessage());
+					 GriefPrevention.AddLogEntry("Unable to load data for claim \"" + files[i].getName() + "\": " + e.toString());
 				}
 				
 				try
@@ -269,6 +306,42 @@ public class FlatFileDataStore extends DataStore
 				catch(IOException exception) {}
 			}
 		}
+		
+		//if converting up from schema version 0, rename files using UUIDs instead of player names
+		//get a list of all the files in the claims data folder
+        if(this.getSchemaVersion() == 0)
+        {
+            files = playerDataFolder.listFiles();
+            for(File playerFile : files)
+            {
+                //anything starting with an underscore or dollar sign isn't a player, ignore those
+                String currentFilename = playerFile.getName();
+                if(currentFilename.startsWith("$") || currentFilename.startsWith("_")) continue;
+                
+                //try to convert player name to UUID
+                UUID playerID = null;
+                try
+                {
+                    playerID = UUIDFetcher.getUUIDOf(currentFilename);
+                    
+                    //if successful, rename the file using the UUID
+                    if(playerID != null)
+                    {
+                        playerFile.renameTo(new File(playerDataFolder, playerID.toString()));
+                    }
+                    
+                    //otherwise hide it from the data store for the future
+                    else
+                    {
+                        playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
+                    }
+                }
+                catch(Exception ex)
+                {
+                    playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
+                }
+            }
+        }
 		
 		super.initialize();
 	}
@@ -301,7 +374,8 @@ public class FlatFileDataStore extends DataStore
 		//if any problem, log it
 		catch(Exception e)
 		{
-			GriefPrevention.AddLogEntry("Unexpected exception saving data for claim \"" + claimID + "\": " + e.getMessage());
+			GriefPrevention.AddLogEntry("Unexpected exception saving data for claim \"" + claimID + "\": " + e.toString());
+			e.printStackTrace();
 		}
 		
 		//close the file
@@ -324,7 +398,9 @@ public class FlatFileDataStore extends DataStore
 		outStream.newLine();
 		
 		//third line is owner name
-		outStream.write(claim.ownerName);
+		String lineToWrite = "";
+		if(claim.ownerID != null) lineToWrite = claim.ownerID.toString();
+		outStream.write(lineToWrite);
 		outStream.newLine();
 		
 		ArrayList<String> builders = new ArrayList<String>();
@@ -382,18 +458,18 @@ public class FlatFileDataStore extends DataStore
 	}
 	
 	@Override
-	synchronized PlayerData getPlayerDataFromStorage(String playerName)
+	synchronized PlayerData getPlayerDataFromStorage(UUID playerID)
 	{
-		File playerFile = new File(playerDataFolderPath + File.separator + playerName);
+		File playerFile = new File(playerDataFolderPath + File.separator + playerID.toString());
 					
 		PlayerData playerData = new PlayerData();
-		playerData.playerName = playerName;
+		playerData.playerID = playerID;
 		
 		//if it doesn't exist as a file
 		if(!playerFile.exists())
 		{
 			//create a file with defaults
-			this.savePlayerData(playerName, playerData);
+			this.savePlayerData(playerID, playerData);
 		}
 		
 		//otherwise, read the file
@@ -441,7 +517,7 @@ public class FlatFileDataStore extends DataStore
 			//if there's any problem with the file's content, log an error message
 			catch(Exception e)
 			{
-				 GriefPrevention.AddLogEntry("Unable to load data for player \"" + playerName + "\": " + e.getMessage());			 
+				 GriefPrevention.AddLogEntry("Unable to load data for player \"" + playerID.toString() + "\": " + e.getMessage());			 
 			}
 			
 			try
@@ -456,16 +532,16 @@ public class FlatFileDataStore extends DataStore
 	
 	//saves changes to player data.  MUST be called after you're done making changes, otherwise a reload will lose them
 	@Override
-	synchronized public void savePlayerData(String playerName, PlayerData playerData)
+	synchronized public void savePlayerData(UUID playerID, PlayerData playerData)
 	{
-		//never save data for the "administrative" account.  an empty string for claim owner indicates administrative account
-		if(playerName.length() == 0) return;
+		//never save data for the "administrative" account.  null for claim owner ID indicates administrative account
+		if(playerID == null) return;
 		
 		BufferedWriter outStream = null;
 		try
 		{
 			//open the player's file
-			File playerDataFile = new File(playerDataFolderPath + File.separator + playerName);
+			File playerDataFile = new File(playerDataFolderPath + File.separator + playerID.toString());
 			playerDataFile.createNewFile();
 			outStream = new BufferedWriter(new FileWriter(playerDataFile));
 			
@@ -498,7 +574,7 @@ public class FlatFileDataStore extends DataStore
 		//if any problem, log it
 		catch(Exception e)
 		{
-			GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerName + "\": " + e.getMessage());
+			GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
 		}
 		
 		try
@@ -607,9 +683,12 @@ public class FlatFileDataStore extends DataStore
 			//all group data files start with a dollar sign.  ignoring those, already handled above
 			if(file.getName().startsWith("$")) continue;
 			
-			String playerName = file.getName();
-			databaseStore.savePlayerData(playerName, this.getPlayerData(playerName));
-			this.clearCachedPlayerData(playerName);
+			//ignore special files (claimID)
+			if(file.getName().startsWith("_")) continue;
+			
+			UUID playerID = UUID.fromString(file.getName());
+			databaseStore.savePlayerData(playerID, this.getPlayerData(playerID));
+			this.clearCachedPlayerData(playerID);
 		}
 		
 		//migrate next claim ID
@@ -647,4 +726,69 @@ public class FlatFileDataStore extends DataStore
 
 	@Override
 	synchronized void close() { }
+
+    @Override
+    int getSchemaVersionFromStorage()
+    {
+        File schemaVersionFile = new File(schemaVersionFilePath);
+        if(schemaVersionFile.exists())
+        {
+            BufferedReader inStream = null;
+            int schemaVersion = 0;
+            try
+            {
+                inStream = new BufferedReader(new FileReader(schemaVersionFile.getAbsolutePath()));
+                
+                //read the version number
+                String line = inStream.readLine();
+                
+                //try to parse into an int value
+                schemaVersion = Integer.parseInt(line);
+            }
+            catch(Exception e){ }
+            
+            try
+            {
+                if(inStream != null) inStream.close();                  
+            }
+            catch(IOException exception) {}
+            
+            return schemaVersion;
+        }
+        else
+        {
+            this.updateSchemaVersionInStorage(0);
+            return 0;
+        }
+    }
+
+    @Override
+    void updateSchemaVersionInStorage(int versionToSet)
+    {
+        BufferedWriter outStream = null;
+        
+        try
+        {
+            //open the file and write the new value
+            File schemaVersionFile = new File(schemaVersionFilePath);
+            schemaVersionFile.createNewFile();
+            outStream = new BufferedWriter(new FileWriter(schemaVersionFile));
+            
+            outStream.write(String.valueOf(versionToSet));
+        }       
+        
+        //if any problem, log it
+        catch(Exception e)
+        {
+            GriefPrevention.AddLogEntry("Unexpected exception saving schema version: " + e.getMessage());
+        }
+        
+        //close the file
+        try
+        {
+            if(outStream != null) outStream.close();
+        }
+        catch(IOException exception) {}
+        
+    }
 }

@@ -236,7 +236,7 @@ class EntityEventHandler implements Listener
 		if(!(entity instanceof Player)) return;  //only tracking players
 		
 		Player player = (Player)entity;
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		
 		//if involved in a siege
 		if(playerData.siegeData != null)
@@ -327,7 +327,7 @@ class EntityEventHandler implements Listener
 		//otherwise, apply entity-count limitations for creative worlds
 		else if(GriefPrevention.instance.creativeRulesApply(event.getEntity().getLocation()))
 		{
-			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
+			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
 			Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, playerData.lastClaim);
 			if(claim == null) return;
 			
@@ -389,8 +389,8 @@ class EntityEventHandler implements Listener
 			
 			Player defender = (Player)(event.getEntity());
 			
-			PlayerData defenderData = this.dataStore.getPlayerData(((Player)event.getEntity()).getName());
-			PlayerData attackerData = this.dataStore.getPlayerData(attacker.getName());
+			PlayerData defenderData = this.dataStore.getPlayerData(((Player)event.getEntity()).getUniqueId());
+			PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
 			
 			//otherwise if protecting spawning players
 			if(GriefPrevention.instance.config_pvp_protectFreshSpawns)
@@ -461,7 +461,7 @@ class EntityEventHandler implements Listener
                 PlayerData playerData = null;
                 if(attacker != null)
                 {
-                    playerData = this.dataStore.getPlayerData(attacker.getName());
+                    playerData = this.dataStore.getPlayerData(attacker.getUniqueId());
                     cachedClaim = playerData.lastClaim;
                 }
                 
@@ -495,7 +495,7 @@ class EntityEventHandler implements Listener
 				PlayerData playerData = null;
 				if(attacker != null)
 				{
-					playerData = this.dataStore.getPlayerData(attacker.getName());
+					playerData = this.dataStore.getPlayerData(attacker.getUniqueId());
 					cachedClaim = playerData.lastClaim;
 				}
 				
@@ -583,7 +583,7 @@ class EntityEventHandler implements Listener
 		PlayerData playerData = null;
 		if(attacker != null)
 		{
-			playerData = this.dataStore.getPlayerData(attacker.getName());
+			playerData = this.dataStore.getPlayerData(attacker.getUniqueId());
 			cachedClaim = playerData.lastClaim;
 		}
 		

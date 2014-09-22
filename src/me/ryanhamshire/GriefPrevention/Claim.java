@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.*;
 
 import org.bukkit.*;
 import org.bukkit.World.Environment;
@@ -48,15 +49,15 @@ public class Claim
 	//id number.  unique to this claim, never changes.
 	Long id = null;
 	
-	//ownername.  for admin claims, this is the empty string
+	//ownerID.  for admin claims, this is NULL
 	//use getOwnerName() to get a friendly name (will be "an administrator" for admin claims)
-	public String ownerName;
+	public UUID ownerID;
 	
 	//list of players who (beyond the claim owner) have permission to grant permissions in this claim
 	public ArrayList<String> managers = new ArrayList<String>();
 	
 	//permissions for this claim, see ClaimPermission class
-	private HashMap<String, ClaimPermission> playerNameToClaimPermissionMap = new HashMap<String, ClaimPermission>();
+	private HashMap<String, ClaimPermission> playerIDToClaimPermissionMap = new HashMap<String, ClaimPermission>();
 	
 	//whether or not this claim is in the data store
 	//if a claim instance isn't in the data store, it isn't "active" - players can't interract with it 
@@ -84,7 +85,7 @@ public class Claim
 	//administrative claims are created and maintained by players with the griefprevention.adminclaims permission.
 	public boolean isAdminClaim()
 	{
-		return (this.ownerName == null || this.ownerName.isEmpty());
+		return (this.ownerID == null);
 	}
 	
 	//accessor for ID
@@ -197,7 +198,7 @@ public class Claim
 	}
 	
 	//main constructor.  note that only creating a claim instance does nothing - a claim must be added to the data store to be effective
-	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, String ownerName, String [] builderNames, String [] containerNames, String [] accessorNames, String [] managerNames, Long id)
+	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, String [] builderIDs, String [] containerIds, String [] accessorIDs, String [] managerIDs, Long id)
 	{
 		//modification date
 		this.modifiedDate = Calendar.getInstance().getTime();
@@ -210,42 +211,42 @@ public class Claim
 		this.greaterBoundaryCorner = greaterBoundaryCorner;
 		
 		//owner
-		this.ownerName = ownerName;
+		this.ownerID = ownerID;
 		
 		//other permissions
-		for(int i = 0; i < builderNames.length; i++)
+		for(int i = 0; i < builderIDs.length; i++)
 		{
-			String name = builderNames[i];
-			if(name != null && !name.isEmpty())
+			String builderID = builderIDs[i];
+			if(builderID != null)
 			{
-				this.playerNameToClaimPermissionMap.put(name, ClaimPermission.Build);
+				this.playerIDToClaimPermissionMap.put(builderID, ClaimPermission.Build);
 			}
 		}
 		
-		for(int i = 0; i < containerNames.length; i++)
+		for(int i = 0; i < containerIds.length; i++)
 		{
-			String name = containerNames[i];
-			if(name != null && !name.isEmpty())
+			String containerID = containerIds[i];
+			if(containerID != null)
 			{
-				this.playerNameToClaimPermissionMap.put(name, ClaimPermission.Inventory);
+				this.playerIDToClaimPermissionMap.put(containerID, ClaimPermission.Inventory);
 			}
 		}
 		
-		for(int i = 0; i < accessorNames.length; i++)
+		for(int i = 0; i < accessorIDs.length; i++)
 		{
-			String name = accessorNames[i];
-			if(name != null && !name.isEmpty())
+			String accessorID = accessorIDs[i];
+			if(accessorID != null)
 			{
-				this.playerNameToClaimPermissionMap.put(name, ClaimPermission.Access);
+				this.playerIDToClaimPermissionMap.put(accessorID, ClaimPermission.Access);
 			}
 		}
 		
-		for(int i = 0; i < managerNames.length; i++)
+		for(int i = 0; i < managerIDs.length; i++)
 		{
-			String name = managerNames[i];
-			if(name != null && !name.isEmpty())
+			String managerID = managerIDs[i];
+			if(managerID != null)
 			{
-				this.managers.add(name);
+				this.managers.add(managerID);
 			}
 		}
 	}
@@ -275,7 +276,7 @@ public class Claim
 		Claim claim = new Claim
 			(new Location(this.lesserBoundaryCorner.getWorld(), this.lesserBoundaryCorner.getBlockX() - howNear, this.lesserBoundaryCorner.getBlockY(), this.lesserBoundaryCorner.getBlockZ() - howNear),
 			 new Location(this.greaterBoundaryCorner.getWorld(), this.greaterBoundaryCorner.getBlockX() + howNear, this.greaterBoundaryCorner.getBlockY(), this.greaterBoundaryCorner.getBlockZ() + howNear),
-			 "", new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);
+			 null, new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);
 		
 		return claim.contains(location, false, true);
 	}
@@ -302,7 +303,7 @@ public class Claim
 		}
 		
 		//no resizing, deleting, and so forth while under siege
-		if(this.ownerName.equals(player.getName()))
+		if(player.getUniqueId().equals(this.ownerID))
 		{
 			if(this.siegeData != null)
 			{
@@ -343,20 +344,20 @@ public class Claim
 		}
 		
 		//no building while in pvp combat
-		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
 		if(playerData.inPvpCombat())
 		{
 			return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPvP);			
 		}
 		
 		//owners can make changes, or admins with ignore claims mode enabled
-		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
+		if(player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims) return null;
 		
 		//anyone with explicit build permission can make changes
 		if(this.hasExplicitPermission(player, ClaimPermission.Build)) return null;
 		
-		//also everyone is a member of the "public", so check for public permission
-		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get("public");
+		//also everyone is a member of the "public", so check for public permission, indicated by a null key
+		ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get(null);
 		if(ClaimPermission.Build == permissionLevel) return null;
 		
 		//subdivision permission inheritance
@@ -372,13 +373,13 @@ public class Claim
 	
 	private boolean hasExplicitPermission(Player player, ClaimPermission level)
 	{
-		String playerName = player.getName();
-		Set<String> keys = this.playerNameToClaimPermissionMap.keySet();
+		String playerID = player.getUniqueId().toString();
+		Set<String> keys = this.playerIDToClaimPermissionMap.keySet();
 		Iterator<String> iterator = keys.iterator();
 		while(iterator.hasNext())
 		{
 			String identifier = iterator.next();
-			if(playerName.equalsIgnoreCase(identifier) && this.playerNameToClaimPermissionMap.get(identifier) == level) return true;
+			if(playerID.equalsIgnoreCase(identifier) && this.playerIDToClaimPermissionMap.get(identifier) == level) return true;
 			
 			else if(identifier.startsWith("[") && identifier.endsWith("]"))
 			{
@@ -389,7 +390,7 @@ public class Claim
 				if(permissionIdentifier == null || permissionIdentifier.isEmpty()) continue;
 				
 				//check permission
-				if(player.hasPermission(permissionIdentifier) && this.playerNameToClaimPermissionMap.get(identifier) == level) return true;
+				if(player.hasPermission(permissionIdentifier) && this.playerIDToClaimPermissionMap.get(identifier) == level) return true;
 			}
 		}
 		
@@ -408,7 +409,7 @@ public class Claim
 			for(int i = 0; i < GriefPrevention.instance.config_siege_blocks.size(); i++)
 			{
 				Material breakableMaterial = GriefPrevention.instance.config_siege_blocks.get(i);
-				if(breakableMaterial.getId() == material.getId())
+				if(breakableMaterial == material)
 				{
 					breakable = true;
 					break;
@@ -420,7 +421,7 @@ public class Claim
 			{
 				return GriefPrevention.instance.dataStore.getMessage(Messages.NonSiegeMaterial);
 			}
-			else if(this.ownerName.equals(player.getName()))
+			else if(player.getUniqueId().equals(this.ownerID))
 			{
 				return GriefPrevention.instance.dataStore.getMessage(Messages.NoOwnerBuildUnderSiege);
 			}
@@ -447,7 +448,7 @@ public class Claim
 		}
 		
 		//claim owner and admins in ignoreclaims mode have access
-		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
+		if(player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims) return null;
 		
 		//look for explicit individual access, inventory, or build permission
 		if(this.hasExplicitPermission(player, ClaimPermission.Access)) return null;
@@ -455,7 +456,7 @@ public class Claim
 		if(this.hasExplicitPermission(player, ClaimPermission.Build)) return null;
 		
 		//also check for public permission
-		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get("public");
+		ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
 		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Access == permissionLevel) return null;		
 		
 		//permission inheritance for subdivisions
@@ -485,7 +486,7 @@ public class Claim
 		}
 		
 		//owner and administrators in ignoreclaims mode have access
-		if(this.ownerName.equals(player.getName()) || GriefPrevention.instance.dataStore.getPlayerData(player.getName()).ignoreClaims) return null;
+		if(player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims) return null;
 		
 		//admin claims need adminclaims permission only.
 		if(this.isAdminClaim())
@@ -498,7 +499,7 @@ public class Claim
 		if(this.hasExplicitPermission(player, ClaimPermission.Build)) return null;
 		
 		//check for public container or build permission
-		ClaimPermission permissionLevel = this.playerNameToClaimPermissionMap.get("public");
+		ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
 		if(ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel) return null;
 		
 		//permission inheritance for subdivisions
@@ -525,7 +526,7 @@ public class Claim
 		for(int i = 0; i < this.managers.size(); i++)
 		{
 			String managerID = this.managers.get(i);
-			if(player.getName().equalsIgnoreCase(managerID)) return null;
+			if(player.getUniqueId().toString().equals(managerID)) return null;
 			
 			else if(managerID.startsWith("[") && managerID.endsWith("]"))
 			{
@@ -547,21 +548,21 @@ public class Claim
 	}
 	
 	//grants a permission for a player or the public
-	public void setPermission(String playerName, ClaimPermission permissionLevel)
+	public void setPermission(String playerID, ClaimPermission permissionLevel)
 	{
-		this.playerNameToClaimPermissionMap.put(playerName.toLowerCase(),  permissionLevel);
+		this.playerIDToClaimPermissionMap.put(playerID.toLowerCase(),  permissionLevel);
 	}
 	
 	//revokes a permission for a player or the public
-	public void dropPermission(String playerName)
+	public void dropPermission(String playerID)
 	{
-		this.playerNameToClaimPermissionMap.remove(playerName.toLowerCase());
+		this.playerIDToClaimPermissionMap.remove(playerID.toLowerCase());
 	}
 	
 	//clears all permissions (except owner of course)
 	public void clearPermissions()
 	{
-		this.playerNameToClaimPermissionMap.clear();
+		this.playerIDToClaimPermissionMap.clear();
 	}
 	
 	//gets ALL permissions
@@ -569,7 +570,7 @@ public class Claim
 	public void getPermissions(ArrayList<String> builders, ArrayList<String> containers, ArrayList<String> accessors, ArrayList<String> managers)
 	{
 		//loop through all the entries in the hash map
-		Iterator<Map.Entry<String, ClaimPermission>> mappingsIterator = this.playerNameToClaimPermissionMap.entrySet().iterator(); 
+		Iterator<Map.Entry<String, ClaimPermission>> mappingsIterator = this.playerIDToClaimPermissionMap.entrySet().iterator(); 
 		while(mappingsIterator.hasNext())
 		{
 			Map.Entry<String, ClaimPermission> entry = mappingsIterator.next();
@@ -615,10 +616,10 @@ public class Claim
 		if(this.parent != null)
 			return this.parent.getOwnerName();
 		
-		if(this.ownerName.length() == 0)
+		if(this.ownerID == null)
 			return GriefPrevention.instance.dataStore.getMessage(Messages.OwnerNameForAdminClaims);
 		
-		return this.ownerName;
+		return GriefPrevention.lookupPlayerName(this.ownerID);
 	}	
 	
 	//whether or not a location is in a claim

@@ -20,6 +20,7 @@ package me.ryanhamshire.GriefPrevention;
 import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.UUID;
 import java.util.Vector;
 
 import me.ryanhamshire.GriefPrevention.Claim;
@@ -33,8 +34,8 @@ import org.bukkit.Location;
 //holds all of GriefPrevention's player-tied data
 public class PlayerData 
 {
-	//the player's name
-	public String playerName;
+	//the player's ID
+	public UUID playerID;
 	
 	//the player's claims
 	public Vector<Claim> claims = new Vector<Claim>();
@@ -151,7 +152,7 @@ public class PlayerData
 		}
 		
 		//add any blocks this player might have based on group membership (permissions)
-		remainingBlocks += GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerName);
+		remainingBlocks += GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
 		
 		return remainingBlocks;
 	}

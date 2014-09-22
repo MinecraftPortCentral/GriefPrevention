@@ -40,7 +40,7 @@ class DeliverClaimBlocksTask implements Runnable
 		{
 			Player player = players[i];
 			DataStore dataStore = GriefPrevention.instance.dataStore;
-			PlayerData playerData = dataStore.getPlayerData(player.getName());
+			PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
 			
 			Location lastLocation = playerData.lastAfkCheckLocation;
 			try  //distance squared will throw an exception if the player has changed worlds

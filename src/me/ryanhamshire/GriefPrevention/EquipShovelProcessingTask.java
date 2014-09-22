@@ -42,7 +42,7 @@ class EquipShovelProcessingTask implements Runnable
 		//if he's not holding the golden shovel anymore, do nothing
 		if(player.getItemInHand().getType() != GriefPrevention.instance.config_claims_modificationTool) return;
 		
-		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
 		
 		int remainingBlocks = playerData.getRemainingClaimBlocks();
 		

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
@@ -802,7 +803,7 @@ public class GriefPrevention extends JavaPlugin
 		//ignoreclaims
 		if(cmd.getName().equalsIgnoreCase("ignoreclaims") && player != null)
 		{
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			
 			playerData.ignoreClaims = !playerData.ignoreClaims;
 			
@@ -831,7 +832,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//count claims
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			int originalClaimCount = playerData.claims.size();
 			
 			//check count
@@ -842,7 +843,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//delete them
-			this.dataStore.deleteClaimsForPlayer(player.getName(), false);
+			this.dataStore.deleteClaimsForPlayer(player.getUniqueId(), false);
 			
 			//inform the player
 			int remainingBlocks = playerData.getRemainingClaimBlocks();
@@ -858,7 +859,7 @@ public class GriefPrevention extends JavaPlugin
 		else if(cmd.getName().equalsIgnoreCase("restorenature") && player != null)
 		{
 			//change shovel mode
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			playerData.shovelMode = ShovelMode.RestoreNature;
 			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RestoreNatureActivate);
 			return true;
@@ -868,7 +869,7 @@ public class GriefPrevention extends JavaPlugin
 		else if(cmd.getName().equalsIgnoreCase("restorenatureaggressive") && player != null)
 		{
 			//change shovel mode
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			playerData.shovelMode = ShovelMode.RestoreNatureAggressive;
 			GriefPrevention.sendMessage(player, TextMode.Warn, Messages.RestoreNatureAggressiveActivate);
 			return true;
@@ -878,7 +879,7 @@ public class GriefPrevention extends JavaPlugin
 		else if(cmd.getName().equalsIgnoreCase("restorenaturefill") && player != null)
 		{
 			//change shovel mode
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			playerData.shovelMode = ShovelMode.RestoreNatureFill;
 			
 			//set radius based on arguments
@@ -931,7 +932,7 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
-			OfflinePlayer targetPlayer = this.resolvePlayer(args[0]);
+			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
 			if(targetPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -941,7 +942,7 @@ public class GriefPrevention extends JavaPlugin
 			//change ownerhsip
 			try
 			{
-				this.dataStore.changeClaimOwner(claim, targetPlayer.getName());
+				this.dataStore.changeClaimOwner(claim, targetPlayer.getUniqueId());
 			}
 			catch(Exception e)
 			{
@@ -992,7 +993,7 @@ public class GriefPrevention extends JavaPlugin
 			if(managers.size() > 0)
 			{
 				for(int i = 0; i < managers.size(); i++)
-					permissions.append(managers.get(i) + " ");
+					permissions.append(this.trustEntryToPlayerName(managers.get(i)) + " ");
 			}
 			
 			player.sendMessage(permissions.toString());
@@ -1002,7 +1003,7 @@ public class GriefPrevention extends JavaPlugin
 			if(builders.size() > 0)
 			{				
 				for(int i = 0; i < builders.size(); i++)
-					permissions.append(builders.get(i) + " ");		
+					permissions.append(this.trustEntryToPlayerName(builders.get(i)) + " ");		
 			}
 			
 			player.sendMessage(permissions.toString());
@@ -1012,7 +1013,7 @@ public class GriefPrevention extends JavaPlugin
 			if(containers.size() > 0)
 			{
 				for(int i = 0; i < containers.size(); i++)
-					permissions.append(containers.get(i) + " ");		
+					permissions.append(this.trustEntryToPlayerName(containers.get(i)) + " ");		
 			}
 			
 			player.sendMessage(permissions.toString());
@@ -1022,7 +1023,7 @@ public class GriefPrevention extends JavaPlugin
 			if(accessors.size() > 0)
 			{
 				for(int i = 0; i < accessors.size(); i++)
-					permissions.append(accessors.get(i) + " ");			
+					permissions.append(this.trustEntryToPlayerName(accessors.get(i)) + " ");			
 			}
 			
 			player.sendMessage(permissions.toString());
@@ -1042,7 +1043,7 @@ public class GriefPrevention extends JavaPlugin
 			Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
 			
 			//bracket any permissions
-			if(args[0].contains("."))
+			if(args[0].contains(".") && !args[0].startsWith("[") && !args[0].endsWith("]"))
 			{
 				args[0] = "[" + args[0] + "]";
 			}
@@ -1068,7 +1069,7 @@ public class GriefPrevention extends JavaPlugin
 				//validate player argument or group argument
 				if(!args[0].startsWith("[") || !args[0].endsWith("]"))
 				{
-					otherPlayer = this.resolvePlayer(args[0]);
+					otherPlayer = this.resolvePlayerByName(args[0]);
 					if(!clearPermissions && otherPlayer == null && !args[0].equals("public"))
 					{
 						GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1084,7 +1085,7 @@ public class GriefPrevention extends JavaPlugin
 			//if no claim here, apply changes to all his claims
 			if(claim == null)
 			{
-				PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+				PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 				for(int i = 0; i < playerData.claims.size(); i++)
 				{
 					claim = playerData.claims.get(i);
@@ -1098,8 +1099,13 @@ public class GriefPrevention extends JavaPlugin
 					//otherwise drop individual permissions
 					else
 					{
-						claim.dropPermission(args[0]);
-						claim.managers.remove(args[0]);
+						String idToDrop = args[0];
+					    if(otherPlayer != null)
+						{
+						    idToDrop = otherPlayer.getUniqueId().toString(); 
+						}
+					    claim.dropPermission(idToDrop);
+						claim.managers.remove(idToDrop);
 					}
 					
 					//save changes
@@ -1140,10 +1146,15 @@ public class GriefPrevention extends JavaPlugin
 				//otherwise individual permission drop
 				else
 				{
-					claim.dropPermission(args[0]);
+				    String idToDrop = args[0];
+                    if(otherPlayer != null)
+                    {
+                        idToDrop = otherPlayer.getUniqueId().toString(); 
+                    }
+				    claim.dropPermission(idToDrop);
 					if(claim.allowEdit(player) == null)
 					{
-						claim.managers.remove(args[0]);
+						claim.managers.remove(idToDrop);
 						
 						//beautify for output
 						if(args[0].equals("public"))
@@ -1225,14 +1236,14 @@ public class GriefPrevention extends JavaPlugin
 			//if no parameter, just tell player cost per block and balance
 			if(args.length != 1)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockPurchaseCost, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksPurchaseCost), String.valueOf(GriefPrevention.economy.getBalance(player.getName())));
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockPurchaseCost, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksPurchaseCost), String.valueOf(GriefPrevention.economy.getBalance(player)));
 				return false;
 			}
 			
 			else
 			{
 				//determine max purchasable blocks
-				PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+				PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 				int maxPurchasable = GriefPrevention.instance.config_claims_maxAccruedBlocks - playerData.accruedClaimBlocks;
 				
 				//if the player is at his max, tell him so
@@ -1265,7 +1276,7 @@ public class GriefPrevention extends JavaPlugin
 				}
 				
 				//if the player can't afford his purchase, send error message
-				double balance = economy.getBalance(player.getName());				
+				double balance = economy.getBalance(player);				
 				double totalCost = blockCount * GriefPrevention.instance.config_economy_claimBlocksPurchaseCost;				
 				if(totalCost > balance)
 				{
@@ -1276,11 +1287,11 @@ public class GriefPrevention extends JavaPlugin
 				else
 				{
 					//withdraw cost
-					economy.withdrawPlayer(player.getName(), totalCost);
+					economy.withdrawPlayer(player, totalCost);
 					
 					//add blocks
 					playerData.accruedClaimBlocks += blockCount;
-					this.dataStore.savePlayerData(player.getName(), playerData);
+					this.dataStore.savePlayerData(player.getUniqueId(), playerData);
 					
 					//inform player
 					GriefPrevention.sendMessage(player, TextMode.Success, Messages.PurchaseConfirmation, String.valueOf(totalCost), String.valueOf(playerData.getRemainingClaimBlocks()));
@@ -1314,7 +1325,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//load player data
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			int availableBlocks = playerData.getRemainingClaimBlocks();
 			
 			//if no amount provided, just tell player value per block sold, and how many he can sell
@@ -1351,11 +1362,11 @@ public class GriefPrevention extends JavaPlugin
 			{					
 				//compute value and deposit it
 				double totalValue = blockCount * GriefPrevention.instance.config_economy_claimBlocksSellValue;					
-				economy.depositPlayer(player.getName(), totalValue);
+				economy.depositPlayer(player, totalValue);
 				
 				//subtract blocks
 				playerData.accruedClaimBlocks -= blockCount;
-				this.dataStore.savePlayerData(player.getName(), playerData);
+				this.dataStore.savePlayerData(player.getUniqueId(), playerData);
 				
 				//inform player
 				GriefPrevention.sendMessage(player, TextMode.Success, Messages.BlockSaleConfirmation, String.valueOf(totalValue), String.valueOf(playerData.getRemainingClaimBlocks()));
@@ -1367,7 +1378,7 @@ public class GriefPrevention extends JavaPlugin
 		//adminclaims
 		else if(cmd.getName().equalsIgnoreCase("adminclaims") && player != null)
 		{
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			playerData.shovelMode = ShovelMode.Admin;
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdminClaimsMode);
 			
@@ -1377,7 +1388,7 @@ public class GriefPrevention extends JavaPlugin
 		//basicclaims
 		else if(cmd.getName().equalsIgnoreCase("basicclaims") && player != null)
 		{
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			playerData.shovelMode = ShovelMode.Basic;
 			playerData.claimSubdividing = null;
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.BasicClaimsMode);
@@ -1388,7 +1399,7 @@ public class GriefPrevention extends JavaPlugin
 		//subdivideclaims
 		else if(cmd.getName().equalsIgnoreCase("subdivideclaims") && player != null)
 		{
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			playerData.shovelMode = ShovelMode.Subdivide;
 			playerData.claimSubdividing = null;
 			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
@@ -1413,7 +1424,7 @@ public class GriefPrevention extends JavaPlugin
 				//deleting an admin claim additionally requires the adminclaims permission
 				if(!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims"))
 				{
-					PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+					PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 					if(claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion)
 					{
 						GriefPrevention.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);
@@ -1489,7 +1500,7 @@ public class GriefPrevention extends JavaPlugin
 			if(args.length != 1) return false;
 			
 			//try to find that player
-			OfflinePlayer otherPlayer = this.resolvePlayer(args[0]);
+			OfflinePlayer otherPlayer = this.resolvePlayerByName(args[0]);
 			if(otherPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1497,7 +1508,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//delete all that player's claims
-			this.dataStore.deleteClaimsForPlayer(otherPlayer.getName(), true);
+			this.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId(), true);
 			
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
 			if(player != null)
@@ -1539,7 +1550,7 @@ public class GriefPrevention extends JavaPlugin
 			//otherwise try to find the specified player
 			else
 			{
-				otherPlayer = this.resolvePlayer(args[0]);
+				otherPlayer = this.resolvePlayerByName(args[0]);
 				if(otherPlayer == null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1548,8 +1559,8 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//load the target player's data
-			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getName());
-			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + (playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName())) + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getName())));
+			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getUniqueId());
+			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.accruedClaimBlocks + "(+" + (playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + ")=" + (playerData.accruedClaimBlocks + playerData.bonusClaimBlocks + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())));
 			for(int i = 0; i < playerData.claims.size(); i++)
 			{
 				Claim claim = playerData.claims.get(i);
@@ -1561,7 +1572,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			//drop the data we just loaded, if the player isn't online
 			if(!otherPlayer.isOnline())
-				this.dataStore.clearCachedPlayerData(otherPlayer.getName());
+				this.dataStore.clearCachedPlayerData(otherPlayer.getUniqueId());
 			
 			return true;
 		}
@@ -1636,7 +1647,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//delete all admin claims
-			this.dataStore.deleteClaimsForPlayer("", true);  //empty string for owner name indicates an administrative claim
+			this.dataStore.deleteClaimsForPlayer(null, true);  //null for owner id indicates an administrative claim
 			
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
 			if(player != null)
@@ -1680,7 +1691,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//otherwise, find the specified player
-			OfflinePlayer targetPlayer = this.resolvePlayer(args[0]);
+			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
 			if(targetPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1688,9 +1699,9 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//give blocks to player
-			PlayerData playerData = this.dataStore.getPlayerData(targetPlayer.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(targetPlayer.getUniqueId());
 			playerData.bonusClaimBlocks += adjustment;
-			this.dataStore.savePlayerData(targetPlayer.getName(), playerData);
+			this.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
 			
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment), String.valueOf(playerData.bonusClaimBlocks));
 			if(player != null) GriefPrevention.AddLogEntry(player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".");
@@ -1703,7 +1714,7 @@ public class GriefPrevention extends JavaPlugin
 		{
 			//FEATURE: empower players who get "stuck" in an area where they don't have permission to build to save themselves
 			
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
 			
 			//if another /trapped is pending, ignore this slash command
@@ -1771,7 +1782,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			//can't start a siege when you're already involved in one
 			Player attacker = player;
-			PlayerData attackerData = this.dataStore.getPlayerData(attacker.getName());
+			PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
 			if(attackerData.siegeData != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.AlreadySieging);
@@ -1813,7 +1824,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//victim must not be under siege already
-			PlayerData defenderData = this.dataStore.getPlayerData(defender.getName());
+			PlayerData defenderData = this.dataStore.getPlayerData(defender.getUniqueId());
 			if(defenderData.siegeData != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.AlreadyUnderSiegePlayer);
@@ -1875,14 +1886,26 @@ public class GriefPrevention extends JavaPlugin
 		return false; 
 	}
 	
-	public static String getfriendlyLocationString(Location location) 
+	private String trustEntryToPlayerName(String entry)
+	{
+        if(entry.startsWith("[") || entry.equals("public"))
+        {
+            return entry;
+        }
+        else
+        {
+            return GriefPrevention.lookupPlayerName(entry);
+        }
+    }
+
+    public static String getfriendlyLocationString(Location location) 
 	{
 		return location.getWorld().getName() + "(" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ() + ")";
 	}
 
 	private boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) 
 	{
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		
 		//which claim is being abandoned?
 		Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
@@ -1954,6 +1977,7 @@ public class GriefPrevention extends JavaPlugin
 		//validate player or group argument
 		String permission = null;
 		OfflinePlayer otherPlayer = null;
+		UUID recipientID = null;
 		if(recipientName.startsWith("[") && recipientName.endsWith("]"))
 		{
 			permission = recipientName.substring(1, recipientName.length() - 1);
@@ -1971,7 +1995,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		else
 		{		
-			otherPlayer = this.resolvePlayer(recipientName);
+			otherPlayer = this.resolvePlayerByName(recipientName);
 			if(otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all"))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1981,6 +2005,7 @@ public class GriefPrevention extends JavaPlugin
 			if(otherPlayer != null)
 			{
 				recipientName = otherPlayer.getName();
+				recipientID = otherPlayer.getUniqueId();
 			}
 			else
 			{
@@ -1992,7 +2017,7 @@ public class GriefPrevention extends JavaPlugin
 		ArrayList<Claim> targetClaims = new ArrayList<Claim>();
 		if(claim == null)
 		{
-			PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			for(int i = 0; i < playerData.claims.size(); i++)
 			{
 				targetClaims.add(playerData.claims.get(i));
@@ -2057,16 +2082,26 @@ public class GriefPrevention extends JavaPlugin
 		for(int i = 0; i < targetClaims.size(); i++)
 		{
 			Claim currentClaim = targetClaims.get(i);
+			String identifierToAdd = recipientName;
+			if(permission != null)
+			{
+			    identifierToAdd = "[" + permission + "]";
+			}
+			else if(recipientID != null)
+			{
+			    identifierToAdd = recipientID.toString(); 
+			}
+			
 			if(permissionLevel == null)
 			{
-				if(!currentClaim.managers.contains(recipientName))
+				if(!currentClaim.managers.contains(identifierToAdd))
 				{
-					currentClaim.managers.add(recipientName);
+					currentClaim.managers.add(identifierToAdd);
 				}
 			}
 			else
 			{				
-				currentClaim.setPermission(recipientName, permissionLevel);
+				currentClaim.setPermission(identifierToAdd, permissionLevel);
 			}
 			this.dataStore.saveClaim(currentClaim);
 		}
@@ -2105,26 +2140,75 @@ public class GriefPrevention extends JavaPlugin
 	}
 
 	//helper method to resolve a player by name
-	private OfflinePlayer resolvePlayer(String name) 
+	private OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first
-		Player player = this.getServer().getPlayer(name);
-		if(player != null) return player;
+		OfflinePlayer [] players = this.getServer().getOnlinePlayers();
+		for(int i = 0; i < players.length; i++)
+        {
+            if(players[i].getName().equalsIgnoreCase(name))
+            {
+                return players[i];
+            }
+        }
 		
 		//then search offline players
-		OfflinePlayer [] offlinePlayers = this.getServer().getOfflinePlayers();
-		for(int i = 0; i < offlinePlayers.length; i++)
-		{
-			if(offlinePlayers[i].getName().equalsIgnoreCase(name))
-			{
-				return offlinePlayers[i];
-			}
-		}
+		players = this.getServer().getOfflinePlayers();
+		for(int i = 0; i < players.length; i++)
+        {
+            if(players[i].getName().equalsIgnoreCase(name))
+            {
+                return players[i];
+            }
+        }
 		
 		//if none found, return null
 		return null;
 	}
 
+	//helper method to resolve a player name from the player's UUID
+    static String lookupPlayerName(UUID playerID) 
+    {
+        //parameter validation
+        if(playerID == null) return "someone";
+            
+        //try online players first
+        Player player = GriefPrevention.instance.getServer().getPlayer(playerID);
+        if(player != null) return player.getName();
+        
+        //then search offline players
+        OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
+        for(int i = 0; i < players.length; i++)
+        {
+            if(players[i].getUniqueId().equals(playerID))
+            {
+                return players[i].getName();
+            }
+        }
+        
+        //if none found
+        GriefPrevention.AddLogEntry("Error: Failed to find a local player with UUID: " + playerID.toString());
+        new Exception().printStackTrace();
+        return "someone";
+    }
+    
+    //string overload for above helper
+    static String lookupPlayerName(String playerID)
+    {
+        UUID id;
+        try
+        {
+            id = UUID.fromString(playerID);
+        }
+        catch(IllegalArgumentException ex)
+        {
+            GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + playerID);
+            return "someone";
+        }
+        
+        return lookupPlayerName(id);
+    }
+	
 	public void onDisable()
 	{ 
 		//save data for any online players
@@ -2132,9 +2216,9 @@ public class GriefPrevention extends JavaPlugin
 		for(int i = 0; i < players.length; i++)
 		{
 			Player player = players[i];
-			String playerName = player.getName();
-			PlayerData playerData = this.dataStore.getPlayerData(playerName);
-			this.dataStore.savePlayerData(playerName, playerData);
+			UUID playerID = player.getUniqueId();
+			PlayerData playerData = this.dataStore.getPlayerData(playerID);
+			this.dataStore.savePlayerData(playerID, playerData);
 		}
 		
 		this.dataStore.close();
@@ -2175,7 +2259,7 @@ public class GriefPrevention extends JavaPlugin
 		}
 			
 		//otherwise, apply immunity
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		playerData.pvpImmune = true;
 		
 		//inform the player
@@ -2471,7 +2555,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	public String allowBuild(Player player, Location location)
 	{
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 		
 		//exception: administrators in ignore claims mode and special player accounts created by server mods
@@ -2513,7 +2597,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	public String allowBreak(Player player, Location location)
 	{
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 		
 		//exception: administrators in ignore claims mode, and special player accounts created by server mods

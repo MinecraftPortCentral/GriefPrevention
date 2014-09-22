@@ -43,7 +43,7 @@ class PlayerKickBanTask implements Runnable
 		if(this.banReason != null)
 		{		
 			//ban
-			GriefPrevention.instance.getServer().getOfflinePlayer(this.player.getName()).setBanned(true);
+			GriefPrevention.instance.getServer().getOfflinePlayer(this.player.getUniqueId()).setBanned(true);
 		
 			//kick
 			if(this.player.isOnline())

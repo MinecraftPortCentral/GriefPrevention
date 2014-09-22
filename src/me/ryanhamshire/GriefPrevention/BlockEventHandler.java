@@ -109,7 +109,7 @@ public class BlockEventHandler implements Listener
 			if(claim == null || claim.allowContainers(player) == null) return;
 			
 			//if the player is under siege, he can't give away items
-			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getName());
+			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
 			if(playerData.siegeData != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoDrop);
@@ -177,7 +177,7 @@ public class BlockEventHandler implements Listener
 			return;
 		}
 		
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		
 		//if there's a claim here
@@ -218,7 +218,7 @@ public class BlockEventHandler implements Listener
 		String signMessage = lines.toString();
 		
 		//if not empty and wasn't the same as the last sign, log it and remember it for later
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		if(notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage))
 		{		
 			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + lines.toString() + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()));
@@ -275,7 +275,7 @@ public class BlockEventHandler implements Listener
 		}
 		
 		//if the block is being placed within or under an existing claim
-		PlayerData playerData = this.dataStore.getPlayerData(player.getName());
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		if(claim != null)
 		{
@@ -350,7 +350,7 @@ public class BlockEventHandler implements Listener
 				//radius == 0 means protect ONLY the chest
 				if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == 0)
 				{					
-					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getName(), null, null);
+					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getUniqueId(), null, null);
 					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ChestClaimConfirmation);						
 				}
 				
@@ -363,7 +363,7 @@ public class BlockEventHandler implements Listener
 							block.getX() - radius, block.getX() + radius, 
 							block.getY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, block.getY(), 
 							block.getZ() - radius, block.getZ() + radius, 
-							player.getName(), 
+							player.getUniqueId(), 
 							null, null).succeeded)
 					{
 						radius--;
@@ -687,7 +687,7 @@ public class BlockEventHandler implements Listener
 			OfflinePlayer fromOwner = null;			
 			if(fromClaim != null)
 			{				
-				fromOwner = GriefPrevention.instance.getServer().getOfflinePlayer(fromClaim.ownerName);
+				fromOwner = GriefPrevention.instance.getServer().getOfflinePlayer(fromClaim.ownerID);
 			}
 			
 			//cancel unless the owner of the spreading block is allowed to build in the receiving claim

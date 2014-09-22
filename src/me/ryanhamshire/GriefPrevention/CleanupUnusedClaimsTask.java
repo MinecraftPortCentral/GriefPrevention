@@ -68,7 +68,7 @@ class CleanupUnusedClaimsTask implements Runnable
 		boolean cleanupChunks = false;
 		
 		//get data for the player, especially last login timestamp
-		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.ownerName);
+		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.ownerID);
 		
 		//determine area of the default chest claim
 		int areaOfDefaultClaim = 0;
@@ -118,7 +118,7 @@ class CleanupUnusedClaimsTask implements Runnable
 				}
 				
 				//delete them
-				GriefPrevention.instance.dataStore.deleteClaimsForPlayer(claim.getOwnerName(), true);
+				GriefPrevention.instance.dataStore.deleteClaimsForPlayer(claim.ownerID, true);
 				GriefPrevention.AddLogEntry(" All of " + claim.getOwnerName() + "'s claims have expired.");
 				
 				for(int i = 0; i < claims.size(); i++)
@@ -189,9 +189,9 @@ class CleanupUnusedClaimsTask implements Runnable
 		}
 		
 		//toss that player data out of the cache, it's probably not needed in memory right now
-		if(!GriefPrevention.instance.getServer().getOfflinePlayer(claim.ownerName).isOnline())
+		if(!GriefPrevention.instance.getServer().getOfflinePlayer(claim.ownerID).isOnline())
 		{
-			GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerName);
+			GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerID);
 		}
 		
 		//since we're potentially loading a lot of chunks to scan parts of the world where there are no players currently playing, be mindful of memory usage
