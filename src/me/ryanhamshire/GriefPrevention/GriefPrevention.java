@@ -1403,7 +1403,7 @@ public class GriefPrevention extends JavaPlugin
 			playerData.shovelMode = ShovelMode.Subdivide;
 			playerData.claimSubdividing = null;
 			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
-			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionDemo);
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo, DataStore.SUBDIVISION_VIDEO_URL);
 			
 			return true;
 		}
@@ -2567,7 +2567,7 @@ public class GriefPrevention extends JavaPlugin
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
+				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo, DataStore.CREATIVE_VIDEO_URL);
 				if(player.hasPermission("griefprevention.ignoreclaims"))
 					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
 				return reason;
@@ -2576,7 +2576,7 @@ public class GriefPrevention extends JavaPlugin
 			//no building in survival wilderness when that is configured
 			else if(this.config_claims_noBuildOutsideClaims && this.config_claims_enabledWorlds.contains(location.getWorld()))
 			{
-				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsDemoAdvertisement);
+				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
 			}
 			
 			else
@@ -2609,7 +2609,7 @@ public class GriefPrevention extends JavaPlugin
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsDemoAdvertisement);
+				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo, DataStore.CREATIVE_VIDEO_URL);
 				if(player.hasPermission("griefprevention.ignoreclaims"))
 					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
 				return reason;
@@ -2617,7 +2617,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			else if(this.config_claims_noBuildOutsideClaims && this.config_claims_enabledWorlds.contains(location.getWorld()))
 			{
-				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsDemoAdvertisement);
+				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
 			}
 			
 			//but it's fine in survival mode

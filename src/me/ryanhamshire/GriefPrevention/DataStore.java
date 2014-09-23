@@ -65,6 +65,11 @@ public abstract class DataStore
 	//current version of the schema of data in secondary storage
     private int currentSchemaVersion = -1;  //-1 means not determined yet
     
+    //video links
+    static final String SURVIVAL_VIDEO_URL = "http://bit.ly/mcgpuser";
+    static final String CREATIVE_VIDEO_URL = "http://bit.ly/mcgpcrea";
+    static final String SUBDIVISION_VIDEO_URL = "http://bit.ly/mcgpsub";
+    
     protected int getSchemaVersion()
     {
         if(this.currentSchemaVersion >= 0)
@@ -884,7 +889,7 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.AdminClaimsMode, "Administrative claims mode active.  Any claims created will be free and editable by other administrators.", null);
 		this.addDefault(defaults, Messages.BasicClaimsMode, "Returned to basic claim creation mode.", null);
 		this.addDefault(defaults, Messages.SubdivisionMode, "Subdivision mode.  Use your shovel to create subdivisions in your existing claims.  Use /basicclaims to exit.", null);
-		this.addDefault(defaults, Messages.SubdivisionDemo, "Land Claim Help:  http://tinyurl.com/7urdtue", null);
+		this.addDefault(defaults, Messages.SubdivisionVideo, "Subdivision Help: {0}", "0:video URL");
 		this.addDefault(defaults, Messages.DeleteClaimMissing, "There's no claim here.", null);
 		this.addDefault(defaults, Messages.DeletionSubdivisionWarning, "This claim includes subdivisions.  If you're sure you want to delete it, use /DeleteClaim again.", null);
 		this.addDefault(defaults, Messages.DeleteSuccess, "Claim deleted.", null);
@@ -940,8 +945,8 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.NoDamageClaimedEntity, "That belongs to {0}.", "0: owner name");
 		this.addDefault(defaults, Messages.ShovelBasicClaimMode, "Shovel returned to basic claims mode.", null);
 		this.addDefault(defaults, Messages.RemainingBlocks, "You may claim up to {0} more blocks.", "0: remaining blocks");
-		this.addDefault(defaults, Messages.CreativeBasicsDemoAdvertisement, "Land Claim Help:  http://tinyurl.com/c7bajb8", null);
-		this.addDefault(defaults, Messages.SurvivalBasicsDemoAdvertisement, "Land Claim Help:  http://tinyurl.com/6nkwegj", null);
+		this.addDefault(defaults, Messages.CreativeBasicsVideo, "Land Claim Help: {0}", "{0}: video URL");
+		this.addDefault(defaults, Messages.SurvivalBasicsVideo, "Land Claim Help: {0}", "{0}: video URL");
 		this.addDefault(defaults, Messages.TrappedChatKeyword, "trapped", "When mentioned in chat, players get information about the /trapped command.");
 		this.addDefault(defaults, Messages.TrappedInstructions, "Are you trapped in someone's land claim?  Try the /trapped command.", null);
 		this.addDefault(defaults, Messages.PvPNoDrop, "You can't drop items while in PvP combat.", null);

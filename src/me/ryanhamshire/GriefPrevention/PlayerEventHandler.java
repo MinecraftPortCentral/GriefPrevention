@@ -106,11 +106,11 @@ class PlayerEventHandler implements Listener
 		{
 			if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.CreativeBasicsDemoAdvertisement, 10L);
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.CreativeBasicsVideo, 10L, DataStore.CREATIVE_VIDEO_URL);
 			}
 			else
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsDemoAdvertisement, 10L);
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsVideo, 10L, DataStore.SURVIVAL_VIDEO_URL);
 			}
 		}
 		
