@@ -2,6 +2,7 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 
 import org.bukkit.OfflinePlayer;
@@ -109,9 +110,38 @@ class UUIDFetcher implements Callable<Map<String, UUID>> {
         {
             if(lookupCache.containsKey(name)) return null;
             
+            //use local minecraft player data to try correcting a name to the correct casing 
             String correctCasingName = getNameWithCasing(name);
             
-            result = new UUIDFetcher(Arrays.asList(name)).call().get(correctCasingName);
+            //online mode: look it up by calling Mojang's web service
+            if(GriefPrevention.instance.getServer().getOnlineMode() == true)
+            {
+                result = new UUIDFetcher(Arrays.asList(name)).call().get(correctCasingName);
+            }
+            
+            //offline mode best guess
+            else
+            {
+                //search server's minecraft player data to find a UUID
+                OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
+                for(OfflinePlayer player : players)
+                {
+                    if(player.getName().equals(correctCasingName))
+                    {
+                        result = player.getUniqueId();
+                        break;
+                    }
+                }
+                
+                //if that doesn't work, make a wild guess by imitating what Mojang reportedly does
+                if(result == null)
+                {
+                    result = java.util.UUID.nameUUIDFromBytes(("OfflinePlayer:" + correctCasingName).getBytes(Charsets.UTF_8));
+                }
+            }
+            
+            //if none of the above worked, throw up our hands and report the problem in the logs
+            //this player will lose his land claim blocks, but claims will stay in place as admin claims
             if(result == null)
             {
                 GriefPrevention.AddLogEntry(correctCasingName + " --> ???");
