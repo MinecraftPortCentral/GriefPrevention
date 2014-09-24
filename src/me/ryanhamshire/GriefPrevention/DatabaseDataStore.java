@@ -414,7 +414,7 @@ public class DatabaseDataStore extends DataStore
 			this.refreshDataConnection();
 			
 			Statement statement = databaseConnection.createStatement();
-			statement.execute("INSERT INTO griefprevention_claimdata VALUES(" +
+			statement.execute("INSERT INTO griefprevention_claimdata (id, owner, lessercorner, greatercorner, builders, containers, accessors, managers, parentid) VALUES(" +
 					id + ", '" +
 					owner + "', '" +
 					lesserCornerString + "', '" +
@@ -509,7 +509,7 @@ public class DatabaseDataStore extends DataStore
 			
 			Statement statement = databaseConnection.createStatement();
 			statement.execute("DELETE FROM griefprevention_playerdata WHERE name='" + playerID.toString() + "';");
-			statement.execute("INSERT INTO griefprevention_playerdata VALUES ('" + playerID.toString() + "', '" + dateString + "', " + playerData.accruedClaimBlocks + ", " + playerData.bonusClaimBlocks + ");");
+			statement.execute("INSERT INTO griefprevention_playerdata (name, lastlogin, accruedblocks, bonusblocks) VALUES ('" + playerID.toString() + "', '" + dateString + "', " + playerData.accruedClaimBlocks + ", " + playerData.bonusClaimBlocks + ");");
 		}
 		catch(SQLException e)
 		{
@@ -608,7 +608,7 @@ public class DatabaseDataStore extends DataStore
             //otherwise return the value that's in the table
             else
             {
-                return results.getInt(0);
+                return results.getInt("version");
             }
             
         }
@@ -616,6 +616,7 @@ public class DatabaseDataStore extends DataStore
         {
             GriefPrevention.AddLogEntry("Unable to retrieve schema version from database.  Details:");
             GriefPrevention.AddLogEntry(e.getMessage());
+            e.printStackTrace();
             return 0;
         }
     }

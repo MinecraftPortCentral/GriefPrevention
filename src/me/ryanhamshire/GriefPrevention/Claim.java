@@ -217,7 +217,7 @@ public class Claim
 		for(int i = 0; i < builderIDs.length; i++)
 		{
 			String builderID = builderIDs[i];
-			if(builderID != null)
+			if(builderID != null && !builderID.isEmpty())
 			{
 				this.playerIDToClaimPermissionMap.put(builderID, ClaimPermission.Build);
 			}
@@ -226,7 +226,7 @@ public class Claim
 		for(int i = 0; i < containerIds.length; i++)
 		{
 			String containerID = containerIds[i];
-			if(containerID != null)
+			if(containerID != null && !containerID.isEmpty())
 			{
 				this.playerIDToClaimPermissionMap.put(containerID, ClaimPermission.Inventory);
 			}
@@ -235,7 +235,7 @@ public class Claim
 		for(int i = 0; i < accessorIDs.length; i++)
 		{
 			String accessorID = accessorIDs[i];
-			if(accessorID != null)
+			if(accessorID != null && !accessorID.isEmpty())
 			{
 				this.playerIDToClaimPermissionMap.put(accessorID, ClaimPermission.Access);
 			}
@@ -244,7 +244,7 @@ public class Claim
 		for(int i = 0; i < managerIDs.length; i++)
 		{
 			String managerID = managerIDs[i];
-			if(managerID != null)
+			if(managerID != null && !managerID.isEmpty())
 			{
 				this.managers.add(managerID);
 			}

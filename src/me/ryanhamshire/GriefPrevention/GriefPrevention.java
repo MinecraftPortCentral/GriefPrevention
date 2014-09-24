@@ -2101,7 +2101,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			else
 			{				
-				currentClaim.setPermission(identifierToAdd, permissionLevel);
+			    currentClaim.setPermission(identifierToAdd, permissionLevel);
 			}
 			this.dataStore.saveClaim(currentClaim);
 		}

@@ -610,6 +610,7 @@ public class FlatFileDataStore extends DataStore
 		catch(Exception e)
 		{
 			GriefPrevention.AddLogEntry("Unexpected exception saving next claim ID: " + e.getMessage());
+			e.printStackTrace();
 		}
 		
 		//close the file
