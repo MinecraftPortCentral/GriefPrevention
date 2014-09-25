@@ -995,7 +995,6 @@ class PlayerEventHandler implements Listener
 				        Material.AIR,
 				        Material.SNOW,
 				        Material.LONG_GRASS);
-				GriefPrevention.sendMessage(player, TextMode.Info, clickedBlock.getType().name());
 			}			
 		}
 		catch(Exception e)  //an exception intermittently comes from getTargetBlock().  when it does, just ignore the event
