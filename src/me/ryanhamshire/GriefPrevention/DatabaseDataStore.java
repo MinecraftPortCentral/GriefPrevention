@@ -160,7 +160,7 @@ public class DatabaseDataStore extends DataStore
                 {
                     ownerID = null;  //administrative land claim
                 }
-                else if(this.getSchemaVersion() < 0)
+                else if(this.getSchemaVersion() < 1)
                 {
                     try
                     {
