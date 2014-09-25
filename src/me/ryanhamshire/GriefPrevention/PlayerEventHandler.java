@@ -53,6 +53,7 @@ import org.bukkit.event.player.PlayerLoginEvent.Result;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.BlockIterator;
 
 class PlayerEventHandler implements Listener 
 {
@@ -990,11 +991,11 @@ class PlayerEventHandler implements Listener
 			if(clickedBlock == null || clickedBlock.getType() == Material.SNOW)
 			{
 				//try to find a far away non-air block along line of sight
-				HashSet<Byte> transparentMaterials = new HashSet<Byte>();
-				transparentMaterials.add(Byte.valueOf((byte)Material.AIR.getId()));
-				transparentMaterials.add(Byte.valueOf((byte)Material.SNOW.getId()));
-				transparentMaterials.add(Byte.valueOf((byte)Material.LONG_GRASS.getId()));
-				clickedBlock = player.getTargetBlock(transparentMaterials, 250);
+				clickedBlock = getTargetBlock(player, 250, 
+				        Material.AIR,
+				        Material.SNOW,
+				        Material.LONG_GRASS);
+				GriefPrevention.sendMessage(player, TextMode.Info, clickedBlock.getType().name());
 			}			
 		}
 		catch(Exception e)  //an exception intermittently comes from getTargetBlock().  when it does, just ignore the event
@@ -1792,5 +1793,28 @@ class PlayerEventHandler implements Listener
 				}
 			}
 		}
-	}	
+	}
+	
+	static Block getTargetBlock(Player player, int maxDistance, Material... passthroughMaterials) throws IllegalStateException
+	{
+	    BlockIterator iterator = new BlockIterator(player.getLocation(), player.getEyeHeight(), maxDistance);
+	    Block result = player.getLocation().getBlock().getRelative(BlockFace.UP);
+	    while (iterator.hasNext())
+	    {
+	        result = iterator.next();
+	        boolean passthrough = false;
+	        for(Material passthroughMaterial : passthroughMaterials)
+	        {
+	            if(result.getType().equals(passthroughMaterial))
+	            {
+	                passthrough = true;
+	                break;
+	            }
+	        }
+	        
+	        if(!passthrough) return result;
+	    }
+	    
+	    return result;
+    }
 }
