@@ -356,8 +356,8 @@ public class Claim
 		//anyone with explicit build permission can make changes
 		if(this.hasExplicitPermission(player, ClaimPermission.Build)) return null;
 		
-		//also everyone is a member of the "public", so check for public permission, indicated by a null key
-		ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get(null);
+		//also everyone is a member of the "public", so check for public permission
+		ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
 		if(ClaimPermission.Build == permissionLevel) return null;
 		
 		//subdivision permission inheritance

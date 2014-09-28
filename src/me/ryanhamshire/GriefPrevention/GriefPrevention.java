@@ -682,6 +682,8 @@ public class GriefPrevention extends JavaPlugin
 			catch(Exception e)
 			{
 				GriefPrevention.AddLogEntry("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
+				GriefPrevention.AddLogEntry(e.getMessage());
+				e.printStackTrace();
 				return;
 			}			
 		}
@@ -2143,17 +2145,14 @@ public class GriefPrevention extends JavaPlugin
 	private OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first
-		OfflinePlayer [] players = this.getServer().getOnlinePlayers();
-		for(int i = 0; i < players.length; i++)
-        {
-            if(players[i].getName().equalsIgnoreCase(name))
-            {
-                return players[i];
-            }
-        }
+		Player targetPlayer = this.getServer().getPlayerExact(name);
+		if(targetPlayer != null) return targetPlayer;
 		
-		//then search offline players
-		players = this.getServer().getOfflinePlayers();
+		targetPlayer = this.getServer().getPlayer(name);
+        if(targetPlayer != null) return targetPlayer;
+        
+        //then search offline players
+		OfflinePlayer [] players = this.getServer().getOfflinePlayers();
 		for(int i = 0; i < players.length; i++)
         {
             if(players[i].getName().equalsIgnoreCase(name))
