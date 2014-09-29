@@ -94,26 +94,12 @@ public abstract class DataStore
 	{
 		GriefPrevention.AddLogEntry(this.claims.size() + " total claims loaded.");
 		
-		//make a list of players who own claims
-		Vector<UUID> playerNames = new Vector<UUID>();
-		for(int i = 0; i < this.claims.size(); i++)
-		{
-			Claim claim = this.claims.get(i);
-			
-			//ignore admin claims
-			if(claim.isAdminClaim()) continue;
-			
-			if(!playerNames.contains(claim.ownerID))
-				playerNames.add(claim.ownerID);
-		}
-		
-		GriefPrevention.AddLogEntry(playerNames.size() + " players have staked claims.");
-		
 		//load up all the messages from messages.yml
 		this.loadMessages();
+		GriefPrevention.AddLogEntry("Customizable messages loaded.");
 		
 		//if converting up from an earlier schema version, write all claims back to storage using the latest format
-        if(this.getSchemaVersion() < this.latestSchemaVersion)
+        if(this.getSchemaVersion() < latestSchemaVersion)
         {
             GriefPrevention.AddLogEntry("Please wait.  Updating data format.");
             
@@ -121,13 +107,12 @@ public abstract class DataStore
             {
                 this.saveClaim(claim);
             }
+            
+            GriefPrevention.AddLogEntry("Update finished.");
         }
 		
-		//collect garbage, since lots of stuff was loaded into memory and then tossed out
-		System.gc();
-		
 		//make a note of the data store schema version
-		this.setSchemaVersion(this.latestSchemaVersion);
+		this.setSchemaVersion(latestSchemaVersion);
 	}
 	
 	//removes cached player data from memory

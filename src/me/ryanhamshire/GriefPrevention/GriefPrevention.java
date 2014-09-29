@@ -171,7 +171,7 @@ public class GriefPrevention extends JavaPlugin
 	//initializes well...   everything
 	public void onEnable()
 	{ 		
-		AddLogEntry("Grief Prevention enabled.");
+		AddLogEntry("Grief Prevention boot start.");
 		
 		instance = this;
 		
@@ -660,6 +660,8 @@ public class GriefPrevention extends JavaPlugin
 			this.config_pvp_blockedCommands.add(commands[i].trim());
 		}
 		
+		AddLogEntry("Finished loading configuration.");
+		
 		//when datastore initializes, it loads player and claim data, and posts some stats to the log
 		if(databaseUrl.length() > 0)
 		{
@@ -712,6 +714,9 @@ public class GriefPrevention extends JavaPlugin
 				GriefPrevention.AddLogEntry(e.getMessage());
 			}
 		}
+		
+		String dataMode = (this.dataStore instanceof FlatFileDataStore)?"(File Mode)":"(Database Mode)";
+		AddLogEntry("Finished loading data " + dataMode + ".");
 		
 		//unless claim block accrual is disabled, start the recurring per 5 minute event to give claim blocks to online players
 		//20L ~ 1 second
@@ -779,6 +784,8 @@ public class GriefPrevention extends JavaPlugin
 				GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
 			}
 		}
+		
+		AddLogEntry("Boot finished.");
 	}
 	
 	//handles slash commands
