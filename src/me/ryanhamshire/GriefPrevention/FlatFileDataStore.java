@@ -211,7 +211,7 @@ public class FlatFileDataStore extends DataStore
 						    }
 						    catch(Exception ex)
 						    {
-						        GriefPrevention.AddLogEntry("Failed to look up UUID for player " + ownerName + ".");
+						        GriefPrevention.AddLogEntry("Error - this is not a valid UUID: " + ownerName + ".");
 						        GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
 						    }
 						}

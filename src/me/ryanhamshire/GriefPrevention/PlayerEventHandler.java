@@ -93,6 +93,12 @@ class PlayerEventHandler implements Listener
 		event.setCancelled(this.handlePlayerChat(player, message, event));
 	}
 	
+	//last chat message shown, regardless of who sent it
+	private String lastChatMessage = "";
+	
+	//number of identical messages in a row
+	private int duplicateMessageCount = 0;
+	
 	//returns true if the message should be sent, false if it should be muted 
 	private boolean handlePlayerChat(Player player, String message, PlayerEvent event)
 	{
@@ -142,6 +148,19 @@ class PlayerEventHandler implements Listener
 			{
 				((AsyncPlayerChatEvent)event).setMessage(message.toLowerCase());
 			}
+		}
+		
+		//always mute an exact match to the last chat message
+		if(message.equals(this.lastChatMessage))
+		{
+		    playerData.spamCount += ++this.duplicateMessageCount;
+		    spam = true;
+		    muted = true;
+		}
+		else
+		{
+		    this.lastChatMessage = message;
+		    this.duplicateMessageCount = 0;
 		}
 		
 		//where other types of spam are concerned, casing isn't significant
