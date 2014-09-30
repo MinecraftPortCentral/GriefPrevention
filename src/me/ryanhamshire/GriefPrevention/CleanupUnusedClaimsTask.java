@@ -205,11 +205,5 @@ class CleanupUnusedClaimsTask implements Runnable
 				chunk.unload(true, true);
 			}
 		}
-		
-		//unfortunately, java/minecraft don't do a good job of clearing unused memory, leading to out of memory errors from this type of world scanning
-		if(this.nextClaimIndex % 5 == 0)
-		{		
-			System.gc();
-		}
 	}
 }

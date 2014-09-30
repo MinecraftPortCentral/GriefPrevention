@@ -134,7 +134,6 @@ class EntityCleanupTask implements Runnable
 		if(nextRunPercentageStart > .99)
 		{
 			nextRunPercentageStart = 0;
-			System.gc();  //clean up every hour
 		}
 		
 		EntityCleanupTask task = new EntityCleanupTask(nextRunPercentageStart);
