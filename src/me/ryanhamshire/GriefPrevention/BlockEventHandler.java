@@ -638,6 +638,7 @@ public class BlockEventHandler implements Listener
 	
 	//ensures fluids don't flow out of claims, unless into another claim where the owner is trusted to build
 	private Claim lastSpreadClaim = null;
+	private Location lastSpreadSourceLocation = null;
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockFromTo (BlockFromToEvent spreadEvent)
 	{
@@ -649,41 +650,40 @@ public class BlockEventHandler implements Listener
 		
 		//from where?
 		Block fromBlock = spreadEvent.getBlock();
-		Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, this.lastSpreadClaim);
-		if(fromClaim != null)
+		Claim fromClaim = null;
+		if(fromBlock.getLocation().equals(lastSpreadSourceLocation))
 		{
-			this.lastSpreadClaim = fromClaim;
+		    fromClaim = lastSpreadClaim;
+		}
+		else
+		{
+		    fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, this.lastSpreadClaim);
+		    lastSpreadClaim = fromClaim;
+		    lastSpreadSourceLocation = fromBlock.getLocation();
 		}
 		
 		//where to?
-		Block toBlock = spreadEvent.getToBlock();		
-		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
+		Block toBlock = spreadEvent.getToBlock();
 		
-		//if it's within the same claim or wilderness to wilderness, allow it
-		if(fromClaim == toClaim) return;
-		
-		//block any spread into the wilderness from a claim
-		if(fromClaim != null && toClaim == null)
+		//if from a land claim, this is easy and cheap - just don't allow for flowing out of that claim
+		if(fromClaim != null)
 		{
-			spreadEvent.setCancelled(true);
-			return;
+		    if(!fromClaim.contains(toBlock.getLocation(), false, false))
+		    {
+		        spreadEvent.setCancelled(true);
+		    }
 		}
 		
-		//if spreading into a claim
-		else if(toClaim != null)
-		{		
-			//who owns the spreading block, if anyone?
-			OfflinePlayer fromOwner = null;			
-			if(fromClaim != null)
-			{				
-				fromOwner = GriefPrevention.instance.getServer().getOfflinePlayer(fromClaim.ownerID);
-			}
-			
-			//cancel unless the owner of the spreading block is allowed to build in the receiving claim
-			if(fromOwner == null || fromOwner.getPlayer() == null || toClaim.allowBuild(fromOwner.getPlayer()) != null)
-			{
-				spreadEvent.setCancelled(true);
-			}
+		//otherwise, just prevent spreading into a claim from outside
+        else
+		{
+    		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
+    		
+    		//if spreading into a claim
+    		if(toClaim != null)
+    		{		
+    			spreadEvent.setCancelled(true);
+    		}
 		}
 	}
 	
