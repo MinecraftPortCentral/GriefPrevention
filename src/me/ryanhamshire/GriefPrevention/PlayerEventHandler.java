@@ -594,6 +594,12 @@ class PlayerEventHandler implements Listener
 			event.setQuitMessage(null);
 		}
 		
+		//silence notifications when the player is banned
+		if(player.isBanned())
+		{
+		    event.setQuitMessage(null);
+		}
+		
 		//make sure his data is all saved - he might have accrued some claim blocks while playing that were not saved immediately
 		this.dataStore.savePlayerData(player.getUniqueId(), playerData);
 		
