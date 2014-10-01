@@ -741,5 +741,46 @@ public class BlockEventHandler implements Listener
 		
 		//everything else is NOT OK
 		dispenseEvent.setCancelled(true);
-	}		
+	}
+	
+	@EventHandler(ignoreCancelled = true)
+    public void onTreeGrow (StructureGrowEvent growEvent)
+    {
+        //only take these potentially expensive steps if configured to do so
+	    if(!GriefPrevention.instance.config_limitTreeGrowth) return;
+	    
+	    Location rootLocation = growEvent.getLocation();
+        Claim rootClaim = this.dataStore.getClaimAt(rootLocation, false, null);
+        String rootOwnerName = null;
+        
+        //who owns the spreading block, if anyone?
+        if(rootClaim != null)
+        {
+            //tree growth in subdivisions is dependent on who owns the top level claim
+            if(rootClaim.parent != null) rootClaim = rootClaim.parent;
+            
+            //if an administrative claim, just let the tree grow where it wants
+            if(rootClaim.isAdminClaim()) return;
+            
+            //otherwise, note the owner of the claim
+            rootOwnerName = rootClaim.getOwnerName();
+        }
+        
+        //for each block growing
+        for(int i = 0; i < growEvent.getBlocks().size(); i++)
+        {
+            BlockState block = growEvent.getBlocks().get(i);
+            Claim blockClaim = this.dataStore.getClaimAt(block.getLocation(), false, rootClaim);
+            
+            //if it's growing into a claim
+            if(blockClaim != null)
+            {
+                //if there's no owner for the new tree, or the owner for the new tree is different from the owner of the claim
+                if(rootOwnerName == null  || !rootOwnerName.equals(blockClaim.getOwnerName()))
+                {
+                    growEvent.getBlocks().remove(i--);
+                }
+            }
+        }
+    }
 }

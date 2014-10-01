@@ -153,6 +153,8 @@ public class GriefPrevention extends JavaPlugin
 	
 	public HashMap<String, Integer> config_seaLevelOverride;		//override for sea level, because bukkit doesn't report the right value for all situations
 	
+	public boolean config_limitTreeGrowth;                          //whether trees should be prevented from growing into a claim from outside
+	
 	//reference to the economy plugin, if economy integration is enabled
 	public static Economy economy = null;					
 	
@@ -351,6 +353,7 @@ public class GriefPrevention extends JavaPlugin
 		this.config_blockSurfaceOtherExplosions = config.getBoolean("GriefPrevention.BlockSurfaceOtherExplosions", true);
 		this.config_blockWildernessWaterBuckets = config.getBoolean("GriefPrevention.LimitSurfaceWaterBuckets", true);
 		this.config_blockSkyTrees = config.getBoolean("GriefPrevention.LimitSkyTrees", true);
+		this.config_limitTreeGrowth = config.getBoolean("GriefPrevention.LimitTreeGrowth", false);
 				
 		this.config_fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
 		this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
@@ -597,6 +600,7 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.BlockSurfaceOtherExplosions", this.config_blockSurfaceOtherExplosions);
 		outConfig.set("GriefPrevention.LimitSurfaceWaterBuckets", this.config_blockWildernessWaterBuckets);
 		outConfig.set("GriefPrevention.LimitSkyTrees", this.config_blockSkyTrees);
+		outConfig.set("GriefPrevention.LimitTreeGrowth", this.config_limitTreeGrowth);
 		
 		outConfig.set("GriefPrevention.FireSpreads", this.config_fireSpreads);
 		outConfig.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
