@@ -180,17 +180,6 @@ public class BlockEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		
-		//if there's a claim here
-		if(claim != null)
-		{
-			//if breaking UNDER the claim and the player has permission to build in the claim
-			if(block.getY() < claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
-			{
-				//extend the claim downward beyond the breakage point
-				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
-			}
-		}
-		
 		//FEATURE: automatically clean up hanging treetops
 		//if it's a log
 		if(block.getType() == Material.LOG && GriefPrevention.instance.config_trees_removeFloatingTreetops)
@@ -320,7 +309,7 @@ public class BlockEventHandler implements Listener
             }
 			
 			//if the player has permission for the claim and he's placing UNDER the claim
-			if(block.getY() < claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
+			if(block.getY() <= claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
 			{
 				//extend the claim downward
 				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
