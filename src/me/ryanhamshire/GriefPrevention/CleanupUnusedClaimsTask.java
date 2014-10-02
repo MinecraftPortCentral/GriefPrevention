@@ -188,11 +188,7 @@ class CleanupUnusedClaimsTask implements Runnable
 			}
 		}
 		
-		//toss that player data out of the cache, it's probably not needed in memory right now
-		if(!GriefPrevention.instance.getServer().getOfflinePlayer(claim.ownerID).isOnline())
-		{
-			GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerID);
-		}
+		GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerID);
 		
 		//since we're potentially loading a lot of chunks to scan parts of the world where there are no players currently playing, be mindful of memory usage
 		if(cleanupChunks)
