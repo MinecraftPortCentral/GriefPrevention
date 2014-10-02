@@ -420,21 +420,35 @@ public class BlockEventHandler implements Listener
 			block.getY() > GriefPrevention.instance.getSeaLevel(block.getWorld()) - 5)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageAboveSeaLevel);
-		}			
+		}
+		
+		//warn players about disabled pistons outside of land claims
+		if( GriefPrevention.instance.config_pistonsInClaimsOnly && 
+	        (block.getType() == Material.PISTON_BASE || block.getType() == Material.PISTON_STICKY_BASE) &&
+	        claim == null )
+		{
+		    GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoPistonsOutsideClaims);
+		}
 	}
 	
 	//blocks "pushing" other players' blocks around (pistons)
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonExtend (BlockPistonExtendEvent event)
 	{		
-		List<Block> blocks = event.getBlocks();
+		//pushing down is ALWAYS safe
+	    if(event.getDirection() == BlockFace.DOWN) return;
+	    
+	    Block pistonBlock = event.getBlock();
+	    List<Block> blocks = event.getBlocks();
 		
 		//if no blocks moving, then only check to make sure we're not pushing into a claim from outside
 		//this avoids pistons breaking non-solids just inside a claim, like torches, doors, and touchplates
 		if(blocks.size() == 0)
 		{
-			Block pistonBlock = event.getBlock();
 			Block invadedBlock = pistonBlock.getRelative(event.getDirection());
+			
+			//pushing "air" is harmless
+			if(invadedBlock.getType() == Material.AIR) return;
 			
 			if(	this.dataStore.getClaimAt(pistonBlock.getLocation(), false, null) == null && 
 				this.dataStore.getClaimAt(invadedBlock.getLocation(), false, null) != null)
@@ -450,68 +464,81 @@ public class BlockEventHandler implements Listener
 		Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, null);
 		if(claim != null) pistonClaimOwnerName = claim.getOwnerName();
 		
-		//which blocks are being pushed?
-		for(int i = 0; i < blocks.size(); i++)
+		//if pistons are limited to same-claim block movement
+		if(GriefPrevention.instance.config_pistonsInClaimsOnly)
 		{
-			//if ANY of the pushed blocks are owned by someone other than the piston owner, cancel the event
-			Block block = blocks.get(i);
-			claim = this.dataStore.getClaimAt(block.getLocation(), false, null);
-			if(claim != null && !claim.getOwnerName().equals(pistonClaimOwnerName))
-			{
-				event.setCancelled(true);
-				event.getBlock().getWorld().createExplosion(event.getBlock().getLocation(), 0);
-				event.getBlock().getWorld().dropItem(event.getBlock().getLocation(), new ItemStack(event.getBlock().getType()));
-				event.getBlock().setType(Material.AIR);
-				return;
-			}
+		    //if piston is not in a land claim, cancel event
+		    if(claim == null)
+	        {
+		        event.setCancelled(true);
+		        return;
+	        }
+		    
+		    for(Block pushedBlock : event.getBlocks())
+		    {
+		        //if pushing blocks located outside the land claim it lives in, cancel the event
+	            if(!claim.contains(pushedBlock.getLocation(), false, false))
+		        {
+		            event.setCancelled(true);
+		            return;
+		        }
+		        
+		        //if pushing a block inside the claim out of the claim, cancel the event
+	            //reason: could push into another land claim, don't want to spend CPU checking for that
+	            //reason: push ice out, place torch, get water outside the claim
+	            if(!claim.contains(pushedBlock.getRelative(event.getDirection()).getLocation(), false, false))
+                {
+                    event.setCancelled(true);
+                    return;
+                }
+		    }
 		}
 		
-		//which direction?  note we're ignoring vertical push
-		int xchange = 0;
-		int zchange = 0;
-		
-		Block piston = event.getBlock();
-		Block firstBlock = blocks.get(0);
-		
-		if(firstBlock.getX() > piston.getX())
+		//otherwise, consider ownership of piston and EACH pushed block
+		else
 		{
-			xchange = 1;
-		}
-		else if(firstBlock.getX() < piston.getX())
-		{
-			xchange = -1;
-		}
-		else if(firstBlock.getZ() > piston.getZ())
-		{
-			zchange = 1;
-		}
-		else if(firstBlock.getZ() < piston.getZ())
-		{
-			zchange = -1; 
-		}
-		
-		//if horizontal movement
-		if(xchange != 0 || zchange != 0)
-		{
-			for(int i = 0; i < blocks.size(); i++)
+		    //which blocks are being pushed?
+		    Claim cachedClaim = claim;
+		    for(int i = 0; i < blocks.size(); i++)
+    		{
+    			//if ANY of the pushed blocks are owned by someone other than the piston owner, cancel the event
+    			Block block = blocks.get(i);
+    			claim = this.dataStore.getClaimAt(block.getLocation(), false, cachedClaim);
+    			if(claim != null)
+    			{
+    			    cachedClaim = claim;
+    			    if(!claim.getOwnerName().equals(pistonClaimOwnerName))
+    			    {
+        				event.setCancelled(true);
+        				event.getBlock().getWorld().createExplosion(event.getBlock().getLocation(), 0);
+        				event.getBlock().getWorld().dropItem(event.getBlock().getLocation(), new ItemStack(event.getBlock().getType()));
+        				event.getBlock().setType(Material.AIR);
+        				return;
+    			    }
+    			}
+    		}
+    		
+			//if any of the blocks are being pushed into a claim from outside, cancel the event
+    		for(int i = 0; i < blocks.size(); i++)
 			{
 				Block block = blocks.get(i);
-				Claim originalClaim = this.dataStore.getClaimAt(block.getLocation(), false, null);
+				Claim originalClaim = this.dataStore.getClaimAt(block.getLocation(), false, cachedClaim);
 				String originalOwnerName = "";
 				if(originalClaim != null)
 				{
-					originalOwnerName = originalClaim.getOwnerName();
+					cachedClaim = originalClaim;
+				    originalOwnerName = originalClaim.getOwnerName();
 				}
 				
-				Claim newClaim = this.dataStore.getClaimAt(block.getLocation().add(xchange, 0, zchange), false, null);
+				Claim newClaim = this.dataStore.getClaimAt(block.getRelative(event.getDirection()).getLocation(), false, cachedClaim);
 				String newOwnerName = "";
 				if(newClaim != null)
 				{
-					newOwnerName = newClaim.getOwnerName();
+				    newOwnerName = newClaim.getOwnerName();
 				}
 				
 				//if pushing this block will change ownership, cancel the event and take away the piston (for performance reasons)
-				if(!newOwnerName.equals(originalOwnerName))
+				if(!newOwnerName.equals(originalOwnerName) && !newOwnerName.isEmpty())
 				{
 					event.setCancelled(true);
 					event.getBlock().getWorld().createExplosion(event.getBlock().getLocation(), 0);
@@ -519,7 +546,6 @@ public class BlockEventHandler implements Listener
 					event.getBlock().setType(Material.AIR);
 					return;
 				}
-				
 			}
 		}
 	}
@@ -528,26 +554,55 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonRetract (BlockPistonRetractEvent event)
 	{
-		//we only care about sticky pistons
+		//we only care about sticky pistons retracting
 		if(!event.isSticky()) return;
-				
-		//who owns the moving block, if anyone?
-		String movingBlockOwnerName = "_";
-		Claim movingBlockClaim = this.dataStore.getClaimAt(event.getRetractLocation(), false, null);
-		if(movingBlockClaim != null) movingBlockOwnerName = movingBlockClaim.getOwnerName();
 		
-		//who owns the piston, if anyone?
-		String pistonOwnerName = "_";
-		Location pistonLocation = event.getBlock().getLocation();		
-		Claim pistonClaim = this.dataStore.getClaimAt(pistonLocation, false, null);
-		if(pistonClaim != null) pistonOwnerName = pistonClaim.getOwnerName();
+		//pulling up is always safe
+		if(event.getDirection() == BlockFace.UP) return;
 		
-		//if there are owners for the blocks, they must be the same player
-		//otherwise cancel the event
-		if(!pistonOwnerName.equals(movingBlockOwnerName))
+		//if pulling "air", always safe
+		if(event.getRetractLocation().getBlock().getType() == Material.AIR) return;
+		
+		//if pistons limited to only pulling blocks which are in the same claim the piston is in
+		if(GriefPrevention.instance.config_pistonsInClaimsOnly)
 		{
-			event.setCancelled(true);
-		}		
+		    //if piston not in a land claim, cancel event
+		    Claim pistonClaim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, null);
+		    if(pistonClaim == null)
+		    {
+		        event.setCancelled(true);
+		        return;
+		    }
+		    
+		    //if pulled block isn't in the same land claim, cancel the event
+		    if(!pistonClaim.contains(event.getRetractLocation(), false, false))
+		    {
+		        event.setCancelled(true);
+		        return;
+		    }
+		}
+		
+		//otherwise, consider ownership of both piston and block
+		else
+		{
+    		//who owns the moving block, if anyone?
+    		String movingBlockOwnerName = "_";
+    		Claim movingBlockClaim = this.dataStore.getClaimAt(event.getRetractLocation(), false, null);
+    		if(movingBlockClaim != null) movingBlockOwnerName = movingBlockClaim.getOwnerName();
+    		
+    		//who owns the piston, if anyone?
+    		String pistonOwnerName = "_";
+    		Location pistonLocation = event.getBlock().getLocation();		
+    		Claim pistonClaim = this.dataStore.getClaimAt(pistonLocation, false, movingBlockClaim);
+    		if(pistonClaim != null) pistonOwnerName = pistonClaim.getOwnerName();
+    		
+    		//if there are owners for the blocks, they must be the same player
+    		//otherwise cancel the event
+    		if(!pistonOwnerName.equals(movingBlockOwnerName))
+    		{
+    			event.setCancelled(true);
+    		}
+		}
 	}
 	
 	//blocks are ignited ONLY by flint and steel (not by being near lava, open flames, etc), unless configured otherwise
