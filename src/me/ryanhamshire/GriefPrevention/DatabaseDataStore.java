@@ -490,7 +490,7 @@ public class DatabaseDataStore extends DataStore
 	
 	//saves changes to player data.  MUST be called after you're done making changes, otherwise a reload will lose them
 	@Override
-	synchronized public void savePlayerData(UUID playerID, PlayerData playerData)
+	public void asyncSavePlayerData(UUID playerID, PlayerData playerData)
 	{
 		//never save data for the "administrative" account.  an empty string for player name indicates administrative account
 		if(playerID == null) return;
@@ -574,7 +574,7 @@ public class DatabaseDataStore extends DataStore
 		this.databaseConnection = null;
 	}
 	
-	private void refreshDataConnection() throws SQLException
+	private synchronized void refreshDataConnection() throws SQLException
 	{
 		if(this.databaseConnection == null || this.databaseConnection.isClosed())
 		{

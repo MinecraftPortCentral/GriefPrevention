@@ -194,11 +194,18 @@ class CleanupUnusedClaimsTask implements Runnable
 		if(cleanupChunks)
 		{
 			World world = claim.getLesserBoundaryCorner().getWorld();
-			Chunk [] chunks = world.getLoadedChunks();
-			for(int i = 0; i < chunks.length; i++)
+			Chunk lesserChunk = world.getChunkAt(claim.getLesserBoundaryCorner());
+			Chunk greaterChunk = world.getChunkAt(claim.getGreaterBoundaryCorner());
+			for(int x = lesserChunk.getX(); x <= greaterChunk.getX(); x++)
 			{
-				Chunk chunk = chunks[i];
-				chunk.unload(true, true);
+			    for(int z = lesserChunk.getZ(); z <= greaterChunk.getZ(); z++)
+			    {
+			        Chunk chunk = world.getChunkAt(x, z);
+			        if(chunk.isLoaded())
+			        {
+			            chunk.unload(true, true);
+			        }
+			    }
 			}
 		}
 	}

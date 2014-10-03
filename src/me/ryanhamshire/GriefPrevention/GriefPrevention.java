@@ -166,7 +166,7 @@ public class GriefPrevention extends JavaPlugin
 	public static final int NOTIFICATION_SECONDS = 20;
 	
 	//adds a server log entry
-	public static void AddLogEntry(String entry)
+	public static synchronized void AddLogEntry(String entry)
 	{
 		log.info("GriefPrevention: " + entry);
 	}

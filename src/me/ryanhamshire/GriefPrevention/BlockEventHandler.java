@@ -166,7 +166,22 @@ public class BlockEventHandler implements Listener
 	public void onBlockBreak(BlockBreakEvent breakEvent)
 	{
 		Player player = breakEvent.getPlayer();
-		Block block = breakEvent.getBlock();		
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        Block block = breakEvent.getBlock();
+		
+		//optimization: breaking blocks directly underneath your last successfully broken block is always* safe
+		//*not when the new block was claimed after the last break 
+		//*not in siege mode, where some types of claimed blocks may be broken
+		Location blockLocation = block.getLocation();
+        Location lastBreakLocation = playerData.lastSuccessfulBreak;
+		if(lastBreakLocation != null &&
+		   !GriefPrevention.instance.siegeEnabledForWorld(block.getWorld()) &&
+		   blockLocation.getBlockX() == lastBreakLocation.getBlockX() &&
+		   blockLocation.getBlockZ() == lastBreakLocation.getBlockZ() &&
+		   blockLocation.getBlockY() <= lastBreakLocation.getBlockY())
+		{
+		    return;
+		}
 		
 		//make sure the player is allowed to break at the location
 		String noBuildReason = GriefPrevention.instance.allowBreak(player, block.getLocation());
@@ -177,8 +192,8 @@ public class BlockEventHandler implements Listener
 			return;
 		}
 		
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
+		//make a note of any successful breaks
+		playerData.lastSuccessfulBreak = block.getLocation();
 		
 		//FEATURE: automatically clean up hanging treetops
 		//if it's a log

@@ -32,6 +32,7 @@ import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Explosive;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -493,6 +494,13 @@ class EntityEventHandler implements Listener
 			{
 				Claim cachedClaim = null;
 				PlayerData playerData = null;
+				
+				//if not a player or an explosive, allow
+				if(attacker == null && !(damageSource instanceof Explosive))
+				{
+				    return;
+				}
+				
 				if(attacker != null)
 				{
 					playerData = this.dataStore.getPlayerData(attacker.getUniqueId());
@@ -577,10 +585,17 @@ class EntityEventHandler implements Listener
 			}
 		}
 		
+		//if not a player and not an explosion, always allow
+        if(attacker == null && !(damageSource instanceof Explosive))
+        {
+            return;
+        }
+		
 		//NOTE: vehicles can be pushed around.
 		//so unless precautions are taken by the owner, a resourceful thief might find ways to steal anyway
 		Claim cachedClaim = null;
 		PlayerData playerData = null;
+		
 		if(attacker != null)
 		{
 			playerData = this.dataStore.getPlayerData(attacker.getUniqueId());

@@ -527,7 +527,12 @@ public abstract class DataStore
 	}
 	
 	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
-	public abstract void savePlayerData(UUID playerID, PlayerData playerData);
+	public void savePlayerData(UUID playerID, PlayerData playerData)
+	{
+	    new SavePlayerDataThread(playerID, playerData).start();
+	}
+	
+	public abstract void asyncSavePlayerData(UUID playerID, PlayerData playerData);
 	
 	//extends a claim to a new depth
 	//respects the max depth config variable
@@ -1116,4 +1121,21 @@ public abstract class DataStore
     }
 	
 	abstract void close();
+	
+	private class SavePlayerDataThread extends Thread
+	{
+	    private UUID playerID;
+	    private PlayerData playerData;
+	    
+	    SavePlayerDataThread(UUID playerID, PlayerData playerData)
+	    {
+	        this.playerID = playerID;
+	        this.playerData = playerData;
+	    }
+	    
+	    public void run()
+	    {
+	        asyncSavePlayerData(this.playerID, this.playerData);
+	    }
+	}
 }

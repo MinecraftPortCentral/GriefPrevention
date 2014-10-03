@@ -100,6 +100,9 @@ public class PlayerData
 	//the last claim this player was in, that we know of
 	public Claim lastClaim = null;
 	
+	//location of the last successfully-broken block, used in a performance optimization
+	Location lastSuccessfulBreak = null;
+	
 	//siege
 	public SiegeData siegeData = null;
 	

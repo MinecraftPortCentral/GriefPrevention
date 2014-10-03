@@ -909,12 +909,15 @@ class PlayerEventHandler implements Listener
 		if(!GriefPrevention.instance.config_claims_preventButtonsSwitches) return;
 		
 		Player player = bedEvent.getPlayer();
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Block block = bedEvent.getBed();
 		
 		//if the bed is in a claim 
-		Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, null);
+		Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, playerData.lastClaim);
 		if(claim != null)
 		{
+		    playerData.lastClaim = claim;
+		    
 			//if the player doesn't have access in that claim, tell him so and prevent him from sleeping in the bed
 			if(claim.allowAccess(player) != null)
 			{
@@ -1006,34 +1009,44 @@ class PlayerEventHandler implements Listener
 	void onPlayerInteract(PlayerInteractEvent event)
 	{
 		Player player = event.getPlayer();
-		
-		//determine target block.  FEATURE: shovel and string can be used from a distance away
-		Block clickedBlock = null;
-		
-		try
+		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
+		Material clickedBlockType = null;
+		if(clickedBlock != null)
 		{
-			clickedBlock = event.getClickedBlock();  //null returned here means interacting with air			
-			if(clickedBlock == null || clickedBlock.getType() == Material.SNOW)
-			{
-				//try to find a far away non-air block along line of sight
-				clickedBlock = getTargetBlock(player, 250, 
-				        Material.AIR,
-				        Material.SNOW,
-				        Material.LONG_GRASS);
-			}			
+		    clickedBlockType = clickedBlock.getType();
 		}
-		catch(Exception e)  //an exception intermittently comes from getTargetBlock().  when it does, just ignore the event
+		else
 		{
-			return;
+		    clickedBlockType = Material.AIR;
 		}
+		
+		//apply rule for players trampling tilled soil back to dirt (never allow it)
+        //NOTE: that this event applies only to players.  monsters and animals can still trample.
+        if(event.getAction() == Action.PHYSICAL)
+        {
+            if(clickedBlockType == Material.SOIL)
+            {
+                event.setCancelled(true);
+            }
+
+            //not tracking any other "physical" interaction events right now
+            return;
+        }
+		
+		//FEATURE: shovel and stick can be used from a distance away
+        Material itemInHand = player.getItemInHand().getType();
+	    if(clickedBlock == null && (itemInHand == Material.STICK || itemInHand == Material.GOLD_SPADE))
+		{
+			//try to find a far away non-air block along line of sight
+	        clickedBlock = getTargetBlock(player, 50);
+	        clickedBlockType = clickedBlock.getType();
+		}			
 		
 		//if no block, stop here
 		if(clickedBlock == null)
 		{
 			return;
 		}
-		
-		Material clickedBlockType = clickedBlock.getType();
 		
 		//apply rules for putting out fires (requires build permission)
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
@@ -1058,13 +1071,6 @@ class PlayerEventHandler implements Listener
 		if(	GriefPrevention.instance.config_claims_preventTheft && (
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
 						clickedBlock.getState() instanceof InventoryHolder ||
-						clickedBlockType == Material.WORKBENCH || 
-						clickedBlockType == Material.ENDER_CHEST ||
-						clickedBlockType == Material.DISPENSER ||
-						clickedBlockType == Material.ANVIL ||
-						clickedBlockType == Material.BREWING_STAND || 
-						clickedBlockType == Material.JUKEBOX || 
-						clickedBlockType == Material.ENCHANTMENT_TABLE ||
 						GriefPrevention.instance.config_mods_containerTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))))
 		{			
 			//block container use while under siege, so players can't hide items from attackers
@@ -1143,14 +1149,6 @@ class PlayerEventHandler implements Listener
 					return;
 				}
 			}			
-		}
-		
-		//apply rule for players trampling tilled soil back to dirt (never allow it)
-		//NOTE: that this event applies only to players.  monsters and animals can still trample.
-		else if(event.getAction() == Action.PHYSICAL && clickedBlockType == Material.SOIL)
-		{
-			event.setCancelled(true);
-			return;
 		}
 		
 		//apply rule for note blocks and repeaters
@@ -1819,24 +1817,14 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
-	static Block getTargetBlock(Player player, int maxDistance, Material... passthroughMaterials) throws IllegalStateException
+	static Block getTargetBlock(Player player, int maxDistance) throws IllegalStateException
 	{
 	    BlockIterator iterator = new BlockIterator(player.getLocation(), player.getEyeHeight(), maxDistance);
 	    Block result = player.getLocation().getBlock().getRelative(BlockFace.UP);
 	    while (iterator.hasNext())
 	    {
 	        result = iterator.next();
-	        boolean passthrough = false;
-	        for(Material passthroughMaterial : passthroughMaterials)
-	        {
-	            if(result.getType().equals(passthroughMaterial))
-	            {
-	                passthrough = true;
-	                break;
-	            }
-	        }
-	        
-	        if(!passthrough) return result;
+	        if(result.getType() != Material.AIR) return result;
 	    }
 	    
 	    return result;
