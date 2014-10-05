@@ -2660,15 +2660,11 @@ public class GriefPrevention extends JavaPlugin
 		//it's too expensive to do this for huge claims
 		if(claim.getArea() > 10000) return;
 		
-		Chunk lesserChunk = claim.getLesserBoundaryCorner().getChunk();
-		Chunk greaterChunk = claim.getGreaterBoundaryCorner().getChunk();
-		
-		for(int x = lesserChunk.getX(); x <= greaterChunk.getX(); x++)
-			for(int z = lesserChunk.getZ(); z <= greaterChunk.getZ(); z++)
-			{
-				Chunk chunk = lesserChunk.getWorld().getChunkAt(x, z);
-				this.restoreChunk(chunk, this.getSeaLevel(chunk.getWorld()) - 15, false, delayInTicks, null);
-			}
+		ArrayList<Chunk> chunks = claim.getChunks();
+        for(Chunk chunk : chunks)
+        {
+			this.restoreChunk(chunk, this.getSeaLevel(chunk.getWorld()) - 15, false, delayInTicks, null);
+        }
 	}
 	
 	public void restoreChunk(Chunk chunk, int miny, boolean aggressiveMode, long delayInTicks, Player playerReceivingVisualization)

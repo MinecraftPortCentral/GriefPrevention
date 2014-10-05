@@ -265,13 +265,7 @@ public class FlatFileDataStore extends DataStore
 							else
 							{
 								topLevelClaim.modifiedDate = new Date(files[i].lastModified());
-								int j = 0;
-								while(j < this.claims.size() && !this.claims.get(j).greaterThan(topLevelClaim)) j++;
-								if(j < this.claims.size())
-									this.claims.add(j, topLevelClaim);
-								else
-									this.claims.add(this.claims.size(), topLevelClaim);
-								topLevelClaim.inDataStore = true;								
+								this.addClaim(topLevelClaim, false);
 							}
 						}
 						
@@ -662,7 +656,7 @@ public class FlatFileDataStore extends DataStore
 		for(int i = 0; i < this.claims.size(); i++)
 		{
 			Claim claim = this.claims.get(i);
-			databaseStore.addClaim(claim);
+			databaseStore.addClaim(claim, true);
 		}
 		
 		//migrate groups

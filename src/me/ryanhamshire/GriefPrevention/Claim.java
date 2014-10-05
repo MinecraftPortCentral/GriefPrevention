@@ -18,13 +18,6 @@
 
 package me.ryanhamshire.GriefPrevention;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 import java.util.*;
 
 import org.bukkit.*;
@@ -735,25 +728,21 @@ public class Claim
 		if(maxEntities == 0) return GriefPrevention.instance.dataStore.getMessage(Messages.ClaimTooSmallForEntities);
 		
 		//count current entities (ignoring players)
-		Chunk lesserChunk = this.getLesserBoundaryCorner().getChunk();
-		Chunk greaterChunk = this.getGreaterBoundaryCorner().getChunk();
-		
 		int totalEntities = 0;
-		for(int x = lesserChunk.getX(); x <= greaterChunk.getX(); x++)
-			for(int z = lesserChunk.getZ(); z <= greaterChunk.getZ(); z++)
+		ArrayList<Chunk> chunks = this.getChunks();
+		for(Chunk chunk : chunks)
+		{
+			Entity [] entities = chunk.getEntities();
+			for(int i = 0; i < entities.length; i++)
 			{
-				Chunk chunk = lesserChunk.getWorld().getChunkAt(x, z);
-				Entity [] entities = chunk.getEntities();
-				for(int i = 0; i < entities.length; i++)
+				Entity entity = entities[i];
+				if(!(entity instanceof Player) && this.contains(entity.getLocation(), false, false))
 				{
-					Entity entity = entities[i];
-					if(!(entity instanceof Player) && this.contains(entity.getLocation(), false, false))
-					{
-						totalEntities++;
-						if(totalEntities > maxEntities) entity.remove();
-					}
+					totalEntities++;
+					if(totalEntities > maxEntities) entity.remove();
 				}
 			}
+		}
 
 		if(totalEntities > maxEntities) return GriefPrevention.instance.dataStore.getMessage(Messages.TooManyEntitiesInClaim);
 		
@@ -833,4 +822,23 @@ public class Claim
 		
 		return (long)score;
 	}
+
+    public ArrayList<Chunk> getChunks()
+    {
+        ArrayList<Chunk> chunks = new ArrayList<Chunk>();
+        
+        World world = this.getLesserBoundaryCorner().getWorld();
+        Chunk lesserChunk = this.getLesserBoundaryCorner().getChunk();
+        Chunk greaterChunk = this.getGreaterBoundaryCorner().getChunk();
+        
+        for(int x = lesserChunk.getX(); x <= greaterChunk.getX(); x++)
+        {
+            for(int z = lesserChunk.getZ(); z <= greaterChunk.getZ(); z++)
+            {
+                chunks.add(world.getChunkAt(x, z));
+            }
+        }
+        
+        return chunks;
+    }
 }

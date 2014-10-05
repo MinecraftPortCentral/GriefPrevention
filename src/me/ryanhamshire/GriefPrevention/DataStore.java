@@ -40,6 +40,7 @@ public abstract class DataStore
 	
 	//in-memory cache for claim data
 	ArrayList<Claim> claims = new ArrayList<Claim>();
+	ConcurrentHashMap<String, ArrayList<Claim>> chunksToClaimsMap = new ConcurrentHashMap<String, ArrayList<Claim>>();
 	
 	//in-memory cache for messages
 	private String [] messages;
@@ -197,7 +198,7 @@ public abstract class DataStore
 	}
 
 	//adds a claim to the datastore, making it an effective claim
-	synchronized void addClaim(Claim newClaim)
+	synchronized void addClaim(Claim newClaim, boolean writeToStorage)
 	{
 		//subdivisions are easy
 		if(newClaim.parent != null)
@@ -209,12 +210,21 @@ public abstract class DataStore
 		}
 		
 		//add it and mark it as added
-		int j = 0;
-		while(j < this.claims.size() && !this.claims.get(j).greaterThan(newClaim)) j++;
-		if(j < this.claims.size())
-			this.claims.add(j, newClaim);
-		else
-			this.claims.add(this.claims.size(), newClaim);
+		this.claims.add(newClaim);
+		ArrayList<Chunk> chunks = newClaim.getChunks();
+		for(Chunk chunk : chunks)
+		{
+		    String chunkID = this.getChunkString(chunk);
+		    ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
+		    if(claimsInChunk == null)
+		    {
+		        claimsInChunk = new ArrayList<Claim>();
+		        this.chunksToClaimsMap.put(chunkID, claimsInChunk);
+		    }
+		    
+		    claimsInChunk.add(newClaim);
+		}
+		
 		newClaim.inDataStore = true;
 		
 		//except for administrative claims (which have no owner), update the owner's playerData with the new claim
@@ -226,7 +236,10 @@ public abstract class DataStore
 		}
 		
 		//make sure the claim is saved to disk
-		this.saveClaim(newClaim);
+		if(writeToStorage)
+		{
+		    this.saveClaim(newClaim);
+		}
 	}
 	
 	//turns a location into a string, useful in data storage
@@ -360,6 +373,21 @@ public abstract class DataStore
 				}
 				break;
 			}
+			
+			ArrayList<Chunk> chunks = claim.getChunks();
+			for(Chunk chunk : chunks)
+			{
+			    String chunkID = this.getChunkString(chunk);
+			    ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
+			    for(int j = 0; j < claimsInChunk.size(); j++)
+			    {
+			        if(claimsInChunk.get(j).id.equals(claim.id))
+			        {
+			            claimsInChunk.remove(j);
+			            break;
+			        }
+			    }
+			}
 		}
 		
 		//remove from secondary storage
@@ -391,40 +419,41 @@ public abstract class DataStore
 		//check cachedClaim guess first.  if it's in the datastore and the location is inside it, we're done
 		if(cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) return cachedClaim;
 		
-		//the claims list is ordered by greater boundary corner
-		//create a temporary "fake" claim in memory for comparison purposes		
-		Claim tempClaim = new Claim();
-		tempClaim.lesserBoundaryCorner = location;
+		//find a top level claim
+		String chunkID = this.getChunkString(location.getChunk());
+		ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
+		if(claimsInChunk == null) return null;
 		
-		//otherwise, search all existing claims until we find the right claim
-		for(int i = 0; i < this.claims.size(); i++)
+		for(Claim claim : claimsInChunk)
 		{
-			Claim claim = this.claims.get(i);
-			
-			//if we reach a claim which is greater than the temp claim created above, there's definitely no claim
-			//in the collection which includes our location
-			if(claim.greaterThan(tempClaim)) return null;
-			
-			//find a top level claim
-			if(claim.contains(location, ignoreHeight, false))
-			{
-				//when we find a top level claim, if the location is in one of its subdivisions,
-				//return the SUBDIVISION, not the top level claim
-				for(int j = 0; j < claim.children.size(); j++)
-				{
-					Claim subdivision = claim.children.get(j);
-					if(subdivision.contains(location, ignoreHeight, false)) return subdivision;
-				}						
-					
-				return claim;
-			}
+		    if(claim.contains(location, ignoreHeight, false))
+		    {
+		        //when we find a top level claim, if the location is in one of its subdivisions,
+                //return the SUBDIVISION, not the top level claim
+                for(int j = 0; j < claim.children.size(); j++)
+                {
+                    Claim subdivision = claim.children.get(j);
+                    if(subdivision.contains(location, ignoreHeight, false)) return subdivision;
+                }                       
+                    
+                return claim;
+		    }
 		}
 		
 		//if no claim found, return null
 		return null;
 	}
 	
-	//creates a claim.
+	//gets a unique, persistent identifier string for a chunk
+	private String getChunkString(Chunk chunk)
+	{
+        return String.format("%s;%d;%d",
+                chunk.getWorld().getName(),
+                chunk.getX(),
+                chunk.getZ());
+    }
+	
+    //creates a claim.
 	//if the new claim would overlap an existing claim, returns a failure along with a reference to the existing claim
 	//otherwise, returns a success along with a reference to the new claim
 	//use ownerName == "" for administrative claims
@@ -518,7 +547,7 @@ public abstract class DataStore
 		}
 		
 		//otherwise add this new claim to the data store to make it effective
-		this.addClaim(newClaim);
+		this.addClaim(newClaim, true);
 		
 		//then return success along with reference to new claim
 		result.succeeded = true;
@@ -557,7 +586,7 @@ public abstract class DataStore
 		}
 		
 		//save changes
-		this.addClaim(claim);
+		this.addClaim(claim, true);
 	}
 
 	//starts a siege on a claim
@@ -833,7 +862,7 @@ public abstract class DataStore
 		else
 		{
 			//put original claim back
-			this.addClaim(claim);
+			this.addClaim(claim, true);
 		}
 		
 		return result;

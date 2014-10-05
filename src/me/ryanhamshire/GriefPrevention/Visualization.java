@@ -48,7 +48,7 @@ public class Visualization
 		//if he's online, create a task to send him the visualization in about half a second
 		if(player.isOnline())
 		{
-			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, new VisualizationApplicationTask(player, playerData, visualization), 10L);
+			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, new VisualizationApplicationTask(player, playerData, visualization), 1L);
 		}
 	}
 	
@@ -215,13 +215,7 @@ public class Visualization
 	private static boolean isTransparent(Block block)
 	{
 		return (	block.getType() == Material.AIR ||
-					block.getType() == Material.LONG_GRASS ||
 					block.getType() == Material.FENCE ||
-					block.getType() == Material.LEAVES ||
-					block.getType() == Material.RED_ROSE ||
-					block.getType() == Material.CHEST ||
-					block.getType() == Material.TORCH ||
-					block.getType() == Material.VINE ||
-					block.getType() == Material.YELLOW_FLOWER );
+					block.getType().isTransparent());
 	}
 }

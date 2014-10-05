@@ -1071,6 +1071,7 @@ class PlayerEventHandler implements Listener
 		if(	GriefPrevention.instance.config_claims_preventTheft && (
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
 						clickedBlock.getState() instanceof InventoryHolder ||
+						clickedBlock.getType() == Material.ANVIL ||
 						GriefPrevention.instance.config_mods_containerTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))))
 		{			
 			//block container use while under siege, so players can't hide items from attackers

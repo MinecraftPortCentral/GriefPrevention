@@ -212,13 +212,7 @@ public class DatabaseDataStore extends DataStore
 				//otherwise, add this claim to the claims collection
 				else
 				{
-					int j = 0;
-					while(j < this.claims.size() && !this.claims.get(j).greaterThan(topLevelClaim)) j++;
-					if(j < this.claims.size())
-						this.claims.add(j, topLevelClaim);
-					else
-						this.claims.add(this.claims.size(), topLevelClaim);
-					topLevelClaim.inDataStore = true;								
+					this.addClaim(topLevelClaim, false);								
 				}
 				
 				//look for any subdivisions for this claim
