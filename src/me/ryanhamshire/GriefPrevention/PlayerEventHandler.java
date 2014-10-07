@@ -18,6 +18,7 @@
 
 package me.ryanhamshire.GriefPrevention;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
@@ -1010,6 +1011,7 @@ class PlayerEventHandler implements Listener
 	{
 		Player player = event.getPlayer();
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
+		Action action = event.getAction();
 		Material clickedBlockType = null;
 		if(clickedBlock != null)
 		{
@@ -1022,7 +1024,7 @@ class PlayerEventHandler implements Listener
 		
 		//apply rule for players trampling tilled soil back to dirt (never allow it)
         //NOTE: that this event applies only to players.  monsters and animals can still trample.
-        if(event.getAction() == Action.PHYSICAL)
+        if(action == Action.PHYSICAL)
         {
             if(clickedBlockType == Material.SOIL)
             {
@@ -1032,10 +1034,16 @@ class PlayerEventHandler implements Listener
             //not tracking any other "physical" interaction events right now
             return;
         }
+        
+        //don't care about left-clicking on most blocks, this is probably a break action
+        if(action == Action.LEFT_CLICK_BLOCK)
+        {
+            if(!this.onLeftClickWatchList(clickedBlockType)) return;
+        }
 		
 		//FEATURE: shovel and stick can be used from a distance away
         Material itemInHand = player.getItemInHand().getType();
-	    if(clickedBlock == null && (itemInHand == Material.STICK || itemInHand == Material.GOLD_SPADE))
+	    if(action == Action.RIGHT_CLICK_AIR && (itemInHand == Material.STICK || itemInHand == Material.GOLD_SPADE))
 		{
 			//try to find a far away non-air block along line of sight
 	        clickedBlock = getTargetBlock(player, 50);
@@ -1172,7 +1180,6 @@ class PlayerEventHandler implements Listener
 		else
 		{
 			//ignore all actions except right-click on a block or in the air
-			Action action = event.getAction();
 			if(action != Action.RIGHT_CLICK_BLOCK && action != Action.RIGHT_CLICK_AIR) return;
 			
 			//what's the player holding?
@@ -1818,7 +1825,23 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
-	static Block getTargetBlock(Player player, int maxDistance) throws IllegalStateException
+	private boolean onLeftClickWatchList(Material material)
+	{
+	    switch(material)
+        {
+            case WOOD_BUTTON:
+            case STONE_BUTTON:
+            case WOOD_DOOR:
+            case LEVER:
+            case DIODE_BLOCK_ON:  //redstone repeater
+            case DIODE_BLOCK_OFF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static Block getTargetBlock(Player player, int maxDistance) throws IllegalStateException
 	{
 	    BlockIterator iterator = new BlockIterator(player.getLocation(), player.getEyeHeight(), maxDistance);
 	    Block result = player.getLocation().getBlock().getRelative(BlockFace.UP);

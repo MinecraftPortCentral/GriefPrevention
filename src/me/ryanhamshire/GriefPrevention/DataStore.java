@@ -447,10 +447,8 @@ public abstract class DataStore
 	//gets a unique, persistent identifier string for a chunk
 	private String getChunkString(Chunk chunk)
 	{
-        return String.format("%s;%d;%d",
-                chunk.getWorld().getName(),
-                chunk.getX(),
-                chunk.getZ());
+        StringBuilder builder = new StringBuilder(chunk.getWorld().getName()).append(chunk.getX()).append(chunk.getZ());
+        return builder.toString();
     }
 	
     //creates a claim.
