@@ -205,7 +205,10 @@ public abstract class DataStore
 		{
 			newClaim.parent.children.add(newClaim);
 			newClaim.inDataStore = true;
-			this.saveClaim(newClaim);
+			if(writeToStorage)
+			{
+			    this.saveClaim(newClaim);
+			}
 			return;
 		}
 		
@@ -228,7 +231,7 @@ public abstract class DataStore
 		newClaim.inDataStore = true;
 		
 		//except for administrative claims (which have no owner), update the owner's playerData with the new claim
-		if(!newClaim.isAdminClaim())
+		if(!newClaim.isAdminClaim() && writeToStorage)
 		{
 			PlayerData ownerData = this.getPlayerData(newClaim.ownerID);
 			ownerData.claims.add(newClaim);
@@ -334,7 +337,7 @@ public abstract class DataStore
 				Claim claim = this.claims.get(i);
 				if(playerID.equals(claim.ownerID))
 				{
-					playerData.claims.add(claim);
+				    playerData.claims.add(claim);
 				}
 			}
 			
