@@ -939,7 +939,7 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
-			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
+			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0], true);
 			if(targetPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1076,7 +1076,7 @@ public class GriefPrevention extends JavaPlugin
 				//validate player argument or group argument
 				if(!args[0].startsWith("[") || !args[0].endsWith("]"))
 				{
-					otherPlayer = this.resolvePlayerByName(args[0]);
+					otherPlayer = this.resolvePlayerByName(args[0], true);
 					if(!clearPermissions && otherPlayer == null && !args[0].equals("public"))
 					{
 						GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1507,7 +1507,7 @@ public class GriefPrevention extends JavaPlugin
 			if(args.length != 1) return false;
 			
 			//try to find that player
-			OfflinePlayer otherPlayer = this.resolvePlayerByName(args[0]);
+			OfflinePlayer otherPlayer = this.resolvePlayerByName(args[0], true);
 			if(otherPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1557,7 +1557,7 @@ public class GriefPrevention extends JavaPlugin
 			//otherwise try to find the specified player
 			else
 			{
-				otherPlayer = this.resolvePlayerByName(args[0]);
+				otherPlayer = this.resolvePlayerByName(args[0], true);
 				if(otherPlayer == null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1698,7 +1698,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//otherwise, find the specified player
-			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
+			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0], true);
 			if(targetPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1996,7 +1996,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		else
 		{		
-			otherPlayer = this.resolvePlayerByName(recipientName);
+			otherPlayer = this.resolvePlayerByName(recipientName, false);
 			if(otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all"))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -2141,7 +2141,7 @@ public class GriefPrevention extends JavaPlugin
 	}
 
 	//helper method to resolve a player by name
-	private OfflinePlayer resolvePlayerByName(String name) 
+	private OfflinePlayer resolvePlayerByName(String name, boolean searchOffline) 
 	{
 		//try online players first
 		Player targetPlayer = this.getServer().getPlayerExact(name);
@@ -2150,13 +2150,16 @@ public class GriefPrevention extends JavaPlugin
 		targetPlayer = this.getServer().getPlayer(name);
         if(targetPlayer != null) return targetPlayer;
         
-        //then search offline players
-		OfflinePlayer [] players = this.getServer().getOfflinePlayers();
-		for(int i = 0; i < players.length; i++)
+        if(searchOffline)
         {
-            if(players[i].getName().equalsIgnoreCase(name))
+            //then search offline players
+    		OfflinePlayer [] players = this.getServer().getOfflinePlayers();
+    		for(int i = 0; i < players.length; i++)
             {
-                return players[i];
+                if(players[i].getName().equalsIgnoreCase(name))
+                {
+                    return players[i];
+                }
             }
         }
 		
