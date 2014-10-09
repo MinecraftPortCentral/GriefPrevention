@@ -109,6 +109,12 @@ public abstract class DataStore
                 this.saveClaim(claim);
             }
             
+            //clean up any UUID conversion work
+            if(UUIDFetcher.lookupCache != null)
+            {
+                UUIDFetcher.lookupCache.clear();
+            }
+            
             GriefPrevention.AddLogEntry("Update finished.");
         }
 		

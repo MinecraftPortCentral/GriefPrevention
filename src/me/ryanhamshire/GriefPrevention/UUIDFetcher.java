@@ -26,7 +26,7 @@ class UUIDFetcher {
     private final boolean rateLimiting;
     
     //cache for username -> uuid lookups
-    private static HashMap<String, UUID> lookupCache;
+    static HashMap<String, UUID> lookupCache;
  
     public UUIDFetcher(List<String> names, boolean rateLimiting) {
         this.names = names;
