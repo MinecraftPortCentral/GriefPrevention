@@ -83,7 +83,6 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_claims_creationRequiresPermission;		//whether creating claims with the shovel requires a permission
 	public int config_claims_claimsExtendIntoGroundDistance;		//how far below the shoveled block a new claim will reach
 	public int config_claims_minSize;								//minimum width and height for non-admin claims
-	public boolean config_claims_allowUnclaimInCreative;			//whether players may unclaim land (resize or abandon) in creative mode
 	public boolean config_claims_autoRestoreUnclaimedCreativeLand; 	//whether unclaimed land in creative worlds is automatically /restorenature-d
 	
 	public boolean config_claims_noBuildOutsideClaims;				//whether players can build in survival worlds outside their claimed areas
@@ -311,7 +310,6 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
 		this.config_claims_noBuildOutsideClaims = config.getBoolean("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", false);
 		this.config_claims_warnOnBuildOutside = config.getBoolean("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", true);
-		this.config_claims_allowUnclaimInCreative = config.getBoolean("GriefPrevention.Claims.AllowUnclaimingCreativeModeLand", true);
 		this.config_claims_autoRestoreUnclaimedCreativeLand = config.getBoolean("GriefPrevention.Claims.AutoRestoreUnclaimedCreativeLand", true);		
 
 		this.config_claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
@@ -571,7 +569,6 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
 		outConfig.set("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", this.config_claims_noBuildOutsideClaims);
 		outConfig.set("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", this.config_claims_warnOnBuildOutside);
-		outConfig.set("GriefPrevention.Claims.AllowUnclaimingCreativeModeLand", this.config_claims_allowUnclaimInCreative);
 		outConfig.set("GriefPrevention.Claims.AutoRestoreUnclaimedCreativeLand", this.config_claims_autoRestoreUnclaimedCreativeLand);
 		
 		outConfig.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
@@ -840,12 +837,6 @@ public class GriefPrevention extends JavaPlugin
 		else if(cmd.getName().equalsIgnoreCase("abandonallclaims") && player != null)
 		{
 			if(args.length != 0) return false;
-			
-			if(!GriefPrevention.instance.config_claims_allowUnclaimInCreative && creativeRulesApply(player.getLocation()))
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoCreativeUnClaim);
-				return true;
-			}
 			
 			//count claims
 			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
@@ -1936,12 +1927,6 @@ public class GriefPrevention extends JavaPlugin
 			GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
 		}
 		
-		//don't allow abandon of creative mode claims
-		else if(!GriefPrevention.instance.config_claims_allowUnclaimInCreative && this.creativeRulesApply(player.getLocation()))
-		{
-			GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoCreativeUnClaim);
-		}
-		
 		//warn if has children and we're not explicitly deleting a top level claim
 		else if(claim.children.size() > 0 && !deleteTopLevelClaim)
 		{
@@ -2200,8 +2185,6 @@ public class GriefPrevention extends JavaPlugin
         }
         
         //if none found
-        GriefPrevention.AddLogEntry("Error: Failed to find a local player with UUID: " + playerID.toString());
-        new Exception().printStackTrace();
         return "someone";
     }
     
@@ -2242,14 +2225,14 @@ public class GriefPrevention extends JavaPlugin
 	//called when a player spawns, applies protection for that player if necessary
 	public void checkPvpProtectionNeeded(Player player)
 	{
-		//if pvp is disabled, do nothing
+	    //if anti spawn camping feature is not enabled, do nothing
+        if(!this.config_pvp_protectFreshSpawns) return;
+        
+	    //if pvp is disabled, do nothing
 		if(!this.config_pvp_enabledWorlds.contains(player.getWorld())) return;
 		
 		//if player is in creative mode, do nothing
 		if(player.getGameMode() == GameMode.CREATIVE) return;
-		
-		//if anti spawn camping feature is not enabled, do nothing
-		if(!this.config_pvp_protectFreshSpawns) return;
 		
 		//if the player has the damage any player permission enabled, do nothing
 		if(player.hasPermission("griefprevention.nopvpimmunity")) return;

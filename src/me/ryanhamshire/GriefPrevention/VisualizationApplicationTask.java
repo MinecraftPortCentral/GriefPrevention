@@ -43,6 +43,7 @@ class VisualizationApplicationTask implements Runnable
 			VisualizationElement element = visualization.elements.get(i);
 			
 			//send the player a fake block change event
+			if(!element.location.getChunk().isLoaded()) continue;  //cheap distance check
 			player.sendBlockChange(element.location, element.visualizedMaterial, element.visualizedData);
 		}
 		

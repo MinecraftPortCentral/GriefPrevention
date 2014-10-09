@@ -127,6 +127,65 @@ public class FlatFileDataStore extends DataStore
 			catch(IOException exception) {}
 		}
 		
+		//if converting up from schema version 0, rename player data files using UUIDs instead of player names
+        //get a list of all the files in the claims data folder
+        if(this.getSchemaVersion() == 0)
+        {
+            files = playerDataFolder.listFiles();
+            ArrayList<String> namesToConvert = new ArrayList<String>();
+            for(File playerFile : files)
+            {
+                //anything starting with an underscore or dollar sign isn't a player, ignore those
+                String currentFilename = playerFile.getName();
+                if(currentFilename.startsWith("$") || currentFilename.startsWith("_")) continue;
+                
+                namesToConvert.add(currentFilename);
+            }
+            
+            //resolve and cache as many as possible through various means
+            try
+            {
+                UUIDFetcher fetcher = new UUIDFetcher(namesToConvert);
+                fetcher.call();
+            }
+            catch(Exception e)
+            {
+                GriefPrevention.AddLogEntry("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
+                e.printStackTrace();
+            }
+            
+            //rename files
+            for(File playerFile : files)
+            {
+                //anything starting with an underscore or dollar sign isn't a player, ignore those
+                String currentFilename = playerFile.getName();
+                if(currentFilename.startsWith("$") || currentFilename.startsWith("_")) continue;
+                
+                //try to convert player name to UUID
+                UUID playerID = null;
+                try
+                {
+                    playerID = UUIDFetcher.getUUIDOf(currentFilename);
+                    
+                    //if successful, rename the file using the UUID
+                    if(playerID != null)
+                    {
+                        playerFile.renameTo(new File(playerDataFolder, playerID.toString()));
+                    }
+                    
+                    //otherwise hide it from the data store for the future
+                    else
+                    {
+                        playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
+                    }
+                }
+                catch(Exception ex)
+                {
+                    playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
+                }
+            }
+        }
+		
 		//load claims data into memory		
 		//get a list of all the files in the claims data folder
 		files = claimDataFolder.listFiles();
@@ -201,7 +260,11 @@ public class FlatFileDataStore extends DataStore
 						    {
 						        ownerID = UUIDFetcher.getUUIDOf(ownerName);
 						    }
-						    catch(Exception ex){ }  //if UUID not found, use NULL
+						    catch(Exception ex)
+						    {
+						        GriefPrevention.AddLogEntry("Couldn't resolve this name to a UUID: " + ownerName + ".");
+                                GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+						    }
 						}
 						else
 						{
@@ -290,7 +353,14 @@ public class FlatFileDataStore extends DataStore
 				//if there's any problem with the file's content, log an error message and skip it
 				catch(Exception e)
 				{
-					 GriefPrevention.AddLogEntry("Unable to load data for claim \"" + files[i].getName() + "\": " + e.toString());
+					if(e.getMessage().contains("World not found"))
+					{
+					    files[i].delete();
+					}
+					else
+					{
+					    GriefPrevention.AddLogEntry("Unable to load data for claim \"" + files[i].getName() + "\": " + e.toString());
+					}
 				}
 				
 				try
@@ -300,42 +370,6 @@ public class FlatFileDataStore extends DataStore
 				catch(IOException exception) {}
 			}
 		}
-		
-		//if converting up from schema version 0, rename files using UUIDs instead of player names
-		//get a list of all the files in the claims data folder
-        if(this.getSchemaVersion() == 0)
-        {
-            files = playerDataFolder.listFiles();
-            for(File playerFile : files)
-            {
-                //anything starting with an underscore or dollar sign isn't a player, ignore those
-                String currentFilename = playerFile.getName();
-                if(currentFilename.startsWith("$") || currentFilename.startsWith("_")) continue;
-                
-                //try to convert player name to UUID
-                UUID playerID = null;
-                try
-                {
-                    playerID = UUIDFetcher.getUUIDOf(currentFilename);
-                    
-                    //if successful, rename the file using the UUID
-                    if(playerID != null)
-                    {
-                        playerFile.renameTo(new File(playerDataFolder, playerID.toString()));
-                    }
-                    
-                    //otherwise hide it from the data store for the future
-                    else
-                    {
-                        playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
-                    }
-                }
-                catch(Exception ex)
-                {
-                    playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
-                }
-            }
-        }
 		
 		super.initialize();
 	}

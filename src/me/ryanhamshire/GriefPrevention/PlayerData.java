@@ -117,13 +117,16 @@ public class PlayerData
 	
 	PlayerData()
 	{
-		//default last login date value to a year ago to ensure a brand new player can log in
+		//default last login date value to 5 minutes ago to ensure a brand new player can log in
 		//see login cooldown feature, PlayerEventHandler.onPlayerLogin()
 		//if the player successfully logs in, this value will be overwritten with the current date and time 
-		Calendar lastYear = Calendar.getInstance();
-		lastYear.add(Calendar.YEAR, -1);
-		this.lastLogin = lastYear.getTime();		
-		this.lastTrappedUsage = lastYear.getTime();
+		Calendar fiveMinutesBack = Calendar.getInstance();
+		fiveMinutesBack.add(Calendar.MINUTE, -5);
+		this.lastLogin = fiveMinutesBack.getTime();		
+		
+		//default last trapped usage to 5 hours ago, so the command is available right away
+		fiveMinutesBack.add(Calendar.HOUR, -5);
+		this.lastTrappedUsage = fiveMinutesBack.getTime();
 	}
 	
 	//whether or not this player is "in" pvp combat

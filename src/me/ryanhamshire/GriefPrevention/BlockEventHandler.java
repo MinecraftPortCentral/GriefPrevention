@@ -51,6 +51,7 @@ import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.material.Dispenser;
 import org.bukkit.util.Vector;
 
 //event handlers related to blocks
@@ -763,24 +764,10 @@ public class BlockEventHandler implements Listener
 	{
 		//from where?
 		Block fromBlock = dispenseEvent.getBlock();
+		Dispenser dispenser = new Dispenser(fromBlock.getType(), fromBlock.getData());
 		
 		//to where?
-		Vector velocity = dispenseEvent.getVelocity();
-		int xChange = 0;
-		int zChange = 0;
-		if(Math.abs(velocity.getX()) > Math.abs(velocity.getZ()))
-		{
-			if(velocity.getX() > 0) xChange = 1;
-			else xChange = -1;				
-		}
-		else
-		{
-			if(velocity.getZ() > 0) zChange = 1;
-			else zChange = -1;
-		}
-		
-		Block toBlock = fromBlock.getRelative(xChange, 0, zChange);
-		
+		Block toBlock = fromBlock.getRelative(dispenser.getFacing());
 		Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, null);
 		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
 		

@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.Callable;
  
-class UUIDFetcher implements Callable<Map<String, UUID>> {
+class UUIDFetcher {
     private static final double PROFILES_PER_REQUEST = 100;
     private static final String PROFILE_URL = "https://api.mojang.com/profiles/minecraft";
     private final JSONParser jsonParser = new JSONParser();
@@ -29,7 +29,7 @@ class UUIDFetcher implements Callable<Map<String, UUID>> {
     private static HashMap<String, UUID> lookupCache;
  
     public UUIDFetcher(List<String> names, boolean rateLimiting) {
-        this.names = ImmutableList.copyOf(names);
+        this.names = names;
         this.rateLimiting = rateLimiting;
     }
  
@@ -37,26 +37,98 @@ class UUIDFetcher implements Callable<Map<String, UUID>> {
         this(names, true);
     }
  
-    public Map<String, UUID> call() throws Exception {
-        Map<String, UUID> uuidMap = new HashMap<String, UUID>();
-        int requests = (int) Math.ceil(names.size() / PROFILES_PER_REQUEST);
-        for (int i = 0; i < requests; i++) {
-            HttpURLConnection connection = createConnection();
-            String body = JSONArray.toJSONString(names.subList(i * 100, Math.min((i + 1) * 100, names.size())));
-            writeBody(connection, body);
-            JSONArray array = (JSONArray) jsonParser.parse(new InputStreamReader(connection.getInputStream()));
-            for (Object profile : array) {
-                JSONObject jsonProfile = (JSONObject) profile;
-                String id = (String) jsonProfile.get("id");
-                String name = (String) jsonProfile.get("name");
-                UUID uuid = UUIDFetcher.getUUID(id);
-                uuidMap.put(name, uuid);
-            }
-            if (rateLimiting && i != requests - 1) {
-                Thread.sleep(100L);
+    public void call() throws Exception
+    {
+        if(lookupCache == null)
+        {
+            lookupCache = new HashMap<String, UUID>();
+        }
+        
+        GriefPrevention.AddLogEntry("UUID conversion process started.  Please be patient - this may take a while.");
+        
+        //try to get correct casing from local data
+        OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
+        GriefPrevention.AddLogEntry("Checking local server data to get correct casing for player names...");
+        for(int i = 0; i < names.size(); i++)
+        {
+            String name = names.get(i);
+            for(OfflinePlayer player : players)
+            {
+                if(player.getName().equalsIgnoreCase(name))
+                {
+                    if(!player.getName().equals(name))
+                    {
+                        GriefPrevention.AddLogEntry(name + " --> " + player.getName());
+                        names.set(i,  player.getName()); 
+                        continue;
+                    }
+                }
             }
         }
-        return uuidMap;
+        
+        //look for local data first
+        GriefPrevention.AddLogEntry("Checking local server data for UUIDs already seen...");
+        for(int i = 0; i < names.size(); i++)
+        {
+            String name = names.get(i);
+            for(OfflinePlayer player : players)
+            {
+                if(player.getName().equalsIgnoreCase(name))
+                {
+                    UUID uuid = player.getUniqueId();
+                    if(uuid != null)
+                    {
+                        GriefPrevention.AddLogEntry(name + " --> " + uuid.toString());
+                        lookupCache.put(name, uuid);
+                        lookupCache.put(name.toLowerCase(), uuid);
+                        names.remove(i--);
+                        continue;
+                    }
+                }
+            }
+        }
+        
+        //for online mode, call Mojang to resolve the rest
+        if(GriefPrevention.instance.getServer().getOnlineMode())
+        {
+            GriefPrevention.AddLogEntry("Calling Mojang to get UUIDs for remaining unresolved players (this is the slowest step)...");
+            
+            int requests = (int) Math.ceil(names.size() / PROFILES_PER_REQUEST);
+            for (int i = 0; i < requests; i++)
+            {
+                HttpURLConnection connection = createConnection();
+                String body = JSONArray.toJSONString(names.subList(i * 100, Math.min((i + 1) * 100, names.size())));
+                writeBody(connection, body);
+                JSONArray array = (JSONArray) jsonParser.parse(new InputStreamReader(connection.getInputStream()));
+                for (Object profile : array) {
+                    JSONObject jsonProfile = (JSONObject) profile;
+                    String id = (String) jsonProfile.get("id");
+                    String name = (String) jsonProfile.get("name");
+                    UUID uuid = UUIDFetcher.getUUID(id);
+                    GriefPrevention.AddLogEntry(name + " --> " + uuid.toString());
+                    lookupCache.put(name, uuid);
+                    lookupCache.put(name.toLowerCase(), uuid);
+                }
+                if (rateLimiting && i != requests - 1) {
+                    Thread.sleep(200L);
+                }
+            }
+        }
+        
+        //for offline mode, generate UUIDs for the rest
+        else
+        {
+            GriefPrevention.AddLogEntry("Generating offline mode UUIDs for remaining unresolved players...");
+            
+            for(int i = 0; i < names.size(); i++)
+            {
+                String name = names.get(i);
+                UUID uuid = java.util.UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(Charsets.UTF_8));
+                GriefPrevention.AddLogEntry(name + " --> " + uuid.toString());
+                lookupCache.put(name, uuid);
+                lookupCache.put(name.toLowerCase(), uuid);
+            }
+        }
     }
  
     private static void writeBody(HttpURLConnection connection, String body) throws Exception {
@@ -100,76 +172,14 @@ class UUIDFetcher implements Callable<Map<String, UUID>> {
  
     public static UUID getUUIDOf(String name) throws Exception
     {
-        if(lookupCache == null)
-        {
-            lookupCache = new HashMap<String, UUID>();
-        }
-        
         UUID result = lookupCache.get(name);
         if(result == null)
         {
-            if(lookupCache.containsKey(name)) return null;
-            
-            //use local minecraft player data to try correcting a name to the correct casing 
-            String correctCasingName = getNameWithCasing(name);
-            
-            //online mode: look it up by calling Mojang's web service
-            if(GriefPrevention.instance.getServer().getOnlineMode() == true)
-            {
-                result = new UUIDFetcher(Arrays.asList(name)).call().get(correctCasingName);
-            }
-            
-            //offline mode best guess
-            else
-            {
-                //search server's minecraft player data to find a UUID
-                OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
-                for(OfflinePlayer player : players)
-                {
-                    if(player.getName().equals(correctCasingName))
-                    {
-                        result = player.getUniqueId();
-                        break;
-                    }
-                }
-                
-                //if that doesn't work, make a wild guess by imitating what Mojang reportedly does
-                if(result == null)
-                {
-                    result = java.util.UUID.nameUUIDFromBytes(("OfflinePlayer:" + correctCasingName).getBytes(Charsets.UTF_8));
-                }
-            }
-            
-            //if none of the above worked, throw up our hands and report the problem in the logs
+            //throw up our hands and report the problem in the logs
             //this player will lose his land claim blocks, but claims will stay in place as admin claims
-            if(result == null)
-            {
-                GriefPrevention.AddLogEntry(correctCasingName + " --> ???");
-                lookupCache.put(name, null);
-                throw new IllegalArgumentException(name);
-            }
-            GriefPrevention.AddLogEntry(correctCasingName + " --> " + result.toString());
-            lookupCache.put(name, result);
+            throw new IllegalArgumentException(name);
         }
         
-        return result; 
-    }
-    
-    private static String getNameWithCasing(String name)
-    {
-        OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
-        for(OfflinePlayer player : players)
-        {
-            if(player.getName().equalsIgnoreCase(name))
-            {
-                if(!player.getName().equals(name))
-                {
-                    GriefPrevention.AddLogEntry(name + " --> " + player.getName());
-                }
-                return player.getName();
-            }
-        }
-        
-        return name;
+        return result;
     }
 }

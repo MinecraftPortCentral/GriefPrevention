@@ -481,7 +481,6 @@ class PlayerEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(playerID);
 		playerData.lastSpawn = now;
 		playerData.lastLogin = new Date();
-		this.dataStore.savePlayerData(playerID, playerData);
 		
 		//if player has never played on the server before, may need pvp protection
 		if(!player.hasPlayedBefore())
@@ -1558,9 +1557,8 @@ class PlayerEventHandler implements Listener
 					}
 				}
 				
-				//special rules for making a top-level claim smaller.  to check this, verifying the old claim's corners are inside the new claim's boundaries.
-				//rule1: in creative mode, top-level claims can't be moved or resized smaller.
-				//rule2: in any mode, shrinking a claim removes any surface fluids
+				//special rule for making a top-level claim smaller.  to check this, verifying the old claim's corners are inside the new claim's boundaries.
+				//rule: in any mode, shrinking a claim removes any surface fluids
 				Claim oldClaim = playerData.claimResizing;
 				boolean smaller = false;
 				if(oldClaim.parent == null)
@@ -1575,13 +1573,6 @@ class PlayerEventHandler implements Listener
 					if(!newClaim.contains(oldClaim.getLesserBoundaryCorner(), true, false) || !newClaim.contains(oldClaim.getGreaterBoundaryCorner(), true, false))
 					{
 						smaller = true;
-						
-						//enforce creative mode rule
-						if(!GriefPrevention.instance.config_claims_allowUnclaimInCreative && !player.hasPermission("griefprevention.deleteclaims") && GriefPrevention.instance.creativeRulesApply(player.getLocation()))
-						{
-							GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoCreativeUnClaim);
-							return;
-						}
 						
 						//remove surface fluids about to be unclaimed
 						oldClaim.removeSurfaceFluids(newClaim);

@@ -66,6 +66,8 @@ public class Visualization
 				for(int i = 0; i < visualization.elements.size(); i++)
 				{
 					VisualizationElement element = visualization.elements.get(i);
+					if(!element.location.getChunk().isLoaded()) continue;
+					if(element.location.distanceSquared(player.getLocation()) > 10000) continue;
 					Block block = element.location.getBlock();
 					player.sendBlockChange(element.location, block.getType(), block.getData());
 				}
@@ -198,7 +200,14 @@ public class Visualization
 	//finds a block the player can probably see.  this is how visualizations "cling" to the ground or ceiling
 	private static Location getVisibleLocation(World world, int x, int y, int z)
 	{
-		Block block = world.getBlockAt(x,  y, z);
+		//cheap distance check - also avoids loading chunks just for a big visualization
+	    Location location = new Location(world, x, y, z);
+		if(!location.getChunk().isLoaded())
+		{
+		    return location;
+		}
+		
+	    Block block = world.getBlockAt(x,  y, z);
 		BlockFace direction = (isTransparent(block)) ? BlockFace.DOWN : BlockFace.UP;
 				
 		while(	block.getY() >= 1 && 
