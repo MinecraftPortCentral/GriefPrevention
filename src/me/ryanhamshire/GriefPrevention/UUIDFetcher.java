@@ -60,8 +60,8 @@ class UUIDFetcher {
                     {
                         GriefPrevention.AddLogEntry(name + " --> " + player.getName());
                         names.set(i,  player.getName()); 
-                        continue;
                     }
+                    break;
                 }
             }
         }
@@ -82,8 +82,8 @@ class UUIDFetcher {
                         lookupCache.put(name, uuid);
                         lookupCache.put(name.toLowerCase(), uuid);
                         names.remove(i--);
-                        continue;
                     }
+                    break;
                 }
             }
         }
