@@ -25,6 +25,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
@@ -2173,24 +2174,50 @@ public class GriefPrevention extends JavaPlugin
         //parameter validation
         if(playerID == null) return "someone";
             
-        //try online players first
+        //check the cache
+        String playerName = GriefPrevention.uuidToNameMap.get(playerID);
+        if(playerName != null) return playerName;
+        
+        //try online players next
         Player player = GriefPrevention.instance.getServer().getPlayer(playerID);
-        if(player != null) return player.getName();
+        if(player != null) playerName = player.getName();
         
         //then search offline players
-        OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
-        for(int i = 0; i < players.length; i++)
+        if(playerName == null)
         {
-            if(players[i].getUniqueId().equals(playerID))
+            OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
+            for(int i = 0; i < players.length; i++)
             {
-                return players[i].getName();
+                if(players[i].getUniqueId().equals(playerID))
+                {
+                    playerName = players[i].getName();
+                    break;
+                }
             }
         }
         
-        //if none found
-        return "someone";
+        if(playerName == null)
+        {
+            playerName = "someone";
+        }
+        
+        //cache the result
+        GriefPrevention.cacheUUIDNamePair(playerID, playerName);
+        
+        //return result
+        return playerName;
     }
     
+    //cache for player name lookups, to save searches of all offline players
+    static ConcurrentHashMap<UUID, String> uuidToNameMap = new ConcurrentHashMap<UUID, String>();
+    static void cacheUUIDNamePair(UUID playerID, String playerName)
+    {
+        //limit memory footprint
+        if(GriefPrevention.uuidToNameMap.size() >= 500) GriefPrevention.uuidToNameMap.clear();
+        
+        GriefPrevention.uuidToNameMap.put(playerID, playerName);        
+    }
+
     //string overload for above helper
     static String lookupPlayerName(String playerID)
     {
