@@ -153,9 +153,6 @@ public class DatabaseDataStore extends DataStore
                     //get the id
                     String playerName = results.getString("name");
                     
-                    //ignore groups
-                    if(playerName.startsWith("$")) continue;
-                    
                     //add to list of names to convert to UUID
                     namesToConvert.add(playerName);
                 }
@@ -180,9 +177,6 @@ public class DatabaseDataStore extends DataStore
                 {
                     //get the id
                     String playerName = results.getString("name");
-                    
-                    //ignore groups
-                    if(playerName.startsWith("$")) continue;
                     
                     //try to convert player name to UUID
                     try
@@ -302,21 +296,7 @@ public class DatabaseDataStore extends DataStore
 				
 				Claim topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames, managerNames, claimID);
 				
-				//search for another claim overlapping this one
-				Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
-								
-				//if there is such a claim, mark it for later removal
-				if(conflictClaim != null)
-				{
-					claimsToRemove.add(conflictClaim);
-					continue;
-				}
-				
-				//otherwise, add this claim to the claims collection
-				else
-				{
-					this.addClaim(topLevelClaim, false);								
-				}
+				this.addClaim(topLevelClaim, false);								
 				
 				//look for any subdivisions for this claim
 				Statement statement2 = this.databaseConnection.createStatement();

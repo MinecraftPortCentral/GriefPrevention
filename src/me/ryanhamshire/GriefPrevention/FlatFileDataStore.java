@@ -157,9 +157,7 @@ public class FlatFileDataStore extends DataStore
             //rename files
             for(File playerFile : files)
             {
-                //anything starting with an underscore or dollar sign isn't a player, ignore those
                 String currentFilename = playerFile.getName();
-                if(currentFilename.startsWith("$") || currentFilename.startsWith("_")) continue;
                 
                 //try to convert player name to UUID
                 UUID playerID = null;
@@ -172,17 +170,8 @@ public class FlatFileDataStore extends DataStore
                     {
                         playerFile.renameTo(new File(playerDataFolder, playerID.toString()));
                     }
-                    
-                    //otherwise hide it from the data store for the future
-                    else
-                    {
-                        playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
-                    }
                 }
-                catch(Exception ex)
-                {
-                    playerFile.renameTo(new File(playerDataFolder, "__" + currentFilename));
-                }
+                catch(Exception ex){ }
             }
         }
 		
@@ -312,24 +301,8 @@ public class FlatFileDataStore extends DataStore
 							//instantiate
 							topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames, managerNames, claimID);
 							
-							//search for another claim overlapping this one
-							Claim conflictClaim = this.getClaimAt(topLevelClaim.lesserBoundaryCorner, true, null);
-							
-							//if there is such a claim, delete this file and move on to the next
-							if(conflictClaim != null)
-							{
-								inStream.close();
-								files[i].delete();
-								line = null;
-								continue;
-							}
-							
-							//otherwise, add this claim to the claims collection
-							else
-							{
-								topLevelClaim.modifiedDate = new Date(files[i].lastModified());
-								this.addClaim(topLevelClaim, false);
-							}
+							topLevelClaim.modifiedDate = new Date(files[i].lastModified());
+							this.addClaim(topLevelClaim, false);
 						}
 						
 						//otherwise there's already a top level claim, so this must be a subdivision of that top level claim
