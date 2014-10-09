@@ -214,15 +214,14 @@ public abstract class DataStore
 		
 		//add it and mark it as added
 		this.claims.add(newClaim);
-		ArrayList<Chunk> chunks = newClaim.getChunks();
-		for(Chunk chunk : chunks)
+		ArrayList<String> chunkStrings = newClaim.getChunkStrings();
+		for(String chunkString : chunkStrings)
 		{
-		    String chunkID = this.getChunkString(chunk);
-		    ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
+		    ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkString);
 		    if(claimsInChunk == null)
 		    {
 		        claimsInChunk = new ArrayList<Claim>();
-		        this.chunksToClaimsMap.put(chunkID, claimsInChunk);
+		        this.chunksToClaimsMap.put(chunkString, claimsInChunk);
 		    }
 		    
 		    claimsInChunk.add(newClaim);
@@ -377,11 +376,10 @@ public abstract class DataStore
 				break;
 			}
 			
-			ArrayList<Chunk> chunks = claim.getChunks();
-			for(Chunk chunk : chunks)
+			ArrayList<String> chunkStrings = claim.getChunkStrings();
+			for(String chunkString : chunkStrings)
 			{
-			    String chunkID = this.getChunkString(chunk);
-			    ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
+			    ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkString);
 			    for(int j = 0; j < claimsInChunk.size(); j++)
 			    {
 			        if(claimsInChunk.get(j).id.equals(claim.id))
@@ -423,7 +421,7 @@ public abstract class DataStore
 		if(cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) return cachedClaim;
 		
 		//find a top level claim
-		String chunkID = this.getChunkString(location.getChunk());
+		String chunkID = this.getChunkString(location);
 		ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
 		if(claimsInChunk == null) return null;
 		
@@ -448,9 +446,13 @@ public abstract class DataStore
 	}
 	
 	//gets a unique, persistent identifier string for a chunk
-	private String getChunkString(Chunk chunk)
+	private String getChunkString(Location location)
 	{
-        StringBuilder builder = new StringBuilder(chunk.getWorld().getName()).append(chunk.getX()).append(chunk.getZ());
+        StringBuilder builder = new StringBuilder(
+            String.valueOf(location.getBlockX() >> 4))
+            .append(location.getWorld().getName())
+            .append(location.getBlockZ() >> 4);
+
         return builder.toString();
     }
 	
