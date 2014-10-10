@@ -135,11 +135,7 @@ public class FlatFileDataStore extends DataStore
             ArrayList<String> namesToConvert = new ArrayList<String>();
             for(File playerFile : files)
             {
-                //anything starting with an underscore or dollar sign isn't a player, ignore those
-                String currentFilename = playerFile.getName();
-                if(currentFilename.startsWith("$") || currentFilename.startsWith("_")) continue;
-                
-                namesToConvert.add(currentFilename);
+                namesToConvert.add(playerFile.getName());
             }
             
             //resolve and cache as many as possible through various means
