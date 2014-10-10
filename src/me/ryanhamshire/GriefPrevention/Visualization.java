@@ -46,7 +46,7 @@ public class Visualization
 		}
 		
 		//if he's online, create a task to send him the visualization in about half a second
-		if(player.isOnline())
+		if(player.isOnline() && visualization.elements.get(0).location.getWorld().equals(player.getWorld()))
 		{
 			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, new VisualizationApplicationTask(player, playerData, visualization), 1L);
 		}
@@ -65,7 +65,14 @@ public class Visualization
 			{			
 				for(int i = 0; i < visualization.elements.size(); i++)
 				{
-					VisualizationElement element = visualization.elements.get(i);
+				    VisualizationElement element = visualization.elements.get(i);
+				    
+				    //check player still in world where visualization exists
+				    if(i == 0)
+				    {
+				        if(!player.getWorld().equals(element.location.getWorld())) return;
+				    }
+				    
 					if(!element.location.getChunk().isLoaded()) continue;
 					if(element.location.distanceSquared(player.getLocation()) > 10000) continue;
 					Block block = element.location.getBlock();
