@@ -492,14 +492,8 @@ public class DatabaseDataStore extends DataStore
 			Statement statement = this.databaseConnection.createStatement();
 			ResultSet results = statement.executeQuery("SELECT * FROM griefprevention_playerdata WHERE name='" + playerID.toString() + "';");
 		
-			//if there's no data for this player, create it with defaults
-			if(!results.next())
-			{
-				this.savePlayerData(playerID, playerData);
-			}
-			
-			//otherwise, just read from the database
-			else
+			//if data for this player exists, use it
+			if(results.next())
 			{			
 				playerData.lastLogin = results.getTimestamp("lastlogin");
 				playerData.accruedClaimBlocks = results.getInt("accruedblocks");

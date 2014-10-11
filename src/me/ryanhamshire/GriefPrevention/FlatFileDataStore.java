@@ -462,15 +462,8 @@ public class FlatFileDataStore extends DataStore
 		PlayerData playerData = new PlayerData();
 		playerData.playerID = playerID;
 		
-		//if it doesn't exist as a file
-		if(!playerFile.exists())
-		{
-			//create a file with defaults
-			this.savePlayerData(playerID, playerData);
-		}
-		
-		//otherwise, read the file
-		else
+		//if it exists as a file, read the file
+		if(playerFile.exists())
 		{			
 			BufferedReader inStream = null;
 			try
