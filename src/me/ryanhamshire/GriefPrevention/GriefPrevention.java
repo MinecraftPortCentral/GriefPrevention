@@ -130,7 +130,6 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_fireSpreads;								//whether fire spreads outside of claims
 	public boolean config_fireDestroys;								//whether fire destroys blocks outside of claims
 	
-	public boolean config_addItemsToClaimedChests;					//whether players may add items to claimed chests by left-clicking them
 	public boolean config_eavesdrop; 								//whether whispered messages will be visible to administrators
 	public ArrayList<String> config_eavesdrop_whisperCommands;		//list of whisper commands to eavesdrop on
 	
@@ -351,7 +350,6 @@ public class GriefPrevention extends JavaPlugin
 		this.config_fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
 		this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
 		
-		this.config_addItemsToClaimedChests = config.getBoolean("GriefPrevention.AddItemsToClaimedChests", true);
 		this.config_eavesdrop = config.getBoolean("GriefPrevention.EavesdropEnabled", false);
 		String whisperCommandsToMonitor = config.getString("GriefPrevention.WhisperCommands", "/tell;/pm;/r");
 		
@@ -595,8 +593,6 @@ public class GriefPrevention extends JavaPlugin
 		
 		outConfig.set("GriefPrevention.FireSpreads", this.config_fireSpreads);
 		outConfig.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
-		
-		outConfig.set("GriefPrevention.AddItemsToClaimedChests", this.config_addItemsToClaimedChests);
 		
 		outConfig.set("GriefPrevention.EavesdropEnabled", this.config_eavesdrop);		
 		outConfig.set("GriefPrevention.WhisperCommands", whisperCommandsToMonitor);		
