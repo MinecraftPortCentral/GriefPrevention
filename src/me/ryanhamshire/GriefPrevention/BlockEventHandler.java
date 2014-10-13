@@ -273,7 +273,7 @@ public class BlockEventHandler implements Listener
 				if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == 0)
 				{					
 					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getUniqueId(), null, null);
-					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ChestClaimConfirmation);						
+					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ChestClaimConfirmation);					
 				}
 				
 				//otherwise, create a claim in the area around the chest
@@ -300,14 +300,7 @@ public class BlockEventHandler implements Listener
 					Visualization.Apply(player, visualization);
 				}
 				
-				//instructions for using /trust
-				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TrustCommandAdvertisement);
-				
-				//unless special permission is required to create a claim with the shovel, educate the player about the shovel
-				if(!GriefPrevention.instance.config_claims_creationRequiresPermission)
-				{
-					GriefPrevention.sendMessage(player, TextMode.Instr, Messages.GoldenShovelAdvertisement);
-				}
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
 			}
 			
 			//check to see if this chest is in a claim, and warn when it isn't
