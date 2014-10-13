@@ -211,6 +211,7 @@ public class DatabaseDataStore extends DataStore
 		results = statement.executeQuery("SELECT * FROM griefprevention_claimdata;");
 		
 		ArrayList<Claim> claimsToRemove = new ArrayList<Claim>();
+		ArrayList<Claim> subdivisionsToLoad = new ArrayList<Claim>();
 		
 		while(results.next())
 		{
@@ -218,7 +219,6 @@ public class DatabaseDataStore extends DataStore
 			{			
 				//skip subdivisions
 				long parentId = results.getLong("parentid");
-				if(parentId != -1) continue;
 				
 				long claimID = results.getLong("id");
 					
@@ -294,44 +294,17 @@ public class DatabaseDataStore extends DataStore
 				String [] managerNames = managersString.split(";");
 				managerNames = this.convertNameListToUUIDList(managerNames);
 				
-				Claim topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames, managerNames, claimID);
+				Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames, managerNames, claimID);
 				
-				this.addClaim(topLevelClaim, false);								
-				
-				//look for any subdivisions for this claim
-				Statement statement2 = this.databaseConnection.createStatement();
-				ResultSet childResults = statement2.executeQuery("SELECT * FROM griefprevention_claimdata WHERE parentid=" + topLevelClaim.id + ";");
-				
-				while(childResults.next())
-				{			
-					String lesserCornerString = childResults.getString("lessercorner");
-					lesserBoundaryCorner = this.locationFromString(lesserCornerString);
-					
-					String greaterCornerString = childResults.getString("greatercorner");
-					greaterBoundaryCorner = this.locationFromString(greaterCornerString);
-					
-					buildersString = childResults.getString("builders");
-					builderNames = buildersString.split(";");
-					builderNames = this.convertNameListToUUIDList(builderNames);
-					
-					containersString = childResults.getString("containers");
-					containerNames = containersString.split(";");
-					containerNames = this.convertNameListToUUIDList(containerNames);
-					
-					accessorsString = childResults.getString("accessors");
-					accessorNames = accessorsString.split(";");
-					accessorNames = this.convertNameListToUUIDList(accessorNames);
-					
-					managersString = childResults.getString("managers");
-					managerNames = managersString.split(";");
-					managerNames = this.convertNameListToUUIDList(managerNames);
-					
-					Claim childClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, null, builderNames, containerNames, accessorNames, managerNames, null);
-					
-					//add this claim to the list of children of the current top level claim
-					childClaim.parent = topLevelClaim;
-					topLevelClaim.children.add(childClaim);
-					childClaim.inDataStore = true;
+				if(parentId == -1)
+				{
+				    //top level claim
+				    this.addClaim(claim, false);
+				}
+				else
+				{
+				    //subdivision
+				    subdivisionsToLoad.add(claim);
 				}
 			}
 			catch(SQLException e)
@@ -339,6 +312,18 @@ public class DatabaseDataStore extends DataStore
 				GriefPrevention.AddLogEntry("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
 				e.printStackTrace();
 			}
+			
+			//add subdivisions to their parent claims
+			for(Claim childClaim : subdivisionsToLoad)
+            {
+                //find top level claim parent
+			    Claim topLevelClaim = this.getClaimAt(childClaim.getLesserBoundaryCorner(), true, null);
+			    
+			    //add this claim to the list of children of the current top level claim
+                childClaim.parent = topLevelClaim;
+                topLevelClaim.children.add(childClaim);
+                childClaim.inDataStore = true;
+            }
 		}
 		
 		for(int i = 0; i < claimsToRemove.size(); i++)
