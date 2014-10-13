@@ -604,7 +604,10 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//make sure his data is all saved - he might have accrued some claim blocks while playing that were not saved immediately
-		this.dataStore.savePlayerData(player.getUniqueId(), playerData);
+		if(!player.isBanned())
+		{
+		    this.dataStore.savePlayerData(player.getUniqueId(), playerData);
+		}
 		
 		this.onPlayerDisconnect(event.getPlayer(), event.getQuitMessage());
 	}
