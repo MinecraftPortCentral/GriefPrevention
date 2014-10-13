@@ -347,8 +347,8 @@ public class GriefPrevention extends JavaPlugin
 		this.config_fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
 		this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
 		
-		this.config_eavesdrop = config.getBoolean("GriefPrevention.EavesdropEnabled", false);
-		String whisperCommandsToMonitor = config.getString("GriefPrevention.WhisperCommands", "/tell;/pm;/r");
+		this.config_eavesdrop = config.getBoolean("GriefPrevention.EavesdropEnabled", true);
+		String whisperCommandsToMonitor = config.getString("GriefPrevention.WhisperCommands", "/tell;/pm;/r;/w;/t");
 		
 		this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
 		
