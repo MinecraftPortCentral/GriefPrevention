@@ -1602,7 +1602,7 @@ class PlayerEventHandler implements Listener
 					}
 					
 					//if in a creative mode world and shrinking an existing claim, restore any unclaimed area
-					if(smaller && GriefPrevention.instance.config_claims_autoRestoreUnclaimedCreativeLand && GriefPrevention.instance.creativeRulesApply(oldClaim.getLesserBoundaryCorner()))
+					if(smaller && GriefPrevention.instance.creativeRulesApply(oldClaim.getLesserBoundaryCorner()))
 					{
 						GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
 						GriefPrevention.instance.restoreClaim(oldClaim, 20L * 60 * 2);  //2 minutes
