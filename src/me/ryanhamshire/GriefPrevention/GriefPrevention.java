@@ -86,8 +86,6 @@ public class GriefPrevention extends JavaPlugin
 	public int config_claims_minSize;								//minimum width and height for non-admin claims
 	public boolean config_claims_autoRestoreUnclaimedCreativeLand; 	//whether unclaimed land in creative worlds is automatically /restorenature-d
 	
-	public boolean config_claims_noBuildOutsideClaims;				//whether players can build in survival worlds outside their claimed areas
-	
 	public int config_claims_chestClaimExpirationDays;				//number of days of inactivity before an automatic chest claim will be deleted
 	public int config_claims_unusedClaimExpirationDays;				//number of days of inactivity before an unused (nothing build) claim will be deleted
 	public boolean config_claims_survivalAutoNatureRestoration;		//whether survival claims will be automatically restored to nature when auto-deleted
@@ -309,7 +307,6 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_minSize = config.getInt("GriefPrevention.Claims.MinimumSize", 10);
 		this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", 0);
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
-		this.config_claims_noBuildOutsideClaims = config.getBoolean("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", false);
 		this.config_claims_warnOnBuildOutside = config.getBoolean("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", true);
 		this.config_claims_autoRestoreUnclaimedCreativeLand = config.getBoolean("GriefPrevention.Claims.AutoRestoreUnclaimedCreativeLand", true);		
 
@@ -568,7 +565,6 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
 		outConfig.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
 		outConfig.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
-		outConfig.set("GriefPrevention.Claims.NoSurvivalBuildingOutsideClaims", this.config_claims_noBuildOutsideClaims);
 		outConfig.set("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", this.config_claims_warnOnBuildOutside);
 		outConfig.set("GriefPrevention.Claims.AutoRestoreUnclaimedCreativeLand", this.config_claims_autoRestoreUnclaimedCreativeLand);
 		
@@ -2599,12 +2595,6 @@ public class GriefPrevention extends JavaPlugin
 				return reason;
 			}
 			
-			//no building in survival wilderness when that is configured
-			else if(this.config_claims_noBuildOutsideClaims && this.config_claims_enabledWorlds.contains(location.getWorld()))
-			{
-				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
-			}
-			
 			else
 			{
 				//but it's fine in survival mode
@@ -2639,11 +2629,6 @@ public class GriefPrevention extends JavaPlugin
 				if(player.hasPermission("griefprevention.ignoreclaims"))
 					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
 				return reason;
-			}
-			
-			else if(this.config_claims_noBuildOutsideClaims && this.config_claims_enabledWorlds.contains(location.getWorld()))
-			{
-				return this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
 			}
 			
 			//but it's fine in survival mode
