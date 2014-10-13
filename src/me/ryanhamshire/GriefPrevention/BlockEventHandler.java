@@ -248,8 +248,8 @@ public class BlockEventHandler implements Listener
 				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
 			}
 			
-			//reset the counter for warning the player when he places outside his claims
-			playerData.unclaimedBlockPlacementsUntilWarning = 1;
+			//allow for a build warning in the future 
+			playerData.warnedAboutBuildingOutsideClaims = false;
 		}
 		
 		//FEATURE: automatically create a claim when a player who has no claims places a chest
@@ -332,17 +332,24 @@ public class BlockEventHandler implements Listener
 		}	
 		
 		//FEATURE: warn players when they're placing non-trash blocks outside of their claimed areas
-		else if(GriefPrevention.instance.config_claims_warnOnBuildOutside && !this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()) && playerData.claims.size() > 0)
+		else if(!this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()) && playerData.claims.size() > 0)
 		{
-			if(--playerData.unclaimedBlockPlacementsUntilWarning <= 0)
+			if(!playerData.warnedAboutBuildingOutsideClaims
+			   && (playerData.lastClaim == null
+			   || playerData.lastClaim.isNear(player.getLocation(), 15)))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
-				playerData.unclaimedBlockPlacementsUntilWarning = 15;
+				playerData.warnedAboutBuildingOutsideClaims = true;
 				
-				if(playerData.lastClaim != null && playerData.lastClaim.allowBuild(player) == null)
+				if(playerData.claims.size() < 2)
 				{
-					Visualization visualization = Visualization.FromClaim(playerData.lastClaim, block.getY(), VisualizationType.Claim, player.getLocation());
-					Visualization.Apply(player, visualization);
+				    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
+				}
+				
+				if(playerData.lastClaim != null)
+				{
+				    Visualization visualization = Visualization.FromClaim(playerData.lastClaim, block.getY(), VisualizationType.Claim, player.getLocation());
+				    Visualization.Apply(player, visualization);
 				}
 			}
 		}

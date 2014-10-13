@@ -145,8 +145,6 @@ public class GriefPrevention extends JavaPlugin
 	public List<String> config_mods_ignoreClaimsAccounts;			//list of player names which ALWAYS ignore claims
 	public MaterialCollection config_mods_explodableIds;			//list of block IDs which can be destroyed by explosions, even in claimed areas
 
-	public boolean config_claims_warnOnBuildOutside;				//whether players should be warned when they're building in an unclaimed area
-	
 	public HashMap<String, Integer> config_seaLevelOverride;		//override for sea level, because bukkit doesn't report the right value for all situations
 	
 	public boolean config_limitTreeGrowth;                          //whether trees should be prevented from growing into a claim from outside
@@ -305,7 +303,6 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_minSize = config.getInt("GriefPrevention.Claims.MinimumSize", 10);
 		this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", 0);
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
-		this.config_claims_warnOnBuildOutside = config.getBoolean("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", true);
 
 		this.config_claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
 		outConfig.set("GriefPrevention.Claims.Expiration.ChestClaimDays", this.config_claims_chestClaimExpirationDays);
@@ -558,7 +555,6 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
 		outConfig.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
 		outConfig.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
-		outConfig.set("GriefPrevention.Claims.WarnWhenBuildingOutsideClaims", this.config_claims_warnOnBuildOutside);
 		
 		outConfig.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
 		outConfig.set("GriefPrevention.Spam.LoginCooldownSeconds", this.config_spam_loginCooldownSeconds);

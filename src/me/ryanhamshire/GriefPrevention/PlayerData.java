@@ -71,11 +71,8 @@ public class PlayerData
 	//whether or not the player has a pending /trapped rescue
 	public boolean pendingTrapped = false;
 	
-	//last place the player damaged a chest
-	public Location lastChestDamageLocation = null;
-	
-	//number of blocks placed outside claims before next warning
-	int unclaimedBlockPlacementsUntilWarning = 1;
+	//whether this player was recently warned about building outside land claims
+	boolean warnedAboutBuildingOutsideClaims = false;
 	
 	//timestamp of last death, for use in preventing death message spam
 	long lastDeathTimeStamp = 0;
