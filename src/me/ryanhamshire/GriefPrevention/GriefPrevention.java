@@ -102,7 +102,7 @@ public class GriefPrevention extends JavaPlugin
 	public ArrayList<Material> config_siege_blocks;					//which blocks will be breakable in siege mode
 		
 	public boolean config_spam_enabled;								//whether or not to monitor for spam
-	public int config_spam_loginCooldownMinutes;					//how long players must wait between logins.  combats login spam.
+	public int config_spam_loginCooldownSeconds;					//how long players must wait between logins.  combats login spam.
 	public ArrayList<String> config_spam_monitorSlashCommands;  	//the list of slash commands monitored for spam
 	public boolean config_spam_banOffenders;						//whether or not to ban spammers automatically
 	public String config_spam_banMessage;							//message to show an automatically banned player
@@ -329,7 +329,7 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.CreativeWorlds", this.config_claims_creativeAutoNatureRestoration);		
 		
 		this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
-		this.config_spam_loginCooldownMinutes = config.getInt("GriefPrevention.Spam.LoginCooldownMinutes", 2);
+		this.config_spam_loginCooldownSeconds = config.getInt("GriefPrevention.Spam.LoginCooldownSeconds", 60);
 		this.config_spam_warningMessage = config.getString("GriefPrevention.Spam.WarningMessage", "Please reduce your noise level.  Spammers will be banned.");
 		this.config_spam_allowedIpAddresses = config.getString("GriefPrevention.Spam.AllowedIpAddresses", "1.2.3.4; 5.6.7.8");
 		this.config_spam_banOffenders = config.getBoolean("GriefPrevention.Spam.BanOffenders", true);		
@@ -573,7 +573,7 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.Claims.AutoRestoreUnclaimedCreativeLand", this.config_claims_autoRestoreUnclaimedCreativeLand);
 		
 		outConfig.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
-		outConfig.set("GriefPrevention.Spam.LoginCooldownMinutes", this.config_spam_loginCooldownMinutes);
+		outConfig.set("GriefPrevention.Spam.LoginCooldownSeconds", this.config_spam_loginCooldownSeconds);
 		outConfig.set("GriefPrevention.Spam.MonitorSlashCommands", slashCommandsToMonitor);
 		outConfig.set("GriefPrevention.Spam.WarningMessage", this.config_spam_warningMessage);
 		outConfig.set("GriefPrevention.Spam.BanOffenders", this.config_spam_banOffenders);		

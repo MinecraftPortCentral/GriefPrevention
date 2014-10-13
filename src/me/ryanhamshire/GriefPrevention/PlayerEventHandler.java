@@ -428,20 +428,20 @@ class PlayerEventHandler implements Listener
 			//FEATURE: login cooldown to prevent login/logout spam with custom clients
 			
 			//if allowed to join and login cooldown enabled
-			if(GriefPrevention.instance.config_spam_loginCooldownMinutes > 0 && event.getResult() == Result.ALLOWED)
+			if(GriefPrevention.instance.config_spam_loginCooldownSeconds > 0 && event.getResult() == Result.ALLOWED)
 			{
 				//determine how long since last login and cooldown remaining
 				PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 				long millisecondsSinceLastLogin = (new Date()).getTime() - playerData.lastLogin.getTime();
-				long minutesSinceLastLogin = millisecondsSinceLastLogin / 1000 / 60;
-				long cooldownRemaining = GriefPrevention.instance.config_spam_loginCooldownMinutes - minutesSinceLastLogin;
+				long secondsSinceLastLogin = millisecondsSinceLastLogin / 1000;
+				long cooldownRemaining = GriefPrevention.instance.config_spam_loginCooldownSeconds - secondsSinceLastLogin;
 				
 				//if cooldown remaining and player doesn't have permission to spam
 				if(cooldownRemaining > 0 && !player.hasPermission("griefprevention.spam"))
 				{
 					//DAS BOOT!
 					event.setResult(Result.KICK_OTHER);				
-					event.setKickMessage("You must wait " + cooldownRemaining + " more minutes before logging-in again.");
+					event.setKickMessage("You must wait " + cooldownRemaining + " seconds before logging-in again.");
 					event.disallow(event.getResult(), event.getKickMessage());
 					return;
 				}
@@ -458,15 +458,6 @@ class PlayerEventHandler implements Listener
 		//remember the player's ip address
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		playerData.ipAddress = event.getAddress();
-	}
-	
-	//when a player spawns, conditionally apply temporary pvp protection 
-	@EventHandler(ignoreCancelled = true)
-	void onPlayerRespawn (PlayerRespawnEvent event)
-	{
-		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(event.getPlayer().getUniqueId());
-		playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
-		GriefPrevention.instance.checkPvpProtectionNeeded(event.getPlayer());
 	}
 	
 	//when a player successfully joins the server...
@@ -561,6 +552,15 @@ class PlayerEventHandler implements Listener
 		//in case player has changed his name, on successful login, update UUID > Name mapping
 		GriefPrevention.cacheUUIDNamePair(player.getUniqueId(), player.getName());
 	}
+	
+	//when a player spawns, conditionally apply temporary pvp protection 
+    @EventHandler(ignoreCancelled = true)
+    void onPlayerRespawn (PlayerRespawnEvent event)
+    {
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(event.getPlayer().getUniqueId());
+        playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
+        GriefPrevention.instance.checkPvpProtectionNeeded(event.getPlayer());
+    }
 	
 	//when a player dies...
 	@EventHandler(priority = EventPriority.LOWEST)
