@@ -620,7 +620,7 @@ public class Claim
 	//excludeSubdivisions = true means that locations inside subdivisions of the claim will return FALSE
 	public boolean contains(Location location, boolean ignoreHeight, boolean excludeSubdivisions)
 	{
-		//not in the same world implies false
+	    //not in the same world implies false
 		if(!location.getWorld().equals(this.lesserBoundaryCorner.getWorld())) return false;
 		
 		int x = location.getBlockX();

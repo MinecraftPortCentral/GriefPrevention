@@ -217,9 +217,7 @@ public class DatabaseDataStore extends DataStore
 		{
 			try
 			{			
-				//skip subdivisions
-				long parentId = results.getLong("parentid");
-				
+			    long parentId = results.getLong("parentid");
 				long claimID = results.getLong("id");
 					
 				Location lesserBoundaryCorner = null;
@@ -251,7 +249,7 @@ public class DatabaseDataStore extends DataStore
 				UUID ownerID = null;
                 if(ownerName.isEmpty())
                 {
-                    ownerID = null;  //administrative land claim
+                    ownerID = null;  //administrative land claim or subdivision
                 }
                 else if(this.getSchemaVersion() < 1)
                 {
@@ -312,19 +310,19 @@ public class DatabaseDataStore extends DataStore
 				GriefPrevention.AddLogEntry("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
 				e.printStackTrace();
 			}
-			
-			//add subdivisions to their parent claims
-			for(Claim childClaim : subdivisionsToLoad)
-            {
-                //find top level claim parent
-			    Claim topLevelClaim = this.getClaimAt(childClaim.getLesserBoundaryCorner(), true, null);
-			    
-			    //add this claim to the list of children of the current top level claim
-                childClaim.parent = topLevelClaim;
-                topLevelClaim.children.add(childClaim);
-                childClaim.inDataStore = true;
-            }
 		}
+		
+		//add subdivisions to their parent claims
+        for(Claim childClaim : subdivisionsToLoad)
+        {
+            //find top level claim parent
+            Claim topLevelClaim = this.getClaimAt(childClaim.getLesserBoundaryCorner(), true, null);
+            
+            //add this claim to the list of children of the current top level claim
+            childClaim.parent = topLevelClaim;
+            topLevelClaim.children.add(childClaim);
+            childClaim.inDataStore = true;
+        }
 		
 		for(int i = 0; i < claimsToRemove.size(); i++)
 		{
