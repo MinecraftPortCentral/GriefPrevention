@@ -330,7 +330,7 @@ public class BlockEventHandler implements Listener
 		else if(!this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
 		{
 			if(!playerData.warnedAboutBuildingOutsideClaims
-			   && (playerData.lastClaim == null
+			   && ((playerData.lastClaim == null && playerData.claims.size() == 0)
 			   || playerData.lastClaim.isNear(player.getLocation(), 15)))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
