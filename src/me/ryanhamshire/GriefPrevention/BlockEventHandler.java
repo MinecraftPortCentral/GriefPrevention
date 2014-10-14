@@ -201,6 +201,8 @@ public class BlockEventHandler implements Listener
 		Claim claim = this.dataStore.getClaimAt(block.getLocation(), true, playerData.lastClaim);
 		if(claim != null)
 		{
+		    playerData.lastClaim = claim;
+		    
 			//FEATURE: prevent theft from container using a hopper when the container is at the very bottom of a land claim
 		    
 	        if(block.getType() == Material.HOPPER)
@@ -325,7 +327,7 @@ public class BlockEventHandler implements Listener
 		}	
 		
 		//FEATURE: warn players when they're placing non-trash blocks outside of their claimed areas
-		else if(!this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()) && playerData.claims.size() > 0)
+		else if(!this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
 		{
 			if(!playerData.warnedAboutBuildingOutsideClaims
 			   && (playerData.lastClaim == null
