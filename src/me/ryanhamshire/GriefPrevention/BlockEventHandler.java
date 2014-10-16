@@ -331,7 +331,7 @@ public class BlockEventHandler implements Listener
 		{
 			if(!playerData.warnedAboutBuildingOutsideClaims
 			   && ((playerData.lastClaim == null && playerData.claims.size() == 0)
-			   || playerData.lastClaim.isNear(player.getLocation(), 15)))
+			   || (playerData.lastClaim != null && playerData.lastClaim.isNear(player.getLocation(), 15))))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
 				playerData.warnedAboutBuildingOutsideClaims = true;
