@@ -565,6 +565,12 @@ public abstract class DataStore
 	}
 	
 	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
+    public void savePlayerDataSync(UUID playerID, PlayerData playerData)
+    {
+        this.asyncSavePlayerData(playerID, playerData);
+    }
+	
+	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
 	public void savePlayerData(UUID playerID, PlayerData playerData)
 	{
 	    new SavePlayerDataThread(playerID, playerData).start();

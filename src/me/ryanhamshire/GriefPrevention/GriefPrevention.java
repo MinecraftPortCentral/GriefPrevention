@@ -2226,7 +2226,7 @@ public class GriefPrevention extends JavaPlugin
 			Player player = players[i];
 			UUID playerID = player.getUniqueId();
 			PlayerData playerData = this.dataStore.getPlayerData(playerID);
-			this.dataStore.savePlayerData(playerID, playerData);
+			this.dataStore.savePlayerDataSync(playerID, playerData);
 		}
 		
 		this.dataStore.close();
