@@ -49,5 +49,11 @@ class VisualizationApplicationTask implements Runnable
 		
 		//remember the visualization applied to this player for later (so it can be inexpensively reverted)
 		playerData.currentVisualization = visualization;
+		
+		//schedule automatic visualization reversion in 60 seconds.
+		GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(
+	        GriefPrevention.instance, 
+	        new VisualizationReversionTask(player, playerData, visualization),
+	        20L * 60);  //60 seconds
 	}
 }
