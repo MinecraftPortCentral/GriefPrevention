@@ -1253,6 +1253,7 @@ class PlayerEventHandler implements Listener
 				if(clickedBlockType == Material.AIR)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
+					Visualization.Revert(player);
 					return;
 				}
 				
