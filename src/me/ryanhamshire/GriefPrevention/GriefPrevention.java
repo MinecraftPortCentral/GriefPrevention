@@ -2133,6 +2133,7 @@ public class GriefPrevention extends JavaPlugin
 		targetPlayer = this.getServer().getPlayer(name);
         if(targetPlayer != null) return targetPlayer;
         
+        OfflinePlayer bestMatch = null;
         if(searchOffline)
         {
             //then search offline players
@@ -2141,13 +2142,13 @@ public class GriefPrevention extends JavaPlugin
             {
                 if(players[i].getName().equalsIgnoreCase(name))
                 {
-                    return players[i];
+                    bestMatch = players[i];
+                    if(bestMatch.getName().equals(name)) return bestMatch;
                 }
             }
         }
 		
-		//if none found, return null
-		return null;
+		return bestMatch;
 	}
 
 	//helper method to resolve a player name from the player's UUID
