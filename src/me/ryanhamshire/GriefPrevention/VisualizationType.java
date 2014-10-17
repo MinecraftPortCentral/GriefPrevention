@@ -24,5 +24,6 @@ public enum VisualizationType
 	Claim,
 	Subdivision,
 	ErrorClaim,
-	RestoreNature
+	RestoreNature,
+	AdminClaim
 }

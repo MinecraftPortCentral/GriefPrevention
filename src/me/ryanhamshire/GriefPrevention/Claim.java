@@ -78,6 +78,8 @@ public class Claim
 	//administrative claims are created and maintained by players with the griefprevention.adminclaims permission.
 	public boolean isAdminClaim()
 	{
+		if(this.parent != null) return this.parent.isAdminClaim();
+	    
 		return (this.ownerID == null);
 	}
 	

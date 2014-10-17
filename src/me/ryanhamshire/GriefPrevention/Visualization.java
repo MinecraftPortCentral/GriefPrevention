@@ -102,6 +102,12 @@ public class Visualization
 			visualization.addClaimElements(claim.children.get(i), height, VisualizationType.Subdivision, locality);
 		}
 		
+		//special visualization for administrative land claims
+		if(claim.isAdminClaim() && visualizationType == VisualizationType.Claim)
+        {
+            visualizationType = VisualizationType.AdminClaim;
+        }
+		
 		//add top level last so that it takes precedence (it shows on top when the child claim boundaries overlap with its boundaries)
 		visualization.addClaimElements(claim, height, visualizationType, locality);
 		
@@ -130,6 +136,12 @@ public class Visualization
 			cornerMaterial = Material.GLOWSTONE;
 			accentMaterial = Material.GOLD_BLOCK;
 		}
+		
+		if(visualizationType == VisualizationType.AdminClaim)
+        {
+            cornerMaterial = Material.GLOWSTONE;
+            accentMaterial = Material.JACK_O_LANTERN;
+        }
 		
 		else if(visualizationType == VisualizationType.Subdivision)
 		{
