@@ -1051,7 +1051,7 @@ class PlayerEventHandler implements Listener
 	    if(action == Action.RIGHT_CLICK_AIR && (itemInHand == Material.STICK || itemInHand == Material.GOLD_SPADE))
 		{
 			//try to find a far away non-air block along line of sight
-	        clickedBlock = getTargetBlock(player, 50);
+	        clickedBlock = getTargetBlock(player, 100);
 	        clickedBlockType = clickedBlock.getType();
 		}			
 		
