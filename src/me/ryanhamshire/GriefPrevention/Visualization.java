@@ -242,8 +242,9 @@ public class Visualization
 	//helper method for above.  allows visualization blocks to sit underneath partly transparent blocks like grass and fence
 	private static boolean isTransparent(Block block)
 	{
-		return (	block.getType() == Material.AIR ||
+		return (	block.getType() != Material.SNOW && (
+		            block.getType() == Material.AIR ||
 					block.getType() == Material.FENCE ||
-					block.getType().isTransparent());
+					block.getType().isTransparent()));
 	}
 }
