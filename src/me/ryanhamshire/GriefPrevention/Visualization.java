@@ -137,7 +137,7 @@ public class Visualization
 			accentMaterial = Material.GOLD_BLOCK;
 		}
 		
-		if(visualizationType == VisualizationType.AdminClaim)
+		else if(visualizationType == VisualizationType.AdminClaim)
         {
             cornerMaterial = Material.GLOWSTONE;
             accentMaterial = Material.JACK_O_LANTERN;
