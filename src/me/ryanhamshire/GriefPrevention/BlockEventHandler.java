@@ -187,6 +187,9 @@ public class BlockEventHandler implements Listener
 			}
 		}
 		
+		//don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(placeEvent.getBlock().getWorld())) return;
+		
 		//make sure the player is allowed to build at the location
 		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
 		if(noBuildReason != null)
@@ -370,8 +373,11 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonExtend (BlockPistonExtendEvent event)
 	{		
-		//pushing down is ALWAYS safe
+	    //pushing down is ALWAYS safe
 	    if(event.getDirection() == BlockFace.DOWN) return;
+	    
+	    //don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(event.getBlock().getWorld())) return;
 	    
 	    Block pistonBlock = event.getBlock();
 	    List<Block> blocks = event.getBlocks();
@@ -489,7 +495,7 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonRetract (BlockPistonRetractEvent event)
 	{
-		//we only care about sticky pistons retracting
+	    //we only care about sticky pistons retracting
 		if(!event.isSticky()) return;
 		
 		//pulling up is always safe
@@ -497,6 +503,9 @@ public class BlockEventHandler implements Listener
 		
 		//if pulling "air", always safe
 		if(event.getRetractLocation().getBlock().getType() == Material.AIR) return;
+		
+		//don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(event.getBlock().getWorld())) return;
 		
 		//if pistons limited to only pulling blocks which are in the same claim the piston is in
 		if(GriefPrevention.instance.config_pistonsInClaimsOnly)
@@ -569,6 +578,9 @@ public class BlockEventHandler implements Listener
 			return;
 		}
 		
+		//don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(spreadEvent.getBlock().getWorld())) return;
+		
 		//never spread into a claimed area, regardless of settings
 		if(this.dataStore.getClaimAt(spreadEvent.getBlock().getLocation(), false, null) != null)
 		{
@@ -619,6 +631,9 @@ public class BlockEventHandler implements Listener
 			return;
 		}
 		
+		//don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(burnEvent.getBlock().getWorld())) return;
+		
 		//never burn claimed blocks, regardless of settings
 		if(this.dataStore.getClaimAt(burnEvent.getBlock().getLocation(), false, null) != null)
 		{
@@ -632,8 +647,8 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockFromTo (BlockFromToEvent spreadEvent)
 	{
-		//don't track fluid movement in worlds where claims are not enabled
-		if(!GriefPrevention.instance.config_claims_enabledWorlds.contains(spreadEvent.getBlock().getWorld())) return;
+		//don't track in worlds where claims are not enabled
+		if(!GriefPrevention.instance.claimsEnabledForWorld(spreadEvent.getBlock().getWorld())) return;
 		
 		//always allow fluids to flow straight down
 		if(spreadEvent.getFace() == BlockFace.DOWN) return;
@@ -681,7 +696,10 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onDispense(BlockDispenseEvent dispenseEvent)
 	{
-		//from where?
+	    //don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(dispenseEvent.getBlock().getWorld())) return;
+	    
+	    //from where?
 		Block fromBlock = dispenseEvent.getBlock();
 		Dispenser dispenser = new Dispenser(fromBlock.getType(), fromBlock.getData());
 		
@@ -713,6 +731,9 @@ public class BlockEventHandler implements Listener
     {
         //only take these potentially expensive steps if configured to do so
 	    if(!GriefPrevention.instance.config_limitTreeGrowth) return;
+	    
+	    //don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(growEvent.getWorld())) return;
 	    
 	    Location rootLocation = growEvent.getLocation();
         Claim rootClaim = this.dataStore.getClaimAt(rootLocation, false, null);

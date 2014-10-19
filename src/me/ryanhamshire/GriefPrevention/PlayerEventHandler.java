@@ -755,6 +755,9 @@ class PlayerEventHandler implements Listener
 	{
 		Player player = event.getPlayer();
 		Entity entity = event.getRightClicked();
+		
+		if(!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) return;
+		
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		
 		//don't allow interaction with item frames in claimed areas without build permission
@@ -912,7 +915,9 @@ class PlayerEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPlayerBedEnter (PlayerBedEnterEvent bedEvent)
 	{
-		if(!GriefPrevention.instance.config_claims_preventButtonsSwitches) return;
+		if(!GriefPrevention.instance.claimsEnabledForWorld(bedEvent.getBed().getWorld())) return;
+	    
+	    if(!GriefPrevention.instance.config_claims_preventButtonsSwitches) return;
 		
 		Player player = bedEvent.getPlayer();
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
@@ -937,7 +942,9 @@ class PlayerEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPlayerBucketEmpty (PlayerBucketEmptyEvent bucketEvent)
 	{
-		Player player = bucketEvent.getPlayer();
+		if(!GriefPrevention.instance.claimsEnabledForWorld(bucketEvent.getBlockClicked().getWorld())) return;
+	    
+	    Player player = bucketEvent.getPlayer();
 		Block block = bucketEvent.getBlockClicked().getRelative(bucketEvent.getBlockFace());
 		int minLavaDistance = 10;
 		
@@ -959,7 +966,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise no wilderness dumping (unless underground) in worlds where claims are enabled
-		else if(GriefPrevention.instance.config_claims_enabledWorlds.contains(block.getWorld()))
+		else if(GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
 		{
 			if(block.getY() >= GriefPrevention.instance.getSeaLevel(block.getWorld()) - 5 && !player.hasPermission("griefprevention.lava"))
 			{
@@ -999,6 +1006,8 @@ class PlayerEventHandler implements Listener
 	{
 		Player player = bucketEvent.getPlayer();
 		Block block = bucketEvent.getBlockClicked();
+		
+		if(!GriefPrevention.instance.claimsEnabledForWorld(block.getWorld())) return;
 		
 		//make sure the player is allowed to build at the location
 		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
@@ -1738,7 +1747,7 @@ class PlayerEventHandler implements Listener
 			if(lastShovelLocation == null)
 			{
 				//if claims are not enabled in this world and it's not an administrative claim, display an error message and stop
-				if(!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()) && playerData.shovelMode != ShovelMode.Admin)
+				if(!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()))
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimsDisabledWorld);
 					return;

@@ -63,8 +63,9 @@ public class GriefPrevention extends JavaPlugin
 	public DataStore dataStore;
 	
 	//configuration variables, loaded/saved from a config.yml
-	public ArrayList<World> config_claims_enabledWorlds;			//list of worlds where players can create GriefPrevention claims
-	public ArrayList<World> config_claims_enabledCreativeWorlds;	//list of worlds where additional creative mode anti-grief rules apply
+	
+	//claim mode for each world
+	public ConcurrentHashMap<World, ClaimsMode> config_claims_worldModes = new ConcurrentHashMap<World, ClaimsMode>();     
 	
 	public boolean config_claims_preventTheft;						//whether containers and crafting blocks are protectable
 	public boolean config_claims_protectCreatures;					//whether claimed animals may be injured by players without permission
@@ -178,70 +179,101 @@ public class GriefPrevention extends JavaPlugin
 		
 		//read configuration settings (note defaults)
 		
-		//default for claims worlds list
-		ArrayList<String> defaultClaimsWorldNames = new ArrayList<String>();
-		List<World> worlds = this.getServer().getWorlds(); 
-		for(int i = 0; i < worlds.size(); i++)
-		{
-			defaultClaimsWorldNames.add(worlds.get(i).getName());
-		}
-		
-		//get claims world names from the config file
-		List<String> claimsEnabledWorldNames = config.getStringList("GriefPrevention.Claims.Worlds");
-		if(claimsEnabledWorldNames == null || claimsEnabledWorldNames.size() == 0)
-		{			
-			claimsEnabledWorldNames = defaultClaimsWorldNames;
-		}
+		//get (deprecated node) claims world names from the config file
+		List<World> worlds = this.getServer().getWorlds();
+        List<String> deprecated_claimsEnabledWorldNames = config.getStringList("GriefPrevention.Claims.Worlds");
 		
 		//validate that list
-		this.config_claims_enabledWorlds = new ArrayList<World>();
-		for(int i = 0; i < claimsEnabledWorldNames.size(); i++)
+		for(int i = 0; i < deprecated_claimsEnabledWorldNames.size(); i++)
 		{
-			String worldName = claimsEnabledWorldNames.get(i);
+			String worldName = deprecated_claimsEnabledWorldNames.get(i);
 			World world = this.getServer().getWorld(worldName);
 			if(world == null)
 			{
-				AddLogEntry("Error: Claims Configuration: There's no world named \"" + worldName + "\".  Please update your config.yml.");
-			}
-			else
-			{
-				this.config_claims_enabledWorlds.add(world);
+			    deprecated_claimsEnabledWorldNames.remove(i--);
 			}
 		}
 		
-		//default creative claim world names
-		List<String> defaultCreativeWorldNames = new ArrayList<String>();
-		
-		//if default game mode for the server is creative, creative rules will apply to all worlds unless the config specifies otherwise
-		if(this.getServer().getDefaultGameMode() == GameMode.CREATIVE)
-		{
-			for(int i = 0; i < defaultClaimsWorldNames.size(); i++)
-			{
-				defaultCreativeWorldNames.add(defaultClaimsWorldNames.get(i));
-			}			
-		}
-		
-		//get creative world names from the config file
-		List<String> creativeClaimsEnabledWorldNames = config.getStringList("GriefPrevention.Claims.CreativeRulesWorlds");
-		if(creativeClaimsEnabledWorldNames == null || creativeClaimsEnabledWorldNames.size() == 0)
-		{			
-			creativeClaimsEnabledWorldNames = defaultCreativeWorldNames;
-		}
+		//get (deprecated node) creative world names from the config file
+		List<String> deprecated_creativeClaimsEnabledWorldNames = config.getStringList("GriefPrevention.Claims.CreativeRulesWorlds");
 		
 		//validate that list
-		this.config_claims_enabledCreativeWorlds = new ArrayList<World>();
-		for(int i = 0; i < creativeClaimsEnabledWorldNames.size(); i++)
+		for(int i = 0; i < deprecated_creativeClaimsEnabledWorldNames.size(); i++)
 		{
-			String worldName = creativeClaimsEnabledWorldNames.get(i);
+			String worldName = deprecated_creativeClaimsEnabledWorldNames.get(i);
 			World world = this.getServer().getWorld(worldName);
 			if(world == null)
 			{
-				AddLogEntry("Error: Claims Configuration: There's no world named \"" + worldName + "\".  Please update your config.yml.");
+			    deprecated_claimsEnabledWorldNames.remove(i--);
 			}
-			else
-			{
-				this.config_claims_enabledCreativeWorlds.add(world);
-			}
+		}
+		
+		//decide claim mode for each world
+		for(World world : worlds)
+		{
+		    //is it specified in the config file?
+		    String configSetting = config.getString("GriefPrevention.Claims.Mode." + world.getName());
+		    if(configSetting != null)
+		    {
+		        ClaimsMode claimsMode = this.configStringToClaimsMode(configSetting);
+		        if(claimsMode != null)
+		        {
+		            this.config_claims_worldModes.put(world, claimsMode);
+		            continue;
+		        }
+		        else
+		        {
+		            GriefPrevention.AddLogEntry("Error: Invalid claim mode \"" + configSetting + "\".  Options are Survival, Creative, and Disabled.");
+		            this.config_claims_worldModes.put(world, ClaimsMode.Creative);
+		        }
+		    }
+		    
+		    //was it specified in a deprecated config node?
+		    if(deprecated_creativeClaimsEnabledWorldNames.contains(world.getName()))
+		    {
+		        this.config_claims_worldModes.put(world, ClaimsMode.Creative);
+		    }
+		    
+		    else if(deprecated_claimsEnabledWorldNames.contains(world.getName()))
+            {
+                this.config_claims_worldModes.put(world, ClaimsMode.Survival);
+            }
+		    
+		    //does the world's name indicate its purpose?
+		    else if(world.getName().toLowerCase().contains("survival"))
+		    {
+		        this.config_claims_worldModes.put(world, ClaimsMode.Survival);
+		    }
+		    
+		    else if(world.getName().toLowerCase().contains("creative"))
+            {
+                this.config_claims_worldModes.put(world, ClaimsMode.Creative);
+            }
+		    
+		    //decide a default based on server type and world type
+		    else if(this.getServer().getDefaultGameMode() == GameMode.CREATIVE)
+		    {
+		        this.config_claims_worldModes.put(world, ClaimsMode.Creative);
+		    }
+		    
+		    else if(world.getEnvironment() == Environment.NORMAL)
+            {
+                this.config_claims_worldModes.put(world, ClaimsMode.Survival);
+            }
+		    
+		    else
+            {
+                this.config_claims_worldModes.put(world, ClaimsMode.Disabled);
+            }
+		    
+		    //if the setting WOULD be disabled but this is a server upgrading from the old config format,
+		    //then default to survival mode for safety's sake (to protect any admin claims which may 
+		    //have been created there)
+		    if(this.config_claims_worldModes.get(world) == ClaimsMode.Disabled &&
+		       deprecated_claimsEnabledWorldNames.size() > 0)
+		    {
+		        this.config_claims_worldModes.put(world, ClaimsMode.Survival);
+		    }
 		}
 		
 		//default for pvp worlds list
@@ -303,19 +335,10 @@ public class GriefPrevention extends JavaPlugin
 		this.config_claims_minSize = config.getInt("GriefPrevention.Claims.MinimumSize", 10);
 		this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", 0);
 		this.config_claims_trappedCooldownHours = config.getInt("GriefPrevention.Claims.TrappedCommandCooldownHours", 8);
-
 		this.config_claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
-		outConfig.set("GriefPrevention.Claims.Expiration.ChestClaimDays", this.config_claims_chestClaimExpirationDays);
-		
 		this.config_claims_unusedClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.UnusedClaimDays", 14);
-		outConfig.set("GriefPrevention.Claims.Expiration.UnusedClaimDays", this.config_claims_unusedClaimExpirationDays);		
-		
 		this.config_claims_expirationDays = config.getInt("GriefPrevention.Claims.Expiration.AllClaimDays", 0);
-		outConfig.set("GriefPrevention.Claims.Expiration.AllClaimDays", this.config_claims_expirationDays);
-		
 		this.config_claims_survivalAutoNatureRestoration = config.getBoolean("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", false);
-		outConfig.set("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", this.config_claims_survivalAutoNatureRestoration);		
-		
 		this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
 		this.config_spam_loginCooldownSeconds = config.getInt("GriefPrevention.Spam.LoginCooldownSeconds", 60);
 		this.config_spam_warningMessage = config.getString("GriefPrevention.Spam.WarningMessage", "Please reduce your noise level.  Spammers will be banned.");
@@ -534,8 +557,14 @@ public class GriefPrevention extends JavaPlugin
 		String databaseUserName = config.getString("GriefPrevention.Database.UserName", "");
 		String databasePassword = config.getString("GriefPrevention.Database.Password", "");
 		
-		outConfig.set("GriefPrevention.Claims.Worlds", claimsEnabledWorldNames);
-		outConfig.set("GriefPrevention.Claims.CreativeRulesWorlds", creativeClaimsEnabledWorldNames);
+		//claims mode by world
+		for(World world : this.config_claims_worldModes.keySet())
+		{
+		    outConfig.set(
+	            "GriefPrevention.Claims.Mode." + world.getName(), 
+	            this.config_claims_worldModes.get(world).name());
+		}
+		
 		outConfig.set("GriefPrevention.Claims.PreventTheft", this.config_claims_preventTheft);
 		outConfig.set("GriefPrevention.Claims.ProtectCreatures", this.config_claims_protectCreatures);
 		outConfig.set("GriefPrevention.Claims.PreventButtonsSwitches", this.config_claims_preventButtonsSwitches);
@@ -555,6 +584,10 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
 		outConfig.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
 		outConfig.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
+		outConfig.set("GriefPrevention.Claims.Expiration.ChestClaimDays", this.config_claims_chestClaimExpirationDays);
+        outConfig.set("GriefPrevention.Claims.Expiration.UnusedClaimDays", this.config_claims_unusedClaimExpirationDays);       
+        outConfig.set("GriefPrevention.Claims.Expiration.AllClaimDays", this.config_claims_expirationDays);
+        outConfig.set("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", this.config_claims_survivalAutoNatureRestoration);
 		
 		outConfig.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
 		outConfig.set("GriefPrevention.Spam.LoginCooldownSeconds", this.config_spam_loginCooldownSeconds);
@@ -775,7 +808,27 @@ public class GriefPrevention extends JavaPlugin
 		AddLogEntry("Boot finished.");
 	}
 	
-	//handles slash commands
+	private ClaimsMode configStringToClaimsMode(String configSetting)
+    {
+        if(configSetting.equalsIgnoreCase("Survival"))
+        {
+            return ClaimsMode.Survival;
+        }
+        else if(configSetting.equalsIgnoreCase("Creative"))
+        {
+            return ClaimsMode.Creative;
+        }
+        else if(configSetting.equalsIgnoreCase("Disabled"))
+        {
+            return ClaimsMode.Disabled;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    //handles slash commands
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
 		
 		Player player = null;
@@ -2275,12 +2328,6 @@ public class GriefPrevention extends JavaPlugin
 		GriefPrevention.sendMessage(player, TextMode.Success, Messages.PvPImmunityStart);
 	}
 	
-	//checks whether players can create claims in a world
-	public boolean claimsEnabledForWorld(World world)
-	{
-		return this.config_claims_enabledWorlds.contains(world);
-	}
-	
 	//checks whether players siege in a world
 	public boolean siegeEnabledForWorld(World world)
 	{
@@ -2556,10 +2603,16 @@ public class GriefPrevention extends JavaPlugin
 		}
 	}
 	
-	//determines whether creative anti-grief rules apply at a location
+	//checks whether players can create claims in a world
+    public boolean claimsEnabledForWorld(World world)
+    {
+        return this.config_claims_worldModes.get(world) != ClaimsMode.Disabled;
+    }
+    
+    //determines whether creative anti-grief rules apply at a location
 	boolean creativeRulesApply(Location location)
 	{
-		return this.config_claims_enabledCreativeWorlds.contains(location.getWorld());
+		return this.config_claims_worldModes.get((location.getWorld())) == ClaimsMode.Creative;
 	}
 	
 	public String allowBuild(Player player, Location location)

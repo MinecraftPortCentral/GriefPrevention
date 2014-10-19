@@ -45,7 +45,14 @@ class EntityCleanupTask implements Runnable
 	@Override
 	public void run() 
 	{
-		ArrayList<World> worlds = GriefPrevention.instance.config_claims_enabledCreativeWorlds;
+		ArrayList<World> worlds = new ArrayList<World>();
+		for(World world : GriefPrevention.instance.getServer().getWorlds())
+	    {
+		    if(GriefPrevention.instance.config_claims_worldModes.get(world) == ClaimsMode.Creative)
+		    {
+		        worlds.add(world);
+		    }
+	    }
 		
 		for(int i = 0; i < worlds.size(); i++)
 		{
