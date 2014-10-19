@@ -824,8 +824,11 @@ class PlayerEventHandler implements Listener
 				{
 					if(claim.allowContainers(player) != null)
 					{
-						GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoDamageClaimedEntity, claim.getOwnerName());
-						event.setCancelled(true);
+						String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
+					    if(player.hasPermission("griefprevention.ignoreclaims"))
+			                message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+					    GriefPrevention.sendMessage(player, TextMode.Err, message);
+                        event.setCancelled(true);
 					}
 				}
 			}

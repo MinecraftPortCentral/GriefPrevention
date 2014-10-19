@@ -552,7 +552,11 @@ class EntityEventHandler implements Listener
 							//kill the arrow to avoid infinite bounce between crowded together animals
 							if(arrow != null) arrow.remove();
 							
-							GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.NoDamageClaimedEntity, claim.getOwnerName());
+							String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
+	                        if(attacker.hasPermission("griefprevention.ignoreclaims"))
+	                            message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+	                        GriefPrevention.sendMessage(attacker, TextMode.Err, message);
+	                        event.setCancelled(true);
 						}
 						
 						//cache claim for later
@@ -635,7 +639,11 @@ class EntityEventHandler implements Listener
 				if(noContainersReason != null)
 				{
 					event.setCancelled(true);
-					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.NoDamageClaimedEntity, claim.getOwnerName());
+					String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
+                    if(attacker.hasPermission("griefprevention.ignoreclaims"))
+                        message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+                    GriefPrevention.sendMessage(attacker, TextMode.Err, message);
+                    event.setCancelled(true);
 				}
 				
 				//cache claim for later
