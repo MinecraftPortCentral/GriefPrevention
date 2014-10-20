@@ -1029,6 +1029,10 @@ class PlayerEventHandler implements Listener
 		Player player = event.getPlayer();
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
 		Action action = event.getAction();
+		
+		//not interested in left-click-on-air actions
+		if(action == Action.LEFT_CLICK_AIR) return;
+		
 		Material clickedBlockType = null;
 		if(clickedBlock != null)
 		{
