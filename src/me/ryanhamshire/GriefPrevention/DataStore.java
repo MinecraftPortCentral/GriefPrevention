@@ -933,7 +933,6 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.AllAdminDeleted, "Deleted all administrative claims.", null);
 		this.addDefault(defaults, Messages.AdjustBlocksSuccess, "Adjusted {0}'s bonus claim blocks by {1}.  New total bonus blocks: {2}.", "0: player; 1: adjustment; 2: new total");
 		this.addDefault(defaults, Messages.NotTrappedHere, "You can build here.  Save yourself.", null);
-		this.addDefault(defaults, Messages.TrappedOnCooldown, "You used /trapped within the last {0} hours.  You have to wait about {1} more minutes before using it again.", "0: default cooldown hours; 1: remaining minutes");
 		this.addDefault(defaults, Messages.RescuePending, "If you stay put for 10 seconds, you'll be teleported out.  Please wait.", null);
 		this.addDefault(defaults, Messages.NonSiegeWorld, "Siege is disabled here.", null);
 		this.addDefault(defaults, Messages.AlreadySieging, "You're already involved in a siege.", null);

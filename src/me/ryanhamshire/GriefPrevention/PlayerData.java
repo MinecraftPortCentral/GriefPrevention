@@ -65,9 +65,6 @@ public class PlayerData
 	//the claim this player is currently subdividing
 	public Claim claimSubdividing = null;
 	
-	//the timestamp for the last time the player used /trapped
-	public Date lastTrappedUsage;
-	
 	//whether or not the player has a pending /trapped rescue
 	public boolean pendingTrapped = false;
 	
@@ -119,11 +116,7 @@ public class PlayerData
 		//if the player successfully logs in, this value will be overwritten with the current date and time 
 		Calendar fiveMinutesBack = Calendar.getInstance();
 		fiveMinutesBack.add(Calendar.MINUTE, -5);
-		this.lastLogin = fiveMinutesBack.getTime();		
-		
-		//default last trapped usage to 5 hours ago, so the command is available right away
-		fiveMinutesBack.add(Calendar.HOUR, -5);
-		this.lastTrappedUsage = fiveMinutesBack.getTime();
+		this.lastLogin = fiveMinutesBack.getTime();
 	}
 	
 	//whether or not this player is "in" pvp combat

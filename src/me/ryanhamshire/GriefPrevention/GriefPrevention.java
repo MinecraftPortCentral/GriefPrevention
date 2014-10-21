@@ -1787,16 +1787,6 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
-			//check cooldown
-			long lastTrappedUsage = playerData.lastTrappedUsage.getTime();
-			long nextTrappedUsage = lastTrappedUsage + 1000 * 60 * 60 * this.config_claims_trappedCooldownHours; 
-			long now = Calendar.getInstance().getTimeInMillis();
-			if(now < nextTrappedUsage)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.TrappedOnCooldown, String.valueOf(this.config_claims_trappedCooldownHours), String.valueOf((nextTrappedUsage - now) / (1000 * 60) + 1));
-				return true;
-			}
-			
 			//send instructions
 			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RescuePending);
 			
