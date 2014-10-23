@@ -1059,7 +1059,7 @@ class PlayerEventHandler implements Listener
         //don't care about left-clicking on most blocks, this is probably a break action
         if(action == Action.LEFT_CLICK_BLOCK)
         {
-            if(!this.onLeftClickWatchList(clickedBlockType)) return;
+            if(!this.onLeftClickWatchList(clickedBlockType) && !GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))  return;
         }
 		
 		//FEATURE: shovel and stick can be used from a distance away
@@ -1301,7 +1301,11 @@ class PlayerEventHandler implements Listener
 					//if deleteclaims permission, tell about the player's offline time
 					if(!claim.isAdminClaim() && player.hasPermission("griefprevention.deleteclaims"))
 					{
-						PlayerData otherPlayerData = this.dataStore.getPlayerData(claim.ownerID);
+						if(claim.parent != null)
+						{
+						    claim = claim.parent;
+						}
+					    PlayerData otherPlayerData = this.dataStore.getPlayerData(claim.ownerID);
 						Date lastLogin = otherPlayerData.lastLogin;
 						Date now = new Date();
 						long daysElapsed = (now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24); 
