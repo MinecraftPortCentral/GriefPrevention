@@ -580,7 +580,6 @@ public class GriefPrevention extends JavaPlugin
 		outConfig.set("GriefPrevention.Claims.CreationRequiresPermission", this.config_claims_creationRequiresPermission);
 		outConfig.set("GriefPrevention.Claims.MinimumSize", this.config_claims_minSize);
 		outConfig.set("GriefPrevention.Claims.MaximumDepth", this.config_claims_maxDepth);
-		outConfig.set("GriefPrevention.Claims.IdleLimitDays", this.config_claims_expirationDays);
 		outConfig.set("GriefPrevention.Claims.TrappedCommandCooldownHours", this.config_claims_trappedCooldownHours);
 		outConfig.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
 		outConfig.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
