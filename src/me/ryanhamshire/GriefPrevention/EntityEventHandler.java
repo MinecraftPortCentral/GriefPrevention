@@ -308,7 +308,7 @@ class EntityEventHandler implements Listener
 		
 		//if the player doesn't have build permission, don't allow the breakage
 		Player playerRemover = (Player)entityEvent.getRemover();
-        String noBuildReason = GriefPrevention.instance.allowBuild(playerRemover, event.getEntity().getLocation());
+        String noBuildReason = GriefPrevention.instance.allowBuild(playerRemover, event.getEntity().getLocation(), Material.AIR);
         if(noBuildReason != null)
         {
         	event.setCancelled(true);
@@ -326,7 +326,7 @@ class EntityEventHandler implements Listener
 	    //FEATURE: similar to above, placing a painting requires build permission in the claim
 	
 		//if the player doesn't have permission, don't allow the placement
-		String noBuildReason = GriefPrevention.instance.allowBuild(event.getPlayer(), event.getEntity().getLocation());
+		String noBuildReason = GriefPrevention.instance.allowBuild(event.getPlayer(), event.getEntity().getLocation(), Material.PAINTING);
         if(noBuildReason != null)
         {
         	event.setCancelled(true);

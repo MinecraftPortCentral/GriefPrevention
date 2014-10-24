@@ -1509,7 +1509,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			else
 			{
-				String noBuildReason = claim.allowBuild(player);
+				String noBuildReason = claim.allowBuild(player, Material.TNT);
 				if(noBuildReason != null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
@@ -1762,7 +1762,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//if the player isn't in a claim or has permission to build, tell him to man up
-			if(claim == null || claim.allowBuild(player) == null)
+			if(claim == null || claim.allowBuild(player, Material.AIR) == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotTrappedHere);				
 				return true;
@@ -2079,7 +2079,7 @@ public class GriefPrevention extends JavaPlugin
 						errorMessage = claim.allowContainers(player);
 						break;
 					default:
-						errorMessage = claim.allowBuild(player);					
+						errorMessage = claim.allowBuild(player, Material.AIR);					
 				}
 			}
 			
@@ -2600,7 +2600,7 @@ public class GriefPrevention extends JavaPlugin
 		return this.config_claims_worldModes.get((location.getWorld())) == ClaimsMode.Creative;
 	}
 	
-	public String allowBuild(Player player, Location location)
+	public String allowBuild(Player player, Location location, Material material)
 	{
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
@@ -2632,7 +2632,7 @@ public class GriefPrevention extends JavaPlugin
 		{
 			//cache the claim for later reference
 			playerData.lastClaim = claim;
-			return claim.allowBuild(player);
+			return claim.allowBuild(player, material);
 		}
 	}
 	

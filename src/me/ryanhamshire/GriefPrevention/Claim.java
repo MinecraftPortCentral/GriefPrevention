@@ -311,14 +311,27 @@ public class Claim
 		
 		//permission inheritance for subdivisions
 		if(this.parent != null)
-			return this.parent.allowBuild(player);
+			return this.parent.allowEdit(player);
 		
 		//error message if all else fails
 		return GriefPrevention.instance.dataStore.getMessage(Messages.OnlyOwnersModifyClaims, this.getOwnerName());
 	}
 	
+	private List<Material> placeableFarmingBlocksList = Arrays.asList(
+	        Material.PUMPKIN_STEM,
+	        Material.CROPS,
+	        Material.MELON_STEM,
+	        Material.CARROT,
+	        Material.POTATO,
+	        Material.NETHER_STALK);
+	    
+    private boolean placeableForFarming(Material material)
+    {
+        return this.placeableFarmingBlocksList.contains(material);
+    }
+	
 	//build permission check
-	public String allowBuild(Player player)
+	public String allowBuild(Player player, Material material)
 	{
 		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
 		if(player == null) return "";
@@ -357,13 +370,24 @@ public class Claim
 		
 		//subdivision permission inheritance
 		if(this.parent != null)
-			return this.parent.allowBuild(player);
+			return this.parent.allowBuild(player, material);
 		
 		//failure message for all other cases
 		String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
 		if(player.hasPermission("griefprevention.ignoreclaims"))
 				reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-		return reason;
+		
+		//allow for farming with /containertrust permission
+		if(reason != null && this.allowContainers(player) == null)
+        {
+            //do allow for farming, if player has /containertrust permission
+            if(this.placeableForFarming(material))
+            {
+                return null;
+            }
+        }
+        
+        return reason;
 	}
 	
 	private boolean hasExplicitPermission(Player player, ClaimPermission level)
@@ -427,7 +451,7 @@ public class Claim
 		}
 		
 		//if not under siege, build rules apply
-		return this.allowBuild(player);		
+		return this.allowBuild(player, material);
 	}
 	
 	//access permission check

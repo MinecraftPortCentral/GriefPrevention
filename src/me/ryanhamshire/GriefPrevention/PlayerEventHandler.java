@@ -763,7 +763,7 @@ class PlayerEventHandler implements Listener
 		//don't allow interaction with item frames in claimed areas without build permission
 		if(entity instanceof Hanging)
 		{
-			String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation()); 
+			String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation(), Material.ITEM_FRAME); 
 			if(noBuildReason != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
@@ -952,7 +952,7 @@ class PlayerEventHandler implements Listener
 		int minLavaDistance = 10;
 		
 		//make sure the player is allowed to build at the location
-		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
+		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), Material.WATER);
 		if(noBuildReason != null)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
@@ -1013,7 +1013,7 @@ class PlayerEventHandler implements Listener
 		if(!GriefPrevention.instance.claimsEnabledForWorld(block.getWorld())) return;
 		
 		//make sure the player is allowed to build at the location
-		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
+		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), Material.AIR);
 		if(noBuildReason != null)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
@@ -1086,7 +1086,7 @@ class PlayerEventHandler implements Listener
 			{
 				playerData.lastClaim = claim;
 				
-				String noBuildReason = claim.allowBuild(player);
+				String noBuildReason = claim.allowBuild(player, Material.AIR);
 				if(noBuildReason != null)
 				{
 					event.setCancelled(true);
@@ -1187,7 +1187,7 @@ class PlayerEventHandler implements Listener
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
-				String noBuildReason = claim.allowBuild(player);
+				String noBuildReason = claim.allowBuild(player, clickedBlockType);
 				if(noBuildReason != null)
 				{
 					event.setCancelled(true);
@@ -1209,7 +1209,7 @@ class PlayerEventHandler implements Listener
 			//if it's bonemeal, check for build permission (ink sac == bone meal, must be a Bukkit bug?)
 			if(materialInHand == Material.INK_SACK)
 			{
-				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation());
+				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation(), clickedBlockType);
 				if(noBuildReason != null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
@@ -1239,7 +1239,7 @@ class PlayerEventHandler implements Listener
 			else if((materialInHand == Material.MONSTER_EGG || materialInHand == Material.MINECART || materialInHand == Material.POWERED_MINECART || materialInHand == Material.STORAGE_MINECART || materialInHand == Material.BOAT) && GriefPrevention.instance.creativeRulesApply(clickedBlock.getLocation()))
 			{
 				//player needs build permission at this location
-				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation());
+				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation(), Material.MINECART);
 				if(noBuildReason != null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);

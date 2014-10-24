@@ -87,20 +87,6 @@ public class BlockEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         Block block = breakEvent.getBlock();
 		
-		//optimization: breaking blocks directly underneath your last successfully broken block is always* safe
-		//*not when the new block was claimed after the last break 
-		//*not in siege mode, where some types of claimed blocks may be broken
-		Location blockLocation = block.getLocation();
-        Location lastBreakLocation = playerData.lastSuccessfulBreak;
-		if(lastBreakLocation != null &&
-		   !GriefPrevention.instance.siegeEnabledForWorld(block.getWorld()) &&
-		   blockLocation.getBlockX() == lastBreakLocation.getBlockX() &&
-		   blockLocation.getBlockZ() == lastBreakLocation.getBlockZ() &&
-		   blockLocation.getBlockY() <= lastBreakLocation.getBlockY())
-		{
-		    return;
-		}
-		
 		//make sure the player is allowed to break at the location
 		String noBuildReason = GriefPrevention.instance.allowBreak(player, block.getLocation());
 		if(noBuildReason != null)
@@ -109,9 +95,6 @@ public class BlockEventHandler implements Listener
 			breakEvent.setCancelled(true);
 			return;
 		}
-		
-		//make a note of any successful breaks
-		playerData.lastSuccessfulBreak = block.getLocation();
 		
 		//FEATURE: automatically clean up hanging treetops
 		//if it's a log
@@ -167,7 +150,7 @@ public class BlockEventHandler implements Listener
 	{
 		Player player = placeEvent.getPlayer();
 		Block block = placeEvent.getBlock();
-		
+				
 		//FEATURE: limit fire placement, to prevent PvP-by-fire
 		
 		//if placed block is fire and pvp is off, apply rules for proximity to other players 
@@ -191,7 +174,7 @@ public class BlockEventHandler implements Listener
         if(!GriefPrevention.instance.claimsEnabledForWorld(placeEvent.getBlock().getWorld())) return;
 		
 		//make sure the player is allowed to build at the location
-		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation());
+		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), block.getType());
 		if(noBuildReason != null)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
@@ -247,7 +230,7 @@ public class BlockEventHandler implements Listener
             }
 			
 			//if the player has permission for the claim and he's placing UNDER the claim
-			if(block.getY() <= claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player) == null)
+			if(block.getY() <= claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player, block.getType()) == null)
 			{
 				//extend the claim downward
 				this.dataStore.extendClaim(claim, claim.getLesserBoundaryCorner().getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
