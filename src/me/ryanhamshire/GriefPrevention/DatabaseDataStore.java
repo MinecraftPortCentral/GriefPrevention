@@ -318,6 +318,12 @@ public class DatabaseDataStore extends DataStore
             //find top level claim parent
             Claim topLevelClaim = this.getClaimAt(childClaim.getLesserBoundaryCorner(), true, null);
             
+            if(topLevelClaim == null)
+            {
+                claimsToRemove.add(childClaim);
+                continue;
+            }
+            
             //add this claim to the list of children of the current top level claim
             childClaim.parent = topLevelClaim;
             topLevelClaim.children.add(childClaim);
