@@ -818,21 +818,26 @@ class PlayerEventHandler implements Listener
 						event.setCancelled(true);
 					}
 				}
-				
-				//if the entity is an animal, apply container rules
-				else if(entity instanceof Animals)
-				{
-					if(claim.allowContainers(player) != null)
-					{
-						String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
-					    if(player.hasPermission("griefprevention.ignoreclaims"))
-			                message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-					    GriefPrevention.sendMessage(player, TextMode.Err, message);
-                        event.setCancelled(true);
-					}
-				}
 			}
 		}
+		
+		//if the entity is an animal, apply container rules
+        if(GriefPrevention.instance.config_claims_preventTheft && entity instanceof Animals)
+        {
+            //if the entity is in a claim
+            Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
+            if(claim != null)
+            {
+                if(claim.allowContainers(player) != null)
+                {
+                    String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
+                    if(player.hasPermission("griefprevention.ignoreclaims"))
+                        message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+                    GriefPrevention.sendMessage(player, TextMode.Err, message);
+                    event.setCancelled(true);
+                }
+            }
+        }
 		
 		//if preventing theft, prevent leashing claimed creatures
 		if(GriefPrevention.instance.config_claims_preventTheft && entity instanceof Creature && player.getItemInHand().getType() == Material.LEASH)
