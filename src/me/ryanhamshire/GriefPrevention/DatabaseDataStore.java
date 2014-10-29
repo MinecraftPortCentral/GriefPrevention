@@ -519,6 +519,7 @@ public class DatabaseDataStore extends DataStore
 			
 			Statement statement = databaseConnection.createStatement();
 			statement.execute("DELETE FROM griefprevention_playerdata WHERE name='" + playerID.toString() + "';");
+			statement = databaseConnection.createStatement();
 			statement.execute("INSERT INTO griefprevention_playerdata (name, lastlogin, accruedblocks, bonusblocks) VALUES ('" + playerID.toString() + "', '" + dateString + "', " + playerData.accruedClaimBlocks + ", " + playerData.bonusClaimBlocks + ");");
 		}
 		catch(SQLException e)
