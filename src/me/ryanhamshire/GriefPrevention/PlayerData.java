@@ -38,16 +38,16 @@ public class PlayerData
 	public UUID playerID;
 	
 	//the player's claims
-	public Vector<Claim> claims = new Vector<Claim>();
+	private Vector<Claim> claims = null;
 	
 	//how many claim blocks the player has earned via play time
-	public int accruedClaimBlocks = GriefPrevention.instance.config_claims_initialBlocks;
+	private Integer accruedClaimBlocks = null;
 	
 	//where this player was the last time we checked on him for earning claim blocks
 	public Location lastAfkCheckLocation = null;
 	
 	//how many claim blocks the player has been gifted by admins, or purchased via economy integration 
-	public int bonusClaimBlocks = 0;
+	private Integer bonusClaimBlocks = null;
 	
 	//what "mode" the shovel is in determines what it will do when it's used
 	public ShovelMode shovelMode = ShovelMode.Basic;
@@ -74,9 +74,12 @@ public class PlayerData
 	//timestamp of last death, for use in preventing death message spam
 	long lastDeathTimeStamp = 0;
 	
+	//whether the player was kicked (set and used during logout)
+	boolean wasKicked = false;
+	
 	//spam
-	public Date lastLogin;							//when the player last logged into the server
-	public String lastMessage = "";					//the player's last chat message, or slash command complete with parameters 
+	private Date lastLogin = null;					//when the player last logged into the server
+    public String lastMessage = "";					//the player's last chat message, or slash command complete with parameters 
 	public Date lastMessageTimestamp = new Date();  //last time the player sent a chat message or used a monitored slash command
 	public int spamCount = 0;						//number of consecutive "spams"
 	public boolean spamWarned = false;				//whether the player recently received a warning
@@ -106,16 +109,6 @@ public class PlayerData
 
 	public InetAddress ipAddress;
 	
-	PlayerData()
-	{
-		//default last login date value to 5 minutes ago to ensure a brand new player can log in
-		//see login cooldown feature, PlayerEventHandler.onPlayerLogin()
-		//if the player successfully logs in, this value will be overwritten with the current date and time 
-		Calendar fiveMinutesBack = Calendar.getInstance();
-		fiveMinutesBack.add(Calendar.MINUTE, -5);
-		this.lastLogin = fiveMinutesBack.getTime();
-	}
-	
 	//whether or not this player is "in" pvp combat
 	public boolean inPvpCombat()
 	{
@@ -137,10 +130,10 @@ public class PlayerData
 	//the number of claim blocks a player has available for claiming land
 	public int getRemainingClaimBlocks()
 	{
-		int remainingBlocks = this.accruedClaimBlocks + this.bonusClaimBlocks;
-		for(int i = 0; i < this.claims.size(); i++)
+		int remainingBlocks = this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
+		for(int i = 0; i < this.getClaims().size(); i++)
 		{
-			Claim claim = this.claims.get(i);
+			Claim claim = this.getClaims().get(i);
 			remainingBlocks -= claim.getArea();
 		}
 		
@@ -149,4 +142,109 @@ public class PlayerData
 		
 		return remainingBlocks;
 	}
+	
+	//don't load data from secondary storage until it's needed
+	public int getAccruedClaimBlocks()
+	{
+	    if(this.accruedClaimBlocks == null) this.loadDataFromSecondaryStorage();
+        return accruedClaimBlocks;
+    }
+
+    public void setAccruedClaimBlocks(Integer accruedClaimBlocks)
+    {
+        this.accruedClaimBlocks = accruedClaimBlocks;
+    }
+
+    public int getBonusClaimBlocks()
+    {
+        if(this.bonusClaimBlocks == null) this.loadDataFromSecondaryStorage();
+        return bonusClaimBlocks;
+    }
+
+    public void setBonusClaimBlocks(Integer bonusClaimBlocks)
+    {
+        this.bonusClaimBlocks = bonusClaimBlocks;
+    }
+
+    public Date getLastLogin()
+    {
+        if(this.lastLogin == null) this.loadDataFromSecondaryStorage();
+        return this.lastLogin;
+    }
+    
+    public void setLastLogin(Date lastLogin)
+    {
+        this.lastLogin = lastLogin;
+    }
+    
+    private void loadDataFromSecondaryStorage()
+    {
+        //reach out to secondary storage to get any data there
+        PlayerData storageData = GriefPrevention.instance.dataStore.getPlayerDataFromStorage(this.playerID);
+        
+        //fill in any missing pieces
+        if(this.lastLogin == null)
+        {
+            if(storageData.lastLogin != null)
+            {
+                this.lastLogin = storageData.lastLogin;
+            }
+            else
+            {
+                //default last login date value to 5 minutes ago to ensure a brand new player can log in
+                //see login cooldown feature, PlayerEventHandler.onPlayerLogin()
+                //if the player successfully logs in, this value will be overwritten with the current date and time 
+                Calendar fiveMinutesBack = Calendar.getInstance();
+                fiveMinutesBack.add(Calendar.MINUTE, -5);
+                this.lastLogin = fiveMinutesBack.getTime();
+            }
+        }
+        
+        if(this.accruedClaimBlocks == null)
+        {
+            if(storageData.accruedClaimBlocks != null)
+            {
+                this.accruedClaimBlocks = storageData.accruedClaimBlocks;
+            }
+            else
+            {
+                this.accruedClaimBlocks = GriefPrevention.instance.config_claims_initialBlocks;
+            }
+        }
+        
+        if(this.bonusClaimBlocks == null)
+        {
+            if(storageData.bonusClaimBlocks != null)
+            {
+                this.bonusClaimBlocks = storageData.bonusClaimBlocks;
+            }
+            else
+            {
+                this.bonusClaimBlocks = 0;
+            }
+        }
+    }
+    
+    public Vector<Claim> getClaims()
+    {
+        if(this.claims == null)
+        {
+            this.claims = new Vector<Claim>();
+            
+            //find all the claims belonging to this player and note them for future reference
+            DataStore dataStore = GriefPrevention.instance.dataStore;
+            for(int i = 0; i < dataStore.claims.size(); i++)
+            {
+                Claim claim = dataStore.claims.get(i);
+                if(playerID.equals(claim.ownerID))
+                {
+                    this.claims.add(claim);
+                }
+            }
+        }
+        
+        return claims;
+    }
+
+
 }

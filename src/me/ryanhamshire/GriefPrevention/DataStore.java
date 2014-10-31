@@ -193,13 +193,13 @@ public abstract class DataStore
 		//adjust blocks and other records
 		if(ownerData != null)
 		{
-			ownerData.claims.remove(claim);
-			ownerData.bonusClaimBlocks -= claim.getArea();
+			ownerData.getClaims().remove(claim);
+			ownerData.setBonusClaimBlocks(ownerData.getBonusClaimBlocks() - claim.getArea());
 			this.savePlayerData(claim.ownerID, ownerData);
 		}
 		
-		newOwnerData.claims.add(claim);
-		newOwnerData.bonusClaimBlocks += claim.getArea();
+		newOwnerData.getClaims().add(claim);
+		newOwnerData.setBonusClaimBlocks(newOwnerData.getBonusClaimBlocks() + claim.getArea());
 		this.savePlayerData(newOwnerID, newOwnerData);
 	}
 
@@ -239,7 +239,7 @@ public abstract class DataStore
 		if(!newClaim.isAdminClaim() && writeToStorage)
 		{
 			PlayerData ownerData = this.getPlayerData(newClaim.ownerID);
-			ownerData.claims.add(newClaim);
+			ownerData.getClaims().add(newClaim);
 			this.savePlayerData(newClaim.ownerID, ownerData);
 		}
 		
@@ -330,21 +330,11 @@ public abstract class DataStore
 		//first, look in memory
 		PlayerData playerData = this.playerNameToPlayerDataMap.get(playerID);
 		
-		//if not there, look in secondary storage
+		//if not there, build a fresh instance with some blanks for what may be in secondary storage
 		if(playerData == null)
 		{
-			playerData = this.getPlayerDataFromStorage(playerID);
+			playerData = new PlayerData();
 			playerData.playerID = playerID;
-			
-			//find all the claims belonging to this player and note them for future reference
-			for(int i = 0; i < this.claims.size(); i++)
-			{
-				Claim claim = this.claims.get(i);
-				if(playerID.equals(claim.ownerID))
-				{
-				    playerData.claims.add(claim);
-				}
-			}
 			
 			//shove that new player data into the hash map cache
 			this.playerNameToPlayerDataMap.put(playerID, playerData);
@@ -404,11 +394,11 @@ public abstract class DataStore
 		if(!claim.isAdminClaim())
 		{
 			PlayerData ownerData = this.getPlayerData(claim.ownerID);
-			for(int i = 0; i < ownerData.claims.size(); i++)
+			for(int i = 0; i < ownerData.getClaims().size(); i++)
 			{
-				if(ownerData.claims.get(i).id.equals(claim.id))
+				if(ownerData.getClaims().get(i).id.equals(claim.id))
 				{
-					ownerData.claims.remove(i);
+					ownerData.getClaims().remove(i);
 					break;
 				}
 			}

@@ -484,9 +484,9 @@ public class DatabaseDataStore extends DataStore
 			//if data for this player exists, use it
 			if(results.next())
 			{			
-				playerData.lastLogin = results.getTimestamp("lastlogin");
-				playerData.accruedClaimBlocks = results.getInt("accruedblocks");
-				playerData.bonusClaimBlocks = results.getInt("bonusblocks");				
+				playerData.setLastLogin(results.getTimestamp("lastlogin"));
+				playerData.setAccruedClaimBlocks(results.getInt("accruedblocks"));
+				playerData.setBonusClaimBlocks(results.getInt("bonusblocks"));				
 			}
 		}
 		catch(SQLException e)
@@ -515,12 +515,12 @@ public class DatabaseDataStore extends DataStore
 			this.refreshDataConnection();
 			
 			SimpleDateFormat sqlFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			String dateString = sqlFormat.format(playerData.lastLogin);
+			String dateString = sqlFormat.format(playerData.getLastLogin());
 			
 			Statement statement = databaseConnection.createStatement();
 			statement.execute("DELETE FROM griefprevention_playerdata WHERE name='" + playerID.toString() + "';");
 			statement = databaseConnection.createStatement();
-			statement.execute("INSERT INTO griefprevention_playerdata (name, lastlogin, accruedblocks, bonusblocks) VALUES ('" + playerID.toString() + "', '" + dateString + "', " + playerData.accruedClaimBlocks + ", " + playerData.bonusClaimBlocks + ");");
+			statement.execute("INSERT INTO griefprevention_playerdata (name, lastlogin, accruedblocks, bonusblocks) VALUES ('" + playerID.toString() + "', '" + dateString + "', " + playerData.getAccruedClaimBlocks() + ", " + playerData.getBonusClaimBlocks() + ");");
 		}
 		catch(SQLException e)
 		{
@@ -562,7 +562,7 @@ public class DatabaseDataStore extends DataStore
 		//group bonus blocks are stored in the player data table, with player name = $groupName
 		String playerName = "$" + groupName;
 		PlayerData playerData = new PlayerData();
-		playerData.bonusClaimBlocks = currentValue;
+		playerData.setBonusClaimBlocks(currentValue);
 		
 		this.savePlayerData(playerName, playerData);
 	}

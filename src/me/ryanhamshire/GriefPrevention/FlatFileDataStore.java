@@ -477,25 +477,25 @@ public class FlatFileDataStore extends DataStore
 				DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");					
 				try
 				{
-					playerData.lastLogin = dateFormat.parse(lastLoginTimestampString);
+					playerData.setLastLogin(dateFormat.parse(lastLoginTimestampString));
 				}
 				catch(ParseException parseException)
 				{
 					GriefPrevention.AddLogEntry("Unable to load last login for \"" + playerFile.getName() + "\".");
-					playerData.lastLogin = null;
+					playerData.setLastLogin(null);
 				}
 				
 				//second line is accrued claim blocks
 				String accruedBlocksString = inStream.readLine();
 				
 				//convert that to a number and store it
-				playerData.accruedClaimBlocks = Integer.parseInt(accruedBlocksString);
+				playerData.setAccruedClaimBlocks(Integer.parseInt(accruedBlocksString));
 				
 				//third line is any bonus claim blocks granted by administrators
 				String bonusBlocksString = inStream.readLine();					
 				
 				//convert that to a number and store it										
-				playerData.bonusClaimBlocks = Integer.parseInt(bonusBlocksString);
+				playerData.setBonusClaimBlocks(Integer.parseInt(bonusBlocksString));
 				
 				//fourth line is a double-semicolon-delimited list of claims, which is currently ignored
 				//String claimsString = inStream.readLine();
@@ -536,26 +536,26 @@ public class FlatFileDataStore extends DataStore
 			outStream = new BufferedWriter(new FileWriter(playerDataFile));
 			
 			//first line is last login timestamp
-			if(playerData.lastLogin == null)playerData.lastLogin = new Date();
+			if(playerData.getLastLogin() == null) playerData.setLastLogin(new Date());
 			DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
-			outStream.write(dateFormat.format(playerData.lastLogin));
+			outStream.write(dateFormat.format(playerData.getLastLogin()));
 			outStream.newLine();
 			
 			//second line is accrued claim blocks
-			outStream.write(String.valueOf(playerData.accruedClaimBlocks));
+			outStream.write(String.valueOf(playerData.getAccruedClaimBlocks()));
 			outStream.newLine();			
 			
 			//third line is bonus claim blocks
-			outStream.write(String.valueOf(playerData.bonusClaimBlocks));
+			outStream.write(String.valueOf(playerData.getBonusClaimBlocks()));
 			outStream.newLine();						
 			
 			//fourth line is a double-semicolon-delimited list of claims
-			if(playerData.claims.size() > 0)
+			if(playerData.getClaims().size() > 0)
 			{
-				outStream.write(this.locationToString(playerData.claims.get(0).getLesserBoundaryCorner()));
-				for(int i = 1; i < playerData.claims.size(); i++)
+				outStream.write(this.locationToString(playerData.getClaims().get(0).getLesserBoundaryCorner()));
+				for(int i = 1; i < playerData.getClaims().size(); i++)
 				{
-					outStream.write(";;" + this.locationToString(playerData.claims.get(i).getLesserBoundaryCorner()));
+					outStream.write(";;" + this.locationToString(playerData.getClaims().get(i).getLesserBoundaryCorner()));
 				}
 			}
 			outStream.newLine();

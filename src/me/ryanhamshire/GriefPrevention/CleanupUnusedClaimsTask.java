@@ -80,10 +80,10 @@ class CleanupUnusedClaimsTask implements Runnable
 		//if he's been gone at least a week, if he has ONLY the new player claim, it will be removed
 		Calendar sevenDaysAgo = Calendar.getInstance();
 		sevenDaysAgo.add(Calendar.DATE, -GriefPrevention.instance.config_claims_chestClaimExpirationDays);
-		boolean newPlayerClaimsExpired = sevenDaysAgo.getTime().after(playerData.lastLogin);
+		boolean newPlayerClaimsExpired = sevenDaysAgo.getTime().after(playerData.getLastLogin());
 		
 		//if only one claim, and the player hasn't played in a week
-		if(newPlayerClaimsExpired && playerData.claims.size() == 1)
+		if(newPlayerClaimsExpired && playerData.getClaims().size() == 1)
 		{
 			//if that's a chest claim and those are set to expire
 			if(claim.getArea() <= areaOfDefaultClaim && GriefPrevention.instance.config_claims_chestClaimExpirationDays > 0)
@@ -108,13 +108,13 @@ class CleanupUnusedClaimsTask implements Runnable
 			Calendar earliestPermissibleLastLogin = Calendar.getInstance();
 			earliestPermissibleLastLogin.add(Calendar.DATE, -GriefPrevention.instance.config_claims_expirationDays);
 			
-			if(earliestPermissibleLastLogin.getTime().after(playerData.lastLogin))
+			if(earliestPermissibleLastLogin.getTime().after(playerData.getLastLogin()))
 			{
 				//make a copy of this player's claim list
 				Vector<Claim> claims = new Vector<Claim>();
-				for(int i = 0; i < playerData.claims.size(); i++)
+				for(int i = 0; i < playerData.getClaims().size(); i++)
 				{
-					claims.add(playerData.claims.get(i));
+					claims.add(playerData.getClaims().get(i));
 				}
 				
 				//delete them
@@ -138,7 +138,7 @@ class CleanupUnusedClaimsTask implements Runnable
 			//if the player has been gone two weeks, scan claim content to assess player investment
 			Calendar earliestAllowedLoginDate = Calendar.getInstance();
 			earliestAllowedLoginDate.add(Calendar.DATE, -GriefPrevention.instance.config_claims_unusedClaimExpirationDays);
-			boolean needsInvestmentScan = earliestAllowedLoginDate.getTime().after(playerData.lastLogin);
+			boolean needsInvestmentScan = earliestAllowedLoginDate.getTime().after(playerData.getLastLogin());
 			
 			//avoid scanning large claims and administrative claims
 			if(claim.isAdminClaim() || claim.getWidth() > 25 || claim.getHeight() > 25) return;

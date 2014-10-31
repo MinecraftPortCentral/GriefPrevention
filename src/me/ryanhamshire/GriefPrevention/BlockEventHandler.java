@@ -255,7 +255,7 @@ public class BlockEventHandler implements Listener
 			int radius = GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius;
 			
 			//if the player doesn't have any claims yet, automatically create a claim centered at the chest
-			if(playerData.claims.size() == 0)
+			if(playerData.getClaims().size() == 0)
 			{
 				//radius == 0 means protect ONLY the chest
 				if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == 0)
@@ -316,13 +316,13 @@ public class BlockEventHandler implements Listener
 		else if(!this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
 		{
 			if(!playerData.warnedAboutBuildingOutsideClaims
-			   && ((playerData.lastClaim == null && playerData.claims.size() == 0)
+			   && ((playerData.lastClaim == null && playerData.getClaims().size() == 0)
 			   || (playerData.lastClaim != null && playerData.lastClaim.isNear(player.getLocation(), 15))))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
 				playerData.warnedAboutBuildingOutsideClaims = true;
 				
-				if(playerData.claims.size() < 2)
+				if(playerData.getClaims().size() < 2)
 				{
 				    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
 				}

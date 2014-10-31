@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -416,6 +417,8 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
+	private ConcurrentHashMap<UUID, Date> lastLoginThisServerSessionMap = new ConcurrentHashMap<UUID, Date>();
+	
 	//when a player attempts to join the server...
 	@EventHandler(priority = EventPriority.HIGHEST)
 	void onPlayerLogin (PlayerLoginEvent event)
@@ -426,29 +429,32 @@ class PlayerEventHandler implements Listener
 		if(GriefPrevention.instance.config_spam_enabled)
 		{
 			//FEATURE: login cooldown to prevent login/logout spam with custom clients
-			
+		    long now = Calendar.getInstance().getTimeInMillis();
+		    
 			//if allowed to join and login cooldown enabled
-			if(GriefPrevention.instance.config_spam_loginCooldownSeconds > 0 && event.getResult() == Result.ALLOWED)
+			if(GriefPrevention.instance.config_spam_loginCooldownSeconds > 0 && event.getResult() == Result.ALLOWED && !player.hasPermission("griefprevention.spam"))
 			{
 				//determine how long since last login and cooldown remaining
-				PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-				long millisecondsSinceLastLogin = (new Date()).getTime() - playerData.lastLogin.getTime();
-				long secondsSinceLastLogin = millisecondsSinceLastLogin / 1000;
-				long cooldownRemaining = GriefPrevention.instance.config_spam_loginCooldownSeconds - secondsSinceLastLogin;
-				
-				//if cooldown remaining and player doesn't have permission to spam
-				if(cooldownRemaining > 0 && !player.hasPermission("griefprevention.spam"))
+				Date lastLoginThisSession = lastLoginThisServerSessionMap.get(player.getUniqueId());
+				if(lastLoginThisSession != null)
 				{
-					//DAS BOOT!
-					event.setResult(Result.KICK_OTHER);				
-					event.setKickMessage("You must wait " + cooldownRemaining + " seconds before logging-in again.");
-					event.disallow(event.getResult(), event.getKickMessage());
-					return;
+    			    long millisecondsSinceLastLogin = now - lastLoginThisSession.getTime();
+    				long secondsSinceLastLogin = millisecondsSinceLastLogin / 1000;
+    				long cooldownRemaining = GriefPrevention.instance.config_spam_loginCooldownSeconds - secondsSinceLastLogin;
+    				
+    				//if cooldown remaining
+    				if(cooldownRemaining > 0)
+    				{
+    					//DAS BOOT!
+    					event.setResult(Result.KICK_OTHER);				
+    					event.setKickMessage("You must wait " + cooldownRemaining + " seconds before logging-in again.");
+    					event.disallow(event.getResult(), event.getKickMessage());
+    					return;
+    				}
 				}
 			}
 			
 			//if logging-in account is banned, remember IP address for later
-			long now = Calendar.getInstance().getTimeInMillis();
 			if(GriefPrevention.instance.config_smartBan && event.getResult() == Result.KICK_BANNED)
 			{
 				this.tempBannedIps.add(new IpBanInfo(event.getAddress(), now + this.MILLISECONDS_IN_DAY, player.getName()));
@@ -468,10 +474,12 @@ class PlayerEventHandler implements Listener
 		UUID playerID = player.getUniqueId();
 		
 		//note login time
-		long now = Calendar.getInstance().getTimeInMillis();
+		Date nowDate = new Date();
+        long now = nowDate.getTime();
 		PlayerData playerData = this.dataStore.getPlayerData(playerID);
 		playerData.lastSpawn = now;
-		playerData.lastLogin = new Date();
+		playerData.setLastLogin(nowDate);
+		this.lastLoginThisServerSessionMap.put(playerID, nowDate);
 		
 		//if player has never played on the server before, may need pvp protection
 		if(!player.hasPlayedBefore())
@@ -577,15 +585,33 @@ class PlayerEventHandler implements Listener
 		playerData.lastDeathTimeStamp = now;
 	}
 	
+	//when a player gets kicked...
+	@EventHandler(priority = EventPriority.HIGHEST)
+	void onPlayerKicked(PlayerKickEvent event)
+    {
+	    Player player = event.getPlayer();
+	    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+	    playerData.wasKicked = true;
+    }
+	
 	//when a player quits...
 	@EventHandler(priority = EventPriority.HIGHEST)
 	void onPlayerQuit(PlayerQuitEvent event)
 	{
-		Player player = event.getPlayer();
+	    Player player = event.getPlayer();
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		boolean isBanned;
+		if(playerData.wasKicked)
+		{
+		    isBanned = player.isBanned();
+		}
+		else
+		{
+		    isBanned = false;
+		}
 		
 		//if banned, add IP to the temporary IP ban list
-		if(player.isBanned() && playerData.ipAddress != null)
+		if(isBanned && playerData.ipAddress != null)
 		{
 			long now = Calendar.getInstance().getTimeInMillis(); 
 			this.tempBannedIps.add(new IpBanInfo(playerData.ipAddress, now + this.MILLISECONDS_IN_DAY, player.getName()));
@@ -598,13 +624,13 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//silence notifications when the player is banned
-		if(player.isBanned())
+		if(isBanned)
 		{
 		    event.setQuitMessage(null);
 		}
 		
 		//make sure his data is all saved - he might have accrued some claim blocks while playing that were not saved immediately
-		if(!player.isBanned())
+		else
 		{
 		    this.dataStore.savePlayerData(player.getUniqueId(), playerData);
 		}
@@ -619,7 +645,7 @@ class PlayerEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(playerID);
 		
 		//FEATURE: claims where players have allowed explosions will revert back to not allowing them when the owner logs out
-		for(Claim claim : playerData.claims)
+		for(Claim claim : playerData.getClaims())
 		{
 			claim.areExplosivesAllowed = false;
 		}
@@ -1311,7 +1337,7 @@ class PlayerEventHandler implements Listener
 						    claim = claim.parent;
 						}
 					    PlayerData otherPlayerData = this.dataStore.getPlayerData(claim.ownerID);
-						Date lastLogin = otherPlayerData.lastLogin;
+						Date lastLogin = otherPlayerData.getLastLogin();
 						Date now = new Date();
 						long daysElapsed = (now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24); 
 						
