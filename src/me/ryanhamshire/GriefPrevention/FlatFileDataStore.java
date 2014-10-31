@@ -469,7 +469,7 @@ public class FlatFileDataStore extends DataStore
 			try
 			{					
 				inStream = new BufferedReader(new FileReader(playerFile.getAbsolutePath()));
-				
+
 				//first line is last login timestamp
 				String lastLoginTimestampString = inStream.readLine();
 				
@@ -507,7 +507,8 @@ public class FlatFileDataStore extends DataStore
 			//if there's any problem with the file's content, log an error message
 			catch(Exception e)
 			{
-				 GriefPrevention.AddLogEntry("Unable to load data for player \"" + playerID.toString() + "\": " + e.getMessage());			 
+				 GriefPrevention.AddLogEntry("Unable to load data for player \"" + playerID.toString() + "\": " + e.toString());
+				 e.printStackTrace();
 			}
 			
 			try

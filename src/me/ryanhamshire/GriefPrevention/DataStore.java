@@ -563,6 +563,10 @@ public abstract class DataStore
 	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
 	public void savePlayerData(UUID playerID, PlayerData playerData)
 	{
+	    //thread won't have access to read from files (silent failure - all readlines() return null)
+	    //ensure player data is already read from file before trying to save
+	    playerData.getAccruedClaimBlocks();
+	    playerData.getClaims();
 	    new SavePlayerDataThread(playerID, playerData).start();
 	}
 	

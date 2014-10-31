@@ -753,8 +753,8 @@ class PlayerEventHandler implements Listener
 		
 		//FEATURE: prevent teleport abuse to win sieges
 		
-		//these rules only apply to non-ender-pearl teleportation
-		if(event.getCause() == TeleportCause.ENDER_PEARL) return;
+		//these rules only apply to siege worlds only
+		if(!GriefPrevention.instance.config_siege_enabledWorlds.contains(player.getWorld())) return;
 		
 		Location source = event.getFrom();
 		Claim sourceClaim = this.dataStore.getClaimAt(source, false, playerData.lastClaim);
@@ -1057,12 +1057,12 @@ class PlayerEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	void onPlayerInteract(PlayerInteractEvent event)
 	{
-		Player player = event.getPlayer();
+	    //not interested in left-click-on-air actions
+	    Action action = event.getAction();
+	    if(action == Action.LEFT_CLICK_AIR) return;
+        
+	    Player player = event.getPlayer();
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
-		Action action = event.getAction();
-		
-		//not interested in left-click-on-air actions
-		if(action == Action.LEFT_CLICK_AIR) return;
 		
 		Material clickedBlockType = null;
 		if(clickedBlock != null)
@@ -1088,50 +1088,39 @@ class PlayerEventHandler implements Listener
         }
         
         //don't care about left-clicking on most blocks, this is probably a break action
-        if(action == Action.LEFT_CLICK_BLOCK)
+        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        if(action == Action.LEFT_CLICK_BLOCK && clickedBlock != null)
         {
-            if(!this.onLeftClickWatchList(clickedBlockType) && !GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))  return;
+            //exception for blocks on a specific watch list
+            if(!this.onLeftClickWatchList(clickedBlockType) && !GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))
+            {
+                //and an exception for putting our fires
+                if(event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
+                {
+                    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+                    if(claim != null)
+                    {
+                        playerData.lastClaim = claim;
+                        
+                        String noBuildReason = claim.allowBuild(player, Material.AIR);
+                        if(noBuildReason != null)
+                        {
+                            event.setCancelled(true);
+                            GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+                            return;
+                        }
+                    }
+                }
+                
+                return;
+            }
         }
-		
-		//FEATURE: shovel and stick can be used from a distance away
-        Material itemInHand = player.getItemInHand().getType();
-	    if(action == Action.RIGHT_CLICK_AIR && (itemInHand == Material.STICK || itemInHand == Material.GOLD_SPADE))
-		{
-			//try to find a far away non-air block along line of sight
-	        clickedBlock = getTargetBlock(player, 100);
-	        clickedBlockType = clickedBlock.getType();
-		}			
-		
-		//if no block, stop here
-		if(clickedBlock == null)
-		{
-			return;
-		}
-		
-		//apply rules for putting out fires (requires build permission)
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		if(event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
-		{
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-			if(claim != null)
-			{
-				playerData.lastClaim = claim;
-				
-				String noBuildReason = claim.allowBuild(player, Material.AIR);
-				if(noBuildReason != null)
-				{
-					event.setCancelled(true);
-					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
-					return;
-				}
-			}
-		}
-		
+        
 		//apply rules for containers and crafting blocks
-		if(	GriefPrevention.instance.config_claims_preventTheft && (
+		if(	clickedBlock != null && GriefPrevention.instance.config_claims_preventTheft && (
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
 						clickedBlock.getState() instanceof InventoryHolder ||
-						clickedBlock.getType() == Material.ANVIL ||
+						clickedBlockType == Material.ANVIL ||
 						GriefPrevention.instance.config_mods_containerTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))))
 		{			
 			//block container use while under siege, so players can't hide items from attackers
@@ -1175,7 +1164,8 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise apply rules for doors, if configured that way
-		else if((GriefPrevention.instance.config_claims_lockWoodenDoors && clickedBlockType == Material.WOODEN_DOOR) ||
+		else if( clickedBlock != null && 
+		        (GriefPrevention.instance.config_claims_lockWoodenDoors && clickedBlockType == Material.WOODEN_DOOR) ||
 				(GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
 				(GriefPrevention.instance.config_claims_lockFenceGates && clickedBlockType == Material.FENCE_GATE))
 		{
@@ -1195,7 +1185,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//otherwise apply rules for buttons and switches
-		else if(GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.WOOD_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null))))
+		else if(clickedBlock != null && GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.WOOD_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null))))
 		{
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
@@ -1213,7 +1203,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//apply rule for note blocks and repeaters
-		else if(clickedBlockType == Material.NOTE_BLOCK || clickedBlockType == Material.DIODE_BLOCK_ON || clickedBlockType == Material.DIODE_BLOCK_OFF)
+		else if(clickedBlock != null && clickedBlockType == Material.NOTE_BLOCK || clickedBlockType == Material.DIODE_BLOCK_ON || clickedBlockType == Material.DIODE_BLOCK_OFF)
 		{
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
@@ -1238,7 +1228,7 @@ class PlayerEventHandler implements Listener
 			Material materialInHand = player.getItemInHand().getType();		
 			
 			//if it's bonemeal, check for build permission (ink sac == bone meal, must be a Bukkit bug?)
-			if(materialInHand == Material.INK_SACK)
+			if(clickedBlock != null && materialInHand == Material.INK_SACK)
 			{
 				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation(), clickedBlockType);
 				if(noBuildReason != null)
@@ -1250,7 +1240,7 @@ class PlayerEventHandler implements Listener
 				return;
 			}
 			
-			else if(materialInHand ==  Material.BOAT)
+			else if(clickedBlock != null && materialInHand ==  Material.BOAT)
 			{
 				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 				if(claim != null)
@@ -1267,7 +1257,7 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//if it's a spawn egg, minecart, or boat, and this is a creative world, apply special rules
-			else if((materialInHand == Material.MONSTER_EGG || materialInHand == Material.MINECART || materialInHand == Material.POWERED_MINECART || materialInHand == Material.STORAGE_MINECART || materialInHand == Material.BOAT) && GriefPrevention.instance.creativeRulesApply(clickedBlock.getLocation()))
+			else if(clickedBlock != null && (materialInHand == Material.MONSTER_EGG || materialInHand == Material.MINECART || materialInHand == Material.POWERED_MINECART || materialInHand == Material.STORAGE_MINECART || materialInHand == Material.BOAT) && GriefPrevention.instance.creativeRulesApply(clickedBlock.getLocation()))
 			{
 				//player needs build permission at this location
 				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation(), Material.MINECART);
@@ -1296,7 +1286,21 @@ class PlayerEventHandler implements Listener
 			//if he's investigating a claim
 			else if(materialInHand == GriefPrevention.instance.config_claims_investigationTool)
 			{
-				//air indicates too far away
+		        //FEATURE: shovel and stick can be used from a distance away
+		        if(action == Action.RIGHT_CLICK_AIR)
+		        {
+		            //try to find a far away non-air block along line of sight
+		            clickedBlock = getTargetBlock(player, 100);
+		            clickedBlockType = clickedBlock.getType();
+		        }           
+		        
+		        //if no block, stop here
+		        if(clickedBlock == null)
+		        {
+		            return;
+		        }
+			    
+			    //air indicates too far away
 				if(clickedBlockType == Material.AIR)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
@@ -1362,6 +1366,20 @@ class PlayerEventHandler implements Listener
 				event.setCancelled(true);
 				return;
 			}
+			
+			//FEATURE: shovel and stick can be used from a distance away
+            if(action == Action.RIGHT_CLICK_AIR)
+            {
+                //try to find a far away non-air block along line of sight
+                clickedBlock = getTargetBlock(player, 100);
+                clickedBlockType = clickedBlock.getType();
+            }           
+            
+            //if no block, stop here
+            if(clickedBlock == null)
+            {
+                return;
+            }
 			
 			//can't use the shovel from too far away
 			if(clickedBlockType == Material.AIR)
