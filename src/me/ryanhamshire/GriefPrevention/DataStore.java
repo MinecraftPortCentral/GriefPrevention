@@ -55,6 +55,7 @@ public abstract class DataStore
 	protected final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
 	final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
 	final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
+	final static String softMuteFilePath = dataLayerFolderPath + File.separator + "softMute.txt";
 
     //the latest version of the data schema implemented here
 	protected static final int latestSchemaVersion = 1;
@@ -70,6 +71,9 @@ public abstract class DataStore
     static final String SURVIVAL_VIDEO_URL = "http://bit.ly/mcgpuser";
     static final String CREATIVE_VIDEO_URL = "http://bit.ly/mcgpcrea";
     static final String SUBDIVISION_VIDEO_URL = "http://bit.ly/mcgpsub";
+    
+    //list of UUIDs which are soft-muted
+    ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>(); 
     
     protected int getSchemaVersion()
     {
@@ -118,11 +122,124 @@ public abstract class DataStore
             GriefPrevention.AddLogEntry("Update finished.");
         }
 		
-		//make a note of the data store schema version
+		//load list of soft mutes
+        this.loadSoftMutes();
+        
+        //make a note of the data store schema version
 		this.setSchemaVersion(latestSchemaVersion);
 	}
 	
-	//removes cached player data from memory
+	private void loadSoftMutes()
+	{
+	    File softMuteFile = new File(softMuteFilePath);
+        if(softMuteFile.exists())
+        {
+            BufferedReader inStream = null;
+            try
+            {
+                //open the file
+                inStream = new BufferedReader(new FileReader(softMuteFile.getAbsolutePath()));
+                
+                //while there are lines left
+                String nextID = inStream.readLine();
+                while(nextID != null)
+                {                
+                    //parse line into a UUID
+                    UUID playerID;
+                    try
+                    {
+                        playerID = UUID.fromString(nextID);
+                    }
+                    catch(Exception e)
+                    {
+                        playerID = null;
+                        GriefPrevention.AddLogEntry("Failed to parse soft mute entry as a UUID: " + nextID);
+                    }
+                    
+                    //push it into the map
+                    if(playerID != null)
+                    {
+                        this.softMuteMap.put(playerID, true);
+                    }
+                    
+                    //move to the next
+                    nextID = inStream.readLine();
+                }
+            }
+            catch(Exception e)
+            {
+                GriefPrevention.AddLogEntry("Failed to read from the soft mute data file: " + e.toString());
+                e.printStackTrace();
+            }
+            
+            try
+            {
+                if(inStream != null) inStream.close();                  
+            }
+            catch(IOException exception) {}
+        }        
+    }
+	
+	//updates soft mute map and data file
+	boolean toggleSoftMute(UUID playerID)
+	{
+	    boolean newValue = !this.isSoftMuted(playerID);
+	    
+	    this.softMuteMap.put(playerID, newValue);
+	    this.saveSoftMutes();
+	    
+	    return newValue;
+	}
+	
+	boolean isSoftMuted(UUID playerID)
+	{
+	    Boolean mapEntry = this.softMuteMap.get(playerID);
+	    if(mapEntry == null || mapEntry == Boolean.FALSE)
+	    {
+	        return false;
+	    }
+	    
+	    return true;
+	}
+	
+	private void saveSoftMutes()
+	{
+	    BufferedWriter outStream = null;
+        
+        try
+        {
+            //open the file and write the new value
+            File softMuteFile = new File(softMuteFilePath);
+            softMuteFile.createNewFile();
+            outStream = new BufferedWriter(new FileWriter(softMuteFile));
+            
+            for(Map.Entry<UUID, Boolean> entry : softMuteMap.entrySet())
+            {
+                if(entry.getValue().booleanValue())
+                {
+                    outStream.write(entry.getKey().toString());
+                    outStream.newLine();
+                }
+            }
+            
+        }       
+        
+        //if any problem, log it
+        catch(Exception e)
+        {
+            GriefPrevention.AddLogEntry("Unexpected exception saving soft mute data: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        //close the file
+        try
+        {
+            if(outStream != null) outStream.close();
+        }
+        catch(IOException exception) {}
+	}
+	
+    //removes cached player data from memory
 	synchronized void clearCachedPlayerData(UUID playerID)
 	{
 		this.playerNameToPlayerDataMap.remove(playerID);
@@ -557,13 +674,15 @@ public abstract class DataStore
 	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
     public void savePlayerDataSync(UUID playerID, PlayerData playerData)
     {
+        //ensure player data is already read from file before trying to save
+        playerData.getAccruedClaimBlocks();
+        playerData.getClaims();
         this.asyncSavePlayerData(playerID, playerData);
     }
 	
 	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
 	public void savePlayerData(UUID playerID, PlayerData playerData)
 	{
-	    //thread won't have access to read from files (silent failure - all readlines() return null)
 	    //ensure player data is already read from file before trying to save
 	    playerData.getAccruedClaimBlocks();
 	    playerData.getClaims();
@@ -1048,6 +1167,8 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.ClaimExplosivesAdvertisement, "To allow explosives to destroy blocks in this land claim, use /ClaimExplosions.", null);
 		this.addDefault(defaults, Messages.PlayerInPvPSafeZone, "That player is in a PvP safe zone.", null);		
 		this.addDefault(defaults, Messages.NoPistonsOutsideClaims, "Warning: Pistons won't move blocks outside land claims.", null);
+		this.addDefault(defaults, Messages.SoftMuted, "Soft-muted {0}.", "The changed player's name.");
+		this.addDefault(defaults, Messages.UnSoftMuted, "Un-soft-muted {0}.", "The changed player's name.");
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));

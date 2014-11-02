@@ -129,6 +129,10 @@ commands:
    claimexplosions:
       description: Toggles whether explosives may be used in a specific land claim.
       usage: /ClaimExplosions
+   softmute:
+      description: Toggles whether a player's messages will only reach other soft-muted players.
+      usage: /SoftMute <player>
+      permission: griefprevention.softmute
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.
@@ -146,6 +150,7 @@ permissions:
             griefprevention.lava: true
             griefprevention.eavesdrop: true
             griefprevention.deathblow: true
+            griefprevention.softmute: true
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
         default: op
@@ -168,13 +173,16 @@ permissions:
         description: Grants permission to place lava near the surface and outside of claims.
         default: op
     griefprevention.eavesdrop:
-        description: Allows a player to see whispered chat messages (/tell).
+        description: Allows a player to see whispered chat messages (/tell) and softmuted messages.
         default: op
     griefprevention.restorenatureaggressive:
         description: Grants access to /RestoreNatureAggressive and /RestoreNatureFill.
         default: op
     griefprevention.deathblow:
         description: Grants access to /DeathBlow.
+        default: op
+    griefprevention.softmute:
+        description: Grants access to /SoftMute.
         default: op
     griefprevention.claims:
         description: Grants access to claim-related slash commands.

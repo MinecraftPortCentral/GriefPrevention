@@ -1910,6 +1910,32 @@ public class GriefPrevention extends JavaPlugin
 			GriefPrevention.sendMessage(defender, TextMode.Warn, Messages.SiegeAlert, attacker.getName());
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.SiegeConfirmed, defender.getName());			
 		}
+		else if(cmd.getName().equalsIgnoreCase("softmute"))
+		{
+		    //requires one parameter
+		    if(args.length != 1) return false;
+		    
+		    //find the specified player
+            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0], true);
+            if(targetPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+                return true;
+            }
+            
+            //toggle mute for player
+            boolean isMuted = this.dataStore.toggleSoftMute(targetPlayer.getUniqueId());
+            if(isMuted)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Success, Messages.SoftMuted, targetPlayer.getName());
+            }
+            else
+            {
+                GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnSoftMuted, targetPlayer.getName());
+            }
+            
+            return true;
+		}
 		
 		return false; 
 	}

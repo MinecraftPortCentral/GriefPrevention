@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -92,7 +93,34 @@ class PlayerEventHandler implements Listener
 		
 		String message = event.getMessage();
 		
-		event.setCancelled(this.handlePlayerChat(player, message, event));
+		boolean muted = this.handlePlayerChat(player, message, event);
+		Set<Player> recipients = event.getRecipients();
+		
+		//muted messages go out to only the sender
+		if(muted)
+		{
+		    recipients.clear();
+		    recipients.add(player);
+		}
+		
+		//soft muted messages go out to all soft muted players
+		else if(this.dataStore.isSoftMuted(player.getUniqueId()))
+		{
+		    Set<Player> recipientsToKeep = new HashSet<Player>();
+		    for(Player recipient : recipients)
+		    {
+		        if(this.dataStore.isSoftMuted(recipient.getUniqueId()))
+		        {
+		            recipientsToKeep.add(recipient);
+		        }
+		        else if(recipient.hasPermission("griefprevention.eavesdrop"))
+		        {
+		            recipient.sendMessage("(Muted)" + player.getName() + ": " + message);
+		        }
+		    }
+		    recipients.clear();
+		    recipients.addAll(recipientsToKeep);
+		}
 	}
 	
 	//last chat message shown, regardless of who sent it
@@ -291,10 +319,6 @@ class PlayerEventHandler implements Listener
 			{
 				//make a log entry
 				GriefPrevention.AddLogEntry("Muted spam from " + player.getName() + ": " + message);
-				
-				//send a fake message so the player doesn't realize he's muted
-				//less information for spammers = less effective spam filter dodging
-				player.sendMessage("<" + player.getName() + "> " + message);
 				
 				//cancelling the event guarantees other players don't receive the message
 				return true;
