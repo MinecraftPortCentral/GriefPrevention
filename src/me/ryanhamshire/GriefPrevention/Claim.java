@@ -323,7 +323,7 @@ public class Claim
 	        Material.MELON_STEM,
 	        Material.CARROT,
 	        Material.POTATO,
-	        Material.NETHER_STALK);
+	        Material.NETHER_WARTS);
 	    
     private boolean placeableForFarming(Material material)
     {
