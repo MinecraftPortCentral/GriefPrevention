@@ -81,7 +81,7 @@ class PlayerEventHandler implements Listener
 	}
 	
 	//when a player chats, monitor for spam
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	synchronized void onPlayerChat (AsyncPlayerChatEvent event)
 	{		
 		Player player = event.getPlayer();
@@ -125,6 +125,7 @@ class PlayerEventHandler implements Listener
 	
 	//last chat message shown, regardless of who sent it
 	private String lastChatMessage = "";
+	private long lastChatMessageTimestamp = 0;
 	
 	//number of identical messages in a row
 	private int duplicateMessageCount = 0;
@@ -181,7 +182,8 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//always mute an exact match to the last chat message
-		if(message.equals(this.lastChatMessage))
+		long now = new Date().getTime();
+		if(message.equals(this.lastChatMessage) && now - this.lastChatMessageTimestamp < 750)
 		{
 		    playerData.spamCount += ++this.duplicateMessageCount;
 		    spam = true;
@@ -190,6 +192,7 @@ class PlayerEventHandler implements Listener
 		else
 		{
 		    this.lastChatMessage = message;
+		    this.lastChatMessageTimestamp = now;
 		    this.duplicateMessageCount = 0;
 		}
 		
@@ -197,7 +200,7 @@ class PlayerEventHandler implements Listener
 		message = message.toLowerCase();
 		
 		//check message content and timing		
-		long millisecondsSinceLastMessage = (new Date()).getTime() - playerData.lastMessageTimestamp.getTime();
+		long millisecondsSinceLastMessage = now - playerData.lastMessageTimestamp.getTime();
 		
 		//if the message came too close to the last one
 		if(millisecondsSinceLastMessage < 1500)
