@@ -115,7 +115,7 @@ class PlayerEventHandler implements Listener
 		        }
 		        else if(recipient.hasPermission("griefprevention.eavesdrop"))
 		        {
-		            recipient.sendMessage("(Muted)" + player.getName() + ": " + message);
+		            recipient.sendMessage(ChatColor.GRAY + "(Muted " + player.getName() + "): " + message);
 		        }
 		    }
 		    recipients.clear();
