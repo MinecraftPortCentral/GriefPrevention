@@ -69,6 +69,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	public boolean config_claims_preventTheft;						//whether containers and crafting blocks are protectable
 	public boolean config_claims_protectCreatures;					//whether claimed animals may be injured by players without permission
+	public boolean config_claims_protectHorses;						//whether horses on a claim should be protected by that claim's rules
 	public boolean config_claims_preventButtonsSwitches;			//whether buttons and switches are protectable
 	public boolean config_claims_lockWoodenDoors;					//whether wooden doors should be locked by default (require /accesstrust)
 	public boolean config_claims_lockTrapDoors;						//whether trap doors should be locked by default (require /accesstrust)
@@ -319,6 +320,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		this.config_claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
 		this.config_claims_protectCreatures = config.getBoolean("GriefPrevention.Claims.ProtectCreatures", true);
+        this.config_claims_protectHorses = config.getBoolean("GriefPrevention.Claims.ProtectHorses", true);
 		this.config_claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);
 		this.config_claims_lockWoodenDoors = config.getBoolean("GriefPrevention.Claims.LockWoodenDoors", false);
 		this.config_claims_lockTrapDoors = config.getBoolean("GriefPrevention.Claims.LockTrapDoors", false);
@@ -564,6 +566,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		outConfig.set("GriefPrevention.Claims.PreventTheft", this.config_claims_preventTheft);
 		outConfig.set("GriefPrevention.Claims.ProtectCreatures", this.config_claims_protectCreatures);
+		outConfig.set("GriefPrevention.Claims.ProtectHorses", this.config_claims_protectHorses);
 		outConfig.set("GriefPrevention.Claims.PreventButtonsSwitches", this.config_claims_preventButtonsSwitches);
 		outConfig.set("GriefPrevention.Claims.LockWoodenDoors", this.config_claims_lockWoodenDoors);
 		outConfig.set("GriefPrevention.Claims.LockTrapDoors", this.config_claims_lockTrapDoors);
