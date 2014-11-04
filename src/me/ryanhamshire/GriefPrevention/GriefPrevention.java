@@ -2204,7 +2204,7 @@ public class GriefPrevention extends JavaPlugin
     		OfflinePlayer [] players = this.getServer().getOfflinePlayers();
     		for(int i = 0; i < players.length; i++)
             {
-                if(players[i].getName().equalsIgnoreCase(name))
+                if(players[i].getName() != null && players[i].getName().equalsIgnoreCase(name))
                 {
                     bestMatch = players[i];
                     if(bestMatch.getName().equals(name)) return bestMatch;
