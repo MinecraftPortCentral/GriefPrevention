@@ -466,14 +466,24 @@ public abstract class DataStore
 	//deletes a claim or subdivision
 	synchronized public void deleteClaim(Claim claim)
 	{
-		//subdivisions are simple - just remove them from their parent claim and save that claim
+	    //subdivisions are simple - just remove them from their parent claim and save that claim
 		if(claim.parent != null)
 		{
 			Claim parentClaim = claim.parent;
 			parentClaim.children.remove(claim);
-			this.saveClaim(parentClaim);
+			claim.inDataStore = false;
+	        this.saveClaim(parentClaim);
 			return;
 		}
+		
+		//delete any children
+        for(int j = 0; j < claim.children.size(); j++)
+        {
+            this.deleteClaim(claim.children.get(j));
+        }
+        
+        //mark as deleted so any references elsewhere can be ignored
+        claim.inDataStore = false;
 		
 		//remove from memory
 		for(int i = 0; i < this.claims.size(); i++)
@@ -481,28 +491,23 @@ public abstract class DataStore
 			if(claims.get(i).id.equals(claim.id))
 			{
 				this.claims.remove(i);
-				claim.inDataStore = false;
-				for(int j = 0; j < claim.children.size(); j++)
-				{
-					claim.children.get(j).inDataStore = false;
-				}
 				break;
 			}
-			
-			ArrayList<String> chunkStrings = claim.getChunkStrings();
-			for(String chunkString : chunkStrings)
-			{
-			    ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkString);
-			    for(int j = 0; j < claimsInChunk.size(); j++)
-			    {
-			        if(claimsInChunk.get(j).id.equals(claim.id))
-			        {
-			            claimsInChunk.remove(j);
-			            break;
-			        }
-			    }
-			}
 		}
+		
+		ArrayList<String> chunkStrings = claim.getChunkStrings();
+        for(String chunkString : chunkStrings)
+        {
+            ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkString);
+            for(int j = 0; j < claimsInChunk.size(); j++)
+            {
+                if(claimsInChunk.get(j).id.equals(claim.id))
+                {
+                    claimsInChunk.remove(j);
+                    break;
+                }
+            }
+        }
 		
 		//remove from secondary storage
 		this.deleteClaimFromSecondaryStorage(claim);
