@@ -133,6 +133,10 @@ commands:
       description: Toggles whether a player's messages will only reach other soft-muted players.
       usage: /SoftMute <player>
       permission: griefprevention.softmute
+   gpreload:
+      description: Reloads Grief Prevention's configuration settings.  Does NOT totally reload the entire plugin.
+      usage: /gpreload
+      permission: griefprevention.reload
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.
@@ -151,6 +155,7 @@ permissions:
             griefprevention.eavesdrop: true
             griefprevention.deathblow: true
             griefprevention.softmute: true
+            griefprevention.reload: true
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
         default: op
@@ -180,6 +185,9 @@ permissions:
         default: op
     griefprevention.deathblow:
         description: Grants access to /DeathBlow.
+        default: op
+    griefprevention.reload:
+        description: Grants access to /gpreload.
         default: op
     griefprevention.softmute:
         description: Grants access to /SoftMute.
