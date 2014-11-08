@@ -216,15 +216,19 @@ public class DatabaseDataStore extends DataStore
 		while(results.next())
 		{
 			try
-			{			
+			{
+			    //problematic claims will be removed from secondary storage, and never added to in-memory data store
+			    boolean removeClaim = false;
+			    
 			    long parentId = results.getLong("parentid");
 				long claimID = results.getLong("id");
 					
 				Location lesserBoundaryCorner = null;
 				Location greaterBoundaryCorner = null;
+				String lesserCornerString = "(location not available)";
 				try
 				{
-    				String lesserCornerString = results.getString("lessercorner");
+    				lesserCornerString = results.getString("lessercorner");
     				lesserBoundaryCorner = this.locationFromString(lesserCornerString);
     				
     				String greaterCornerString = results.getString("greatercorner");
@@ -234,10 +238,8 @@ public class DatabaseDataStore extends DataStore
 				{
 				    if(e.getMessage().contains("World not found"))
 				    {
-				        Claim claim = new Claim();
-				        claim.id = claimID;
-				        claimsToRemove.add(claim);
-				        continue;
+				        removeClaim = true;
+				        GriefPrevention.AddLogEntry("Removing a claim in a world which does not exist: " + lesserCornerString);
 				    }
 				    else
 				    {
@@ -294,7 +296,11 @@ public class DatabaseDataStore extends DataStore
 				
 				Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames, managerNames, claimID);
 				
-				if(parentId == -1)
+				if(removeClaim)
+				{
+				    claimsToRemove.add(claim);
+				}
+				else if(parentId == -1)
 				{
 				    //top level claim
 				    this.addClaim(claim, false);
@@ -321,6 +327,7 @@ public class DatabaseDataStore extends DataStore
             if(topLevelClaim == null)
             {
                 claimsToRemove.add(childClaim);
+                GriefPrevention.AddLogEntry("Removing orphaned claim subdivision: " + childClaim.getLesserBoundaryCorner().toString());
                 continue;
             }
             
@@ -448,17 +455,21 @@ public class DatabaseDataStore extends DataStore
 		}
 	}
 	
-	//deletes a top level claim from the database
+	//deletes a claim from the database
 	@Override
 	synchronized void deleteClaimFromSecondaryStorage(Claim claim)
 	{
-		try
+	    try
 		{
 			this.refreshDataConnection();
-			
+
+						
 			Statement statement = this.databaseConnection.createStatement();
-			statement.execute("DELETE FROM griefprevention_claimdata WHERE id=" + claim.id + ";");			
-			statement.execute("DELETE FROM griefprevention_claimdata WHERE parentid=" + claim.id + ";");
+			statement.execute("DELETE FROM griefprevention_claimdata WHERE lessercorner='" + this.locationToString(claim.lesserBoundaryCorner) + "' AND greatercorner = '" + this.locationToString(claim.greaterBoundaryCorner) + "';");
+			if(claim.id != -1)
+			{
+			    statement.execute("DELETE FROM griefprevention_claimdata WHERE parentid=" + claim.id + ";");
+			}
 		}
 		catch(SQLException e)
 		{
