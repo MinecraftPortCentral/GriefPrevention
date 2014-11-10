@@ -54,7 +54,7 @@ class UUIDFetcher {
             String name = names.get(i);
             for(OfflinePlayer player : players)
             {
-                if(player.getName().equalsIgnoreCase(name))
+                if(player.getName() != null && player.getName().equalsIgnoreCase(name))
                 {
                     if(!player.getName().equals(name))
                     {
@@ -73,7 +73,7 @@ class UUIDFetcher {
             String name = names.get(i);
             for(OfflinePlayer player : players)
             {
-                if(player.getName().equalsIgnoreCase(name))
+                if(player.getName() != null && player.getName().equalsIgnoreCase(name))
                 {
                     UUID uuid = player.getUniqueId();
                     if(uuid != null)
