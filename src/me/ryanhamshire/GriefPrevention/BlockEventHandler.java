@@ -624,55 +624,31 @@ public class BlockEventHandler implements Listener
 		}
 	}
 	
-	//ensures fluids don't flow out of claims, unless into another claim where the owner is trusted to build
+	//ensures fluids don't flow into land claims from outside
 	private Claim lastSpreadClaim = null;
-	private Location lastSpreadSourceLocation = null;
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockFromTo (BlockFromToEvent spreadEvent)
 	{
-		//don't track in worlds where claims are not enabled
+	    //always allow fluids to flow straight down
+        if(spreadEvent.getFace() == BlockFace.DOWN) return;
+        
+	    //don't track in worlds where claims are not enabled
 		if(!GriefPrevention.instance.claimsEnabledForWorld(spreadEvent.getBlock().getWorld())) return;
 		
-		//always allow fluids to flow straight down
-		if(spreadEvent.getFace() == BlockFace.DOWN) return;
-		
-		//from where?
-		Block fromBlock = spreadEvent.getBlock();
-		Claim fromClaim = null;
-		if(fromBlock.getLocation().equals(lastSpreadSourceLocation))
-		{
-		    fromClaim = lastSpreadClaim;
-		}
-		else
-		{
-		    fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, this.lastSpreadClaim);
-		    lastSpreadClaim = fromClaim;
-		    lastSpreadSourceLocation = fromBlock.getLocation();
-		}
-		
 		//where to?
-		Block toBlock = spreadEvent.getToBlock();
-		
-		//if from a land claim, this is easy and cheap - just don't allow for flowing out of that claim
-		if(fromClaim != null)
-		{
-		    if(!fromClaim.contains(toBlock.getLocation(), false, false))
-		    {
-		        spreadEvent.setCancelled(true);
-		    }
-		}
-		
-		//otherwise, just prevent spreading into a claim from outside
-        else
-		{
-    		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
-    		
-    		//if spreading into a claim
-    		if(toClaim != null)
-    		{		
-    			spreadEvent.setCancelled(true);
-    		}
-		}
+        Block toBlock = spreadEvent.getToBlock();
+        Location toLocation = toBlock.getLocation();
+        Claim toClaim = this.dataStore.getClaimAt(toLocation, false, lastSpreadClaim);
+        
+        //if into a land claim, it must be from the same land claim
+        if(toClaim != null)
+        {
+            this.lastSpreadClaim = toClaim;
+            if(!toClaim.contains(spreadEvent.getBlock().getLocation(), false, false))
+            {
+                spreadEvent.setCancelled(true);
+            }
+        }
 	}
 	
 	//ensures dispensers can't be used to dispense a block(like water or lava) or item across a claim boundary

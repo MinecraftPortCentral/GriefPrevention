@@ -1115,15 +1115,16 @@ class PlayerEventHandler implements Listener
         }
         
         //don't care about left-clicking on most blocks, this is probably a break action
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = null;
         if(action == Action.LEFT_CLICK_BLOCK && clickedBlock != null)
         {
             //exception for blocks on a specific watch list
             if(!this.onLeftClickWatchList(clickedBlockType) && !GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))
             {
                 //and an exception for putting our fires
-                if(event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
+                if(clickedBlockType == Material.NETHERRACK && event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
                 {
+                    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
                     Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
                     if(claim != null)
                     {
@@ -1146,11 +1147,13 @@ class PlayerEventHandler implements Listener
 		//apply rules for containers and crafting blocks
 		if(	clickedBlock != null && GriefPrevention.instance.config_claims_preventTheft && (
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
-						clickedBlock.getState() instanceof InventoryHolder ||
+						this.isInventoryHolder(clickedBlock) ||
 						clickedBlockType == Material.ANVIL ||
 						GriefPrevention.instance.config_mods_containerTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))))
 		{			
-			//block container use while under siege, so players can't hide items from attackers
+		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		    
+		    //block container use while under siege, so players can't hide items from attackers
 			if(playerData.siegeData != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
@@ -1196,7 +1199,8 @@ class PlayerEventHandler implements Listener
 				(GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
 				(GriefPrevention.instance.config_claims_lockFenceGates && clickedBlockType == Material.FENCE_GATE))
 		{
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
 				playerData.lastClaim = claim;
@@ -1214,10 +1218,12 @@ class PlayerEventHandler implements Listener
 		//otherwise apply rules for buttons and switches
 		else if(clickedBlock != null && GriefPrevention.instance.config_claims_preventButtonsSwitches && (clickedBlockType == null || clickedBlockType == Material.STONE_BUTTON || clickedBlockType == Material.WOOD_BUTTON || clickedBlockType == Material.LEVER || GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null))))
 		{
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
-				playerData.lastClaim = claim;
+			    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+			    playerData.lastClaim = claim;
 				
 				String noAccessReason = claim.allowAccess(player);
 				if(noAccessReason != null)
@@ -1232,7 +1238,8 @@ class PlayerEventHandler implements Listener
 		//apply rule for note blocks and repeaters
 		else if(clickedBlock != null && clickedBlockType == Material.NOTE_BLOCK || clickedBlockType == Material.DIODE_BLOCK_ON || clickedBlockType == Material.DIODE_BLOCK_OFF)
 		{
-			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 			if(claim != null)
 			{
 				String noBuildReason = claim.allowBuild(player, clickedBlockType);
@@ -1269,7 +1276,8 @@ class PlayerEventHandler implements Listener
 			
 			else if(clickedBlock != null && materialInHand ==  Material.BOAT)
 			{
-				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+			    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+			    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 				if(claim != null)
 				{
 					String noAccessReason = claim.allowAccess(player);
@@ -1296,6 +1304,7 @@ class PlayerEventHandler implements Listener
 				}
 			
 				//enforce limit on total number of entities in this claim
+				if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 				if(claim == null) return;
 				
@@ -1335,6 +1344,7 @@ class PlayerEventHandler implements Listener
 					return;
 				}
 				
+				if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 				Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false /*ignore height*/, playerData.lastClaim);
 				
 				//no claim case
@@ -1387,6 +1397,7 @@ class PlayerEventHandler implements Listener
 			else if(materialInHand != GriefPrevention.instance.config_claims_modificationTool) return;
 			
 			//disable golden shovel while under siege
+			if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			if(playerData.siegeData != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoShovel);
@@ -1588,6 +1599,7 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//if he's resizing a claim and that claim hasn't been deleted since he started resizing it
+			if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			if(playerData.claimResizing != null && playerData.claimResizing.inDataStore)
 			{
 				if(clickedBlock.getLocation().equals(playerData.lastShovelLocation)) return;
@@ -1724,6 +1736,7 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//otherwise, since not currently resizing a claim, must be starting a resize, creating a new claim, or creating a subdivision
+			if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), true /*ignore height*/, playerData.lastClaim);			
 			
 			//if within an existing claim, he's not creating a new one
@@ -1919,7 +1932,25 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
-	private boolean onLeftClickWatchList(Material material)
+	//determines whether a block type is an inventory holder.  uses a caching strategy to save cpu time
+	private ConcurrentHashMap<Integer, Boolean> inventoryHolderCache = new ConcurrentHashMap<Integer, Boolean>();
+	private boolean isInventoryHolder(Block clickedBlock)
+	{
+	    Integer cacheKey = clickedBlock.getTypeId();
+	    Boolean cachedValue = this.inventoryHolderCache.get(cacheKey);
+	    if(cachedValue != null)
+	    {
+	        return cachedValue.booleanValue();
+	    }
+	    else
+	    {
+	        boolean isHolder = clickedBlock.getState() instanceof InventoryHolder;
+	        this.inventoryHolderCache.put(cacheKey, isHolder);
+	        return isHolder;
+	    }
+    }
+
+    private boolean onLeftClickWatchList(Material material)
 	{
 	    switch(material)
         {

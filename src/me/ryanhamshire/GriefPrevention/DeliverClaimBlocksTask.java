@@ -26,53 +26,77 @@ import org.bukkit.entity.Player;
 //runs every 5 minutes in the main thread, grants blocks per hour / 12 to each online player who appears to be actively playing
 class DeliverClaimBlocksTask implements Runnable 
 {	
+    private Player player;
+    
+    public DeliverClaimBlocksTask(Player player)
+    {
+        this.player = player;
+    }
+    
 	@Override
 	public void run()
 	{
-		Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
-		
-		//ensure players get at least 1 block (if accrual is totally disabled, this task won't even be scheduled)
-		int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
-		if(accruedBlocks < 0) accruedBlocks = 1;
-		
-		//for each online player
-		for(int i = 0; i < players.length; i++)
+		//if no player specified, this task will create a player-specific task for each online player, scheduled one tick apart
+	    if(this.player == null)
 		{
-			Player player = players[i];
-			DataStore dataStore = GriefPrevention.instance.dataStore;
-			PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
-			
-			Location lastLocation = playerData.lastAfkCheckLocation;
-			try  //distance squared will throw an exception if the player has changed worlds
-			{
-				//if he's not in a vehicle and has moved at least three blocks since the last check
-				//and he's not being pushed around by fluids
-				if(!player.isInsideVehicle() && 
-				   (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 9) &&
-				   !player.getLocation().getBlock().isLiquid())
-				{					
-					//if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
-					//in that case, leave his blocks where they are
-					if(playerData.getAccruedClaimBlocks() > GriefPrevention.instance.config_claims_maxAccruedBlocks) continue;
-					
-					//add blocks
-					playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() + accruedBlocks);
-					
-					//respect limits
-					if(playerData.getAccruedClaimBlocks() > GriefPrevention.instance.config_claims_maxAccruedBlocks)
-					{
-						playerData.setAccruedClaimBlocks(GriefPrevention.instance.config_claims_maxAccruedBlocks); 
-					}
-					
-					//intentionally NOT saving data here to reduce overall secondary storage access frequency
-					//many other operations will cause this players data to save, including his eventual logout
-					//dataStore.savePlayerData(player.getName(), playerData);
-				}
-			}
-			catch(Exception e) { }
-			
-			//remember current location for next time
-			playerData.lastAfkCheckLocation = player.getLocation();
+	        Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
+	        
+	        long i = 0;
+	        for(Player onlinePlayer : players)
+	        {
+	            DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer);
+	            GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, newTask, i++);
+	        }
 		}
+	    
+	    //otherwise, deliver claim blocks to the specified player
+	    else
+	    {
+	        int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
+	        if(accruedBlocks < 0) accruedBlocks = 1;
+	        
+	        DataStore dataStore = GriefPrevention.instance.dataStore;
+            PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
+            
+            Location lastLocation = playerData.lastAfkCheckLocation;
+            try  //distance squared will throw an exception if the player has changed worlds
+            {
+                //if he's not in a vehicle and has moved at least three blocks since the last check
+                //and he's not being pushed around by fluids
+                if(!player.isInsideVehicle() && 
+                   (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 9) &&
+                   !player.getLocation().getBlock().isLiquid())
+                {                   
+                    //if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
+                    //in that case, leave his blocks where they are
+                    if(playerData.getAccruedClaimBlocks() > GriefPrevention.instance.config_claims_maxAccruedBlocks) return;
+                    
+                    //add blocks
+                    playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() + accruedBlocks);
+                    
+                    //respect limits
+                    if(playerData.getAccruedClaimBlocks() > GriefPrevention.instance.config_claims_maxAccruedBlocks)
+                    {
+                        playerData.setAccruedClaimBlocks(GriefPrevention.instance.config_claims_maxAccruedBlocks); 
+                    }
+                    
+                    //intentionally NOT saving data here to reduce overall secondary storage access frequency
+                    //many other operations will cause this players data to save, including his eventual logout
+                    //dataStore.savePlayerData(player.getName(), playerData);
+                }
+            }
+            catch(IllegalArgumentException e)  //can't measure distance when to/from are different worlds
+            {
+                
+            }
+            catch(Exception e)
+            {
+                GriefPrevention.AddLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
+                e.printStackTrace();
+            }
+            
+            //remember current location for next time
+            playerData.lastAfkCheckLocation = player.getLocation();
+	    }
 	}
 }
