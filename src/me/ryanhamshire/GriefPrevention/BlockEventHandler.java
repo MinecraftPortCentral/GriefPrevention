@@ -691,9 +691,9 @@ public class BlockEventHandler implements Listener
 		Claim fromClaim = this.dataStore.getClaimAt(fromBlock.getLocation(), false, null);
 		Claim toClaim = this.dataStore.getClaimAt(toBlock.getLocation(), false, fromClaim);
 		
-		//into wilderness is NOT OK when surface buckets are limited
+		//into wilderness is NOT OK in creative mode worlds
 		Material materialDispensed = dispenseEvent.getItem().getType();
-		if((materialDispensed == Material.WATER_BUCKET || materialDispensed == Material.LAVA_BUCKET) && GriefPrevention.instance.config_blockWildernessWaterBuckets && GriefPrevention.instance.claimsEnabledForWorld(fromBlock.getWorld()) && toClaim == null)
+		if((materialDispensed == Material.WATER_BUCKET || materialDispensed == Material.LAVA_BUCKET) && GriefPrevention.instance.creativeRulesApply(dispenseEvent.getBlock().getLocation()) && toClaim == null)
 		{
 			dispenseEvent.setCancelled(true);
 			return;

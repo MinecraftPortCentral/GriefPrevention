@@ -1026,12 +1026,12 @@ class PlayerEventHandler implements Listener
 			minLavaDistance = 3;
 		}
 		
-		//otherwise no wilderness dumping (unless underground) in worlds where claims are enabled
-		else if(GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
+		//otherwise no wilderness dumping in creative mode worlds
+		else if(GriefPrevention.instance.creativeRulesApply(block.getLocation()))
 		{
 			if(block.getY() >= GriefPrevention.instance.getSeaLevel(block.getWorld()) - 5 && !player.hasPermission("griefprevention.lava"))
 			{
-				if(bucketEvent.getBucket() == Material.LAVA_BUCKET || GriefPrevention.instance.config_blockWildernessWaterBuckets)
+				if(bucketEvent.getBucket() == Material.LAVA_BUCKET)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoWildernessBuckets);
 					bucketEvent.setCancelled(true);

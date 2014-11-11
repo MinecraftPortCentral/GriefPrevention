@@ -123,7 +123,6 @@ public class GriefPrevention extends JavaPlugin
 	
 	public boolean config_blockSurfaceCreeperExplosions;			//whether creeper explosions near or above the surface destroy blocks
 	public boolean config_blockSurfaceOtherExplosions;				//whether non-creeper explosions near or above the surface destroy blocks
-	public boolean config_blockWildernessWaterBuckets;				//whether players can dump water buckets outside their claims
 	public boolean config_blockSkyTrees;							//whether players can build trees on platforms in the sky
 	
 	public boolean config_fireSpreads;								//whether fire spreads outside of claims
@@ -496,7 +495,6 @@ public class GriefPrevention extends JavaPlugin
         
         this.config_blockSurfaceCreeperExplosions = config.getBoolean("GriefPrevention.BlockSurfaceCreeperExplosions", true);
         this.config_blockSurfaceOtherExplosions = config.getBoolean("GriefPrevention.BlockSurfaceOtherExplosions", true);
-        this.config_blockWildernessWaterBuckets = config.getBoolean("GriefPrevention.LimitSurfaceWaterBuckets", true);
         this.config_blockSkyTrees = config.getBoolean("GriefPrevention.LimitSkyTrees", true);
         this.config_limitTreeGrowth = config.getBoolean("GriefPrevention.LimitTreeGrowth", false);
         this.config_pistonsInClaimsOnly = config.getBoolean("GriefPrevention.LimitPistonsToLandClaims", true);
@@ -747,7 +745,6 @@ public class GriefPrevention extends JavaPlugin
         
         outConfig.set("GriefPrevention.BlockSurfaceCreeperExplosions", this.config_blockSurfaceCreeperExplosions);
         outConfig.set("GriefPrevention.BlockSurfaceOtherExplosions", this.config_blockSurfaceOtherExplosions);
-        outConfig.set("GriefPrevention.LimitSurfaceWaterBuckets", this.config_blockWildernessWaterBuckets);
         outConfig.set("GriefPrevention.LimitSkyTrees", this.config_blockSkyTrees);
         outConfig.set("GriefPrevention.LimitTreeGrowth", this.config_limitTreeGrowth);
         outConfig.set("GriefPrevention.LimitPistonsToLandClaims", this.config_pistonsInClaimsOnly);
@@ -2004,13 +2001,6 @@ public class GriefPrevention extends JavaPlugin
 		{
 			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
 			return true;
-		}
-		
-		//if the claim has lots of surface water or some surface lava, warn the player it will be cleaned up
-		else if(!playerData.warnedAboutMajorDeletion && claim.hasSurfaceFluids())
-		{			
-			GriefPrevention.sendMessage(player, TextMode.Warn, Messages.ConfirmFluidRemoval);
-			playerData.warnedAboutMajorDeletion = true;
 		}
 		
 		else

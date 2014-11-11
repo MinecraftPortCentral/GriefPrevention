@@ -107,7 +107,7 @@ public class Claim
 		return true;
 	}
 	
-	//removes any fluids above sea level in a claim
+	//removes any lava above sea level in a claim
 	//exclusionClaim is another claim indicating an sub-area to be excluded from this operation
 	//it may be null
 	public void removeSurfaceFluids(Claim exclusionClaim)
@@ -118,8 +118,8 @@ public class Claim
 		//don't do it for very large claims
 		if(this.getArea() > 10000) return;
 		
-		//don't do it when surface fluids are allowed to be dumped
-		if(!GriefPrevention.instance.config_blockWildernessWaterBuckets) return;
+		//only in creative mode worlds
+		if(!GriefPrevention.instance.creativeRulesApply(this.lesserBoundaryCorner)) return;
 		
 		Location lesser = this.getLesserBoundaryCorner();
 		Location greater = this.getGreaterBoundaryCorner();
@@ -141,7 +141,7 @@ public class Claim
 					Block block = lesser.getWorld().getBlockAt(x, y, z);
 					if(exclusionClaim != null && exclusionClaim.contains(block.getLocation(), true, false)) continue;
 					
-					if(block.getType() == Material.STATIONARY_WATER || block.getType() == Material.STATIONARY_LAVA || block.getType() == Material.LAVA || block.getType() == Material.WATER)
+					if(block.getType() == Material.STATIONARY_LAVA || block.getType() == Material.LAVA)
 					{
 						block.setType(Material.AIR);
 					}
@@ -150,7 +150,7 @@ public class Claim
 		}		
 	}
 	
-	//determines whether or not a claim has surface fluids (lots of water blocks, or any lava blocks)
+	//determines whether or not a claim has surface lava
 	//used to warn players when they abandon their claims about automatic fluid cleanup
 	boolean hasSurfaceFluids()
 	{
@@ -165,7 +165,6 @@ public class Claim
 		//respect sea level in normal worlds
 		if(lesser.getWorld().getEnvironment() == Environment.NORMAL) seaLevel = GriefPrevention.instance.getSeaLevel(lesser.getWorld());
 		
-		int waterCount = 0;
 		for(int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
 		{
 			for(int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++)
@@ -175,13 +174,7 @@ public class Claim
 					//dodge the exclusion claim
 					Block block = lesser.getWorld().getBlockAt(x, y, z);
 					
-					if(block.getType() == Material.STATIONARY_WATER || block.getType() == Material.WATER)
-					{
-						waterCount++;
-						if(waterCount > 10) return true;
-					}
-					
-					else if(block.getType() == Material.STATIONARY_LAVA || block.getType() == Material.LAVA)
+					if(block.getType() == Material.STATIONARY_LAVA || block.getType() == Material.LAVA)
 					{
 						return true;
 					}
