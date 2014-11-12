@@ -562,7 +562,7 @@ public class BlockEventHandler implements Listener
 			
 			//if the source of the spread is not fire on netherrack, put out that source fire to save cpu cycles
 			Block source = spreadEvent.getSource();
-			if(source.getType() == Material.FIRE && source.getRelative(BlockFace.DOWN).getType() != Material.NETHERRACK)
+			if(source.getRelative(BlockFace.DOWN).getType() != Material.NETHERRACK)
 			{
 				source.setType(Material.AIR);
 			}			
