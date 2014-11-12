@@ -190,10 +190,8 @@ class EntityEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onEntitySpawn(CreatureSpawnEvent event)
 	{
-		LivingEntity entity = event.getEntity();
-		
 		//these rules apply only to creative worlds
-		if(!GriefPrevention.instance.creativeRulesApply(entity.getLocation())) return;
+		if(!GriefPrevention.instance.creativeRulesApply(event.getLocation())) return;
 		
 		//chicken eggs and breeding could potentially make a mess in the wilderness, once griefers get involved
 		SpawnReason reason = event.getSpawnReason();
