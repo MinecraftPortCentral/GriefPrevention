@@ -161,12 +161,6 @@ class EntityEventHandler implements Listener
 			{
 				blocks.remove(i--);
 			}
-			
-			//if the block is not claimed and is a log, trigger the anti-tree-top code
-			else if(block.getType() == Material.LOG)
-			{
-				GriefPrevention.instance.handleLogBroken(block);
-			}
 		}
 	}
 	

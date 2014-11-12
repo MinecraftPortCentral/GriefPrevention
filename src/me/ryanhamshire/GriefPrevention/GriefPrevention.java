@@ -69,6 +69,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	public boolean config_claims_preventTheft;						//whether containers and crafting blocks are protectable
 	public boolean config_claims_protectCreatures;					//whether claimed animals may be injured by players without permission
+	public boolean config_claims_protectFires;                      //whether open flint+steel flames should be protected - optional because it's expensive
 	public boolean config_claims_preventButtonsSwitches;			//whether buttons and switches are protectable
 	public boolean config_claims_lockWoodenDoors;					//whether wooden doors should be locked by default (require /accesstrust)
 	public boolean config_claims_lockTrapDoors;						//whether trap doors should be locked by default (require /accesstrust)
@@ -114,9 +115,6 @@ public class GriefPrevention extends JavaPlugin
 	public ArrayList<String> config_pvp_blockedCommands;			//list of commands which may not be used during pvp combat
 	public boolean config_pvp_noCombatInPlayerLandClaims;			//whether players may fight in player-owned land claims
 	public boolean config_pvp_noCombatInAdminLandClaims;			//whether players may fight in admin-owned land claims
-	
-	public boolean config_trees_removeFloatingTreetops;				//whether to automatically remove partially cut trees
-	public boolean config_trees_regrowGriefedTrees;					//whether to automatically replant partially cut trees
 	
 	public double config_economy_claimBlocksPurchaseCost;			//cost to purchase a claim block.  set to zero to disable purchase.
 	public double config_economy_claimBlocksSellValue;				//return on a sold claim block.  set to zero to disable sale.
@@ -455,6 +453,7 @@ public class GriefPrevention extends JavaPlugin
         
         this.config_claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
         this.config_claims_protectCreatures = config.getBoolean("GriefPrevention.Claims.ProtectCreatures", true);
+        this.config_claims_protectFires = config.getBoolean("GriefPrevention.Claims.ProtectFires", false);
         this.config_claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);
         this.config_claims_lockWoodenDoors = config.getBoolean("GriefPrevention.Claims.LockWoodenDoors", false);
         this.config_claims_lockTrapDoors = config.getBoolean("GriefPrevention.Claims.LockTrapDoors", false);
@@ -486,9 +485,6 @@ public class GriefPrevention extends JavaPlugin
         this.config_pvp_combatTimeoutSeconds = config.getInt("GriefPrevention.PvP.CombatTimeoutSeconds", 15);
         this.config_pvp_allowCombatItemDrop = config.getBoolean("GriefPrevention.PvP.AllowCombatItemDrop", false);
         String bannedPvPCommandsList = config.getString("GriefPrevention.PvP.BlockedSlashCommands", "/home;/vanish;/spawn;/tpa");
-        
-        this.config_trees_removeFloatingTreetops = config.getBoolean("GriefPrevention.Trees.RemoveFloatingTreetops", true);
-        this.config_trees_regrowGriefedTrees = config.getBoolean("GriefPrevention.Trees.RegrowGriefedTrees", true);
         
         this.config_economy_claimBlocksPurchaseCost = config.getDouble("GriefPrevention.Economy.ClaimBlocksPurchaseCost", 0);
         this.config_economy_claimBlocksSellValue = config.getDouble("GriefPrevention.Economy.ClaimBlocksSellValue", 0);
@@ -704,6 +700,7 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.Claims.LockTrapDoors", this.config_claims_lockTrapDoors);
         outConfig.set("GriefPrevention.Claims.LockFenceGates", this.config_claims_lockFenceGates);
         outConfig.set("GriefPrevention.Claims.EnderPearlsRequireAccessTrust", this.config_claims_enderPearlsRequireAccessTrust);
+        outConfig.set("GriefPrevention.Claims.ProtectFires", this.config_claims_protectFires);
         outConfig.set("GriefPrevention.Claims.InitialBlocks", this.config_claims_initialBlocks);
         outConfig.set("GriefPrevention.Claims.BlocksAccruedPerHour", this.config_claims_blocksAccruedPerHour);
         outConfig.set("GriefPrevention.Claims.MaxAccruedBlocks", this.config_claims_maxAccruedBlocks);
@@ -736,9 +733,6 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.PvP.BlockedSlashCommands", bannedPvPCommandsList);
         outConfig.set("GriefPrevention.PvP.ProtectPlayersInLandClaims.PlayerOwnedClaims", this.config_pvp_noCombatInPlayerLandClaims);
         outConfig.set("GriefPrevention.PvP.ProtectPlayersInLandClaims.AdministrativeClaims", this.config_pvp_noCombatInAdminLandClaims);
-        
-        outConfig.set("GriefPrevention.Trees.RemoveFloatingTreetops", this.config_trees_removeFloatingTreetops);
-        outConfig.set("GriefPrevention.Trees.RegrowGriefedTrees", this.config_trees_regrowGriefedTrees);
         
         outConfig.set("GriefPrevention.Economy.ClaimBlocksPurchaseCost", this.config_economy_claimBlocksPurchaseCost);
         outConfig.set("GriefPrevention.Economy.ClaimBlocksSellValue", this.config_economy_claimBlocksSellValue);
@@ -2360,198 +2354,6 @@ public class GriefPrevention extends JavaPlugin
 		return this.config_siege_enabledWorlds.contains(world);
 	}
 
-	//processes broken log blocks to automatically remove floating treetops
-	void handleLogBroken(Block block) 
-	{
-		//find the lowest log in the tree trunk including this log
-		Block rootBlock = this.getRootBlock(block); 
-		
-		//null indicates this block isn't part of a tree trunk
-		if(rootBlock == null) return;
-		
-		//next step: scan for other log blocks and leaves in this tree
-		
-		//set boundaries for the scan 
-		int min_x = rootBlock.getX() - GriefPrevention.TREE_RADIUS;
-		int max_x = rootBlock.getX() + GriefPrevention.TREE_RADIUS;
-		int min_z = rootBlock.getZ() - GriefPrevention.TREE_RADIUS;
-		int max_z = rootBlock.getZ() + GriefPrevention.TREE_RADIUS;
-		int max_y = rootBlock.getWorld().getMaxHeight() - 1;
-		
-		//keep track of all the examined blocks, and all the log blocks found
-		ArrayList<Block> examinedBlocks = new ArrayList<Block>();
-		ArrayList<Block> treeBlocks = new ArrayList<Block>();
-		
-		//queue the first block, which is the block immediately above the player-chopped block
-		ConcurrentLinkedQueue<Block> blocksToExamine = new ConcurrentLinkedQueue<Block>();
-		blocksToExamine.add(rootBlock);
-		examinedBlocks.add(rootBlock);
-		
-		boolean hasLeaves = false;
-		
-		while(!blocksToExamine.isEmpty())
-		{
-			//pop a block from the queue
-			Block currentBlock = blocksToExamine.remove();
-			
-			//if this is a log block, determine whether it should be chopped
-			if(currentBlock.getType() == Material.LOG)
-			{
-				boolean partOfTree = false;
-				
-				//if it's stacked with the original chopped block, the answer is always yes
-				if(currentBlock.getX() == block.getX() && currentBlock.getZ() == block.getZ())
-				{
-					partOfTree = true;
-				}
-				
-				//otherwise find the block underneath this stack of logs
-				else
-				{
-					Block downBlock = currentBlock.getRelative(BlockFace.DOWN);
-					while(downBlock.getType() == Material.LOG)
-					{
-						downBlock = downBlock.getRelative(BlockFace.DOWN);
-					}
-					
-					//if it's air or leaves, it's okay to chop this block
-					//this avoids accidentally chopping neighboring trees which are close enough to touch their leaves to ours
-					if(downBlock.getType() == Material.AIR || downBlock.getType() == Material.LEAVES)
-					{
-						partOfTree = true;
-					}
-					
-					//otherwise this is a stack of logs which touches a solid surface
-					//if it's close to the original block's stack, don't clean up this tree (just stop here)
-					else
-					{
-						if(Math.abs(downBlock.getX() - block.getX()) <= 1 && Math.abs(downBlock.getZ() - block.getZ()) <= 1) return;
-					}
-				}
-				
-				if(partOfTree)
-				{
-					treeBlocks.add(currentBlock);
-				}
-			}
-			
-			//if this block is a log OR a leaf block, also check its neighbors
-			if(currentBlock.getType() == Material.LOG || currentBlock.getType() == Material.LEAVES)
-			{
-				if(currentBlock.getType() == Material.LEAVES)
-				{
-					hasLeaves = true;
-				}
-				
-				Block [] neighboringBlocks = new Block [] 
-				{
-					currentBlock.getRelative(BlockFace.EAST),
-					currentBlock.getRelative(BlockFace.WEST),
-					currentBlock.getRelative(BlockFace.NORTH),
-					currentBlock.getRelative(BlockFace.SOUTH),
-					currentBlock.getRelative(BlockFace.UP),						
-					currentBlock.getRelative(BlockFace.DOWN)
-				};
-				
-				for(int i = 0; i < neighboringBlocks.length; i++)
-				{
-					Block neighboringBlock = neighboringBlocks[i];
-											
-					//if the neighboringBlock is out of bounds, skip it
-					if(neighboringBlock.getX() < min_x || neighboringBlock.getX() > max_x || neighboringBlock.getZ() < min_z || neighboringBlock.getZ() > max_z || neighboringBlock.getY() > max_y) continue;						
-					
-					//if we already saw this block, skip it
-					if(examinedBlocks.contains(neighboringBlock)) continue;
-					
-					//mark the block as examined
-					examinedBlocks.add(neighboringBlock);
-					
-					//if the neighboringBlock is a leaf or log, put it in the queue to be examined later
-					if(neighboringBlock.getType() == Material.LOG || neighboringBlock.getType() == Material.LEAVES)
-					{
-						blocksToExamine.add(neighboringBlock);
-					}
-					
-					//if we encounter any player-placed block type, bail out (don't automatically remove parts of this tree, it might support a treehouse!)
-					else if(this.isPlayerBlock(neighboringBlock)) 
-					{
-						return;						
-					}
-				}					
-			}				
-		}
-		
-		//if it doesn't have leaves, it's not a tree, so don't clean it up
-		if(hasLeaves)
-		{		
-			//schedule a cleanup task for later, in case the player leaves part of this tree hanging in the air		
-			TreeCleanupTask cleanupTask = new TreeCleanupTask(block, rootBlock, treeBlocks, rootBlock.getData());
-
-			//20L ~ 1 second, so 2 mins = 120 seconds ~ 2400L 
-			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, cleanupTask, 2400L);
-		}
-	}
-	
-	//helper for above, finds the "root" of a stack of logs
-	//will return null if the stack is determined to not be a natural tree
-	private Block getRootBlock(Block logBlock)
-	{
-		if(logBlock.getType() != Material.LOG) return null;
-		
-		//run down through log blocks until finding a non-log block
-		Block underBlock = logBlock.getRelative(BlockFace.DOWN);
-		while(underBlock.getType() == Material.LOG)
-		{
-			underBlock = underBlock.getRelative(BlockFace.DOWN);
-		}
-		
-		//if this is a standard tree, that block MUST be dirt
-		if(underBlock.getType() != Material.DIRT) return null;
-		
-		//run up through log blocks until finding a non-log block
-		Block aboveBlock = logBlock.getRelative(BlockFace.UP);
-		while(aboveBlock.getType() == Material.LOG)
-		{
-			aboveBlock = aboveBlock.getRelative(BlockFace.UP);
-		}
-		
-		//if this is a standard tree, that block MUST be air or leaves
-		if(aboveBlock.getType() != Material.AIR && aboveBlock.getType() != Material.LEAVES) return null;
-		
-		return underBlock.getRelative(BlockFace.UP);
-	}
-	
-	//for sake of identifying trees ONLY, a cheap but not 100% reliable method for identifying player-placed blocks
-	private boolean isPlayerBlock(Block block)
-	{
-		Material material = block.getType();
-		
-		//list of natural blocks which are OK to have next to a log block in a natural tree setting
-		if(	material == Material.AIR || 
-			material == Material.LEAVES || 
-			material == Material.LOG || 
-			material == Material.DIRT ||
-			material == Material.GRASS ||			
-			material == Material.STATIONARY_WATER ||
-			material == Material.BROWN_MUSHROOM || 
-			material == Material.RED_MUSHROOM ||
-			material == Material.RED_ROSE ||
-			material == Material.LONG_GRASS ||
-			material == Material.SNOW ||
-			material == Material.STONE ||
-			material == Material.VINE ||
-			material == Material.WATER_LILY ||
-			material == Material.YELLOW_FLOWER ||
-			material == Material.CLAY)
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
-	}
-	
 	//moves a player from the claim he's in to a nearby wilderness location
 	public Location ejectPlayer(Player player)
 	{
@@ -2677,7 +2479,7 @@ public class GriefPrevention extends JavaPlugin
 		}
 	}
 	
-	public String allowBreak(Player player, Location location)
+	public String allowBreak(Player player, Block block, Location location)
 	{
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
@@ -2709,7 +2511,7 @@ public class GriefPrevention extends JavaPlugin
 			playerData.lastClaim = claim;
 		
 			//if not in the wilderness, then apply claim rules (permissions, etc)
-			return claim.allowBreak(player, location.getBlock().getType());
+			return claim.allowBreak(player, block.getType());
 		}
 	}
 

@@ -84,24 +84,15 @@ public class BlockEventHandler implements Listener
 	public void onBlockBreak(BlockBreakEvent breakEvent)
 	{
 		Player player = breakEvent.getPlayer();
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        Block block = breakEvent.getBlock();
+		Block block = breakEvent.getBlock();
 		
 		//make sure the player is allowed to break at the location
-		String noBuildReason = GriefPrevention.instance.allowBreak(player, block.getLocation());
+		String noBuildReason = GriefPrevention.instance.allowBreak(player, block, block.getLocation());
 		if(noBuildReason != null)
 		{
 			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
 			breakEvent.setCancelled(true);
 			return;
-		}
-		
-		//FEATURE: automatically clean up hanging treetops
-		//if it's a log
-		if(block.getType() == Material.LOG && GriefPrevention.instance.config_trees_removeFloatingTreetops)
-		{
-			//run the specialized code for treetop removal (see below)
-			GriefPrevention.instance.handleLogBroken(block);
 		}
 	}
 	

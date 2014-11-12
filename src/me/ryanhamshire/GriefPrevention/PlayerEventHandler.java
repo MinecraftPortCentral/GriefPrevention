@@ -1122,7 +1122,7 @@ class PlayerEventHandler implements Listener
             if(!this.onLeftClickWatchList(clickedBlockType) && !GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))
             {
                 //and an exception for putting our fires
-                if(clickedBlockType == Material.NETHERRACK && event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
+                if(GriefPrevention.instance.config_claims_protectFires && event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
                 {
                     if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
                     Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
