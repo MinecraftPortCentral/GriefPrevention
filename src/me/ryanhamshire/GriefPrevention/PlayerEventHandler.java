@@ -976,33 +976,6 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
-	//block players from entering beds they don't have permission for
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-	public void onPlayerBedEnter (PlayerBedEnterEvent bedEvent)
-	{
-		if(!GriefPrevention.instance.claimsEnabledForWorld(bedEvent.getBed().getWorld())) return;
-	    
-	    if(!GriefPrevention.instance.config_claims_preventButtonsSwitches) return;
-		
-		Player player = bedEvent.getPlayer();
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		Block block = bedEvent.getBed();
-		
-		//if the bed is in a claim 
-		Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, playerData.lastClaim);
-		if(claim != null)
-		{
-		    playerData.lastClaim = claim;
-		    
-			//if the player doesn't have access in that claim, tell him so and prevent him from sleeping in the bed
-			if(claim.allowAccess(player) != null)
-			{
-				bedEvent.setCancelled(true);
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBedPermission, claim.getOwnerName());
-			}
-		}		
-	}
-	
 	//block use of buckets within other players' claims
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPlayerBucketEmpty (PlayerBucketEmptyEvent bucketEvent)
@@ -1197,10 +1170,11 @@ class PlayerEventHandler implements Listener
 			}
 		}
 		
-		//otherwise apply rules for doors, if configured that way
+		//otherwise apply rules for doors and beds, if configured that way
 		else if( clickedBlock != null && 
 		        (GriefPrevention.instance.config_claims_lockWoodenDoors && clickedBlockType == Material.WOODEN_DOOR) ||
-				(GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
+		        (GriefPrevention.instance.config_claims_preventButtonsSwitches && clickedBlockType == Material.BED_BLOCK) ||
+		        (GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
 				(GriefPrevention.instance.config_claims_lockFenceGates && clickedBlockType == Material.FENCE_GATE))
 		{
 		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
