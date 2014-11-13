@@ -42,6 +42,7 @@ import org.bukkit.entity.Boat;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Hanging;
+import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.entity.minecart.PoweredMinecart;
@@ -811,8 +812,9 @@ class PlayerEventHandler implements Listener
 		
 		if(!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) return;
 		
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		
+		//allow horse protection to be overridden to allow management from other plugins
+        if (!GriefPrevention.instance.config_claims_protectHorses && entity instanceof Horse) return;
+        
 		//don't allow interaction with item frames in claimed areas without build permission
 		if(entity instanceof Hanging)
 		{
@@ -825,6 +827,8 @@ class PlayerEventHandler implements Listener
 			}			
 		}
 		
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        
 		//don't allow container access during pvp combat
 		if((entity instanceof StorageMinecart || entity instanceof PoweredMinecart))
 		{
