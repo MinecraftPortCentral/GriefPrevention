@@ -329,6 +329,7 @@ public class FlatFileDataStore extends DataStore
 					else
 					{
 					    GriefPrevention.AddLogEntry("Unable to load data for claim \"" + files[i].getName() + "\": " + e.toString());
+					    e.printStackTrace();
 					}
 				}
 				

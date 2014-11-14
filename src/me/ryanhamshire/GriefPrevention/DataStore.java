@@ -389,9 +389,9 @@ public abstract class DataStore
 		String [] elements = string.split(locationStringDelimiter);
 	    
 		//expect four elements - world name, X, Y, and Z, respectively
-		if(elements.length != 4)
+		if(elements.length < 4)
 		{
-			throw new Exception("Expected four distinct parts to the location string.");
+			throw new Exception("Expected four distinct parts to the location string: \"" + string + "\"");
 		}
 		
 		String worldName = elements[0];
