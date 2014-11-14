@@ -1099,20 +1099,25 @@ class PlayerEventHandler implements Listener
             if(!this.onLeftClickWatchList(clickedBlockType) && !GriefPrevention.instance.config_mods_accessTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))
             {
                 //and an exception for putting our fires
-                if(GriefPrevention.instance.config_claims_protectFires && event.getClickedBlock() != null && event.getClickedBlock().getRelative(event.getBlockFace()).getType() == Material.FIRE)
+                if(GriefPrevention.instance.config_claims_protectFires && event.getClickedBlock() != null)
                 {
-                    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-                    if(claim != null)
+                    Block adjacentBlock = event.getClickedBlock().getRelative(event.getBlockFace());
+                    if(adjacentBlock.getType() == Material.FIRE)
                     {
-                        playerData.lastClaim = claim;
-                        
-                        String noBuildReason = claim.allowBuild(player, Material.AIR);
-                        if(noBuildReason != null)
+                        if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+                        Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+                        if(claim != null)
                         {
-                            event.setCancelled(true);
-                            GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
-                            return;
+                            playerData.lastClaim = claim;
+                            
+                            String noBuildReason = claim.allowBuild(player, Material.AIR);
+                            if(noBuildReason != null)
+                            {
+                                event.setCancelled(true);
+                                GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+                                player.sendBlockChange(adjacentBlock.getLocation(), adjacentBlock.getTypeId(), adjacentBlock.getData());
+                                return;
+                            }
                         }
                     }
                 }
