@@ -417,7 +417,8 @@ class EntityEventHandler implements Listener
 			{
 				Claim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, attackerData.lastClaim);
 				if(	attackerClaim != null && 
-					(attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+					(attackerClaim.isAdminClaim() && attackerClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+					 attackerClaim.isAdminClaim() && attackerClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
 					!attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
 				{
 					attackerData.lastClaim = attackerClaim;
@@ -428,7 +429,8 @@ class EntityEventHandler implements Listener
 				
 				Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim);
 				if( defenderClaim != null &&
-					(defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+					(defenderClaim.isAdminClaim() && defenderClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+		             defenderClaim.isAdminClaim() && defenderClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
 					!defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
 				{
 					defenderData.lastClaim = defenderClaim;

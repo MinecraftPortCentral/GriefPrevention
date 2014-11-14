@@ -116,6 +116,7 @@ public class GriefPrevention extends JavaPlugin
 	public ArrayList<String> config_pvp_blockedCommands;			//list of commands which may not be used during pvp combat
 	public boolean config_pvp_noCombatInPlayerLandClaims;			//whether players may fight in player-owned land claims
 	public boolean config_pvp_noCombatInAdminLandClaims;			//whether players may fight in admin-owned land claims
+	public boolean config_pvp_noCombatInAdminSubdivisions;          //whether players may fight in subdivisions of admin-owned land claims
 	
 	public double config_economy_claimBlocksPurchaseCost;			//cost to purchase a claim block.  set to zero to disable purchase.
 	public double config_economy_claimBlocksSellValue;				//return on a sold claim block.  set to zero to disable sale.
@@ -681,6 +682,7 @@ public class GriefPrevention extends JavaPlugin
         
         this.config_pvp_noCombatInPlayerLandClaims = config.getBoolean("GriefPrevention.PvP.ProtectPlayersInLandClaims.PlayerOwnedClaims", this.config_siege_enabledWorlds.size() == 0);
         this.config_pvp_noCombatInAdminLandClaims = config.getBoolean("GriefPrevention.PvP.ProtectPlayersInLandClaims.AdministrativeClaims", this.config_siege_enabledWorlds.size() == 0);
+        this.config_pvp_noCombatInAdminSubdivisions = config.getBoolean("GriefPrevention.PvP.ProtectPlayersInLandClaims.AdministrativeSubdivisions", this.config_siege_enabledWorlds.size() == 0);
         
         //optional database settings
         this.databaseUrl = config.getString("GriefPrevention.Database.URL", "");
@@ -736,6 +738,7 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.PvP.BlockedSlashCommands", bannedPvPCommandsList);
         outConfig.set("GriefPrevention.PvP.ProtectPlayersInLandClaims.PlayerOwnedClaims", this.config_pvp_noCombatInPlayerLandClaims);
         outConfig.set("GriefPrevention.PvP.ProtectPlayersInLandClaims.AdministrativeClaims", this.config_pvp_noCombatInAdminLandClaims);
+        outConfig.set("GriefPrevention.PvP.ProtectPlayersInLandClaims.AdministrativeSubdivisions", this.config_pvp_noCombatInAdminSubdivisions);
         
         outConfig.set("GriefPrevention.Economy.ClaimBlocksPurchaseCost", this.config_economy_claimBlocksPurchaseCost);
         outConfig.set("GriefPrevention.Economy.ClaimBlocksSellValue", this.config_economy_claimBlocksSellValue);
