@@ -52,14 +52,16 @@ class DeliverClaimBlocksTask implements Runnable
 	    //otherwise, deliver claim blocks to the specified player
 	    else
 	    {
-	        int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
-	        if(accruedBlocks < 0) accruedBlocks = 1;
-	        
 	        DataStore dataStore = GriefPrevention.instance.dataStore;
             PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
             
+            //if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
+            //in that case, leave his blocks where they are
+            int currentTotal = playerData.getAccruedClaimBlocks();
+            if(currentTotal >= GriefPrevention.instance.config_claims_maxAccruedBlocks) return;
+            
             Location lastLocation = playerData.lastAfkCheckLocation;
-            try  //distance squared will throw an exception if the player has changed worlds
+            try
             {
                 //if he's not in a vehicle and has moved at least three blocks since the last check
                 //and he's not being pushed around by fluids
@@ -67,18 +69,16 @@ class DeliverClaimBlocksTask implements Runnable
                    (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 9) &&
                    !player.getLocation().getBlock().isLiquid())
                 {                   
-                    //if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
-                    //in that case, leave his blocks where they are
-                    if(playerData.getAccruedClaimBlocks() > GriefPrevention.instance.config_claims_maxAccruedBlocks) return;
                     
                     //add blocks
-                    playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() + accruedBlocks);
+                    int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
+                    if(accruedBlocks < 0) accruedBlocks = 1;
+                    int newTotal = currentTotal + accruedBlocks;
                     
                     //respect limits
-                    if(playerData.getAccruedClaimBlocks() > GriefPrevention.instance.config_claims_maxAccruedBlocks)
-                    {
-                        playerData.setAccruedClaimBlocks(GriefPrevention.instance.config_claims_maxAccruedBlocks); 
-                    }
+                    if(newTotal > GriefPrevention.instance.config_claims_maxAccruedBlocks) newTotal = GriefPrevention.instance.config_claims_maxAccruedBlocks;
+                    
+                    playerData.setAccruedClaimBlocks(newTotal); 
                     
                     //intentionally NOT saving data here to reduce overall secondary storage access frequency
                     //many other operations will cause this players data to save, including his eventual logout
