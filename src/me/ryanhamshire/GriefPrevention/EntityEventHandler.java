@@ -36,6 +36,7 @@ import org.bukkit.entity.Explosive;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Villager;
 
@@ -357,26 +358,18 @@ class EntityEventHandler implements Listener
 		
 		//determine which player is attacking, if any
 		Player attacker = null;
-		Arrow arrow = null;
+		Projectile arrow = null;
 		Entity damageSource = subEvent.getDamager();
 		if(damageSource instanceof Player)
 		{
 			attacker = (Player)damageSource;
 		}
-		else if(damageSource instanceof Arrow)
+		else if(damageSource instanceof Projectile)
 		{
-			arrow = (Arrow)damageSource;
+			arrow = (Projectile)damageSource;
 			if(arrow.getShooter() instanceof Player)
 			{
 				attacker = (Player)arrow.getShooter();
-			}
-		}
-		else if(damageSource instanceof ThrownPotion)
-		{
-			ThrownPotion potion = (ThrownPotion)damageSource;
-			if(potion.getShooter() instanceof Player)
-			{
-				attacker = (Player)potion.getShooter();
 			}
 		}
 		
@@ -569,7 +562,7 @@ class EntityEventHandler implements Listener
 	public void onVehicleDamage (VehicleDamageEvent event)
 	{
 		//all of this is anti theft code
-		if(!GriefPrevention.instance.config_claims_preventTheft) return;		
+		if(!GriefPrevention.instance.config_claims_preventTheft) return;	
 		
 		//don't track in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getVehicle().getWorld())) return;
@@ -577,24 +570,16 @@ class EntityEventHandler implements Listener
 		//determine which player is attacking, if any
 		Player attacker = null;
 		Entity damageSource = event.getAttacker();
-		if(damageSource instanceof Player)
+		if(damageSource.getType() == EntityType.PLAYER)
 		{
 			attacker = (Player)damageSource;
 		}
-		else if(damageSource instanceof Arrow)
+		else if(damageSource instanceof Projectile)
 		{
-			Arrow arrow = (Arrow)damageSource;
-			if(arrow.getShooter() instanceof Player)
+		    Projectile arrow = (Projectile)damageSource;
+		    if(arrow.getShooter() instanceof Player)
 			{
 				attacker = (Player)arrow.getShooter();
-			}
-		}
-		else if(damageSource instanceof ThrownPotion)
-		{
-			ThrownPotion potion = (ThrownPotion)damageSource;
-			if(potion.getShooter() instanceof Player)
-			{
-				attacker = (Player)potion.getShooter();
 			}
 		}
 		
