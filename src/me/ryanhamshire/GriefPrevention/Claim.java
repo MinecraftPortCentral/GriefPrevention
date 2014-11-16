@@ -642,16 +642,16 @@ public class Claim
 	    //not in the same world implies false
 		if(!location.getWorld().equals(this.lesserBoundaryCorner.getWorld())) return false;
 		
-		int x = location.getBlockX();
-		int y = location.getBlockY();
-		int z = location.getBlockZ();
+		double x = location.getX();
+		double y = location.getY();
+		double z = location.getZ();
 		
 		//main check
-		boolean inClaim = (ignoreHeight || y >= this.lesserBoundaryCorner.getBlockY()) &&
-				x >= this.lesserBoundaryCorner.getBlockX() &&
-				x <= this.greaterBoundaryCorner.getBlockX() &&
-				z >= this.lesserBoundaryCorner.getBlockZ() &&
-				z <= this.greaterBoundaryCorner.getBlockZ();
+		boolean inClaim = (ignoreHeight || y >= this.lesserBoundaryCorner.getY()) &&
+				x >= this.lesserBoundaryCorner.getX() &&
+				x <= this.greaterBoundaryCorner.getX() &&
+				z >= this.lesserBoundaryCorner.getZ() &&
+				z <= this.greaterBoundaryCorner.getZ();
 				
 		if(!inClaim) return false;
 				

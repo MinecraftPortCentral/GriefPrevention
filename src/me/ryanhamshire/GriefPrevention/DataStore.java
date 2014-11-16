@@ -457,8 +457,7 @@ public abstract class DataStore
 			this.playerNameToPlayerDataMap.put(playerID, playerData);
 		}
 		
-		//try the hash map again.  if it's STILL not there, we have a bug to fix
-		return this.playerNameToPlayerDataMap.get(playerID);
+		return playerData;
 	}
 	
 	abstract PlayerData getPlayerDataFromStorage(UUID playerID);
@@ -566,12 +565,7 @@ public abstract class DataStore
 	//gets a unique, persistent identifier string for a chunk
 	private String getChunkString(Location location)
 	{
-        StringBuilder builder = new StringBuilder(
-            String.valueOf(location.getBlockX() >> 4))
-            .append(location.getWorld().getName())
-            .append(location.getBlockZ() >> 4);
-
-        return builder.toString();
+        return (location.getBlockX() >> 4) + location.getWorld().getName() + (location.getBlockZ() >> 4);
     }
 	
     //creates a claim.
