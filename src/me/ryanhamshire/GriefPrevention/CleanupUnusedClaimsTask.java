@@ -68,7 +68,7 @@ class CleanupUnusedClaimsTask implements Runnable
 		boolean cleanupChunks = false;
 		
 		//get data for the player, especially last login timestamp
-		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.ownerID);
+		PlayerData playerData = null;
 		
 		//determine area of the default chest claim
 		int areaOfDefaultClaim = 0;
@@ -77,16 +77,16 @@ class CleanupUnusedClaimsTask implements Runnable
 			areaOfDefaultClaim = (int)Math.pow(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius * 2 + 1, 2);  
 		}
 		
-		//if he's been gone at least a week, if he has ONLY the new player claim, it will be removed
-		Calendar sevenDaysAgo = Calendar.getInstance();
-		sevenDaysAgo.add(Calendar.DATE, -GriefPrevention.instance.config_claims_chestClaimExpirationDays);
-		boolean newPlayerClaimsExpired = sevenDaysAgo.getTime().after(playerData.getLastLogin());
-		
-		//if only one claim, and the player hasn't played in a week
-		if(newPlayerClaimsExpired && playerData.getClaims().size() == 1)
+		//if this claim is a chest claim and those are set to expire
+        if(claim.getArea() <= areaOfDefaultClaim && GriefPrevention.instance.config_claims_chestClaimExpirationDays > 0)
 		{
-			//if that's a chest claim and those are set to expire
-			if(claim.getArea() <= areaOfDefaultClaim && GriefPrevention.instance.config_claims_chestClaimExpirationDays > 0)
+            playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.ownerID);
+            
+            //if the owner has been gone at least a week, and if he has ONLY the new player claim, it will be removed
+	        Calendar sevenDaysAgo = Calendar.getInstance();
+	        sevenDaysAgo.add(Calendar.DATE, -GriefPrevention.instance.config_claims_chestClaimExpirationDays);
+	        boolean newPlayerClaimsExpired = sevenDaysAgo.getTime().after(playerData.getLastLogin());
+			if(newPlayerClaimsExpired && playerData.getClaims().size() == 1)
 			{
 				claim.removeSurfaceFluids(null);
 				GriefPrevention.instance.dataStore.deleteClaim(claim);
@@ -105,7 +105,8 @@ class CleanupUnusedClaimsTask implements Runnable
 		//if configured to always remove claims after some inactivity period without exceptions...
 		else if(GriefPrevention.instance.config_claims_expirationDays > 0)
 		{
-			Calendar earliestPermissibleLastLogin = Calendar.getInstance();
+			if(playerData == null) playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.ownerID);
+		    Calendar earliestPermissibleLastLogin = Calendar.getInstance();
 			earliestPermissibleLastLogin.add(Calendar.DATE, -GriefPrevention.instance.config_claims_expirationDays);
 			
 			if(earliestPermissibleLastLogin.getTime().after(playerData.getLastLogin()))
@@ -157,7 +158,7 @@ class CleanupUnusedClaimsTask implements Runnable
 			}
 		}
 		
-		GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerID);
+		if(playerData != null) GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerID);
 		
 		//since we're potentially loading a lot of chunks to scan parts of the world where there are no players currently playing, be mindful of memory usage
 		if(cleanupChunks)
