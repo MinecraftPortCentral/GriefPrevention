@@ -676,15 +676,13 @@ public abstract class DataStore
         //ensure player data is already read from file before trying to save
         playerData.getAccruedClaimBlocks();
         playerData.getClaims();
+        
         this.asyncSavePlayerData(playerID, playerData);
     }
 	
 	//saves changes to player data to secondary storage.  MUST be called after you're done making changes, otherwise a reload will lose them
 	public void savePlayerData(UUID playerID, PlayerData playerData)
 	{
-	    //ensure player data is already read from file before trying to save
-	    playerData.getAccruedClaimBlocks();
-	    playerData.getClaims();
 	    new SavePlayerDataThread(playerID, playerData).start();
 	}
 	
@@ -1290,6 +1288,9 @@ public abstract class DataStore
 	    
 	    public void run()
 	    {
+	        //ensure player data is already read from file before trying to save
+	        playerData.getAccruedClaimBlocks();
+	        playerData.getClaims();
 	        asyncSavePlayerData(this.playerID, this.playerData);
 	    }
 	}

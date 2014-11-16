@@ -627,7 +627,8 @@ class PlayerEventHandler implements Listener
 	void onPlayerQuit(PlayerQuitEvent event)
 	{
 	    Player player = event.getPlayer();
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		UUID playerID = player.getUniqueId();
+	    PlayerData playerData = this.dataStore.getPlayerData(playerID);
 		boolean isBanned;
 		if(playerData.wasKicked)
 		{
@@ -663,37 +664,22 @@ class PlayerEventHandler implements Listener
 		    this.dataStore.savePlayerData(player.getUniqueId(), playerData);
 		}
 		
-		this.onPlayerDisconnect(event.getPlayer(), event.getQuitMessage());
-	}
-	
-	//helper for above
-	private void onPlayerDisconnect(Player player, String notificationMessage)
-	{
-		UUID playerID = player.getUniqueId();
-		PlayerData playerData = this.dataStore.getPlayerData(playerID);
-		
-		//FEATURE: claims where players have allowed explosions will revert back to not allowing them when the owner logs out
-		for(Claim claim : playerData.getClaims())
-		{
-			claim.areExplosivesAllowed = false;
-		}
-		
 		//FEATURE: players in pvp combat when they log out will die
-		if(GriefPrevention.instance.config_pvp_punishLogout && playerData.inPvpCombat())
-		{
-			player.setHealth(0);
-		}
-		
-		//FEATURE: during a siege, any player who logs out dies and forfeits the siege
-		
-		//if player was involved in a siege, he forfeits
-		if(playerData.siegeData != null)
-		{
-			if(player.getHealth() > 0) player.setHealth(0);  //might already be zero from above, this avoids a double death message
-		}
-		
-		//drop data about this player
-		this.dataStore.clearCachedPlayerData(playerID);
+        if(GriefPrevention.instance.config_pvp_punishLogout && playerData.inPvpCombat())
+        {
+            player.setHealth(0);
+        }
+        
+        //FEATURE: during a siege, any player who logs out dies and forfeits the siege
+        
+        //if player was involved in a siege, he forfeits
+        if(playerData.siegeData != null)
+        {
+            if(player.getHealth() > 0) player.setHealth(0);  //might already be zero from above, this avoids a double death message
+        }
+        
+        //drop data about this player
+        this.dataStore.clearCachedPlayerData(playerID);
 	}
 	
 	//determines whether or not a login or logout notification should be silenced, depending on how many there have been in the last minute
