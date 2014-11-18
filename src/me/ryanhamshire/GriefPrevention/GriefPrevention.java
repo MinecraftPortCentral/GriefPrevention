@@ -1954,7 +1954,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		else if(cmd.getName().equalsIgnoreCase("gpreload"))
 		{
-		    this.reloadConfig();
+		    this.loadConfig();
 		    if(player != null)
 		    {
 		        GriefPrevention.sendMessage(player, TextMode.Success, "Configuration updated.  If you have updated your Grief Prevention JAR, you still need to /reload or reboot your server.");
