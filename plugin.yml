@@ -1,7 +1,8 @@
 name: GriefPrevention
 main: me.ryanhamshire.GriefPrevention.GriefPrevention
-softdepend: [Vault, Multiverse-Core, My Worlds, MystCraft, Transporter]
+softdepend: [Vault, Multiverse-Core, My Worlds, MystCraft, Transporter, TheUnderground]
 dev-url: http://dev.bukkit.org/server-mods/grief-prevention
+loadbefore: [TheUnderground]
 version: 8.8.1
 commands:
    abandonclaim:
