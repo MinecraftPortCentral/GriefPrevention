@@ -78,6 +78,7 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_claims_enderPearlsRequireAccessTrust;		//whether teleporting into a claim with a pearl requires access trust
 	
 	public int config_claims_initialBlocks;							//the number of claim blocks a new player starts with
+	public double config_claims_abandonReturnRatio;                 //the portion of claim blocks returned to a player when a claim is abandoned
 	public int config_claims_blocksAccruedPerHour;					//how many additional blocks players get each hour of play (can be zero)
 	public int config_claims_maxAccruedBlocks;						//the limit on accrued blocks (over time).  doesn't limit purchased or admin-gifted blocks 
 	public int config_claims_maxDepth;								//limit on how deep claims can go
@@ -465,6 +466,7 @@ public class GriefPrevention extends JavaPlugin
         this.config_claims_initialBlocks = config.getInt("GriefPrevention.Claims.InitialBlocks", 100);
         this.config_claims_blocksAccruedPerHour = config.getInt("GriefPrevention.Claims.BlocksAccruedPerHour", 100);
         this.config_claims_maxAccruedBlocks = config.getInt("GriefPrevention.Claims.MaxAccruedBlocks", 80000);
+        this.config_claims_abandonReturnRatio = config.getDouble("GriefPrevention.Claims.AbandonReturnRatio", 1);
         this.config_claims_automaticClaimsForNewPlayersRadius = config.getInt("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadius", 4);
         this.config_claims_claimsExtendIntoGroundDistance = config.getInt("GriefPrevention.Claims.ExtendIntoGroundDistance", 5);
         this.config_claims_creationRequiresPermission = config.getBoolean("GriefPrevention.Claims.CreationRequiresPermission", false);
@@ -708,7 +710,7 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.Claims.ProtectHorses", this.config_claims_protectHorses);
         outConfig.set("GriefPrevention.Claims.InitialBlocks", this.config_claims_initialBlocks);
         outConfig.set("GriefPrevention.Claims.BlocksAccruedPerHour", this.config_claims_blocksAccruedPerHour);
-        outConfig.set("GriefPrevention.Claims.MaxAccruedBlocks", this.config_claims_maxAccruedBlocks);
+        outConfig.set("GriefPrevention.Claims.AbandonReturnRatio", this.config_claims_abandonReturnRatio);
         outConfig.set("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadius", this.config_claims_automaticClaimsForNewPlayersRadius);
         outConfig.set("GriefPrevention.Claims.ExtendIntoGroundDistance", this.config_claims_claimsExtendIntoGroundDistance);
         outConfig.set("GriefPrevention.Claims.CreationRequiresPermission", this.config_claims_creationRequiresPermission);
@@ -885,6 +887,12 @@ public class GriefPrevention extends JavaPlugin
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.YouHaveNoClaims);
 				return true;
+			}
+			
+			//adjust claim blocks
+			for(Claim claim : playerData.getClaims())
+			{
+			    playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int)Math.ceil((claim.getArea() * (1 - this.config_claims_abandonReturnRatio))));
 			}
 			
 			//delete them
@@ -2016,6 +2024,9 @@ public class GriefPrevention extends JavaPlugin
 				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
 				GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
 			}
+			
+			//adjust claim blocks
+			playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int)Math.ceil((claim.getArea() * (1 - this.config_claims_abandonReturnRatio))));
 			
 			//tell the player how many claim blocks he has left
 			int remainingBlocks = playerData.getRemainingClaimBlocks();
