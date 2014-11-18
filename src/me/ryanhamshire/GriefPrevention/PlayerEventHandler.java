@@ -1037,6 +1037,10 @@ class PlayerEventHandler implements Listener
 		String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), Material.AIR);
 		if(noBuildReason != null)
 		{
+		    //exemption for cow milking (permissions will be handled by player interact with entity event instead)
+		    Material blockType = block.getType();
+		    if(blockType == Material.AIR || blockType.isSolid()) return;
+		    
 			GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
 			bucketEvent.setCancelled(true);
 			return;
