@@ -1101,7 +1101,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			player.sendMessage(permissions.toString());
 			permissions = new StringBuilder();
-			permissions.append(ChatColor.BLUE + "A :");
+			permissions.append(ChatColor.BLUE + "A:");
 				
 			if(accessors.size() > 0)
 			{
