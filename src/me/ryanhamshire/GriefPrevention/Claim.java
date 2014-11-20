@@ -649,9 +649,9 @@ public class Claim
 		//main check
 		boolean inClaim = (ignoreHeight || y >= this.lesserBoundaryCorner.getY()) &&
 				x >= this.lesserBoundaryCorner.getX() &&
-				x <= this.greaterBoundaryCorner.getX() &&
+				x < this.greaterBoundaryCorner.getX() + 1 &&
 				z >= this.lesserBoundaryCorner.getZ() &&
-				z <= this.greaterBoundaryCorner.getZ();
+				z < this.greaterBoundaryCorner.getZ() + 1;
 				
 		if(!inClaim) return false;
 				
