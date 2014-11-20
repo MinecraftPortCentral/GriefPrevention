@@ -587,6 +587,10 @@ class PlayerEventHandler implements Listener
 		
 		//in case player has changed his name, on successful login, update UUID > Name mapping
 		GriefPrevention.cacheUUIDNamePair(player.getUniqueId(), player.getName());
+		
+		//also cache the reverse mapping
+		GriefPrevention.instance.playerNameToIDMap.put(player.getName(), playerID);
+		GriefPrevention.instance.playerNameToIDMap.put(player.getName().toLowerCase(), playerID);
 	}
 	
 	//when a player spawns, conditionally apply temporary pvp protection 

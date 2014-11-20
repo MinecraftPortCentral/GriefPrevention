@@ -302,6 +302,35 @@ public class GriefPrevention extends JavaPlugin
 			}
 		}
 		
+		int playersCached = 0;
+		OfflinePlayer [] offlinePlayers = this.getServer().getOfflinePlayers();
+		long now = System.currentTimeMillis();
+		final long TENDAYS = 1000 * 60 * 60 * 24 * 10; 
+		for(OfflinePlayer player : offlinePlayers)
+		{
+		    try
+		    {
+    		    String playerName = player.getName();
+    		    UUID playerID = player.getUniqueId();
+    		    if(playerName == null || playerID == null) continue;
+    		    long absentMilliseconds = now - player.getLastPlayed();
+    		    
+    		    //if the player has been seen in the last 10 days, cache his name/UUID pair
+    		    if(absentMilliseconds < TENDAYS)
+    		    {
+    		        this.playerNameToIDMap.put(playerName, playerID);
+    		        this.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
+    		        playersCached++;
+    		    }
+		    }
+		    catch(Exception e)
+		    {
+		        e.printStackTrace();
+		    }
+		}
+		
+		AddLogEntry("Cached " + playersCached + " recent players.");
+		
 		AddLogEntry("Boot finished.");
 	}
 	
@@ -986,7 +1015,7 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
-			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0], true);
+			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
 			if(targetPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1123,7 +1152,7 @@ public class GriefPrevention extends JavaPlugin
 				//validate player argument or group argument
 				if(!args[0].startsWith("[") || !args[0].endsWith("]"))
 				{
-					otherPlayer = this.resolvePlayerByName(args[0], true);
+					otherPlayer = this.resolvePlayerByName(args[0]);
 					if(!clearPermissions && otherPlayer == null && !args[0].equals("public"))
 					{
 						GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1554,7 +1583,7 @@ public class GriefPrevention extends JavaPlugin
 			if(args.length != 1) return false;
 			
 			//try to find that player
-			OfflinePlayer otherPlayer = this.resolvePlayerByName(args[0], true);
+			OfflinePlayer otherPlayer = this.resolvePlayerByName(args[0]);
 			if(otherPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1604,7 +1633,7 @@ public class GriefPrevention extends JavaPlugin
 			//otherwise try to find the specified player
 			else
 			{
-				otherPlayer = this.resolvePlayerByName(args[0], true);
+				otherPlayer = this.resolvePlayerByName(args[0]);
 				if(otherPlayer == null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1745,7 +1774,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//otherwise, find the specified player
-			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0], true);
+			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
 			if(targetPlayer == null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -1932,7 +1961,7 @@ public class GriefPrevention extends JavaPlugin
 		    if(args.length != 1) return false;
 		    
 		    //find the specified player
-            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0], true);
+            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
             if(targetPlayer == null)
             {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -2070,7 +2099,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		else
 		{		
-			otherPlayer = this.resolvePlayerByName(recipientName, false);
+			otherPlayer = this.resolvePlayerByName(recipientName);
 			if(otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all"))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
@@ -2215,7 +2244,8 @@ public class GriefPrevention extends JavaPlugin
 	}
 
 	//helper method to resolve a player by name
-	private OfflinePlayer resolvePlayerByName(String name, boolean searchOffline) 
+	ConcurrentHashMap<String, UUID> playerNameToIDMap = new ConcurrentHashMap<String, UUID>();
+	private OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first
 		Player targetPlayer = this.getServer().getPlayerExact(name);
@@ -2224,22 +2254,22 @@ public class GriefPrevention extends JavaPlugin
 		targetPlayer = this.getServer().getPlayer(name);
         if(targetPlayer != null) return targetPlayer;
         
-        OfflinePlayer bestMatch = null;
-        if(searchOffline)
+        UUID bestMatchID = null;
+        
+        //try exact match first
+        bestMatchID = this.playerNameToIDMap.get(name);
+        
+        //if failed, try ignore case
+        if(bestMatchID == null)
         {
-            //then search offline players
-    		OfflinePlayer [] players = this.getServer().getOfflinePlayers();
-    		for(int i = 0; i < players.length; i++)
-            {
-                if(players[i].getName() != null && players[i].getName().equalsIgnoreCase(name))
-                {
-                    bestMatch = players[i];
-                    if(bestMatch.getName().equals(name)) return bestMatch;
-                }
-            }
+            bestMatchID = this.playerNameToIDMap.get(name.toLowerCase());
         }
-		
-		return bestMatch;
+        if(bestMatchID == null)
+        {
+            return null;
+        }
+
+		return this.getServer().getOfflinePlayer(bestMatchID);
 	}
 
 	//helper method to resolve a player name from the player's UUID

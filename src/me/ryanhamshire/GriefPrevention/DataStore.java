@@ -1011,7 +1011,7 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.TransferClaimPermission, "That command requires the administrative claims permission.", null);
 		this.addDefault(defaults, Messages.TransferClaimMissing, "There's no claim here.  Stand in the administrative claim you want to transfer.", null);
 		this.addDefault(defaults, Messages.TransferClaimAdminOnly, "Only administrative claims may be transferred to a player.", null);
-		this.addDefault(defaults, Messages.PlayerNotFound, "Player not found.", null);
+		this.addDefault(defaults, Messages.PlayerNotFound, "No player by that name has logged in recently.", null);
 		this.addDefault(defaults, Messages.TransferTopLevel, "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.", null);
 		this.addDefault(defaults, Messages.TransferSuccess, "Claim transferred.", null);
 		this.addDefault(defaults, Messages.TrustListNoClaim, "Stand inside the claim you're curious about.", null);
