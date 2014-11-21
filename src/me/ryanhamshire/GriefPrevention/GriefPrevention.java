@@ -2319,7 +2319,11 @@ public class GriefPrevention extends JavaPlugin
         //limit memory footprint
         if(GriefPrevention.uuidToNameMap.size() >= 500) GriefPrevention.uuidToNameMap.clear();
         
-        GriefPrevention.uuidToNameMap.put(playerID, playerName);        
+        GriefPrevention.uuidToNameMap.put(playerID, playerName);  
+        
+        //always store the reverse mapping
+        GriefPrevention.instance.playerNameToIDMap.put(playerName, playerID);
+        GriefPrevention.instance.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
     }
 
     //string overload for above helper
