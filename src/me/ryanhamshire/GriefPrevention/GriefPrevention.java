@@ -1018,7 +1018,7 @@ public class GriefPrevention extends JavaPlugin
 			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
 			if(targetPlayer == null)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 				return true;
 			}
 			
@@ -1155,7 +1155,7 @@ public class GriefPrevention extends JavaPlugin
 					otherPlayer = this.resolvePlayerByName(args[0]);
 					if(!clearPermissions && otherPlayer == null && !args[0].equals("public"))
 					{
-						GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+						GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 						return true;
 					}
 					
@@ -1586,7 +1586,7 @@ public class GriefPrevention extends JavaPlugin
 			OfflinePlayer otherPlayer = this.resolvePlayerByName(args[0]);
 			if(otherPlayer == null)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 				return true;
 			}
 			
@@ -1636,7 +1636,7 @@ public class GriefPrevention extends JavaPlugin
 				otherPlayer = this.resolvePlayerByName(args[0]);
 				if(otherPlayer == null)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 					return true;
 				}
 			}
@@ -1670,7 +1670,7 @@ public class GriefPrevention extends JavaPlugin
 			Player targetPlayer = this.getServer().getPlayer(args[0]);
 			if(targetPlayer == null)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 				return true;
 			}
 			
@@ -1681,7 +1681,7 @@ public class GriefPrevention extends JavaPlugin
 				recipientPlayer = this.getServer().getPlayer(args[1]);
 				if(recipientPlayer == null)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 					return true;
 				}
 			}
@@ -1777,7 +1777,7 @@ public class GriefPrevention extends JavaPlugin
 			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
 			if(targetPlayer == null)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 				return true;
 			}
 			
@@ -1876,7 +1876,7 @@ public class GriefPrevention extends JavaPlugin
 				defender = this.getServer().getPlayer(args[0]);
 				if(defender == null)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 					return true;
 				}
 			}
@@ -1964,7 +1964,7 @@ public class GriefPrevention extends JavaPlugin
             OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
             if(targetPlayer == null)
             {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
                 return true;
             }
             
@@ -2102,7 +2102,7 @@ public class GriefPrevention extends JavaPlugin
 			otherPlayer = this.resolvePlayerByName(recipientName);
 			if(otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all"))
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound);
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
 				return;
 			}
 			
