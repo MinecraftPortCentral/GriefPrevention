@@ -305,7 +305,7 @@ public class GriefPrevention extends JavaPlugin
 		int playersCached = 0;
 		OfflinePlayer [] offlinePlayers = this.getServer().getOfflinePlayers();
 		long now = System.currentTimeMillis();
-		final long TENDAYS = 1000 * 60 * 60 * 24 * 10; 
+		final long WHILEBACK = 1000 * 60 * 60 * 24 * 30;  //30 days back 
 		for(OfflinePlayer player : offlinePlayers)
 		{
 		    try
@@ -315,8 +315,8 @@ public class GriefPrevention extends JavaPlugin
     		    if(playerName == null || playerID == null) continue;
     		    long absentMilliseconds = now - player.getLastPlayed();
     		    
-    		    //if the player has been seen in the last 10 days, cache his name/UUID pair
-    		    if(absentMilliseconds < TENDAYS)
+    		    //if the player has been seen in the last 30 days, cache his name/UUID pair
+    		    if(absentMilliseconds < WHILEBACK)
     		    {
     		        this.playerNameToIDMap.put(playerName, playerID);
     		        this.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
