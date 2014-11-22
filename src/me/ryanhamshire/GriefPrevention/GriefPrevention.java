@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -305,7 +306,7 @@ public class GriefPrevention extends JavaPlugin
 		int playersCached = 0;
 		OfflinePlayer [] offlinePlayers = this.getServer().getOfflinePlayers();
 		long now = System.currentTimeMillis();
-		final long WHILEBACK = 1000 * 60 * 60 * 24 * 30;  //30 days back 
+		final long millisecondsPerDay = 1000 * 60 * 60 * 24;
 		for(OfflinePlayer player : offlinePlayers)
 		{
 		    try
@@ -313,10 +314,12 @@ public class GriefPrevention extends JavaPlugin
     		    String playerName = player.getName();
     		    UUID playerID = player.getUniqueId();
     		    if(playerName == null || playerID == null) continue;
-    		    long absentMilliseconds = now - player.getLastPlayed();
+    		    long lastSeen = player.getLastPlayed();
     		    
     		    //if the player has been seen in the last 30 days, cache his name/UUID pair
-    		    if(absentMilliseconds < WHILEBACK)
+    		    long diff = now - lastSeen;
+    		    long daysDiff = diff / millisecondsPerDay;
+    		    if(daysDiff <= 30)
     		    {
     		        this.playerNameToIDMap.put(playerName, playerID);
     		        this.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
