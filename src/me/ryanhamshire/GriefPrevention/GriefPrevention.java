@@ -2498,6 +2498,11 @@ public class GriefPrevention extends JavaPlugin
 		return this.config_claims_worldModes.get((location.getWorld())) == ClaimsMode.Creative;
 	}
 	
+	public String allowBuild(Player player, Location location)
+	{
+	    return this.allowBuild(player, location, location.getBlock().getType());
+	}
+	
 	public String allowBuild(Player player, Location location, Material material)
 	{
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
