@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -2349,10 +2350,9 @@ public class GriefPrevention extends JavaPlugin
 	public void onDisable()
 	{ 
 		//save data for any online players
-		Player [] players = this.getServer().getOnlinePlayers();
-		for(int i = 0; i < players.length; i++)
+		Collection<Player> players = (Collection<Player>)this.getServer().getOnlinePlayers();
+		for(Player player : players)
 		{
-			Player player = players[i];
 			UUID playerID = player.getUniqueId();
 			PlayerData playerData = this.dataStore.getPlayerData(playerID);
 			this.dataStore.savePlayerDataSync(playerID, playerData);

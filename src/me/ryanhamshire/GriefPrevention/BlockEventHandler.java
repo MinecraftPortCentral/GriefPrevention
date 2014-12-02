@@ -19,6 +19,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.bukkit.ChatColor;
@@ -122,10 +123,9 @@ public class BlockEventHandler implements Listener
 			
 			if(!player.hasPermission("griefprevention.eavesdrop"))
 			{
-				Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
-				for(int i = 0; i < players.length; i++)
+				Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
+				for(Player otherPlayer : players)
 				{
-					Player otherPlayer = players[i];
 					if(otherPlayer.hasPermission("griefprevention.eavesdrop"))
 					{
 						otherPlayer.sendMessage(ChatColor.GRAY + player.getName() + "(sign): " + signMessage);

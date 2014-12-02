@@ -20,6 +20,7 @@ package me.ryanhamshire.GriefPrevention;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -405,10 +406,9 @@ class PlayerEventHandler implements Listener
 			
 			String logMessage = logMessageBuilder.toString();
 			
-			Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
-			for(int i = 0; i < players.length; i++)
+			Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
+			for(Player player : players)
 			{
-				Player player = players[i];
 				if(player.hasPermission("griefprevention.eavesdrop") && !player.getName().equalsIgnoreCase(args[1]))
 				{
 					player.sendMessage(ChatColor.GRAY + logMessage);
@@ -563,12 +563,12 @@ class PlayerEventHandler implements Listener
 						GriefPrevention.AddLogEntry("Auto-banned " + player.getName() + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " (" + info.address.toString() + ").");
 						
 						//notify any online ops
-						Player [] players = GriefPrevention.instance.getServer().getOnlinePlayers();
-						for(int k = 0; k < players.length; k++)
+						Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
+						for(Player otherPlayer : players)
 						{
-							if(players[k].isOp())
+							if(otherPlayer.isOp())
 							{
-								GriefPrevention.sendMessage(players[k], TextMode.Success, Messages.AutoBanNotify, player.getName(), info.bannedAccountName);
+								GriefPrevention.sendMessage(otherPlayer, TextMode.Success, Messages.AutoBanNotify, player.getName(), info.bannedAccountName);
 							}
 						}
 						
