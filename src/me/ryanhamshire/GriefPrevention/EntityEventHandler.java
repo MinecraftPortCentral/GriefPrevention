@@ -453,8 +453,8 @@ class EntityEventHandler implements Listener
 		    //don't track in worlds where claims are not enabled
 	        if(!GriefPrevention.instance.claimsEnabledForWorld(event.getEntity().getWorld())) return;
 		    
-		    //if the damaged entity is a claimed item frame, the damager needs to be a player with container trust in the claim
-		    if(subEvent.getEntityType() == EntityType.ITEM_FRAME)
+		    //if the damaged entity is a claimed item frame or armor stand, the damager needs to be a player with container trust in the claim
+		    if(subEvent.getEntityType() == EntityType.ITEM_FRAME || subEvent.getEntityType() == EntityType.ARMOR_STAND)
 		    {
 		        //decide whether it's claimed
 		        Claim cachedClaim = null;

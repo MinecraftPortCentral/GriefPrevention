@@ -42,6 +42,7 @@ import org.bukkit.entity.Animals;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
@@ -801,8 +802,8 @@ class PlayerEventHandler implements Listener
 		//allow horse protection to be overridden to allow management from other plugins
         if (!GriefPrevention.instance.config_claims_protectHorses && entity instanceof Horse) return;
         
-		//don't allow interaction with item frames in claimed areas without build permission
-		if(entity instanceof Hanging)
+		//don't allow interaction with item frames or armor stands in claimed areas without build permission
+		if(entity.getType() == EntityType.ARMOR_STAND || entity instanceof Hanging)
 		{
 			String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation(), Material.ITEM_FRAME); 
 			if(noBuildReason != null)
