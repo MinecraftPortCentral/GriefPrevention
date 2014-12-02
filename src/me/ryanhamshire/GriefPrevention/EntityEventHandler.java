@@ -360,17 +360,21 @@ class EntityEventHandler implements Listener
 		Player attacker = null;
 		Projectile arrow = null;
 		Entity damageSource = subEvent.getDamager();
-		if(damageSource instanceof Player)
+		
+		if(damageSource != null)
 		{
-			attacker = (Player)damageSource;
-		}
-		else if(damageSource instanceof Projectile)
-		{
-			arrow = (Projectile)damageSource;
-			if(arrow.getShooter() instanceof Player)
-			{
-				attacker = (Player)arrow.getShooter();
-			}
+    		if(damageSource instanceof Player)
+    		{
+    			attacker = (Player)damageSource;
+    		}
+    		else if(damageSource instanceof Projectile)
+    		{
+    			arrow = (Projectile)damageSource;
+    			if(arrow.getShooter() instanceof Player)
+    			{
+    				attacker = (Player)arrow.getShooter();
+    			}
+    		}
 		}
 		
 		//if the attacker is a player and defender is a player (pvp combat)
@@ -495,7 +499,7 @@ class EntityEventHandler implements Listener
 				PlayerData playerData = null;
 				
 				//if not a player or an explosive, allow
-				if(attacker == null && damageSource.getType() != EntityType.CREEPER && !(damageSource instanceof Explosive))
+				if(attacker == null && damageSource != null && damageSource.getType() != EntityType.CREEPER && !(damageSource instanceof Explosive))
 				{
 				    return;
 				}
@@ -516,7 +520,7 @@ class EntityEventHandler implements Listener
 					if(attacker == null)
 					{
 						//exception case
-						if(event.getEntity() instanceof Villager && damageSource instanceof Monster && claim.isAdminClaim())
+						if(event.getEntity() instanceof Villager && damageSource != null && damageSource instanceof Monster && claim.isAdminClaim())
 						{
 							return;
 						}
@@ -570,6 +574,20 @@ class EntityEventHandler implements Listener
 		//determine which player is attacking, if any
 		Player attacker = null;
 		Entity damageSource = event.getAttacker();
+		
+		//if damage source is null, don't allow the damage when the vehicle is in a land claim
+		if(damageSource == null)
+		{
+		    Claim claim = this.dataStore.getClaimAt(event.getVehicle().getLocation(), false, null);
+	        
+	        //if it's claimed
+	        if(claim != null)
+	        {
+	            event.setCancelled(true);
+	            return;
+	        }
+		}
+		
 		if(damageSource.getType() == EntityType.PLAYER)
 		{
 			attacker = (Player)damageSource;
