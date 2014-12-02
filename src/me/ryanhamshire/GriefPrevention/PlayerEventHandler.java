@@ -1167,10 +1167,28 @@ class PlayerEventHandler implements Listener
 		
 		//otherwise apply rules for doors and beds, if configured that way
 		else if( clickedBlock != null && 
-		        (GriefPrevention.instance.config_claims_lockWoodenDoors && clickedBlockType == Material.WOODEN_DOOR) ||
-		        (GriefPrevention.instance.config_claims_preventButtonsSwitches && clickedBlockType == Material.BED_BLOCK) ||
-		        (GriefPrevention.instance.config_claims_lockTrapDoors && clickedBlockType == Material.TRAP_DOOR) ||
-				(GriefPrevention.instance.config_claims_lockFenceGates && clickedBlockType == Material.FENCE_GATE))
+		        
+		        (GriefPrevention.instance.config_claims_lockWoodenDoors && (
+	                        clickedBlockType == Material.WOODEN_DOOR   ||
+	                        clickedBlockType == Material.ACACIA_DOOR   || 
+	                        clickedBlockType == Material.BIRCH_DOOR    ||
+	                        clickedBlockType == Material.JUNGLE_DOOR   ||
+                            clickedBlockType == Material.SPRUCE_DOOR   ||
+	                        clickedBlockType == Material.DARK_OAK_DOOR)) ||
+		        
+                (GriefPrevention.instance.config_claims_preventButtonsSwitches && clickedBlockType == Material.BED_BLOCK) ||
+		        
+                (GriefPrevention.instance.config_claims_lockTrapDoors && (
+		                    clickedBlockType == Material.TRAP_DOOR ||
+		                    clickedBlockType == Material.IRON_TRAPDOOR)) ||
+				
+                (GriefPrevention.instance.config_claims_lockFenceGates && (
+    				        clickedBlockType == Material.FENCE_GATE          ||
+    				        clickedBlockType == Material.ACACIA_FENCE_GATE   || 
+                            clickedBlockType == Material.BIRCH_FENCE_GATE    ||
+                            clickedBlockType == Material.JUNGLE_FENCE_GATE   ||
+                            clickedBlockType == Material.SPRUCE_FENCE_GATE   ||
+                            clickedBlockType == Material.DARK_OAK_FENCE_GATE)))
 		{
 		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
@@ -1957,7 +1975,6 @@ class PlayerEventHandler implements Listener
         {
             case WOOD_BUTTON:
             case STONE_BUTTON:
-            case WOOD_DOOR:
             case LEVER:
             case DIODE_BLOCK_ON:  //redstone repeater
             case DIODE_BLOCK_OFF:
