@@ -1180,8 +1180,7 @@ class PlayerEventHandler implements Listener
                 (GriefPrevention.instance.config_claims_preventButtonsSwitches && clickedBlockType == Material.BED_BLOCK) ||
 		        
                 (GriefPrevention.instance.config_claims_lockTrapDoors && (
-		                    clickedBlockType == Material.TRAP_DOOR ||
-		                    clickedBlockType == Material.IRON_TRAPDOOR)) ||
+		                    clickedBlockType == Material.TRAP_DOOR)) ||
 				
                 (GriefPrevention.instance.config_claims_lockFenceGates && (
     				        clickedBlockType == Material.FENCE_GATE          ||

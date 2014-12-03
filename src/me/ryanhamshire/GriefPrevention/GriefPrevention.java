@@ -2283,49 +2283,21 @@ public class GriefPrevention extends JavaPlugin
         if(playerID == null) return "someone";
             
         //check the cache
-        String playerName = GriefPrevention.uuidToNameMap.get(playerID);
-        if(playerName != null) return playerName;
-        
-        //try online players next
-        Player player = GriefPrevention.instance.getServer().getPlayer(playerID);
-        if(player != null) playerName = player.getName();
-        
-        //then search offline players
-        if(playerName == null)
+        OfflinePlayer player = GriefPrevention.instance.getServer().getOfflinePlayer(playerID);
+        if(player.hasPlayedBefore())
         {
-            OfflinePlayer [] players = GriefPrevention.instance.getServer().getOfflinePlayers();
-            for(int i = 0; i < players.length; i++)
-            {
-                if(players[i].getUniqueId().equals(playerID))
-                {
-                    playerName = players[i].getName();
-                    break;
-                }
-            }
+            return player.getName();
         }
-        
-        if(playerName == null)
+        else
         {
-            playerName = "someone";
+            return "someone";
         }
-        
-        //cache the result
-        GriefPrevention.cacheUUIDNamePair(playerID, playerName);
-        
-        //return result
-        return playerName;
     }
     
     //cache for player name lookups, to save searches of all offline players
-    static ConcurrentHashMap<UUID, String> uuidToNameMap = new ConcurrentHashMap<UUID, String>();
     static void cacheUUIDNamePair(UUID playerID, String playerName)
     {
-        //limit memory footprint
-        if(GriefPrevention.uuidToNameMap.size() >= 500) GriefPrevention.uuidToNameMap.clear();
-        
-        GriefPrevention.uuidToNameMap.put(playerID, playerName);  
-        
-        //always store the reverse mapping
+        //store the reverse mapping
         GriefPrevention.instance.playerNameToIDMap.put(playerName, playerID);
         GriefPrevention.instance.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
     }
