@@ -1252,8 +1252,8 @@ class PlayerEventHandler implements Listener
 			ItemStack itemInHand = player.getItemInHand();
 			Material materialInHand = itemInHand.getType();		
 			
-			//if it's bonemeal, check for build permission (ink sac == bone meal, must be a Bukkit bug?)
-			if(clickedBlock != null && materialInHand == Material.INK_SACK)
+			//if it's bonemeal or armor stand, check for build permission (ink sac == bone meal, must be a Bukkit bug?)
+			if(clickedBlock != null && (materialInHand == Material.INK_SACK || materialInHand == Material.ARMOR_STAND))
 			{
 				String noBuildReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation(), clickedBlockType);
 				if(noBuildReason != null)
