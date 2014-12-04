@@ -553,12 +553,6 @@ public class GriefPrevention extends JavaPlugin
         this.config_mods_accessTrustIds = new MaterialCollection();
         List<String> accessTrustStrings = config.getStringList("GriefPrevention.Mods.BlockIdsRequiringAccessTrust");
         
-        //default values for access trust mod blocks
-        if(accessTrustStrings == null || accessTrustStrings.size() == 0)
-        {
-            //none by default
-        }
-        
         this.parseMaterialListFromConfig(accessTrustStrings, this.config_mods_accessTrustIds);
         
         this.config_mods_containerTrustIds = new MaterialCollection();
@@ -567,36 +561,7 @@ public class GriefPrevention extends JavaPlugin
         //default values for container trust mod blocks
         if(containerTrustStrings == null || containerTrustStrings.size() == 0)
         {
-            containerTrustStrings.add(new MaterialInfo(227, "Battery Box").toString());
-            containerTrustStrings.add(new MaterialInfo(130, "Transmutation Tablet").toString());
-            containerTrustStrings.add(new MaterialInfo(128, "Alchemical Chest and Energy Condenser").toString());
-            containerTrustStrings.add(new MaterialInfo(181, "Various Chests").toString());
-            containerTrustStrings.add(new MaterialInfo(178, "Ender Chest").toString());
-            containerTrustStrings.add(new MaterialInfo(150, "Various BuildCraft Gadgets").toString());
-            containerTrustStrings.add(new MaterialInfo(155, "Filler").toString());
-            containerTrustStrings.add(new MaterialInfo(157, "Builder").toString());
-            containerTrustStrings.add(new MaterialInfo(158, "Template Drawing Table").toString());
-            containerTrustStrings.add(new MaterialInfo(126, "Various EE Gadgets").toString());
-            containerTrustStrings.add(new MaterialInfo(138, "Various RedPower Gadgets").toString());
-            containerTrustStrings.add(new MaterialInfo(137, "BuildCraft Project Table and Furnaces").toString());
-            containerTrustStrings.add(new MaterialInfo(250, "Various IC2 Machines").toString());
-            containerTrustStrings.add(new MaterialInfo(161, "BuildCraft Engines").toString());
-            containerTrustStrings.add(new MaterialInfo(169, "Automatic Crafting Table").toString());
-            containerTrustStrings.add(new MaterialInfo(177, "Wireless Components").toString());
-            containerTrustStrings.add(new MaterialInfo(183, "Solar Arrays").toString());
-            containerTrustStrings.add(new MaterialInfo(187, "Charging Benches").toString());
-            containerTrustStrings.add(new MaterialInfo(188, "More IC2 Machines").toString());
-            containerTrustStrings.add(new MaterialInfo(190, "Generators, Fabricators, Strainers").toString());
-            containerTrustStrings.add(new MaterialInfo(194, "More Gadgets").toString());
-            containerTrustStrings.add(new MaterialInfo(207, "Computer").toString());
-            containerTrustStrings.add(new MaterialInfo(208, "Computer Peripherals").toString());
-            containerTrustStrings.add(new MaterialInfo(246, "IC2 Generators").toString());
-            containerTrustStrings.add(new MaterialInfo(24303, "Teleport Pipe").toString());
-            containerTrustStrings.add(new MaterialInfo(24304, "Waterproof Teleport Pipe").toString());
-            containerTrustStrings.add(new MaterialInfo(24305, "Power Teleport Pipe").toString());
-            containerTrustStrings.add(new MaterialInfo(4311, "Diamond Sorting Pipe").toString());
-            containerTrustStrings.add(new MaterialInfo(216, "Turtle").toString());
-            
+            containerTrustStrings.add(new MaterialInfo(99999, "Example - ID 99999, all data values.").toString());
         }
         
         //parse the strings from the config file
@@ -604,13 +569,6 @@ public class GriefPrevention extends JavaPlugin
         
         this.config_mods_explodableIds = new MaterialCollection();
         List<String> explodableStrings = config.getStringList("GriefPrevention.Mods.BlockIdsExplodable");
-        
-        //default values for explodable mod blocks
-        if(explodableStrings == null || explodableStrings.size() == 0)
-        {
-            explodableStrings.add(new MaterialInfo(161, "BuildCraft Engines").toString());          
-            explodableStrings.add(new MaterialInfo(246, (byte)5 ,"Nuclear Reactor").toString());
-        }
         
         //parse the strings from the config file
         this.parseMaterialListFromConfig(explodableStrings, this.config_mods_explodableIds);
