@@ -1059,6 +1059,8 @@ class PlayerEventHandler implements Listener
 	    Player player = event.getPlayer();
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
 		
+		GriefPrevention.AddLogEntry(action.name());
+		
 		Material clickedBlockType = null;
 		if(clickedBlock != null)
 		{
@@ -1897,7 +1899,11 @@ class PlayerEventHandler implements Listener
 				
 				if(playerData.shovelMode != ShovelMode.Admin && (newClaimWidth < GriefPrevention.instance.config_claims_minSize || newClaimHeight < GriefPrevention.instance.config_claims_minSize))
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.NewClaimTooSmall, String.valueOf(GriefPrevention.instance.config_claims_minSize));
+					//this IF block is a workaround for craftbukkit bug which fires two events for one interaction
+				    if(newClaimWidth != 1 && newClaimHeight != 1)
+				    {
+				        GriefPrevention.sendMessage(player, TextMode.Err, Messages.NewClaimTooSmall, String.valueOf(GriefPrevention.instance.config_claims_minSize));
+				    }
 					return;
 				}
 				
