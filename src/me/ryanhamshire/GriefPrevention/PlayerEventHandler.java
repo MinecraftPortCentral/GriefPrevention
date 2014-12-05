@@ -1059,8 +1059,6 @@ class PlayerEventHandler implements Listener
 	    Player player = event.getPlayer();
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
 		
-		GriefPrevention.AddLogEntry(action.name());
-		
 		Material clickedBlockType = null;
 		if(clickedBlock != null)
 		{
