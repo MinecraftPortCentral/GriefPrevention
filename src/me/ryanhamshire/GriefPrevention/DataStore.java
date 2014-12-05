@@ -918,7 +918,7 @@ public abstract class DataStore
 		for(int i = 0; i < this.claims.size(); i++)
 		{
 			Claim claim = this.claims.get(i);
-			if(playerID.equals(claim.ownerID) && (deleteCreativeClaims || !GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())))
+			if((playerID == claim.ownerID || playerID.equals(claim.ownerID)) && (deleteCreativeClaims || !GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())))
 				claimsToDelete.add(claim);
 		}
 		
