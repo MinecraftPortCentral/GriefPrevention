@@ -568,6 +568,9 @@ class EntityEventHandler implements Listener
 		//all of this is anti theft code
 		if(!GriefPrevention.instance.config_claims_preventTheft) return;	
 		
+		//input validation
+		if(event.getVehicle() == null) return;
+		
 		//don't track in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getVehicle().getWorld())) return;
 		
