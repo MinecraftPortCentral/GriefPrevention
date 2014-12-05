@@ -109,7 +109,7 @@ public class BlockEventHandler implements Listener
 		for(int i = 0; i < event.getLines().length; i++)
 		{
 			if(event.getLine(i).length() != 0) notEmpty = true;
-			lines.append(event.getLine(i) + ";");
+			lines.append("\n" + event.getLine(i));
 		}
 		
 		String signMessage = lines.toString();
@@ -118,7 +118,7 @@ public class BlockEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		if(notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage))
 		{		
-			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + lines.toString() + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()));
+			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()) + lines.toString());
 			playerData.lastMessage = signMessage;
 			
 			if(!player.hasPermission("griefprevention.eavesdrop"))
@@ -128,7 +128,7 @@ public class BlockEventHandler implements Listener
 				{
 					if(otherPlayer.hasPermission("griefprevention.eavesdrop"))
 					{
-						otherPlayer.sendMessage(ChatColor.GRAY + player.getName() + "(sign): " + signMessage);
+						otherPlayer.sendMessage(ChatColor.GRAY + player.getName() + " sign @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()) + " :" + signMessage);
 					}
 				}
 			}
