@@ -1683,7 +1683,7 @@ public class GriefPrevention extends JavaPlugin
 		}
 		
 		//deletealladminclaims
-		else if(cmd.getName().equalsIgnoreCase("deletealladminclaims"))
+		else if(player != null && cmd.getName().equalsIgnoreCase("deletealladminclaims"))
 		{
 			if(!player.hasPermission("griefprevention.deleteclaims"))
 			{
