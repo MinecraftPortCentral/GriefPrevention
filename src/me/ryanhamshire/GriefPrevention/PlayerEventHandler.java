@@ -1734,6 +1734,7 @@ class PlayerEventHandler implements Listener
 						if(blocksRemainingAfter < 0)
 						{
 							GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeNeedMoreBlocks, String.valueOf(Math.abs(blocksRemainingAfter)));
+							this.tryAdvertiseAdminAlternatives(player);
 							return;
 						}
 					}
@@ -1962,7 +1963,7 @@ class PlayerEventHandler implements Listener
 					if(newClaimArea > remainingBlocks)
 					{
 						GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimInsufficientBlocks, String.valueOf(newClaimArea - remainingBlocks));
-						GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimAdvertisement);
+						this.tryAdvertiseAdminAlternatives(player);
 						return;
 					}
 				}					
@@ -2003,7 +2004,24 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
-	//determines whether a block type is an inventory holder.  uses a caching strategy to save cpu time
+	//educates a player about /adminclaims and /acb, if he can use them 
+	private void tryAdvertiseAdminAlternatives(Player player)
+	{
+        if(player.hasPermission("griefprevention.adminclaims") && player.hasPermission("griefprevention.adjustclaimblocks"))
+        {
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACandACB);
+        }
+        else if(player.hasPermission("griefprevention.adminclaims"))
+        {
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseAdminClaims);
+        }
+        else if(player.hasPermission("griefprevention.adjustclaimblocks"))
+        {
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACB);
+        }
+    }
+
+    //determines whether a block type is an inventory holder.  uses a caching strategy to save cpu time
 	private ConcurrentHashMap<Integer, Boolean> inventoryHolderCache = new ConcurrentHashMap<Integer, Boolean>();
 	private boolean isInventoryHolder(Block clickedBlock)
 	{
