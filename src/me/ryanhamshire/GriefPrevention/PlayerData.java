@@ -108,6 +108,15 @@ public class PlayerData
 	public boolean warnedAboutMajorDeletion = false;
 
 	public InetAddress ipAddress;
+
+    //whether or not this player has received a message about unlocking death drops since his last death
+	boolean receivedDropUnlockAdvertisement = false;
+
+    //whether or not this player's dropped items (on death) are unlocked for other players to pick up
+	boolean dropsAreUnlocked = false;
+
+    //message to send to player after he respawns
+	String messageOnRespawn = null;
 	
 	//whether or not this player is "in" pvp combat
 	public boolean inPvpCombat()

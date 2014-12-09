@@ -594,9 +594,17 @@ class PlayerEventHandler implements Listener
     @EventHandler(ignoreCancelled = true)
     void onPlayerRespawn (PlayerRespawnEvent event)
     {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
         playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
-        GriefPrevention.instance.checkPvpProtectionNeeded(event.getPlayer());
+        GriefPrevention.instance.checkPvpProtectionNeeded(player);
+        
+        //also send him any messaged from grief prevention he would have received while dead
+        if(playerData.messageOnRespawn != null)
+        {
+            GriefPrevention.sendMessage(player, ChatColor.RESET /*color is alrady embedded in message in this case*/, playerData.messageOnRespawn, 40L);
+            playerData.messageOnRespawn = null;
+        }
     }
 	
 	//when a player dies...
@@ -612,6 +620,10 @@ class PlayerEventHandler implements Listener
 		}
 		
 		playerData.lastDeathTimeStamp = now;
+		
+		//these are related to locking dropped items on death to prevent theft
+		playerData.dropsAreUnlocked = false;
+		playerData.receivedDropUnlockAdvertisement = false;
 	}
 	
 	//when a player gets kicked...
@@ -906,7 +918,44 @@ class PlayerEventHandler implements Listener
 	{
 		Player player = event.getPlayer();
 		
-		if(!event.getPlayer().getWorld().getPVP()) return;
+		//FEATURE: lock dropped items to player who dropped them
+		
+		//who owns this stack?
+		ItemStack stack = event.getItem().getItemStack();
+		UUID ownerID = GriefPrevention.instance.itemStackOwnerMap.get(stack);
+		if(ownerID != null)
+		{
+		    //has that player unlocked his drops?
+		    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID);
+		    String ownerName = GriefPrevention.lookupPlayerName(ownerID);
+		    if(owner.isOnline() && !player.equals(owner))
+		    {
+		        PlayerData playerData = this.dataStore.getPlayerData(ownerID);
+		        
+		        //if locked, don't allow pickup
+		        if(!playerData.dropsAreUnlocked)
+		        {
+		            event.setCancelled(true);
+		            
+		            //if hasn't been instructed how to unlock, send explanatory messages
+		            if(!playerData.receivedDropUnlockAdvertisement)
+		            {
+		                GriefPrevention.sendMessage(owner.getPlayer(), TextMode.Instr, Messages.DropUnlockAdvertisement);
+		                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PickupBlockedExplanation, ownerName);
+		                playerData.receivedDropUnlockAdvertisement = true;
+		            }
+		        }
+		    }
+		    
+		    //if allowed to pick up, remove from ownership map
+		    if(!event.isCancelled())
+		    {
+		        GriefPrevention.instance.itemStackOwnerMap.remove(stack);
+		    }
+		}
+		
+		//the rest of this code is specific to pvp worlds
+		if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(player.getWorld())) return;
 		
 		//if we're preventing spawn camping and the player was previously empty handed...
 		if(GriefPrevention.instance.config_pvp_protectFreshSpawns && (player.getItemInHand().getType() == Material.AIR))

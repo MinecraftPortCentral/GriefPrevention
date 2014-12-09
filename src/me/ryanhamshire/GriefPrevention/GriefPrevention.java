@@ -64,6 +64,9 @@ public class GriefPrevention extends JavaPlugin
 	//this handles data storage, like player and region data
 	public DataStore dataStore;
 	
+	//this remembers which item stacks dropped in the world belong to which players
+    ConcurrentHashMap<ItemStack, UUID> itemStackOwnerMap = new ConcurrentHashMap<ItemStack, UUID>();
+	
 	//configuration variables, loaded/saved from a config.yml
 	
 	//claim mode for each world
@@ -120,6 +123,9 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_pvp_noCombatInPlayerLandClaims;			//whether players may fight in player-owned land claims
 	public boolean config_pvp_noCombatInAdminLandClaims;			//whether players may fight in admin-owned land claims
 	public boolean config_pvp_noCombatInAdminSubdivisions;          //whether players may fight in subdivisions of admin-owned land claims
+	
+	public boolean config_lockDeathDropsInPvpWorlds;                //whether players' dropped on death items are protected in pvp worlds
+	public boolean config_lockDeathDropsInNonPvpWorlds;             //whether players' dropped on death items are protected in non-pvp worlds
 	
 	public double config_economy_claimBlocksPurchaseCost;			//cost to purchase a claim block.  set to zero to disable purchase.
 	public double config_economy_claimBlocksSellValue;				//return on a sold claim block.  set to zero to disable sale.
@@ -527,6 +533,9 @@ public class GriefPrevention extends JavaPlugin
         this.config_economy_claimBlocksPurchaseCost = config.getDouble("GriefPrevention.Economy.ClaimBlocksPurchaseCost", 0);
         this.config_economy_claimBlocksSellValue = config.getDouble("GriefPrevention.Economy.ClaimBlocksSellValue", 0);
         
+        this.config_lockDeathDropsInPvpWorlds = config.getBoolean("GriefPrevention.ProtectItemsDroppedOnDeath.PvPWorlds", false);
+        this.config_lockDeathDropsInNonPvpWorlds = config.getBoolean("GriefPrevention.ProtectItemsDroppedOnDeath.NonPvPWorlds", true);
+        
         this.config_blockSurfaceCreeperExplosions = config.getBoolean("GriefPrevention.BlockSurfaceCreeperExplosions", true);
         this.config_blockSurfaceOtherExplosions = config.getBoolean("GriefPrevention.BlockSurfaceOtherExplosions", true);
         this.config_blockSkyTrees = config.getBoolean("GriefPrevention.LimitSkyTrees", true);
@@ -736,6 +745,9 @@ public class GriefPrevention extends JavaPlugin
         
         outConfig.set("GriefPrevention.Economy.ClaimBlocksPurchaseCost", this.config_economy_claimBlocksPurchaseCost);
         outConfig.set("GriefPrevention.Economy.ClaimBlocksSellValue", this.config_economy_claimBlocksSellValue);
+        
+        outConfig.set("GriefPrevention.ProtectItemsDroppedOnDeath.PvPWorlds", this.config_lockDeathDropsInPvpWorlds);
+        outConfig.set("GriefPrevention.ProtectItemsDroppedOnDeath.NonPvPWorlds", this.config_lockDeathDropsInNonPvpWorlds);
         
         outConfig.set("GriefPrevention.BlockSurfaceCreeperExplosions", this.config_blockSurfaceCreeperExplosions);
         outConfig.set("GriefPrevention.BlockSurfaceOtherExplosions", this.config_blockSurfaceOtherExplosions);
@@ -1622,62 +1634,12 @@ public class GriefPrevention extends JavaPlugin
 			return true;
 		}
 		
-		//deathblow <player> [recipientPlayer]
-		else if(cmd.getName().equalsIgnoreCase("deathblow"))
+		//unlockItems
+		else if(cmd.getName().equalsIgnoreCase("unlockdrops") && player != null)
 		{
-			//requires at least one parameter, the target player's name
-			if(args.length < 1) return false;
-			
-			//try to find that player
-			Player targetPlayer = this.getServer().getPlayer(args[0]);
-			if(targetPlayer == null)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
-				return true;
-			}
-			
-			//try to find the recipient player, if specified
-			Player recipientPlayer = null;
-			if(args.length > 1)
-			{
-				recipientPlayer = this.getServer().getPlayer(args[1]);
-				if(recipientPlayer == null)
-				{
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
-					return true;
-				}
-			}
-			
-			//if giving inventory to another player, teleport the target player to that receiving player
-			if(recipientPlayer != null)
-			{
-				targetPlayer.teleport(recipientPlayer);
-			}
-			
-			//otherwise, plan to "pop" the player in place
-			else
-			{
-				//if in a normal world, shoot him up to the sky first, so his items will fall on the surface.
-				if(targetPlayer.getWorld().getEnvironment() == Environment.NORMAL)
-				{
-					Location location = targetPlayer.getLocation();
-					location.setY(location.getWorld().getMaxHeight());
-					targetPlayer.teleport(location);
-				}
-			}
-			 
-			//kill target player
-			targetPlayer.setHealth(0);
-			
-			//log entry
-			if(player != null)
-			{
-				GriefPrevention.AddLogEntry(player.getName() + " used /DeathBlow to kill " + targetPlayer.getName() + ".");
-			}
-			else
-			{
-				GriefPrevention.AddLogEntry("Killed " + targetPlayer.getName() + ".");
-			}
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		    playerData.dropsAreUnlocked = true;
+		    GriefPrevention.sendMessage(player, TextMode.Success, Messages.DropUnlockConfirmation);
 			
 			return true;
 		}
@@ -2207,6 +2169,7 @@ public class GriefPrevention extends JavaPlugin
 
 	//helper method to resolve a player by name
 	ConcurrentHashMap<String, UUID> playerNameToIDMap = new ConcurrentHashMap<String, UUID>();
+
 	private OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first

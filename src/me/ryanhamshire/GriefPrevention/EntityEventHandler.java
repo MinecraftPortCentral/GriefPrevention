@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
@@ -62,6 +63,7 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 
 //handles events related to entities
 class EntityEventHandler implements Listener
@@ -217,7 +219,32 @@ class EntityEventHandler implements Listener
 	{
 		LivingEntity entity = event.getEntity();
 		
-		//don't track in worlds where claims are not enabled
+		//FEATURE: lock dropped items to player who dropped them
+		
+		if(entity instanceof Player)
+		{
+		    Player player = (Player)entity;
+		    World world = entity.getWorld();
+		    
+		    //decide whether or not to apply this feature to this situation (depends on the world wher it happens)
+		    boolean isPvPWorld = GriefPrevention.instance.config_pvp_enabledWorlds.contains(world);
+		    if((isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInPvpWorlds) || 
+		       (!isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInNonPvpWorlds))
+		    {
+		        //mark the dropped stacks with player's UUID
+		        List<ItemStack> drops = event.getDrops();
+		        for(ItemStack stack : drops)
+		        {
+		            GriefPrevention.instance.itemStackOwnerMap.put(stack, player.getUniqueId());
+		        }
+		        
+		        //allow the player to receive a message about how to unlock any drops
+		        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		        playerData.receivedDropUnlockAdvertisement = false;
+		    }
+		}
+		
+		//don't do the rest in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) return;
 		
 		//special rule for creative worlds: killed entities don't drop items or experience orbs

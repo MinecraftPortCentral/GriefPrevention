@@ -119,10 +119,9 @@ commands:
       description: Converts an administrative claim to a private claim.
       usage: /TransferClaim <player>
       permission: griefprevention.adjustclaimblocks
-   deathblow:
-      description: Kills a player, optionally giving his inventory to another player.
-      usage: /DeathBlow <player> [recipientPlayer]
-      permission: griefprevention.deathblow
+   unlockdrops:
+      description: Allows other players to pick up the items you dropped when you died.
+      usage: /UnlockDrops
    claimslist:
       description: Lists information about a player's claim blocks and claims.
       usage: /ClaimsList or /ClaimsList <player>
