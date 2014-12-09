@@ -527,7 +527,11 @@ public class BlockEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockIgnite (BlockIgniteEvent igniteEvent)
 	{
-		if(!GriefPrevention.instance.config_fireSpreads && igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL &&  igniteEvent.getCause() != IgniteCause.LIGHTNING)
+	    //don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(igniteEvent.getBlock().getWorld())) return;
+        
+	    
+	    if(!GriefPrevention.instance.config_fireSpreads && igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL &&  igniteEvent.getCause() != IgniteCause.LIGHTNING)
 		{	
 			igniteEvent.setCancelled(true);			
 		}
@@ -539,6 +543,9 @@ public class BlockEventHandler implements Listener
 	{
 		if(spreadEvent.getSource().getType() != Material.FIRE) return;
 		
+		//don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(spreadEvent.getBlock().getWorld())) return;
+        
 		if(!GriefPrevention.instance.config_fireSpreads)
 		{
 			spreadEvent.setCancelled(true);
@@ -551,9 +558,6 @@ public class BlockEventHandler implements Listener
 			
 			return;
 		}
-		
-		//don't track in worlds where claims are not enabled
-        if(!GriefPrevention.instance.claimsEnabledForWorld(spreadEvent.getBlock().getWorld())) return;
 		
 		//never spread into a claimed area, regardless of settings
 		if(this.dataStore.getClaimAt(spreadEvent.getBlock().getLocation(), false, null) != null)
@@ -573,7 +577,10 @@ public class BlockEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockBurn (BlockBurnEvent burnEvent)
 	{
-		if(!GriefPrevention.instance.config_fireDestroys)
+	    //don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(burnEvent.getBlock().getWorld())) return;
+        
+	    if(!GriefPrevention.instance.config_fireDestroys)
 		{
 			burnEvent.setCancelled(true);
 			Block block = burnEvent.getBlock();
@@ -604,9 +611,6 @@ public class BlockEventHandler implements Listener
 			}
 			return;
 		}
-		
-		//don't track in worlds where claims are not enabled
-        if(!GriefPrevention.instance.claimsEnabledForWorld(burnEvent.getBlock().getWorld())) return;
 		
 		//never burn claimed blocks, regardless of settings
 		if(this.dataStore.getClaimAt(burnEvent.getBlock().getLocation(), false, null) != null)
