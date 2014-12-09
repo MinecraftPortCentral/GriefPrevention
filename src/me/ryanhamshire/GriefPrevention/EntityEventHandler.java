@@ -614,8 +614,9 @@ class EntityEventHandler implements Listener
 	        if(claim != null)
 	        {
 	            event.setCancelled(true);
-	            return;
 	        }
+	        
+            return;
 		}
 		
 		if(damageSource.getType() == EntityType.PLAYER)
