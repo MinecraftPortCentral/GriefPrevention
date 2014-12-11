@@ -96,10 +96,35 @@ class UUIDFetcher {
             int requests = (int) Math.ceil(names.size() / PROFILES_PER_REQUEST);
             for (int i = 0; i < requests; i++)
             {
-                HttpURLConnection connection = createConnection();
-                String body = JSONArray.toJSONString(names.subList(i * 100, Math.min((i + 1) * 100, names.size())));
-                writeBody(connection, body);
-                JSONArray array = (JSONArray) jsonParser.parse(new InputStreamReader(connection.getInputStream()));
+                boolean retry = false;
+                JSONArray array = null;
+                do
+                {
+                    HttpURLConnection connection = createConnection();
+                    String body = JSONArray.toJSONString(names.subList(i * 100, Math.min((i + 1) * 100, names.size())));
+                    writeBody(connection, body);
+                    retry = false;
+                    array = null;
+                    try
+                    {
+                        array = (JSONArray) jsonParser.parse(new InputStreamReader(connection.getInputStream()));
+                    }
+                    catch(Exception e)
+                    {
+                        //in case of error 429 too many requests, pause and then retry later
+                        if(e.getMessage().contains("429"))
+                        {
+                            retry = true;
+                            GriefPrevention.AddLogEntry("Mojang says we're sending requests too fast.  Will retry every 30 seconds until we succeed...");
+                            Thread.sleep(30000);
+                        }
+                        else
+                        {
+                            throw e;
+                        }
+                    }
+                }while(retry);
+                
                 for (Object profile : array) {
                     JSONObject jsonProfile = (JSONObject) profile;
                     String id = (String) jsonProfile.get("id");
