@@ -696,12 +696,18 @@ public abstract class DataStore
 		
 		if(claim.parent != null) claim = claim.parent;
 		
+		//note any subdivisions
+		ArrayList<Claim> subdivisions = new ArrayList<Claim>(claim.children);
+		
 		//delete the claim
 		this.deleteClaim(claim);
 		
 		//re-create it at the new depth
 		claim.lesserBoundaryCorner.setY(newDepth);
 		claim.greaterBoundaryCorner.setY(newDepth);
+		
+		//re-add the subdivisions (deleteClaim() removed them)
+		claim.children.addAll(subdivisions);
 		
 		//make all subdivisions reach to the same depth
 		for(int i = 0; i < claim.children.size(); i++)
@@ -942,7 +948,10 @@ public abstract class DataStore
 	//see CreateClaim() for details on return value
 	synchronized public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2)
 	{
-		//remove old claim
+		//note any subdivisions before deleting the claim
+	    ArrayList<Claim> subdivisions = new ArrayList<Claim>(claim.children);
+	    
+	    //remove old claim
 		this.deleteClaim(claim);					
 		
 		//try to create this new claim, ignoring the original when checking for overlap
@@ -972,13 +981,8 @@ public abstract class DataStore
 				result.claim.managers.add(managers.get(i));
 			}
 			
-			//copy subdivisions from old claim
-			for(int i = 0; i < claim.children.size(); i++)
-			{
-				Claim subdivision = claim.children.get(i);
-				subdivision.parent = result.claim;
-				result.claim.children.add(subdivision);
-			}
+			//restore subdivisions
+			result.claim.children.addAll(subdivisions);
 			
 			//save those changes
 			this.saveClaim(result.claim);
