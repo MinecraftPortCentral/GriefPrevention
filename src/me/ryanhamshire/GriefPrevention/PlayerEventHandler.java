@@ -18,7 +18,6 @@
 
 package me.ryanhamshire.GriefPrevention;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -407,7 +406,7 @@ class PlayerEventHandler implements Listener
 			
 			String logMessage = logMessageBuilder.toString();
 			
-			Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
+			Player [] players = (Player [])GriefPrevention.instance.getServer().getOnlinePlayers().toArray();
 			for(Player player : players)
 			{
 				if(player.hasPermission("griefprevention.eavesdrop") && !player.getName().equalsIgnoreCase(args[1]))
@@ -1666,7 +1665,6 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//if he's resizing a claim and that claim hasn't been deleted since he started resizing it
-			if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			if(playerData.claimResizing != null && playerData.claimResizing.inDataStore)
 			{
 				if(clickedBlock.getLocation().equals(playerData.lastShovelLocation)) return;
@@ -1804,7 +1802,6 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//otherwise, since not currently resizing a claim, must be starting a resize, creating a new claim, or creating a subdivision
-			if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 			Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), true /*ignore height*/, playerData.lastClaim);			
 			
 			//if within an existing claim, he's not creating a new one
