@@ -117,12 +117,23 @@ class EntityEventHandler implements Listener
 		
 		//FEATURE: explosions don't destroy blocks when they explode near or above sea level in standard worlds
 		boolean isCreeper = (explodeEvent.getEntity() != null && explodeEvent.getEntity() instanceof Creeper);
+		
+		//exception for some land claims in survival worlds, see notes below
+		Claim originationClaim = null;
+		if(!GriefPrevention.instance.creativeRulesApply(location))
+        {
+		    originationClaim = GriefPrevention.instance.dataStore.getClaimAt(location, false, null);
+        }
+		
 		if( location.getWorld().getEnvironment() == Environment.NORMAL && GriefPrevention.instance.claimsEnabledForWorld(location.getWorld()) && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions)))			
 		{
 			for(int i = 0; i < blocks.size(); i++)
 			{
 				Block block = blocks.get(i);
 				if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
+				
+				//in survival worlds, if claim explosions are enabled for the source claim, allow non-creeper explosions to destroy blocks in and under that claim even above sea level. 
+				if(!isCreeper && originationClaim != null && originationClaim.areExplosivesAllowed && originationClaim.contains(block.getLocation(), true, false)) continue;
 				
 				if(block.getLocation().getBlockY() > GriefPrevention.instance.getSeaLevel(location.getWorld()) - 7)
 				{
