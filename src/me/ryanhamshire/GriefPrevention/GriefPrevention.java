@@ -137,7 +137,8 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_fireSpreads;								//whether fire spreads outside of claims
 	public boolean config_fireDestroys;								//whether fire destroys blocks outside of claims
 	
-	public boolean config_eavesdrop; 								//whether whispered messages will be visible to administrators
+	public boolean config_whisperNotifications; 					//whether whispered messages will broadcast to administrators in game
+	public boolean config_signNotifications;                        //whether sign content will broadcast to administrators in game
 	public ArrayList<String> config_eavesdrop_whisperCommands;		//list of whisper commands to eavesdrop on
 	
 	public boolean config_smartBan;									//whether to ban accounts which very likely owned by a banned player
@@ -545,8 +546,9 @@ public class GriefPrevention extends JavaPlugin
         this.config_fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
         this.config_fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
         
-        this.config_eavesdrop = config.getBoolean("GriefPrevention.EavesdropEnabled", true);
-        String whisperCommandsToMonitor = config.getString("GriefPrevention.WhisperCommands", "/tell;/pm;/r;/w;/t;/msg");
+        this.config_whisperNotifications = config.getBoolean("GriefPrevention.AdminsGetWhispers", true);
+        this.config_signNotifications = config.getBoolean("GriefPrevention.AdminsGetSignNotifications", true);
+        String whisperCommandsToMonitor = config.getString("GriefPrevention.WhisperCommands", "/tell;/pm;/r;/w;/whisper;/t;/msg");
         
         this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
         
@@ -758,7 +760,9 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.FireSpreads", this.config_fireSpreads);
         outConfig.set("GriefPrevention.FireDestroys", this.config_fireDestroys);
         
-        outConfig.set("GriefPrevention.EavesdropEnabled", this.config_eavesdrop);       
+        outConfig.set("GriefPrevention.AdminsGetWhispers", this.config_whisperNotifications);
+        outConfig.set("GriefPrevention.AdminsGetSignNotifications", this.config_signNotifications);
+        
         outConfig.set("GriefPrevention.WhisperCommands", whisperCommandsToMonitor);     
         outConfig.set("GriefPrevention.SmartBan", this.config_smartBan);
         

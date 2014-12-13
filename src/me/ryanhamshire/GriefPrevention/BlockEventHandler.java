@@ -101,7 +101,10 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true)
 	public void onSignChanged(SignChangeEvent event)
 	{
-		Player player = event.getPlayer();
+	    //send sign content to online administrators
+	    if(!GriefPrevention.instance.config_signNotifications) return;
+	    
+	    Player player = event.getPlayer();
 		if(player == null) return;
 		
 		StringBuilder lines = new StringBuilder();
