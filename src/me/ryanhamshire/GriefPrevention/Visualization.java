@@ -46,7 +46,7 @@ public class Visualization
 		}
 		
 		//if he's online, create a task to send him the visualization in about half a second
-		if(player.isOnline() && visualization.elements.get(0).location.getWorld().equals(player.getWorld()))
+		if(player.isOnline() && visualization.elements.size() > 0 && visualization.elements.get(0).location.getWorld().equals(player.getWorld()))
 		{
 			GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, new VisualizationApplicationTask(player, playerData, visualization), 1L);
 		}
@@ -183,10 +183,10 @@ public class Visualization
 		this.elements.add(new VisualizationElement(getVisibleLocation(world, smallx, height, bigz - 1, waterIsTransparent), accentMaterial, (byte)0));
 		
 		//locality
-		int minx = locality.getBlockX() - 100;
-		int minz = locality.getBlockZ() - 100;
-		int maxx = locality.getBlockX() + 100;
-		int maxz = locality.getBlockZ() + 100;
+		int minx = locality.getBlockX() - 200;
+		int minz = locality.getBlockZ() - 200;
+		int maxx = locality.getBlockX() + 200;
+		int maxz = locality.getBlockZ() + 200;
 		
 		//top line		
 		for(int x = smallx + 10; x < bigx - 10; x += 10)
@@ -249,4 +249,16 @@ public class Visualization
 					(waterIsTransparent && block.getType() == Material.STATIONARY_WATER) || 
 					block.getType().isTransparent()));
 	}
+
+    public static Visualization fromClaims(ArrayList<Claim> claims, int height, VisualizationType type, Location locality)
+    {
+        Visualization visualization = new Visualization();
+        
+        for(Claim claim : claims)
+        {
+            visualization.addClaimElements(claim, height, type, locality);
+        }
+        
+        return visualization;
+    }
 }

@@ -1304,4 +1304,29 @@ public abstract class DataStore
 	        asyncSavePlayerData(this.playerID, this.playerData);
 	    }
 	}
+
+    //gets all the claims "near" a location
+	ArrayList<Claim> getNearbyClaims(Location location)
+    {
+        ArrayList<Claim> claims = new ArrayList<Claim>();
+        
+        Chunk lesserChunk = location.getWorld().getChunkAt(location.subtract(150, 0, 150));
+        Chunk greaterChunk = location.getWorld().getChunkAt(location.add(300, 0, 300));
+        
+        for(int chunk_x = lesserChunk.getX(); chunk_x <= greaterChunk.getX(); chunk_x++)
+        {
+            for(int chunk_z = lesserChunk.getZ(); chunk_z <= greaterChunk.getZ(); chunk_z++)
+            {
+                Chunk chunk = location.getWorld().getChunkAt(chunk_x, chunk_z);
+                String chunkID = this.getChunkString(chunk.getBlock(0,  0,  0).getLocation());
+                ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
+                if(claimsInChunk != null)
+                {
+                    claims.addAll(claimsInChunk);
+                }
+            }
+        }
+        
+        return claims;        
+    }
 }

@@ -1361,7 +1361,20 @@ class PlayerEventHandler implements Listener
 			//if he's investigating a claim
 			else if(materialInHand == GriefPrevention.instance.config_claims_investigationTool)
 			{
-		        //FEATURE: shovel and stick can be used from a distance away
+		        //if holding shift (sneaking), show all claims in area
+			    if(player.isSneaking() && player.hasPermission("griefprevention.visualizenearbyclaims"))
+			    {
+			        //find nearby claims
+			        ArrayList<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
+			        
+			        //visualize boundaries
+                    Visualization visualization = Visualization.fromClaims(claims, (int)player.getEyeHeight(), VisualizationType.Claim, player.getLocation());
+                    Visualization.Apply(player, visualization);
+                    
+                    return;
+			    }
+			    
+			    //FEATURE: shovel and stick can be used from a distance away
 		        if(action == Action.RIGHT_CLICK_AIR)
 		        {
 		            //try to find a far away non-air block along line of sight
@@ -1400,7 +1413,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
 					
 					//visualize boundary
-					Visualization visualization = Visualization.FromClaim(claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
+					Visualization visualization = Visualization.FromClaim(claim, (int)player.getEyeHeight(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					
 					//if can resize this claim, tell about the boundaries
