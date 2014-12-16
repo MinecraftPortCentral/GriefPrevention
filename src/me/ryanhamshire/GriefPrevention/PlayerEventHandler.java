@@ -929,18 +929,24 @@ class PlayerEventHandler implements Listener
 		
 		//who owns this stack?
 		ItemStack stack = event.getItem().getItemStack();
-		UUID ownerID = GriefPrevention.instance.itemStackOwnerMap.get(stack);
-		if(ownerID != null)
+		ItemStackOwnerInfo ownerInfo = GriefPrevention.instance.itemStackOwnerMap.get(stack);
+		if(ownerInfo != null)
 		{
 		    //has that player unlocked his drops?
-		    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID);
-		    String ownerName = GriefPrevention.lookupPlayerName(ownerID);
+		    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerInfo.ownerID);
+		    String ownerName = GriefPrevention.lookupPlayerName(ownerInfo.ownerID);
 		    if(owner.isOnline() && !player.equals(owner))
 		    {
-		        PlayerData playerData = this.dataStore.getPlayerData(ownerID);
+		        PlayerData playerData = this.dataStore.getPlayerData(ownerInfo.ownerID);
+		        Location location = event.getItem().getLocation();
 		        
-		        //if locked, don't allow pickup
-		        if(!playerData.dropsAreUnlocked)
+		        //if locked and in locality of protection, don't allow pickup
+		        if(!playerData.dropsAreUnlocked
+	                && location.getX() > ownerInfo.locality.getX() - 10
+	                && location.getX() < ownerInfo.locality.getX() + 10
+	                && location.getZ() < ownerInfo.locality.getZ() + 10
+	                && location.getZ() > ownerInfo.locality.getZ() - 10
+	                && location.getY() < ownerInfo.locality.getY() + 5)
 		        {
 		            event.setCancelled(true);
 		            

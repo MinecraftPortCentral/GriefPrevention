@@ -61,7 +61,7 @@ public class GriefPrevention extends JavaPlugin
 	public DataStore dataStore;
 	
 	//this remembers which item stacks dropped in the world belong to which players
-    ConcurrentHashMap<ItemStack, UUID> itemStackOwnerMap = new ConcurrentHashMap<ItemStack, UUID>();
+    ConcurrentHashMap<ItemStack, ItemStackOwnerInfo> itemStackOwnerMap = new ConcurrentHashMap<ItemStack, ItemStackOwnerInfo>();
 	
 	//configuration variables, loaded/saved from a config.yml
 	

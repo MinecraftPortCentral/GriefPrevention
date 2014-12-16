@@ -240,7 +240,7 @@ class EntityEventHandler implements Listener
 		        List<ItemStack> drops = event.getDrops();
 		        for(ItemStack stack : drops)
 		        {
-		            GriefPrevention.instance.itemStackOwnerMap.put(stack, player.getUniqueId());
+		            GriefPrevention.instance.itemStackOwnerMap.put(stack, new ItemStackOwnerInfo(player.getUniqueId(), player.getLocation()));
 		        }
 		        
 		        //allow the player to receive a message about how to unlock any drops
