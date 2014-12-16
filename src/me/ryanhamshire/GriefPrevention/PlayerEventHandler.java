@@ -801,6 +801,14 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
+	//when a player interacts with a specific part of entity...
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event)
+    {
+        //treat it the same as interacting with an entity in general
+        this.onPlayerInteractEntity((PlayerInteractEntityEvent)event);        
+    }
+    
 	//when a player interacts with an entity...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPlayerInteractEntity(PlayerInteractEntityEvent event)
