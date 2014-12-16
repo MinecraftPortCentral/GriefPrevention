@@ -603,7 +603,7 @@ public class BlockEventHandler implements Listener
         if(toClaim != null)
         {
             this.lastSpreadClaim = toClaim;
-            if(!toClaim.contains(spreadEvent.getBlock().getLocation(), false, false))
+            if(!toClaim.contains(spreadEvent.getBlock().getLocation(), false, true))
             {
                 spreadEvent.setCancelled(true);
             }
