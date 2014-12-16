@@ -39,7 +39,13 @@ class SendPlayerMessageTask implements Runnable
 	@Override
 	public void run()
 	{
-		//if the player is dead, save it for after his respawn
+		if(player == null)
+		{
+		    GriefPrevention.AddLogEntry(color + message);
+		    return;
+		}
+	    
+	    //if the player is dead, save it for after his respawn
 	    if(this.player.isDead())
 	    {
 	        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.player.getUniqueId());
