@@ -44,7 +44,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Horse;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.entity.minecart.PoweredMinecart;
 import org.bukkit.entity.minecart.StorageMinecart;
@@ -58,6 +60,7 @@ import org.bukkit.event.player.PlayerLoginEvent.Result;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.util.BlockIterator;
 
 class PlayerEventHandler implements Listener 
@@ -596,7 +599,6 @@ class PlayerEventHandler implements Listener
         Player player = event.getPlayer();
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
         playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
-        GriefPrevention.instance.checkPvpProtectionNeeded(player);
         
         //also send him any messaged from grief prevention he would have received while dead
         if(playerData.messageOnRespawn != null)
@@ -604,6 +606,8 @@ class PlayerEventHandler implements Listener
             GriefPrevention.sendMessage(player, ChatColor.RESET /*color is alrady embedded in message in this case*/, playerData.messageOnRespawn, 40L);
             playerData.messageOnRespawn = null;
         }
+        
+        GriefPrevention.instance.checkPvpProtectionNeeded(player);
     }
 	
 	//when a player dies...
@@ -806,7 +810,10 @@ class PlayerEventHandler implements Listener
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event)
     {
         //treat it the same as interacting with an entity in general
-        this.onPlayerInteractEntity((PlayerInteractEntityEvent)event);        
+        if(event.getRightClicked().getType() == EntityType.ARMOR_STAND)
+        {
+            this.onPlayerInteractEntity((PlayerInteractEntityEvent)event);
+        }
     }
     
 	//when a player interacts with an entity...
@@ -834,6 +841,9 @@ class PlayerEventHandler implements Listener
 		}
 		
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		
+		//always allow interactions when player is in ignore claims mode
+		if(playerData.ignoreClaims) return;
         
 		//don't allow container access during pvp combat
 		if((entity instanceof StorageMinecart || entity instanceof PoweredMinecart))
@@ -853,6 +863,30 @@ class PlayerEventHandler implements Listener
 			}			
 		}
 		
+		//if entity is tameable and has an owner, apply special rules
+        if(entity instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(entity.getLocation().getWorld()))
+        {
+            Tameable tameable = (Tameable)entity;
+            if(tameable.isTamed() && tameable.getOwner() != null)
+            {
+               UUID ownerID = tameable.getOwner().getUniqueId();
+               
+               //if the player interacting is the owner, always allow
+               if(player.getUniqueId().equals(ownerID)) return;
+               
+               //otherwise disallow
+               OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
+               String ownerName = owner.getName();
+               if(ownerName == null) ownerName = "someone";
+               String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
+               if(player.hasPermission("griefprevention.ignoreclaims"))
+                   message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+               GriefPrevention.sendMessage(player, TextMode.Err, message);
+               event.setCancelled(true);
+               return;
+            }
+        }
+		
 		//if the entity is a vehicle and we're preventing theft in claims		
 		if(GriefPrevention.instance.config_claims_preventTheft && entity instanceof Vehicle)
 		{
@@ -868,6 +902,7 @@ class PlayerEventHandler implements Listener
 					{
 						GriefPrevention.sendMessage(player, TextMode.Err, noContainersReason);
 						event.setCancelled(true);
+						return;
 					}
 				}
 				
@@ -879,6 +914,7 @@ class PlayerEventHandler implements Listener
 					{
 						player.sendMessage(noAccessReason);
 						event.setCancelled(true);
+						return;
 					}
 				}
 			}
@@ -898,6 +934,7 @@ class PlayerEventHandler implements Listener
                         message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
                     GriefPrevention.sendMessage(player, TextMode.Err, message);
                     event.setCancelled(true);
+                    return;
                 }
             }
         }
@@ -928,25 +965,21 @@ class PlayerEventHandler implements Listener
 		//FEATURE: lock dropped items to player who dropped them
 		
 		//who owns this stack?
-		ItemStack stack = event.getItem().getItemStack();
-		ItemStackOwnerInfo ownerInfo = GriefPrevention.instance.itemStackOwnerMap.get(stack);
-		if(ownerInfo != null)
+		Item item = event.getItem();
+		List<MetadataValue> data = item.getMetadata("GP_ITEMOWNER");
+		if(data != null && data.size() > 0)
 		{
+		    UUID ownerID = (UUID)data.get(0).value();
+		    
 		    //has that player unlocked his drops?
-		    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerInfo.ownerID);
-		    String ownerName = GriefPrevention.lookupPlayerName(ownerInfo.ownerID);
+		    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID);
+		    String ownerName = GriefPrevention.lookupPlayerName(ownerID);
 		    if(owner.isOnline() && !player.equals(owner))
 		    {
-		        PlayerData playerData = this.dataStore.getPlayerData(ownerInfo.ownerID);
-		        Location location = event.getItem().getLocation();
-		        
-		        //if locked and in locality of protection, don't allow pickup
-		        if(!playerData.dropsAreUnlocked
-	                && location.getX() > ownerInfo.locality.getX() - 10
-	                && location.getX() < ownerInfo.locality.getX() + 10
-	                && location.getZ() < ownerInfo.locality.getZ() + 10
-	                && location.getZ() > ownerInfo.locality.getZ() - 10
-	                && location.getY() < ownerInfo.locality.getY() + 5)
+		        PlayerData playerData = this.dataStore.getPlayerData(ownerID);
+
+                //if locked, don't allow pickup
+		        if(!playerData.dropsAreUnlocked)
 		        {
 		            event.setCancelled(true);
 		            
@@ -958,12 +991,6 @@ class PlayerEventHandler implements Listener
 		                playerData.receivedDropUnlockAdvertisement = true;
 		            }
 		        }
-		    }
-		    
-		    //if allowed to pick up, remove from ownership map
-		    if(!event.isCancelled())
-		    {
-		        GriefPrevention.instance.itemStackOwnerMap.remove(stack);
 		    }
 		}
 		

@@ -42,6 +42,7 @@ import org.bukkit.block.Block;
 import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -59,9 +60,6 @@ public class GriefPrevention extends JavaPlugin
 	
 	//this handles data storage, like player and region data
 	public DataStore dataStore;
-	
-	//this remembers which item stacks dropped in the world belong to which players
-    ConcurrentHashMap<ItemStack, ItemStackOwnerInfo> itemStackOwnerMap = new ConcurrentHashMap<ItemStack, ItemStackOwnerInfo>();
 	
 	//configuration variables, loaded/saved from a config.yml
 	
@@ -2292,8 +2290,8 @@ public class GriefPrevention extends JavaPlugin
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		playerData.pvpImmune = true;
 		
-		//inform the player
-		GriefPrevention.sendMessage(player, TextMode.Success, Messages.PvPImmunityStart);
+		//inform the player after he finishes respawning
+		GriefPrevention.sendMessage(player, TextMode.Success, Messages.PvPImmunityStart, 5L);
 	}
 	
 	//checks whether players siege in a world
@@ -2558,4 +2556,7 @@ public class GriefPrevention extends JavaPlugin
 			return overrideValue;
 		}		
 	}
+	
+	//this tracks item stacks expected to drop which will need protection
+    ArrayList<PendingItemProtection> pendingItemWatchList = new ArrayList<PendingItemProtection>();
 }

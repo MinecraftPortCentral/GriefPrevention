@@ -18,11 +18,14 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -32,10 +35,12 @@ import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Explosive;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Tameable;
 import org.bukkit.entity.Villager;
 
 import org.bukkit.event.EventHandler;
@@ -58,6 +63,7 @@ import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
 
 //handles events related to entities
 class EntityEventHandler implements Listener
@@ -181,6 +187,49 @@ class EntityEventHandler implements Listener
 		{
 			event.setCancelled(true);
 		}
+		
+		//if item is on watch list, apply protection
+		ArrayList<PendingItemProtection> watchList = GriefPrevention.instance.pendingItemWatchList;
+		Item newItem = event.getEntity();
+		Long now = null;
+		for(int i = 0; i < watchList.size(); i++)
+		{
+		    PendingItemProtection pendingProtection = watchList.get(i);
+		    //ignore and remove any expired pending protections
+            if(now == null) now = System.currentTimeMillis();
+            if(pendingProtection.expirationTimestamp < now)
+            {
+                watchList.remove(i--);
+                continue;
+            }
+		    //skip if item stack doesn't match
+		    if(pendingProtection.itemStack.getAmount() != newItem.getItemStack().getAmount() ||
+		       pendingProtection.itemStack.getType() != newItem.getItemStack().getType())
+		    {
+		        continue;
+		    }
+		    
+		    //skip if new item location isn't near the expected spawn area 
+		    Location spawn = event.getLocation();
+		    Location expected = pendingProtection.location;
+		    if(!spawn.getWorld().equals(expected.getWorld()) ||
+		       spawn.getX() < expected.getX() - 5 ||
+		       spawn.getX() > expected.getX() + 5 ||
+		       spawn.getZ() < expected.getZ() - 5 ||
+		       spawn.getZ() > expected.getZ() + 5 ||
+		       spawn.getY() < expected.getY() - 15 ||
+		       spawn.getY() > expected.getY() + 3)
+		    {
+		        continue;
+		    }
+		    
+		    //otherwise, mark item with protection information
+		    newItem.setMetadata("GP_ITEMOWNER", new FixedMetadataValue(GriefPrevention.instance, pendingProtection.owner));
+		    
+		    //and remove pending protection data
+		    watchList.remove(i);
+		    break;
+		}
 	}
 	
 	//when an experience bottle explodes...
@@ -219,35 +268,10 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when an entity dies...
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onEntityDeath(EntityDeathEvent event)
 	{
 		LivingEntity entity = event.getEntity();
-		
-		//FEATURE: lock dropped items to player who dropped them
-		
-		if(entity instanceof Player)
-		{
-		    Player player = (Player)entity;
-		    World world = entity.getWorld();
-		    
-		    //decide whether or not to apply this feature to this situation (depends on the world wher it happens)
-		    boolean isPvPWorld = GriefPrevention.instance.config_pvp_enabledWorlds.contains(world);
-		    if((isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInPvpWorlds) || 
-		       (!isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInNonPvpWorlds))
-		    {
-		        //mark the dropped stacks with player's UUID
-		        List<ItemStack> drops = event.getDrops();
-		        for(ItemStack stack : drops)
-		        {
-		            GriefPrevention.instance.itemStackOwnerMap.put(stack, new ItemStackOwnerInfo(player.getUniqueId(), player.getLocation()));
-		        }
-		        
-		        //allow the player to receive a message about how to unlock any drops
-		        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		        playerData.receivedDropUnlockAdvertisement = false;
-		    }
-		}
 		
 		//don't do the rest in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) return;
@@ -276,6 +300,31 @@ class EntityEventHandler implements Listener
 			//end it, with the dieing player being the loser
 			this.dataStore.endSiege(playerData.siegeData, null, player.getName(), true /*ended due to death*/);
 		}
+		
+		//FEATURE: lock dropped items to player who dropped them
+        
+        World world = entity.getWorld();
+        
+        //decide whether or not to apply this feature to this situation (depends on the world where it happens)
+        boolean isPvPWorld = GriefPrevention.instance.config_pvp_enabledWorlds.contains(world);
+        if((isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInPvpWorlds) || 
+           (!isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInNonPvpWorlds))
+        {
+            //remember information about these drops so that they can be marked when they spawn as items
+            long expirationTime = System.currentTimeMillis() + 3000;  //now + 3 seconds
+            Location deathLocation = player.getLocation();
+            UUID playerID = player.getUniqueId();
+            List<ItemStack> drops = event.getDrops();
+            for(ItemStack stack : drops)
+            {
+                GriefPrevention.instance.pendingItemWatchList.add(
+                       new PendingItemProtection(deathLocation, playerID, expirationTime, stack));
+            }
+            
+            //allow the player to receive a message about how to unlock any drops
+            playerData.dropsAreUnlocked = false;
+            playerData.receivedDropUnlockAdvertisement = false;
+        }
 	}
 	
 	//when an entity picks up an item
@@ -527,7 +576,34 @@ class EntityEventHandler implements Listener
 		    //if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
 			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures))
 			{
-				Claim cachedClaim = null;
+			    //if entity is tameable and has an owner, apply special rules
+		        if(subEvent.getEntity() instanceof Tameable)
+		        {
+		            Tameable tameable = (Tameable)subEvent.getEntity();
+		            if(tameable.isTamed() && tameable.getOwner() != null)
+		            {
+		               UUID ownerID = tameable.getOwner().getUniqueId();
+		               
+		               //if the player interacting is the owner, always allow
+		               if(attacker.getUniqueId().equals(ownerID)) return;
+		               
+		               //otherwise disallow in non-pvp worlds
+		               if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(subEvent.getEntity().getLocation().getWorld()))
+                       {
+    		               OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
+                           String ownerName = owner.getName();
+    		               if(ownerName == null) ownerName = "someone";
+    		               String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
+    		               if(attacker.hasPermission("griefprevention.ignoreclaims"))
+    		                   message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+    		               GriefPrevention.sendMessage(attacker, TextMode.Err, message);
+    		               event.setCancelled(true);
+    		               return;
+                       }
+		            }
+		        }
+			    
+			    Claim cachedClaim = null;
 				PlayerData playerData = null;
 				
 				//if not a player or an explosive, allow
