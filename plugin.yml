@@ -137,6 +137,9 @@ commands:
       description: Reloads Grief Prevention's configuration settings.  Does NOT totally reload the entire plugin.
       usage: /gpreload
       permission: griefprevention.reload
+   givepet:
+      description: Allows a player to give away a pet he or she tamed.
+      usage: /GivePet <player>
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.

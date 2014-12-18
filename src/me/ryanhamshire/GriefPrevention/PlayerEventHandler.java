@@ -825,15 +825,48 @@ class PlayerEventHandler implements Listener
 		
 		if(!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) return;
 		
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        
-        //always allow interactions when player is in ignore claims mode
-        if(playerData.ignoreClaims) return;
-		
 		//allow horse protection to be overridden to allow management from other plugins
         if (!GriefPrevention.instance.config_claims_protectHorses && entity instanceof Horse) return;
         
-		//don't allow interaction with item frames or armor stands in claimed areas without build permission
+        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        
+		//if entity is tameable and has an owner, apply special rules
+        if(entity instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(entity.getLocation().getWorld()))
+        {
+            Tameable tameable = (Tameable)entity;
+            if(tameable.isTamed() && tameable.getOwner() != null)
+            {
+               UUID ownerID = tameable.getOwner().getUniqueId();
+               
+               //if the player interacting is the owner or an admin in ignore claims mode, always allow
+               if(player.getUniqueId().equals(ownerID) || playerData.ignoreClaims)
+               {
+                   //if giving away pet, do that instead
+                   if(playerData.petGiveawayRecipient != null)
+                   {
+                       tameable.setOwner(playerData.petGiveawayRecipient);
+                       playerData.petGiveawayRecipient = null;
+                       GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetGiveawayConfirmation);
+                       event.setCancelled(true);
+                   }
+                   
+                   return;
+               }
+               
+               //otherwise disallow
+               OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
+               String ownerName = owner.getName();
+               if(ownerName == null) ownerName = "someone";
+               String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, ownerName);
+               if(player.hasPermission("griefprevention.ignoreclaims"))
+                   message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+               GriefPrevention.sendMessage(player, TextMode.Err, message);
+               event.setCancelled(true);
+               return;
+            }
+        }
+        
+        //don't allow interaction with item frames or armor stands in claimed areas without build permission
 		if(entity.getType() == EntityType.ARMOR_STAND || entity instanceof Hanging)
 		{
 			String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation(), Material.ITEM_FRAME); 
@@ -845,48 +878,27 @@ class PlayerEventHandler implements Listener
 			}			
 		}
 		
-		//don't allow container access during pvp combat
-		if((entity instanceof StorageMinecart || entity instanceof PoweredMinecart))
-		{
-			if(playerData.siegeData != null)
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
-				event.setCancelled(true);
-				return;
-			}
-			
-			if(playerData.inPvpCombat())
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PvPNoContainers);
-				event.setCancelled(true);
-				return;
-			}			
-		}
-		
-		//if entity is tameable and has an owner, apply special rules
-        if(entity instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(entity.getLocation().getWorld()))
+		//always allow interactions when player is in ignore claims mode
+        if(playerData.ignoreClaims) return;
+        
+        //don't allow container access during pvp combat
+        if((entity instanceof StorageMinecart || entity instanceof PoweredMinecart))
         {
-            Tameable tameable = (Tameable)entity;
-            if(tameable.isTamed() && tameable.getOwner() != null)
+            if(playerData.siegeData != null)
             {
-               UUID ownerID = tameable.getOwner().getUniqueId();
-               
-               //if the player interacting is the owner, always allow
-               if(player.getUniqueId().equals(ownerID)) return;
-               
-               //otherwise disallow
-               OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
-               String ownerName = owner.getName();
-               if(ownerName == null) ownerName = "someone";
-               String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
-               if(player.hasPermission("griefprevention.ignoreclaims"))
-                   message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-               GriefPrevention.sendMessage(player, TextMode.Err, message);
-               event.setCancelled(true);
-               return;
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
+                event.setCancelled(true);
+                return;
             }
+            
+            if(playerData.inPvpCombat())
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PvPNoContainers);
+                event.setCancelled(true);
+                return;
+            }           
         }
-		
+        
 		//if the entity is a vehicle and we're preventing theft in claims		
 		if(GriefPrevention.instance.config_claims_preventTheft && entity instanceof Vehicle)
 		{

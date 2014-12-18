@@ -30,6 +30,7 @@ import me.ryanhamshire.GriefPrevention.SiegeData;
 import me.ryanhamshire.GriefPrevention.Visualization;
 
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 
 //holds all of GriefPrevention's player-tied data
 public class PlayerData 
@@ -117,6 +118,9 @@ public class PlayerData
 
     //message to send to player after he respawns
 	String messageOnRespawn = null;
+
+    //player which a pet will be given to when it's right-clicked
+	OfflinePlayer petGiveawayRecipient = null;
 	
 	//whether or not this player is "in" pvp combat
 	public boolean inPvpCombat()

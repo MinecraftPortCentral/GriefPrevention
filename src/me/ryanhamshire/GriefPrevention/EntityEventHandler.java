@@ -430,11 +430,32 @@ class EntityEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onEntityDamage (EntityDamageEvent event)
 	{
-		//only actually interested in entities damaging entities (ignoring environmental damage)
-		if(!(event instanceof EntityDamageByEntityEvent)) return;
-		
 		//monsters are never protected
 		if(event.getEntity() instanceof Monster) return;
+		
+		//protect pets from environmental damage types which could be easily caused by griefers
+        if(event.getEntity() instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(event.getEntity().getWorld()))
+        {
+            Tameable tameable = (Tameable)event.getEntity();
+            if(tameable.isTamed())
+            {
+                DamageCause cause = event.getCause();
+                if( cause != null && (
+                    cause == DamageCause.ENTITY_EXPLOSION ||
+                    cause == DamageCause.FALLING_BLOCK ||
+                    cause == DamageCause.FIRE ||
+                    cause == DamageCause.FIRE_TICK ||
+                    cause == DamageCause.LAVA ||
+                    cause == DamageCause.SUFFOCATION))
+                {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
+		
+		//the rest is only interested in entities damaging entities (ignoring environmental damage)
+        if(!(event instanceof EntityDamageByEntityEvent)) return;
 		
 		EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
 		
@@ -578,7 +599,7 @@ class EntityEventHandler implements Listener
 			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures))
 			{
 			    //if entity is tameable and has an owner, apply special rules
-		        if(subEvent.getEntity() instanceof Tameable)
+		        if(subEvent.getEntity() instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(subEvent.getEntity().getWorld()))
 		        {
 		            Tameable tameable = (Tameable)subEvent.getEntity();
 		            if(tameable.isTamed() && tameable.getOwner() != null)
@@ -608,23 +629,6 @@ class EntityEventHandler implements Listener
         		                event.setCancelled(true);
         		                return;
                             }
-		                }
-		                
-		                //also limit damage sources to prevent grief of pets by build (flint/steel, lava buckets, sand...)
-		                else
-		                {
-		                    DamageCause cause = event.getCause();
-		                    if(cause != null && (
-		                            cause == DamageCause.ENTITY_EXPLOSION ||
-		                            cause == DamageCause.FALLING_BLOCK ||
-		                            cause == DamageCause.FIRE ||
-		                            cause == DamageCause.FIRE_TICK ||
-		                            cause == DamageCause.LAVA ||
-		                            cause == DamageCause.SUFFOCATION))
-		                    {
-		                        event.setCancelled(true);
-		                        return;
-		                    }
 		                }
 		            }
 		        }
