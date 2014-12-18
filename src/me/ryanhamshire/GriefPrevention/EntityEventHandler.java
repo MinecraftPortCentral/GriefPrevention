@@ -52,6 +52,7 @@ import org.bukkit.event.entity.EntityBreakDoorEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
@@ -537,8 +538,8 @@ class EntityEventHandler implements Listener
 		{
 		    //don't track in worlds where claims are not enabled
 	        if(!GriefPrevention.instance.claimsEnabledForWorld(event.getEntity().getWorld())) return;
-		    
-		    //if the damaged entity is a claimed item frame or armor stand, the damager needs to be a player with container trust in the claim
+	        
+	        //if the damaged entity is a claimed item frame or armor stand, the damager needs to be a player with container trust in the claim
 		    if(subEvent.getEntityType() == EntityType.ITEM_FRAME || subEvent.getEntityType() == EntityType.ARMOR_STAND)
 		    {
 		        //decide whether it's claimed
@@ -582,24 +583,49 @@ class EntityEventHandler implements Listener
 		            Tameable tameable = (Tameable)subEvent.getEntity();
 		            if(tameable.isTamed() && tameable.getOwner() != null)
 		            {
-		               UUID ownerID = tameable.getOwner().getUniqueId();
-		               
-		               //if the player interacting is the owner, always allow
-		               if(attacker.getUniqueId().equals(ownerID)) return;
-		               
-		               //otherwise disallow in non-pvp worlds
-		               if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(subEvent.getEntity().getLocation().getWorld()))
-                       {
-    		               OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
-                           String ownerName = owner.getName();
-    		               if(ownerName == null) ownerName = "someone";
-    		               String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
-    		               if(attacker.hasPermission("griefprevention.ignoreclaims"))
-    		                   message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-    		               GriefPrevention.sendMessage(attacker, TextMode.Err, message);
-    		               event.setCancelled(true);
-    		               return;
-                       }
+		                //limit attacks by players to owners and admins in ignore claims mode
+		                if(attacker != null)
+		                {
+    		                UUID ownerID = tameable.getOwner().getUniqueId();
+    		               
+    		                //if the player interacting is the owner, always allow
+    		                if(attacker.getUniqueId().equals(ownerID)) return;
+    		                
+    		                //allow for admin override
+    		                PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
+    		                if(attackerData.ignoreClaims) return;
+    		               
+    		                //otherwise disallow in non-pvp worlds
+    		                if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(subEvent.getEntity().getLocation().getWorld()))
+                            {
+        		                OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
+                                String ownerName = owner.getName();
+        		                if(ownerName == null) ownerName = "someone";
+        		                String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
+        		                if(attacker.hasPermission("griefprevention.ignoreclaims"))
+        		                    message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        		                GriefPrevention.sendMessage(attacker, TextMode.Err, message);
+        		                event.setCancelled(true);
+        		                return;
+                            }
+		                }
+		                
+		                //also limit damage sources to prevent grief of pets by build (flint/steel, lava buckets, sand...)
+		                else
+		                {
+		                    DamageCause cause = event.getCause();
+		                    if(cause != null && (
+		                            cause == DamageCause.ENTITY_EXPLOSION ||
+		                            cause == DamageCause.FALLING_BLOCK ||
+		                            cause == DamageCause.FIRE ||
+		                            cause == DamageCause.FIRE_TICK ||
+		                            cause == DamageCause.LAVA ||
+		                            cause == DamageCause.SUFFOCATION))
+		                    {
+		                        event.setCancelled(true);
+		                        return;
+		                    }
+		                }
 		            }
 		        }
 			    

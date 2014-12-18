@@ -825,6 +825,11 @@ class PlayerEventHandler implements Listener
 		
 		if(!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) return;
 		
+		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        
+        //always allow interactions when player is in ignore claims mode
+        if(playerData.ignoreClaims) return;
+		
 		//allow horse protection to be overridden to allow management from other plugins
         if (!GriefPrevention.instance.config_claims_protectHorses && entity instanceof Horse) return;
         
@@ -840,11 +845,6 @@ class PlayerEventHandler implements Listener
 			}			
 		}
 		
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		
-		//always allow interactions when player is in ignore claims mode
-		if(playerData.ignoreClaims) return;
-        
 		//don't allow container access during pvp combat
 		if((entity instanceof StorageMinecart || entity instanceof PoweredMinecart))
 		{
