@@ -781,6 +781,13 @@ class PlayerEventHandler implements Listener
 			}
 		}
 		
+		//FEATURE: when players get trapped in a nether portal, send them back through to the other side
+		if(event.getCause() == TeleportCause.NETHER_PORTAL)
+		{
+		    CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFrom());
+            GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 100L);
+		}
+		
 		//FEATURE: prevent teleport abuse to win sieges
 		
 		//these rules only apply to siege worlds only

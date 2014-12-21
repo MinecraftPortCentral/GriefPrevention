@@ -39,6 +39,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -49,6 +50,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.BlockIterator;
 
 public class GriefPrevention extends JavaPlugin
 {
@@ -60,6 +62,9 @@ public class GriefPrevention extends JavaPlugin
 	
 	//this handles data storage, like player and region data
 	public DataStore dataStore;
+	
+	//this tracks item stacks expected to drop which will need protection
+    ArrayList<PendingItemProtection> pendingItemWatchList = new ArrayList<PendingItemProtection>();
 	
 	//configuration variables, loaded/saved from a config.yml
 	
@@ -1952,6 +1957,18 @@ public class GriefPrevention extends JavaPlugin
             return true;
 		}
 		
+		//gpblockinfo
+		else if(cmd.getName().equalsIgnoreCase("gpblockinfo") && player != null)
+		{
+		    ItemStack inHand = player.getItemInHand();
+		    player.sendMessage("In Hand: " + String.format("%s(%d:%d)", inHand.getType().name(), inHand.getTypeId(), inHand.getData().getData()));
+		    
+		    Block inWorld = GriefPrevention.getTargetNonAirBlock(player, 300);
+		    player.sendMessage("In World: " + String.format("%s(%d:%d)", inWorld.getType().name(), inWorld.getTypeId(), inWorld.getData()));
+		    
+		    return true;
+		}
+		
 		return false; 
 	}
 	
@@ -2590,6 +2607,16 @@ public class GriefPrevention extends JavaPlugin
 		}		
 	}
 	
-	//this tracks item stacks expected to drop which will need protection
-    ArrayList<PendingItemProtection> pendingItemWatchList = new ArrayList<PendingItemProtection>();
+	private static Block getTargetNonAirBlock(Player player, int maxDistance) throws IllegalStateException
+    {
+        BlockIterator iterator = new BlockIterator(player.getLocation(), player.getEyeHeight(), maxDistance);
+        Block result = player.getLocation().getBlock().getRelative(BlockFace.UP);
+        while (iterator.hasNext())
+        {
+            result = iterator.next();
+            if(result.getType() != Material.AIR) return result;
+        }
+        
+        return result;
+    }
 }

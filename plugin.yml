@@ -140,6 +140,10 @@ commands:
    givepet:
       description: Allows a player to give away a pet he or she tamed.
       usage: /GivePet <player>
+   gpblockinfo:
+      description: Allows an administrator to get technical information about blocks in the world and items in hand.
+      usage: /GPBlockInfo
+      permission: griefprevention.gpblockinfo
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.
@@ -204,4 +208,7 @@ permissions:
         default: true
     griefprevention.visualizenearbyclaims:
         description: Allows a player to see all nearby claims at once.
+        default: op
+    griefprevention.gpblockinfo:
+        description: Grants access to /GPBlockInfo.
         default: op
