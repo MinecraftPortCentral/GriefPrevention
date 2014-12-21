@@ -1428,7 +1428,7 @@ class PlayerEventHandler implements Listener
 			        ArrayList<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
 			        
 			        //visualize boundaries
-                    Visualization visualization = Visualization.fromClaims(claims, (int)player.getEyeHeight(), VisualizationType.Claim, player.getLocation());
+                    Visualization visualization = Visualization.fromClaims(claims, player.getEyeLocation().getBlockY(), VisualizationType.Claim, player.getLocation());
                     Visualization.Apply(player, visualization);
                     
                     return;
@@ -1473,7 +1473,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
 					
 					//visualize boundary
-					Visualization visualization = Visualization.FromClaim(claim, (int)player.getEyeHeight(), VisualizationType.Claim, player.getLocation());
+					Visualization visualization = Visualization.FromClaim(claim, player.getEyeLocation().getBlockY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					
 					//if can resize this claim, tell about the boundaries

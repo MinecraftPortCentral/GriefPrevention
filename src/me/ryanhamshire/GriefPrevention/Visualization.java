@@ -226,10 +226,10 @@ public class Visualization
 		{
 		    return location;
 		}
-		
-	    Block block = world.getBlockAt(x,  y, z);
+
+		Block block = world.getBlockAt(x,  y, z);
 		BlockFace direction = (isTransparent(block, waterIsTransparent)) ? BlockFace.DOWN : BlockFace.UP;
-				
+
 		while(	block.getY() >= 1 && 
 				block.getY() < world.getMaxHeight() - 1 &&
 				(!isTransparent(block.getRelative(BlockFace.UP), waterIsTransparent) || isTransparent(block, waterIsTransparent)))
