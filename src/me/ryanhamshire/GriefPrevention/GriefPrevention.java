@@ -1620,15 +1620,16 @@ public class GriefPrevention extends JavaPlugin
 			
 			//load the target player's data
 			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getUniqueId());
-			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.getAccruedClaimBlocks() + "(+" + (playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + ")=" + (playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())));
+			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.getAccruedClaimBlocks() + " blocks from play +" + (playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + " bonus = " + (playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + " total.");
+			GriefPrevention.sendMessage(player, TextMode.Instr, "Your Claims:");
 			for(int i = 0; i < playerData.getClaims().size(); i++)
 			{
 				Claim claim = playerData.getClaims().get(i);
-				GriefPrevention.sendMessage(player, TextMode.Instr, "  (-" + claim.getArea() + ") " + getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+				GriefPrevention.sendMessage(player, TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " (-" + claim.getArea() + " blocks)");
 			}
 			
 			if(playerData.getClaims().size() > 0)
-				GriefPrevention.sendMessage(player, TextMode.Instr, "   =" + playerData.getRemainingClaimBlocks());
+				GriefPrevention.sendMessage(player, TextMode.Instr, " = " + playerData.getRemainingClaimBlocks() + " blocks left to spend");
 			
 			//drop the data we just loaded, if the player isn't online
 			if(!otherPlayer.isOnline())
@@ -1986,7 +1987,7 @@ public class GriefPrevention extends JavaPlugin
 
     public static String getfriendlyLocationString(Location location) 
 	{
-		return location.getWorld().getName() + "(" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ() + ")";
+		return location.getWorld().getName() + ": x" + location.getBlockX() + ", z" + location.getBlockZ();
 	}
 
 	private boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) 
