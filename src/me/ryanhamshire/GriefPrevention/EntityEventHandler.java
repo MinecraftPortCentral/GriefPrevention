@@ -35,6 +35,7 @@ import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Explosive;
+import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -65,6 +66,8 @@ import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.util.Vector;
 
 //handles events related to entities
 class EntityEventHandler implements Listener
@@ -95,6 +98,52 @@ class EntityEventHandler implements Listener
 		else if(event.getEntityType() == EntityType.WITHER && GriefPrevention.instance.config_claims_worldModes.get(event.getBlock().getWorld()) != ClaimsMode.Disabled)
 		{
 			event.setCancelled(true);
+		}
+		
+		//sand cannon fix - when the falling block doesn't fall straight down, take additional anti-grief steps
+		else if (event.getEntityType() == EntityType.FALLING_BLOCK)
+		{
+		    FallingBlock entity = (FallingBlock)event.getEntity();
+		    Block block = event.getBlock();
+		    
+		    //if changing a block TO air, this is when the falling block formed.  note its original location
+		    if(event.getTo() == Material.AIR)
+		    {
+		        entity.setMetadata("GP_FALLINGBLOCK", new FixedMetadataValue(GriefPrevention.instance, block.getLocation()));
+		    }
+		    //otherwise, the falling block is forming a block.  compare new location to original source
+		    else
+		    {
+		         List<MetadataValue> values = entity.getMetadata("GP_FALLINGBLOCK");
+		         
+		         //if we're not sure where this entity came from (maybe another plugin didn't follow the standard?), allow the block to form
+		         if(values.size() < 1) return;
+		         
+		         Location originalLocation = (Location)(values.get(0).value());
+		         Location newLocation = block.getLocation();
+		         
+		         //if did not fall straight down
+		         if(originalLocation.getBlockX() != newLocation.getBlockX() || originalLocation.getBlockZ() != newLocation.getBlockZ())
+		         {
+		             //in creative mode worlds, never form the block
+		             if(GriefPrevention.instance.config_claims_worldModes.get(newLocation.getWorld()) == ClaimsMode.Creative)
+		             {
+		                 event.setCancelled(true);
+		                 return;
+		             }
+		             
+		             //in other worlds, if landing in land claim, only allow if source was also in the land claim
+		             Claim claim = this.dataStore.getClaimAt(newLocation, false, null);
+		             if(claim != null && !claim.contains(originalLocation, false, false))
+		             {
+		                 //when not allowed, drop as item instead of forming a block
+		                 event.setCancelled(true);
+		                 ItemStack itemStack = new ItemStack(entity.getMaterial(), 1, entity.getBlockData());
+		                 Item item = block.getWorld().dropItem(entity.getLocation(), itemStack);
+		                 item.setVelocity(new Vector());
+		             }
+		         }
+		    }
 		}
 	}
 	
