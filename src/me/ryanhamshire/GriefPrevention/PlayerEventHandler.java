@@ -350,7 +350,7 @@ class PlayerEventHandler implements Listener
 	//if two strings are 75% identical, they're too close to follow each other in the chat
 	private boolean stringsAreSimilar(String message, String lastMessage)
 	{
-		//determine which is shorter
+	    //determine which is shorter
 		String shorterString, longerString;
 		if(lastMessage.length() < message.length())
 		{
@@ -373,16 +373,18 @@ class PlayerEventHandler implements Listener
 		
 		//compare forward
 		int identicalCount = 0;
-		for(int i = 0; i < shorterString.length(); i++)
+		int i;
+		for(i = 0; i < shorterString.length(); i++)
 		{
 			if(shorterString.charAt(i) == longerString.charAt(i)) identicalCount++;
 			if(identicalCount > maxIdenticalCharacters) return true;
 		}
 		
 		//compare backward
-		for(int i = 0; i < shorterString.length(); i++)
+		int j;
+		for(j = 0; j < shorterString.length() - i; j++)
 		{
-			if(shorterString.charAt(shorterString.length() - i - 1) == longerString.charAt(longerString.length() - i - 1)) identicalCount++;
+			if(shorterString.charAt(shorterString.length() - j - 1) == longerString.charAt(longerString.length() - j - 1)) identicalCount++;
 			if(identicalCount > maxIdenticalCharacters) return true;
 		}
 		
