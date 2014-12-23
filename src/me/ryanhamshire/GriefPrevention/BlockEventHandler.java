@@ -605,7 +605,11 @@ public class BlockEventHandler implements Listener
             this.lastSpreadClaim = toClaim;
             if(!toClaim.contains(spreadEvent.getBlock().getLocation(), false, true))
             {
-                spreadEvent.setCancelled(true);
+                //exception: from parent into subdivision
+                if(toClaim.parent == null || !toClaim.parent.contains(spreadEvent.getBlock().getLocation(), false, false))
+                {
+                    spreadEvent.setCancelled(true);
+                }
             }
         }
 	}
