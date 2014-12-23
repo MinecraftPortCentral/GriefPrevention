@@ -242,7 +242,7 @@ public class BlockEventHandler implements Listener
 					Visualization.Apply(player, visualization);
 				}
 				
-				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
 			}
 			
 			//check to see if this chest is in a claim, and warn when it isn't
@@ -278,7 +278,7 @@ public class BlockEventHandler implements Listener
 				
 				if(playerData.getClaims().size() < 2)
 				{
-				    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo, DataStore.SURVIVAL_VIDEO_URL);
+				    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
 				}
 				
 				if(playerData.lastClaim != null)

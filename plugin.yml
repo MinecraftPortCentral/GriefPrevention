@@ -164,6 +164,7 @@ permissions:
             griefprevention.softmute: true
             griefprevention.reload: true
             griefprevention.visualizenearbyclaims: true
+            griefprevention.overrideclaimcountlimit: true
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
         default: op
@@ -211,4 +212,7 @@ permissions:
         default: op
     griefprevention.gpblockinfo:
         description: Grants access to /GPBlockInfo.
+        default: op
+    griefprevention.overrideclaimcountlimit:
+        description: Allows players to create more claims than the limit specified by the config.
         default: op

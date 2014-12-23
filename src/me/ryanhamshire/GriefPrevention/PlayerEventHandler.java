@@ -149,11 +149,11 @@ class PlayerEventHandler implements Listener
 		{
 			if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.CreativeBasicsVideo, 10L, DataStore.CREATIVE_VIDEO_URL);
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.CreativeBasicsVideo2, 10L, DataStore.CREATIVE_VIDEO_URL);
 			}
 			else
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsVideo, 10L, DataStore.SURVIVAL_VIDEO_URL);
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsVideo2, 10L, DataStore.SURVIVAL_VIDEO_URL);
 			}
 		}
 		
@@ -512,10 +512,18 @@ class PlayerEventHandler implements Listener
 		playerData.setLastLogin(nowDate);
 		this.lastLoginThisServerSessionMap.put(playerID, nowDate);
 		
-		//if player has never played on the server before, may need pvp protection
+		//if player has never played on the server before...
 		if(!player.hasPlayedBefore())
 		{
-			GriefPrevention.instance.checkPvpProtectionNeeded(player);
+			//may need pvp protection
+		    GriefPrevention.instance.checkPvpProtectionNeeded(player);
+		    
+		    //if in survival claims mode, send a message about the claim basics video (except for admins - assumed experts)
+		    if(GriefPrevention.instance.config_claims_worldModes.get(player.getWorld()) == ClaimsMode.Survival && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10)
+		    {
+		        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AvoidGriefClaimLand, 600L);
+		        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, 601L, DataStore.SURVIVAL_VIDEO_URL);
+		    }
 		}
 		
 		//silence notifications when they're coming too fast
@@ -762,7 +770,7 @@ class PlayerEventHandler implements Listener
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerTeleport(PlayerTeleportEvent event)
 	{
-		Player player = event.getPlayer();
+	    Player player = event.getPlayer();
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		
 		//FEATURE: prevent players from using ender pearls to gain access to secured claims
@@ -1849,6 +1857,13 @@ class PlayerEventHandler implements Listener
 						GriefPrevention.AddLogEntry(player.getName() + " resized " + playerData.claimResizing.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(playerData.claimResizing.lesserBoundaryCorner) + ".");
 					}
 					
+					//if increased to a sufficiently large size and no subdivisions yet, send subdivision instructions
+					if(oldClaim.getArea() < 1000 && result.claim.getArea() >= 1000 && result.claim.children.size() == 0 && !player.hasPermission("griefprevention.adminclaims"))
+					{
+					  GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
+	                  GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L, DataStore.SUBDIVISION_VIDEO_URL);
+					}
+					
 					//if in a creative mode world and shrinking an existing claim, restore any unclaimed area
 					if(smaller && GriefPrevention.instance.creativeRulesApply(oldClaim.getLesserBoundaryCorner()))
 					{
@@ -1991,6 +2006,15 @@ class PlayerEventHandler implements Listener
 					return;
 				}
 				
+				//if he's at the claim count per player limit already and doesn't have permission to bypass, display an error message
+				if(GriefPrevention.instance.config_claims_maxClaimsPerPlayer > 0 &&
+				   !player.hasPermission("griefprevention.overrideclaimcountlimit") &&
+				   playerData.getClaims().size() >= GriefPrevention.instance.config_claims_maxClaimsPerPlayer)
+				{
+				    GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimCreationFailedOverClaimCountLimit);
+				    return;
+				}
+				
 				//remember it, and start him on the new claim
 				playerData.lastShovelLocation = clickedBlock.getLocation();
 				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimStart);
@@ -2069,6 +2093,13 @@ class PlayerEventHandler implements Listener
 					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					playerData.lastShovelLocation = null;
+					
+					//if it's a big claim, tell the player about subdivisions
+					if(!player.hasPermission("griefprevention.adminclaims") && result.claim.getArea() >= 1000)
+		            {
+		                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
+		                GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L, DataStore.SUBDIVISION_VIDEO_URL);
+		            }
 				}
 			}
 		}

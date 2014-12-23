@@ -80,6 +80,7 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_claims_lockTrapDoors;						//whether trap doors should be locked by default (require /accesstrust)
 	public boolean config_claims_lockFenceGates;					//whether fence gates should be locked by default (require /accesstrust)
 	public boolean config_claims_enderPearlsRequireAccessTrust;		//whether teleporting into a claim with a pearl requires access trust
+	public int config_claims_maxClaimsPerPlayer;                    //maximum number of claims per player
 	
 	public int config_claims_initialBlocks;							//the number of claim blocks a new player starts with
 	public double config_claims_abandonReturnRatio;                 //the portion of claim blocks returned to a player when a claim is abandoned
@@ -515,6 +516,7 @@ public class GriefPrevention extends JavaPlugin
         this.config_claims_unusedClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.UnusedClaimDays", 14);
         this.config_claims_expirationDays = config.getInt("GriefPrevention.Claims.Expiration.AllClaimDays", 0);
         this.config_claims_survivalAutoNatureRestoration = config.getBoolean("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", false);
+        this.config_claims_maxClaimsPerPlayer = config.getInt("GriefPrevention.Claims.MaximumNumberOfClaimsPerPlayer", 0);
         this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
         this.config_spam_loginCooldownSeconds = config.getInt("GriefPrevention.Spam.LoginCooldownSeconds", 60);
         this.config_spam_warningMessage = config.getString("GriefPrevention.Spam.WarningMessage", "Please reduce your noise level.  Spammers will be banned.");
@@ -724,6 +726,7 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.Claims.Expiration.UnusedClaimDays", this.config_claims_unusedClaimExpirationDays);       
         outConfig.set("GriefPrevention.Claims.Expiration.AllClaimDays", this.config_claims_expirationDays);
         outConfig.set("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", this.config_claims_survivalAutoNatureRestoration);
+        outConfig.set("GriefPrevention.Claims.MaximumNumberOfClaimsPerPlayer", this.config_claims_maxClaimsPerPlayer);
         
         outConfig.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
         outConfig.set("GriefPrevention.Spam.LoginCooldownSeconds", this.config_spam_loginCooldownSeconds);
@@ -1463,7 +1466,7 @@ public class GriefPrevention extends JavaPlugin
 			playerData.shovelMode = ShovelMode.Subdivide;
 			playerData.claimSubdividing = null;
 			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
-			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo, DataStore.SUBDIVISION_VIDEO_URL);
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, DataStore.SUBDIVISION_VIDEO_URL);
 			
 			return true;
 		}
@@ -2219,7 +2222,7 @@ public class GriefPrevention extends JavaPlugin
 	//helper method to resolve a player by name
 	ConcurrentHashMap<String, UUID> playerNameToIDMap = new ConcurrentHashMap<String, UUID>();
 
-	private OfflinePlayer resolvePlayerByName(String name) 
+    private OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first
 		Player targetPlayer = this.getServer().getPlayerExact(name);
@@ -2459,7 +2462,7 @@ public class GriefPrevention extends JavaPlugin
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo, DataStore.CREATIVE_VIDEO_URL);
+				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
 				if(player.hasPermission("griefprevention.ignoreclaims"))
 					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
 				return reason;
@@ -2495,7 +2498,7 @@ public class GriefPrevention extends JavaPlugin
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location))
 			{
-				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo, DataStore.CREATIVE_VIDEO_URL);
+				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims) + "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
 				if(player.hasPermission("griefprevention.ignoreclaims"))
 					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
 				return reason;
