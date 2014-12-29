@@ -571,11 +571,23 @@ public class DatabaseDataStore extends DataStore
 	synchronized void saveGroupBonusBlocks(String groupName, int currentValue)
 	{
 		//group bonus blocks are stored in the player data table, with player name = $groupName
-		String playerName = "$" + groupName;
-		PlayerData playerData = new PlayerData();
-		playerData.setBonusClaimBlocks(currentValue);
-		
-		this.savePlayerData(playerName, playerData);
+	    try
+        {
+            this.refreshDataConnection();
+            
+            SimpleDateFormat sqlFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String dateString = sqlFormat.format(new Date());
+            
+            Statement statement = databaseConnection.createStatement();
+            statement.execute("DELETE FROM griefprevention_playerdata WHERE name='$" + groupName + "';");
+            statement = databaseConnection.createStatement();
+            statement.execute("INSERT INTO griefprevention_playerdata (name, lastlogin, accruedblocks, bonusblocks) VALUES ('$" + groupName + "', '" + dateString + "', " + "0" + ", " + String.valueOf(currentValue) + ");");
+        }
+        catch(SQLException e)
+        {
+            GriefPrevention.AddLogEntry("Unable to save data for group " + groupName + ".  Details:");
+            GriefPrevention.AddLogEntry(e.getMessage());
+        }
 	}
 	
 	@Override
