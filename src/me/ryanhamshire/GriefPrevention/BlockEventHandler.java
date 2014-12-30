@@ -214,7 +214,7 @@ public class BlockEventHandler implements Listener
 				//radius == 0 means protect ONLY the chest
 				if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == 0)
 				{					
-					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getUniqueId(), null, null);
+					this.dataStore.createClaim(block.getWorld(), block.getX(), block.getX(), block.getY(), block.getY(), block.getZ(), block.getZ(), player.getUniqueId(), null, null, player);
 					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ChestClaimConfirmation);					
 				}
 				
@@ -228,7 +228,8 @@ public class BlockEventHandler implements Listener
 							block.getY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, block.getY(), 
 							block.getZ() - radius, block.getZ() + radius, 
 							player.getUniqueId(), 
-							null, null).succeeded)
+							null, null,
+							player).succeeded)
 					{
 						radius--;
 					}

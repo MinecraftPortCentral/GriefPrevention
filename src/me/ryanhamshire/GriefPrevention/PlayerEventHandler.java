@@ -1844,7 +1844,7 @@ class PlayerEventHandler implements Listener
 				}
 				
 				//ask the datastore to try and resize the claim, this checks for conflicts with other claims
-				CreateClaimResult result = GriefPrevention.instance.dataStore.resizeClaim(playerData.claimResizing, newx1, newx2, newy1, newy2, newz1, newz2);
+				CreateClaimResult result = GriefPrevention.instance.dataStore.resizeClaim(playerData.claimResizing, newx1, newx2, newy1, newy2, newz1, newz2, player);
 				
 				if(result.succeeded)
 				{
@@ -1880,12 +1880,19 @@ class PlayerEventHandler implements Listener
 				}
 				else
 				{
-					//inform player
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlap);
-					
-					//show the player the conflicting claim
-					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
-					Visualization.Apply(player, visualization);
+					if(result.claim != null)
+					{
+    				    //inform player
+    					GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlap);
+    					
+    					//show the player the conflicting claim
+    					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
+    					Visualization.Apply(player, visualization);
+					}
+					else
+					{
+					    GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlapRegion);
+					}
 				}
 				
 				return;
@@ -1949,7 +1956,7 @@ class PlayerEventHandler implements Listener
 									playerData.lastShovelLocation.getBlockZ(), clickedBlock.getZ(), 
 									null,  //owner is not used for subdivisions
 									playerData.claimSubdividing,
-									null);
+									null, player);
 							
 							//if it didn't succeed, tell the player why
 							if(!result.succeeded)
@@ -2068,23 +2075,31 @@ class PlayerEventHandler implements Listener
 					playerID = null;
 				}
 				
-				//try to create a new claim (will return null if this claim overlaps another)
+				//try to create a new claim
 				CreateClaimResult result = this.dataStore.createClaim(
 						player.getWorld(), 
 						lastShovelLocation.getBlockX(), clickedBlock.getX(), 
 						lastShovelLocation.getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance, 
 						lastShovelLocation.getBlockZ(), clickedBlock.getZ(), 
 						playerID,
-						null, null);
+						null, null,
+						player);
 				
 				//if it didn't succeed, tell the player why
 				if(!result.succeeded)
 				{
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapShort);
-					
-					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
-					Visualization.Apply(player, visualization);
-					
+					if(result.claim != null)
+					{
+    				    GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapShort);
+    					
+    					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.ErrorClaim, player.getLocation());
+    					Visualization.Apply(player, visualization);
+					}
+					else
+					{
+					    GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapRegion);
+					}
+    					
 					return;
 				}
 				

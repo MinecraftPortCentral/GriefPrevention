@@ -29,6 +29,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.sk89q.worldedit.BlockVector;
+import com.sk89q.worldguard.LocalPlayer;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.managers.RegionManager;
+import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+
 //singleton class which manages all GriefPrevention data (except for config options)
 public abstract class DataStore 
 {
@@ -73,7 +81,10 @@ public abstract class DataStore
     static final String SUBDIVISION_VIDEO_URL = "" + ChatColor.DARK_AQUA + ChatColor.UNDERLINE + "bit.ly/mcgpsub";
     
     //list of UUIDs which are soft-muted
-    ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>(); 
+    ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
+    
+    //world guard reference, if available
+    boolean worldGuardHooked = false;
     
     protected int getSchemaVersion()
     {
@@ -127,6 +138,13 @@ public abstract class DataStore
         
         //make a note of the data store schema version
 		this.setSchemaVersion(latestSchemaVersion);
+		
+		//try to hook into world guard
+		worldGuardHooked = (GriefPrevention.instance.getServer().getPluginManager().getPlugin("WorldGuard") != null);
+		if(worldGuardHooked)
+		{
+		    GriefPrevention.AddLogEntry("Successfully hooked into WorldGuard.");
+		}
 	}
 	
 	private void loadSoftMutes()
@@ -570,14 +588,16 @@ public abstract class DataStore
 	
     //creates a claim.
 	//if the new claim would overlap an existing claim, returns a failure along with a reference to the existing claim
+	//if the new claim would overlap a WorldGuard region where the player doesn't have permission to build, returns a failure with NULL for claim
 	//otherwise, returns a success along with a reference to the new claim
 	//use ownerName == "" for administrative claims
 	//for top level claims, pass parent == NULL
 	//DOES adjust claim blocks available on success (players can go into negative quantity available)
+	//DOES check for world guard regions where the player doesn't have permission
 	//does NOT check a player has permission to create a claim, or enough claim blocks.
 	//does NOT check minimum claim size constraints
 	//does NOT visualize the new claim for any players	
-	synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent, Long id)
+	synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent, Long id, Player creatingPlayer)
 	{
 		CreateClaimResult result = new CreateClaimResult();
 		
@@ -661,6 +681,26 @@ public abstract class DataStore
 			}
 		}
 		
+		//if worldguard is installed, also prevent claims from overlapping any worldguard regions
+		if(this.worldGuardHooked && creatingPlayer != null)
+		{
+		    WorldGuardPlugin worldGuard = (WorldGuardPlugin)GriefPrevention.instance.getServer().getPluginManager().getPlugin("WorldGuard");
+		    Location lesser = newClaim.getLesserBoundaryCorner();
+		    Location greater = newClaim.getGreaterBoundaryCorner();
+		    for(int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
+		        for(int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++)
+		            for(int y = 0; y <= lesser.getWorld().getMaxHeight(); y++)
+		            {
+		                if(!worldGuard.canBuild(creatingPlayer, new Location(lesser.getWorld(), x, y, z)))
+		                {
+		                    //result = fail, return null to indicate a region is in the way
+		                    result.succeeded = false;
+		                    result.claim = null;
+		                    return result;
+		                }
+		            }
+		}
+
 		//otherwise add this new claim to the data store to make it effective
 		this.addClaim(newClaim, true);
 		
@@ -946,7 +986,7 @@ public abstract class DataStore
 
 	//tries to resize a claim
 	//see CreateClaim() for details on return value
-	synchronized public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2)
+	synchronized public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2, Player resizingPlayer)
 	{
 		//note any subdivisions before deleting the claim
 	    ArrayList<Claim> subdivisions = new ArrayList<Claim>(claim.children);
@@ -955,7 +995,7 @@ public abstract class DataStore
 		this.deleteClaim(claim);					
 		
 		//try to create this new claim, ignoring the original when checking for overlap
-		CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2, claim.ownerID, claim.parent, claim.id);
+		CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2, claim.ownerID, claim.parent, claim.id, resizingPlayer);
 		
 		//if succeeded
 		if(result.succeeded)
@@ -1183,6 +1223,8 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.AvoidGriefClaimLand, "Prevent grief!  If you claim your land, you will be grief-proof.", null);
 		this.addDefault(defaults, Messages.BecomeMayor, "Subdivide your land claim and become a mayor!", null);
 		this.addDefault(defaults, Messages.ClaimCreationFailedOverClaimCountLimit, "You've reached your limit on land claims.  Use /AbandonClaim to remove one before creating another.", null);
+		this.addDefault(defaults, Messages.CreateClaimFailOverlapRegion, "You can't claim all of this because you're not allowed to build here.", null);
+		this.addDefault(defaults, Messages.ResizeFailOverlapRegion, "You don't have permission to build there, so you can't claim that area.", null);
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));
