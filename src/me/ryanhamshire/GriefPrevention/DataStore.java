@@ -35,7 +35,6 @@ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 //singleton class which manages all GriefPrevention data (except for config options)
 public abstract class DataStore 
@@ -684,21 +683,25 @@ public abstract class DataStore
 		//if worldguard is installed, also prevent claims from overlapping any worldguard regions
 		if(this.worldGuardHooked && creatingPlayer != null)
 		{
-		    WorldGuardPlugin worldGuard = (WorldGuardPlugin)GriefPrevention.instance.getServer().getPluginManager().getPlugin("WorldGuard");
-		    Location lesser = newClaim.getLesserBoundaryCorner();
-		    Location greater = newClaim.getGreaterBoundaryCorner();
-		    for(int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
-		        for(int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++)
-		            for(int y = 0; y <= lesser.getWorld().getMaxHeight(); y++)
-		            {
-		                if(!worldGuard.canBuild(creatingPlayer, new Location(lesser.getWorld(), x, y, z)))
-		                {
-		                    //result = fail, return null to indicate a region is in the way
-		                    result.succeeded = false;
-		                    result.claim = null;
-		                    return result;
-		                }
-		            }
+		    /*WorldGuardPlugin worldGuard = (WorldGuardPlugin)GriefPrevention.instance.getServer().getPluginManager().getPlugin("WorldGuard");
+		    RegionManager manager = worldGuard.getRegionManager(world);
+		    if(manager != null)
+		    {
+		        Location lesser = newClaim.getLesserBoundaryCorner();
+		        Location greater = newClaim.getGreaterBoundaryCorner();
+		        ProtectedCuboidRegion tempRegion = new ProtectedCuboidRegion(
+	                "GP_TEMP",
+	                new BlockVector(lesser.getX(), 0, lesser.getZ()),
+	                new BlockVector(greater.getX(), world.getMaxHeight(), greater.getZ()));
+		        ApplicableRegionSet overlaps = manager.getApplicableRegions(tempRegion);
+		        LocalPlayer localPlayer = worldGuard.wrapPlayer(creatingPlayer);
+		        if(!overlaps.canBuild(localPlayer))
+		        {
+		            result.succeeded = false;
+		            result.claim = null;
+		            return result;
+		        }
+		    }*/
 		}
 
 		//otherwise add this new claim to the data store to make it effective
