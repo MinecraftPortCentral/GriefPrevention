@@ -769,7 +769,7 @@ class PlayerEventHandler implements Listener
 	}
 	
 	//when a player teleports via a portal
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.HIGHEST)
 	void onPlayerPortal(PlayerPortalEvent event) 
 	{
 	    Player player = event.getPlayer();
@@ -779,6 +779,23 @@ class PlayerEventHandler implements Listener
         {
             CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFrom());
             GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 100L);
+        }
+        
+        //FEATURE: if the player teleporting doesn't have permission to build a nether portal and none already exists at the destination, redirect the portal
+        Location existingPortalLocation = event.getPortalTravelAgent().findPortal(event.getTo());
+        boolean creatingPortal = event.getPortalTravelAgent().getCanCreatePortal() && (existingPortalLocation == null);
+        
+        //if creating a new portal
+        if(creatingPortal)
+        {
+            //and it goes to a land claim
+            Claim claim = this.dataStore.getClaimAt(event.getTo(), false, null);
+            while(claim != null && claim.allowBuild(player, Material.PORTAL) != null)
+            {
+                //redirect to outside the land claim
+                event.setTo(claim.getLesserBoundaryCorner().clone().add(-50, 0, -50));
+                claim = this.dataStore.getClaimAt(event.getTo(), false, null);
+            }
         }
 	}
 	
