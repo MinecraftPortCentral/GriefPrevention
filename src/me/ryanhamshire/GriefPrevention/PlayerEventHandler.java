@@ -768,6 +768,20 @@ class PlayerEventHandler implements Listener
 		}
 	}
 	
+	//when a player teleports via a portal
+	@EventHandler(priority = EventPriority.LOWEST)
+	void onPlayerPortal(PlayerPortalEvent event) 
+	{
+	    Player player = event.getPlayer();
+        
+	    //FEATURE: when players get trapped in a nether portal, send them back through to the other side
+        if(event.getCause() == TeleportCause.NETHER_PORTAL)
+        {
+            CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFrom());
+            GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 100L);
+        }
+	}
+	
 	//when a player teleports
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerTeleport(PlayerTeleportEvent event)
@@ -789,13 +803,6 @@ class PlayerEventHandler implements Listener
 					event.setCancelled(true);
 				}
 			}
-		}
-		
-		//FEATURE: when players get trapped in a nether portal, send them back through to the other side
-		if(event.getCause() == TeleportCause.NETHER_PORTAL)
-		{
-		    CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFrom());
-            GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 100L);
 		}
 		
 		//FEATURE: prevent teleport abuse to win sieges
