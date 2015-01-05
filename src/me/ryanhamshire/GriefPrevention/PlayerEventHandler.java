@@ -772,6 +772,9 @@ class PlayerEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
 	void onPlayerPortal(PlayerPortalEvent event) 
 	{
+	    //don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(event.getTo().getWorld())) return;
+	    
 	    Player player = event.getPlayer();
         
 	    //FEATURE: when players get trapped in a nether portal, send them back through to the other side
@@ -781,20 +784,20 @@ class PlayerEventHandler implements Listener
             GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 100L);
         }
         
-        //FEATURE: if the player teleporting doesn't have permission to build a nether portal and none already exists at the destination, redirect the portal
+        //FEATURE: if the player teleporting doesn't have permission to build a nether portal and none already exists at the destination, cancel the teleportation
         Location existingPortalLocation = event.getPortalTravelAgent().findPortal(event.getTo());
         boolean creatingPortal = event.getPortalTravelAgent().getCanCreatePortal() && (existingPortalLocation == null);
         
         //if creating a new portal
         if(creatingPortal)
         {
-            //and it goes to a land claim
+            //and it goes to a land claim where the player doesn't have permission to build
             Claim claim = this.dataStore.getClaimAt(event.getTo(), false, null);
-            while(claim != null && claim.allowBuild(player, Material.PORTAL) != null)
+            if(claim != null && claim.allowBuild(player, Material.PORTAL) != null)
             {
-                //redirect to outside the land claim
-                event.setTo(claim.getLesserBoundaryCorner().clone().add(-50, 0, -50));
-                claim = this.dataStore.getClaimAt(event.getTo(), false, null);
+                //cancel and inform about the reason
+                event.setCancelled(true);
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, claim.getOwnerName());
             }
         }
 	}
