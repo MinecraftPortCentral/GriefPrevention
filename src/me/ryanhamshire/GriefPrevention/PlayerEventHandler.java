@@ -769,7 +769,7 @@ class PlayerEventHandler implements Listener
 	}
 	
 	//when a player teleports via a portal
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
 	void onPlayerPortal(PlayerPortalEvent event) 
 	{
 	    Player player = event.getPlayer();
