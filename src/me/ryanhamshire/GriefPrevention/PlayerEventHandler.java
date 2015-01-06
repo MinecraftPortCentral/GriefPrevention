@@ -34,6 +34,7 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.TravelAgent;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -776,28 +777,43 @@ class PlayerEventHandler implements Listener
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getTo().getWorld())) return;
 	    
 	    Player player = event.getPlayer();
-        
-	    //FEATURE: when players get trapped in a nether portal, send them back through to the other side
+	    
         if(event.getCause() == TeleportCause.NETHER_PORTAL)
         {
+            //FEATURE: when players get trapped in a nether portal, send them back through to the other side
             CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFrom());
             GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 100L);
-        }
         
-        //FEATURE: if the player teleporting doesn't have permission to build a nether portal and none already exists at the destination, cancel the teleportation
-        Location existingPortalLocation = event.getPortalTravelAgent().findPortal(event.getTo());
-        boolean creatingPortal = event.getPortalTravelAgent().getCanCreatePortal() && (existingPortalLocation == null);
-        
-        //if creating a new portal
-        if(creatingPortal)
-        {
-            //and it goes to a land claim where the player doesn't have permission to build
-            Claim claim = this.dataStore.getClaimAt(event.getTo(), false, null);
-            if(claim != null && claim.allowBuild(player, Material.PORTAL) != null)
+            //FEATURE: if the player teleporting doesn't have permission to build a nether portal and none already exists at the destination, cancel the teleportation
+            Location destination = event.getTo();
+            if(event.useTravelAgent())
             {
-                //cancel and inform about the reason
-                event.setCancelled(true);
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, claim.getOwnerName());
+                if(event.getPortalTravelAgent().getCanCreatePortal())
+                {
+                    //hypothetically find where the portal would be created if it were
+                    TravelAgent agent = event.getPortalTravelAgent();
+                    agent.setCanCreatePortal(false);
+                    destination = agent.findOrCreate(destination);
+                    agent.setCanCreatePortal(true);
+                }
+                else
+                {
+                    //if not able to create a portal, we don't have to do anything here
+                    return;
+                }
+            }
+            
+            //if creating a new portal
+            if(destination.getBlock().getType() != Material.PORTAL)
+            {
+                //check for a land claim and the player's permission that land claim
+                Claim claim = this.dataStore.getClaimAt(destination, false, null);
+                if(claim != null && claim.allowBuild(player, Material.PORTAL) != null)
+                {
+                    //cancel and inform about the reason
+                    event.setCancelled(true);
+                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, claim.getOwnerName());
+                }
             }
         }
 	}
