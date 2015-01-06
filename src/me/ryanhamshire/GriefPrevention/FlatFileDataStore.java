@@ -19,12 +19,16 @@
 package me.ryanhamshire.GriefPrevention;
 
 import java.io.*;
+import java.lang.management.ThreadInfo;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import org.bukkit.*;
+
+import com.google.common.io.Files;
 
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore
@@ -466,57 +470,73 @@ public class FlatFileDataStore extends DataStore
 		//if it exists as a file, read the file
 		if(playerFile.exists())
 		{			
-			BufferedReader inStream = null;
-			try
-			{					
-				inStream = new BufferedReader(new FileReader(playerFile.getAbsolutePath()));
-
-				//first line is last login timestamp
-				String lastLoginTimestampString = inStream.readLine();
-				
-				//convert that to a date and store it
-				DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");					
-				try
-				{
-					playerData.setLastLogin(dateFormat.parse(lastLoginTimestampString));
-				}
-				catch(ParseException parseException)
-				{
-					GriefPrevention.AddLogEntry("Unable to load last login for \"" + playerFile.getName() + "\".");
-					playerData.setLastLogin(null);
-				}
-				
-				//second line is accrued claim blocks
-				String accruedBlocksString = inStream.readLine();
-				
-				//convert that to a number and store it
-				playerData.setAccruedClaimBlocks(Integer.parseInt(accruedBlocksString));
-				
-				//third line is any bonus claim blocks granted by administrators
-				String bonusBlocksString = inStream.readLine();					
-				
-				//convert that to a number and store it										
-				playerData.setBonusClaimBlocks(Integer.parseInt(bonusBlocksString));
-				
-				//fourth line is a double-semicolon-delimited list of claims, which is currently ignored
-				//String claimsString = inStream.readLine();
-				inStream.readLine();
-				
-				inStream.close();
-			}
-				
-			//if there's any problem with the file's content, log an error message
-			catch(Exception e)
-			{
-				 GriefPrevention.AddLogEntry("Unable to load data for player \"" + playerID.toString() + "\": " + e.toString());
-				 e.printStackTrace();
-			}
+			boolean needRetry = false;
+			int retriesRemaining = 5;
+			Exception latestException = null;
+			do
+    			{
+    			try
+    			{					
+    				needRetry = false;
+    			    
+    			    //read the file content and immediately close it
+    			    List<String> lines = Files.readLines(playerFile, Charset.forName("UTF-8"));
+    			    Iterator<String> iterator = lines.iterator();
+    			    
+    				//first line is last login timestamp
+    				String lastLoginTimestampString = iterator.next();
+    				
+    				//convert that to a date and store it
+    				DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");					
+    				try
+    				{
+    					playerData.setLastLogin(dateFormat.parse(lastLoginTimestampString));
+    				}
+    				catch(ParseException parseException)
+    				{
+    					GriefPrevention.AddLogEntry("Unable to load last login for \"" + playerFile.getName() + "\".");
+    					playerData.setLastLogin(null);
+    				}
+    				
+    				//second line is accrued claim blocks
+    				String accruedBlocksString = iterator.next();
+    				
+    				//convert that to a number and store it
+    				playerData.setAccruedClaimBlocks(Integer.parseInt(accruedBlocksString));
+    				
+    				//third line is any bonus claim blocks granted by administrators
+    				String bonusBlocksString = iterator.next();
+    				
+    				//convert that to a number and store it										
+    				playerData.setBonusClaimBlocks(Integer.parseInt(bonusBlocksString));
+    				
+    				//fourth line is a double-semicolon-delimited list of claims, which is currently ignored
+    				//String claimsString = inStream.readLine();
+    				//iterator.next();
+    			}
+    				
+    			//if there's any problem with the file's content, retry up to 5 times with 5 milliseconds between
+    			catch(Exception e)
+    			{
+    				latestException = e;
+    				needRetry = true;
+    				retriesRemaining--;
+    			}
+    			
+    			try
+    			{
+                    if(needRetry) Thread.sleep(5);
+    			}
+    			catch(InterruptedException exception) {}
+    			
+			}while(needRetry && retriesRemaining >= 0);
 			
-			try
+			//if last attempt failed, log information about the problem
+			if(needRetry)
 			{
-				if(inStream != null) inStream.close();
+			    GriefPrevention.AddLogEntry("Retry attempts exhausted.  Unable to load data for player \"" + playerID.toString() + "\": " + latestException.toString());
+                latestException.printStackTrace();
 			}
-			catch(IOException exception) {}
 		}
 			
 		return playerData;
@@ -529,38 +549,37 @@ public class FlatFileDataStore extends DataStore
 		//never save data for the "administrative" account.  null for claim owner ID indicates administrative account
 		if(playerID == null) return;
 		
-		BufferedWriter outStream = null;
+		StringBuilder fileContent = new StringBuilder();
 		try
 		{
-			//open the player's file
-			File playerDataFile = new File(playerDataFolderPath + File.separator + playerID.toString());
-			playerDataFile.createNewFile();
-			outStream = new BufferedWriter(new FileWriter(playerDataFile));
-			
 			//first line is last login timestamp
 			if(playerData.getLastLogin() == null) playerData.setLastLogin(new Date());
 			DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
-			outStream.write(dateFormat.format(playerData.getLastLogin()));
-			outStream.newLine();
+			fileContent.append(dateFormat.format(playerData.getLastLogin()));
+			fileContent.append("\n");
 			
 			//second line is accrued claim blocks
-			outStream.write(String.valueOf(playerData.getAccruedClaimBlocks()));
-			outStream.newLine();			
+			fileContent.append(String.valueOf(playerData.getAccruedClaimBlocks()));
+			fileContent.append("\n");			
 			
 			//third line is bonus claim blocks
-			outStream.write(String.valueOf(playerData.getBonusClaimBlocks()));
-			outStream.newLine();						
+			fileContent.append(String.valueOf(playerData.getBonusClaimBlocks()));
+			fileContent.append("\n");
 			
 			//fourth line is a double-semicolon-delimited list of claims
 			if(playerData.getClaims().size() > 0)
 			{
-				outStream.write(this.locationToString(playerData.getClaims().get(0).getLesserBoundaryCorner()));
+				fileContent.append(this.locationToString(playerData.getClaims().get(0).getLesserBoundaryCorner()));
 				for(int i = 1; i < playerData.getClaims().size(); i++)
 				{
-					outStream.write(";;" + this.locationToString(playerData.getClaims().get(i).getLesserBoundaryCorner()));
+					fileContent.append(";;" + this.locationToString(playerData.getClaims().get(i).getLesserBoundaryCorner()));
 				}
 			}
-			outStream.newLine();
+			fileContent.append("\n");
+			
+			//write data to file
+            File playerDataFile = new File(playerDataFolderPath + File.separator + playerID.toString());
+            Files.write(fileContent.toString().getBytes("UTF-8"), playerDataFile);
 		}		
 		
 		//if any problem, log it
@@ -568,16 +587,6 @@ public class FlatFileDataStore extends DataStore
 		{
 			GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
 		}
-		
-		try
-		{
-			//close the file
-			if(outStream != null)
-			{
-				outStream.close();
-			}
-		}
-		catch(IOException exception){}
 	}
 	
 	@Override
