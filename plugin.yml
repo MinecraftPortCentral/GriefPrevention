@@ -8,6 +8,7 @@ commands:
    abandonclaim:
       description: Deletes a claim.
       usage: /AbandonClaim
+      aliases: [unclaim, declaim, removeclaim, disclaim]
       permission: griefprevention.claims
    abandontoplevelclaim:
       description: Deletes a claim and all its subdivisions.
@@ -45,7 +46,7 @@ commands:
    subdivideclaims:
       description: Switches the shovel tool to subdivision mode, used to subdivide your claims.
       usage: /SubdivideClaims
-      aliases: sc
+      aliases: [sc, subdivideclaim]
       permission: griefprevention.claims
    adjustbonusclaimblocks:
       description: Adds or subtracts bonus claim blocks for a player.
@@ -118,6 +119,7 @@ commands:
    transferclaim:
       description: Converts an administrative claim to a private claim.
       usage: /TransferClaim <player>
+      aliases: giveclaim
       permission: griefprevention.adjustclaimblocks
    unlockdrops:
       description: Allows other players to pick up the items you dropped when you died.
@@ -125,7 +127,7 @@ commands:
    claimslist:
       description: Lists information about a player's claim blocks and claims.
       usage: /ClaimsList or /ClaimsList <player>
-      aliases: claimlist
+      aliases: [claimlist, listclaims]
    claimexplosions:
       description: Toggles whether explosives may be used in a specific land claim.
       usage: /ClaimExplosions
