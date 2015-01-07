@@ -227,7 +227,7 @@ class PlayerEventHandler implements Listener
 		//filter IP addresses
 		if(!muted)
 		{
-			Pattern ipAddressPattern = Pattern.compile("\\d{1,4}\\D{1,3}\\d{1,4}\\D{1,3}\\d{1,4}\\D{1,3}\\d{1,4}");
+			Pattern ipAddressPattern = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
 			Matcher matcher = ipAddressPattern.matcher(message);
 			
 			//if it looks like an IP address
