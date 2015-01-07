@@ -26,11 +26,15 @@ public class VisualizationElement
 	public Location location;
 	public Material visualizedMaterial;
 	public byte visualizedData; 
+	public Material realMaterial;
+	public byte realData;
 	
-	public VisualizationElement(Location location, Material visualizedMaterial, byte visualizedData)
+	public VisualizationElement(Location location, Material visualizedMaterial, byte visualizedData, Material realMaterial, byte realData)
 	{
 		this.location = location;
 		this.visualizedMaterial= visualizedMaterial;
 		this.visualizedData = visualizedData;
+		this.realData = realData;
+		this.realMaterial = realMaterial;
 	}
 }
