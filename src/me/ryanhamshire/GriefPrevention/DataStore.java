@@ -83,7 +83,7 @@ public abstract class DataStore
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
     
     //world guard reference, if available
-    boolean worldGuardHooked = false;
+    private WorldGuardWrapper worldGuard = null;
     
     protected int getSchemaVersion()
     {
@@ -139,11 +139,13 @@ public abstract class DataStore
 		this.setSchemaVersion(latestSchemaVersion);
 		
 		//try to hook into world guard
-		worldGuardHooked = (GriefPrevention.instance.getServer().getPluginManager().getPlugin("WorldGuard") != null);
-		if(worldGuardHooked)
+		try
 		{
+		    this.worldGuard = new WorldGuardWrapper();
 		    GriefPrevention.AddLogEntry("Successfully hooked into WorldGuard.");
 		}
+		//if failed, world guard compat features will just be disabled.
+		catch(ClassNotFoundException exception){ }
 	}
 	
 	private void loadSoftMutes()
@@ -681,27 +683,14 @@ public abstract class DataStore
 		}
 		
 		//if worldguard is installed, also prevent claims from overlapping any worldguard regions
-		if(this.worldGuardHooked && creatingPlayer != null)
+		if(this.worldGuard != null && creatingPlayer != null)
 		{
-		    /*WorldGuardPlugin worldGuard = (WorldGuardPlugin)GriefPrevention.instance.getServer().getPluginManager().getPlugin("WorldGuard");
-		    RegionManager manager = worldGuard.getRegionManager(world);
-		    if(manager != null)
+		    if(!this.worldGuard.canBuild(newClaim.lesserBoundaryCorner, newClaim.greaterBoundaryCorner, creatingPlayer))
 		    {
-		        Location lesser = newClaim.getLesserBoundaryCorner();
-		        Location greater = newClaim.getGreaterBoundaryCorner();
-		        ProtectedCuboidRegion tempRegion = new ProtectedCuboidRegion(
-	                "GP_TEMP",
-	                new BlockVector(lesser.getX(), 0, lesser.getZ()),
-	                new BlockVector(greater.getX(), world.getMaxHeight(), greater.getZ()));
-		        ApplicableRegionSet overlaps = manager.getApplicableRegions(tempRegion);
-		        LocalPlayer localPlayer = worldGuard.wrapPlayer(creatingPlayer);
-		        if(!overlaps.canBuild(localPlayer))
-		        {
-		            result.succeeded = false;
-		            result.claim = null;
-		            return result;
-		        }
-		    }*/
+                result.succeeded = false;
+                result.claim = null;
+                return result;
+            }
 		}
 
 		//otherwise add this new claim to the data store to make it effective
