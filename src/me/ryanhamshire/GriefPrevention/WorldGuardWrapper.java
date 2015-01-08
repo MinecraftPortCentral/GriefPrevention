@@ -8,6 +8,7 @@ import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 
@@ -32,7 +33,7 @@ class WorldGuardWrapper
                 new BlockVector(greaterCorner.getX(), world.getMaxHeight(), greaterCorner.getZ()));
             ApplicableRegionSet overlaps = manager.getApplicableRegions(tempRegion);
             LocalPlayer localPlayer = worldGuard.wrapPlayer(creatingPlayer);
-            return overlaps.canBuild(localPlayer);
+            return overlaps.testState(localPlayer, DefaultFlag.BUILD);
         }
         
         return true;

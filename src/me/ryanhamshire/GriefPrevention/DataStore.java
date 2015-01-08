@@ -146,6 +146,7 @@ public abstract class DataStore
 		}
 		//if failed, world guard compat features will just be disabled.
 		catch(ClassNotFoundException exception){ }
+		catch(NoClassDefFoundError exception){ }
 	}
 	
 	private void loadSoftMutes()

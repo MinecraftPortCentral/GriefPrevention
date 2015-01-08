@@ -764,36 +764,29 @@ class EntityEventHandler implements Listener
 		//determine which player is attacking, if any
 		Player attacker = null;
 		Entity damageSource = event.getAttacker();
-		
-		//if damage source is null, don't allow the damage when the vehicle is in a land claim
-		if(damageSource == null)
+		EntityType damageSourceType = null;
+
+		//if damage source is null or a creeper, don't allow the damage when the vehicle is in a land claim
+		if(damageSource != null)
 		{
-		    Claim claim = this.dataStore.getClaimAt(event.getVehicle().getLocation(), false, null);
-	        
-	        //if it's claimed
-	        if(claim != null)
-	        {
-	            event.setCancelled(true);
-	        }
-	        
-            return;
-		}
-		
-		if(damageSource.getType() == EntityType.PLAYER)
-		{
-			attacker = (Player)damageSource;
-		}
-		else if(damageSource instanceof Projectile)
-		{
-		    Projectile arrow = (Projectile)damageSource;
-		    if(arrow.getShooter() instanceof Player)
-			{
-				attacker = (Player)arrow.getShooter();
-			}
+		    damageSourceType = damageSource.getType();
+
+		    if(damageSource.getType() == EntityType.PLAYER)
+    		{
+    			attacker = (Player)damageSource;
+    		}
+    		else if(damageSource instanceof Projectile)
+    		{
+    		    Projectile arrow = (Projectile)damageSource;
+    		    if(arrow.getShooter() instanceof Player)
+    			{
+    				attacker = (Player)arrow.getShooter();
+    			}
+    		}
 		}
 		
 		//if not a player and not an explosion, always allow
-        if(attacker == null && !(damageSource instanceof Explosive))
+        if(attacker == null && damageSourceType != EntityType.CREEPER && damageSourceType != EntityType.PRIMED_TNT)
         {
             return;
         }
