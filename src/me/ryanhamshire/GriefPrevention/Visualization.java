@@ -148,7 +148,7 @@ public class Visualization
 		else if(visualizationType == VisualizationType.AdminClaim)
         {
             cornerMaterial = Material.GLOWSTONE;
-            accentMaterial = Material.JACK_O_LANTERN;
+            accentMaterial = Material.PUMPKIN;
         }
 		
 		else if(visualizationType == VisualizationType.Subdivision)
