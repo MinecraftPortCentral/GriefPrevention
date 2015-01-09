@@ -201,28 +201,28 @@ public class Visualization
 		final int STEP = 5;
 		
 		//top line		
-		for(int x = smallx + STEP; x < bigx - STEP; x += STEP)
+		for(int x = smallx + STEP; x < bigx - STEP / 2; x += STEP)
 		{
 			if(x > minx && x < maxx)
 				this.elements.add(new VisualizationElement(new Location(world, x, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
 		//bottom line
-		for(int x = smallx + STEP; x < bigx - STEP; x += STEP)
+		for(int x = smallx + STEP; x < bigx - STEP / 2; x += STEP)
 		{
 			if(x > minx && x < maxx)
 				this.elements.add(new VisualizationElement(new Location(world, x, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
 		//left line
-		for(int z = smallz + STEP; z < bigz - STEP; z += STEP)
+		for(int z = smallz + STEP; z < bigz - STEP / 2; z += STEP)
 		{
 			if(z > minz && z < maxz)
 				this.elements.add(new VisualizationElement(new Location(world, smallx, 0, z), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
 		//right line
-		for(int z = smallz + STEP; z < bigz - STEP; z += STEP)
+		for(int z = smallz + STEP; z < bigz - STEP / 2; z += STEP)
 		{
 			if(z > minz && z < maxz)
 				this.elements.add(new VisualizationElement(new Location(world, bigx, 0, z), accentMaterial, (byte)0, Material.AIR, (byte)0));
@@ -280,7 +280,7 @@ public class Visualization
 					block.getType().isTransparent()));
 	}
 
-    public static Visualization fromClaims(ArrayList<Claim> claims, int height, VisualizationType type, Location locality)
+    public static Visualization fromClaims(Iterable<Claim> claims, int height, VisualizationType type, Location locality)
     {
         Visualization visualization = new Visualization();
         

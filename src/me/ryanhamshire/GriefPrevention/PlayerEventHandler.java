@@ -1482,11 +1482,13 @@ class PlayerEventHandler implements Listener
 			    if(player.isSneaking() && player.hasPermission("griefprevention.visualizenearbyclaims"))
 			    {
 			        //find nearby claims
-			        ArrayList<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
+			        Set<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
 			        
 			        //visualize boundaries
                     Visualization visualization = Visualization.fromClaims(claims, player.getEyeLocation().getBlockY(), VisualizationType.Claim, player.getLocation());
                     Visualization.Apply(player, visualization);
+                    
+                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
                     
                     return;
 			    }
