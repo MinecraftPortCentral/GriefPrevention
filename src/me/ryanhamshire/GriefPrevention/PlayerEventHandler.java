@@ -774,6 +774,9 @@ class PlayerEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
 	void onPlayerPortal(PlayerPortalEvent event) 
 	{
+	    //if the player isn't going anywhere, take no action
+	    if(event.getTo() == null || event.getTo().getWorld() == null) return;
+	    
 	    //don't track in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getTo().getWorld())) return;
 	    
