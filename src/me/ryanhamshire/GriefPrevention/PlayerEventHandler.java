@@ -1897,8 +1897,29 @@ class PlayerEventHandler implements Listener
 				
 				if(result.succeeded)
 				{
-					//inform and show the player
-					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ClaimResizeSuccess, String.valueOf(playerData.getRemainingClaimBlocks()));
+					//decide how many claim blocks are available for more resizing
+				    int claimBlocksRemaining = 0;
+				    if(!playerData.claimResizing.isAdminClaim())
+				    {
+				        if(playerData.claimResizing.ownerID == player.getUniqueId())
+				        {
+				            claimBlocksRemaining = playerData.getRemainingClaimBlocks();
+				        }
+				        else
+				        {
+				            UUID ownerID = playerData.claimResizing.ownerID;
+				            PlayerData ownerData = this.dataStore.getPlayerData(ownerID);
+				            claimBlocksRemaining = ownerData.getRemainingClaimBlocks();
+				            OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID);
+				            if(!owner.isOnline())
+				            {
+				                this.dataStore.clearCachedPlayerData(ownerID);
+				            }
+				        }
+				    }
+					
+				    //inform about success, visualize, communicate remaining blocks available
+				    GriefPrevention.sendMessage(player, TextMode.Success, Messages.ClaimResizeSuccess, String.valueOf(claimBlocksRemaining));
 					Visualization visualization = Visualization.FromClaim(result.claim, clickedBlock.getY(), VisualizationType.Claim, player.getLocation());
 					Visualization.Apply(player, visualization);
 					
