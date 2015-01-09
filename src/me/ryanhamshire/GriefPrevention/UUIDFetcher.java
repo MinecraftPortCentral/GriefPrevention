@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
  
 class UUIDFetcher {
-    private static final double PROFILES_PER_REQUEST = 100;
+    private static int PROFILES_PER_REQUEST = 100;
     private static final String PROFILE_URL = "https://api.mojang.com/profiles/minecraft";
     private final JSONParser jsonParser = new JSONParser();
     private final List<String> names;
@@ -90,15 +90,14 @@ class UUIDFetcher {
         {
             GriefPrevention.AddLogEntry("Calling Mojang to get UUIDs for remaining unresolved players (this is the slowest step)...");
             
-            int requests = (int) Math.ceil(names.size() / PROFILES_PER_REQUEST);
-            for (int i = 0; i < requests; i++)
+            for (int i = 0; i * PROFILES_PER_REQUEST < names.size(); i++)
             {
                 boolean retry = false;
                 JSONArray array = null;
                 do
                 {
                     HttpURLConnection connection = createConnection();
-                    String body = JSONArray.toJSONString(names.subList(i * 100, Math.min((i + 1) * 100, names.size())));
+                    String body = JSONArray.toJSONString(names.subList(i * PROFILES_PER_REQUEST, Math.min((i + 1) * PROFILES_PER_REQUEST, names.size())));
                     writeBody(connection, body);
                     retry = false;
                     array = null;
@@ -112,8 +111,22 @@ class UUIDFetcher {
                         if(e.getMessage().contains("429"))
                         {
                             retry = true;
-                            GriefPrevention.AddLogEntry("Mojang says we're sending requests too fast.  Will retry every 30 seconds until we succeed...");
-                            Thread.sleep(30000);
+                            
+                            //if this is the first time we're sending anything, the batch size must be too big
+                            //try reducing it
+                            if(i == 0 && PROFILES_PER_REQUEST > 1)
+                            {
+                                GriefPrevention.AddLogEntry("Batch size " + PROFILES_PER_REQUEST + " seems too large.  Looking for a workable batch size...");
+                                PROFILES_PER_REQUEST = Math.max(PROFILES_PER_REQUEST - 5, 1);
+                            }
+                            
+                            //otherwise, keep the batch size which has worked for previous iterations
+                            //but wait a little while before trying again.
+                            else
+                            {
+                                GriefPrevention.AddLogEntry("Mojang says we're sending requests too fast.  Will retry every 30 seconds until we succeed...");
+                                Thread.sleep(30000);
+                            }
                         }
                         else
                         {
@@ -131,7 +144,7 @@ class UUIDFetcher {
                     lookupCache.put(name, uuid);
                     lookupCache.put(name.toLowerCase(), uuid);
                 }
-                if (rateLimiting && i != requests - 1) {
+                if (rateLimiting) {
                     Thread.sleep(200L);
                 }
             }
