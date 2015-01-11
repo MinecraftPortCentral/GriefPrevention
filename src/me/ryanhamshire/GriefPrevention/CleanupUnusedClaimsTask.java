@@ -89,7 +89,7 @@ class CleanupUnusedClaimsTask implements Runnable
 			if(newPlayerClaimsExpired && playerData.getClaims().size() == 1)
 			{
 				claim.removeSurfaceFluids(null);
-				GriefPrevention.instance.dataStore.deleteClaim(claim);
+				GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 				cleanupChunks = true;
 				
 				//if configured to do so, restore the land to natural
@@ -147,7 +147,7 @@ class CleanupUnusedClaimsTask implements Runnable
 			
 			if(investmentScore < minInvestment)
 			{
-				GriefPrevention.instance.dataStore.deleteClaim(claim);
+				GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 				GriefPrevention.AddLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
 				
 				//if configured to do so, restore the claim area to natural state

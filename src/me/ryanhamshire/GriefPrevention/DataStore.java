@@ -23,6 +23,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
+
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -483,7 +485,12 @@ public abstract class DataStore
 	abstract PlayerData getPlayerDataFromStorage(UUID playerID);
 	
 	//deletes a claim or subdivision
-	synchronized public void deleteClaim(Claim claim)
+    synchronized public void deleteClaim(Claim claim)
+    {
+        this.deleteClaim(claim, true);
+    }
+	
+	synchronized void deleteClaim(Claim claim, boolean fireEvent)
 	{
 	    //subdivisions are simple - just remove them from their parent claim and save that claim
 		if(claim.parent != null)
@@ -498,7 +505,7 @@ public abstract class DataStore
 		//delete any children
         for(int j = 0; j < claim.children.size(); j++)
         {
-            this.deleteClaim(claim.children.get(j));
+            this.deleteClaim(claim.children.get(j), false);
         }
         
         //mark as deleted so any references elsewhere can be ignored
@@ -544,6 +551,12 @@ public abstract class DataStore
 				}
 			}
 			this.savePlayerData(claim.ownerID, ownerData);
+		}
+		
+		if(fireEvent)
+		{
+		    ClaimDeletedEvent ev = new ClaimDeletedEvent(claim);
+            Bukkit.getPluginManager().callEvent(ev);
 		}
 	}
 	
@@ -752,7 +765,7 @@ public abstract class DataStore
 		ArrayList<Claim> subdivisions = new ArrayList<Claim>(claim.children);
 		
 		//delete the claim
-		this.deleteClaim(claim);
+		this.deleteClaim(claim, false);
 		
 		//re-create it at the new depth
 		claim.lesserBoundaryCorner.setY(newDepth);
@@ -985,7 +998,7 @@ public abstract class DataStore
 			Claim claim = claimsToDelete.get(i); 
 			claim.removeSurfaceFluids(null);
 			
-			this.deleteClaim(claim);
+			this.deleteClaim(claim, true);
 			
 			//if in a creative mode world, delete the claim
 			if(GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()))
@@ -1003,7 +1016,7 @@ public abstract class DataStore
 	    ArrayList<Claim> subdivisions = new ArrayList<Claim>(claim.children);
 	    
 	    //remove old claim
-		this.deleteClaim(claim);					
+		this.deleteClaim(claim, false);					
 		
 		//try to create this new claim, ignoring the original when checking for overlap
 		CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2, claim.ownerID, claim.parent, claim.id, resizingPlayer);
