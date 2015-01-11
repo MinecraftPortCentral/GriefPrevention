@@ -582,6 +582,17 @@ public abstract class DataStore
 		return null;
 	}
 	
+	//finds a claim by ID
+	public synchronized Claim getClaim(long id)
+	{
+	    for(Claim claim : this.claims)
+	    {
+	        if(claim.getID() == id) return claim;
+	    }
+	    
+	    return null;
+	}
+	
 	//gets a unique, persistent identifier string for a chunk
 	private String getChunkString(Location location)
 	{
