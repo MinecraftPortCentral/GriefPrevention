@@ -905,7 +905,7 @@ class EntityEventHandler implements Listener
 	    }
 	}
 	
-	private HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList
+	private static final HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList
 	(
 	    PotionEffectType.ABSORPTION,
 	    PotionEffectType.DAMAGE_RESISTANCE,
