@@ -208,25 +208,27 @@ public class Visualization
 				this.elements.add(new VisualizationElement(new Location(world, bigx, 0, z), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
-		//bottom left corner
-        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+		//bottom left corner leaves
         this.elements.add(new VisualizationElement(new Location(world, smallx + 1, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
         this.elements.add(new VisualizationElement(new Location(world, smallx, 0, smallz + 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
         
-        //bottom right corner
-        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+        //bottom right corner leaves
         this.elements.add(new VisualizationElement(new Location(world, bigx - 1, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
         this.elements.add(new VisualizationElement(new Location(world, bigx, 0, smallz + 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
         
-        //top right corner
-        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+        //top right corner leaves
         this.elements.add(new VisualizationElement(new Location(world, bigx - 1, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
         this.elements.add(new VisualizationElement(new Location(world, bigx, 0, bigz - 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
         
-        //top left corner
-        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+        //top left corner leaves
         this.elements.add(new VisualizationElement(new Location(world, smallx + 1, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
         this.elements.add(new VisualizationElement(new Location(world, smallx, 0, bigz - 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
+        
+        //corners
+        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
 		
 		//remove any out of range elements (the corners may be out of range)
 		this.removeElementsOutOfRange(minx, minz, maxx, maxz);
