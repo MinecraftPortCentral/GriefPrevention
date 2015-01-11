@@ -593,6 +593,14 @@ public abstract class DataStore
 	    return null;
 	}
 	
+	//returns a read-only access point for the list of all land claims
+	//if you need to make changes, use provided methods like .deleteClaim() and .createClaim().
+	//this will ensure primary memory (RAM) and secondary memory (disk, database) stay in sync
+	public Collection<Claim> getClaims()
+	{
+	    return Collections.unmodifiableCollection(this.claims);
+	}
+	
 	//gets a unique, persistent identifier string for a chunk
 	private String getChunkString(Location location)
 	{
