@@ -1901,13 +1901,17 @@ class PlayerEventHandler implements Listener
 				    int claimBlocksRemaining = 0;
 				    if(!playerData.claimResizing.isAdminClaim())
 				    {
-				        if(playerData.claimResizing.ownerID == player.getUniqueId())
+				        UUID ownerID = playerData.claimResizing.ownerID;
+				        if(playerData.claimResizing.parent != null)
+				        {
+				            ownerID = playerData.claimResizing.parent.ownerID;
+				        }
+				        if(ownerID == player.getUniqueId())
 				        {
 				            claimBlocksRemaining = playerData.getRemainingClaimBlocks();
 				        }
 				        else
 				        {
-				            UUID ownerID = playerData.claimResizing.ownerID;
 				            PlayerData ownerData = this.dataStore.getPlayerData(ownerID);
 				            claimBlocksRemaining = ownerData.getRemainingClaimBlocks();
 				            OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID);
@@ -1924,7 +1928,7 @@ class PlayerEventHandler implements Listener
 					Visualization.Apply(player, visualization);
 					
 					//if resizing someone else's claim, make a log entry
-					if(!playerID.equals(playerData.claimResizing.ownerID))
+					if(!playerID.equals(playerData.claimResizing.ownerID) && playerData.claimResizing.parent == null)
 					{
 						GriefPrevention.AddLogEntry(player.getName() + " resized " + playerData.claimResizing.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(playerData.claimResizing.lesserBoundaryCorner) + ".");
 					}
