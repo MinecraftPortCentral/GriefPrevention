@@ -492,7 +492,7 @@ public abstract class DataStore
 			parentClaim.children.remove(claim);
 			claim.inDataStore = false;
 	        this.saveClaim(parentClaim);
-			return;
+	        return;
 		}
 		
 		//delete any children
@@ -739,14 +739,13 @@ public abstract class DataStore
 		claim.lesserBoundaryCorner.setY(newDepth);
 		claim.greaterBoundaryCorner.setY(newDepth);
 		
-		//re-add the subdivisions (deleteClaim() removed them)
-		claim.children.addAll(subdivisions);
-		
-		//make all subdivisions reach to the same depth
-		for(int i = 0; i < claim.children.size(); i++)
+		//re-add the subdivisions (deleteClaim() removed them) with the new depth
+		for(Claim subdivision : subdivisions)
 		{
-			claim.children.get(i).lesserBoundaryCorner.setY(newDepth);
-			claim.children.get(i).greaterBoundaryCorner.setY(newDepth);
+		    subdivision.lesserBoundaryCorner.setY(newDepth);
+            subdivision.greaterBoundaryCorner.setY(newDepth);
+		    subdivision.parent = claim;
+		    this.addClaim(subdivision, false);
 		}
 		
 		//save changes
@@ -1015,7 +1014,11 @@ public abstract class DataStore
 			}
 			
 			//restore subdivisions
-			result.claim.children.addAll(subdivisions);
+			for(Claim subdivision : subdivisions)
+			{
+			    subdivision.parent = result.claim;
+			    this.addClaim(subdivision, false);
+			}
 			
 			//save those changes
 			this.saveClaim(result.claim);
