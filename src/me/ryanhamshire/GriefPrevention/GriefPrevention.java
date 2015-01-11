@@ -451,35 +451,12 @@ public class GriefPrevention extends JavaPlugin
             }
         }
         
-        //default for pvp worlds list
-        ArrayList<String> defaultPvpWorldNames = new ArrayList<String>();
-        for(int i = 0; i < worlds.size(); i++)          
-        {
-            World world = worlds.get(i); 
-            if(world.getPVP())
-            {
-                defaultPvpWorldNames.add(world.getName());
-            }
-        }
-        
-        //get pvp world names from the config file
-        List<String> pvpEnabledWorldNames = config.getStringList("GriefPrevention.PvP.Worlds");
-        if(pvpEnabledWorldNames == null || pvpEnabledWorldNames.size() == 0)
-        {           
-            pvpEnabledWorldNames = defaultPvpWorldNames;
-        }
-        
-        //validate that list
+        //pvp worlds list
         this.config_pvp_enabledWorlds = new ArrayList<World>();
-        for(int i = 0; i < pvpEnabledWorldNames.size(); i++)
+        for(World world : worlds)          
         {
-            String worldName = pvpEnabledWorldNames.get(i);
-            World world = this.getServer().getWorld(worldName);
-            if(world == null)
-            {
-                AddLogEntry("Error: PvP Configuration: There's no world named \"" + worldName + "\".  Please update your config.yml.");
-            }
-            else
+            boolean pvpWorld = config.getBoolean("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), world.getPVP());
+            if(pvpWorld)
             {
                 this.config_pvp_enabledWorlds.add(world);
             }
@@ -737,7 +714,10 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.Spam.AllowedIpAddresses", this.config_spam_allowedIpAddresses);
         outConfig.set("GriefPrevention.Spam.DeathMessageCooldownSeconds", this.config_spam_deathMessageCooldownSeconds);
         
-        outConfig.set("GriefPrevention.PvP.Worlds", pvpEnabledWorldNames);
+        for(World world : worlds)
+        {
+            outConfig.set("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), this.config_pvp_enabledWorlds.contains(world));
+        }
         outConfig.set("GriefPrevention.PvP.ProtectFreshSpawns", this.config_pvp_protectFreshSpawns);
         outConfig.set("GriefPrevention.PvP.PunishLogout", this.config_pvp_punishLogout);
         outConfig.set("GriefPrevention.PvP.CombatTimeoutSeconds", this.config_pvp_combatTimeoutSeconds);
