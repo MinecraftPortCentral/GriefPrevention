@@ -290,7 +290,7 @@ public class FlatFileDataStore extends DataStore
 						
 						//skip any remaining extra lines, until the "===" string, indicating the end of this claim or subdivision
 						line = inStream.readLine();
-						while(line != null && !line.contains("=========="))
+						while(line != null && !line.contains("==="))
 							line = inStream.readLine();
 						
 						//build a claim instance from those data
