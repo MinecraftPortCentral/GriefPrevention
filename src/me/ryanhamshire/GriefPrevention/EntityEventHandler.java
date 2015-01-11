@@ -19,7 +19,10 @@
 package me.ryanhamshire.GriefPrevention;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +45,7 @@ import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Tameable;
+import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Villager;
 
 import org.bukkit.event.EventHandler;
@@ -59,6 +63,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.ExpBottleEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
@@ -67,6 +72,9 @@ import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.util.Vector;
 
 //handles events related to entities
@@ -835,4 +843,83 @@ class EntityEventHandler implements Listener
 			}
 		}
 	}
+	
+	//when a splash potion effects one or more entities...
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onPotionSplash (PotionSplashEvent event)
+	{
+	    ThrownPotion potion = event.getPotion();
+	    
+	    //ignore potions not thrown by players
+	    ProjectileSource projectileSource = potion.getShooter();
+        if(projectileSource == null || !(projectileSource instanceof Player)) return;
+        Player thrower = (Player)projectileSource;
+        
+	    Collection<PotionEffect> effects = potion.getEffects();
+	    for(PotionEffect effect : effects)
+	    {
+	        //no restrictions for positive effects
+	        PotionEffectType effectType = effect.getType();
+	        if(positiveEffects.contains(effectType)) continue;
+	        
+	        for(LivingEntity effected : event.getAffectedEntities())
+	        {
+	            //always impact the thrower
+	            if(effected == thrower) continue;
+	            
+	            //always impact non players
+	            if(!(effected instanceof Player)) continue;
+	            
+	            //otherwise if in no-pvp zone, stop effect
+	            //FEATURE: prevent players from engaging in PvP combat inside land claims (when it's disabled)
+	            else if(GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims || GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims)
+	            {
+	                Player effectedPlayer = (Player)effected;
+	                PlayerData defenderData = this.dataStore.getPlayerData(effectedPlayer.getUniqueId());
+	                PlayerData attackerData = this.dataStore.getPlayerData(thrower.getUniqueId());
+	                Claim attackerClaim = this.dataStore.getClaimAt(thrower.getLocation(), false, attackerData.lastClaim);
+	                if( attackerClaim != null && 
+	                    (attackerClaim.isAdminClaim() && attackerClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+	                     attackerClaim.isAdminClaim() && attackerClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
+	                    !attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
+	                {
+	                    attackerData.lastClaim = attackerClaim;
+	                    event.setIntensity(effected, 0);
+	                    GriefPrevention.sendMessage(thrower, TextMode.Err, Messages.CantFightWhileImmune);
+	                    continue;
+	                }
+	                
+	                Claim defenderClaim = this.dataStore.getClaimAt(effectedPlayer.getLocation(), false, defenderData.lastClaim);
+	                if( defenderClaim != null &&
+	                    (defenderClaim.isAdminClaim() && defenderClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+	                     defenderClaim.isAdminClaim() && defenderClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
+	                    !defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
+	                {
+	                    defenderData.lastClaim = defenderClaim;
+	                    event.setIntensity(effected, 0);
+	                    GriefPrevention.sendMessage(thrower, TextMode.Err, Messages.PlayerInPvPSafeZone);
+	                    continue;
+	                }
+	            }
+	        }
+	    }
+	}
+	
+	private HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList
+	(
+	    PotionEffectType.ABSORPTION,
+	    PotionEffectType.DAMAGE_RESISTANCE,
+	    PotionEffectType.FAST_DIGGING,
+	    PotionEffectType.FIRE_RESISTANCE,
+	    PotionEffectType.HEAL,
+	    PotionEffectType.HEALTH_BOOST,
+	    PotionEffectType.INCREASE_DAMAGE,
+	    PotionEffectType.INVISIBILITY,
+	    PotionEffectType.JUMP,
+	    PotionEffectType.NIGHT_VISION,
+	    PotionEffectType.REGENERATION,
+	    PotionEffectType.SATURATION,
+	    PotionEffectType.SPEED,
+	    PotionEffectType.WATER_BREATHING
+	));
 }
