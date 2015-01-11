@@ -1286,6 +1286,7 @@ class PlayerEventHandler implements Listener
 		if(	clickedBlock != null && GriefPrevention.instance.config_claims_preventTheft && (
 						event.getAction() == Action.RIGHT_CLICK_BLOCK && (
 						this.isInventoryHolder(clickedBlock) ||
+						clickedBlockType == Material.JUKEBOX ||
 						clickedBlockType == Material.ANVIL ||
 						GriefPrevention.instance.config_mods_containerTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))))
 		{			
