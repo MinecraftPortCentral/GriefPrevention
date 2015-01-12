@@ -716,7 +716,7 @@ public abstract class DataStore
 		}
 		
 		//if worldguard is installed, also prevent claims from overlapping any worldguard regions
-		if(this.worldGuard != null && creatingPlayer != null)
+		if(GriefPrevention.instance.config_claims_respectWorldGuard && this.worldGuard != null && creatingPlayer != null)
 		{
 		    if(!this.worldGuard.canBuild(newClaim.lesserBoundaryCorner, newClaim.greaterBoundaryCorner, creatingPlayer))
 		    {
