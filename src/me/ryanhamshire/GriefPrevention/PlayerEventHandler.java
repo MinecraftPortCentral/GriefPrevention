@@ -997,7 +997,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//if the entity is an animal, apply container rules
-        if(GriefPrevention.instance.config_claims_preventTheft && entity instanceof Animals)
+        if(GriefPrevention.instance.config_claims_preventTheft && (entity instanceof Animals || entity.getType() == EntityType.VILLAGER))
         {
             //if the entity is in a claim
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
