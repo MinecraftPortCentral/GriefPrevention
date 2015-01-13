@@ -2262,7 +2262,9 @@ class PlayerEventHandler implements Listener
 	    while (iterator.hasNext())
 	    {
 	        result = iterator.next();
-	        if(result.getType() != Material.AIR && result.getType() != Material.STATIONARY_WATER) return result;
+	        if(result.getType() != Material.AIR && 
+	           result.getType() != Material.STATIONARY_WATER &&
+	           result.getType() != Material.LONG_GRASS) return result;
 	    }
 	    
 	    return result;
