@@ -1391,8 +1391,15 @@ class PlayerEventHandler implements Listener
 			}			
 		}
 		
-		//apply rule for note blocks and repeaters
-		else if(clickedBlock != null && clickedBlockType == Material.NOTE_BLOCK || clickedBlockType == Material.DIODE_BLOCK_ON || clickedBlockType == Material.DIODE_BLOCK_OFF)
+		//apply rule for note blocks and repeaters and daylight sensors
+		else if(clickedBlock != null && 
+		        (
+		                clickedBlockType == Material.NOTE_BLOCK || 
+		                clickedBlockType == Material.DIODE_BLOCK_ON || 
+		                clickedBlockType == Material.DIODE_BLOCK_OFF) ||
+		                clickedBlockType == Material.DAYLIGHT_DETECTOR ||
+		                clickedBlockType == Material.DAYLIGHT_DETECTOR_INVERTED
+		        )
 		{
 		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
