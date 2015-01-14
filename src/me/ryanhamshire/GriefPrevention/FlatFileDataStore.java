@@ -215,7 +215,7 @@ public class FlatFileDataStore extends DataStore
 					while(line != null)
 					{					
 						//skip any SUB:### lines from previous versions
-					    if(line.startsWith("SUB:"))
+					    if(line.toLowerCase().startsWith("sub:"))
 					    {
 					        line = inStream.readLine();
 					    }
