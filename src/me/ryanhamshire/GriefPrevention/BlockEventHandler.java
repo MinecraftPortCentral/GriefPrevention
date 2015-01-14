@@ -104,8 +104,9 @@ public class BlockEventHandler implements Listener
 		boolean notEmpty = false;
 		for(int i = 0; i < event.getLines().length; i++)
 		{
-			if(event.getLine(i).length() != 0) notEmpty = true;
-			lines.append("\n" + event.getLine(i));
+			String withoutSpaces = event.getLine(i).replace(" ", ""); 
+		    if(!withoutSpaces.isEmpty()) notEmpty = true;
+			lines.append("\n  " + event.getLine(i));
 		}
 		
 		String signMessage = lines.toString();
