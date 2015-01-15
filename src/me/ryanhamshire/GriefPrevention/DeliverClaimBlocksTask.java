@@ -75,12 +75,8 @@ class DeliverClaimBlocksTask implements Runnable
                     //add blocks
                     int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
                     if(accruedBlocks < 0) accruedBlocks = 1;
-                    int newTotal = currentTotal + accruedBlocks;
                     
-                    //respect limits
-                    if(newTotal > GriefPrevention.instance.config_claims_maxAccruedBlocks) newTotal = GriefPrevention.instance.config_claims_maxAccruedBlocks;
-                    
-                    playerData.setAccruedClaimBlocks(newTotal); 
+                    playerData.accrueBlocks(accruedBlocks); 
                     
                     //intentionally NOT saving data here to reduce overall secondary storage access frequency
                     //many other operations will cause this players data to save, including his eventual logout
