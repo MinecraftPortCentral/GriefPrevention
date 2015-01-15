@@ -125,6 +125,9 @@ public class PlayerData
     //player which a pet will be given to when it's right-clicked
 	OfflinePlayer petGiveawayRecipient = null;
 	
+	//timestamp for last "you're building outside your land claims" message
+	Long buildWarningTimestamp = null;
+	
 	//whether or not this player is "in" pvp combat
 	public boolean inPvpCombat()
 	{

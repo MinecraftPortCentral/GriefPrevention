@@ -271,23 +271,30 @@ public class BlockEventHandler implements Listener
 		//FEATURE: warn players when they're placing non-trash blocks outside of their claimed areas
 		else if(!this.trashBlocks.contains(block.getType()) && GriefPrevention.instance.claimsEnabledForWorld(block.getWorld()))
 		{
-			if(!playerData.warnedAboutBuildingOutsideClaims
+			if(!playerData.warnedAboutBuildingOutsideClaims && !player.hasPermission("griefprevention.adminclaims")
 			   && ((playerData.lastClaim == null && playerData.getClaims().size() == 0)
 			   || (playerData.lastClaim != null && playerData.lastClaim.isNear(player.getLocation(), 15))))
 			{
-				GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
-				playerData.warnedAboutBuildingOutsideClaims = true;
-				
-				if(playerData.getClaims().size() < 2)
-				{
-				    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
-				}
-				
-				if(playerData.lastClaim != null)
-				{
-				    Visualization visualization = Visualization.FromClaim(playerData.lastClaim, block.getY(), VisualizationType.Claim, player.getLocation());
-				    Visualization.Apply(player, visualization);
-				}
+				Long now = null;
+			    if(playerData.buildWarningTimestamp == null || (now = System.currentTimeMillis()) - playerData.buildWarningTimestamp > 600000)  //10 minute cooldown
+			    {
+    			    GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
+    				playerData.warnedAboutBuildingOutsideClaims = true;
+    				
+    				if(now == null) now = System.currentTimeMillis();
+    				playerData.buildWarningTimestamp = now;
+    				
+    				if(playerData.getClaims().size() < 2)
+    				{
+    				    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
+    				}
+    				
+    				if(playerData.lastClaim != null)
+    				{
+    				    Visualization visualization = Visualization.FromClaim(playerData.lastClaim, block.getY(), VisualizationType.Claim, player.getLocation());
+    				    Visualization.Apply(player, visualization);
+    				}
+			    }
 			}
 		}
 		
