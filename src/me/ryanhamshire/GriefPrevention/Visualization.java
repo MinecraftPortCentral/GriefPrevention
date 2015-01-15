@@ -70,7 +70,7 @@ public class Visualization
 		        int maxz = player.getLocation().getBlockZ() + 100;
 		        
 		        //remove any elements which are too far away
-		        visualization.removeElementsOutOfRange(minx, minz, maxx, maxz);
+		        visualization.removeElementsOutOfRange(visualization.elements, minx, minz, maxx, maxz);
 			    
 				//send real block information for any remaining elements
 		        for(int i = 0; i < visualization.elements.size(); i++)
@@ -139,6 +139,8 @@ public class Visualization
 		Material cornerMaterial;
 		Material accentMaterial;
 		
+		ArrayList<VisualizationElement> newElements = new ArrayList<VisualizationElement>();
+		
 		if(visualizationType == VisualizationType.Claim)
 		{
 			cornerMaterial = Material.GLOWSTONE;
@@ -184,84 +186,86 @@ public class Visualization
 		for(int x = smallx + STEP; x < bigx - STEP / 2; x += STEP)
 		{
 			if(x > minx && x < maxx)
-				this.elements.add(new VisualizationElement(new Location(world, x, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
+			    newElements.add(new VisualizationElement(new Location(world, x, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
 		//bottom line
 		for(int x = smallx + STEP; x < bigx - STEP / 2; x += STEP)
 		{
 			if(x > minx && x < maxx)
-				this.elements.add(new VisualizationElement(new Location(world, x, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
+			    newElements.add(new VisualizationElement(new Location(world, x, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
 		//left line
 		for(int z = smallz + STEP; z < bigz - STEP / 2; z += STEP)
 		{
 			if(z > minz && z < maxz)
-				this.elements.add(new VisualizationElement(new Location(world, smallx, 0, z), accentMaterial, (byte)0, Material.AIR, (byte)0));
+			    newElements.add(new VisualizationElement(new Location(world, smallx, 0, z), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
 		//right line
 		for(int z = smallz + STEP; z < bigz - STEP / 2; z += STEP)
 		{
 			if(z > minz && z < maxz)
-				this.elements.add(new VisualizationElement(new Location(world, bigx, 0, z), accentMaterial, (byte)0, Material.AIR, (byte)0));
+			    newElements.add(new VisualizationElement(new Location(world, bigx, 0, z), accentMaterial, (byte)0, Material.AIR, (byte)0));
 		}
 		
 		//bottom left corner leaves
-        this.elements.add(new VisualizationElement(new Location(world, smallx + 1, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
-        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, smallz + 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, smallx + 1, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, smallx, 0, smallz + 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
         
         //bottom right corner leaves
-        this.elements.add(new VisualizationElement(new Location(world, bigx - 1, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
-        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, smallz + 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, bigx - 1, 0, smallz), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, bigx, 0, smallz + 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
         
         //top right corner leaves
-        this.elements.add(new VisualizationElement(new Location(world, bigx - 1, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
-        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, bigz - 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, bigx - 1, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, bigx, 0, bigz - 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
         
         //top left corner leaves
-        this.elements.add(new VisualizationElement(new Location(world, smallx + 1, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
-        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, bigz - 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, smallx + 1, 0, bigz), accentMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, smallx, 0, bigz - 1), accentMaterial, (byte)0, Material.AIR, (byte)0));
         
         //corners
-        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
-        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
-        this.elements.add(new VisualizationElement(new Location(world, bigx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
-        this.elements.add(new VisualizationElement(new Location(world, smallx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, smallx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, bigx, 0, smallz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, bigx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
+		newElements.add(new VisualizationElement(new Location(world, smallx, 0, bigz), cornerMaterial, (byte)0, Material.AIR, (byte)0));
 		
 		//remove any out of range elements (the corners may be out of range)
-		this.removeElementsOutOfRange(minx, minz, maxx, maxz);
+		this.removeElementsOutOfRange(newElements, minx, minz, maxx, maxz);
 		
 		//remove any elements outside the claim
-		for(int i = 0; i < this.elements.size(); i++)
+		for(int i = 0; i < newElements.size(); i++)
 		{
-		    VisualizationElement element = this.elements.get(i);
+		    VisualizationElement element = newElements.get(i);
 		    if(!claim.contains(element.location, true, false))
 		    {
-		        this.elements.remove(i--);
+		        newElements.remove(i--);
 		    }
 		}
 		
 		//set Y values and real block information for any remaining visualization blocks
-		for(VisualizationElement element : this.elements)
+		for(VisualizationElement element : newElements)
 		{
 		    Location tempLocation = element.location;
 		    element.location = getVisibleLocation(tempLocation.getWorld(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent);
 		    element.realMaterial = element.location.getBlock().getType();
 		    element.realData = element.location.getBlock().getData();
 		}
+		
+		this.elements.addAll(newElements);
 	}
 	
 	//removes any elements which are out of visualization range
-	private void removeElementsOutOfRange(int minx, int minz, int maxx, int maxz)
+	private void removeElementsOutOfRange(ArrayList<VisualizationElement> elements, int minx, int minz, int maxx, int maxz)
 	{
-	    for(int i = 0; i < this.elements.size(); i++)
+	    for(int i = 0; i < elements.size(); i++)
 	    {
-	        Location location = this.elements.get(i).location;
+	        Location location = elements.get(i).location;
 	        if(location.getX() < minx || location.getX() > maxx || location.getZ() < minz || location.getZ() > maxz)
 	        {
-	            this.elements.remove(i--);
+	            elements.remove(i--);
 	        }
 	    }
     }
