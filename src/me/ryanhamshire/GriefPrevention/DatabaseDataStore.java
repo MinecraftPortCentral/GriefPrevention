@@ -240,6 +240,7 @@ public class DatabaseDataStore extends DataStore
 				    {
 				        removeClaim = true;
 				        GriefPrevention.AddLogEntry("Removing a claim in a world which does not exist: " + lesserCornerString);
+				        continue;
 				    }
 				    else
 				    {
