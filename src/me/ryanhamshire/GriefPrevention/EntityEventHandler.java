@@ -92,7 +92,7 @@ class EntityEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityChangeBLock(EntityChangeBlockEvent event)
 	{
-		if(!GriefPrevention.instance.config_endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN)
+	    if(!GriefPrevention.instance.config_endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN)
 		{
 			event.setCancelled(true);
 		}
@@ -166,9 +166,21 @@ class EntityEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityInteract(EntityInteractEvent event)
 	{
-		if(!GriefPrevention.instance.config_creaturesTrampleCrops && event.getBlock().getType() == Material.SOIL)
-		{
-			event.setCancelled(true);
+		Material material = event.getBlock().getType();
+	    if(material == Material.SOIL)
+	    {
+	        if(!GriefPrevention.instance.config_creaturesTrampleCrops)
+	        {
+	            event.setCancelled(true);
+	        }
+	        else
+	        {
+	            Entity rider = event.getEntity().getPassenger();
+	            if(rider != null && rider.getType() == EntityType.PLAYER)
+	            {
+	                event.setCancelled(true);
+	            }
+	        }
 		}
 	}
 	
