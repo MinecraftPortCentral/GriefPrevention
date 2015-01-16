@@ -128,6 +128,10 @@ public class PlayerData
 	//timestamp for last "you're building outside your land claims" message
 	Long buildWarningTimestamp = null;
 	
+	//spot where a player can't talk, used to mute new players until they've moved a little
+	//this is an anti-bot strategy.
+	Location noChatLocation = null;
+	
 	//whether or not this player is "in" pvp combat
 	public boolean inPvpCombat()
 	{

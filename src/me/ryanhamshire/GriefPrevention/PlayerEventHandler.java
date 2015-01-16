@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.bukkit.Achievement;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -176,7 +177,23 @@ class PlayerEventHandler implements Listener
 		boolean spam = false;
 		boolean muted = false;
 		
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		//prevent bots from chatting - require movement before talking for any newish players
+        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		if(playerData.noChatLocation != null)
+        {
+		    Location currentLocation = player.getLocation();
+            if(currentLocation.getBlockX() == playerData.noChatLocation.getBlockX() &&
+               currentLocation.getBlockZ() == playerData.noChatLocation.getBlockZ())
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoChatUntilMove, 10L);
+                spam = true;
+                muted = true;
+            }
+            else
+            {
+                playerData.noChatLocation = null;
+            }
+        }
 		
 		//remedy any CAPS SPAM, exception for very short messages which could be emoticons like =D or XD
 		if(message.length() > 4 && this.stringsAreSimilar(message.toUpperCase(), message))
@@ -515,6 +532,12 @@ class PlayerEventHandler implements Listener
 		playerData.lastSpawn = now;
 		playerData.setLastLogin(nowDate);
 		this.lastLoginThisServerSessionMap.put(playerID, nowDate);
+		
+		//if newish, prevent chat until he's moved a bit to prove he's not a bot
+		if(!player.hasAchievement(Achievement.MINE_WOOD))
+		{
+		    playerData.noChatLocation = player.getLocation();
+		}
 		
 		//if player has never played on the server before...
 		if(!player.hasPlayedBefore())
