@@ -2236,11 +2236,11 @@ public class GriefPrevention extends JavaPlugin
     static String lookupPlayerName(UUID playerID) 
     {
         //parameter validation
-        if(playerID == null) return "someone";
+        if(playerID == null) return "somebody";
             
         //check the cache
         OfflinePlayer player = GriefPrevention.instance.getServer().getOfflinePlayer(playerID);
-        if(player.hasPlayedBefore())
+        if(player.hasPlayedBefore() || player.isOnline())
         {
             return player.getName();
         }
@@ -2454,9 +2454,9 @@ public class GriefPrevention extends JavaPlugin
 				return reason;
 			}
 			
-			else
+		    //but it's fine in survival mode
+		    else
 			{
-				//but it's fine in survival mode
 				return null;
 			}			
 		}

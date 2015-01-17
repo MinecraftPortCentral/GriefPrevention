@@ -39,6 +39,7 @@ import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
+import org.bukkit.event.block.BlockMultiPlaceEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -130,6 +131,28 @@ public class BlockEventHandler implements Listener
 				}
 			}
 		}
+	}
+	
+	//when a player places multiple blocks...
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	public void onBlocksPlace(BlockMultiPlaceEvent placeEvent)
+	{
+	    Player player = placeEvent.getPlayer();
+	    
+	    //don't track in worlds where claims are not enabled
+        if(!GriefPrevention.instance.claimsEnabledForWorld(placeEvent.getBlock().getWorld())) return;
+        
+        //make sure the player is allowed to build at the location
+        for(BlockState block : placeEvent.getReplacedBlockStates())
+        {
+            String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), block.getType());
+            if(noBuildReason != null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
+                placeEvent.setCancelled(true);
+                return;
+            }
+        }
 	}
 	
 	//when a player places a block...
