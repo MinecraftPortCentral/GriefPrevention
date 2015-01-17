@@ -200,6 +200,7 @@ public class GriefPrevention extends JavaPlugin
 				{
 					GriefPrevention.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
 					FlatFileDataStore flatFileStore = new FlatFileDataStore();
+					this.dataStore = flatFileStore;
 					flatFileStore.migrateData(databaseStore);
 					GriefPrevention.AddLogEntry("Data migration process complete.  Reloading data from the database...");
 					databaseStore.close();
