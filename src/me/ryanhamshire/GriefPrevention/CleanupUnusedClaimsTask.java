@@ -93,7 +93,7 @@ class CleanupUnusedClaimsTask implements Runnable
 				cleanupChunks = true;
 				
 				//if configured to do so, restore the land to natural
-				if((GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) && GriefPrevention.instance.config_claims_creativeAutoNatureRestoration) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
+				if(GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
 				{
 					GriefPrevention.instance.restoreClaim(claim, 0);
 				}
@@ -125,7 +125,7 @@ class CleanupUnusedClaimsTask implements Runnable
 				for(int i = 0; i < claims.size(); i++)
 				{
 					//if configured to do so, restore the land to natural
-					if((GriefPrevention.instance.creativeRulesApply(claims.get(i).getLesserBoundaryCorner()) && GriefPrevention.instance.config_claims_creativeAutoNatureRestoration) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
+					if(GriefPrevention.instance.creativeRulesApply(claims.get(i).getLesserBoundaryCorner()) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
 					{
 						GriefPrevention.instance.restoreClaim(claims.get(i), 0);
 						cleanupChunks = true;				
@@ -147,14 +147,20 @@ class CleanupUnusedClaimsTask implements Runnable
 			
 			if(investmentScore < minInvestment)
 			{
-				GriefPrevention.instance.dataStore.deleteClaim(claim, true);
-				GriefPrevention.AddLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
-				
-				//if configured to do so, restore the claim area to natural state
-				if((GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) && GriefPrevention.instance.config_claims_creativeAutoNatureRestoration) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
-				{
-					GriefPrevention.instance.restoreClaim(claim, 0);
-				}
+			    playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.ownerID);
+	            
+	            //if the owner has been gone at least a week, and if he has ONLY the new player claim, it will be removed
+	            Calendar sevenDaysAgo = Calendar.getInstance();
+	            sevenDaysAgo.add(Calendar.DATE, -GriefPrevention.instance.config_claims_unusedClaimExpirationDays);
+	            boolean claimExpired = sevenDaysAgo.getTime().after(playerData.getLastLogin());
+	            if(claimExpired)
+	            {
+    			    GriefPrevention.instance.dataStore.deleteClaim(claim, true);
+    				GriefPrevention.AddLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+    				
+    				//restore the claim area to natural state
+    				GriefPrevention.instance.restoreClaim(claim, 0);
+	            }
 			}
 		}
 		
