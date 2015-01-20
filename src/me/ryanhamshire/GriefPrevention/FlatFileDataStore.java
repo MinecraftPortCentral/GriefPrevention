@@ -158,6 +158,17 @@ public class FlatFileDataStore extends DataStore
             {
                 String currentFilename = playerFile.getName();
                 
+                //if corrected casing and a record already exists using the correct casing, skip this one
+                String correctedCasing = UUIDFetcher.correctedNames.get(currentFilename);
+                if(correctedCasing != null)
+                {
+                    File correctedCasingFile = new File(playerDataFolder.getPath() + File.separator + correctedCasing);
+                    if(correctedCasingFile.exists())
+                    {
+                        continue;
+                    }
+                }
+                
                 //try to convert player name to UUID
                 UUID playerID = null;
                 try

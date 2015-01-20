@@ -129,6 +129,7 @@ public abstract class DataStore
             if(UUIDFetcher.lookupCache != null)
             {
                 UUIDFetcher.lookupCache.clear();
+                UUIDFetcher.correctedNames.clear();
             }
             
             GriefPrevention.AddLogEntry("Update finished.");

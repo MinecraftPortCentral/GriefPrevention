@@ -24,6 +24,9 @@ class UUIDFetcher {
     
     //cache for username -> uuid lookups
     static HashMap<String, UUID> lookupCache;
+    
+    //record of username -> proper casing updates
+    static HashMap<String, String> correctedNames;
  
     public UUIDFetcher(List<String> names, boolean rateLimiting) {
         this.names = names;
@@ -41,6 +44,11 @@ class UUIDFetcher {
             lookupCache = new HashMap<String, UUID>();
         }
         
+        if(correctedNames == null)
+        {
+            correctedNames = new HashMap<String, String>();
+        }
+        
         GriefPrevention.AddLogEntry("UUID conversion process started.  Please be patient - this may take a while.");
         
         //try to get correct casing from local data
@@ -56,6 +64,7 @@ class UUIDFetcher {
                     if(!player.getName().equals(name))
                     {
                         GriefPrevention.AddLogEntry(name + " --> " + player.getName());
+                        correctedNames.put(name, player.getName());
                         names.set(i,  player.getName()); 
                     }
                     break;
