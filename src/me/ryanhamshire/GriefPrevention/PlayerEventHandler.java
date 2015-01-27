@@ -1809,7 +1809,7 @@ class PlayerEventHandler implements Listener
 			}
 			
 			//if the player doesn't have claims permission, don't do anything
-			if(GriefPrevention.instance.config_claims_creationRequiresPermission && !player.hasPermission("griefprevention.createclaims"))
+			if(!player.hasPermission("griefprevention.createclaims"))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoCreateClaimPermission);
 				return;
