@@ -502,7 +502,7 @@ class EntityEventHandler implements Listener
 	}
 	
 	//when an entity is damaged
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityDamage (EntityDamageEvent event)
 	{
 		//monsters are never protected
