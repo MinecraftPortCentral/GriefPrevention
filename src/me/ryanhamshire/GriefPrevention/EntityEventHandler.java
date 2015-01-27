@@ -32,6 +32,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Animals;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Enderman;
@@ -878,9 +879,32 @@ class EntityEventHandler implements Listener
 	    Collection<PotionEffect> effects = potion.getEffects();
 	    for(PotionEffect effect : effects)
 	    {
-	        //no restrictions for positive effects
 	        PotionEffectType effectType = effect.getType();
-	        if(positiveEffects.contains(effectType)) continue;
+	        
+	        //restrict jump potions on claimed animals (griefers could use this to steal animals over fences)
+	        if(effectType == PotionEffectType.JUMP)
+	        {
+	            for(LivingEntity effected : event.getAffectedEntities())
+	            {
+	                Claim cachedClaim = null; 
+	                if(effected instanceof Animals)
+	                {
+	                      Claim claim = this.dataStore.getClaimAt(effected.getLocation(), false, cachedClaim);
+	                      if(claim != null)
+	                      {
+	                          cachedClaim = claim;
+	                          if(claim.allowContainers(thrower) != null)
+	                          {
+	                              event.setCancelled(true);
+	                              return;
+	                          }
+	                      }
+	                }
+	            }
+	        }
+	        
+	        //otherwise, no restrictions for positive effects
+            if(positiveEffects.contains(effectType)) continue;
 	        
 	        for(LivingEntity effected : event.getAffectedEntities())
 	        {
