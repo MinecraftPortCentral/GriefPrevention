@@ -149,7 +149,7 @@ commands:
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.
-        default: op
+        default: true
     griefprevention.admin.*:
         description: Grants all administrative functionality.
         children:

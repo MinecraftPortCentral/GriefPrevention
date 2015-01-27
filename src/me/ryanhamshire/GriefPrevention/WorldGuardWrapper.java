@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.bukkit.permission.RegionPermissionModel;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.flags.DefaultFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
@@ -24,7 +25,11 @@ class WorldGuardWrapper
     public boolean canBuild(Location lesserCorner, Location greaterCorner, Player creatingPlayer)
     {
         World world = lesserCorner.getWorld();
+        
+        if(new RegionPermissionModel(this.worldGuard, creatingPlayer).mayIgnoreRegionProtection(world)) return true;
+        
         RegionManager manager = this.worldGuard.getRegionManager(world);
+        
         if(manager != null)
         {
             ProtectedCuboidRegion tempRegion = new ProtectedCuboidRegion(
