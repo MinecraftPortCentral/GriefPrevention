@@ -107,6 +107,12 @@ class EntityEventHandler implements Listener
 		{
 			event.setCancelled(true);
 		}
+	    
+	    //don't allow players to trample crops
+		else if(event.getEntityType() == EntityType.PLAYER && event.getBlock().getType() == Material.SOIL)
+		{
+		    event.setCancelled(true);
+		}
 		
 		//sand cannon fix - when the falling block doesn't fall straight down, take additional anti-grief steps
 		else if (event.getEntityType() == EntityType.FALLING_BLOCK)

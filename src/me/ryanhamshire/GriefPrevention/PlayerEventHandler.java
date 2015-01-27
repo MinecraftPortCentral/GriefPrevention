@@ -1243,6 +1243,7 @@ class PlayerEventHandler implements Listener
 	    //not interested in left-click-on-air actions
 	    Action action = event.getAction();
 	    if(action == Action.LEFT_CLICK_AIR) return;
+	    if(action == Action.PHYSICAL) return;
         
 	    Player player = event.getPlayer();
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
@@ -1257,20 +1258,7 @@ class PlayerEventHandler implements Listener
 		    clickedBlockType = Material.AIR;
 		}
 		
-		//apply rule for players trampling tilled soil back to dirt (never allow it)
-        //NOTE: that this event applies only to players.  monsters and animals can still trample.
-        if(action == Action.PHYSICAL)
-        {
-            if(clickedBlockType == Material.SOIL)
-            {
-                event.setCancelled(true);
-            }
-
-            //not tracking any other "physical" interaction events right now
-            return;
-        }
-        
-        //don't care about left-clicking on most blocks, this is probably a break action
+		//don't care about left-clicking on most blocks, this is probably a break action
         PlayerData playerData = null;
         if(action == Action.LEFT_CLICK_BLOCK && clickedBlock != null)
         {
