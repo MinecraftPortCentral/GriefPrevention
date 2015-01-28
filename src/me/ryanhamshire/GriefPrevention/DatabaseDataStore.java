@@ -505,6 +505,7 @@ public class DatabaseDataStore extends DataStore
 		{
 			GriefPrevention.AddLogEntry("Unable to retrieve data for player " + playerID.toString() + ".  Details:");
 			GriefPrevention.AddLogEntry(e.getMessage());
+			e.printStackTrace();
 		}
 			
 		return playerData;
@@ -617,6 +618,8 @@ public class DatabaseDataStore extends DataStore
 			Properties connectionProps = new Properties();
 			connectionProps.put("user", this.userName);
 			connectionProps.put("password", this.password);
+			connectionProps.put("autoReconnect", "true");
+			connectionProps.put("maxReconnects", "4");
 			
 			//establish connection
 			this.databaseConnection = DriverManager.getConnection(this.databaseUrl, connectionProps); 
