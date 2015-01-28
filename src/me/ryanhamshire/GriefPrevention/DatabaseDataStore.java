@@ -250,7 +250,7 @@ public class DatabaseDataStore extends DataStore
 				
 				String ownerName = results.getString("owner");
 				UUID ownerID = null;
-                if(ownerName.isEmpty())
+                if(ownerName.isEmpty() || ownerName.startsWith("--"))
                 {
                     ownerID = null;  //administrative land claim or subdivision
                 }
@@ -262,7 +262,7 @@ public class DatabaseDataStore extends DataStore
                     }
                     catch(Exception ex)
                     {
-                        GriefPrevention.AddLogEntry("This owner name did not convert to aUUID: " + ownerName + ".");
+                        GriefPrevention.AddLogEntry("This owner name did not convert to a UUID: " + ownerName + ".");
                         GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                     }
                 }
