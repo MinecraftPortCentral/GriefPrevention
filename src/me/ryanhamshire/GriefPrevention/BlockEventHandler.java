@@ -29,7 +29,10 @@ import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.Hopper;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -45,9 +48,12 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.world.StructureGrowEvent;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Dispenser;
+import org.bukkit.metadata.MetadataValue;
 
 //event handlers related to blocks
 public class BlockEventHandler implements Listener 
@@ -723,4 +729,24 @@ public class BlockEventHandler implements Listener
             }
         }
     }
+	
+	@EventHandler(ignoreCancelled = true)
+    public void onInventoryPickupItem (InventoryPickupItemEvent event)
+	{
+	    //prevent hoppers from picking-up items dropped by players on death
+
+	    InventoryHolder holder = event.getInventory().getHolder();
+	    if(holder instanceof HopperMinecart || holder instanceof Hopper)
+	    {
+	        Item item = event.getItem();
+	        List<MetadataValue> data = item.getMetadata("GP_ITEMOWNER");
+	        
+	        //if this is marked as belonging to a player
+	        if(data != null && data.size() > 0)
+	        {
+	            //don't allow the pickup
+	            event.setCancelled(true);
+	        }
+	    }
+	}
 }
