@@ -160,7 +160,7 @@ public class FlatFileDataStore extends DataStore
                 
                 //if corrected casing and a record already exists using the correct casing, skip this one
                 String correctedCasing = UUIDFetcher.correctedNames.get(currentFilename);
-                if(correctedCasing != null)
+                if(correctedCasing != null && !currentFilename.equals(correctedCasing))
                 {
                     File correctedCasingFile = new File(playerDataFolder.getPath() + File.separator + correctedCasing);
                     if(correctedCasingFile.exists())
