@@ -193,6 +193,9 @@ public class DatabaseDataStore extends DataStore
                     catch(Exception ex){ }
                 }
                 
+                //refresh data connection in case data migration took a long time
+                this.refreshDataConnection();
+                
                 for(String name : changes.keySet())
                 {
                     statement = this.databaseConnection.createStatement();
