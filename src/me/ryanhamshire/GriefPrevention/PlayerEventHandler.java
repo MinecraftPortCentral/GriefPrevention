@@ -921,7 +921,7 @@ class PlayerEventHandler implements Listener
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         
 		//if entity is tameable and has an owner, apply special rules
-        if(entity instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(entity.getLocation().getWorld()))
+        if(entity instanceof Tameable)
         {
             Tameable tameable = (Tameable)entity;
             if(tameable.isTamed() && tameable.getOwner() != null)
@@ -943,16 +943,19 @@ class PlayerEventHandler implements Listener
                    return;
                }
                
-               //otherwise disallow
-               OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
-               String ownerName = owner.getName();
-               if(ownerName == null) ownerName = "someone";
-               String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, ownerName);
-               if(player.hasPermission("griefprevention.ignoreclaims"))
-                   message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-               GriefPrevention.sendMessage(player, TextMode.Err, message);
-               event.setCancelled(true);
-               return;
+               if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(entity.getLocation().getWorld()))
+               {
+                   //otherwise disallow
+                   OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
+                   String ownerName = owner.getName();
+                   if(ownerName == null) ownerName = "someone";
+                   String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, ownerName);
+                   if(player.hasPermission("griefprevention.ignoreclaims"))
+                       message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+                   GriefPrevention.sendMessage(player, TextMode.Err, message);
+                   event.setCancelled(true);
+                   return;
+               }
             }
         }
         
