@@ -109,8 +109,8 @@ class EntityEventHandler implements Listener
 			event.setCancelled(true);
 		}
 	    
-	    //don't allow players to trample crops
-		else if(event.getEntityType() == EntityType.PLAYER && event.getBlock().getType() == Material.SOIL)
+	    //don't allow crops to be trampled
+		else if(event.getTo() == Material.DIRT && event.getBlock().getType() == Material.SOIL)
 		{
 		    event.setCancelled(true);
 		}
