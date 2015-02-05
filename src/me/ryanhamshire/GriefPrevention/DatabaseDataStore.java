@@ -198,8 +198,16 @@ public class DatabaseDataStore extends DataStore
                 
                 for(String name : changes.keySet())
                 {
-                    statement = this.databaseConnection.createStatement();
-                    statement.execute("UPDATE griefprevention_playerdata SET name = '" + changes.get(name).toString() + "' WHERE name = '" + name + "';");
+                    try
+                    {
+                        statement = this.databaseConnection.createStatement();
+                        statement.execute("UPDATE griefprevention_playerdata SET name = '" + changes.get(name).toString() + "' WHERE name = '" + name + "';");
+                    }
+                    catch(SQLException e)
+                    {
+                        GriefPrevention.AddLogEntry("Unable to convert player data for " + name + ".  Skipping.");
+                        GriefPrevention.AddLogEntry(e.getMessage());
+                    }
                 }
             }
             catch(SQLException e)
