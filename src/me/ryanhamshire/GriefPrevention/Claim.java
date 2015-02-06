@@ -569,12 +569,22 @@ public class Claim
 	public void dropPermission(String playerID)
 	{
 		this.playerIDToClaimPermissionMap.remove(playerID.toLowerCase());
+		
+		for(Claim child : this.children)
+		{
+		    child.dropPermission(playerID);
+		}
 	}
 	
 	//clears all permissions (except owner of course)
 	public void clearPermissions()
 	{
 		this.playerIDToClaimPermissionMap.clear();
+		
+		for(Claim child : this.children)
+        {
+            child.clearPermissions();
+        }
 	}
 	
 	//gets ALL permissions
