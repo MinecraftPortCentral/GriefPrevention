@@ -718,7 +718,7 @@ class EntityEventHandler implements Listener
 				PlayerData playerData = null;
 				
 				//if not a player or an explosive, allow
-				if(attacker == null && damageSource != null && damageSource.getType() != EntityType.CREEPER && !(damageSource instanceof Explosive))
+				if(attacker == null && damageSource != null && !(damageSource instanceof Projectile) && damageSource.getType() != EntityType.CREEPER && !(damageSource instanceof Explosive))
 				{
 				    return;
 				}
@@ -739,7 +739,7 @@ class EntityEventHandler implements Listener
 					if(attacker == null)
 					{
 						//exception case
-						if(event.getEntity() instanceof Villager && damageSource != null && damageSource instanceof Monster && claim.isAdminClaim())
+						if(event.getEntity() instanceof Villager && damageSource != null && damageSource instanceof Monster)
 						{
 							return;
 						}
@@ -748,6 +748,10 @@ class EntityEventHandler implements Listener
 						else
 						{
 							event.setCancelled(true);
+							if(damageSource != null && damageSource instanceof Projectile)
+							{
+							    damageSource.remove();
+							}
 						}						
 					}
 					
