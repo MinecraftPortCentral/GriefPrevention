@@ -168,6 +168,10 @@ permissions:
             griefprevention.visualizenearbyclaims: true
             griefprevention.overrideclaimcountlimit: true
             griefprevention.transferclaim: true
+            griefprevention.claimslistother: true
+    griefprevention.claimslistother:
+        description: Grants permission to use /ClaimsList to get another player's information.
+        default: op
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
         default: op

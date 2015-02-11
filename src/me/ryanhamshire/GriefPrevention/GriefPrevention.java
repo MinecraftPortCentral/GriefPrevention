@@ -1590,7 +1590,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//otherwise if no permission to delve into another player's claims data
-			else if(player != null && !player.hasPermission("griefprevention.deleteclaims"))
+			else if(player != null && !player.hasPermission("griefprevention.claimslistother"))
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimsListNoPermission);
 				return true;
