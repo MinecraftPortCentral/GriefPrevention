@@ -961,16 +961,6 @@ public class GriefPrevention extends JavaPlugin
 		//transferclaim <player>
 		else if(cmd.getName().equalsIgnoreCase("transferclaim") && player != null)
 		{
-			//requires exactly one parameter, the other player's name
-			if(args.length != 1) return false;
-			
-			//check additional permission
-			if(!player.hasPermission("griefprevention.adminclaims"))
-			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.TransferClaimPermission);
-				return true;
-			}
-			
 			//which claim is the user in?
 			Claim claim = this.dataStore.getClaimAt(player.getLocation(), true, null);
 			if(claim == null)
@@ -979,11 +969,23 @@ public class GriefPrevention extends JavaPlugin
 				return true;
 			}
 			
-			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
-			if(targetPlayer == null)
+			//check additional permission for admin claims
+            if(claim.isAdminClaim() && !player.hasPermission("griefprevention.adminclaims"))
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.TransferClaimPermission);
+                return true;
+            }
+			
+			OfflinePlayer targetPlayer = null;  //no argument = make an admin claim
+			
+			if(args.length > 0)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
-				return true;
+    			targetPlayer = this.resolvePlayerByName(args[0]);
+    			if(targetPlayer == null)
+    			{
+    				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+    				return true;
+    			}
 			}
 			
 			//change ownerhsip

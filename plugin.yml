@@ -120,7 +120,7 @@ commands:
       description: Converts an administrative claim to a private claim.
       usage: /TransferClaim <player>
       aliases: giveclaim
-      permission: griefprevention.adjustclaimblocks
+      permission: griefprevention.transferclaim
    unlockdrops:
       description: Allows other players to pick up the items you dropped when you died.
       usage: /UnlockDrops
@@ -167,8 +167,12 @@ permissions:
             griefprevention.reload: true
             griefprevention.visualizenearbyclaims: true
             griefprevention.overrideclaimcountlimit: true
+            griefprevention.transferclaim: true
     griefprevention.restorenature:
         description: Grants permission to use /RestoreNature.
+        default: op
+    griefprevention.transferclaim:
+        description: Grants permission to use /TransferClaim.
         default: op
     griefprevention.ignoreclaims:
         description: Grants permission to use /IgnoreClaims.

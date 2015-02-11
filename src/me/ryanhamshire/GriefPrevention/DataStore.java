@@ -334,13 +334,9 @@ public abstract class DataStore
 		if(ownerData != null)
 		{
 			ownerData.getClaims().remove(claim);
-			ownerData.setBonusClaimBlocks(ownerData.getBonusClaimBlocks() - claim.getArea());
-			this.savePlayerData(claim.ownerID, ownerData);
 		}
 		
 		newOwnerData.getClaims().add(claim);
-		newOwnerData.setBonusClaimBlocks(newOwnerData.getBonusClaimBlocks() + claim.getArea());
-		this.savePlayerData(newOwnerID, newOwnerData);
 	}
 
 	//adds a claim to the datastore, making it an effective claim
