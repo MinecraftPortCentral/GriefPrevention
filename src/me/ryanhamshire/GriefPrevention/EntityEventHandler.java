@@ -888,8 +888,8 @@ class EntityEventHandler implements Listener
 	    {
 	        PotionEffectType effectType = effect.getType();
 	        
-	        //restrict jump potions on claimed animals (griefers could use this to steal animals over fences)
-	        if(effectType == PotionEffectType.JUMP)
+	        //restrict some potions on claimed animals (griefers could use this to kill or steal animals over fences)
+	        if(effectType == PotionEffectType.JUMP || effectType == PotionEffectType.POISON)
 	        {
 	            for(LivingEntity effected : event.getAffectedEntities())
 	            {
