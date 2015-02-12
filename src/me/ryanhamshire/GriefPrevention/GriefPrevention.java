@@ -976,32 +976,36 @@ public class GriefPrevention extends JavaPlugin
                 return true;
             }
 			
-			OfflinePlayer targetPlayer = null;  //no argument = make an admin claim
+			UUID newOwnerID = null;  //no argument = make an admin claim
+			String ownerName = "admin";
 			
 			if(args.length > 0)
 			{
-    			targetPlayer = this.resolvePlayerByName(args[0]);
+    			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
     			if(targetPlayer == null)
     			{
     				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
     				return true;
     			}
+    			newOwnerID = targetPlayer.getUniqueId();
+    			ownerName = targetPlayer.getName();
 			}
 			
 			//change ownerhsip
 			try
 			{
-				this.dataStore.changeClaimOwner(claim, targetPlayer.getUniqueId());
+				this.dataStore.changeClaimOwner(claim, newOwnerID);
 			}
 			catch(Exception e)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
+				e.printStackTrace();
+			    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
 				return true;
 			}
 			
 			//confirm
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.TransferSuccess);
-			GriefPrevention.AddLogEntry(player.getName() + " transferred a claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + targetPlayer.getName() + ".");
+			GriefPrevention.AddLogEntry(player.getName() + " transferred a claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + ownerName + ".");
 			
 			return true;
 		}

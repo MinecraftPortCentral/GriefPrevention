@@ -324,7 +324,12 @@ public abstract class DataStore
 		}
 		
 		//determine new owner
-		PlayerData newOwnerData = this.getPlayerData(newOwnerID);
+		PlayerData newOwnerData = null;
+		
+		if(newOwnerID != null)
+	    {
+		    newOwnerData = this.getPlayerData(newOwnerID);
+	    }
 		
 		//transfer
 		claim.ownerID = newOwnerID;
@@ -336,7 +341,10 @@ public abstract class DataStore
 			ownerData.getClaims().remove(claim);
 		}
 		
-		newOwnerData.getClaims().add(claim);
+		if(newOwnerData != null)
+		{
+		    newOwnerData.getClaims().add(claim);
+		}
 	}
 
 	//adds a claim to the datastore, making it an effective claim
