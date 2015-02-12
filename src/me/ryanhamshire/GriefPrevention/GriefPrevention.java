@@ -998,7 +998,6 @@ public class GriefPrevention extends JavaPlugin
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace();
 			    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
 				return true;
 			}
