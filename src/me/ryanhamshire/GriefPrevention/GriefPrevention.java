@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -1612,16 +1613,19 @@ public class GriefPrevention extends JavaPlugin
 			
 			//load the target player's data
 			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getUniqueId());
+			Vector<Claim> claims = playerData.getClaims();
 			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.getAccruedClaimBlocks() + " blocks from play +" + (playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + " bonus = " + (playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + " total.");
-			GriefPrevention.sendMessage(player, TextMode.Instr, "Your Claims:");
-			for(int i = 0; i < playerData.getClaims().size(); i++)
+			if(claims.size() > 0)
 			{
-				Claim claim = playerData.getClaims().get(i);
-				GriefPrevention.sendMessage(player, TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " (-" + claim.getArea() + " blocks)");
-			}
+    			GriefPrevention.sendMessage(player, TextMode.Instr, "Your Claims:");
+    			for(int i = 0; i < playerData.getClaims().size(); i++)
+    			{
+    				Claim claim = playerData.getClaims().get(i);
+    				GriefPrevention.sendMessage(player, TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " (-" + claim.getArea() + " blocks)");
+    			}
 			
-			if(playerData.getClaims().size() > 0)
 				GriefPrevention.sendMessage(player, TextMode.Instr, " = " + playerData.getRemainingClaimBlocks() + " blocks left to spend");
+			}
 			
 			//drop the data we just loaded, if the player isn't online
 			if(!otherPlayer.isOnline())
