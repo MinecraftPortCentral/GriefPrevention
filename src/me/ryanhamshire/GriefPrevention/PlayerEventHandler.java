@@ -234,8 +234,8 @@ class PlayerEventHandler implements Listener
 			spam = true;
 		}
 		
-		//if it's very similar to the last message
-		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage))
+		//if it's very similar to the last message from the same player and within 10 seconds of that message
+		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage) && now - playerData.lastMessageTimestamp.getTime() < 10000)
 		{
 			playerData.spamCount++;
 			spam = true;
