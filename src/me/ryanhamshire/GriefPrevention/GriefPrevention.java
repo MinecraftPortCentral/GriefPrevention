@@ -1383,7 +1383,7 @@ public class GriefPrevention extends JavaPlugin
 			//if no amount provided, just tell player value per block sold, and how many he can sell
 			if(args.length != 1)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksSellValue), String.valueOf(availableBlocks));
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksSellValue), String.valueOf(Math.max(0, availableBlocks - GriefPrevention.instance.config_claims_initialBlocks)));
 				return false;
 			}
 						
@@ -1404,7 +1404,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//if he doesn't have enough blocks, tell him so
-			if(blockCount > availableBlocks)
+			if(blockCount > availableBlocks - GriefPrevention.instance.config_claims_initialBlocks)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotEnoughBlocksForSale);
 			}
