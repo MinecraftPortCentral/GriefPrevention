@@ -321,9 +321,8 @@ public class GriefPrevention extends JavaPlugin
 		{
 		    try
 		    {
-    		    String playerName = player.getName();
     		    UUID playerID = player.getUniqueId();
-    		    if(playerName == null || playerID == null) continue;
+    		    if(playerID == null) continue;
     		    long lastSeen = player.getLastPlayed();
     		    
     		    //if the player has been seen in the last 30 days, cache his name/UUID pair
@@ -331,7 +330,9 @@ public class GriefPrevention extends JavaPlugin
     		    long daysDiff = diff / millisecondsPerDay;
     		    if(daysDiff <= 30)
     		    {
-    		        this.playerNameToIDMap.put(playerName, playerID);
+    		        String playerName = player.getName();
+    		        if(playerName == null) continue;
+                    this.playerNameToIDMap.put(playerName, playerID);
     		        this.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
     		        playersCached++;
     		    }
