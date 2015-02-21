@@ -822,6 +822,10 @@ public class GriefPrevention extends JavaPlugin
         {
             return ClaimsMode.Disabled;
         }
+        else if(configSetting.equalsIgnoreCase("SurvivalRequiringClaims"))
+        {
+            return ClaimsMode.SurvivalRequiringClaims;
+        }
         else
         {
             return null;
