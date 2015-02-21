@@ -867,6 +867,7 @@ class PlayerEventHandler implements Listener
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, noAccessReason);
 					event.setCancelled(true);
+					player.getInventory().addItem(new ItemStack(Material.ENDER_PEARL));
 				}
 			}
 		}
