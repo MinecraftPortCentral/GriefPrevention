@@ -2456,7 +2456,7 @@ public class GriefPrevention extends JavaPlugin
 		if(claim == null)
 		{
 			//no building in the wilderness in creative mode
-			if(this.creativeRulesApply(location))
+			if(this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getWorld()) == ClaimsMode.SurvivalRequiringClaims)
 			{
 				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
 				if(player.hasPermission("griefprevention.ignoreclaims"))
@@ -2493,7 +2493,7 @@ public class GriefPrevention extends JavaPlugin
 		if(claim == null)
 		{
 			//no building in the wilderness in creative mode
-			if(this.creativeRulesApply(location))
+			if(this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getWorld()) == ClaimsMode.SurvivalRequiringClaims)
 			{
 				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
 				if(player.hasPermission("griefprevention.ignoreclaims"))

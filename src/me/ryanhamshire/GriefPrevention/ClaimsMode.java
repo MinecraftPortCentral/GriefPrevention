@@ -4,5 +4,6 @@ public enum ClaimsMode
 {
     Survival,
     Creative,
-    Disabled
+    Disabled,
+    SurvivalRequiringClaims
 }
