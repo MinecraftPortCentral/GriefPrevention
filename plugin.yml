@@ -170,6 +170,10 @@ permissions:
             griefprevention.overrideclaimcountlimit: true
             griefprevention.transferclaim: true
             griefprevention.claimslistother: true
+            griefprevention.siegeimmune: true
+    griefprevention.siegeimmune:
+        description: Makes a player immune to /Siege.
+        default: op
     griefprevention.givepet:
         description: Grants permission to use /GivePet.
         default: true

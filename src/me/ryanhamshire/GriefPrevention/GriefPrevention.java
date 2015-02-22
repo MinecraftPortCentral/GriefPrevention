@@ -1825,6 +1825,13 @@ public class GriefPrevention extends JavaPlugin
 				return false;
 			}
 			
+			//victim must not have the permission which makes him immune to siege
+			if(defender.hasPermission("griefprevention.siegeimmune"))
+			{
+			    GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeImmune);
+                return true;
+			}
+			
 			//victim must not be under siege already
 			PlayerData defenderData = this.dataStore.getPlayerData(defender.getUniqueId());
 			if(defenderData.siegeData != null)
