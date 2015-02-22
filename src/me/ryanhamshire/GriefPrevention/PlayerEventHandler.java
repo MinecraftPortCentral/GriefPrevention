@@ -628,7 +628,7 @@ class PlayerEventHandler implements Listener
 	}
 	
 	//when a player spawns, conditionally apply temporary pvp protection 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     void onPlayerRespawn (PlayerRespawnEvent event)
     {
         Player player = event.getPlayer();
@@ -1096,6 +1096,8 @@ class PlayerEventHandler implements Listener
 		                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PickupBlockedExplanation, ownerName);
 		                playerData.receivedDropUnlockAdvertisement = true;
 		            }
+		            
+		            return;
 		        }
 		    }
 		}
