@@ -103,6 +103,8 @@ public class GriefPrevention extends JavaPlugin
 	public Material config_claims_investigationTool;				//which material will be used to investigate claims with a right click
 	public Material config_claims_modificationTool;	  				//which material will be used to create/resize claims with a right click
 	
+	public ArrayList<String> config_claims_commandsRequiringAccessTrust; //the list of slash commands requiring access trust when in a claim
+	
 	public ArrayList<World> config_siege_enabledWorlds;				//whether or not /siege is enabled on this server
 	public ArrayList<Material> config_siege_blocks;					//which blocks will be breakable in siege mode
 		
@@ -498,6 +500,7 @@ public class GriefPrevention extends JavaPlugin
         this.config_claims_maxClaimsPerPlayer = config.getInt("GriefPrevention.Claims.MaximumNumberOfClaimsPerPlayer", 0);
         this.config_claims_respectWorldGuard = config.getBoolean("GriefPrevention.Claims.CreationRequiresWorldGuardBuildPermission", true);
         this.config_claims_portalsRequirePermission = config.getBoolean("GriefPrevention.Claims.PortalGenerationRequiresPermission", false);
+        String accessTrustSlashCommands = config.getString("GriefPrevention.Claims.CommandsRequiringAccessTrust", "/sethome");
         
         this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
         this.config_spam_loginCooldownSeconds = config.getInt("GriefPrevention.Spam.LoginCooldownSeconds", 60);
@@ -710,6 +713,7 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.Claims.MaximumNumberOfClaimsPerPlayer", this.config_claims_maxClaimsPerPlayer);
         outConfig.set("GriefPrevention.Claims.CreationRequiresWorldGuardBuildPermission", this.config_claims_respectWorldGuard);
         outConfig.set("GriefPrevention.Claims.PortalGenerationRequiresPermission", this.config_claims_portalsRequirePermission);
+        outConfig.set("GriefPrevention.Claims.CommandsRequiringAccessTrust", accessTrustSlashCommands);
         
         outConfig.set("GriefPrevention.Spam.Enabled", this.config_spam_enabled);
         outConfig.set("GriefPrevention.Spam.LoginCooldownSeconds", this.config_spam_loginCooldownSeconds);
@@ -783,9 +787,17 @@ public class GriefPrevention extends JavaPlugin
             AddLogEntry("Unable to write to the configuration file at \"" + DataStore.configFilePath + "\"");
         }
         
+        //try to parse the list of commands requiring access trust in land claims
+        this.config_claims_commandsRequiringAccessTrust = new ArrayList<String>();
+        String [] commands = accessTrustSlashCommands.split(";");
+        for(int i = 0; i < commands.length; i++)
+        {
+            this.config_claims_commandsRequiringAccessTrust.add(commands[i].trim());
+        }
+        
         //try to parse the list of commands which should be monitored for spam
         this.config_spam_monitorSlashCommands = new ArrayList<String>();
-        String [] commands = slashCommandsToMonitor.split(";");
+        commands = slashCommandsToMonitor.split(";");
         for(int i = 0; i < commands.length; i++)
         {
             this.config_spam_monitorSlashCommands.add(commands[i].trim());
