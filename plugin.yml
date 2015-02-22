@@ -53,6 +53,11 @@ commands:
       usage: /AdjustBonusClaimBlocks <player> <amount>
       permission: griefprevention.adjustclaimblocks
       aliases: acb
+   setaccruedclaimblocks:
+      description: Updates a player's accrued claim block total.
+      usage: /SetAccruedClaimBlocks <player> <amount>
+      permission: griefprevention.adjustclaimblocks
+      aliases: scb
    deleteclaim:
       description: Deletes the claim you're standing in, even if it's not your claim.
       usage: /DeleteClaim

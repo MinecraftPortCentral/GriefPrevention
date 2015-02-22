@@ -1733,6 +1733,42 @@ public class GriefPrevention extends JavaPlugin
 			return true;			
 		}
 		
+		//setaccruedclaimblocks <player> <amount>
+        else if(cmd.getName().equalsIgnoreCase("setaccruedclaimblocks"))
+        {
+            //requires exactly two parameters, the other player's name and the new amount
+            if(args.length != 2) return false;
+            
+            //parse the adjustment amount
+            int newAmount;         
+            try
+            {
+                newAmount = Integer.parseInt(args[1]);
+            }
+            catch(NumberFormatException numberFormatException)
+            {
+                return false;  //causes usage to be displayed
+            }
+            
+            //find the specified player
+            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
+            if(targetPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            
+            //set player's blocks
+            PlayerData playerData = this.dataStore.getPlayerData(targetPlayer.getUniqueId());
+            playerData.setAccruedClaimBlocks(newAmount);
+            this.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
+            
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.SetClaimBlocksSuccess);
+            if(player != null) GriefPrevention.AddLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".");
+            
+            return true;
+        }
+		
 		//trapped
 		else if(cmd.getName().equalsIgnoreCase("trapped") && player != null)
 		{
