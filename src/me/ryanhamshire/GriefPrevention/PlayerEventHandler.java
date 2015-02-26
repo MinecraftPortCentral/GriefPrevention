@@ -1281,7 +1281,7 @@ class PlayerEventHandler implements Listener
 	    Action action = event.getAction();
 	    if(action == Action.LEFT_CLICK_AIR) return;
 	    if(action == Action.PHYSICAL) return;
-        
+	    
 	    Player player = event.getPlayer();
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
 		
@@ -1337,6 +1337,7 @@ class PlayerEventHandler implements Listener
 						clickedBlockType == Material.CAULDRON ||
 						clickedBlockType == Material.JUKEBOX ||
 						clickedBlockType == Material.ANVIL ||
+						clickedBlockType == Material.CAKE_BLOCK ||
 						GriefPrevention.instance.config_mods_containerTrustIds.Contains(new MaterialInfo(clickedBlock.getTypeId(), clickedBlock.getData(), null)))))
 		{			
 		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
@@ -1439,6 +1440,25 @@ class PlayerEventHandler implements Listener
 				}
 			}			
 		}
+		
+		//otherwise apply rule for cake
+        else if(clickedBlock != null && GriefPrevention.instance.config_claims_preventTheft && clickedBlockType == Material.CAKE_BLOCK)
+        {
+            if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
+            Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
+            if(claim != null)
+            {
+                playerData.lastClaim = claim;
+                
+                String noContainerReason = claim.allowAccess(player);
+                if(noContainerReason != null)
+                {
+                    event.setCancelled(true);
+                    GriefPrevention.sendMessage(player, TextMode.Err, noContainerReason);
+                    return;
+                }
+            }           
+        }
 		
 		//apply rule for note blocks and repeaters and daylight sensors
 		else if(clickedBlock != null && 
@@ -2299,6 +2319,7 @@ class PlayerEventHandler implements Listener
             case LEVER:
             case DIODE_BLOCK_ON:  //redstone repeater
             case DIODE_BLOCK_OFF:
+            case CAKE_BLOCK:
                 return true;
             default:
                 return false;
