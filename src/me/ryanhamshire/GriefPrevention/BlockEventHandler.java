@@ -471,14 +471,8 @@ public class BlockEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onBlockPistonRetract (BlockPistonRetractEvent event)
 	{
-	    //we only care about sticky pistons retracting
-		if(!event.isSticky()) return;
-		
 		//pulling up is always safe
 		if(event.getDirection() == BlockFace.UP) return;
-		
-		//if pulling "air", always safe
-		if(event.getRetractLocation().getBlock().getType() == Material.AIR) return;
 		
 		//don't track in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getBlock().getWorld())) return;
@@ -494,33 +488,39 @@ public class BlockEventHandler implements Listener
 		        return;
 		    }
 		    
-		    //if pulled block isn't in the same land claim, cancel the event
-		    if(!pistonClaim.contains(event.getRetractLocation(), false, false))
+		    for(Block movedBlock : event.getBlocks())
 		    {
-		        event.setCancelled(true);
-		        return;
+		        //if pulled block isn't in the same land claim, cancel the event
+    		    if(!pistonClaim.contains(movedBlock.getLocation(), false, false))
+    		    {
+    		        event.setCancelled(true);
+    		        return;
+    		    }
 		    }
 		}
 		
 		//otherwise, consider ownership of both piston and block
 		else
 		{
-    		//who owns the moving block, if anyone?
-    		String movingBlockOwnerName = "_";
-    		Claim movingBlockClaim = this.dataStore.getClaimAt(event.getRetractLocation(), false, null);
-    		if(movingBlockClaim != null) movingBlockOwnerName = movingBlockClaim.getOwnerName();
-    		
-    		//who owns the piston, if anyone?
-    		String pistonOwnerName = "_";
-    		Location pistonLocation = event.getBlock().getLocation();		
-    		Claim pistonClaim = this.dataStore.getClaimAt(pistonLocation, false, movingBlockClaim);
-    		if(pistonClaim != null) pistonOwnerName = pistonClaim.getOwnerName();
-    		
-    		//if there are owners for the blocks, they must be the same player
-    		//otherwise cancel the event
-    		if(!pistonOwnerName.equals(movingBlockOwnerName))
+		    //who owns the piston, if anyone?
+            String pistonOwnerName = "_";
+            Location pistonLocation = event.getBlock().getLocation();       
+            Claim pistonClaim = this.dataStore.getClaimAt(pistonLocation, false, null);
+            if(pistonClaim != null) pistonOwnerName = pistonClaim.getOwnerName();
+		    
+		    String movingBlockOwnerName = "_";
+    		for(Block movedBlock : event.getBlocks())
     		{
-    			event.setCancelled(true);
+    		    //who owns the moving block, if anyone?
+                Claim movingBlockClaim = this.dataStore.getClaimAt(movedBlock.getLocation(), false, pistonClaim);
+        		if(movingBlockClaim != null) movingBlockOwnerName = movingBlockClaim.getOwnerName();
+        		
+        		//if there are owners for the blocks, they must be the same player
+        		//otherwise cancel the event
+        		if(!pistonOwnerName.equals(movingBlockOwnerName))
+        		{
+        			event.setCancelled(true);
+        		}
     		}
 		}
 	}
