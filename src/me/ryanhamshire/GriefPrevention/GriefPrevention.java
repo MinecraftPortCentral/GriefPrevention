@@ -315,37 +315,11 @@ public class GriefPrevention extends JavaPlugin
 			}
 		}
 		
-		int playersCached = 0;
+		//cache offline players
 		OfflinePlayer [] offlinePlayers = this.getServer().getOfflinePlayers();
-		long now = System.currentTimeMillis();
-		final long millisecondsPerDay = 1000 * 60 * 60 * 24;
-		for(OfflinePlayer player : offlinePlayers)
-		{
-		    try
-		    {
-    		    UUID playerID = player.getUniqueId();
-    		    if(playerID == null) continue;
-    		    long lastSeen = player.getLastPlayed();
-    		    
-    		    //if the player has been seen in the last 30 days, cache his name/UUID pair
-    		    long diff = now - lastSeen;
-    		    long daysDiff = diff / millisecondsPerDay;
-    		    if(daysDiff <= 30)
-    		    {
-    		        String playerName = player.getName();
-    		        if(playerName == null) continue;
-                    this.playerNameToIDMap.put(playerName, playerID);
-    		        this.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
-    		        playersCached++;
-    		    }
-		    }
-		    catch(Exception e)
-		    {
-		        e.printStackTrace();
-		    }
-		}
-		
-		AddLogEntry("Cached " + playersCached + " recent players.");
+		CacheOfflinePlayerNamesThread namesThread = new CacheOfflinePlayerNamesThread(offlinePlayers, this.playerNameToIDMap);
+		namesThread.setPriority(Thread.MIN_PRIORITY);
+		namesThread.start();
 		
 		AddLogEntry("Boot finished.");
 	}
@@ -2275,7 +2249,50 @@ public class GriefPrevention extends JavaPlugin
 	//helper method to resolve a player by name
 	ConcurrentHashMap<String, UUID> playerNameToIDMap = new ConcurrentHashMap<String, UUID>();
 
-    private OfflinePlayer resolvePlayerByName(String name) 
+	//thread to build the above cache
+	private class CacheOfflinePlayerNamesThread extends Thread
+    {
+        private OfflinePlayer [] offlinePlayers;
+        private ConcurrentHashMap<String, UUID> playerNameToIDMap;
+        
+        CacheOfflinePlayerNamesThread(OfflinePlayer [] offlinePlayers, ConcurrentHashMap<String, UUID> playerNameToIDMap)
+        {
+            this.offlinePlayers = offlinePlayers;
+            this.playerNameToIDMap = playerNameToIDMap;
+        }
+        
+        public void run()
+        {
+            long now = System.currentTimeMillis();
+            final long millisecondsPerDay = 1000 * 60 * 60 * 24;
+            for(OfflinePlayer player : offlinePlayers)
+            {
+                try
+                {
+                    UUID playerID = player.getUniqueId();
+                    if(playerID == null) continue;
+                    long lastSeen = player.getLastPlayed();
+                    
+                    //if the player has been seen in the last 30 days, cache his name/UUID pair
+                    long diff = now - lastSeen;
+                    long daysDiff = diff / millisecondsPerDay;
+                    if(daysDiff <= 30)
+                    {
+                        String playerName = player.getName();
+                        if(playerName == null) continue;
+                        this.playerNameToIDMap.put(playerName, playerID);
+                        this.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
+                    }
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+	
+	private OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first
 		Player targetPlayer = this.getServer().getPlayerExact(name);
