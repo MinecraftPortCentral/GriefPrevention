@@ -18,6 +18,7 @@
 
 package me.ryanhamshire.GriefPrevention;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -1189,6 +1190,8 @@ class PlayerEventHandler implements Listener
 	}
 	
 	//block use of buckets within other players' claims
+	private HashSet<Material> commonAdjacentBlocks_water = new HashSet<Material>(Arrays.asList(Material.WATER, Material.STATIONARY_WATER, Material.SOIL, Material.DIRT, Material.STONE));
+	private HashSet<Material> commonAdjacentBlocks_lava = new HashSet<Material>(Arrays.asList(Material.LAVA, Material.STATIONARY_LAVA, Material.DIRT, Material.STONE));
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPlayerBucketEmpty (PlayerBucketEmptyEvent bucketEvent)
 	{
@@ -1247,6 +1250,34 @@ class PlayerEventHandler implements Listener
 					}					
 				}
 			}
+		}
+		
+		//log any suspicious placements (check sea level, world type, and adjacent blocks)
+		if(block.getY() >= GriefPrevention.instance.getSeaLevel(block.getWorld()) - 5 && !player.hasPermission("griefprevention.lava") && block.getWorld().getEnvironment() != Environment.NETHER)
+		{
+		    //if certain blocks are nearby, it's less suspicious and not worth logging
+		    HashSet<Material> exclusionAdjacentTypes;
+		    if(bucketEvent.getBucket() == Material.WATER_BUCKET)
+		        exclusionAdjacentTypes = this.commonAdjacentBlocks_water;
+		    else
+		        exclusionAdjacentTypes = this.commonAdjacentBlocks_lava;
+		    
+		    boolean makeLogEntry = true;
+		    BlockFace [] adjacentDirections = new BlockFace[] {BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.DOWN};
+		    for(BlockFace direction : adjacentDirections)
+		    {
+		        Material adjacentBlockType = block.getRelative(direction).getType();
+		        if(exclusionAdjacentTypes.contains(adjacentBlockType))
+	            {
+		            makeLogEntry = false;
+		            break;
+	            }
+		    }
+		    
+		    if(makeLogEntry)
+	        {
+	            GriefPrevention.AddLogEntry(player.getName() + " placed suspicious " + bucketEvent.getBucket().name() + " @ " + GriefPrevention.getfriendlyLocationString(block.getLocation()));
+	        }
 		}
 	}
 	
