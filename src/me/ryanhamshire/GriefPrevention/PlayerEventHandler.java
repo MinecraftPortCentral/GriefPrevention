@@ -1096,7 +1096,7 @@ class PlayerEventHandler implements Listener
 	public void onPlayerPickupItem(PlayerPickupItemEvent event)
 	{
 		Player player = event.getPlayer();
-GriefPrevention.AddLogEntry("player pickup item event");		
+
 		//FEATURE: lock dropped items to player who dropped them
 		
 		//who owns this stack?
