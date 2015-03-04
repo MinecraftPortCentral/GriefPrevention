@@ -2394,31 +2394,43 @@ public class GriefPrevention extends JavaPlugin
 		if(player.hasPermission("griefprevention.nopvpimmunity")) return;
 		
 		//check inventory for well, anything
-		PlayerInventory inventory = player.getInventory();
-		ItemStack [] armorStacks = inventory.getArmorContents();
-		
-		//check armor slots, stop if any items are found
-		for(int i = 0; i < armorStacks.length; i++)
+		if(GriefPrevention.isInventoryEmpty(player))
 		{
-			if(!(armorStacks[i] == null || armorStacks[i].getType() == Material.AIR)) return;
+    		//if empty, apply immunity
+    		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+    		playerData.pvpImmune = true;
+    		
+    		//inform the player after he finishes respawning
+    		GriefPrevention.sendMessage(player, TextMode.Success, Messages.PvPImmunityStart, 5L);
+    		
+    		//start a task to re-check this player's inventory every minute until his immunity is gone
+    		PvPImmunityValidationTask task = new PvPImmunityValidationTask(player);
+    		this.getServer().getScheduler().scheduleSyncDelayedTask(this, task, 1200L);
 		}
-		
-		//check other slots, stop if any items are found
-		ItemStack [] generalStacks = inventory.getContents();
-		for(int i = 0; i < generalStacks.length; i++)
-		{
-			if(!(generalStacks[i] == null || generalStacks[i].getType() == Material.AIR)) return;
-		}
-			
-		//otherwise, apply immunity
-		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		playerData.pvpImmune = true;
-		
-		//inform the player after he finishes respawning
-		GriefPrevention.sendMessage(player, TextMode.Success, Messages.PvPImmunityStart, 5L);
 	}
 	
-	//checks whether players siege in a world
+	static boolean isInventoryEmpty(Player player)
+	{
+	    PlayerInventory inventory = player.getInventory();
+        ItemStack [] armorStacks = inventory.getArmorContents();
+        
+        //check armor slots, stop if any items are found
+        for(int i = 0; i < armorStacks.length; i++)
+        {
+            if(!(armorStacks[i] == null || armorStacks[i].getType() == Material.AIR)) return false;
+        }
+        
+        //check other slots, stop if any items are found
+        ItemStack [] generalStacks = inventory.getContents();
+        for(int i = 0; i < generalStacks.length; i++)
+        {
+            if(!(generalStacks[i] == null || generalStacks[i].getType() == Material.AIR)) return false;
+        }
+        
+	    return true;
+    }
+
+    //checks whether players siege in a world
 	public boolean siegeEnabledForWorld(World world)
 	{
 		return this.config_siege_enabledWorlds.contains(world);
