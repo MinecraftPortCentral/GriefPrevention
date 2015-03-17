@@ -824,11 +824,14 @@ class EntityEventHandler implements Listener
         PlayerData defenderData = this.dataStore.getPlayerData(defender.getUniqueId());
         PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
         
-        long now = Calendar.getInstance().getTimeInMillis();
-        defenderData.lastPvpTimestamp = now;
-        defenderData.lastPvpPlayer = attacker.getName();
-        attackerData.lastPvpTimestamp = now;
-        attackerData.lastPvpPlayer = defender.getName();
+        if(attacker != defender)
+        {
+            long now = Calendar.getInstance().getTimeInMillis();
+            defenderData.lastPvpTimestamp = now;
+            defenderData.lastPvpPlayer = attacker.getName();
+            attackerData.lastPvpTimestamp = now;
+            attackerData.lastPvpPlayer = defender.getName();
+        }
     }
 	
 	//when a vehicle is damaged
