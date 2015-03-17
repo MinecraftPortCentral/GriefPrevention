@@ -259,7 +259,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.AddLogEntry("Muted IP address from " + player.getName() + ": " + message);
 					
 					//spam notation
-					playerData.spamCount++;
+					playerData.spamCount+=5;
 					spam = true;
 					
 					//block message
