@@ -1286,16 +1286,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			else
 			{
-				//determine max purchasable blocks
 				PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-				int maxPurchasable = GriefPrevention.instance.config_claims_maxAccruedBlocks - playerData.getAccruedClaimBlocks();
-				
-				//if the player is at his max, tell him so
-				if(maxPurchasable <= 0)
-				{
-					GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimBlockLimit);
-					return true;
-				}
 				
 				//try to parse number of blocks
 				int blockCount;
@@ -1313,12 +1304,6 @@ public class GriefPrevention extends JavaPlugin
 					return false;
 				}
 				
-				//correct block count to max allowed
-				if(blockCount > maxPurchasable)
-				{
-					blockCount = maxPurchasable;
-				}
-				
 				//if the player can't afford his purchase, send error message
 				double balance = economy.getBalance(player);				
 				double totalCost = blockCount * GriefPrevention.instance.config_economy_claimBlocksPurchaseCost;				
@@ -1334,7 +1319,7 @@ public class GriefPrevention extends JavaPlugin
 					economy.withdrawPlayer(player, totalCost);
 					
 					//add blocks
-					playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() + blockCount);
+					playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);
 					this.dataStore.savePlayerData(player.getUniqueId(), playerData);
 					
 					//inform player
@@ -1370,12 +1355,12 @@ public class GriefPrevention extends JavaPlugin
 			
 			//load player data
 			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-			int availableBlocks = playerData.getRemainingClaimBlocks();
+			int availableBlocks = playerData.getBonusClaimBlocks();
 			
 			//if no amount provided, just tell player value per block sold, and how many he can sell
 			if(args.length != 1)
 			{
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksSellValue), String.valueOf(Math.max(0, availableBlocks - GriefPrevention.instance.config_claims_initialBlocks)));
+				GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksSellValue), String.valueOf(availableBlocks));
 				return false;
 			}
 						
@@ -1396,7 +1381,7 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//if he doesn't have enough blocks, tell him so
-			if(blockCount > availableBlocks - GriefPrevention.instance.config_claims_initialBlocks)
+			if(blockCount > availableBlocks)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotEnoughBlocksForSale);
 			}
@@ -1409,7 +1394,7 @@ public class GriefPrevention extends JavaPlugin
 				economy.depositPlayer(player, totalValue);
 				
 				//subtract blocks
-				playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - blockCount);
+				playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() - blockCount);
 				this.dataStore.savePlayerData(player.getUniqueId(), playerData);
 				
 				//inform player
