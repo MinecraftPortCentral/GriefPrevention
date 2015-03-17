@@ -2058,8 +2058,11 @@ public class GriefPrevention extends JavaPlugin
 				GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
 			}
 			
-			//adjust claim blocks
-			playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int)Math.ceil((claim.getArea() * (1 - this.config_claims_abandonReturnRatio))));
+			//adjust claim blocks when abandoning a top level claim
+			if(claim.parent == null)
+			{
+			    playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int)Math.ceil((claim.getArea() * (1 - this.config_claims_abandonReturnRatio))));
+			}
 			
 			//tell the player how many claim blocks he has left
 			int remainingBlocks = playerData.getRemainingClaimBlocks();
