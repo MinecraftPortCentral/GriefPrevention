@@ -28,6 +28,8 @@ import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.milkbowl.vault.economy.Economy;
 
@@ -2697,5 +2699,24 @@ public class GriefPrevention extends JavaPlugin
         }
         
         return result;
+    }
+
+    public boolean containsBlockedIP(String message)
+    {
+        message = message.replace("\r\n", "");
+        Pattern ipAddressPattern = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
+        Matcher matcher = ipAddressPattern.matcher(message);
+        
+        //if it looks like an IP address
+        if(matcher.find())
+        {
+            //and it's not in the list of allowed IP addresses
+            if(!GriefPrevention.instance.config_spam_allowedIpAddresses.contains(matcher.group()))
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

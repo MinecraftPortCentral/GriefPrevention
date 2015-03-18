@@ -246,25 +246,17 @@ class PlayerEventHandler implements Listener
 		//filter IP addresses
 		if(!muted)
 		{
-			Pattern ipAddressPattern = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
-			Matcher matcher = ipAddressPattern.matcher(message);
-			
-			//if it looks like an IP address
-			if(matcher.find())
+			if(GriefPrevention.instance.containsBlockedIP(message))
 			{
-				//and it's not in the list of allowed IP addresses
-				if(!GriefPrevention.instance.config_spam_allowedIpAddresses.contains(matcher.group()))
-				{
-					//log entry
-					GriefPrevention.AddLogEntry("Muted IP address from " + player.getName() + ": " + message);
-					
-					//spam notation
-					playerData.spamCount+=5;
-					spam = true;
-					
-					//block message
-					muted = true;
-				}
+				//log entry
+				GriefPrevention.AddLogEntry("Muted IP address from " + player.getName() + ": " + message);
+				
+				//spam notation
+				playerData.spamCount+=5;
+				spam = true;
+				
+				//block message
+				muted = true;
 			}
 		}
 		
