@@ -242,6 +242,7 @@ public class GriefPrevention extends JavaPlugin
 			{
 				GriefPrevention.AddLogEntry("Unable to initialize the file system data store.  Details:");
 				GriefPrevention.AddLogEntry(e.getMessage());
+				e.printStackTrace();
 			}
 		}
 		
@@ -258,7 +259,7 @@ public class GriefPrevention extends JavaPlugin
 		
 		//start the recurring cleanup event for entities in creative worlds
 		EntityCleanupTask task = new EntityCleanupTask(0);
-		this.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L);
+		this.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 60 * 2);
 		
 		//start recurring cleanup scan for unused claims belonging to inactive players
 		CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();

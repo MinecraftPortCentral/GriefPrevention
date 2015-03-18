@@ -112,8 +112,11 @@ public class BlockEventHandler implements Listener
 		for(int i = 0; i < event.getLines().length; i++)
 		{
 			String withoutSpaces = event.getLine(i).replace(" ", ""); 
-		    if(!withoutSpaces.isEmpty()) notEmpty = true;
-			lines.append("\n  " + event.getLine(i));
+		    if(!withoutSpaces.isEmpty())
+	        {
+		        notEmpty = true;
+		        lines.append("\n  " + event.getLine(i));
+	        }
 		}
 		
 		String signMessage = lines.toString();
@@ -122,7 +125,7 @@ public class BlockEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		if(notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage))
 		{		
-			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()) + lines.toString());
+			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()) + lines.toString().replace("\r\n", ";"));
 			playerData.lastMessage = signMessage;
 			
 			if(!player.hasPermission("griefprevention.eavesdrop"))
