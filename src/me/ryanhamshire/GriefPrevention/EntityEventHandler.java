@@ -797,6 +797,9 @@ class EntityEventHandler implements Listener
         
         EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
         
+        //if not in a pvp rules world, do nothing
+        if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(defender.getWorld())) return;
+        
         //determine which player is attacking, if any
         Player attacker = null;
         Projectile arrow = null;
