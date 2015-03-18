@@ -176,7 +176,7 @@ class PlayerEventHandler implements Listener
 		if(player.hasPermission("griefprevention.spam")) return false;
 		
 		boolean spam = false;
-		boolean muted = false;
+		String mutedReason = null;
 		
 		//prevent bots from chatting - require movement before talking for any newish players
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
@@ -188,7 +188,7 @@ class PlayerEventHandler implements Listener
             {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoChatUntilMove, 10L);
                 spam = true;
-                muted = true;
+                mutedReason = "pre-movement chat";
             }
             else
             {
@@ -208,11 +208,11 @@ class PlayerEventHandler implements Listener
 		
 		//always mute an exact match to the last chat message
 		long now = new Date().getTime();
-		if(message.equals(this.lastChatMessage) && now - this.lastChatMessageTimestamp < 750)
+		if(mutedReason != null && message.equals(this.lastChatMessage) && now - this.lastChatMessageTimestamp < 750)
 		{
 		    playerData.spamCount += ++this.duplicateMessageCount;
 		    spam = true;
-		    muted = true;
+		    mutedReason = "repeat message";
 		}
 		else
 		{
@@ -236,32 +236,29 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//if it's very similar to the last message from the same player and within 10 seconds of that message
-		if(!muted && this.stringsAreSimilar(message, playerData.lastMessage) && now - playerData.lastMessageTimestamp.getTime() < 10000)
+		if(mutedReason == null && this.stringsAreSimilar(message, playerData.lastMessage) && now - playerData.lastMessageTimestamp.getTime() < 10000)
 		{
 			playerData.spamCount++;
 			spam = true;
-			muted = true;
+			mutedReason = "similar message";
 		}
 		
 		//filter IP addresses
-		if(!muted)
+		if(mutedReason == null)
 		{
 			if(GriefPrevention.instance.containsBlockedIP(message))
 			{
-				//log entry
-				GriefPrevention.AddLogEntry("Muted IP address from " + player.getName() + ": " + message);
-				
 				//spam notation
 				playerData.spamCount+=5;
 				spam = true;
 				
 				//block message
-				muted = true;
+				mutedReason = "IP address";
 			}
 		}
 		
 		//if the message was mostly non-alpha-numerics or doesn't include much whitespace, consider it a spam (probably ansi art or random text gibberish) 
-		if(!muted && message.length() > 5)
+		if(mutedReason == null && message.length() > 5)
 		{
 			int symbolsCount = 0;
 			int whitespaceCount = 0;
@@ -282,13 +279,13 @@ class PlayerEventHandler implements Listener
 			if(symbolsCount > message.length() / 2 || (message.length() > 15 && whitespaceCount < message.length() / 10))
 			{
 				spam = true;
-				if(playerData.spamCount > 0) muted = true;
+				if(playerData.spamCount > 0) mutedReason = "gibberish";
 				playerData.spamCount++;
 			}
 		}
 		
 		//very short messages close together are spam
-		if(!muted && message.length() < 5 && millisecondsSinceLastMessage < 3000)
+		if(mutedReason == null && message.length() < 5 && millisecondsSinceLastMessage < 3000)
 		{
 			spam = true;
 			playerData.spamCount++;
@@ -326,7 +323,10 @@ class PlayerEventHandler implements Listener
 			//anything above level 2, mute and warn
 			if(playerData.spamCount >= 4)
 			{
-				muted = true;
+				if(mutedReason == null)
+				{
+				    mutedReason = "too-frequent text";
+				}
 				if(!playerData.spamWarned)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Warn, GriefPrevention.instance.config_spam_warningMessage, 10L);
@@ -335,10 +335,10 @@ class PlayerEventHandler implements Listener
 				}
 			}
 			
-			if(muted)
+			if(mutedReason != null)
 			{
 				//make a log entry
-				GriefPrevention.AddLogEntry("Muted spam from " + player.getName() + ": " + message);
+				GriefPrevention.AddLogEntry("Muted " + mutedReason + " from " + player.getName() + ": " + message);
 				
 				//cancelling the event guarantees other players don't receive the message
 				return true;
