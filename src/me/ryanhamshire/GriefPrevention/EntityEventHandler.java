@@ -248,7 +248,7 @@ class EntityEventHandler implements Listener
 			
 			claim = this.dataStore.getClaimAt(block.getLocation(), false, claim); 
 			//if the block is claimed, remove it from the list of destroyed blocks
-			if(claim != null && !claim.areExplosivesAllowed)
+			if(claim != null && !claim.areExplosivesAllowed && GriefPrevention.instance.config_blockClaimExplosions)
 			{
 				blocks.remove(i--);
 			}
