@@ -132,7 +132,7 @@ public class BlockEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		if(notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage))
 		{		
-			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()) + lines.toString().replace("\r\n", ";"));
+			GriefPrevention.AddLogEntry("[Sign Placement] <" + player.getName() + "> " + " @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()) + ": " + lines.toString().replace("\n  ", ";"));
 			playerData.lastMessage = signMessage;
 			
 			if(!player.hasPermission("griefprevention.eavesdrop"))

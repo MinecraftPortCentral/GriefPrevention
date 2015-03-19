@@ -338,7 +338,7 @@ class PlayerEventHandler implements Listener
 			if(mutedReason != null)
 			{
 				//make a log entry
-				GriefPrevention.AddLogEntry("Muted " + mutedReason + " from " + player.getName() + ": " + message);
+				GriefPrevention.AddLogEntry("Muted " + mutedReason + ".");
 				
 				//cancelling the event guarantees other players don't receive the message
 				return true;
