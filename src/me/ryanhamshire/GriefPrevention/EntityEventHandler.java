@@ -195,64 +195,77 @@ class EntityEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityExplode(EntityExplodeEvent explodeEvent)
 	{		
-		List<Block> blocks = explodeEvent.blockList();
-		Location location = explodeEvent.getLocation();
-		
+		//only applies to claims-enabled worlds
+	    Location location = explodeEvent.getLocation();
+		World world = location.getWorld();
+	    
+		if(!GriefPrevention.instance.claimsEnabledForWorld(world)) return;
+	    
 		//FEATURE: explosions don't destroy blocks when they explode near or above sea level in standard worlds
 		boolean isCreeper = (explodeEvent.getEntity() != null && explodeEvent.getEntity() instanceof Creeper);
 		
-		//exception for some land claims in survival worlds, see notes below
-		Claim originationClaim = null;
-		if(!GriefPrevention.instance.creativeRulesApply(location))
+		boolean applySeaLevelRules = world.getEnvironment() == Environment.NORMAL && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions));
+		
+		List<Block> blocks = explodeEvent.blockList();
+        
+		//special rule for creative worlds: explosions don't destroy anything
+        if(GriefPrevention.instance.creativeRulesApply(explodeEvent.getLocation()))
         {
-		    originationClaim = GriefPrevention.instance.dataStore.getClaimAt(location, false, null);
+            for(int i = 0; i < blocks.size(); i++)
+            {
+                Block block = blocks.get(i);
+                if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
+                
+                blocks.remove(i--);
+            }
+            
+            return;
         }
 		
-		if( location.getWorld().getEnvironment() == Environment.NORMAL && GriefPrevention.instance.claimsEnabledForWorld(location.getWorld()) && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions)))			
-		{
-			for(int i = 0; i < blocks.size(); i++)
-			{
-				Block block = blocks.get(i);
-				if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
-				
-				//in survival worlds, if claim explosions are enabled for the source claim, allow non-creeper explosions to destroy blocks in and under that claim even above sea level. 
-				if(!isCreeper && originationClaim != null && originationClaim.areExplosivesAllowed && originationClaim.contains(block.getLocation(), true, false)) continue;
-				
-				if(block.getLocation().getBlockY() > GriefPrevention.instance.getSeaLevel(location.getWorld()) - 7)
-				{
-					blocks.remove(i--);
-				}
-			}			
-		}
-		
-		//special rule for creative worlds: explosions don't destroy anything
-		if(GriefPrevention.instance.creativeRulesApply(explodeEvent.getLocation()))
-		{
-			for(int i = 0; i < blocks.size(); i++)
-			{
-				Block block = blocks.get(i);
-				if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
-				
-				blocks.remove(i--);
-			}
-		}
-		
-		//FEATURE: explosions don't damage claimed blocks	
-		Claim claim = null;
-		for(int i = 0; i < blocks.size(); i++)  //for each destroyed block
-		{
-			Block block = blocks.get(i);
-			if(block.getType() == Material.AIR) continue;  //if it's air, we don't care
-			
-			if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null))) continue;
-			
-			claim = this.dataStore.getClaimAt(block.getLocation(), false, claim); 
-			//if the block is claimed, remove it from the list of destroyed blocks
-			if(claim != null && !claim.areExplosivesAllowed && GriefPrevention.instance.config_blockClaimExplosions)
-			{
-				blocks.remove(i--);
-			}
-		}
+		//make a list of blocks which were allowed to explode
+        List<Block> explodedBlocks = new ArrayList<Block>();
+        Claim cachedClaim = null;
+        for(int i = 0; i < blocks.size(); i++)
+        {
+            Block block = blocks.get(i);
+            
+            //always ignore air blocks
+            if(block.getType() == Material.AIR) continue;
+            
+            //always allow certain block types to explode
+            if(GriefPrevention.instance.config_mods_explodableIds.Contains(new MaterialInfo(block.getTypeId(), block.getData(), null)))
+            {
+                explodedBlocks.add(block);
+                continue;
+            }
+            
+            //is it in a land claim?
+            Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, cachedClaim);
+            if(claim != null)
+            {
+                cachedClaim = claim;
+            }
+                    
+            //if yes, apply claim exemptions if they should apply
+            if((claim != null && claim.areExplosivesAllowed) || !GriefPrevention.instance.config_blockClaimExplosions)
+            {
+                explodedBlocks.add(block);
+                continue;
+            }
+            
+            //if no, then also consider sea level rules
+            if(applySeaLevelRules)
+            {
+                if(block.getLocation().getBlockY() < GriefPrevention.instance.getSeaLevel(world) - 7)
+                {
+                    explodedBlocks.add(block);
+                }
+            }
+        }
+        
+        //clear original damage list and replace with allowed damage list
+        blocks.clear();
+        blocks.addAll(explodedBlocks);
 	}
 	
 	//when an item spawns...
