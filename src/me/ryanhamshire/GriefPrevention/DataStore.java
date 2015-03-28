@@ -622,7 +622,7 @@ public abstract class DataStore
 	//gets a unique, persistent identifier string for a chunk
 	private String getChunkString(Location location)
 	{
-        return (location.getBlockX() >> 4) + location.getWorld().getName() + (location.getBlockZ() >> 4);
+        return String.valueOf(location.getBlockX() >> 4) + (location.getBlockZ() >> 4);
     }
 	
     //creates a claim.
