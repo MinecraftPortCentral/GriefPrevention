@@ -677,7 +677,7 @@ class EntityEventHandler implements Listener
 			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures))
 			{
 			    //if entity is tameable and has an owner, apply special rules
-		        if(subEvent.getEntity() instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(subEvent.getEntity().getWorld()))
+		        if(subEvent.getEntity() instanceof Tameable)
 		        {
 		            Tameable tameable = (Tameable)subEvent.getEntity();
 		            if(tameable.isTamed() && tameable.getOwner() != null)
@@ -707,6 +707,13 @@ class EntityEventHandler implements Listener
         		                event.setCancelled(true);
         		                return;
                             }
+    		                //and disallow if attacker is pvp immune
+    		                else if(attackerData.pvpImmune)
+    		                {
+    		                    event.setCancelled(true);
+    	                        GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
+    	                        return;
+    		                }
 		                }
 		            }
 		        }
