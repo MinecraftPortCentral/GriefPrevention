@@ -874,7 +874,6 @@ public class Claim
     public ArrayList<String> getChunkStrings()
     {
         ArrayList<String> chunkStrings = new ArrayList<String>();
-        World world = this.getLesserBoundaryCorner().getWorld();
         int smallX = this.getLesserBoundaryCorner().getBlockX() >> 4;
         int smallZ = this.getLesserBoundaryCorner().getBlockZ() >> 4;
 		int largeX = this.getGreaterBoundaryCorner().getBlockX() >> 4;
@@ -884,8 +883,7 @@ public class Claim
 		{
 		    for(int z = smallZ; z <= largeZ; z++)
 		    {
-		        StringBuilder builder = new StringBuilder(String.valueOf(x)).append(world.getName()).append(z);
-		        chunkStrings.add(builder.toString());
+		        chunkStrings.add(String.valueOf(x) + z);
 		    }
 		}
 		

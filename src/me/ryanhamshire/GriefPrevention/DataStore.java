@@ -619,8 +619,8 @@ public abstract class DataStore
 	    return Collections.unmodifiableCollection(this.claims);
 	}
 	
-	//gets a unique, persistent identifier string for a chunk
-	private String getChunkString(Location location)
+	//gets an almost-unique, persistent identifier string for a chunk
+	String getChunkString(Location location)
 	{
         return String.valueOf(location.getBlockX() >> 4) + (location.getBlockZ() >> 4);
     }
