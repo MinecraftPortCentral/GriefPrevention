@@ -52,6 +52,7 @@ import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityBreakDoorEvent;
@@ -195,21 +196,30 @@ class EntityEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityExplode(EntityExplodeEvent explodeEvent)
 	{		
-		//only applies to claims-enabled worlds
-	    Location location = explodeEvent.getLocation();
-		World world = location.getWorld();
-	    
-		if(!GriefPrevention.instance.claimsEnabledForWorld(world)) return;
-	    
-		//FEATURE: explosions don't destroy blocks when they explode near or above sea level in standard worlds
-		boolean isCreeper = (explodeEvent.getEntity() != null && explodeEvent.getEntity() instanceof Creeper);
-		
-		boolean applySeaLevelRules = world.getEnvironment() == Environment.NORMAL && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions));
-		
-		List<Block> blocks = explodeEvent.blockList();
+		this.handleExplosion(explodeEvent.getLocation(), explodeEvent.getEntity(), explodeEvent.blockList());
+	}
+	
+	//when a block explodes...
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    public void onBlockExplode(BlockExplodeEvent explodeEvent)
+    {       
+        this.handleExplosion(explodeEvent.getBlock().getLocation(), null, explodeEvent.blockList());
+    }
+    
+    void handleExplosion(Location location, Entity entity, List<Block> blocks)
+    {
+        //only applies to claims-enabled worlds
+        World world = location.getWorld();
         
-		//special rule for creative worlds: explosions don't destroy anything
-        if(GriefPrevention.instance.creativeRulesApply(explodeEvent.getLocation()))
+        if(!GriefPrevention.instance.claimsEnabledForWorld(world)) return;
+        
+        //FEATURE: explosions don't destroy surface blocks by default
+        boolean isCreeper = (entity != null && entity instanceof Creeper);
+        
+        boolean applySurfaceRules = world.getEnvironment() == Environment.NORMAL && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions));
+        
+        //special rule for creative worlds: explosions don't destroy anything
+        if(GriefPrevention.instance.creativeRulesApply(location))
         {
             for(int i = 0; i < blocks.size(); i++)
             {
@@ -221,8 +231,8 @@ class EntityEventHandler implements Listener
             
             return;
         }
-		
-		//make a list of blocks which were allowed to explode
+        
+        //make a list of blocks which were allowed to explode
         List<Block> explodedBlocks = new ArrayList<Block>();
         Claim cachedClaim = null;
         for(int i = 0; i < blocks.size(); i++)
@@ -253,8 +263,8 @@ class EntityEventHandler implements Listener
                 continue;
             }
             
-            //if no, then also consider sea level rules
-            if(applySeaLevelRules)
+            //if no, then also consider surface rules
+            if(applySurfaceRules && claim == null)
             {
                 if(block.getLocation().getBlockY() < GriefPrevention.instance.getSeaLevel(world) - 7)
                 {
@@ -266,7 +276,7 @@ class EntityEventHandler implements Listener
         //clear original damage list and replace with allowed damage list
         blocks.clear();
         blocks.addAll(explodedBlocks);
-	}
+    }
 	
 	//when an item spawns...
 	@EventHandler(priority = EventPriority.LOWEST)
