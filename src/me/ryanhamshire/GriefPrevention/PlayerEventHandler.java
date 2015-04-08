@@ -1488,10 +1488,11 @@ class PlayerEventHandler implements Listener
 		        (
 		                clickedBlockType == Material.NOTE_BLOCK || 
 		                clickedBlockType == Material.DIODE_BLOCK_ON || 
-		                clickedBlockType == Material.DIODE_BLOCK_OFF) ||
+		                clickedBlockType == Material.DIODE_BLOCK_OFF ||
+		                clickedBlockType == Material.DRAGON_EGG ||
 		                clickedBlockType == Material.DAYLIGHT_DETECTOR ||
 		                clickedBlockType == Material.DAYLIGHT_DETECTOR_INVERTED
-		        )
+		        ))
 		{
 		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		    Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
@@ -2343,6 +2344,7 @@ class PlayerEventHandler implements Listener
             case DIODE_BLOCK_ON:  //redstone repeater
             case DIODE_BLOCK_OFF:
             case CAKE_BLOCK:
+            case DRAGON_EGG:
                 return true;
             default:
                 return false;
