@@ -40,6 +40,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Explosive;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Horse;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -531,6 +532,9 @@ class EntityEventHandler implements Listener
 	{
 		//monsters are never protected
 		if(event.getEntity() instanceof Monster) return;
+		
+		//horse protections can be disabled
+		if(event.getEntity() instanceof Horse && !GriefPrevention.instance.config_claims_protectHorses) return;
 		
 		//protect pets from environmental damage types which could be easily caused by griefers
         if(event.getEntity() instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(event.getEntity().getWorld()))
