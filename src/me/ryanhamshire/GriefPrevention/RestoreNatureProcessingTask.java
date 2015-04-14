@@ -155,7 +155,9 @@ class RestoreNatureProcessingTask implements Runnable
 	
 	private void removePlayerLeaves()
 	{
-		for(int x = 1; x < snapshots.length - 1; x++)
+		if(this.seaLevel < 1) return;
+	    
+	    for(int x = 1; x < snapshots.length - 1; x++)
 		{
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
 			{
@@ -174,7 +176,9 @@ class RestoreNatureProcessingTask implements Runnable
 
 	private void fillBigHoles()
 	{
-		for(int x = 1; x < snapshots.length - 1; x++)
+		if(this.seaLevel < 3) return;
+	    
+	    for(int x = 1; x < snapshots.length - 1; x++)
 		{
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
 			{
@@ -235,7 +239,9 @@ class RestoreNatureProcessingTask implements Runnable
 	
 	private void reduceStone()
 	{
-		for(int x = 1; x < snapshots.length - 1; x++)
+		if(this.seaLevel < 1) return;
+	    
+	    for(int x = 1; x < snapshots.length - 1; x++)
 		{
 			for(int z = 1; z < snapshots[0][0].length - 1; z++)
 			{
@@ -280,7 +286,9 @@ class RestoreNatureProcessingTask implements Runnable
 	
 	private void reduceLogs()
 	{
-		boolean jungleBiome = this.biome == Biome.JUNGLE || this.biome == Biome.JUNGLE_HILLS;
+		if(this.seaLevel < 1) return;
+	    
+	    boolean jungleBiome = this.biome == Biome.JUNGLE || this.biome == Biome.JUNGLE_HILLS;
 		
 		//scan all blocks above sea level
 		for(int x = 1; x < snapshots.length - 1; x++)
@@ -525,7 +533,7 @@ class RestoreNatureProcessingTask implements Runnable
 		do
 		{
 			changed = false;		
-			for(int y = this.seaLevel - 10; y <= this.seaLevel; y++)			
+			for(int y = Math.max(this.seaLevel - 10, 0); y <= this.seaLevel; y++)			
 			{
 				for(int x = 1; x < snapshots.length - 1; x++)				
 				{
@@ -580,7 +588,9 @@ class RestoreNatureProcessingTask implements Runnable
 	
 	private void removeDumpedFluids()
 	{
-		//remove any surface water or lava above sea level, presumed to be placed by players
+		if(this.seaLevel < 1) return;
+	    
+	    //remove any surface water or lava above sea level, presumed to be placed by players
 		//sometimes, this is naturally generated.  but replacing it is very easy with a bucket, so overall this is a good plan
 		if(this.environment == Environment.NETHER) return;
 		for(int x = 1; x < snapshots.length - 1; x++)
