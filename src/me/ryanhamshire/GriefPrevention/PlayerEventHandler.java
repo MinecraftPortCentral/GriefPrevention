@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.bukkit.Achievement;
@@ -115,6 +114,7 @@ class PlayerEventHandler implements Listener
 		//soft muted messages go out to all soft muted players
 		else if(this.dataStore.isSoftMuted(player.getUniqueId()))
 		{
+		    String notificationMessage = "(Muted " + player.getName() + "): " + message;
 		    Set<Player> recipientsToKeep = new HashSet<Player>();
 		    for(Player recipient : recipients)
 		    {
@@ -124,11 +124,19 @@ class PlayerEventHandler implements Listener
 		        }
 		        else if(recipient.hasPermission("griefprevention.eavesdrop"))
 		        {
-		            recipient.sendMessage(ChatColor.GRAY + "(Muted " + player.getName() + "): " + message);
+		            recipient.sendMessage(ChatColor.GRAY + notificationMessage);
 		        }
 		    }
 		    recipients.clear();
 		    recipients.addAll(recipientsToKeep);
+		    
+		    GriefPrevention.AddLogEntry(notificationMessage, CustomLogEntryTypes.Debug, true);
+		}
+		
+		//unfiltered messages go to the abridged chat logs
+		else
+		{
+		    this.makeSocialLogEntry(player.getName(), message);
 		}
 	}
 	
@@ -300,7 +308,7 @@ class PlayerEventHandler implements Listener
 				if(GriefPrevention.instance.config_spam_banOffenders)
 				{
 					//log entry
-					GriefPrevention.AddLogEntry("Banning " + player.getName() + " for spam.");
+					GriefPrevention.AddLogEntry("Banning " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 					
 					//kick and ban
 					PlayerKickBanTask task = new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage);
@@ -309,7 +317,7 @@ class PlayerEventHandler implements Listener
 				else
 				{
 					//log entry
-					GriefPrevention.AddLogEntry("Banning " + player.getName() + " for spam.");
+					GriefPrevention.AddLogEntry("Kicking " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 					
 					//just kick
 					PlayerKickBanTask task = new PlayerKickBanTask(player, null);
@@ -330,7 +338,7 @@ class PlayerEventHandler implements Listener
 				if(!playerData.spamWarned)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Warn, GriefPrevention.instance.config_spam_warningMessage, 10L);
-					GriefPrevention.AddLogEntry("Warned " + player.getName() + " about spam penalties.");
+					GriefPrevention.AddLogEntry("Warned " + player.getName() + " about spam penalties.", CustomLogEntryTypes.Debug, true);
 					playerData.spamWarned = true;
 				}
 			}
@@ -339,6 +347,7 @@ class PlayerEventHandler implements Listener
 			{
 				//make a log entry
 				GriefPrevention.AddLogEntry("Muted " + mutedReason + ".");
+				GriefPrevention.AddLogEntry("Muted " + player.getName() + " " + mutedReason + ":" + message, CustomLogEntryTypes.Debug, true);
 				
 				//cancelling the event guarantees other players don't receive the message
 				return true;
@@ -442,28 +451,40 @@ class PlayerEventHandler implements Listener
 			return;
 		}
 		
-		//if anti spam enabled, check for spam
-		if(GriefPrevention.instance.config_spam_enabled)
+		//if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
+		boolean isMonitoredCommand = false;
+		for(String monitoredCommand : GriefPrevention.instance.config_spam_monitorSlashCommands)
 		{
-    		//if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
-    		boolean isMonitoredCommand = false;
-    		for(String monitoredCommand : GriefPrevention.instance.config_spam_monitorSlashCommands)
-    		{
-    			if(args[0].equalsIgnoreCase(monitoredCommand))
-    			{
-    				isMonitoredCommand = true;
-    				break;
-    			}
-    		}
-    		
-    		if(isMonitoredCommand)
-    		{
-    			event.setCancelled(this.handlePlayerChat(event.getPlayer(), event.getMessage(), event));		
-    		}
+			if(args[0].equalsIgnoreCase(monitoredCommand))
+			{
+				isMonitoredCommand = true;
+				break;
+			}
+		}
+		
+		if(isMonitoredCommand)
+		{
+		    //if anti spam enabled, check for spam
+	        if(GriefPrevention.instance.config_spam_enabled)
+		    {
+		        event.setCancelled(this.handlePlayerChat(event.getPlayer(), event.getMessage(), event));
+		    }
+		    
+		    //unless cancelled, log in abridged logs
+	        if(!event.isCancelled())
+		    {
+		        StringBuilder builder = new StringBuilder();
+		        for(String arg : args)
+		        {
+		            builder.append(arg + " ");
+		        }
+		        
+	            this.makeSocialLogEntry(event.getPlayer().getName(), builder.toString());
+		    }
 		}
 		
 		//if requires access trust, check for permission
-		boolean isMonitoredCommand = false;
+		isMonitoredCommand = false;
         for(String monitoredCommand : GriefPrevention.instance.config_claims_commandsRequiringAccessTrust)
         {
             if(args[0].equalsIgnoreCase(monitoredCommand))
@@ -490,7 +511,22 @@ class PlayerEventHandler implements Listener
         }
 	}
 	
-	private ConcurrentHashMap<UUID, Date> lastLoginThisServerSessionMap = new ConcurrentHashMap<UUID, Date>();
+	private int longestNameLength = 10;
+	private void makeSocialLogEntry(String name, String message)
+	{
+        StringBuilder entryBuilder = new StringBuilder(name);
+        for(int i = name.length(); i < longestNameLength; i++)
+        {
+            entryBuilder.append(' ');
+        }
+        entryBuilder.append(": " + message);
+        
+        this.longestNameLength = Math.max(longestNameLength, name.length());
+        
+        GriefPrevention.AddLogEntry(entryBuilder.toString(), CustomLogEntryTypes.SocialActivity, true);
+    }
+
+    private ConcurrentHashMap<UUID, Date> lastLoginThisServerSessionMap = new ConcurrentHashMap<UUID, Date>();
 	
 	//when a player attempts to join the server...
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -619,7 +655,7 @@ class PlayerEventHandler implements Listener
 					//otherwise if that account is still banned, ban this account, too
 					else
 					{
-						GriefPrevention.AddLogEntry("Auto-banned " + player.getName() + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " (" + info.address.toString() + ").");
+						GriefPrevention.AddLogEntry("Auto-banned " + player.getName() + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " (" + info.address.toString() + ").", CustomLogEntryTypes.AdminActivity);
 						
 						//notify any online ops
 						Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
@@ -1268,7 +1304,7 @@ class PlayerEventHandler implements Listener
 		    
 		    if(makeLogEntry)
 	        {
-	            GriefPrevention.AddLogEntry(player.getName() + " placed suspicious " + bucketEvent.getBucket().name() + " @ " + GriefPrevention.getfriendlyLocationString(block.getLocation()));
+	            GriefPrevention.AddLogEntry(player.getName() + " placed suspicious " + bucketEvent.getBucket().name() + " @ " + GriefPrevention.getfriendlyLocationString(block.getLocation()), CustomLogEntryTypes.SuspiciousActivity);
 	        }
 		}
 	}

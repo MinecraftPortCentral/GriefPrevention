@@ -41,6 +41,8 @@ class DeliverClaimBlocksTask implements Runnable
 		//if no player specified, this task will create a player-specific task for each online player, scheduled one tick apart
 	    if(this.player == null && GriefPrevention.instance.config_claims_blocksAccruedPerHour > 0)
 		{
+	        GriefPrevention.AddLogEntry("Delivering claim blocks to active players...", CustomLogEntryTypes.Debug, true);
+	        
 	        Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
 	        
 	        long i = 0;
@@ -76,11 +78,17 @@ class DeliverClaimBlocksTask implements Runnable
                     int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
                     if(accruedBlocks < 0) accruedBlocks = 1;
                     
+                    GriefPrevention.AddLogEntry(accruedBlocks + " for " + player.getName(), CustomLogEntryTypes.Debug, true);
+                    
                     playerData.accrueBlocks(accruedBlocks); 
                     
                     //intentionally NOT saving data here to reduce overall secondary storage access frequency
                     //many other operations will cause this players data to save, including his eventual logout
-                    //dataStore.savePlayerData(player.getName(), playerData);
+                    //dataStore.savePlayerData(player.getUniqueIdentifier(), playerData);
+                }
+                else
+                {
+                    GriefPrevention.AddLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
                 }
             }
             catch(IllegalArgumentException e)  //can't measure distance when to/from are different worlds

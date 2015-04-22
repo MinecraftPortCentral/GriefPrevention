@@ -31,6 +31,7 @@ import me.ryanhamshire.GriefPrevention.Visualization;
 
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
 //holds all of GriefPrevention's player-tied data
 public class PlayerData 
@@ -291,6 +292,17 @@ public class PlayerData
             int totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if(totalBlocks < totalClaimsArea)
             {
+                Player player = GriefPrevention.instance.getServer().getPlayer(this.playerID);
+                GriefPrevention.AddLogEntry(player.getName() + "has more claimed land than blocks available.  Adding blocks to fix.", CustomLogEntryTypes.Debug);
+                GriefPrevention.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug);
+                for(Claim claim : this.claims)
+                {
+                    GriefPrevention.AddLogEntry(
+                            GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " // "
+                            + GriefPrevention.getfriendlyLocationString(claim.getGreaterBoundaryCorner()) + " = "
+                            + claim.getArea());
+                }
+                
                 //try to fix it by adding to accrued blocks
                 this.accruedClaimBlocks = totalClaimsArea;
                 if(this.accruedClaimBlocks > GriefPrevention.instance.config_claims_maxAccruedBlocks)

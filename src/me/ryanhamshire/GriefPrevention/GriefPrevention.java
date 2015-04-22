@@ -46,7 +46,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -68,6 +67,9 @@ public class GriefPrevention extends JavaPlugin
 	
 	//this tracks item stacks expected to drop which will need protection
     ArrayList<PendingItemProtection> pendingItemWatchList = new ArrayList<PendingItemProtection>();
+    
+    //log entry manager for GP's custom log files
+    CustomLogger customLogger;
 	
 	//configuration variables, loaded/saved from a config.yml
 	
@@ -164,6 +166,13 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_limitTreeGrowth;                          //whether trees should be prevented from growing into a claim from outside
 	public boolean config_pistonsInClaimsOnly;                      //whether pistons are limited to only move blocks located within the piston's land claim
 	
+	//custom log settings
+	public int config_logs_daysToKeep;
+    public boolean config_logs_socialEnabled;
+    public boolean config_logs_suspiciousEnabled;
+    public boolean config_logs_adminEnabled;
+    public boolean config_logs_debugEnabled;
+	
 	private String databaseUrl;
 	private String databaseUserName;
 	private String databasePassword;
@@ -178,20 +187,36 @@ public class GriefPrevention extends JavaPlugin
 	public static final int NOTIFICATION_SECONDS = 20;
 	
 	//adds a server log entry
-	public static synchronized void AddLogEntry(String entry)
+	public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs)
 	{
-		log.info("GriefPrevention: " + entry);
+		if(customLogType != null && GriefPrevention.instance.customLogger != null)
+		{
+		    GriefPrevention.instance.customLogger.AddEntry(entry, customLogType);
+		}
+	    if(!excludeFromServerLogs) log.info("GriefPrevention: " + entry);
 	}
+	
+	public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType)
+    {
+        AddLogEntry(entry, customLogType, false);
+    }
+	
+	public static synchronized void AddLogEntry(String entry)
+    {
+        AddLogEntry(entry, CustomLogEntryTypes.Debug);
+    }
 	
 	//initializes well...   everything
 	public void onEnable()
 	{ 		
-		AddLogEntry("Grief Prevention boot start.");
-		
-		instance = this;
+	    instance = this;
+        
+        AddLogEntry("Grief Prevention boot start.");
 		
 		this.loadConfig();
 		
+		this.customLogger = new CustomLogger();
+        
 		AddLogEntry("Finished loading configuration.");
 		
 		//when datastore initializes, it loads player and claim data, and posts some stats to the log
@@ -330,7 +355,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	private void loadConfig()
 	{
-	  //load the config if it exists
+	    //load the config if it exists
         FileConfiguration config = YamlConfiguration.loadConfiguration(new File(DataStore.configFilePath));
         FileConfiguration outConfig = new YamlConfiguration();
         
@@ -658,6 +683,13 @@ public class GriefPrevention extends JavaPlugin
         this.databaseUserName = config.getString("GriefPrevention.Database.UserName", "");
         this.databasePassword = config.getString("GriefPrevention.Database.Password", "");
         
+        //custom logger settings
+        this.config_logs_daysToKeep = config.getInt("GriefPrevention.Abridged Logs.Days To Keep", 7);
+        this.config_logs_socialEnabled = config.getBoolean("GriefPrevention.Abridged Logs.Included Entry Types.Social Activity", true);
+        this.config_logs_suspiciousEnabled = config.getBoolean("GriefPrevention.Abridged Logs.Included Entry Types.Suspicious Activity", true);
+        this.config_logs_adminEnabled = config.getBoolean("GriefPrevention.Abridged Logs.Included Entry Types.Administrative Activity", false);
+        this.config_logs_debugEnabled = config.getBoolean("GriefPrevention.Abridged Logs.Included Entry Types.Debug", false);
+        
         //claims mode by world
         for(World world : this.config_claims_worldModes.keySet())
         {
@@ -757,6 +789,13 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.Mods.BlockIdsRequiringAccessTrust", accessTrustStrings);
         outConfig.set("GriefPrevention.Mods.BlockIdsRequiringContainerTrust", containerTrustStrings);
         outConfig.set("GriefPrevention.Mods.BlockIdsExplodable", explodableStrings);
+        
+        //custom logger settings
+        outConfig.set("GriefPrevention.Abridged Logs.Days To Keep", this.config_logs_daysToKeep);
+        outConfig.set("GriefPrevention.Abridged Logs.Included Entry Types.Social Activity", this.config_logs_socialEnabled);
+        outConfig.set("GriefPrevention.Abridged Logs.Included Entry Types.Suspicious Activity", this.config_logs_suspiciousEnabled);
+        outConfig.set("GriefPrevention.Abridged Logs.Included Entry Types.Administrative Activity", this.config_logs_adminEnabled);
+        outConfig.set("GriefPrevention.Abridged Logs.Included Entry Types.Debug", this.config_logs_debugEnabled);
         
         try
         {
@@ -1002,7 +1041,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			//confirm
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.TransferSuccess);
-			GriefPrevention.AddLogEntry(player.getName() + " transferred a claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + ownerName + ".");
+			GriefPrevention.AddLogEntry(player.getName() + " transferred a claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + ownerName + ".", CustomLogEntryTypes.AdminActivity);
 			
 			return true;
 		}
@@ -1477,7 +1516,7 @@ public class GriefPrevention extends JavaPlugin
 						}
 						
 						GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteSuccess);
-						GriefPrevention.AddLogEntry(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+						GriefPrevention.AddLogEntry(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()), CustomLogEntryTypes.AdminActivity);
 						
 						//revert any current visualization
 						Visualization.Revert(player);
@@ -1548,7 +1587,7 @@ public class GriefPrevention extends JavaPlugin
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
 			if(player != null)
 			{
-				GriefPrevention.AddLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".");
+				GriefPrevention.AddLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".", CustomLogEntryTypes.AdminActivity);
 			
 				//revert any current visualization
 				Visualization.Revert(player);
@@ -1641,7 +1680,7 @@ public class GriefPrevention extends JavaPlugin
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
 			if(player != null)
 			{
-				GriefPrevention.AddLogEntry(player.getName() + " deleted all administrative claims.");
+				GriefPrevention.AddLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
 			
 				//revert any current visualization
 				Visualization.Revert(player);
@@ -1693,7 +1732,7 @@ public class GriefPrevention extends JavaPlugin
 			this.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
 			
 			GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment), String.valueOf(playerData.getBonusClaimBlocks()));
-			if(player != null) GriefPrevention.AddLogEntry(player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".");
+			if(player != null) GriefPrevention.AddLogEntry(player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".", CustomLogEntryTypes.AdminActivity);
 			
 			return true;			
 		}
@@ -1729,7 +1768,7 @@ public class GriefPrevention extends JavaPlugin
             this.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
             
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.SetClaimBlocksSuccess);
-            if(player != null) GriefPrevention.AddLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".");
+            if(player != null) GriefPrevention.AddLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".", CustomLogEntryTypes.AdminActivity);
             
             return true;
         }
@@ -2243,7 +2282,7 @@ public class GriefPrevention extends JavaPlugin
 	//helper method to resolve a player by name
 	ConcurrentHashMap<String, UUID> playerNameToIDMap = new ConcurrentHashMap<String, UUID>();
 
-	//thread to build the above cache
+    //thread to build the above cache
 	private class CacheOfflinePlayerNamesThread extends Thread
     {
         private OfflinePlayer [] offlinePlayers;
@@ -2368,6 +2407,9 @@ public class GriefPrevention extends JavaPlugin
 		}
 		
 		this.dataStore.close();
+		
+		//dump any remaining unwritten log entries
+		this.customLogger.WriteEntries();
 		
 		AddLogEntry("GriefPrevention disabled.");
 	}
