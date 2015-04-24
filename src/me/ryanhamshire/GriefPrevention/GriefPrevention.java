@@ -1400,7 +1400,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			//load player data
 			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-			int availableBlocks = Math.min(playerData.getBonusClaimBlocks(), playerData.getRemainingClaimBlocks());
+			int availableBlocks = playerData.getRemainingClaimBlocks();
 			
 			//if no amount provided, just tell player value per block sold, and how many he can sell
 			if(args.length != 1)
