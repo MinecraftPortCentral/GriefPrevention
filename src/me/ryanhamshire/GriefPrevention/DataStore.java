@@ -299,12 +299,19 @@ public abstract class DataStore
 	
 	abstract void saveGroupBonusBlocks(String groupName, int amount);
 	
-	synchronized public void changeClaimOwner(Claim claim, UUID newOwnerID) throws Exception
+	class NoTransferException extends Exception
+	{
+	    NoTransferException(String message)
+	    {
+	        super(message);
+	    }
+	}
+	synchronized public void changeClaimOwner(Claim claim, UUID newOwnerID) throws NoTransferException
 	{
 		//if it's a subdivision, throw an exception
 		if(claim.parent != null)
 		{
-			throw new Exception("Subdivisions can't be transferred.  Only top-level claims may change owners.");
+			throw new NoTransferException("Subdivisions can't be transferred.  Only top-level claims may change owners.");
 		}
 		
 		//otherwise update information
