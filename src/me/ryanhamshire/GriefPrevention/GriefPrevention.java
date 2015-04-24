@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
 import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
@@ -1033,10 +1034,10 @@ public class GriefPrevention extends JavaPlugin
 			{
 				this.dataStore.changeClaimOwner(claim, newOwnerID);
 			}
-			catch(Exception e)
+			catch(NoTransferException e)
 			{
 			    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
-				return true;
+    			return true;
 			}
 			
 			//confirm

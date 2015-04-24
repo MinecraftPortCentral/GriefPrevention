@@ -292,15 +292,16 @@ public class PlayerData
             int totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if(totalBlocks < totalClaimsArea)
             {
-                Player player = GriefPrevention.instance.getServer().getPlayer(this.playerID);
-                GriefPrevention.AddLogEntry(player.getName() + "has more claimed land than blocks available.  Adding blocks to fix.", CustomLogEntryTypes.Debug);
-                GriefPrevention.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug);
+                OfflinePlayer player = GriefPrevention.instance.getServer().getOfflinePlayer(this.playerID);
+                GriefPrevention.AddLogEntry(player.getName() + "has more claimed land than blocks available.  Adding blocks to fix.", CustomLogEntryTypes.Debug, true);
+                GriefPrevention.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug, true);
                 for(Claim claim : this.claims)
                 {
                     GriefPrevention.AddLogEntry(
                             GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " // "
                             + GriefPrevention.getfriendlyLocationString(claim.getGreaterBoundaryCorner()) + " = "
-                            + claim.getArea());
+                            + claim.getArea()
+                            , CustomLogEntryTypes.Debug, true);
                 }
                 
                 //try to fix it by adding to accrued blocks
