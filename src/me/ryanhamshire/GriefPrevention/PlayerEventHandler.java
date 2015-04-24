@@ -89,7 +89,7 @@ class PlayerEventHandler implements Listener
 	}
 	
 	//when a player chats, monitor for spam
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	synchronized void onPlayerChat (AsyncPlayerChatEvent event)
 	{		
 		Player player = event.getPlayer();
