@@ -511,8 +511,8 @@ class PlayerEventHandler implements Listener
         }
 	}
 	
-	private int longestNameLength = 10;
-	private void makeSocialLogEntry(String name, String message)
+	static int longestNameLength = 10;
+	static void makeSocialLogEntry(String name, String message)
 	{
         StringBuilder entryBuilder = new StringBuilder(name);
         for(int i = name.length(); i < longestNameLength; i++)
@@ -521,7 +521,7 @@ class PlayerEventHandler implements Listener
         }
         entryBuilder.append(": " + message);
         
-        this.longestNameLength = Math.max(longestNameLength, name.length());
+        longestNameLength = Math.max(longestNameLength, name.length());
         
         GriefPrevention.AddLogEntry(entryBuilder.toString(), CustomLogEntryTypes.SocialActivity, true);
     }
