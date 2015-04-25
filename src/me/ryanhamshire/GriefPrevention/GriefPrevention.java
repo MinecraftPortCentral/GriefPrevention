@@ -1720,12 +1720,23 @@ public class GriefPrevention extends JavaPlugin
 			}
 			
 			//otherwise, find the specified player
-			OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
-			if(targetPlayer == null)
+			OfflinePlayer targetPlayer;
+			try
 			{
-				GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
-				return true;
+			    UUID playerID = UUID.fromString(args[0]);
+			    targetPlayer = this.getServer().getOfflinePlayer(playerID);
+			    
 			}
+			catch(IllegalArgumentException e)
+			{
+    			targetPlayer = this.resolvePlayerByName(args[0]);
+			}
+			
+			if(targetPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
 			
 			//give blocks to player
 			PlayerData playerData = this.dataStore.getPlayerData(targetPlayer.getUniqueId());
