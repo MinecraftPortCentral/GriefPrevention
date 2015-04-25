@@ -23,6 +23,9 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.bukkit.scheduler.BukkitScheduler;
 
 import com.google.common.io.Files;
@@ -58,6 +61,7 @@ class CustomLogger
         }
     }
     
+    private static final Pattern inlineFormatterPattern = Pattern.compile("§."); 
     void AddEntry(String entry, CustomLogEntryTypes entryType)
     {
         //if disabled, do nothing
@@ -67,7 +71,9 @@ class CustomLogger
         //if entry type is not enabled, do nothing
         if(!this.isEnabledType(entryType)) return;
         
-        //otherwise write to the in-memory buffer
+        //otherwise write to the in-memory buffer, after removing formatters
+        Matcher matcher = inlineFormatterPattern.matcher(entry);
+        entry = matcher.replaceAll("");
         String timestamp = this.timestampFormat.format(new Date());
         this.queuedEntries.append(timestamp + " " + entry + "\n");
     }
