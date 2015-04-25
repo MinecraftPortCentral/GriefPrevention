@@ -17,6 +17,7 @@
  */
 
 package me.ryanhamshire.GriefPrevention;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -527,6 +528,9 @@ class PlayerEventHandler implements Listener
     }
 
     private ConcurrentHashMap<UUID, Date> lastLoginThisServerSessionMap = new ConcurrentHashMap<UUID, Date>();
+
+    //counts how many players are using each IP address connected to the server right now
+    private ConcurrentHashMap<String, Integer> ipCountHash = new ConcurrentHashMap<String, Integer>();
 	
 	//when a player attempts to join the server...
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -570,9 +574,30 @@ class PlayerEventHandler implements Listener
 			}
 		}
 		
+		//ensure we're not over the limit for this IP address
+		InetAddress ipAddress = event.getAddress();
+		String ipAddressString = ipAddress.toString();
+		int ipLimit = GriefPrevention.instance.config_ipLimit;
+		if(ipLimit > 0)
+		{
+		    Integer ipCount = this.ipCountHash.get(ipAddressString);
+		    if(ipCount == null) ipCount = 0;
+		    if(ipCount >= ipLimit)
+		    {
+		        event.setResult(Result.KICK_OTHER);               
+                event.setKickMessage("Sorry, there are too many players logged in with your IP address.");
+                event.disallow(event.getResult(), event.getKickMessage());
+                return;
+		    }
+		    else
+		    {
+		        this.ipCountHash.put(ipAddressString, ipCount + 1);
+		    }
+		}
+		
 		//remember the player's ip address
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		playerData.ipAddress = event.getAddress();
+		playerData.ipAddress = ipAddress;
 	}
 	
 	//when a player successfully joins the server...
@@ -788,6 +813,19 @@ class PlayerEventHandler implements Listener
         
         //drop data about this player
         this.dataStore.clearCachedPlayerData(playerID);
+        
+        //reduce count of players with that player's IP address
+        if(GriefPrevention.instance.config_ipLimit > 0)
+        {
+            InetAddress ipAddress = playerData.ipAddress;
+            if(ipAddress != null)
+            {
+                String ipAddressString = ipAddress.toString();
+                Integer count = this.ipCountHash.get(ipAddressString);
+                if(count == null) count = 1;
+                this.ipCountHash.put(ipAddressString, count - 1);
+            }
+        }
 	}
 	
 	//determines whether or not a login or logout notification should be silenced, depending on how many there have been in the last minute

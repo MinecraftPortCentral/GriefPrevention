@@ -293,7 +293,7 @@ public class PlayerData
             if(totalBlocks < totalClaimsArea)
             {
                 OfflinePlayer player = GriefPrevention.instance.getServer().getOfflinePlayer(this.playerID);
-                GriefPrevention.AddLogEntry(player.getName() + "has more claimed land than blocks available.  Adding blocks to fix.", CustomLogEntryTypes.Debug, true);
+                GriefPrevention.AddLogEntry(player.getName() + " has more claimed land than blocks available.  Adding blocks to fix.", CustomLogEntryTypes.Debug, true);
                 GriefPrevention.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug, true);
                 for(Claim claim : this.claims)
                 {

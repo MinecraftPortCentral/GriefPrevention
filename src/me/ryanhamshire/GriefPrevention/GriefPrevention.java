@@ -157,6 +157,8 @@ public class GriefPrevention extends JavaPlugin
 	public boolean config_creaturesTrampleCrops;					//whether or not non-player entities may trample crops
 	public boolean config_zombiesBreakDoors;						//whether or not hard-mode zombies may break down wooden doors
 	
+	public int config_ipLimit;                                      //how many players can share an IP address
+	
 	public MaterialCollection config_mods_accessTrustIds;			//list of block IDs which should require /accesstrust for player interaction
 	public MaterialCollection config_mods_containerTrustIds;		//list of block IDs which should require /containertrust for player interaction
 	public List<String> config_mods_ignoreClaimsAccounts;			//list of player names which ALWAYS ignore claims
@@ -542,6 +544,7 @@ public class GriefPrevention extends JavaPlugin
         String whisperCommandsToMonitor = config.getString("GriefPrevention.WhisperCommands", "/tell;/pm;/r;/w;/whisper;/t;/msg");
         
         this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
+        this.config_ipLimit = config.getInt("GriefPrevention.MaxPlayersPerIpAddress", 5); 
         
         this.config_endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
         this.config_silverfishBreakBlocks = config.getBoolean("GriefPrevention.SilverfishBreakBlocks", false);
@@ -770,6 +773,7 @@ public class GriefPrevention extends JavaPlugin
         
         outConfig.set("GriefPrevention.WhisperCommands", whisperCommandsToMonitor);     
         outConfig.set("GriefPrevention.SmartBan", this.config_smartBan);
+        outConfig.set("GriefPrevention.MaxPlayersPerIpAddress", this.config_ipLimit);
         
         outConfig.set("GriefPrevention.Siege.Worlds", siegeEnabledWorldNames);
         outConfig.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
