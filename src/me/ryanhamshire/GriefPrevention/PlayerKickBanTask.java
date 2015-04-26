@@ -28,19 +28,23 @@ class PlayerKickBanTask implements Runnable
 	//player to kick or ban
 	private Player player;
 	
-	//ban message.  if null, don't ban
-	private String banReason;
+	//message to send player.
+	private String reason;
 	
-	public PlayerKickBanTask(Player player, String banReason)
+	//whether to ban
+	private boolean ban;
+	
+	public PlayerKickBanTask(Player player, String reason, boolean ban)
 	{
 		this.player = player;
-		this.banReason = banReason;		
+		this.reason = reason;	
+		this.ban = ban;
 	}
 	
 	@Override
 	public void run()
 	{
-		if(this.banReason != null)
+		if(this.ban)
 		{		
 			//ban
 			this.player.setBanned(true);
@@ -48,12 +52,12 @@ class PlayerKickBanTask implements Runnable
 			//kick
 			if(this.player.isOnline())
 			{
-				this.player.kickPlayer(this.banReason);
+				this.player.kickPlayer(this.reason);
 			}
 		}	
 		else if(this.player.isOnline())
 		{
-			this.player.kickPlayer("");
+			this.player.kickPlayer(this.reason);
 		}
 	}
 }

@@ -312,7 +312,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.AddLogEntry("Banning " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 					
 					//kick and ban
-					PlayerKickBanTask task = new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage);
+					PlayerKickBanTask task = new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage, true);
 					GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 1L);
 				}
 				else
@@ -321,7 +321,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.AddLogEntry("Kicking " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 					
 					//just kick
-					PlayerKickBanTask task = new PlayerKickBanTask(player, null);
+					PlayerKickBanTask task = new PlayerKickBanTask(player, "", false);
 					GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 1L);					
 				}
 				
@@ -574,30 +574,9 @@ class PlayerEventHandler implements Listener
 			}
 		}
 		
-		//ensure we're not over the limit for this IP address
-		InetAddress ipAddress = event.getAddress();
-		String ipAddressString = ipAddress.toString();
-		int ipLimit = GriefPrevention.instance.config_ipLimit;
-		if(ipLimit > 0)
-		{
-		    Integer ipCount = this.ipCountHash.get(ipAddressString);
-		    if(ipCount == null) ipCount = 0;
-		    if(ipCount >= ipLimit)
-		    {
-		        event.setResult(Result.KICK_OTHER);               
-                event.setKickMessage("Sorry, there are too many players logged in with your IP address.");
-                event.disallow(event.getResult(), event.getKickMessage());
-                return;
-		    }
-		    else
-		    {
-		        this.ipCountHash.put(ipAddressString, ipCount + 1);
-		    }
-		}
-		
 		//remember the player's ip address
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		playerData.ipAddress = ipAddress;
+		playerData.ipAddress = event.getAddress();
 	}
 	
 	//when a player successfully joins the server...
@@ -693,7 +672,7 @@ class PlayerEventHandler implements Listener
 						}
 						
 						//ban player
-						PlayerKickBanTask task = new PlayerKickBanTask(player, "");
+						PlayerKickBanTask task = new PlayerKickBanTask(player, "", true);
 						GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
 						
 						//silence join message
@@ -707,6 +686,30 @@ class PlayerEventHandler implements Listener
 		
 		//in case player has changed his name, on successful login, update UUID > Name mapping
 		GriefPrevention.cacheUUIDNamePair(player.getUniqueId(), player.getName());
+		
+		//ensure we're not over the limit for this IP address
+        InetAddress ipAddress = playerData.ipAddress;
+        String ipAddressString = ipAddress.toString();
+        int ipLimit = GriefPrevention.instance.config_ipLimit;
+        if(ipLimit > 0 && !player.hasAchievement(Achievement.MINE_WOOD))
+        {
+            Integer ipCount = this.ipCountHash.get(ipAddressString);
+            if(ipCount == null) ipCount = 0;
+            if(ipCount >= ipLimit)
+            {
+                //kick player
+                PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.", false);
+                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
+                
+                //silence join message
+                event.setJoinMessage("");               
+                return;
+            }
+            else
+            {
+                this.ipCountHash.put(ipAddressString, ipCount + 1);
+            }
+        }
 	}
 	
 	//when a player spawns, conditionally apply temporary pvp protection 
@@ -815,7 +818,7 @@ class PlayerEventHandler implements Listener
         this.dataStore.clearCachedPlayerData(playerID);
         
         //reduce count of players with that player's IP address
-        if(GriefPrevention.instance.config_ipLimit > 0)
+        if(GriefPrevention.instance.config_ipLimit > 0 && !player.hasAchievement(Achievement.MINE_WOOD))
         {
             InetAddress ipAddress = playerData.ipAddress;
             if(ipAddress != null)

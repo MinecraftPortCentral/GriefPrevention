@@ -544,7 +544,7 @@ public class GriefPrevention extends JavaPlugin
         String whisperCommandsToMonitor = config.getString("GriefPrevention.WhisperCommands", "/tell;/pm;/r;/w;/whisper;/t;/msg");
         
         this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
-        this.config_ipLimit = config.getInt("GriefPrevention.MaxPlayersPerIpAddress", 5); 
+        this.config_ipLimit = config.getInt("GriefPrevention.MaxPlayersPerIpAddress", 3); 
         
         this.config_endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
         this.config_silverfishBreakBlocks = config.getBoolean("GriefPrevention.SilverfishBreakBlocks", false);
