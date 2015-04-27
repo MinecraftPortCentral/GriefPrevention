@@ -36,31 +36,34 @@ class EquipShovelProcessingTask implements Runnable
 	@Override
 	public void run()
 	{
-		//if he logged out, don't do anything
-		if(!player.isOnline()) return;
-		
 		//if he's not holding the golden shovel anymore, do nothing
 		if(player.getItemInHand().getType() != GriefPrevention.instance.config_claims_modificationTool) return;
 		
 		PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
 		
-		int remainingBlocks = playerData.getRemainingClaimBlocks();
+        //reset any work he might have been doing
+        playerData.lastShovelLocation = null;
+        playerData.claimResizing = null;
 		
-		//if in basic claims mode...
-		if(playerData.shovelMode == ShovelMode.Basic)
+		//always reset to basic claims mode
+        if(playerData.shovelMode != ShovelMode.Basic)
+        {           
+            playerData.shovelMode = ShovelMode.Basic;
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShovelBasicClaimMode);
+        }
+		
+		//tell him how many claim blocks he has available
+        int remainingBlocks = playerData.getRemainingClaimBlocks();
+        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RemainingBlocks, String.valueOf(remainingBlocks));
+		
+		//link to a video demo of land claiming, based on world type
+		if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
 		{
-			//tell him how many claim blocks he has available
-			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RemainingBlocks, String.valueOf(remainingBlocks));
-			
-			//link to a video demo of land claiming, based on world type
-			if(GriefPrevention.instance.creativeRulesApply(player.getLocation()))
-			{
-				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);			
-			}
-			else
-			{
-				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
-			}
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);			
+		}
+		else if(GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getWorld()))
+		{
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
 		}
 	}
 }

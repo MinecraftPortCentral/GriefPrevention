@@ -1233,22 +1233,10 @@ class PlayerEventHandler implements Listener
 		Player player = event.getPlayer();
 		
 		//if he's switching to the golden shovel
-		ItemStack newItemStack = player.getInventory().getItem(event.getNewSlot());
+		int newSlot = event.getNewSlot();
+		ItemStack newItemStack = player.getInventory().getItem(newSlot);
 		if(newItemStack != null && newItemStack.getType() == GriefPrevention.instance.config_claims_modificationTool)
 		{
-			PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-		
-			//always reset to basic claims mode
-			if(playerData.shovelMode != ShovelMode.Basic)
-			{			
-				playerData.shovelMode = ShovelMode.Basic;
-				GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShovelBasicClaimMode);
-			}
-		
-			//reset any work he might have been doing
-			playerData.lastShovelLocation = null;
-			playerData.claimResizing = null;
-			
 			//give the player his available claim blocks count and claiming instructions, but only if he keeps the shovel equipped for a minimum time, to avoid mouse wheel spam
 			if(GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()))
 			{
