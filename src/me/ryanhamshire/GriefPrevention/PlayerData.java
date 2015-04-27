@@ -172,6 +172,15 @@ public class PlayerData
 	{
 	    if(this.accruedClaimBlocks == null) this.loadDataFromSecondaryStorage();
         
+	    //if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
+        //in that case, leave his blocks where they are
+        int currentTotal = this.accruedClaimBlocks;
+        if(currentTotal >= GriefPrevention.instance.config_claims_maxAccruedBlocks)
+        {
+            this.newlyAccruedClaimBlocks = 0;
+            return currentTotal;
+        }
+	    
 	    //move any in the holding area
 	    int newTotal = this.accruedClaimBlocks + this.newlyAccruedClaimBlocks;
 	    this.newlyAccruedClaimBlocks = 0;

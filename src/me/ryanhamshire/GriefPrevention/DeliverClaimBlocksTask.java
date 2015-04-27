@@ -41,8 +41,6 @@ class DeliverClaimBlocksTask implements Runnable
 		//if no player specified, this task will create a player-specific task for each online player, scheduled one tick apart
 	    if(this.player == null && GriefPrevention.instance.config_claims_blocksAccruedPerHour > 0)
 		{
-	        GriefPrevention.AddLogEntry("Delivering claim blocks to active players...", CustomLogEntryTypes.Debug, true);
-	        
 	        Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
 	        
 	        long i = 0;
@@ -59,26 +57,20 @@ class DeliverClaimBlocksTask implements Runnable
 	        DataStore dataStore = GriefPrevention.instance.dataStore;
             PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
             
-            //if player is over accrued limit, accrued limit was probably reduced in config file AFTER he accrued
-            //in that case, leave his blocks where they are
-            int currentTotal = playerData.getAccruedClaimBlocks();
-            if(currentTotal >= GriefPrevention.instance.config_claims_maxAccruedBlocks) return;
-            
             Location lastLocation = playerData.lastAfkCheckLocation;
             try
             {
                 //if he's not in a vehicle and has moved at least three blocks since the last check
                 //and he's not being pushed around by fluids
                 if(!player.isInsideVehicle() && 
-                   (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 9) &&
+                   (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 0) &&
                    !player.getLocation().getBlock().isLiquid())
                 {                   
-                    
                     //add blocks
-                    int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 12;
+                    int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 6;
                     if(accruedBlocks < 0) accruedBlocks = 1;
                     
-                    GriefPrevention.AddLogEntry(accruedBlocks + " for " + player.getName(), CustomLogEntryTypes.Debug, true);
+                    GriefPrevention.AddLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
                     
                     playerData.accrueBlocks(accruedBlocks); 
                     

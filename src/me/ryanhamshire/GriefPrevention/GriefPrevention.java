@@ -285,7 +285,7 @@ public class GriefPrevention extends JavaPlugin
 		if(this.config_claims_blocksAccruedPerHour > 0)
 		{
 			DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-			this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 5, 20L * 60 * 5);
+			this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 10, 20L * 60 * 10);
 		}
 		
 		//start the recurring cleanup event for entities in creative worlds
