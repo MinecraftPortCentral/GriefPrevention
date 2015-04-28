@@ -79,6 +79,9 @@ public class PlayerData
 	//timestamp of last death, for use in preventing death message spam
 	long lastDeathTimeStamp = 0;
 	
+	//timestamp when last siege ended (where this player was the defender)
+	long lastSiegeEndTimeStamp = 0;
+	
 	//whether the player was kicked (set and used during logout)
 	boolean wasKicked = false;
 	

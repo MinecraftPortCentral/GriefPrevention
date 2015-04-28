@@ -849,6 +849,7 @@ public abstract class DataStore
 		
 		PlayerData defenderData = this.getPlayerData(siegeData.defender.getUniqueId());	
 		defenderData.siegeData = null;
+		defenderData.lastSiegeEndTimeStamp = System.currentTimeMillis();
 
 		//start a cooldown for this attacker/defender pair
 		Long now = Calendar.getInstance().getTimeInMillis();
@@ -945,6 +946,17 @@ public abstract class DataStore
 			//if found but expired, remove it
 			this.siegeCooldownRemaining.remove(attacker.getName() + "_" + defender.getName());
 		}
+		
+		//look for genderal defender cooldown
+        PlayerData defenderData = this.getPlayerData(defender.getUniqueId());
+		if(defenderData.lastSiegeEndTimeStamp > 0)
+        {
+            long now = System.currentTimeMillis();
+            if(now - defenderData.lastSiegeEndTimeStamp > 1000 * 60 * 15) //15 minutes in milliseconds
+            {
+                return true;
+            }
+        }
 		
 		//look for an attacker/claim cooldown
 		if(cooldownEnd == null && this.siegeCooldownRemaining.get(attacker.getName() + "_" + defenderClaim.getOwnerName()) != null)
