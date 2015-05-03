@@ -132,7 +132,7 @@ public class BlockEventHandler implements Listener
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		if(notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage))
 		{		
-			GriefPrevention.AddLogEntry(lines.toString().replace("\n  ", ";"), null);
+			GriefPrevention.AddLogEntry(player.getName() + lines.toString().replace("\n  ", ";"), null);
 			PlayerEventHandler.makeSocialLogEntry(player.getName(), signMessage);
 			playerData.lastMessage = signMessage;
 			
