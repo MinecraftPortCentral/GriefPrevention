@@ -662,6 +662,9 @@ class EntityEventHandler implements Listener
 		       || subEvent.getEntityType() == EntityType.ARMOR_STAND
 		       || subEvent.getEntityType() == EntityType.VILLAGER)
 		    {
+		        //allow for disabling villager protections in the config
+		        if(subEvent.getEntityType() == EntityType.VILLAGER && !GriefPrevention.instance.config_claims_protectCreatures) return;
+		        
 		        //decide whether it's claimed
 		        Claim cachedClaim = null;
                 PlayerData playerData = null;
