@@ -689,25 +689,28 @@ class PlayerEventHandler implements Listener
 		
 		//ensure we're not over the limit for this IP address
         InetAddress ipAddress = playerData.ipAddress;
-        String ipAddressString = ipAddress.toString();
-        int ipLimit = GriefPrevention.instance.config_ipLimit;
-        if(ipLimit > 0 && !player.hasAchievement(Achievement.MINE_WOOD))
+        if(ipAddress != null)
         {
-            Integer ipCount = this.ipCountHash.get(ipAddressString);
-            if(ipCount == null) ipCount = 0;
-            if(ipCount >= ipLimit)
+            String ipAddressString = ipAddress.toString();
+            int ipLimit = GriefPrevention.instance.config_ipLimit;
+            if(ipLimit > 0 && !player.hasAchievement(Achievement.MINE_WOOD))
             {
-                //kick player
-                PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.", false);
-                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
-                
-                //silence join message
-                event.setJoinMessage("");               
-                return;
-            }
-            else
-            {
-                this.ipCountHash.put(ipAddressString, ipCount + 1);
+                Integer ipCount = this.ipCountHash.get(ipAddressString);
+                if(ipCount == null) ipCount = 0;
+                if(ipCount >= ipLimit)
+                {
+                    //kick player
+                    PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.", false);
+                    GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
+                    
+                    //silence join message
+                    event.setJoinMessage("");               
+                    return;
+                }
+                else
+                {
+                    this.ipCountHash.put(ipAddressString, ipCount + 1);
+                }
             }
         }
 	}
