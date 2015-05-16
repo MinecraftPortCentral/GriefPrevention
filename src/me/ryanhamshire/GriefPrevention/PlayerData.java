@@ -19,9 +19,12 @@
 package me.ryanhamshire.GriefPrevention;
 import java.net.InetAddress;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -135,6 +138,11 @@ public class PlayerData
 	//spot where a player can't talk, used to mute new players until they've moved a little
 	//this is an anti-bot strategy.
 	Location noChatLocation = null;
+	
+	//ignore list
+	//true means invisible (admin-forced ignore), false means player-created ignore
+	ConcurrentHashMap<UUID, Boolean> ignoredPlayers = new ConcurrentHashMap<UUID, Boolean>();
+	boolean ignoreListChanged = false;
 	
 	//whether or not this player is "in" pvp combat
 	public boolean inPvpCombat()

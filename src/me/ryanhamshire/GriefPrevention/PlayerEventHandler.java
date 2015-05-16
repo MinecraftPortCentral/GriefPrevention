@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+
 import org.bukkit.Achievement;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -134,10 +135,32 @@ class PlayerEventHandler implements Listener
 		    GriefPrevention.AddLogEntry(notificationMessage, CustomLogEntryTypes.Debug, true);
 		}
 		
-		//unfiltered messages go to the abridged chat logs
+		//remaining messages
 		else
 		{
+		    //enter in abridged chat logs
 		    this.makeSocialLogEntry(player.getName(), message);
+		    
+		    //based on ignore lists, remove some of the audience
+		    Set<Player> recipientsToRemove = new HashSet<Player>();
+		    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+		    for(Player recipient : recipients)
+		    {
+		        if(playerData.ignoredPlayers.containsKey(recipient.getUniqueId()))
+		        {
+		            recipientsToRemove.add(recipient);
+		        }
+		        else
+		        {
+		            PlayerData targetPlayerData = this.dataStore.getPlayerData(recipient.getUniqueId());
+		            if(targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId()))
+		            {
+		                recipientsToRemove.add(recipient);
+		            }
+		        }
+		    }
+		    
+		    recipients.removeAll(recipientsToRemove);
 		}
 	}
 	
@@ -419,32 +442,61 @@ class PlayerEventHandler implements Listener
 	{
 		String [] args = event.getMessage().split(" ");
 		
-		//if eavesdrop enabled, eavesdrop
 		String command = args[0].toLowerCase();
-		if(GriefPrevention.instance.config_whisperNotifications && GriefPrevention.instance.config_eavesdrop_whisperCommands.contains(command) && !event.getPlayer().hasPermission("griefprevention.eavesdrop") && args.length > 1)
-		{			
-			StringBuilder logMessageBuilder = new StringBuilder();
-			logMessageBuilder.append("[[").append(event.getPlayer().getName()).append("]] ");
-			
-			for(int i = 1; i < args.length; i++)
-			{
-				logMessageBuilder.append(args[i]).append(" ");
-			}
-			
-			String logMessage = logMessageBuilder.toString();
-			
-			Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
-			for(Player player : players)
-			{
-				if(player.hasPermission("griefprevention.eavesdrop") && !player.getName().equalsIgnoreCase(args[1]))
-				{
-					player.sendMessage(ChatColor.GRAY + logMessage);
-				}
-			}
+		
+		Player player = event.getPlayer();
+		PlayerData playerData = null;
+		
+		//if a whisper
+		if(GriefPrevention.instance.config_eavesdrop_whisperCommands.contains(command) && args.length > 1)
+		{
+    		//if eavesdrop enabled, eavesdrop
+            if(GriefPrevention.instance.config_whisperNotifications && !event.getPlayer().hasPermission("griefprevention.eavesdrop"))
+    		{			
+    			StringBuilder logMessageBuilder = new StringBuilder();
+    			logMessageBuilder.append("[[").append(event.getPlayer().getName()).append("]] ");
+    			
+    			for(int i = 1; i < args.length; i++)
+    			{
+    				logMessageBuilder.append(args[i]).append(" ");
+    			}
+    			
+    			String logMessage = logMessageBuilder.toString();
+    			
+    			Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
+    			for(Player onlinePlayer : players)
+    			{
+    				if(onlinePlayer.hasPermission("griefprevention.eavesdrop") && !onlinePlayer.getName().equalsIgnoreCase(args[1]))
+    				{
+    				    onlinePlayer.sendMessage(ChatColor.GRAY + logMessage);
+    				}
+    			}
+    		}
+            
+            //determine target player
+            Player targetPlayer = GriefPrevention.instance.getServer().getPlayer(args[1]);
+            if(targetPlayer != null && targetPlayer.isOnline())
+            {
+                //if either is ignoring the other, cancel this command
+                playerData = this.dataStore.getPlayerData(player.getUniqueId());
+                if(playerData.ignoredPlayers.containsKey(targetPlayer.getUniqueId()))
+                {
+                    event.setCancelled(true);
+                    return;
+                }
+                
+                PlayerData targetPlayerData = this.dataStore.getPlayerData(targetPlayer.getUniqueId());
+                if(targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId()))
+                {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
 		}
 		
 		//if in pvp, block any pvp-banned slash commands
-		PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
+		if(playerData == null) playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
+
 		if((playerData.inPvpCombat() || playerData.siegeData != null) && GriefPrevention.instance.config_pvp_blockedCommands.contains(command))
 		{
 			event.setCancelled(true);
@@ -497,7 +549,6 @@ class PlayerEventHandler implements Listener
         
         if(isMonitoredCommand)
         {
-            Player player = event.getPlayer();
             Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
             if(claim != null)
             {
@@ -713,6 +764,9 @@ class PlayerEventHandler implements Listener
                 }
             }
         }
+        
+        //create a thread to load ignore information
+        new IgnoreLoaderThread(playerID, playerData.ignoredPlayers).start();
 	}
 	
 	//when a player spawns, conditionally apply temporary pvp protection 

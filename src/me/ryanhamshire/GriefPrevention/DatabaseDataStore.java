@@ -524,7 +524,7 @@ public class DatabaseDataStore extends DataStore
 	
 	//saves changes to player data.  MUST be called after you're done making changes, otherwise a reload will lose them
 	@Override
-	public void asyncSavePlayerData(UUID playerID, PlayerData playerData)
+	public void overrideSavePlayerData(UUID playerID, PlayerData playerData)
 	{
 		//never save data for the "administrative" account.  an empty string for player name indicates administrative account
 		if(playerID == null) return;

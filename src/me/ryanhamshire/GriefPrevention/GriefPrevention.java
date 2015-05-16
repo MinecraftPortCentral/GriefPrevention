@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -281,7 +282,7 @@ public class GriefPrevention extends JavaPlugin
 		String dataMode = (this.dataStore instanceof FlatFileDataStore)?"(File Mode)":"(Database Mode)";
 		AddLogEntry("Finished loading data " + dataMode + ".");
 		
-		//unless claim block accrual is disabled, start the recurring per 5 minute event to give claim blocks to online players
+		//unless claim block accrual is disabled, start the recurring per 10 minute event to give claim blocks to online players
 		//20L ~ 1 second
 		if(this.config_claims_blocksAccruedPerHour > 0)
 		{
@@ -353,6 +354,13 @@ public class GriefPrevention extends JavaPlugin
 		CacheOfflinePlayerNamesThread namesThread = new CacheOfflinePlayerNamesThread(offlinePlayers, this.playerNameToIDMap);
 		namesThread.setPriority(Thread.MIN_PRIORITY);
 		namesThread.start();
+		
+		//load ignore lists for any already-online players
+		Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
+		for(Player player : players)
+		{
+		    new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
+		}
 		
 		AddLogEntry("Boot finished.");
 	}
@@ -2049,8 +2057,168 @@ public class GriefPrevention extends JavaPlugin
 		    return true;
 		}
 		
+		//ignoreplayer
+        else if(cmd.getName().equalsIgnoreCase("ignoreplayer") && player != null)
+        {
+            //requires target player name
+            if(args.length < 1) return false;
+            
+            //validate target player
+            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
+            if(targetPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            
+            this.setIgnoreStatus(player, targetPlayer, IgnoreMode.StandardIgnore);
+
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.IgnoreConfirmation);
+            
+            return true;
+        }
+		
+		//unignoreplayer
+        else if(cmd.getName().equalsIgnoreCase("unignoreplayer") && player != null)
+        {
+            //requires target player name
+            if(args.length < 1) return false;
+            
+            //validate target player
+            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
+            if(targetPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            
+            PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+            Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
+            if(ignoreStatus == null || ignoreStatus == true)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotIgnoringPlayer);
+                return true;
+            }
+            
+            this.setIgnoreStatus(player, targetPlayer, IgnoreMode.None);
+
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnIgnoreConfirmation);
+            
+            return true;
+        }
+		
+		//ignoredplayerlist
+        else if(cmd.getName().equalsIgnoreCase("ignoredplayerlist") && player != null)
+        {
+            PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+            StringBuilder builder = new StringBuilder();
+            for(Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet())
+            {
+                if(entry.getValue() != null)
+                {
+                    //if not an admin ignore, add it to the list
+                    if(!entry.getValue())
+                    {
+                        builder.append(GriefPrevention.lookupPlayerName(entry.getKey()));
+                        builder.append(" ");
+                    }
+                }
+            }
+            
+            String list = builder.toString().trim();
+            if(list.isEmpty())
+            {
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.NotIgnoringAnyone);
+            }
+            else
+            {
+                GriefPrevention.sendMessage(player, TextMode.Info, list);
+            }
+            
+            return true;
+        }
+		
+		//separateplayers
+        else if(cmd.getName().equalsIgnoreCase("separate") && player != null)
+        {
+            //requires two player names
+            if(args.length < 2) return false;
+            
+            //validate target players
+            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
+            if(targetPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            
+            OfflinePlayer targetPlayer2 = this.resolvePlayerByName(args[1]);
+            if(targetPlayer2 == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            
+            this.setIgnoreStatus(targetPlayer, targetPlayer2, IgnoreMode.AdminIgnore);
+
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.SeparateConfirmation);
+            
+            return true;
+        }
+		
+		//unseparateplayers
+        else if(cmd.getName().equalsIgnoreCase("unseparate") && player != null)
+        {
+            //requires two player names
+            if(args.length < 2) return false;
+            
+            //validate target players
+            OfflinePlayer targetPlayer = this.resolvePlayerByName(args[0]);
+            if(targetPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            
+            OfflinePlayer targetPlayer2 = this.resolvePlayerByName(args[1]);
+            if(targetPlayer2 == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            
+            this.setIgnoreStatus(targetPlayer, targetPlayer2, IgnoreMode.None);
+            this.setIgnoreStatus(targetPlayer2, targetPlayer, IgnoreMode.None);
+
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnSeparateConfirmation);
+            
+            return true;
+        }
+		
 		return false; 
 	}
+	
+	void setIgnoreStatus(OfflinePlayer ignorer, OfflinePlayer ignoree, IgnoreMode mode)
+	{
+	    PlayerData playerData = this.dataStore.getPlayerData(ignorer.getUniqueId());
+        if(mode == IgnoreMode.None)
+        {
+            playerData.ignoredPlayers.remove(ignoree.getUniqueId());
+        }
+        else
+        {
+            playerData.ignoredPlayers.put(ignoree.getUniqueId(), mode == IgnoreMode.StandardIgnore ? false : true);
+        }
+        
+        playerData.ignoreListChanged = true;
+        if(!ignorer.isOnline())
+        {
+            this.dataStore.savePlayerData(ignorer.getUniqueId(), playerData);
+            this.dataStore.clearCachedPlayerData(ignorer.getUniqueId());
+        }
+	}
+	
+	enum IgnoreMode	{None, StandardIgnore, AdminIgnore}
 	
 	private String trustEntryToPlayerName(String entry)
 	{

@@ -19,6 +19,9 @@
 package me.ryanhamshire.GriefPrevention;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -30,6 +33,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
+import com.google.common.io.Files;
 
 //singleton class which manages all GriefPrevention data (except for config options)
 public abstract class DataStore 
@@ -55,7 +60,8 @@ public abstract class DataStore
 	
 	//path information, for where stuff stored on disk is well...  stored
 	protected final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
-	final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
+	final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
+    final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
 	final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
 	final static String softMuteFilePath = dataLayerFolderPath + File.separator + "softMute.txt";
 
@@ -103,6 +109,13 @@ public abstract class DataStore
 	void initialize() throws Exception
 	{
 		GriefPrevention.AddLogEntry(this.claims.size() + " total claims loaded.");
+		
+		//ensure data folders exist
+        File playerDataFolder = new File(playerDataFolderPath);
+        if(!playerDataFolder.exists())
+        {
+            playerDataFolder.mkdirs();
+        }
 		
 		//load up all the messages from messages.yml
 		this.loadMessages();
@@ -756,7 +769,47 @@ public abstract class DataStore
 	    new SavePlayerDataThread(playerID, playerData).start();
 	}
 	
-	public abstract void asyncSavePlayerData(UUID playerID, PlayerData playerData);
+	public void asyncSavePlayerData(UUID playerID, PlayerData playerData)
+	{
+	    //save everything except the ignore list
+	    this.overrideSavePlayerData(playerID, playerData);
+	    
+	    //save the ignore list
+	    if(playerData.ignoreListChanged)
+	    {
+    	    StringBuilder fileContent = new StringBuilder();
+            try
+            {
+                for(UUID uuidKey : playerData.ignoredPlayers.keySet())
+                {
+                    Boolean value = playerData.ignoredPlayers.get(uuidKey);
+                    if(value == null) continue;
+                    
+                    //admin-enforced ignores begin with an asterisk
+                    if(value)
+                    {
+                        fileContent.append("*");
+                    }
+                    
+                    fileContent.append(uuidKey);
+                    fileContent.append("\n");
+                }
+                
+                //write data to file
+                File playerDataFile = new File(playerDataFolderPath + File.separator + playerID + ".ignore");
+                Files.write(fileContent.toString().trim().getBytes("UTF-8"), playerDataFile);
+            }  
+            
+            //if any problem, log it
+            catch(Exception e)
+            {
+                GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
+                e.printStackTrace();
+            }
+	    }
+	}
+	
+	abstract void overrideSavePlayerData(UUID playerID, PlayerData playerData);
 	
 	//extends a claim to a new depth
 	//respects the max depth config variable
@@ -1275,6 +1328,12 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.NoChatUntilMove, "Sorry, but you have to move a little more before you can chat.  We get lots of spam bots here.  :)", null);
 		this.addDefault(defaults, Messages.SiegeImmune, "That player is immune to /siege.", null);
 		this.addDefault(defaults, Messages.SetClaimBlocksSuccess, "Updated accrued claim blocks.", null);
+		this.addDefault(defaults, Messages.IgnoreConfirmation, "You're now ignoring chat messages from that player.", null);
+		this.addDefault(defaults, Messages.UnIgnoreConfirmation, "You're no longer ignoring chat messages from that player.", null);
+		this.addDefault(defaults, Messages.NotIgnoringPlayer, "You're not ignoring that player.", null);
+		this.addDefault(defaults, Messages.SeparateConfirmation, "Those players will now ignore each other in chat.", null);
+		this.addDefault(defaults, Messages.UnSeparateConfirmation, "Those players will no longer ignore each other in chat.", null);
+		this.addDefault(defaults, Messages.NotIgnoringAnyone, "You're not ignoring anyone.", null);
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));
