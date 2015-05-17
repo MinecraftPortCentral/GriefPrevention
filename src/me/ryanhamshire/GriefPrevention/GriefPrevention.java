@@ -2493,10 +2493,10 @@ public class GriefPrevention extends JavaPlugin
                     if(playerID == null) continue;
                     long lastSeen = player.getLastPlayed();
                     
-                    //if the player has been seen in the last 30 days, cache his name/UUID pair
+                    //if the player has been seen in the last 90 days, cache his name/UUID pair
                     long diff = now - lastSeen;
                     long daysDiff = diff / millisecondsPerDay;
-                    if(daysDiff <= 30)
+                    if(daysDiff <= 90)
                     {
                         String playerName = player.getName();
                         if(playerName == null) continue;
