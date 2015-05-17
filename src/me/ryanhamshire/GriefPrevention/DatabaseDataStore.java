@@ -18,6 +18,8 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -514,9 +516,9 @@ public class DatabaseDataStore extends DataStore
 		}
 		catch(SQLException e)
 		{
-			GriefPrevention.AddLogEntry("Unable to retrieve data for player " + playerID.toString() + ".  Details:");
-			GriefPrevention.AddLogEntry(e.getMessage());
-			e.printStackTrace();
+		    StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            GriefPrevention.AddLogEntry(playerID + " " + errors.toString(), CustomLogEntryTypes.Exception);
 		}
 			
 		return playerData;
@@ -548,8 +550,9 @@ public class DatabaseDataStore extends DataStore
 		}
 		catch(SQLException e)
 		{
-			GriefPrevention.AddLogEntry("Unable to save data for player " + playerID.toString() + ".  Details:");
-			GriefPrevention.AddLogEntry(e.getMessage());
+		    StringWriter errors = new StringWriter();
+		    e.printStackTrace(new PrintWriter(errors));
+		    GriefPrevention.AddLogEntry(playerID + " " + errors.toString(), CustomLogEntryTypes.Exception);
 		}
 	}
 	

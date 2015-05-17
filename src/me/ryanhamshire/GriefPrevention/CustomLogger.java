@@ -80,6 +80,7 @@ class CustomLogger
     
     private boolean isEnabledType(CustomLogEntryTypes entryType)
     {
+        if(entryType == CustomLogEntryTypes.Exception) return true;
         if(entryType == CustomLogEntryTypes.SocialActivity && !GriefPrevention.instance.config_logs_socialEnabled) return false;
         if(entryType == CustomLogEntryTypes.SuspiciousActivity && !GriefPrevention.instance.config_logs_suspiciousEnabled) return false;
         if(entryType == CustomLogEntryTypes.AdminActivity && !GriefPrevention.instance.config_logs_adminEnabled) return false;
@@ -185,5 +186,6 @@ enum CustomLogEntryTypes
     SocialActivity,
     SuspiciousActivity,
     AdminActivity,
-    Debug
+    Debug,
+    Exception
 }

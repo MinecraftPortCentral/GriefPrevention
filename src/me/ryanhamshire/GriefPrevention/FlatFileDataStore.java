@@ -94,7 +94,9 @@ public class FlatFileDataStore extends DataStore
 			}
 			catch(Exception e)
 			{
-				 GriefPrevention.AddLogEntry("Unable to load group bonus block data from file \"" + file.getName() + "\": " + e.getMessage());
+			    StringWriter errors = new StringWriter();
+	            e.printStackTrace(new PrintWriter(errors));
+	            GriefPrevention.AddLogEntry(errors.toString(), CustomLogEntryTypes.Exception);
 			}
 			
 			try
@@ -340,8 +342,9 @@ public class FlatFileDataStore extends DataStore
 					}
 					else
 					{
-					    GriefPrevention.AddLogEntry("Unable to load data for claim \"" + files[i].getName() + "\": " + e.toString());
-					    e.printStackTrace();
+					    StringWriter errors = new StringWriter();
+			            e.printStackTrace(new PrintWriter(errors));
+			            GriefPrevention.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
 					}
 				}
 				
@@ -384,8 +387,9 @@ public class FlatFileDataStore extends DataStore
 		//if any problem, log it
 		catch(Exception e)
 		{
-			GriefPrevention.AddLogEntry("Unexpected exception saving data for claim \"" + claimID + "\": " + e.toString());
-			e.printStackTrace();
+		    StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            GriefPrevention.AddLogEntry(claimID + " " + errors.toString(), CustomLogEntryTypes.Exception);
 		}
 		
 		//close the file
@@ -542,8 +546,9 @@ public class FlatFileDataStore extends DataStore
 			//if last attempt failed, log information about the problem
 			if(needRetry)
 			{
-			    GriefPrevention.AddLogEntry("Retry attempts exhausted.  Unable to load data for player \"" + playerID.toString() + "\": " + latestException.toString());
-                latestException.printStackTrace();
+			    StringWriter errors = new StringWriter();
+	            latestException.printStackTrace(new PrintWriter(errors));
+	            GriefPrevention.AddLogEntry(playerID + " " + errors.toString(), CustomLogEntryTypes.Exception);
 			}
 		}
 			
