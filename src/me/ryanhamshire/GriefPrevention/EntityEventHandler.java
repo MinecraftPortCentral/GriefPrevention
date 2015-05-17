@@ -588,10 +588,6 @@ class EntityEventHandler implements Listener
 		{
 			//FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
 			
-			//doesn't apply when the attacker has the no pvp immunity permission
-			//this rule is here to allow server owners to have a world with no spawn camp protection by assigning permissions based on the player's world
-			if(attacker.hasPermission("griefprevention.nopvpimmunity")) return;
-			
 			Player defender = (Player)(event.getEntity());
 			
 			if(attacker != defender)
@@ -621,7 +617,7 @@ class EntityEventHandler implements Listener
     			if(GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims || GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims)
     			{
     				Claim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, attackerData.lastClaim);
-    				if(	attackerClaim != null && 
+    				if(	attackerClaim != null && !attackerData.ignoreClaims &&  //ignore claims mode allows for pvp inside land claims
     					(attackerClaim.isAdminClaim() && attackerClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
     					 attackerClaim.isAdminClaim() && attackerClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
     					!attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
