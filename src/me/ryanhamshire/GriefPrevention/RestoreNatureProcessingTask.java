@@ -137,12 +137,6 @@ class RestoreNatureProcessingTask implements Runnable
 		//remove water/lava above sea level
 		this.removeDumpedFluids();
 		
-		//cover over any gaping holes in creative mode worlds
-		if(this.creativeMode && this.environment == Environment.NORMAL)
-		{
-			this.fillBigHoles();
-		}
-		
 		//cover surface stone and gravel with sand or grass, as the biome requires
 		this.coverSurfaceStone();
 		
@@ -175,29 +169,6 @@ class RestoreNatureProcessingTask implements Runnable
 		}		
 	}
 
-	private void fillBigHoles()
-	{
-		if(this.seaLevel < 3) return;
-	    
-	    for(int x = 1; x < snapshots.length - 1; x++)
-		{
-			for(int z = 1; z < snapshots[0][0].length - 1; z++)
-			{
-				//replace air, lava, or running water at sea level with stone
-				if(this.snapshots[x][this.seaLevel - 2][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 2][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 2][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 2][z].data != 0))
-				{
-					this.snapshots[x][this.seaLevel - 2][z].typeId = Material.STONE.getId();
-				}
-				
-				//do the same for one layer beneath that (because a future restoration step may convert surface stone to sand, which falls down)
-				if(this.snapshots[x][this.seaLevel - 3][z].typeId == Material.AIR.getId() || this.snapshots[x][this.seaLevel - 3][z].typeId == Material.LAVA.getId() || (this.snapshots[x][this.seaLevel - 3][z].typeId == Material.WATER.getId() || this.snapshots[x][this.seaLevel - 3][z].data != 0))
-				{
-					this.snapshots[x][this.seaLevel - 3][z].typeId = Material.STONE.getId();
-				}
-			}
-		}
-	}
-	
 	//converts sandstone adjacent to sand to sand, and any other sandstone to air
 	private void removeSandstone()
 	{
