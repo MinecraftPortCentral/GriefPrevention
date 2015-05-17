@@ -100,6 +100,7 @@ class RestoreNatureProcessingTask implements Runnable
 		{
 			this.playerBlocks.add(Material.LEAVES.getId());
 			this.playerBlocks.add(Material.LOG.getId());
+			this.playerBlocks.add(Material.LOG_2.getId());
 			this.playerBlocks.add(Material.VINE.getId());
 		}
 	}
@@ -301,6 +302,7 @@ class RestoreNatureProcessingTask implements Runnable
 					
 					//skip non-logs
 					if(block.typeId != Material.LOG.getId()) continue;
+					if(block.typeId != Material.LOG_2.getId()) continue;
 					
 					//if in jungle biome, skip jungle logs
 					if(jungleBiome && block.data == 3) continue;
@@ -459,6 +461,8 @@ class RestoreNatureProcessingTask implements Runnable
 		notSuitableForFillBlocks.add(Material.CACTUS.getId());
 		notSuitableForFillBlocks.add(Material.STATIONARY_WATER.getId());
 		notSuitableForFillBlocks.add(Material.STATIONARY_LAVA.getId());
+		notSuitableForFillBlocks.add(Material.LOG.getId());
+		notSuitableForFillBlocks.add(Material.LOG_2.getId());
 		
 		boolean changed;
 		do
@@ -753,6 +757,7 @@ class RestoreNatureProcessingTask implements Runnable
 		{
 			playerBlocks.add(Material.LEAVES.getId());
 			playerBlocks.add(Material.LOG.getId());
+			playerBlocks.add(Material.LOG_2.getId());
 		}
 		
 		return playerBlocks;
