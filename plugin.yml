@@ -197,6 +197,7 @@ permissions:
             griefprevention.claimslistother: true
             griefprevention.siegeimmune: true
             griefprevention.separate: true
+            griefprevention.eavesdropsigns: true
     griefprevention.siegeimmune:
         description: Makes a player immune to /Siege.
         default: op
@@ -232,6 +233,9 @@ permissions:
         default: op
     griefprevention.eavesdrop:
         description: Allows a player to see whispered chat messages (/tell) and softmuted messages.
+        default: op
+    griefprevention.eavesdropsigns:
+        description: Allows a player to see sign placements as chat messages.
         default: op
     griefprevention.restorenatureaggressive:
         description: Grants access to /RestoreNatureAggressive and /RestoreNatureFill.

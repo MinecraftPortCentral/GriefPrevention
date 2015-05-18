@@ -136,12 +136,12 @@ public class BlockEventHandler implements Listener
 			PlayerEventHandler.makeSocialLogEntry(player.getName(), signMessage);
 			playerData.lastMessage = signMessage;
 			
-			if(!player.hasPermission("griefprevention.eavesdrop"))
+			if(!player.hasPermission("griefprevention.eavesdropsigns"))
 			{
 				Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
 				for(Player otherPlayer : players)
 				{
-					if(otherPlayer.hasPermission("griefprevention.eavesdrop"))
+					if(otherPlayer.hasPermission("griefprevention.eavesdropsigns"))
 					{
 						otherPlayer.sendMessage(ChatColor.GRAY + player.getName() + signMessage);
 					}
