@@ -1333,7 +1333,16 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.NotIgnoringPlayer, "You're not ignoring that player.", null);
 		this.addDefault(defaults, Messages.SeparateConfirmation, "Those players will now ignore each other in chat.", null);
 		this.addDefault(defaults, Messages.UnSeparateConfirmation, "Those players will no longer ignore each other in chat.", null);
-		this.addDefault(defaults, Messages.NotIgnoringAnyone, "You're not ignoring anyone.", null);
+        this.addDefault(defaults, Messages.NotIgnoringAnyone, "You're not ignoring anyone.", null);
+		this.addDefault(defaults, Messages.TrustListHeader, "Explicit permissions here:", null);
+		this.addDefault(defaults, Messages.Manage, "Manage.", null);
+		this.addDefault(defaults, Messages.Build, "Build", null);
+		this.addDefault(defaults, Messages.Containers, "Containers", null);
+		this.addDefault(defaults, Messages.Access, "Access", null);
+		this.addDefault(defaults, Messages.StartBlockMath, "{0} blocks from play + {1} bonus = {2} total.", null);
+		this.addDefault(defaults, Messages.ClaimsListHeader, "Claims:", null);
+		this.addDefault(defaults, Messages.ContinueBlockMath, " (-{0} blocks)", null);
+		this.addDefault(defaults, Messages.EndBlockMath, " = {0} blocks left to spend", null);
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));

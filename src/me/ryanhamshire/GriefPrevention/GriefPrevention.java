@@ -1090,10 +1090,10 @@ public class GriefPrevention extends JavaPlugin
 			ArrayList<String> managers = new ArrayList<String>();
 			claim.getPermissions(builders, containers, accessors, managers);
 			
-			player.sendMessage("Explicit permissions here:");
+			GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrustListHeader);
 			
 			StringBuilder permissions = new StringBuilder();
-			permissions.append(ChatColor.GOLD + "M: ");
+			permissions.append(ChatColor.GOLD + ">");
 			
 			if(managers.size() > 0)
 			{
@@ -1103,7 +1103,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			player.sendMessage(permissions.toString());
 			permissions = new StringBuilder();
-			permissions.append(ChatColor.YELLOW + "B: ");
+			permissions.append(ChatColor.YELLOW + ">");
 			
 			if(builders.size() > 0)
 			{				
@@ -1113,7 +1113,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			player.sendMessage(permissions.toString());
 			permissions = new StringBuilder();
-			permissions.append(ChatColor.GREEN + "C: ");				
+			permissions.append(ChatColor.GREEN + ">");				
 			
 			if(containers.size() > 0)
 			{
@@ -1123,7 +1123,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			player.sendMessage(permissions.toString());
 			permissions = new StringBuilder();
-			permissions.append(ChatColor.BLUE + "A:");
+			permissions.append(ChatColor.BLUE + ">");
 				
 			if(accessors.size() > 0)
 			{
@@ -1133,7 +1133,11 @@ public class GriefPrevention extends JavaPlugin
 			
 			player.sendMessage(permissions.toString());
 			
-			player.sendMessage("(M-anager, B-builder, C-ontainers, A-ccess)");
+			player.sendMessage(
+		        ChatColor.GOLD + this.dataStore.getMessage(Messages.Manage) + " " + 
+		        ChatColor.YELLOW + this.dataStore.getMessage(Messages.Build) + " " + 
+		        ChatColor.GREEN + this.dataStore.getMessage(Messages.Containers) + " " + 
+		        ChatColor.BLUE + this.dataStore.getMessage(Messages.Access));
 			
 			return true;
 		}
@@ -1651,17 +1655,20 @@ public class GriefPrevention extends JavaPlugin
 			//load the target player's data
 			PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getUniqueId());
 			Vector<Claim> claims = playerData.getClaims();
-			GriefPrevention.sendMessage(player, TextMode.Instr, " " + playerData.getAccruedClaimBlocks() + " blocks from play +" + (playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + " bonus = " + (playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId())) + " total.");
+			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.StartBlockMath, 
+		        String.valueOf(playerData.getAccruedClaimBlocks()), 
+		        String.valueOf((playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))), 
+		        String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))));
 			if(claims.size() > 0)
 			{
-    			GriefPrevention.sendMessage(player, TextMode.Instr, "Claims:");
+    			GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimsListHeader);
     			for(int i = 0; i < playerData.getClaims().size(); i++)
     			{
     				Claim claim = playerData.getClaims().get(i);
-    				GriefPrevention.sendMessage(player, TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " (-" + claim.getArea() + " blocks)");
+    				GriefPrevention.sendMessage(player, TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner()) + this.dataStore.getMessage(Messages.ContinueBlockMath, String.valueOf(claim.getArea())));
     			}
 			
-				GriefPrevention.sendMessage(player, TextMode.Instr, " = " + playerData.getRemainingClaimBlocks() + " blocks left to spend");
+				GriefPrevention.sendMessage(player, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks()));
 			}
 			
 			//drop the data we just loaded, if the player isn't online
