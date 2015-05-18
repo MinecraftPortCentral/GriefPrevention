@@ -2342,6 +2342,13 @@ class PlayerEventHandler implements Listener
 					return;
 				}
 				
+				//apply pvp rule
+				if(playerData.inPvpCombat())
+				{
+				    GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoClaimDuringPvP);
+				    return;
+				}
+				
 				//apply minimum claim dimensions rule
 				int newClaimWidth = Math.abs(playerData.lastShovelLocation.getBlockX() - clickedBlock.getX()) + 1;
 				int newClaimHeight = Math.abs(playerData.lastShovelLocation.getBlockZ() - clickedBlock.getZ()) + 1;

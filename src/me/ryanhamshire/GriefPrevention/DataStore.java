@@ -1343,6 +1343,7 @@ public abstract class DataStore
 		this.addDefault(defaults, Messages.ClaimsListHeader, "Claims:", null);
 		this.addDefault(defaults, Messages.ContinueBlockMath, " (-{0} blocks)", null);
 		this.addDefault(defaults, Messages.EndBlockMath, " = {0} blocks left to spend", null);
+		this.addDefault(defaults, Messages.NoClaimDuringPvP, "You can't claim lands during PvP combat.", null);
 		
 		//load the config file
 		FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));
