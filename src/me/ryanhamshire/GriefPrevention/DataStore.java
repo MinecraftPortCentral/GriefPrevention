@@ -366,7 +366,10 @@ public abstract class DataStore
 		//subdivisions are easy
 		if(newClaim.parent != null)
 		{
-			newClaim.parent.children.add(newClaim);
+			if(!newClaim.parent.children.contains(newClaim))
+			{
+			    newClaim.parent.children.add(newClaim);
+			}
 			newClaim.inDataStore = true;
 			if(writeToStorage)
 			{
@@ -397,7 +400,6 @@ public abstract class DataStore
 		{
 			PlayerData ownerData = this.getPlayerData(newClaim.ownerID);
 			ownerData.getClaims().add(newClaim);
-			this.savePlayerData(newClaim.ownerID, ownerData);
 		}
 		
 		//make sure the claim is saved to disk
