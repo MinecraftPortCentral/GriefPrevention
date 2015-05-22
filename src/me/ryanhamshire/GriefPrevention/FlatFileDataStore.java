@@ -699,8 +699,9 @@ public class FlatFileDataStore extends DataStore
 			//all group data files start with a dollar sign.  ignoring those, already handled above
 			if(file.getName().startsWith("$")) continue;
 			
-			//ignore special files (claimID)
+			//ignore special files
 			if(file.getName().startsWith("_")) continue;
+			if(file.getName().endsWith(".ignore")) continue;
 			
 			UUID playerID = UUID.fromString(file.getName());
 			databaseStore.savePlayerData(playerID, this.getPlayerData(playerID));
