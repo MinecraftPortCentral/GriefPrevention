@@ -617,27 +617,32 @@ class EntityEventHandler implements Listener
     			if(GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims || GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims)
     			{
     				Claim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, attackerData.lastClaim);
-    				if(	attackerClaim != null && !attackerData.ignoreClaims &&  //ignore claims mode allows for pvp inside land claims
-    					(attackerClaim.isAdminClaim() && attackerClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
-    					 attackerClaim.isAdminClaim() && attackerClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
-    					!attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
+    				if(!attackerData.ignoreClaims)
     				{
-    					attackerData.lastClaim = attackerClaim;
-    					event.setCancelled(true);
-    					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
-    					return;
-    				}
-    				
-    				Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim);
-    				if( defenderClaim != null &&
-    					(defenderClaim.isAdminClaim() && defenderClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
-    		             defenderClaim.isAdminClaim() && defenderClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
-    					!defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
-    				{
-    					defenderData.lastClaim = defenderClaim;
-    					event.setCancelled(true);
-    					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
-    					return;
+    				    if(	attackerClaim != null && //ignore claims mode allows for pvp inside land claims
+    				        !attackerData.inPvpCombat() &&
+        					(attackerClaim.isAdminClaim() && attackerClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+        					 attackerClaim.isAdminClaim() && attackerClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
+        					!attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
+        				{
+        					attackerData.lastClaim = attackerClaim;
+        					event.setCancelled(true);
+        					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
+        					return;
+        				}
+        				
+        				Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim);
+        				if( defenderClaim != null &&
+        				    !defenderData.inPvpCombat() &&
+        				    (defenderClaim.isAdminClaim() && defenderClaim.parent == null && GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims ||
+        		             defenderClaim.isAdminClaim() && defenderClaim.parent != null && GriefPrevention.instance.config_pvp_noCombatInAdminSubdivisions ||
+        					!defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
+        				{
+        					defenderData.lastClaim = defenderClaim;
+        					event.setCancelled(true);
+        					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
+        					return;
+        				}
     				}
     			}
 			}
