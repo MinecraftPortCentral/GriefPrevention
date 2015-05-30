@@ -440,7 +440,8 @@ class PlayerEventHandler implements Listener
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	synchronized void onPlayerCommandPreprocess (PlayerCommandPreprocessEvent event)
 	{
-		String [] args = event.getMessage().split(" ");
+		String message = event.getMessage();
+	    String [] args = message.split(" ");
 		
 		String command = args[0].toLowerCase();
 		
@@ -538,9 +539,10 @@ class PlayerEventHandler implements Listener
 		
 		//if requires access trust, check for permission
 		isMonitoredCommand = false;
-        for(String monitoredCommand : GriefPrevention.instance.config_claims_commandsRequiringAccessTrust)
+		String lowerCaseMessage = message.toLowerCase();
+		for(String monitoredCommand : GriefPrevention.instance.config_claims_commandsRequiringAccessTrust)
         {
-            if(args[0].equalsIgnoreCase(monitoredCommand))
+            if(lowerCaseMessage.startsWith(monitoredCommand))
             {
                 isMonitoredCommand = true;
                 break;
