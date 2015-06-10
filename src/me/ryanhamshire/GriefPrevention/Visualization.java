@@ -282,6 +282,9 @@ public class Visualization
 		return (	block.getType() != Material.SNOW && (
 		            block.getType() == Material.AIR ||
 					block.getType() == Material.FENCE ||
+					block.getType() == Material.SIGN ||
+					block.getType() == Material.SIGN_POST ||
+					block.getType() == Material.WALL_SIGN ||
 					(waterIsTransparent && block.getType() == Material.STATIONARY_WATER) || 
 					block.getType().isTransparent()));
 	}
