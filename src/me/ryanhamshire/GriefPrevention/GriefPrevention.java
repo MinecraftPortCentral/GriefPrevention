@@ -1259,10 +1259,10 @@ public class GriefPrevention extends JavaPlugin
                     {
                         idToDrop = otherPlayer.getUniqueId().toString(); 
                     }
-				    claim.dropPermission(idToDrop);
-					if(claim.allowEdit(player) == null)
+				    if(claim.allowEdit(player) == null)
 					{
-						claim.managers.remove(idToDrop);
+				        claim.dropPermission(idToDrop);
+	                    claim.managers.remove(idToDrop);
 						
 						//beautify for output
 						if(args[0].equals("public"))
@@ -1274,7 +1274,8 @@ public class GriefPrevention extends JavaPlugin
 					}
 					else
 					{
-						GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustOwnerOnly, claim.getOwnerName());
+						GriefPrevention.sendMessage(player, TextMode.Err, Messages.UntrustOwnerOnly, claim.getOwnerName());
+						return true;
 					}
 				}
 				
