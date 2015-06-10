@@ -1677,6 +1677,31 @@ public class GriefPrevention extends JavaPlugin
 			return true;
 		}
 		
+		//adminclaimslist
+        else if(cmd.getName().equalsIgnoreCase("adminclaimslist"))
+        {
+            //find admin claims
+            Vector<Claim> claims = new Vector<Claim>();
+            for(Claim claim : this.dataStore.claims)
+            {
+                if(claim.ownerID == null)  //admin claim
+                {
+                    claims.add(claim);
+                }
+            }
+            if(claims.size() > 0)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimsListHeader);
+                for(int i = 0; i < claims.size(); i++)
+                {
+                    Claim claim = claims.get(i);
+                    GriefPrevention.sendMessage(player, TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+                }
+            }
+
+            return true;
+        }
+		
 		//unlockItems
 		else if(cmd.getName().equalsIgnoreCase("unlockdrops") && player != null)
 		{

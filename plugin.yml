@@ -121,6 +121,10 @@ commands:
       description: Deletes all administrative claims.
       usage: /DeleteAllAdminClaims
       permission: griefprevention.adminclaims
+   adminclaimslist:
+      description: Lists all administrative claims.
+      usage: /AdminClaimsList
+      permission: griefprevention.adminclaims
    transferclaim:
       description: Converts an administrative claim to a private claim.
       usage: /TransferClaim <player>
