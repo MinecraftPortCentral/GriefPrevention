@@ -338,6 +338,7 @@ public class FlatFileDataStore extends DataStore
 				{
 					if(e.getMessage().contains("World not found"))
 					{
+					    inStream.close();
 					    files[i].delete();
 					}
 					else
