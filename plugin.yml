@@ -156,14 +156,17 @@ commands:
       description: Ignores another player's chat messages.
       usage: /IgnorePlayer <player name>
       aliases: [ignore]
+      permission: griefprevention.ignore
    unignoreplayer:
       description: Unignores another player's chat messages.
       usage: /UnIgnorePlayer <player name>
       aliases: [unignore]
+      permission: griefprevention.ignore
    ignoredplayerlist:
       description: Lists the players you're ignoring in chat.
       usage: /IgnoredPlayerList
       aliases: [ignores, ignored, ignorelist, ignoredlist, listignores, listignored, ignoring]
+      permission: griefprevention.ignore
    separate:
       description: Forces two players to ignore each other in chat.
       usage: /Separate
@@ -267,3 +270,6 @@ permissions:
     griefprevention.separate:
         description: Grants access to /Separate and /UnSeparate.
         default: op
+    griefprevention.ignore:
+        description: Grants access to /Ignore, /Unignore, and /IgnoreList
+        default: true
