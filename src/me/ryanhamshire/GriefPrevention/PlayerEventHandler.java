@@ -232,7 +232,7 @@ class PlayerEventHandler implements Listener
 		if(message.length() > 4 && this.stringsAreSimilar(message.toUpperCase(), message))
 		{
 			//exception for strings containing forward slash to avoid changing a case-sensitive URL
-			if(event instanceof AsyncPlayerChatEvent && !message.contains("/"))
+			if(event instanceof AsyncPlayerChatEvent)
 			{
 				((AsyncPlayerChatEvent)event).setMessage(message.toLowerCase());
 			}
