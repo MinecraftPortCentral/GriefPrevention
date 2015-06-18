@@ -407,7 +407,7 @@ class EntityEventHandler implements Listener
         World world = entity.getWorld();
         
         //decide whether or not to apply this feature to this situation (depends on the world where it happens)
-        boolean isPvPWorld = GriefPrevention.instance.config_pvp_enabledWorlds.contains(world);
+        boolean isPvPWorld = GriefPrevention.instance.pvpRulesApply(world);
         if((isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInPvpWorlds) || 
            (!isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInNonPvpWorlds))
         {
@@ -537,7 +537,7 @@ class EntityEventHandler implements Listener
 		if(event.getEntity() instanceof Horse && !GriefPrevention.instance.config_claims_protectHorses) return;
 		
 		//protect pets from environmental damage types which could be easily caused by griefers
-        if(event.getEntity() instanceof Tameable && !GriefPrevention.instance.config_pvp_enabledWorlds.contains(event.getEntity().getWorld()))
+        if(event.getEntity() instanceof Tameable && !GriefPrevention.instance.pvpRulesApply(event.getEntity().getWorld()))
         {
             Tameable tameable = (Tameable)event.getEntity();
             if(tameable.isTamed())
@@ -836,7 +836,7 @@ class EntityEventHandler implements Listener
         EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
         
         //if not in a pvp rules world, do nothing
-        if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(defender.getWorld())) return;
+        if(!GriefPrevention.instance.pvpRulesApply(defender.getWorld())) return;
         
         //determine which player is attacking, if any
         Player attacker = null;

@@ -2640,7 +2640,7 @@ public class GriefPrevention extends JavaPlugin
         if(!this.config_pvp_protectFreshSpawns) return;
         
 	    //if pvp is disabled, do nothing
-		if(!this.config_pvp_enabledWorlds.contains(player.getWorld())) return;
+		if(!pvpRulesApply(player.getWorld())) return;
 		
 		//if player is in creative mode, do nothing
 		if(player.getGameMode() == GameMode.CREATIVE) return;
@@ -2982,5 +2982,12 @@ public class GriefPrevention extends JavaPlugin
         }
         
         return false;
+    }
+
+    public boolean pvpRulesApply(World world)
+    {
+        if(this.config_pvp_enabledWorlds.contains(world)) return true;
+        
+        return world.getPVP();
     }
 }

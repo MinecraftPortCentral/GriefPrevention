@@ -1101,7 +1101,7 @@ class PlayerEventHandler implements Listener
                    return;
                }
                
-               if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(entity.getLocation().getWorld()))
+               if(!GriefPrevention.instance.pvpRulesApply(entity.getLocation().getWorld()))
                {
                    //otherwise disallow
                    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
@@ -1260,7 +1260,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//the rest of this code is specific to pvp worlds
-		if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(player.getWorld())) return;
+		if(!GriefPrevention.instance.pvpRulesApply(player.getWorld())) return;
 		
 		//if we're preventing spawn camping and the player was previously empty handed...
 		if(GriefPrevention.instance.config_pvp_protectFreshSpawns && (player.getItemInHand().getType() == Material.AIR))
@@ -1349,7 +1349,7 @@ class PlayerEventHandler implements Listener
 		}
 		
 		//lava buckets can't be dumped near other players unless pvp is on
-		if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(block.getWorld()) && !player.hasPermission("griefprevention.lava"))
+		if(!GriefPrevention.instance.pvpRulesApply(block.getWorld()) && !player.hasPermission("griefprevention.lava"))
 		{
 			if(bucketEvent.getBucket() == Material.LAVA_BUCKET)
 			{
