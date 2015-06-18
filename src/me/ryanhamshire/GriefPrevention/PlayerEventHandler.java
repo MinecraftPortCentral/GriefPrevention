@@ -778,6 +778,7 @@ class PlayerEventHandler implements Listener
         Player player = event.getPlayer();
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
         playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
+        playerData.lastPvpTimestamp = 0;  //no longer in pvp combat
         
         //also send him any messaged from grief prevention he would have received while dead
         if(playerData.messageOnRespawn != null)
