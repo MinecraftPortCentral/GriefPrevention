@@ -728,7 +728,7 @@ class EntityEventHandler implements Listener
     		                //otherwise disallow in non-pvp worlds
     		                if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(subEvent.getEntity().getLocation().getWorld()))
                             {
-        		                OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
+    		                    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
                                 String ownerName = owner.getName();
         		                if(ownerName == null) ownerName = "someone";
         		                String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
@@ -782,7 +782,7 @@ class EntityEventHandler implements Listener
 						//all other cases
 						else
 						{
-							event.setCancelled(true);
+						    event.setCancelled(true);
 							if(damageSource != null && damageSource instanceof Projectile)
 							{
 							    damageSource.remove();
@@ -790,9 +790,9 @@ class EntityEventHandler implements Listener
 						}						
 					}
 					
-					//otherwise the player damaging the entity must have permission
-					else
-					{		
+					//otherwise the player damaging the entity must have permission, unless it's a dog in a pvp world
+					else if(!(GriefPrevention.instance.pvpRulesApply(event.getEntity().getWorld()) && event.getEntity().getType() == EntityType.WOLF))
+					{
 						String noContainersReason = claim.allowContainers(attacker);
 						if(noContainersReason != null)
 						{
