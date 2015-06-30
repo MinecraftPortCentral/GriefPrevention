@@ -361,6 +361,16 @@ public class Claim
 		ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
 		if(ClaimPermission.Build == permissionLevel) return null;
 		
+		//allow for farming with /containertrust permission
+        if(this.allowContainers(player) == null)
+        {
+            //do allow for farming, if player has /containertrust permission
+            if(this.placeableForFarming(material))
+            {
+                return null;
+            }
+        }
+		
 		//subdivision permission inheritance
 		if(this.parent != null)
 			return this.parent.allowBuild(player, material);
@@ -370,17 +380,7 @@ public class Claim
 		if(player.hasPermission("griefprevention.ignoreclaims"))
 				reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
 		
-		//allow for farming with /containertrust permission
-		if(reason != null && this.allowContainers(player) == null)
-        {
-            //do allow for farming, if player has /containertrust permission
-            if(this.placeableForFarming(material))
-            {
-                return null;
-            }
-        }
-        
-        return reason;
+		return reason;
 	}
 	
 	private boolean hasExplicitPermission(Player player, ClaimPermission level)
