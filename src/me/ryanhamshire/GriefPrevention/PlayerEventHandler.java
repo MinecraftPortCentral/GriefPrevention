@@ -1616,7 +1616,9 @@ class PlayerEventHandler implements Listener
 		                clickedBlockType == Material.DIODE_BLOCK_OFF ||
 		                clickedBlockType == Material.DRAGON_EGG ||
 		                clickedBlockType == Material.DAYLIGHT_DETECTOR ||
-		                clickedBlockType == Material.DAYLIGHT_DETECTOR_INVERTED
+		                clickedBlockType == Material.DAYLIGHT_DETECTOR_INVERTED ||
+		                clickedBlockType == Material.REDSTONE_COMPARATOR_ON ||
+		                clickedBlockType == Material.REDSTONE_COMPARATOR_OFF
 		        ))
 		{
 		    if(playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
