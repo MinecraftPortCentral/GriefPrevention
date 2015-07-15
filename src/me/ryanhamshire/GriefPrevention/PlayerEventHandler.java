@@ -32,6 +32,8 @@ import java.util.regex.Pattern;
 
 
 import org.bukkit.Achievement;
+import org.bukkit.BanList;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -39,6 +41,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.TravelAgent;
+import org.bukkit.BanList.Type;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -335,7 +338,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.AddLogEntry("Banning " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 					
 					//kick and ban
-					PlayerKickBanTask task = new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage, true);
+					PlayerKickBanTask task = new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage, "GriefPrevention Anti-Spam",true);
 					GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 1L);
 				}
 				else
@@ -344,7 +347,7 @@ class PlayerEventHandler implements Listener
 					GriefPrevention.AddLogEntry("Kicking " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 					
 					//just kick
-					PlayerKickBanTask task = new PlayerKickBanTask(player, "", false);
+					PlayerKickBanTask task = new PlayerKickBanTask(player, "", "GriefPrevention Anti-Spam", false);
 					GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 1L);					
 				}
 				
@@ -725,7 +728,7 @@ class PlayerEventHandler implements Listener
 						}
 						
 						//ban player
-						PlayerKickBanTask task = new PlayerKickBanTask(player, "", true);
+						PlayerKickBanTask task = new PlayerKickBanTask(player, "", "GriefPrevention Smart Ban - Shared Login:" + info.bannedAccountName, true);
 						GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
 						
 						//silence join message
@@ -753,7 +756,7 @@ class PlayerEventHandler implements Listener
                 if(ipCount >= ipLimit)
                 {
                     //kick player
-                    PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.", false);
+                    PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.", "GriefPrevention IP-sharing limit.", false);
                     GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
                     
                     //silence join message
