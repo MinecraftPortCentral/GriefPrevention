@@ -284,7 +284,7 @@ class PlayerEventHandler implements Listener
 			if(GriefPrevention.instance.containsBlockedIP(message))
 			{
 				//spam notation
-				playerData.spamCount+=5;
+				playerData.spamCount+=1;
 				spam = true;
 				
 				//block message
