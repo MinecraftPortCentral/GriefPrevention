@@ -454,31 +454,37 @@ class PlayerEventHandler implements Listener
 		//if a whisper
 		if(GriefPrevention.instance.config_eavesdrop_whisperCommands.contains(command) && args.length > 1)
 		{
-    		//if eavesdrop enabled, eavesdrop
-            if(GriefPrevention.instance.config_whisperNotifications && !event.getPlayer().hasPermission("griefprevention.eavesdrop"))
+		    //determine target player, might be NULL
+            Player targetPlayer = GriefPrevention.instance.getServer().getPlayer(args[1]);
+		    
+		    //if eavesdrop enabled and sender doesn't have the eavesdrop permission, eavesdrop
+		    if(GriefPrevention.instance.config_whisperNotifications && !player.hasPermission("griefprevention.eavesdrop"))
     		{			
-    			StringBuilder logMessageBuilder = new StringBuilder();
-    			logMessageBuilder.append("[[").append(event.getPlayer().getName()).append("]] ");
-    			
-    			for(int i = 1; i < args.length; i++)
-    			{
-    				logMessageBuilder.append(args[i]).append(" ");
-    			}
-    			
-    			String logMessage = logMessageBuilder.toString();
-    			
-    			Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
-    			for(Player onlinePlayer : players)
-    			{
-    				if(onlinePlayer.hasPermission("griefprevention.eavesdrop") && !onlinePlayer.getName().equalsIgnoreCase(args[1]))
-    				{
-    				    onlinePlayer.sendMessage(ChatColor.GRAY + logMessage);
-    				}
-    			}
+                //except for when the recipient has eavesdrop permission
+                if(targetPlayer == null || targetPlayer.hasPermission("griefprevention.eavesdrop"))
+                {
+                    StringBuilder logMessageBuilder = new StringBuilder();
+        			logMessageBuilder.append("[[").append(event.getPlayer().getName()).append("]] ");
+        			
+        			for(int i = 1; i < args.length; i++)
+        			{
+        				logMessageBuilder.append(args[i]).append(" ");
+        			}
+        			
+        			String logMessage = logMessageBuilder.toString();
+        			
+        			Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
+        			for(Player onlinePlayer : players)
+        			{
+        				if(onlinePlayer.hasPermission("griefprevention.eavesdrop") && !onlinePlayer.equals(targetPlayer))
+        				{
+        				    onlinePlayer.sendMessage(ChatColor.GRAY + logMessage);
+        				}
+        			}
+                }
     		}
             
-            //determine target player
-            Player targetPlayer = GriefPrevention.instance.getServer().getPlayer(args[1]);
+            //ignore feature
             if(targetPlayer != null && targetPlayer.isOnline())
             {
                 //if either is ignoring the other, cancel this command
