@@ -580,6 +580,7 @@ public class Claim
 	public void clearPermissions()
 	{
 		this.playerIDToClaimPermissionMap.clear();
+		this.managers.clear();
 		
 		for(Claim child : this.children)
         {

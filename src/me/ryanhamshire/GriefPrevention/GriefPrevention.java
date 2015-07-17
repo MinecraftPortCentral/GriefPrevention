@@ -1244,13 +1244,21 @@ public class GriefPrevention extends JavaPlugin
 			else if(claim.allowGrantPermission(player) != null)
 			{
 				GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoPermissionTrust, claim.getOwnerName());
+				return true;
 			}
 			else
 			{
 				//if clearing all
 				if(clearPermissions)
 				{
-					claim.clearPermissions();
+					//requires owner
+				    if(claim.allowEdit(player) != null)
+				    {
+				        GriefPrevention.sendMessage(player, TextMode.Err, Messages.UntrustAllOwnerOnly);
+				        return true;
+				    }
+				    
+				    claim.clearPermissions();
 					GriefPrevention.sendMessage(player, TextMode.Success, Messages.ClearPermissionsOneClaim);
 				}
 				
@@ -1262,8 +1270,14 @@ public class GriefPrevention extends JavaPlugin
                     {
                         idToDrop = otherPlayer.getUniqueId().toString(); 
                     }
-				    if(claim.allowEdit(player) == null)
+				    boolean targetIsManager = claim.managers.contains(idToDrop);
+                    if(targetIsManager && claim.allowEdit(player) != null)  //only claim owners can untrust managers
 					{
+                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.ManagersDontUntrustManagers, claim.getOwnerName());
+                        return true;
+					}
+                    else
+                    {
 				        claim.dropPermission(idToDrop);
 	                    claim.managers.remove(idToDrop);
 						
@@ -1274,11 +1288,6 @@ public class GriefPrevention extends JavaPlugin
 						}
 						
 						GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustIndividualSingleClaim, args[0]);
-					}
-					else
-					{
-						GriefPrevention.sendMessage(player, TextMode.Err, Messages.UntrustOwnerOnly, claim.getOwnerName());
-						return true;
 					}
 				}
 				
