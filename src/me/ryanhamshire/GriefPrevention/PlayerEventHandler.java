@@ -1709,7 +1709,10 @@ class PlayerEventHandler implements Listener
 			//if he's investigating a claim
 			else if(materialInHand == GriefPrevention.instance.config_claims_investigationTool)
 			{
-		        //if holding shift (sneaking), show all claims in area
+		        //if claims are disabled in this world, do nothing
+			    if(!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld())) return;
+			    
+			    //if holding shift (sneaking), show all claims in area
 			    if(player.isSneaking() && player.hasPermission("griefprevention.visualizenearbyclaims"))
 			    {
 			        //find nearby claims
