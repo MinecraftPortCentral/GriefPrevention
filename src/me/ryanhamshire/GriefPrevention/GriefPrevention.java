@@ -826,7 +826,10 @@ public class GriefPrevention extends JavaPlugin
         String [] commands = accessTrustSlashCommands.split(";");
         for(int i = 0; i < commands.length; i++)
         {
-            this.config_claims_commandsRequiringAccessTrust.add(commands[i].trim().toLowerCase());
+            if(!commands[i].isEmpty())
+            {
+                this.config_claims_commandsRequiringAccessTrust.add(commands[i].trim().toLowerCase());
+            }
         }
         
         //try to parse the list of commands which should be monitored for spam
