@@ -2804,11 +2804,19 @@ public class GriefPrevention extends JavaPlugin
 			//no building in the wilderness in creative mode
 			if(this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getWorld()) == ClaimsMode.SurvivalRequiringClaims)
 			{
-				String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
-				if(player.hasPermission("griefprevention.ignoreclaims"))
-					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-				reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
-				return reason;
+				//exception: when chest claims are enabled, players who have zero land claims and are placing a chest
+			    if(material != Material.CHEST || playerData.getClaims().size() > 0 || GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == -1)
+			    {
+    			    String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
+    				if(player.hasPermission("griefprevention.ignoreclaims"))
+    					reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+    				reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
+    				return reason;
+			    }
+			    else
+			    {
+			        return null;
+			    }
 			}
 			
 		    //but it's fine in survival mode
