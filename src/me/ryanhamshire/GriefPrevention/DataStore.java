@@ -220,7 +220,7 @@ public abstract class DataStore
 	    return newValue;
 	}
 	
-	boolean isSoftMuted(UUID playerID)
+	public boolean isSoftMuted(UUID playerID)
 	{
 	    Boolean mapEntry = this.softMuteMap.get(playerID);
 	    if(mapEntry == null || mapEntry == Boolean.FALSE)
