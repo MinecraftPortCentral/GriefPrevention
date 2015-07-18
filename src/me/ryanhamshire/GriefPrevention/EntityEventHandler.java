@@ -584,7 +584,7 @@ class EntityEventHandler implements Listener
 		}
 		
 		//if the attacker is a player and defender is a player (pvp combat)
-		if(attacker != null && event.getEntity() instanceof Player && GriefPrevention.instance.config_pvp_enabledWorlds.contains(attacker.getWorld()))
+		if(attacker != null && event.getEntity() instanceof Player && GriefPrevention.instance.pvpRulesApply(attacker.getWorld()))
 		{
 			//FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
 			
@@ -726,7 +726,7 @@ class EntityEventHandler implements Listener
     		                if(attackerData.ignoreClaims) return;
     		               
     		                //otherwise disallow in non-pvp worlds
-    		                if(!GriefPrevention.instance.config_pvp_enabledWorlds.contains(subEvent.getEntity().getLocation().getWorld()))
+    		                if(!GriefPrevention.instance.pvpRulesApply(subEvent.getEntity().getLocation().getWorld()))
                             {
     		                    OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
                                 String ownerName = owner.getName();

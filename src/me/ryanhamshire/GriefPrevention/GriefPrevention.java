@@ -124,7 +124,7 @@ public class GriefPrevention extends JavaPlugin
 	public String config_spam_allowedIpAddresses;					//IP addresses which will not be censored
 	public int config_spam_deathMessageCooldownSeconds;				//cooldown period for death messages (per player) in seconds
 	
-	public ArrayList<World> config_pvp_enabledWorlds;				//list of worlds where pvp anti-grief rules apply
+	HashMap<World, Boolean> config_pvp_specifiedWorlds;				//list of worlds where pvp anti-grief rules apply, according to the config file
 	public boolean config_pvp_protectFreshSpawns;					//whether to make newly spawned players immune until they pick up an item
 	public boolean config_pvp_punishLogout;						    //whether to kill players who log out during PvP combat
 	public int config_pvp_combatTimeoutSeconds;						//how long combat is considered to continue after the most recent damage
@@ -471,14 +471,11 @@ public class GriefPrevention extends JavaPlugin
         }
         
         //pvp worlds list
-        this.config_pvp_enabledWorlds = new ArrayList<World>();
+        this.config_pvp_specifiedWorlds = new HashMap<World, Boolean>();
         for(World world : worlds)          
         {
             boolean pvpWorld = config.getBoolean("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), world.getPVP());
-            if(pvpWorld)
-            {
-                this.config_pvp_enabledWorlds.add(world);
-            }
+            this.config_pvp_specifiedWorlds.put(world, pvpWorld);
         }
         
         //sea level
@@ -751,7 +748,7 @@ public class GriefPrevention extends JavaPlugin
         
         for(World world : worlds)
         {
-            outConfig.set("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), this.config_pvp_enabledWorlds.contains(world));
+            outConfig.set("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), this.pvpRulesApply(world));
         }
         outConfig.set("GriefPrevention.PvP.ProtectFreshSpawns", this.config_pvp_protectFreshSpawns);
         outConfig.set("GriefPrevention.PvP.PunishLogout", this.config_pvp_punishLogout);
@@ -3006,8 +3003,8 @@ public class GriefPrevention extends JavaPlugin
 
     public boolean pvpRulesApply(World world)
     {
-        if(this.config_pvp_enabledWorlds.contains(world)) return true;
-        
+        Boolean configSetting = this.config_pvp_specifiedWorlds.get(world);
+        if(configSetting != null) return configSetting;
         return world.getPVP();
     }
 }

@@ -1110,7 +1110,6 @@ class PlayerEventHandler implements Listener
                    
                    return;
                }
-               
                if(!GriefPrevention.instance.pvpRulesApply(entity.getLocation().getWorld()))
                {
                    //otherwise disallow
