@@ -671,8 +671,8 @@ class PlayerEventHandler implements Listener
 		    //if in survival claims mode, send a message about the claim basics video (except for admins - assumed experts)
 		    if(GriefPrevention.instance.config_claims_worldModes.get(player.getWorld()) == ClaimsMode.Survival && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10)
 		    {
-		        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AvoidGriefClaimLand, 600L);
-		        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, 601L, DataStore.SURVIVAL_VIDEO_URL);
+		        WelcomeTask task = new WelcomeTask(player);
+		        Bukkit.getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 600L);  //30 seconds after join
 		    }
 		}
 		
