@@ -26,6 +26,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
+import me.ryanhamshire.GriefPrevention.events.PreventPvPEvent;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -81,7 +84,7 @@ import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.util.Vector;
 
 //handles events related to entities
-class EntityEventHandler implements Listener
+public class EntityEventHandler implements Listener
 {
 	//convenience reference for the singleton datastore
 	private DataStore dataStore;
@@ -626,9 +629,14 @@ class EntityEventHandler implements Listener
         					!attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
         				{
         					attackerData.lastClaim = attackerClaim;
-        					event.setCancelled(true);
-        					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
-        					return;
+        					PreventPvPEvent pvpEvent = new PreventPvPEvent(attackerClaim);
+                            Bukkit.getPluginManager().callEvent(pvpEvent);
+                            if(!pvpEvent.isCancelled())
+                            {
+            					event.setCancelled(true);
+            					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
+            					return;
+                            }
         				}
         				
         				Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim);
@@ -639,9 +647,14 @@ class EntityEventHandler implements Listener
         					!defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
         				{
         					defenderData.lastClaim = defenderClaim;
-        					event.setCancelled(true);
-        					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
-        					return;
+        					PreventPvPEvent pvpEvent = new PreventPvPEvent(defenderClaim);
+        					Bukkit.getPluginManager().callEvent(pvpEvent);
+        					if(!pvpEvent.isCancelled())
+        					{
+            					event.setCancelled(true);
+            					GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
+            					return;
+        					}
         				}
     				}
     			}
@@ -1026,9 +1039,14 @@ class EntityEventHandler implements Listener
 	                    !attackerClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
 	                {
 	                    attackerData.lastClaim = attackerClaim;
-	                    event.setIntensity(effected, 0);
-	                    GriefPrevention.sendMessage(thrower, TextMode.Err, Messages.CantFightWhileImmune);
-	                    continue;
+	                    PreventPvPEvent pvpEvent = new PreventPvPEvent(attackerClaim);
+                        Bukkit.getPluginManager().callEvent(pvpEvent);
+                        if(!pvpEvent.isCancelled())
+                        {
+    	                    event.setIntensity(effected, 0);
+    	                    GriefPrevention.sendMessage(thrower, TextMode.Err, Messages.CantFightWhileImmune);
+    	                    continue;
+                        }
 	                }
 	                
 	                Claim defenderClaim = this.dataStore.getClaimAt(effectedPlayer.getLocation(), false, defenderData.lastClaim);
@@ -1038,16 +1056,21 @@ class EntityEventHandler implements Listener
 	                    !defenderClaim.isAdminClaim() && GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims))
 	                {
 	                    defenderData.lastClaim = defenderClaim;
-	                    event.setIntensity(effected, 0);
-	                    GriefPrevention.sendMessage(thrower, TextMode.Err, Messages.PlayerInPvPSafeZone);
-	                    continue;
+	                    PreventPvPEvent pvpEvent = new PreventPvPEvent(defenderClaim);
+                        Bukkit.getPluginManager().callEvent(pvpEvent);
+                        if(!pvpEvent.isCancelled())
+                        {
+    	                    event.setIntensity(effected, 0);
+    	                    GriefPrevention.sendMessage(thrower, TextMode.Err, Messages.PlayerInPvPSafeZone);
+    	                    continue;
+                        }
 	                }
 	            }
 	        }
 	    }
 	}
 	
-	private static final HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList
+	public static final HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList
 	(
 	    PotionEffectType.ABSORPTION,
 	    PotionEffectType.DAMAGE_RESISTANCE,
