@@ -461,7 +461,7 @@ class PlayerEventHandler implements Listener
 		    if(GriefPrevention.instance.config_whisperNotifications && !player.hasPermission("griefprevention.eavesdrop"))
     		{			
                 //except for when the recipient has eavesdrop permission
-                if(targetPlayer == null || targetPlayer.hasPermission("griefprevention.eavesdrop"))
+                if(targetPlayer == null || !targetPlayer.hasPermission("griefprevention.eavesdrop"))
                 {
                     StringBuilder logMessageBuilder = new StringBuilder();
         			logMessageBuilder.append("[[").append(event.getPlayer().getName()).append("]] ");
