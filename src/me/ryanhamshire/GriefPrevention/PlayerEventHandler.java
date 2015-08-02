@@ -142,7 +142,7 @@ class PlayerEventHandler implements Listener
 		else
 		{
 		    //enter in abridged chat logs
-		    this.makeSocialLogEntry(player.getName(), message);
+		    makeSocialLogEntry(player.getName(), message);
 		    
 		    //based on ignore lists, remove some of the audience
 		    Set<Player> recipientsToRemove = new HashSet<Player>();
@@ -2089,10 +2089,20 @@ class PlayerEventHandler implements Listener
 					int newHeight = (Math.abs(newz1 - newz2) + 1);
 					boolean smaller = newWidth < playerData.claimResizing.getWidth() || newHeight < playerData.claimResizing.getHeight();
 							
-					if(!player.hasPermission("griefprevention.adminclaims") && !playerData.claimResizing.isAdminClaim() && smaller && (newWidth < GriefPrevention.instance.config_claims_minSize || newHeight < GriefPrevention.instance.config_claims_minSize))
+					if(!player.hasPermission("griefprevention.adminclaims") && !playerData.claimResizing.isAdminClaim() && smaller)
 					{
-						GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimTooSmall, String.valueOf(GriefPrevention.instance.config_claims_minSize));
-						return;
+					    if(newWidth < GriefPrevention.instance.config_claims_minWidth || newHeight < GriefPrevention.instance.config_claims_minWidth)
+					    {
+    						GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimTooNarrow, String.valueOf(GriefPrevention.instance.config_claims_minWidth));
+    						return;
+					    }
+					    
+					    int newArea = newWidth * newHeight;
+					    if(newArea < GriefPrevention.instance.config_claims_minArea)
+					    {
+					        GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimInsufficientArea, String.valueOf(GriefPrevention.instance.config_claims_minArea));
+                            return;
+					    }
 					}
 					
 					//make sure player has enough blocks to make up the difference
@@ -2369,14 +2379,28 @@ class PlayerEventHandler implements Listener
 				int newClaimWidth = Math.abs(playerData.lastShovelLocation.getBlockX() - clickedBlock.getX()) + 1;
 				int newClaimHeight = Math.abs(playerData.lastShovelLocation.getBlockZ() - clickedBlock.getZ()) + 1;
 				
-				if(playerData.shovelMode != ShovelMode.Admin && (newClaimWidth < GriefPrevention.instance.config_claims_minSize || newClaimHeight < GriefPrevention.instance.config_claims_minSize))
+				if(playerData.shovelMode != ShovelMode.Admin)
 				{
-					//this IF block is a workaround for craftbukkit bug which fires two events for one interaction
-				    if(newClaimWidth != 1 && newClaimHeight != 1)
+				    if(newClaimWidth < GriefPrevention.instance.config_claims_minWidth || newClaimHeight < GriefPrevention.instance.config_claims_minWidth)
 				    {
-				        GriefPrevention.sendMessage(player, TextMode.Err, Messages.NewClaimTooSmall, String.valueOf(GriefPrevention.instance.config_claims_minSize));
+    					//this IF block is a workaround for craftbukkit bug which fires two events for one interaction
+    				    if(newClaimWidth != 1 && newClaimHeight != 1)
+    				    {
+    				        GriefPrevention.sendMessage(player, TextMode.Err, Messages.NewClaimTooNarrow, String.valueOf(GriefPrevention.instance.config_claims_minWidth));
+    				    }
+    				    return;
 				    }
-					return;
+					
+					int newArea = newClaimWidth * newClaimHeight;
+                    if(newArea < GriefPrevention.instance.config_claims_minArea)
+                    {
+                        if(newArea != 1)
+                        {
+                            GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimInsufficientArea, String.valueOf(GriefPrevention.instance.config_claims_minArea));
+                        }
+                        
+                        return;
+                    }
 				}
 				
 				//if not an administrative claim, verify the player has enough claim blocks for this new claim

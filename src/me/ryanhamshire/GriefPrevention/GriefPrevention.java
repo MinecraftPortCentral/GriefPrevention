@@ -101,7 +101,8 @@ public class GriefPrevention extends JavaPlugin
 	
 	public int config_claims_automaticClaimsForNewPlayersRadius;	//how big automatic new player claims (when they place a chest) should be.  0 to disable
 	public int config_claims_claimsExtendIntoGroundDistance;		//how far below the shoveled block a new claim will reach
-	public int config_claims_minSize;								//minimum width and height for non-admin claims
+	public int config_claims_minWidth;								//minimum width for non-admin claims
+	public int config_claims_minArea;                               //minimum area for non-admin claims
 	
 	public int config_claims_chestClaimExpirationDays;				//number of days of inactivity before an automatic chest claim will be deleted
 	public int config_claims_unusedClaimExpirationDays;				//number of days of inactivity before an unused (nothing build) claim will be deleted
@@ -503,7 +504,8 @@ public class GriefPrevention extends JavaPlugin
         this.config_claims_abandonReturnRatio = config.getDouble("GriefPrevention.Claims.AbandonReturnRatio", 1);
         this.config_claims_automaticClaimsForNewPlayersRadius = config.getInt("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadius", 4);
         this.config_claims_claimsExtendIntoGroundDistance = Math.abs(config.getInt("GriefPrevention.Claims.ExtendIntoGroundDistance", 5));
-        this.config_claims_minSize = config.getInt("GriefPrevention.Claims.MinimumSize", 10);
+        this.config_claims_minWidth = config.getInt("GriefPrevention.Claims.MinimumWidth", 5);
+        this.config_claims_minArea = config.getInt("GriefPrevention.Claims.MinimumArea", 100);
         this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", 0);
         this.config_claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
         this.config_claims_unusedClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.UnusedClaimDays", 14);
@@ -725,7 +727,8 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.Claims.AbandonReturnRatio", this.config_claims_abandonReturnRatio);
         outConfig.set("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadius", this.config_claims_automaticClaimsForNewPlayersRadius);
         outConfig.set("GriefPrevention.Claims.ExtendIntoGroundDistance", this.config_claims_claimsExtendIntoGroundDistance);
-        outConfig.set("GriefPrevention.Claims.MinimumSize", this.config_claims_minSize);
+        outConfig.set("GriefPrevention.Claims.MinimumWidth", this.config_claims_minWidth);
+        outConfig.set("GriefPrevention.Claims.MinimumArea", this.config_claims_minArea);
         outConfig.set("GriefPrevention.Claims.MaximumDepth", this.config_claims_maxDepth);
         outConfig.set("GriefPrevention.Claims.InvestigationTool", this.config_claims_investigationTool.name());
         outConfig.set("GriefPrevention.Claims.ModificationTool", this.config_claims_modificationTool.name());
