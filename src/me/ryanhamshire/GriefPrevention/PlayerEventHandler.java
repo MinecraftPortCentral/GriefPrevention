@@ -326,6 +326,10 @@ class PlayerEventHandler implements Listener
 			playerData.spamCount++;
 		}
 		
+		//in any case, record the timestamp of this message and also its content for next time
+        playerData.lastMessageTimestamp = new Date();
+        playerData.lastMessage = message;
+		
 		//if the message was determined to be a spam, consider taking action		
 		if(spam)
 		{		
@@ -387,10 +391,6 @@ class PlayerEventHandler implements Listener
 			playerData.spamCount = 0;
 			playerData.spamWarned = false;
 		}
-		
-		//in any case, record the timestamp of this message and also its content for next time
-		playerData.lastMessageTimestamp = new Date();
-		playerData.lastMessage = message;
 		
 		return false;
 	}
