@@ -2559,7 +2559,7 @@ public class GriefPrevention extends JavaPlugin
         }
     }
 	
-	private OfflinePlayer resolvePlayerByName(String name) 
+	public OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first
 		Player targetPlayer = this.getServer().getPlayerExact(name);
