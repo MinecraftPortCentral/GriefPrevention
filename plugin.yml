@@ -29,8 +29,8 @@ commands:
       aliases: ut
       permission: griefprevention.claims
    containertrust:
-      description: Grants a player access to your containers.
-      usage: /ContainerTrust <player>.  Grants a player access to your inventory, bed, and buttons/levers.
+      description: Grants a player access to your claim's containers, crops, animals, bed, buttons, and levers.
+      usage: /ContainerTrust <player>.  Grants a player access to your inventory, crops, animals, bed, and buttons/levers.
       aliases: ct
       permission: griefprevention.claims
    accesstrust:
