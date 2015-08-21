@@ -580,15 +580,7 @@ public class FlatFileDataStore extends DataStore
 			fileContent.append(String.valueOf(playerData.getBonusClaimBlocks()));
 			fileContent.append("\n");
 			
-			//fourth line is a double-semicolon-delimited list of claims
-			if(playerData.getClaims().size() > 0)
-			{
-				fileContent.append(this.locationToString(playerData.getClaims().get(0).getLesserBoundaryCorner()));
-				for(int i = 1; i < playerData.getClaims().size(); i++)
-				{
-					fileContent.append(";;" + this.locationToString(playerData.getClaims().get(i).getLesserBoundaryCorner()));
-				}
-			}
+			//fourth line is blank
 			fileContent.append("\n");
 			
 			//write data to file
