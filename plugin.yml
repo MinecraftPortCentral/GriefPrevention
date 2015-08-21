@@ -179,6 +179,10 @@ commands:
       description: Reverses /separate.
       usage: /UnSeparate
       permission: griefprevention.separate
+   claimbook:
+      description: Gives a player a replacement land claiming book.
+      usage: /ClaimBook <player>
+      permission: griefprevention.claimbook
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.
@@ -205,6 +209,7 @@ permissions:
             griefprevention.siegeimmune: true
             griefprevention.separate: true
             griefprevention.eavesdropsigns: true
+            griefprevention.claimbook: true
     griefprevention.siegeimmune:
         description: Makes a player immune to /Siege.
         default: op
@@ -277,3 +282,6 @@ permissions:
     griefprevention.ignore:
         description: Grants access to /Ignore, /Unignore, and /IgnoreList
         default: true
+    griefprevention.claimbook:
+        description: Grants access to /ClaimBook.
+        default: op

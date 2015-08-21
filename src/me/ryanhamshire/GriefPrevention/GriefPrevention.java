@@ -1631,6 +1631,27 @@ public class GriefPrevention extends JavaPlugin
 			return true;
 		}
 		
+		//claimbook
+        else if(cmd.getName().equalsIgnoreCase("claimbook"))
+        {
+            //requires one parameter
+            if(args.length != 1) return false;
+            
+            //try to find the specified player
+            Player otherPlayer = this.getServer().getPlayer(args[0]);
+            if(otherPlayer == null)
+            {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerNotFound2);
+                return true;
+            }
+            else
+            {
+                WelcomeTask task = new WelcomeTask(otherPlayer);
+                task.run();
+                return true;
+            }
+        }
+		
 		//claimslist or claimslist <player>
 		else if(cmd.getName().equalsIgnoreCase("claimslist"))
 		{
