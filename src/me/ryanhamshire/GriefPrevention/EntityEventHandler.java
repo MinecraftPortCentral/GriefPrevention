@@ -52,6 +52,7 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Tameable;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Villager;
+import org.bukkit.entity.WaterMob;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -718,7 +719,7 @@ public class EntityEventHandler implements Listener
 		    }
 		    
 		    //if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
-			if ((subEvent.getEntity() instanceof Creature && GriefPrevention.instance.config_claims_protectCreatures))
+			if (((subEvent.getEntity() instanceof Creature || subEvent.getEntity() instanceof WaterMob) && GriefPrevention.instance.config_claims_protectCreatures))
 			{
 			    //if entity is tameable and has an owner, apply special rules
 		        if(subEvent.getEntity() instanceof Tameable)
