@@ -413,7 +413,7 @@ public class Claim
 	public String allowBreak(Player player, Material material)
 	{
 		//if under siege, some blocks will be breakable
-		if(this.siegeData != null)
+		if(this.siegeData != null || this.doorsOpen)
 		{
 			boolean breakable = false;
 			
