@@ -329,6 +329,9 @@ public class Claim
 		//if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
 		if(player == null) return "";
 		
+		//if under siege, tnt may be placed and ignited
+        if(this.siegeData != null && (material == Material.FIRE || material == Material.TNT)) return null;
+		
 		//when a player tries to build in a claim, if he's under siege, the siege may extend to include the new claim
 		GriefPrevention.instance.dataStore.tryExtendSiege(player, this);
 		
@@ -450,7 +453,7 @@ public class Claim
 	//access permission check
 	public String allowAccess(Player player)
 	{
-		//following a siege where the defender lost, the claim will allow everyone access for a time
+	    //following a siege where the defender lost, the claim will allow everyone access for a time
 		if(this.doorsOpen) return null;
 		
 		//admin claims need adminclaims permission only.
