@@ -186,7 +186,7 @@ public class Claim
 	}
 	
 	//main constructor.  note that only creating a claim instance does nothing - a claim must be added to the data store to be effective
-	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, String [] builderIDs, String [] containerIds, String [] accessorIDs, String [] managerIDs, Long id)
+	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs, List<String> accessorIDs, List<String> managerIDs, Long id)
 	{
 		//modification date
 		this.modifiedDate = Calendar.getInstance().getTime();
@@ -202,36 +202,32 @@ public class Claim
 		this.ownerID = ownerID;
 		
 		//other permissions
-		for(int i = 0; i < builderIDs.length; i++)
+		for(String builderID : builderIDs)
 		{
-			String builderID = builderIDs[i];
 			if(builderID != null && !builderID.isEmpty())
 			{
 				this.playerIDToClaimPermissionMap.put(builderID, ClaimPermission.Build);
 			}
 		}
 		
-		for(int i = 0; i < containerIds.length; i++)
+		for(String containerID : containerIDs)
 		{
-			String containerID = containerIds[i];
 			if(containerID != null && !containerID.isEmpty())
 			{
 				this.playerIDToClaimPermissionMap.put(containerID, ClaimPermission.Inventory);
 			}
 		}
 		
-		for(int i = 0; i < accessorIDs.length; i++)
+		for(String accessorID : accessorIDs)
 		{
-			String accessorID = accessorIDs[i];
 			if(accessorID != null && !accessorID.isEmpty())
 			{
 				this.playerIDToClaimPermissionMap.put(accessorID, ClaimPermission.Access);
 			}
 		}
 		
-		for(int i = 0; i < managerIDs.length; i++)
+		for(String managerID : managerIDs)
 		{
-			String managerID = managerIDs[i];
 			if(managerID != null && !managerID.isEmpty())
 			{
 				this.managers.add(managerID);
@@ -264,7 +260,7 @@ public class Claim
 		Claim claim = new Claim
 			(new Location(this.lesserBoundaryCorner.getWorld(), this.lesserBoundaryCorner.getBlockX() - howNear, this.lesserBoundaryCorner.getBlockY(), this.lesserBoundaryCorner.getBlockZ() - howNear),
 			 new Location(this.greaterBoundaryCorner.getWorld(), this.greaterBoundaryCorner.getBlockX() + howNear, this.greaterBoundaryCorner.getBlockY(), this.greaterBoundaryCorner.getBlockZ() + howNear),
-			 null, new String[] {}, new String[] {}, new String[] {}, new String[] {}, null);
+			 null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null);
 		
 		return claim.contains(location, false, true);
 	}

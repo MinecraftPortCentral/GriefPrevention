@@ -225,6 +225,7 @@ public class DatabaseDataStore extends DataStore
 		
 		ArrayList<Claim> claimsToRemove = new ArrayList<Claim>();
 		ArrayList<Claim> subdivisionsToLoad = new ArrayList<Claim>();
+		List<World> validWorlds = Bukkit.getServer().getWorlds();
 		
 		while(results.next())
 		{
@@ -242,10 +243,10 @@ public class DatabaseDataStore extends DataStore
 				try
 				{
     				lesserCornerString = results.getString("lessercorner");
-    				lesserBoundaryCorner = this.locationFromString(lesserCornerString);
+    				lesserBoundaryCorner = this.locationFromString(lesserCornerString, validWorlds);
     				
     				String greaterCornerString = results.getString("greatercorner");
-    				greaterBoundaryCorner = this.locationFromString(greaterCornerString);
+    				greaterBoundaryCorner = this.locationFromString(greaterCornerString, validWorlds);
 				}
 				catch(Exception e)
 				{
@@ -293,19 +294,19 @@ public class DatabaseDataStore extends DataStore
                 }
 	
 				String buildersString = results.getString("builders");
-				String [] builderNames = buildersString.split(";");
+				List<String> builderNames = Arrays.asList(buildersString.split(";"));
 				builderNames = this.convertNameListToUUIDList(builderNames);
 				
 				String containersString = results.getString("containers");
-				String [] containerNames = containersString.split(";");
+				List<String> containerNames = Arrays.asList(containersString.split(";"));
 				containerNames = this.convertNameListToUUIDList(containerNames);
 				
 				String accessorsString = results.getString("accessors");
-				String [] accessorNames = accessorsString.split(";");
+				List<String> accessorNames = Arrays.asList(accessorsString.split(";"));
 				accessorNames = this.convertNameListToUUIDList(accessorNames);
 				
 				String managersString = results.getString("managers");
-				String [] managerNames = managersString.split(";");
+				List<String> managerNames = Arrays.asList(managersString.split(";"));
 				managerNames = this.convertNameListToUUIDList(managerNames);
 				
 				Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames, managerNames, claimID);
@@ -356,6 +357,13 @@ public class DatabaseDataStore extends DataStore
 			this.deleteClaimFromSecondaryStorage(claimsToRemove.get(i));
 		}
 		
+		if(this.getSchemaVersion() <= 2)
+		{
+		    this.refreshDataConnection();
+            statement = this.databaseConnection.createStatement();
+            statement.execute("DELETE FROM griefprevention_claimdata WHERE id='-1';");
+		}
+		
 		super.initialize();
 	}
 	
@@ -369,15 +377,8 @@ public class DatabaseDataStore extends DataStore
 			//wipe out any existing data about this claim
 			this.deleteClaimFromSecondaryStorage(claim);
 			
-			//write top level claim data to the database
+			//write claim data to the database
 			this.writeClaimData(claim);
-					
-			//for each subdivision
-			for(int i = 0; i < claim.children.size(); i++)
-			{
-				//write the subdivision's data to the database
-				this.writeClaimData(claim.children.get(i));
-			}
 		}
 		catch(SQLException e)
 		{
@@ -435,23 +436,13 @@ public class DatabaseDataStore extends DataStore
 			parentId = claim.parent.id;
 		}
 		
-		long id;
-		if(claim.id == null)
-		{
-			id = -1;
-		}
-		else
-		{
-			id = claim.id;
-		}
-		
 		try
 		{
 			this.refreshDataConnection();
 			
 			Statement statement = databaseConnection.createStatement();
 			statement.execute("INSERT INTO griefprevention_claimdata (id, owner, lessercorner, greatercorner, builders, containers, accessors, managers, parentid) VALUES(" +
-					id + ", '" +
+					claim.id + ", '" +
 					owner + "', '" +
 					lesserCornerString + "', '" +
 					greaterCornerString + "', '" +
@@ -479,11 +470,7 @@ public class DatabaseDataStore extends DataStore
 
 						
 			Statement statement = this.databaseConnection.createStatement();
-			statement.execute("DELETE FROM griefprevention_claimdata WHERE lessercorner='" + this.locationToString(claim.lesserBoundaryCorner) + "' AND greatercorner = '" + this.locationToString(claim.greaterBoundaryCorner) + "';");
-			if(claim.id != -1)
-			{
-			    statement.execute("DELETE FROM griefprevention_claimdata WHERE parentid=" + claim.id + ";");
-			}
+			statement.execute("DELETE FROM griefprevention_claimdata WHERE id='" + claim.id + "';");
 		}
 		catch(SQLException e)
 		{

@@ -173,14 +173,14 @@ commands:
       permission: griefprevention.ignore
    separate:
       description: Forces two players to ignore each other in chat.
-      usage: /Separate
+      usage: /Separate <player1> <player2>
       permission: griefprevention.separate
    unseparate:
       description: Reverses /separate.
-      usage: /UnSeparate
+      usage: /UnSeparate <player1> <player2>
       permission: griefprevention.separate
    claimbook:
-      description: Gives a player a replacement land claiming book.
+      description: Gives a player a manual about claiming land.
       usage: /ClaimBook <player>
       permission: griefprevention.claimbook
 permissions:
