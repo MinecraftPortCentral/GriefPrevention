@@ -1580,7 +1580,7 @@ public class GriefPrevention extends JavaPlugin
 			
 			else
 			{
-				String noBuildReason = claim.allowBuild(player, Material.TNT);
+				String noBuildReason = claim.allowBuild(player, Material.STONE);
 				if(noBuildReason != null)
 				{
 					GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
