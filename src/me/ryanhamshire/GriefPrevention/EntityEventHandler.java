@@ -824,7 +824,7 @@ public class EntityEventHandler implements Listener
 					}
 					
 					//otherwise the player damaging the entity must have permission, unless it's a dog in a pvp world
-					else if(!(GriefPrevention.instance.pvpRulesApply(event.getEntity().getWorld()) && event.getEntity().getType() == EntityType.WOLF))
+					else if(!(event.getEntity().getWorld().getPVP() && event.getEntity().getType() == EntityType.WOLF))
 					{
 						String noContainersReason = claim.allowContainers(attacker);
 						if(noContainersReason != null)
