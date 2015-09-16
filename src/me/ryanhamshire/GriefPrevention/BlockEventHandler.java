@@ -39,6 +39,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockDispenseEvent;
+import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
@@ -669,6 +670,32 @@ public class BlockEventHandler implements Listener
                 }
             }
         }
+        
+        //otherwise if creative mode world, don't flow
+        else if(GriefPrevention.instance.creativeRulesApply(toLocation))
+        {
+            spreadEvent.setCancelled(true);
+        }
+	}
+	
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    public void onForm(BlockFormEvent event)
+	{
+	    Block block = event.getBlock();
+	    Location location = block.getLocation();
+	    
+	    if(GriefPrevention.instance.creativeRulesApply(location))
+	    {
+	        Material type = block.getType();
+	        if(type == Material.COBBLESTONE || type == Material.OBSIDIAN || type == Material.STATIONARY_LAVA || type == Material.STATIONARY_WATER)
+	        {
+	            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(location, false, null);
+	            if(claim == null)
+	            {
+	                event.setCancelled(true);
+	            }
+	        }
+	    }
 	}
 	
 	//ensures dispensers can't be used to dispense a block(like water or lava) or item across a claim boundary
