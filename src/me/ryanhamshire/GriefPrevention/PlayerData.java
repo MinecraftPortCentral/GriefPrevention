@@ -143,6 +143,9 @@ public class PlayerData
 	//true means invisible (admin-forced ignore), false means player-created ignore
 	public ConcurrentHashMap<UUID, Boolean> ignoredPlayers = new ConcurrentHashMap<UUID, Boolean>();
 	public boolean ignoreListChanged = false;
+
+    //profanity warning, once per play session
+	boolean profanityWarned = false;
 	
 	//whether or not this player is "in" pvp combat
 	public boolean inPvpCombat()

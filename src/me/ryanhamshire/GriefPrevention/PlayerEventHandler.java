@@ -87,6 +87,9 @@ class PlayerEventHandler implements Listener
 	//regex pattern for the "how do i claim land?" scanner
 	private Pattern howToClaimPattern = null;
 	
+	//matcher for banned words
+	private WordFinder bannedWordFinder = new WordFinder(GriefPrevention.instance.dataStore.loadBannedWords());
+	
 	//typical constructor, yawn
 	PlayerEventHandler(DataStore dataStore, GriefPrevention plugin)
 	{
@@ -137,6 +140,34 @@ class PlayerEventHandler implements Listener
 		    
 		    GriefPrevention.AddLogEntry(notificationMessage, CustomLogEntryTypes.Debug, true);
 		}
+		
+		//troll and excessive profanity filter
+		else if(!player.hasPermission("griefprevention.spam") && this.bannedWordFinder.hasMatch(message))
+        {
+		    //limit recipients to sender
+		    recipients.clear();
+            recipients.add(player);
+		    
+		    //if player not new warn for the first infraction per play session.
+            if(player.hasAchievement(Achievement.MINE_WOOD))
+            {
+                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+                if(!playerData.profanityWarned)
+                {
+                    playerData.profanityWarned = true;
+                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoProfanity);
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+            
+            //otherwise assume chat troll and mute all chat from this sender until an admin says otherwise
+            else
+            {
+                GriefPrevention.AddLogEntry("Auto-muted new player " + player.getName() + " for profanity shortly after join.  Use /SoftMute to undo.");
+                GriefPrevention.instance.dataStore.toggleSoftMute(player.getUniqueId());
+            }
+        }
 		
 		//remaining messages
 		else
