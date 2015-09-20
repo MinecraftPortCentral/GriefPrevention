@@ -613,14 +613,14 @@ public class DatabaseDataStore extends DataStore
 	
 	private synchronized void refreshDataConnection() throws SQLException
 	{
-		if(this.databaseConnection == null || this.databaseConnection.isClosed())
+		if(this.databaseConnection == null || !this.databaseConnection.isValid(3))
 		{
 			//set username/pass properties
 			Properties connectionProps = new Properties();
 			connectionProps.put("user", this.userName);
 			connectionProps.put("password", this.password);
 			connectionProps.put("autoReconnect", "true");
-			connectionProps.put("maxReconnects", "4");
+			connectionProps.put("maxReconnects", Integer.MAX_VALUE);
 			
 			//establish connection
 			this.databaseConnection = DriverManager.getConnection(this.databaseUrl, connectionProps); 
