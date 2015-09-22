@@ -620,7 +620,7 @@ public class DatabaseDataStore extends DataStore
 			connectionProps.put("user", this.userName);
 			connectionProps.put("password", this.password);
 			connectionProps.put("autoReconnect", "true");
-			connectionProps.put("maxReconnects", Integer.MAX_VALUE);
+			connectionProps.put("maxReconnects", String.valueOf(Integer.MAX_VALUE));
 			
 			//establish connection
 			this.databaseConnection = DriverManager.getConnection(this.databaseUrl, connectionProps); 
