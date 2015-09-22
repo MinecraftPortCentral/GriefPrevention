@@ -36,12 +36,14 @@ import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
+import org.bukkit.ChunkSnapshot;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.TravelAgent;
 import org.bukkit.BanList.Type;
+import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -2493,6 +2495,25 @@ class PlayerEventHandler implements Listener
 		                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
 		                GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L, DataStore.SUBDIVISION_VIDEO_URL);
 		            }
+					
+					//auto-extend it downward to cover anything already built underground
+					Claim newClaim = result.claim;
+					Location lesserCorner = newClaim.getLesserBoundaryCorner();
+					Location greaterCorner = newClaim.getGreaterBoundaryCorner();
+					World world = lesserCorner.getWorld();
+					ArrayList<ChunkSnapshot> snapshots = new ArrayList<ChunkSnapshot>();
+					for(int chunkx = lesserCorner.getBlockX() / 16; chunkx <= greaterCorner.getBlockX() / 16; chunkx++)
+					{
+					    for(int chunkz = lesserCorner.getBlockZ() / 16; chunkz <= greaterCorner.getBlockZ() / 16; chunkz++)
+					    {
+					        if(world.isChunkLoaded(chunkx, chunkz))
+					        {
+					            snapshots.add(world.getChunkAt(chunkx, chunkz).getChunkSnapshot(true, true, true));
+					        }
+					    }
+					}
+					
+					Bukkit.getScheduler().runTaskAsynchronously(GriefPrevention.instance, new AutoExtendClaimTask(newClaim, snapshots, world.getEnvironment()));
 				}
 			}
 		}
