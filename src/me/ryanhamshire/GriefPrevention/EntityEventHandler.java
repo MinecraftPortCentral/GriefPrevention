@@ -21,6 +21,7 @@ package me.ryanhamshire.GriefPrevention;
 import org.spongepowered.api.block.BlockTransaction;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.monster.Enderman;
 import org.spongepowered.api.entity.living.monster.Silverfish;
@@ -36,6 +37,7 @@ import org.spongepowered.api.potion.PotionEffectTypes;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 
 //handles events related to entities
 public class EntityEventHandler {
@@ -69,8 +71,8 @@ public class EntityEventHandler {
                     if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
                         transaction.setIsValid(false);
                     } else {
-                        final Entity rider = (Entity) ((net.minecraft.entity.Entity) entity).riddenByEntity;
-                        if (rider != null && rider instanceof Player) {
+                        final Optional<Entity> optPassenger = entity.get(Keys.PASSENGER);
+                        if (optPassenger.isPresent() && optPassenger.get() instanceof Player) {
                             transaction.setIsValid(false);
                         }
                     }
