@@ -20,17 +20,15 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 archivesBaseName = project.name.toLowerCase()
-version = "${project.version}"
+version = project.version
 
 ext {
-    minecraftPlugin = plugins.getPlugin('net.minecraftforge.gradle.forge')
-    forgeBuild = '1519'
     DIR_MCP_MAPPINGS = net.minecraftforge.gradle.common.Constants.DIR_MCP_MAPPINGS
 }
 
 minecraft {
-    forgeVersion = project.forgeBuild
-    mappings = 'snapshot_20150301'
+    forgeVersion = project.forgeVersion
+    mappings = project.mcpMappings
 }
 
 repositories {
@@ -46,6 +44,14 @@ dependencies {
         transitive = true
     }
     compile 'junit:junit:4.12'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
 }
 
 if (JavaVersion.current().isJava8Compatible() || JavaVersion.current().isJava9Compatible()) {
