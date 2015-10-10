@@ -20,9 +20,15 @@ package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.io.Files;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
+import net.minecraft.item.ItemStack;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.service.scheduler.Task;
+import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
+import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.common.Sponge;
@@ -615,7 +621,7 @@ public abstract class DataStore {
     }
 
     // gets an almost-unique, persistent identifier string for a chunk
-    String getChunkString(Location location) {
+    String getChunkString(Location<World> location) {
         return String.valueOf(location.getBlockX() >> 4) + (location.getBlockZ() >> 4);
     }
 
@@ -706,13 +712,13 @@ public abstract class DataStore {
 
         // if worldguard is installed, also prevent claims from overlapping any
         // worldguard regions
-        if (GriefPrevention.instance.config_claims_respectWorldGuard && this.worldGuard != null && creatingPlayer != null) {
+        /*if (GriefPrevention.instance.config_claims_respectWorldGuard && this.worldGuard != null && creatingPlayer != null) {
             if (!this.worldGuard.canBuild(newClaim.lesserBoundaryCorner, newClaim.greaterBoundaryCorner, creatingPlayer)) {
                 result.succeeded = false;
                 result.claim = null;
                 return result;
             }
-        }
+        }*/
 
         // otherwise add this new claim to the data store to make it effective
         this.addClaim(newClaim, true);
@@ -787,11 +793,11 @@ public abstract class DataStore {
             claim = claim.parent;
 
         // adjust to new depth
-        claim.lesserBoundaryCorner.setY(newDepth);
-        claim.greaterBoundaryCorner.setY(newDepth);
+        claim.lesserBoundaryCorner = claim.lesserBoundaryCorner.add(0, newDepth, 0);
+        claim.greaterBoundaryCorner = claim.greaterBoundaryCorner.add(0, newDepth, 0);
         for (Claim subdivision : claim.children) {
-            subdivision.lesserBoundaryCorner.setY(newDepth);
-            subdivision.greaterBoundaryCorner.setY(newDepth);
+            subdivision.lesserBoundaryCorner = subdivision.lesserBoundaryCorner.add(0, newDepth, 0);
+            subdivision.greaterBoundaryCorner = subdivision.greaterBoundaryCorner.add(0, newDepth, 0);
             this.saveClaim(subdivision);
         }
 
@@ -814,9 +820,9 @@ public abstract class DataStore {
         // why isn't this a "repeating" task?
         // because depending on the status of the siege at the time the task
         // runs, there may or may not be a reason to run the task again
-        SiegeCheckupTask task = new SiegeCheckupTask(siegeData);
-        siegeData.checkupTaskID =
-                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 30);
+        SiegeCheckupTask siegeTask = new SiegeCheckupTask(siegeData);
+        Task task = GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 30).execute(siegeTask).submit(GriefPrevention.instance);
+        siegeData.checkupTaskID = task.getUniqueId();
     }
 
     // ends a siege
@@ -869,49 +875,62 @@ public abstract class DataStore {
         }
 
         // cancel the siege checkup task
-        GriefPrevention.instance.getServer().getScheduler().cancelTask(siegeData.checkupTaskID);
+        GriefPrevention.instance.game.getScheduler().getTaskById(siegeData.checkupTaskID).get().cancel();
 
         // notify everyone who won and lost
         if (winnerName != null && loserName != null) {
-            GriefPrevention.instance.getServer().broadcastMessage(winnerName + " defeated " + loserName + " in siege warfare!");
+            GriefPrevention.instance.game.getServer().getBroadcastSink().sendMessage(Texts.of(winnerName + " defeated " + loserName + " in siege warfare!"));
         }
 
         // if the claim should be opened to looting
         if (grantAccess) {
-            Player winner = GriefPrevention.instance.getServer().getPlayer(winnerName);
-            if (winner != null) {
+            Optional<Player> winner = GriefPrevention.instance.game.getServer().getPlayer(winnerName);
+            if (winner.isPresent()) {
                 // notify the winner
-                GriefPrevention.sendMessage(winner, TextMode.Success, Messages.SiegeWinDoorsOpen);
+                GriefPrevention.sendMessage(winner.get(), TextMode.Success, Messages.SiegeWinDoorsOpen);
 
                 // schedule a task to secure the claims in about 5 minutes
                 SecureClaimTask task = new SecureClaimTask(siegeData);
-                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 60 * 5);
+                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 60 * 5).execute(task).submit(GriefPrevention.instance);
             }
         }
 
         // if the siege ended due to death, transfer inventory to winner
         if (death) {
-            Player winner = GriefPrevention.instance.getServer().getPlayer(winnerName);
-            Player loser = GriefPrevention.instance.getServer().getPlayer(loserName);
-            if (winner != null && loser != null) {
+            Optional<Player> winner = GriefPrevention.instance.game.getServer().getPlayer(winnerName);
+            Optional<Player> loser = GriefPrevention.instance.game.getServer().getPlayer(loserName);
+            if (winner.isPresent() && loser.isPresent()) {
                 // get loser's inventory, then clear it
-                ItemStack[] loserItems = loser.getInventory().getContents();
-                loser.getInventory().clear();
+                net.minecraft.entity.player.EntityPlayerMP loserPlayer = (net.minecraft.entity.player.EntityPlayerMP) loser.get();
+                net.minecraft.entity.player.EntityPlayerMP winnerPlayer = (net.minecraft.entity.player.EntityPlayerMP) winner.get();
+                List<ItemStack> loserItems = new ArrayList<ItemStack>();
+                for (int i = 0; i < loserPlayer.inventory.mainInventory.length; i++) {
+                    if (loserPlayer.inventory.mainInventory[i] != null) {
+                        loserItems.add(loserPlayer.inventory.mainInventory[i]);
+                    }
+                }
+
+                loserPlayer.inventory.clear();
 
                 // try to add it to the winner's inventory
-                for (int j = 0; j < loserItems.length; j++) {
-                    if (loserItems[j] == null || loserItems[j].getType() == Material.AIR || loserItems[j].getAmount() == 0)
+                for (int j = 0; j < loserItems.size(); j++) {
+                    if (loserItems.get(j) == null || loserItems.get(j).stackSize == 0)
                         continue;
 
-                    HashMap<Integer, ItemStack> wontFitItems = winner.getInventory().addItem(loserItems[j]);
-
-                    // drop any remainder on the ground at his feet
-                    Object[] keys = wontFitItems.keySet().toArray();
-                    Location winnerLocation = winner.getLocation();
-                    for (int i = 0; i < keys.length; i++) {
-                        Integer key = (Integer) keys[i];
-                        winnerLocation.getWorld().dropItemNaturally(winnerLocation, wontFitItems.get(key));
+                    boolean added = winnerPlayer.inventory.addItemStackToInventory(loserItems.get(j));
+                    if (added) {
+                        loserItems.remove(j);
+                    } else {
+                        break;
                     }
+                }
+
+                // drop any remainder on the ground at his feet
+                Location<World> winnerLocation = winner.get().getLocation();
+                for (int i = 0; i < loserItems.size(); i++) {
+                    net.minecraft.entity.item.EntityItem entity = new net.minecraft.entity.item.EntityItem((net.minecraft.world.World) winnerLocation.getExtent(), winnerLocation.getX(), winnerLocation.getY(), winnerLocation.getZ(), loserItems.get(i));
+                    entity.setPickupDelay(10);
+                    ((net.minecraft.world.World)winnerLocation.getExtent()).spawnEntityInWorld(entity);
                 }
             }
         }
@@ -1021,7 +1040,7 @@ public abstract class DataStore {
             Player resizingPlayer) {
         // try to create this new claim, ignoring the original when checking for
         // overlap
-        CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newy1, newy2, newz1, newz2,
+        CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getExtent(), newx1, newx2, newy1, newy2, newz1, newz2,
                 claim.ownerID, claim.parent, claim.id, resizingPlayer);
 
         // if succeeded
@@ -1432,15 +1451,15 @@ public abstract class DataStore {
             }
 
             // otherwise try to convert to a UUID
-            UUID playerID = null;
+            Optional<User> player = Optional.empty();
             try {
-                playerID = UUIDFetcher.getUUIDOf(name);
+                player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(name);
             } catch (Exception ex) {
             }
 
             // if successful, replace player name with corresponding UUID
-            if (playerID != null) {
-                resultNames.add(playerID.toString());
+            if (player.isPresent()) {
+                resultNames.add(player.get().getUniqueId().toString());
             }
         }
 
@@ -1469,19 +1488,23 @@ public abstract class DataStore {
     }
 
     // gets all the claims "near" a location
-    Set<Claim> getNearbyClaims(Location location) {
+    Set<Claim> getNearbyClaims(Location<World> location) {
         Set<Claim> claims = new HashSet<Claim>();
 
-        Chunk lesserChunk = location.getWorld().getChunkAt(location.subtract(150, 0, 150));
-        Chunk greaterChunk = location.getWorld().getChunkAt(location.add(300, 0, 300));
+        Optional<Chunk> lesserChunk = location.getExtent().getChunk(location.sub(150, 0, 150).getBlockPosition());
+        Optional<Chunk> greaterChunk = location.getExtent().getChunk(location.add(300, 0, 300).getBlockPosition());
 
-        for (int chunk_x = lesserChunk.getX(); chunk_x <= greaterChunk.getX(); chunk_x++) {
-            for (int chunk_z = lesserChunk.getZ(); chunk_z <= greaterChunk.getZ(); chunk_z++) {
-                Chunk chunk = location.getWorld().getChunkAt(chunk_x, chunk_z);
-                String chunkID = this.getChunkString(chunk.getBlock(0, 0, 0).getLocation());
-                ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
-                if (claimsInChunk != null) {
-                    claims.addAll(claimsInChunk);
+        if (lesserChunk.isPresent() && greaterChunk.isPresent()) {
+            for (int chunk_x = lesserChunk.get().getPosition().getX(); chunk_x <= greaterChunk.get().getPosition().getX(); chunk_x++) {
+                for (int chunk_z = lesserChunk.get().getPosition().getZ(); chunk_z <= greaterChunk.get().getPosition().getZ(); chunk_z++) {
+                    Optional<Chunk> chunk = location.getExtent().getChunk(chunk_x, 0, chunk_z);
+                    if (chunk.isPresent()) {
+                        String chunkID = this.getChunkString(chunk.get().getWorld().getLocation(0, 0, 0));
+                        ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
+                        if (claimsInChunk != null) {
+                            claims.addAll(claimsInChunk);
+                        }
+                    }
                 }
             }
         }
