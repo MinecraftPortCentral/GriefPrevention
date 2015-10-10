@@ -1,5 +1,6 @@
 package me.ryanhamshire.GriefPrevention;
 
+import net.minecraft.entity.player.EntityPlayer;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.DisplayNameData;
 import org.spongepowered.api.data.manipulator.mutable.item.AuthorData;
@@ -82,7 +83,7 @@ public class WelcomeTask implements Runnable {
                 e.printStackTrace();
             }
 
-            player.setItemInHand(itemStack);
+            ((EntityPlayer) player).inventory.addItemStackToInventory((net.minecraft.item.ItemStack) (Object) itemStack.copy());
         }
 
     }
