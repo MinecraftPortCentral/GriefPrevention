@@ -18,7 +18,19 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+
+import com.mojang.authlib.GameProfile;
+import net.minecraft.command.CommandException;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.BanList;
+import net.minecraft.server.management.UserListBansEntry;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.service.ban.BanService;
+import org.spongepowered.api.text.Texts;
+
+import java.util.Date;
 
 //kicks or bans a player
 //need a task for this because async threads (like the chat event handlers) can't kick or ban.
@@ -47,16 +59,17 @@ class PlayerKickBanTask implements Runnable {
     @Override
     public void run() {
         if (this.ban) {
-            // ban
-            BanList bans = Bukkit.getServer().getBanList(Type.NAME);
-            bans.addBan(this.player.getName(), this.reason, null, source);
+            MinecraftServer minecraftserver = MinecraftServer.getServer();
+            GameProfile gameprofile = minecraftserver.getPlayerProfileCache().getGameProfileForUsername(player.getName());
 
-            // kick
-            if (this.player.isOnline()) {
-                this.player.kickPlayer(this.reason);
+            UserListBansEntry userlistbansentry = new UserListBansEntry(gameprofile, null, ((EntityPlayer) player).getCommandSenderName(),
+                                                                        null, this.reason);
+            minecraftserver.getConfigurationManager().getBannedPlayers().addEntry(userlistbansentry);
+            EntityPlayerMP entityplayermp = minecraftserver.getConfigurationManager().getPlayerByUsername(this.player.getName());
+
+            if (entityplayermp != null) {
+                entityplayermp.playerNetServerHandler.kickPlayerFromServer("You are banned from this server.");
             }
-        } else if (this.player.isOnline()) {
-            this.player.kickPlayer(this.reason);
         }
     }
 }
