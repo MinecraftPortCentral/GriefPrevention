@@ -20,6 +20,10 @@ package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.io.Files;
 import org.eclipse.jgit.api.errors.InvalidConfigurationException;
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -38,6 +42,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -147,37 +152,18 @@ public class FlatFileDataStore extends DataStore {
                 namesToConvert.add(playerFile.getName());
             }
 
-            // resolve and cache as many as possible through various means
-            try {
-                UUIDFetcher fetcher = new UUIDFetcher(namesToConvert);
-                fetcher.call();
-            } catch (Exception e) {
-                GriefPrevention.AddLogEntry("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
-                e.printStackTrace();
-            }
-
             // rename files
             for (File playerFile : files) {
                 String currentFilename = playerFile.getName();
 
-                // if corrected casing and a record already exists using the
-                // correct casing, skip this one
-                String correctedCasing = UUIDFetcher.correctedNames.get(currentFilename);
-                if (correctedCasing != null && !currentFilename.equals(correctedCasing)) {
-                    File correctedCasingFile = new File(playerDataFolder.getPath() + File.separator + correctedCasing);
-                    if (correctedCasingFile.exists()) {
-                        continue;
-                    }
-                }
-
                 // try to convert player name to UUID
-                UUID playerID = null;
+                Optional<User> player = null;
                 try {
-                    playerID = UUIDFetcher.getUUIDOf(currentFilename);
+                    player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(currentFilename);
 
                     // if successful, rename the file using the UUID
-                    if (playerID != null) {
-                        playerFile.renameTo(new File(playerDataFolder, playerID.toString()));
+                    if (player.isPresent()) {
+                        playerFile.renameTo(new File(playerDataFolder, player.get().toString()));
                     }
                 } catch (Exception ex) {
                 }
@@ -198,7 +184,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
     void loadClaimData_Legacy(File[] files) throws Exception {
-        List<World> validWorlds = Bukkit.getServer().getWorlds();
+        List<World> validWorlds = (List<World>) GriefPrevention.instance.game.getServer().getWorlds();
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].isFile()) // avoids folders
@@ -247,31 +233,23 @@ public class FlatFileDataStore extends DataStore {
                         }
 
                         // first line is lesser boundary corner location
-                        Location lesserBoundaryCorner = this.locationFromString(line, validWorlds);
+                        Location<World> lesserBoundaryCorner = this.locationFromString(line, validWorlds);
 
                         // second line is greater boundary corner location
                         line = inStream.readLine();
-                        Location greaterBoundaryCorner = this.locationFromString(line, validWorlds);
+                        Location<World> greaterBoundaryCorner = this.locationFromString(line, validWorlds);
 
                         // third line is owner name
                         line = inStream.readLine();
                         String ownerName = line;
-                        UUID ownerID = null;
+                        Optional<User> owner = null;
                         if (ownerName.isEmpty() || ownerName.startsWith("--")) {
-                            ownerID = null; // administrative land claim or
+                            owner = Optional.empty(); // administrative land claim or
                                             // subdivision
                         } else if (this.getSchemaVersion() == 0) {
-                            try {
-                                ownerID = UUIDFetcher.getUUIDOf(ownerName);
-                            } catch (Exception ex) {
+                            owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(ownerName);
+                            if (!owner.isPresent()) {
                                 GriefPrevention.AddLogEntry("Couldn't resolve this name to a UUID: " + ownerName + ".");
-                                GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
-                            }
-                        } else {
-                            try {
-                                ownerID = UUID.fromString(ownerName);
-                            } catch (Exception ex) {
-                                GriefPrevention.AddLogEntry("Error - this is not a valid UUID: " + ownerName + ".");
                                 GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                             }
                         }
@@ -313,7 +291,7 @@ public class FlatFileDataStore extends DataStore {
                         // it's the top level claim
                         if (topLevelClaim == null) {
                             // instantiate
-                            topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames,
+                            topLevelClaim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), builderNames, containerNames,
                                     accessorNames, managerNames, claimID);
 
                             topLevelClaim.modifiedDate = new Date(files[i].lastModified());
@@ -439,7 +417,7 @@ public class FlatFileDataStore extends DataStore {
             builder.append(line).append('\n');
         }
 
-        return this.loadClaim(builder.toString(), out_parentID, file.lastModified(), claimID, Bukkit.getServer().getWorlds());
+        return this.loadClaim(builder.toString(), out_parentID, file.lastModified(), claimID, (List<World>) GriefPrevention.instance.game.getServer().getWorlds());
     }
 
     Claim loadClaim(String input, ArrayList<Long> out_parentID, long lastModifiedDate, long claimID, List<World> validWorlds)
