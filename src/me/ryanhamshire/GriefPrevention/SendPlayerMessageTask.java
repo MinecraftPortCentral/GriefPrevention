@@ -21,7 +21,6 @@ package me.ryanhamshire.GriefPrevention;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.Texts;
-import org.spongepowered.common.text.SpongeTexts;
 
 //sends a message to a player
 //used to send delayed messages, for example help text triggered by a player's chat
@@ -38,7 +37,7 @@ class SendPlayerMessageTask implements Runnable {
     @Override
     public void run() {
         if (player == null) {
-            GriefPrevention.AddLogEntry(SpongeTexts.toComponent(message).getUnformattedText());
+            GriefPrevention.AddLogEntry(Texts.toPlain(message));
             return;
         }
 

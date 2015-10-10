@@ -28,7 +28,6 @@ import static org.spongepowered.api.util.command.args.GenericArguments.player;
 import static org.spongepowered.api.util.command.args.GenericArguments.playerOrSource;
 import static org.spongepowered.api.util.command.args.GenericArguments.string;
 
-import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
@@ -47,7 +46,6 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
-import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
@@ -68,7 +66,6 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.text.SpongeTexts;
 
 import java.io.File;
 import java.io.IOException;
@@ -675,7 +672,6 @@ public class GriefPrevention {
 
             // default values for container trust mod blocks
             if (containerTrustStrings == null || containerTrustStrings.size() == 0) {
-                containerTrustStrings = Lists.newArrayList();
                 containerTrustStrings.add(new MaterialInfo(99999, "Example - ID 99999, all data values.").toString());
             }
 
@@ -1296,7 +1292,7 @@ public class GriefPrevention {
                     this.handleTrustCommand(checkPlayer(src), null, args.<String>getOne("target").get());
                     return CommandResult.success();
                 })
-                .build(), "containertrust", "ct");
+                .build(), "permissiontrust", "pt");
 
         game.getCommandDispatcher().register(this, CommandSpec.builder()
                 .description(Texts.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
@@ -2481,7 +2477,7 @@ public class GriefPrevention {
             return;
 
         if (player == null) {
-            GriefPrevention.AddLogEntry(SpongeTexts.toComponent(message).getUnformattedText());
+            GriefPrevention.AddLogEntry(Texts.toPlain(message));
         } else {
             player.sendMessage(message);
         }

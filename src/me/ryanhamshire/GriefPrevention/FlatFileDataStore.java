@@ -21,9 +21,7 @@ package me.ryanhamshire.GriefPrevention;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
-import org.eclipse.jgit.api.errors.InvalidConfigurationException;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.world.Location;
@@ -414,13 +412,13 @@ public class FlatFileDataStore extends DataStore {
         }
     }
 
-    Claim loadClaim(File file, ArrayList<Long> out_parentID, long claimID) throws IOException, InvalidConfigurationException, Exception {
+    Claim loadClaim(File file, ArrayList<Long> out_parentID, long claimID) throws IOException, Exception {
         return this.loadClaim(file, out_parentID, file.lastModified(), claimID, (List<World>) GriefPrevention.instance.game.getServer().getWorlds());
     }
 
 
     Claim loadClaim(File claimFile, ArrayList<Long> out_parentID, long lastModifiedDate, long claimID, List<World> validWorlds)
-            throws InvalidConfigurationException, Exception {
+            throws Exception {
         Claim claim;
 
         HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(claimFile).build();
@@ -442,10 +440,14 @@ public class FlatFileDataStore extends DataStore {
             }
         }
 
-        List<String> builders = mainNode.getNode("Builders").getList(new TypeToken<String>() {});
-        List<String> containers = mainNode.getNode("Containers").getList(new TypeToken<String>() {});
-        List<String> accessors = mainNode.getNode("Accessors").getList(new TypeToken<String>() {});
-        List<String> managers = mainNode.getNode("Managers").getList(new TypeToken<String>() {});
+        List<String> builders = mainNode.getNode("Builders").getList(new TypeToken<String>() {
+        });
+        List<String> containers = mainNode.getNode("Containers").getList(new TypeToken<String>() {
+        });
+        List<String> accessors = mainNode.getNode("Accessors").getList(new TypeToken<String>() {
+        });
+        List<String> managers = mainNode.getNode("Managers").getList(new TypeToken<String>() {
+        });
         out_parentID.add(mainNode.getNode("Parent Claim ID").getLong(-1L));
 
         // instantiate
