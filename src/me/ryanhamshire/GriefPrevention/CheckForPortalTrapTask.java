@@ -15,40 +15,35 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-package me.ryanhamshire.GriefPrevention;
 
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
+package me.ryanhamshire.GriefPrevention;
 
 //players can be "trapped" in a portal frame if they don't have permission to break
 //solid blocks blocking them from exiting the frame
 //if that happens, we detect the problem and send them back through the portal.
-class CheckForPortalTrapTask implements Runnable 
-{
-	//player who recently teleported via nether portal 
-	private Player player;
-	
-	//where to send the player back to if he hasn't left the portal frame
-	private Location returnLocation;
-	
-	public CheckForPortalTrapTask(Player player, Location location)
-	{
-		this.player = player;
-		this.returnLocation = location;		
-	}
-	
-	@Override
-	public void run()
-	{
-		//if player has logged out, do nothing
-	    if(!this.player.isOnline()) return;
-	    
-	    //otherwise if still standing in a portal frame, teleport him back through
-	    if(this.player.getLocation().getBlock().getType() == Material.PORTAL)
-	    {
-	        this.player.teleport(this.returnLocation);
-	    }
-	}
+class CheckForPortalTrapTask implements Runnable {
+
+    // player who recently teleported via nether portal
+    private Player player;
+
+    // where to send the player back to if he hasn't left the portal frame
+    private Location returnLocation;
+
+    public CheckForPortalTrapTask(Player player, Location location) {
+        this.player = player;
+        this.returnLocation = location;
+    }
+
+    @Override
+    public void run() {
+        // if player has logged out, do nothing
+        if (!this.player.isOnline())
+            return;
+
+        // otherwise if still standing in a portal frame, teleport him back
+        // through
+        if (this.player.getLocation().getBlock().getType() == Material.PORTAL) {
+            this.player.teleport(this.returnLocation);
+        }
+    }
 }

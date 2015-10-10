@@ -18,14 +18,15 @@
 
 package me.ryanhamshire.GriefPrevention;
 
-import org.bukkit.ChatColor;
+import org.spongepowered.api.text.format.TextColor;
+import org.spongepowered.api.text.format.TextColors;
 
-//just a few constants for chat color codes
-class TextMode 
-{	
-	final static ChatColor Info = ChatColor.AQUA;
-	final static ChatColor Instr = ChatColor.YELLOW;
-	final static ChatColor Warn = ChatColor.GOLD;
-	final static ChatColor Err = ChatColor.RED;
-	final static ChatColor Success = ChatColor.GREEN;
+//just a few constants for text color codes
+class TextMode {
+
+    final static TextColor Info = TextColors.AQUA;
+    final static TextColor Instr = TextColors.YELLOW;
+    final static TextColor Warn = TextColors.GOLD;
+    final static TextColor Err = TextColors.RED;
+    final static TextColor Success = TextColors.GREEN;
 }

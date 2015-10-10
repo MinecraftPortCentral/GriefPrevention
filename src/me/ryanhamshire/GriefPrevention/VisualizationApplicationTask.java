@@ -15,45 +15,44 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
- package me.ryanhamshire.GriefPrevention;
 
-import org.bukkit.entity.Player;
+package me.ryanhamshire.GriefPrevention;
+
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.common.Sponge;
 
 //applies a visualization for a player by sending him block change packets
-class VisualizationApplicationTask implements Runnable 
-{
-	private Visualization visualization;
-	private Player player;
-	private PlayerData playerData;
+class VisualizationApplicationTask implements Runnable {
 
-	public VisualizationApplicationTask(Player player, PlayerData playerData, Visualization visualization)
-	{
-		this.visualization = visualization;
-		this.playerData = playerData;
-		this.player = player;
-	}
-	
-	@Override
-	public void run()
-	{
-		//for each element (=block) of the visualization
-		for(int i = 0; i < visualization.elements.size(); i++)
-		{
-			VisualizationElement element = visualization.elements.get(i);
-			
-			//send the player a fake block change event
-			if(!element.location.getChunk().isLoaded()) continue;  //cheap distance check
-			player.sendBlockChange(element.location, element.visualizedMaterial, element.visualizedData);
-		}
-		
-		//remember the visualization applied to this player for later (so it can be inexpensively reverted)
-		playerData.currentVisualization = visualization;
-		
-		//schedule automatic visualization reversion in 60 seconds.
-		GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(
-	        GriefPrevention.instance, 
-	        new VisualizationReversionTask(player, playerData, visualization),
-	        20L * 60);  //60 seconds
-	}
+    private Visualization visualization;
+    private Player player;
+    private PlayerData playerData;
+
+    public VisualizationApplicationTask(Player player, PlayerData playerData, Visualization visualization) {
+        this.visualization = visualization;
+        this.playerData = playerData;
+        this.player = player;
+    }
+
+    @Override
+    public void run() {
+        // for each element (=block) of the visualization
+        for (int i = 0; i < visualization.elements.size(); i++) {
+            VisualizationElement element = visualization.elements.get(i);
+
+            // send the player a fake block change event
+            if (!element.location.getExtent().isLoaded())
+                continue; // cheap distance check
+            BlockUtils.sendBlockChange(player, element.visualizedBlock);
+        }
+
+        // remember the visualization applied to this player for later (so it
+        // can be inexpensively reverted)
+        playerData.currentVisualization = visualization;
+
+        // schedule automatic visualization reversion in 60 seconds.
+        Sponge.getGame().getScheduler().createTaskBuilder().delay(20L * 60)
+                .execute(new VisualizationReversionTask(player, playerData, visualization)); // 60
+                                                                                             // seconds
+    }
 }

@@ -15,88 +15,86 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
- package me.ryanhamshire.GriefPrevention;
+
+package me.ryanhamshire.GriefPrevention;
+
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
+import org.spongepowered.common.Sponge;
 
 import java.util.Collection;
-
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
 
 //FEATURE: give players claim blocks for playing, as long as they're not away from their computer
 
 //runs every 5 minutes in the main thread, grants blocks per hour / 12 to each online player who appears to be actively playing
-class DeliverClaimBlocksTask implements Runnable 
-{	
+class DeliverClaimBlocksTask implements Runnable {
+
     private Player player;
-    
-    public DeliverClaimBlocksTask(Player player)
-    {
+
+    public DeliverClaimBlocksTask(Player player) {
         this.player = player;
     }
-    
-	@Override
-	public void run()
-	{
-	    if(GriefPrevention.instance.config_claims_blocksAccruedPerHour <= 0) return;
-	    
-	    //if no player specified, this task will create a player-specific task for each online player, scheduled one tick apart
-	    if(this.player == null)
-		{
-	        Collection<Player> players = (Collection<Player>)GriefPrevention.instance.getServer().getOnlinePlayers();
-	        
-	        long i = 0;
-	        for(Player onlinePlayer : players)
-	        {
-	            DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer);
-	            GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, newTask, i++);
-	        }
-		}
-	    
-	    //otherwise, deliver claim blocks to the specified player
-	    else
-	    {
-	        DataStore dataStore = GriefPrevention.instance.dataStore;
+
+    @Override
+    public void run() {
+        if (GriefPrevention.instance.config_claims_blocksAccruedPerHour <= 0)
+            return;
+
+        // if no player specified, this task will create a player-specific task
+        // for each online player, scheduled one tick apart
+        if (this.player == null) {
+            Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
+
+            long i = 0;
+            for (Player onlinePlayer : players) {
+                DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer);
+                Sponge.getGame().getScheduler().createTaskBuilder().async().delay(i++).execute(newTask);
+            }
+        }
+
+        // otherwise, deliver claim blocks to the specified player
+        else {
+            DataStore dataStore = GriefPrevention.instance.dataStore;
             PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
-            
-            Location lastLocation = playerData.lastAfkCheckLocation;
-            try
-            {
-                //if he's not in a vehicle and has moved at least three blocks since the last check
-                //and he's not being pushed around by fluids
-                if(!player.isInsideVehicle() && 
-                   (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 0) &&
-                   !player.getLocation().getBlock().isLiquid())
-                {                   
-                    //add blocks
+
+            Location<World> lastLocation = playerData.lastAfkCheckLocation;
+            try {
+                // if he's not in a vehicle and has moved at least three blocks
+                // since the last check
+                // and he's not being pushed around by fluids
+                if (!player.isInsideVehicle() &&
+                        (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 0) &&
+                        !player.getLocation().getBlock().isLiquid()) {
+                    // add blocks
                     int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 6;
-                    if(accruedBlocks < 0) accruedBlocks = 1;
-                    
+                    if (accruedBlocks < 0)
+                        accruedBlocks = 1;
+
                     GriefPrevention.AddLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
-                    
-                    playerData.accrueBlocks(accruedBlocks); 
-                    
-                    //intentionally NOT saving data here to reduce overall secondary storage access frequency
-                    //many other operations will cause this players data to save, including his eventual logout
-                    //dataStore.savePlayerData(player.getUniqueIdentifier(), playerData);
-                }
-                else
-                {
+
+                    playerData.accrueBlocks(accruedBlocks);
+
+                    // intentionally NOT saving data here to reduce overall
+                    // secondary storage access frequency
+                    // many other operations will cause this players data to
+                    // save, including his eventual logout
+                    // dataStore.savePlayerData(player.getUniqueIdentifier(),
+                    // playerData);
+                } else {
                     GriefPrevention.AddLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
                 }
-            }
-            catch(IllegalArgumentException e)  //can't measure distance when to/from are different worlds
+            } catch (IllegalArgumentException e) // can't measure distance when
+                                                 // to/from are different worlds
             {
-                
-            }
-            catch(Exception e)
-            {
+
+            } catch (Exception e) {
                 GriefPrevention.AddLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
                 e.printStackTrace();
             }
-            
-            //remember current location for next time
+
+            // remember current location for next time
             playerData.lastAfkCheckLocation = player.getLocation();
-	    }
-	}
+        }
+    }
 }

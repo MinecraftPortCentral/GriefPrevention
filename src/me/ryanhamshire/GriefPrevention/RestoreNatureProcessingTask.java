@@ -18,13 +18,16 @@
  
 package me.ryanhamshire.GriefPrevention;
 
-import java.util.ArrayList;
+import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.biome.BiomeType;
+import org.spongepowered.common.Sponge;
+import org.spongepowered.common.registry.SpongeGameRegistry;
 
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World.Environment;
-import org.bukkit.block.Biome;
-import org.bukkit.entity.Player;
+import java.util.ArrayList;
 
 //non-main-thread task which processes world data to repair the unnatural
 //after processing is complete, creates a main thread task to make the necessary changes to the world
@@ -37,20 +40,20 @@ class RestoreNatureProcessingTask implements Runnable
 	//other information collected from the main thread.
 	//not to be updated, only to be passed back to main thread to provide some context about the operation
 	private int miny;
-	private Environment environment;
+	private DimensionType environment;
 	private Location lesserBoundaryCorner;
 	private Location greaterBoundaryCorner;
 	private Player player;			//absolutely must not be accessed.  not thread safe.
-	private Biome biome;
+	private BiomeType biome;
 	private boolean creativeMode;
 	private int seaLevel;
 	private boolean aggressiveMode;
 	
 	//two lists of materials
-	private ArrayList<Integer> notAllowedToHang;    //natural blocks which don't naturally hang in their air
-	private ArrayList<Integer> playerBlocks;		//a "complete" list of player-placed blocks.  MUST BE MAINTAINED as patches introduce more
+	private ArrayList<BlockType> notAllowedToHang;    //natural blocks which don't naturally hang in their air
+	private ArrayList<BlockType> playerBlocks;		//a "complete" list of player-placed blocks.  MUST BE MAINTAINED as patches introduce more
 	
-	public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, Environment environment, Biome biome, Location lesserBoundaryCorner, Location greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, boolean creativeMode, Player player)
+	public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, DimensionType environment, BiomeType biome, Location lesserBoundaryCorner, Location greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, boolean creativeMode, Player player)
 	{
 		this.snapshots = snapshots;
 		this.miny = miny;
@@ -64,19 +67,19 @@ class RestoreNatureProcessingTask implements Runnable
 		this.player = player;
 		this.creativeMode = creativeMode;
 		
-		this.notAllowedToHang = new ArrayList<Integer>();
-		this.notAllowedToHang.add(Material.DIRT.getId());
-		this.notAllowedToHang.add(Material.LONG_GRASS.getId());
-		this.notAllowedToHang.add(Material.SNOW.getId());
-		this.notAllowedToHang.add(Material.LOG.getId());
+		this.notAllowedToHang = new ArrayList<BlockType>();
+		this.notAllowedToHang.add(BlockTypes.DIRT);
+		this.notAllowedToHang.add(BlockTypes.TALLGRASS);
+		this.notAllowedToHang.add(BlockTypes.SNOW);
+		this.notAllowedToHang.add(BlockTypes.LOG);
 		
 		if(this.aggressiveMode)
 		{
-			this.notAllowedToHang.add(Material.GRASS.getId());			
-			this.notAllowedToHang.add(Material.STONE.getId());
+			this.notAllowedToHang.add(BlockTypes.GRASS);			
+			this.notAllowedToHang.add(BlockTypes.STONE);
 		}
 		
-		this.playerBlocks = new ArrayList<Integer>();
+		this.playerBlocks = new ArrayList<BlockType>();
 		this.playerBlocks.addAll(RestoreNatureProcessingTask.getPlayerBlocks(this.environment, this.biome));
 		
 		//in aggressive or creative world mode, also treat these blocks as user placed, to be removed
@@ -606,36 +609,40 @@ class RestoreNatureProcessingTask implements Runnable
 		return y;
 	}
 	
-	static ArrayList<Integer> getPlayerBlocks(Environment environment, Biome biome) 
+	static ArrayList<BlockType> getPlayerBlocks(DimensionType environment, BiomeType biome) 
 	{
 		//NOTE on this list.  why not make a list of natural blocks?
 		//answer: better to leave a few player blocks than to remove too many natural blocks.  remember we're "restoring nature"
 		//a few extra player blocks can be manually removed, but it will be impossible to guess exactly which natural materials to use in manual repair of an overzealous block removal
-		ArrayList<Integer> playerBlocks = new ArrayList<Integer>();
-		playerBlocks.add(Material.FIRE.getId());
-		playerBlocks.add(Material.BED_BLOCK.getId());
-		playerBlocks.add(Material.WOOD.getId());
-		playerBlocks.add(Material.BOOKSHELF.getId());
-		playerBlocks.add(Material.BREWING_STAND.getId());
-		playerBlocks.add(Material.BRICK.getId());
-		playerBlocks.add(Material.COBBLESTONE.getId());
-		playerBlocks.add(Material.GLASS.getId());
-		playerBlocks.add(Material.LAPIS_BLOCK.getId());
-		playerBlocks.add(Material.DISPENSER.getId());
-		playerBlocks.add(Material.NOTE_BLOCK.getId());
-		playerBlocks.add(Material.POWERED_RAIL.getId());
-		playerBlocks.add(Material.DETECTOR_RAIL.getId());
-		playerBlocks.add(Material.PISTON_STICKY_BASE.getId());
-		playerBlocks.add(Material.PISTON_BASE.getId());
-		playerBlocks.add(Material.PISTON_EXTENSION.getId());
-		playerBlocks.add(Material.WOOL.getId());
-		playerBlocks.add(Material.PISTON_MOVING_PIECE.getId());
-		playerBlocks.add(Material.GOLD_BLOCK.getId());
-		playerBlocks.add(Material.IRON_BLOCK.getId());
-		playerBlocks.add(Material.DOUBLE_STEP.getId());
-		playerBlocks.add(Material.STEP.getId());
-		playerBlocks.add(Material.CROPS.getId());
-		playerBlocks.add(Material.TNT.getId());
+		ArrayList<BlockType> playerBlocks = new ArrayList<BlockType>();
+		for (BlockType blockType : Sponge.getGame().getRegistry().getAllOf(BlockType.class)) {
+		    playerBlocks.add(blockType);
+		}
+
+		/*playerBlocks.add(BlockTypes.FIRE);
+		playerBlocks.add(BlockTypes.BED);
+		playerBlocks.add(BlockTypes.PLANKS);
+		playerBlocks.add(BlockTypes.BOOKSHELF);
+		playerBlocks.add(BlockTypes.BREWING_STAND);
+		playerBlocks.add(BlockTypes.BRICK_BLOCK);
+		playerBlocks.add(BlockTypes.COBBLESTONE);
+		playerBlocks.add(BlockTypes.GLASS);
+		playerBlocks.add(BlockTypes.LAPIS_BLOCK);
+		playerBlocks.add(BlockTypes.DISPENSER);
+		playerBlocks.add(BlockTypes.NOTEBLOCK);
+		playerBlocks.add(BlockTypes.RAIL);
+		playerBlocks.add(BlockTypes.DETECTOR_RAIL);
+		playerBlocks.add(BlockTypes.STICKY_PISTON);
+		playerBlocks.add(BlockTypes.PISTON);
+		playerBlocks.add(BlockTypes.PISTON_EXTENSION);
+		playerBlocks.add(BlockTypes.WOOL);
+		playerBlocks.add(BlockTypes.PISTON_HEAD);
+		playerBlocks.add(BlockTypes.GOLD_BLOCK);
+		playerBlocks.add(BlockTypes.IRON_BLOCK);
+		playerBlocks.add(BlockTypes.DOUBLE_STONE_SLAB);
+		playerBlocks.add(BlockTypes.STONE_SLAB);
+		playerBlocks.add(BlockTypes.WHEAT);
+		playerBlocks.add(BlockTypes.TNT);
 		playerBlocks.add(Material.MOSSY_COBBLESTONE.getId());
 		playerBlocks.add(Material.TORCH.getId());
 		playerBlocks.add(Material.FIRE.getId());
@@ -701,11 +708,11 @@ class RestoreNatureProcessingTask implements Runnable
 		playerBlocks.add(Material.POTATO.getId());
 		playerBlocks.add(Material.WOOD_BUTTON.getId());
 		playerBlocks.add(Material.SKULL.getId());
-		playerBlocks.add(Material.ANVIL.getId());
+		playerBlocks.add(Material.ANVIL.getId());*/
 		
 		
 		//these are unnatural in the standard world, but not in the nether
-		if(environment != Environment.NETHER)
+		/*if(environment != Environment.NETHER)
 		{
 			playerBlocks.add(Material.NETHERRACK.getId());
 			playerBlocks.add(Material.SOUL_SAND.getId());
@@ -729,7 +736,7 @@ class RestoreNatureProcessingTask implements Runnable
 			playerBlocks.add(Material.LEAVES.getId());
 			playerBlocks.add(Material.LOG.getId());
 			playerBlocks.add(Material.LOG_2.getId());
-		}
+		}*/
 		
 		return playerBlocks;
 	}

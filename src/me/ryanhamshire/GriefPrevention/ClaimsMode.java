@@ -1,7 +1,6 @@
 package me.ryanhamshire.GriefPrevention;
 
-public enum ClaimsMode
-{
+public enum ClaimsMode {
     Survival,
     Creative,
     Disabled,

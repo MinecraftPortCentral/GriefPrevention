@@ -1,93 +1,85 @@
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.world.Chunk;
+import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.world.biome.BiomeType;
+import org.spongepowered.common.Sponge;
+
 import java.util.ArrayList;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChunkSnapshot;
-import org.bukkit.World.Environment;
-import org.bukkit.block.Biome;
-
 //automatically extends a claim downward based on block types detected
-class AutoExtendClaimTask implements Runnable
-{
-    private Claim claim;
-    private ArrayList<ChunkSnapshot> chunks;
-    private Environment worldType;
+class AutoExtendClaimTask implements Runnable {
 
-    public AutoExtendClaimTask(Claim claim, ArrayList<ChunkSnapshot> chunks, Environment worldType)
-    {
+    private Claim claim;
+    private ArrayList<Chunk> chunks;
+    private DimensionType worldType;
+
+    public AutoExtendClaimTask(Claim claim, ArrayList<Chunk> chunks, DimensionType worldType) {
         this.claim = claim;
         this.chunks = chunks;
         this.worldType = worldType;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         int newY = this.getLowestBuiltY();
-        if(newY < this.claim.getLesserBoundaryCorner().getBlockY())
-        {
-            Bukkit.getScheduler().runTask(GriefPrevention.instance, new ExecuteExtendClaimTask(claim, newY));
+        if (newY < this.claim.getLesserBoundaryCorner().getBlockY()) {
+            Sponge.getGame().getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY));
         }
     }
 
-    private int getLowestBuiltY()
-    {
+    private int getLowestBuiltY() {
         int y = this.claim.getLesserBoundaryCorner().getBlockY();
-        
-        if(this.yTooSmall(y)) return y;
-        
-        for(ChunkSnapshot chunk : this.chunks)
-        {
-            Biome biome = chunk.getBiome(0,  0);
+
+        if (this.yTooSmall(y))
+            return y;
+
+        for (Chunk chunk : this.chunks) {
+            BiomeType biome = chunk.getBiome(0, 0);
             ArrayList<Integer> playerBlockIDs = RestoreNatureProcessingTask.getPlayerBlocks(this.worldType, biome);
-            
+
             boolean ychanged = true;
-            while(!this.yTooSmall(y) && ychanged)
-            {
+            while (!this.yTooSmall(y) && ychanged) {
                 ychanged = false;
-                for(int x = 0; x < 16; x++)
-                {
-                    for(int z = 0; z < 16; z++)
-                    {
+                for (int x = 0; x < 16; x++) {
+                    for (int z = 0; z < 16; z++) {
                         int blockType = chunk.getBlockTypeId(x, y, z);
-                        while(!this.yTooSmall(y) && playerBlockIDs.contains(blockType))
-                        {
+                        while (!this.yTooSmall(y) && playerBlockIDs.contains(blockType)) {
                             ychanged = true;
                             blockType = chunk.getBlockTypeId(x, --y, z);
                         }
-                        
-                        if(this.yTooSmall(y)) return y;
+
+                        if (this.yTooSmall(y))
+                            return y;
                     }
                 }
             }
-            
-            if(this.yTooSmall(y)) return y;
+
+            if (this.yTooSmall(y))
+                return y;
         }
-        
+
         return y;
     }
 
-    private boolean yTooSmall(int y)
-    {
+    private boolean yTooSmall(int y) {
         return y == 0 || y <= GriefPrevention.instance.config_claims_maxDepth;
     }
-    
-    //runs in the main execution thread, where it can safely change claims and save those changes
-    private class ExecuteExtendClaimTask implements Runnable
-    {
+
+    // runs in the main execution thread, where it can safely change claims and
+    // save those changes
+    private class ExecuteExtendClaimTask implements Runnable {
+
         private Claim claim;
         private int newY;
 
-        public ExecuteExtendClaimTask(Claim claim, int newY)
-        {
+        public ExecuteExtendClaimTask(Claim claim, int newY) {
             this.claim = claim;
             this.newY = newY;
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             GriefPrevention.instance.dataStore.extendClaim(claim, newY);
         }
     }

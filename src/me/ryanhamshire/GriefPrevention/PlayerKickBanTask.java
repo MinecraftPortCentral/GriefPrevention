@@ -15,57 +15,48 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 package me.ryanhamshire.GriefPrevention;
 
-import org.bukkit.BanList;
-import org.bukkit.Bukkit;
-import org.bukkit.BanList.Type;
-import org.bukkit.entity.Player;
+import net.minecraft.server.management.BanList;
 
 //kicks or bans a player
 //need a task for this because async threads (like the chat event handlers) can't kick or ban.
 //but they CAN schedule a task to run in the main thread to do that job
-class PlayerKickBanTask implements Runnable 
-{
-	//player to kick or ban
-	private Player player;
-	
-	//message to send player.
-	private String reason;
-	
-	//source of ban
-	private String source;
-	
-	//whether to ban
-	private boolean ban;
-	
-	public PlayerKickBanTask(Player player, String reason, String source, boolean ban)
-	{
-		this.player = player;
-		this.reason = reason;	
-		this.source = source;
-		this.ban = ban;
-	}
-	
-	@Override
-	public void run()
-	{
-		if(this.ban)
-		{		
-			//ban
-			BanList bans = Bukkit.getServer().getBanList(Type.NAME);
-			bans.addBan(this.player.getName(), this.reason, null, source);
-		
-			//kick
-			if(this.player.isOnline())
-			{
-				this.player.kickPlayer(this.reason);
-			}
-		}	
-		else if(this.player.isOnline())
-		{
-			this.player.kickPlayer(this.reason);
-		}
-	}
+class PlayerKickBanTask implements Runnable {
+
+    // player to kick or ban
+    private Player player;
+
+    // message to send player.
+    private String reason;
+
+    // source of ban
+    private String source;
+
+    // whether to ban
+    private boolean ban;
+
+    public PlayerKickBanTask(Player player, String reason, String source, boolean ban) {
+        this.player = player;
+        this.reason = reason;
+        this.source = source;
+        this.ban = ban;
+    }
+
+    @Override
+    public void run() {
+        if (this.ban) {
+            // ban
+            BanList bans = Bukkit.getServer().getBanList(Type.NAME);
+            bans.addBan(this.player.getName(), this.reason, null, source);
+
+            // kick
+            if (this.player.isOnline()) {
+                this.player.kickPlayer(this.reason);
+            }
+        } else if (this.player.isOnline()) {
+            this.player.kickPlayer(this.reason);
+        }
+    }
 }

@@ -17,24 +17,21 @@
  */
 
 package me.ryanhamshire.GriefPrevention;
-import org.bukkit.Location;
-import org.bukkit.Material;
+
+import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.world.Chunk;
+import org.spongepowered.api.world.Location;
 
 //represents a "fake" block sent to a player as part of a visualization
-public class VisualizationElement 
-{
-	public Location location;
-	public Material visualizedMaterial;
-	public byte visualizedData; 
-	public Material realMaterial;
-	public byte realData;
-	
-	public VisualizationElement(Location location, Material visualizedMaterial, byte visualizedData, Material realMaterial, byte realData)
-	{
-		this.location = location;
-		this.visualizedMaterial= visualizedMaterial;
-		this.visualizedData = visualizedData;
-		this.realData = realData;
-		this.realMaterial = realMaterial;
-	}
+public class VisualizationElement {
+
+    public Location<Chunk> location;
+    public BlockSnapshot visualizedBlock;
+    public BlockSnapshot actualBlock;
+
+    public VisualizationElement(Location<Chunk> location, BlockSnapshot visualBlock, BlockSnapshot actualBlock) {
+        this.location = location;
+        this.visualizedBlock = visualBlock;
+        this.actualBlock = actualBlock;
+    }
 }
