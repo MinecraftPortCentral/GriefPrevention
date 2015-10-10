@@ -23,6 +23,8 @@ import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.entity.EntityType;
+import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.living.monster.Enderman;
 import org.spongepowered.api.entity.living.monster.Silverfish;
 import org.spongepowered.api.entity.living.monster.Wither;
@@ -32,8 +34,13 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.entity.SpawnEntityEvent;
+import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.potion.PotionEffectType;
 import org.spongepowered.api.potion.PotionEffectTypes;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -58,8 +65,16 @@ public class EntityEventHandler {
                 final BlockType originalType = transaction.getOriginal().getState().getType();
                 final BlockType finalType = transaction.getFinalReplacement().getState().getType();
 
-                if (!GriefPrevention.instance.config_endermenMoveBlocks && entity instanceof Enderman) {
-                    transaction.setIsValid(false);
+                if (entity instanceof Enderman) {
+                    if (!GriefPrevention.instance.config_endermenMoveBlocks) {
+                        transaction.setIsValid(false);
+                    } else {
+                        // and the block is claimed
+                        if (this.dataStore.getClaimAt(transaction.getFinalReplacement().getLocation().get(), false, null) != null) {
+                            // he doesn't get to steal it
+                            transaction.setIsValid(false);
+                        }
+                    }
                 } else if (!GriefPrevention.instance.config_silverfishBreakBlocks && entity instanceof Silverfish) {
                     transaction.setIsValid(false);
                 } else if (GriefPrevention.instance.config_claims_worldModes.get(event.getTargetWorld()) != ClaimsMode.Disabled && entity instanceof
@@ -79,6 +94,38 @@ public class EntityEventHandler {
                     }
                 }
             }
+        }
+    }
+
+    // when a creature spawns...
+    @Listener(order = Order.EARLY)
+    public void onSpawnEntity(SpawnEntityEvent event) {
+        final Location<World> location = event.getTargetEntity().getLocation();
+        // these rules apply only to creative worlds
+        if (!GriefPrevention.instance.creativeRulesApply(location))
+            return;
+
+        final Cause cause = event.getCause();
+        final Player player = cause.first(Player.class).orElse(null);
+        final ItemStack stack = cause.first(ItemStack.class).orElse(null);
+        final EntityType entityType = event.getTargetEntity().getType();
+        if (player != null) {
+            if (stack != null && !stack.getItem().equals(ItemTypes.SPAWN_EGG)) {
+                event.setCancelled(true);
+                return;
+            }
+            if (!entityType.equals(EntityTypes.IRON_GOLEM) && !entityType.equals(EntityTypes.SNOWMAN) && !entityType.equals(EntityTypes
+                    .ARMOR_STAND)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+
+        // otherwise, just apply the limit on total entities per claim (and no
+        // spawning in the wilderness!)
+        Claim claim = this.dataStore.getClaimAt(location, false, null);
+        if (claim == null || claim.allowMoreEntities() != null) {
+            event.setCancelled(true);
         }
     }
 
@@ -290,31 +337,6 @@ public class EntityEventHandler {
         }
     }
 
-    // when a creature spawns...
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onEntitySpawn(CreatureSpawnEvent event) {
-        // these rules apply only to creative worlds
-        if (!GriefPrevention.instance.creativeRulesApply(event.getLocation()))
-            return;
-
-        // chicken eggs and breeding could potentially make a mess in the
-        // wilderness, once griefers get involved
-        SpawnReason reason = event.getSpawnReason();
-        if (reason != SpawnReason.SPAWNER_EGG && reason != SpawnReason.BUILD_IRONGOLEM && reason != SpawnReason.BUILD_SNOWMAN
-                && event.getEntityType() != EntityType.ARMOR_STAND) {
-            event.setCancelled(true);
-            return;
-        }
-
-        // otherwise, just apply the limit on total entities per claim (and no
-        // spawning in the wilderness!)
-        Claim claim = this.dataStore.getClaimAt(event.getLocation(), false, null);
-        if (claim == null || claim.allowMoreEntities() != null) {
-            event.setCancelled(true);
-            return;
-        }
-    }
-
     // when an entity dies...
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
@@ -375,21 +397,6 @@ public class EntityEventHandler {
             // drops
             playerData.dropsAreUnlocked = false;
             playerData.receivedDropUnlockAdvertisement = false;
-        }
-    }
-
-    // when an entity picks up an item
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onEntityPickup(EntityChangeBlockEvent event) {
-        // FEATURE: endermen don't steal claimed blocks
-
-        // if its an enderman
-        if (event.getEntity() instanceof Enderman) {
-            // and the block is claimed
-            if (this.dataStore.getClaimAt(event.getBlock().getLocation(), false, null) != null) {
-                // he doesn't get to steal it
-                event.setCancelled(true);
-            }
         }
     }
 
