@@ -33,18 +33,19 @@ import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.item.ItemStack;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.api.Game;
 //import net.milkbowl.vault.economy.Economy;
 import org.spongepowered.api.GameRegistry;
+import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.service.event.EventManager;
 import org.spongepowered.api.service.user.UserStorage;
@@ -59,6 +60,7 @@ import org.spongepowered.api.util.command.CommandException;
 import org.spongepowered.api.util.command.CommandPermissionException;
 import org.spongepowered.api.util.command.CommandResult;
 import org.spongepowered.api.util.command.spec.CommandSpec;
+import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -108,280 +110,230 @@ public class GriefPrevention {
     // claim mode for each world
     public ConcurrentHashMap<World, ClaimsMode> config_claims_worldModes;
 
-    public boolean config_claims_preventTheft; // whether containers and
-                                               // crafting blocks are
-                                               // protectable
-    public boolean config_claims_protectCreatures; // whether claimed animals
-                                                   // may be injured by players
-                                                   // without permission
-    public boolean config_claims_protectFires; // whether open flint+steel
-                                               // flames should be protected -
-                                               // optional because it's
-                                               // expensive
-    public boolean config_claims_protectHorses; // whether horses on a claim
-                                                // should be protected by that
-                                                // claim's rules
-    public boolean config_claims_preventButtonsSwitches; // whether buttons and
-                                                         // switches are
-                                                         // protectable
-    public boolean config_claims_lockWoodenDoors; // whether wooden doors should
-                                                  // be locked by default
-                                                  // (require /accesstrust)
-    public boolean config_claims_lockTrapDoors; // whether trap doors should be
-                                                // locked by default (require
-                                                // /accesstrust)
-    public boolean config_claims_lockFenceGates; // whether fence gates should
-                                                 // be locked by default
-                                                 // (require /accesstrust)
-    public boolean config_claims_enderPearlsRequireAccessTrust; // whether
-                                                                // teleporting
-                                                                // into a claim
-                                                                // with a pearl
-                                                                // requires
-                                                                // access trust
-    public int config_claims_maxClaimsPerPlayer; // maximum number of claims per
-                                                 // player
-    public boolean config_claims_respectWorldGuard; // whether claim creations
-                                                    // requires WG build
-                                                    // permission in creation
-                                                    // area
-    public boolean config_claims_portalsRequirePermission; // whether nether
-                                                           // portals require
-                                                           // permission to
-                                                           // generate. defaults
-                                                           // to off for
-                                                           // performance
-                                                           // reasons
-    public boolean config_claims_villagerTradingRequiresTrust; // whether
-                                                               // trading with a
-                                                               // claimed
-                                                               // villager
-                                                               // requires
-                                                               // permission
+    // whether containers and crafting blocks are protectable
+    public boolean config_claims_preventTheft;
 
-    public int config_claims_initialBlocks; // the number of claim blocks a new
-                                            // player starts with
-    public double config_claims_abandonReturnRatio; // the portion of claim
-                                                    // blocks returned to a
-                                                    // player when a claim is
-                                                    // abandoned
-    public int config_claims_blocksAccruedPerHour; // how many additional blocks
-                                                   // players get each hour of
-                                                   // play (can be zero)
-    public int config_claims_maxAccruedBlocks; // the limit on accrued blocks
-                                               // (over time). doesn't limit
-                                               // purchased or admin-gifted
-                                               // blocks
-    public int config_claims_maxDepth; // limit on how deep claims can go
-    public int config_claims_expirationDays; // how many days of inactivity
-                                             // before a player loses his claims
+    // whether claimed animals may be injured by players without permission
+    public boolean config_claims_protectCreatures;
 
-    public int config_claims_automaticClaimsForNewPlayersRadius; // how big
-                                                                 // automatic
-                                                                 // new player
-                                                                 // claims (when
-                                                                 // they place a
-                                                                 // chest)
-                                                                 // should be. 0
-                                                                 // to disable
-    public int config_claims_claimsExtendIntoGroundDistance; // how far below
-                                                             // the shoveled
-                                                             // block a new
-                                                             // claim will reach
-    public int config_claims_minWidth; // minimum width for non-admin claims
-    public int config_claims_minArea; // minimum area for non-admin claims
+    // whether open flint+steel flames should be protected - optional because it's expensive
+    public boolean config_claims_protectFires;
 
-    public int config_claims_chestClaimExpirationDays; // number of days of
-                                                       // inactivity before an
-                                                       // automatic chest claim
-                                                       // will be deleted
-    public int config_claims_unusedClaimExpirationDays; // number of days of
-                                                        // inactivity before an
-                                                        // unused (nothing
-                                                        // build) claim will be
-                                                        // deleted
-    public boolean config_claims_survivalAutoNatureRestoration; // whether
-                                                                // survival
-                                                                // claims will
-                                                                // be
-                                                                // automatically
-                                                                // restored to
-                                                                // nature when
-                                                                // auto-deleted
+    // whether horses on a claim should be protected by that claim's rules
+    public boolean config_claims_protectHorses;
 
-    public BlockType config_claims_investigationTool; // which material will be
-                                                      // used to investigate
-                                                      // claims with a right
-                                                      // click
-    public BlockType config_claims_modificationTool; // which material will be
-                                                     // used to create/resize
-                                                     // claims with a right
-                                                     // click
+    // whether buttons and switches are protectable
+    public boolean config_claims_preventButtonsSwitches;
 
-    public ArrayList<String> config_claims_commandsRequiringAccessTrust; // the
-                                                                         // list
-                                                                         // of
-                                                                         // slash
-                                                                         // commands
-                                                                         // requiring
-                                                                         // access
-                                                                         // trust
-                                                                         // when
-                                                                         // in a
-                                                                         // claim
-    public boolean config_claims_supplyPlayerManual; // whether to give new
-                                                     // players a book with land
-                                                     // claim help in it
+    // whether wooden doors should be locked by default (require /accesstrust)
+    public boolean config_claims_lockWoodenDoors;
 
-    public ArrayList<World> config_siege_enabledWorlds; // whether or not /siege
-                                                        // is enabled on this
-                                                        // server
-    public ArrayList<BlockType> config_siege_blocks; // which blocks will be
-                                                     // breakable in siege mode
+    // whether trap doors should be locked by default (require /accesstrust)
+    public boolean config_claims_lockTrapDoors;
 
-    public boolean config_spam_enabled; // whether or not to monitor for spam
-    public int config_spam_loginCooldownSeconds; // how long players must wait
-                                                 // between logins. combats
-                                                 // login spam.
-    public ArrayList<String> config_spam_monitorSlashCommands; // the list of
-                                                               // slash commands
-                                                               // monitored for
-                                                               // spam
-    public boolean config_spam_banOffenders; // whether or not to ban spammers
-                                             // automatically
-    public String config_spam_banMessage; // message to show an automatically
-                                          // banned player
-    public String config_spam_warningMessage; // message to show a player who is
-                                              // close to spam level
-    public String config_spam_allowedIpAddresses; // IP addresses which will not
-                                                  // be censored
-    public int config_spam_deathMessageCooldownSeconds; // cooldown period for
-                                                        // death messages (per
-                                                        // player) in seconds
+    // whether fence gates should be locked by default (require /accesstrust)
+    public boolean config_claims_lockFenceGates;
 
-    HashMap<World, Boolean> config_pvp_specifiedWorlds; // list of worlds where
-                                                        // pvp anti-grief rules
-                                                        // apply, according to
-                                                        // the config file
-    public boolean config_pvp_protectFreshSpawns; // whether to make newly
-                                                  // spawned players immune
-                                                  // until they pick up an item
-    public boolean config_pvp_punishLogout; // whether to kill players who log
-                                            // out during PvP combat
-    public int config_pvp_combatTimeoutSeconds; // how long combat is considered
-                                                // to continue after the most
-                                                // recent damage
-    public boolean config_pvp_allowCombatItemDrop; // whether a player can drop
-                                                   // items during combat to
-                                                   // hide them
-    public ArrayList<String> config_pvp_blockedCommands; // list of commands
-                                                         // which may not be
-                                                         // used during pvp
-                                                         // combat
-    public boolean config_pvp_noCombatInPlayerLandClaims; // whether players may
-                                                          // fight in
-                                                          // player-owned land
-                                                          // claims
-    public boolean config_pvp_noCombatInAdminLandClaims; // whether players may
-                                                         // fight in admin-owned
-                                                         // land claims
-    public boolean config_pvp_noCombatInAdminSubdivisions; // whether players
-                                                           // may fight in
-                                                           // subdivisions of
-                                                           // admin-owned land
-                                                           // claims
+    // whether teleporting into a claim with a pearl requires access trust
+    public boolean config_claims_enderPearlsRequireAccessTrust;
 
-    public boolean config_lockDeathDropsInPvpWorlds; // whether players' dropped
-                                                     // on death items are
-                                                     // protected in pvp worlds
-    public boolean config_lockDeathDropsInNonPvpWorlds; // whether players'
-                                                        // dropped on death
-                                                        // items are protected
-                                                        // in non-pvp worlds
+    // maximum number of claims per player
+    public int config_claims_maxClaimsPerPlayer;
 
-    public double config_economy_claimBlocksPurchaseCost; // cost to purchase a
-                                                          // claim block. set to
-                                                          // zero to disable
-                                                          // purchase.
-    public double config_economy_claimBlocksSellValue; // return on a sold claim
-                                                       // block. set to zero to
-                                                       // disable sale.
+    // whether claim creations requires WG build permission in creation area
+    public boolean config_claims_respectWorldGuard;
 
-    public boolean config_blockClaimExplosions; // whether explosions may
-                                                // destroy claimed blocks
-    public boolean config_blockSurfaceCreeperExplosions; // whether creeper
-                                                         // explosions near or
-                                                         // above the surface
-                                                         // destroy blocks
-    public boolean config_blockSurfaceOtherExplosions; // whether non-creeper
-                                                       // explosions near or
-                                                       // above the surface
-                                                       // destroy blocks
-    public boolean config_blockSkyTrees; // whether players can build trees on
-                                         // platforms in the sky
+    // whether nether portals require permission to generate. defaults to off for performance reasons
+    public boolean config_claims_portalsRequirePermission;
 
-    public boolean config_fireSpreads; // whether fire spreads outside of claims
-    public boolean config_fireDestroys; // whether fire destroys blocks outside
-                                        // of claims
+    // whether trading with a claimed villager requires permission
+    public boolean config_claims_villagerTradingRequiresTrust;
 
-    public boolean config_whisperNotifications; // whether whispered messages
-                                                // will broadcast to
-                                                // administrators in game
-    public boolean config_signNotifications; // whether sign content will
-                                             // broadcast to administrators in
-                                             // game
-    public ArrayList<String> config_eavesdrop_whisperCommands; // list of
-                                                               // whisper
-                                                               // commands to
-                                                               // eavesdrop on
+    // the number of claim blocks a new player starts with
+    public int config_claims_initialBlocks;
 
-    public boolean config_smartBan; // whether to ban accounts which very likely
-                                    // owned by a banned player
+    // the portion of claim blocks returned to a player when a claim is abandoned
+    public double config_claims_abandonReturnRatio;
 
-    public boolean config_endermenMoveBlocks; // whether or not endermen may
-                                              // move blocks around
-    public boolean config_silverfishBreakBlocks; // whether silverfish may break
-                                                 // blocks
-    public boolean config_creaturesTrampleCrops; // whether or not non-player
-                                                 // entities may trample crops
-    public boolean config_zombiesBreakDoors; // whether or not hard-mode zombies
-                                             // may break down wooden doors
+    // how many additional blocks players get each hour of play (can be zero)
+    public int config_claims_blocksAccruedPerHour;
 
-    public int config_ipLimit; // how many players can share an IP address
+    // the limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks
+    public int config_claims_maxAccruedBlocks;
 
-    public MaterialCollection config_mods_accessTrustIds; // list of block IDs
-                                                          // which should
-                                                          // require
-                                                          // /accesstrust for
-                                                          // player interaction
-    public MaterialCollection config_mods_containerTrustIds; // list of block
-                                                             // IDs which should
-                                                             // require
-                                                             // /containertrust
-                                                             // for player
-                                                             // interaction
-    public List<String> config_mods_ignoreClaimsAccounts; // list of player
-                                                          // names which ALWAYS
-                                                          // ignore claims
-    public MaterialCollection config_mods_explodableIds; // list of block IDs
-                                                         // which can be
-                                                         // destroyed by
-                                                         // explosions, even in
-                                                         // claimed areas
+    // limit on how deep claims can go
+    public int config_claims_maxDepth;
 
-    public HashMap<String, Integer> config_seaLevelOverride; // override for sea
-                                                             // level, because
-                                                             // bukkit doesn't
-                                                             // report the right
-                                                             // value for all
-                                                             // situations
+    // how many days of inactivity before a player loses his claims
+    public int config_claims_expirationDays;
 
-    public boolean config_limitTreeGrowth; // whether trees should be prevented
-                                           // from growing into a claim from
-                                           // outside
-    public boolean config_pistonsInClaimsOnly; // whether pistons are limited to
-                                               // only move blocks located
-                                               // within the piston's land claim
+    // how big automatic new player claims (when they place a chest) should be. 0 to disable
+    public int config_claims_automaticClaimsForNewPlayersRadius;
+
+    // how far below the shoveled block a new claim will reach
+    public int config_claims_claimsExtendIntoGroundDistance;
+
+    // minimum width for non-admin claims
+    public int config_claims_minWidth;
+
+    // minimum area for non-admin claims
+    public int config_claims_minArea;
+
+    // number of days of inactivity before an automatic chest claim will be deleted
+    public int config_claims_chestClaimExpirationDays;
+
+    // number of days of inactivity before an unused (nothingbuild) claim will be deleted
+    public int config_claims_unusedClaimExpirationDays;
+
+    // whether survival claims will be automatically restored to nature when auto-deleted
+    public boolean config_claims_survivalAutoNatureRestoration;
+
+    // which material will beused to investigate claims with a right click
+    public ItemType config_claims_investigationTool;
+
+    // which material will be used to create/resize claims with a right click
+    public ItemType config_claims_modificationTool;
+
+    // the list of slashcommands requiring access trust when in a claim
+    public ArrayList<String> config_claims_commandsRequiringAccessTrust;
+
+    // whether to give new players a book with land claim help in it
+    public boolean config_claims_supplyPlayerManual;
+
+    // whether or not /siege is enabled on this server
+    public ArrayList<World> config_siege_enabledWorlds;
+
+    // which blocks will be breakable in siege mode
+    public ArrayList<BlockType> config_siege_blocks;
+
+    // whether or not to monitor for spam
+    public boolean config_spam_enabled;
+
+    // how long players must wait between logins. combats login spam.
+    public int config_spam_loginCooldownSeconds;
+
+    // the list of slash commands monitored for spam
+    public ArrayList<String> config_spam_monitorSlashCommands;
+
+    // whether or not to ban spammers automatically
+    public boolean config_spam_banOffenders;
+
+    // message to show an automatically banned player
+    public String config_spam_banMessage;
+
+    // message to show a player who is close to spam level
+    public String config_spam_warningMessage;
+
+    // IP addresses which will not be censored
+    public String config_spam_allowedIpAddresses;
+
+    // cooldown period for death messages (per player) in seconds
+    public int config_spam_deathMessageCooldownSeconds;
+
+    // list of worlds where pvp anti-grief rules apply, according to the config file
+    HashMap<World, Boolean> config_pvp_specifiedWorlds;
+
+    // whether to make newly spawned players immune until they pick up an item
+    public boolean config_pvp_protectFreshSpawns;
+
+    // whether to kill players who log out during PvP combat
+    public boolean config_pvp_punishLogout;
+
+    // how long combat is considered to continue after the most recent damage
+    public int config_pvp_combatTimeoutSeconds;
+
+    // whether a player can drop items during combat to hide them
+    public boolean config_pvp_allowCombatItemDrop;
+
+    // list of commands which may not be used during pvp combat
+    public ArrayList<String> config_pvp_blockedCommands;
+
+    // whether players may fight in player-owned land claims
+    public boolean config_pvp_noCombatInPlayerLandClaims;
+
+    // whether players may fight in admin-owned land claims
+    public boolean config_pvp_noCombatInAdminLandClaims;
+
+    // whether players may fight insubdivisions of admin-owned land claims
+    public boolean config_pvp_noCombatInAdminSubdivisions;
+
+    // whether players' dropped on death items are protected in pvp worlds
+    public boolean config_lockDeathDropsInPvpWorlds;
+
+    // whether players' dropped on death items are protected in non-pvp worlds
+    public boolean config_lockDeathDropsInNonPvpWorlds;
+
+    // cost to purchase a claim block. set to zero to disable purchase.
+    public double config_economy_claimBlocksPurchaseCost;
+
+    // return on a sold claim block. set to zero to disable sale.
+    public double config_economy_claimBlocksSellValue;
+
+    // whether explosions may destroy claimed blocks
+    public boolean config_blockClaimExplosions;
+
+    // whether creeper explosions near or above the surface destroy blocks
+    public boolean config_blockSurfaceCreeperExplosions;
+
+    // whether non-creeper explosions near or above the surface destroy blocks
+    public boolean config_blockSurfaceOtherExplosions;
+
+    // whether players can build trees on platforms in the sky
+    public boolean config_blockSkyTrees;
+
+    // whether fire spreads outside of claims
+    public boolean config_fireSpreads;
+
+    // whether fire destroys blocks outside of claims
+    public boolean config_fireDestroys;
+
+    // whether whispered messages will broadcast to administrators in game
+    public boolean config_whisperNotifications;
+
+    // whether sign content will broadcast to administrators in game
+    public boolean config_signNotifications;
+
+    // list of whisper commands to eavesdrop on
+    public ArrayList<String> config_eavesdrop_whisperCommands;
+
+    // whether to ban accounts which very likely owned by a banned player
+    public boolean config_smartBan;
+
+    // whether or not endermen may move blocks around
+    public boolean config_endermenMoveBlocks;
+
+    // whether silverfish may break blocks
+    public boolean config_silverfishBreakBlocks;
+
+    // whether or not non-player entities may trample crops
+    public boolean config_creaturesTrampleCrops;
+
+    // whether or not hard-mode zombies may break down wooden doors
+    public boolean config_zombiesBreakDoors;
+
+    // how many players can share an IP address
+    public int config_ipLimit;
+
+    // list of block IDs which should require /accesstrust for player interaction
+    public MaterialCollection config_mods_accessTrustIds;
+
+    // list of block IDs which should require /containertrust for player interaction
+    public MaterialCollection config_mods_containerTrustIds;
+
+    // list of player names which ALWAYS ignore claims
+    public List<String> config_mods_ignoreClaimsAccounts;
+
+    // list of block IDs which can be destroyed by explosions, even in claimed areas
+    public MaterialCollection config_mods_explodableIds;
+
+    // override for sea level, because bukkit doesn't report the right value for all situations
+    public HashMap<String, Integer> config_seaLevelOverride;
+
+    // whether trees should be prevented from growing into a claim from outside
+    public boolean config_limitTreeGrowth;
+
+    // whether pistons are limited to only move blocks located within the piston's land claim
+    public boolean config_pistonsInClaimsOnly;
 
     // custom log settings
     public int config_logs_daysToKeep;
@@ -548,6 +500,7 @@ public class GriefPrevention {
         AddLogEntry("Boot finished.");
     }
 
+    @SuppressWarnings("serial")
     private void loadConfig() {
         try {
             // load the config if it exists
@@ -738,25 +691,30 @@ public class GriefPrevention {
                     mainNode.getNode("GriefPrevention", "Claims", "InvestigationTool").getString(investigationToolMaterialName);
 
             // validate investigation tool
-            this.config_claims_investigationTool = Material.getMaterial(investigationToolMaterialName);
-            if (this.config_claims_investigationTool == null) {
+            Optional<ItemType> investigationTool = game.getRegistry().getType(ItemType.class, investigationToolMaterialName);
+            if (!investigationTool.isPresent()) {
                 GriefPrevention.AddLogEntry(
                         "ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
-                this.config_claims_investigationTool = Material.STICK;
+                this.config_claims_investigationTool = ItemTypes.STICK;
+            } else {
+                this.config_claims_investigationTool = investigationTool.get();
             }
 
             // default for claim creation/modification tool
-            String modificationToolMaterialName = Material.GOLD_SPADE.name();
+            String modificationToolMaterialName = ItemTypes.GOLDEN_SHOVEL.getId();
 
             // get modification tool from config
             modificationToolMaterialName = mainNode.getNode("GriefPrevention", "Claims", "ModificationTool").getString(modificationToolMaterialName);
 
             // validate modification tool
-            this.config_claims_modificationTool = Material.getMaterial(modificationToolMaterialName);
-            if (this.config_claims_modificationTool == null) {
+            this.config_claims_modificationTool = null;
+            Optional<ItemType> modificationTool = game.getRegistry().getType(ItemType.class, modificationToolMaterialName);
+            if (!modificationTool.isPresent()) {
                 GriefPrevention.AddLogEntry("ERROR: Material " + modificationToolMaterialName
                         + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
-                this.config_claims_modificationTool = Material.GOLD_SPADE;
+                this.config_claims_modificationTool = ItemTypes.GOLDEN_SHOVEL;
+            } else {
+                this.config_claims_modificationTool = modificationTool.get();
             }
 
             // default for siege worlds list
@@ -782,23 +740,23 @@ public class GriefPrevention {
             }
 
             // default siege blocks
-            this.config_siege_blocks = new ArrayList<Material>();
-            this.config_siege_blocks.add(Material.DIRT);
-            this.config_siege_blocks.add(Material.GRASS);
-            this.config_siege_blocks.add(Material.LONG_GRASS);
-            this.config_siege_blocks.add(Material.COBBLESTONE);
-            this.config_siege_blocks.add(Material.GRAVEL);
-            this.config_siege_blocks.add(Material.SAND);
-            this.config_siege_blocks.add(Material.GLASS);
-            this.config_siege_blocks.add(Material.THIN_GLASS);
-            this.config_siege_blocks.add(Material.WOOD);
-            this.config_siege_blocks.add(Material.WOOL);
-            this.config_siege_blocks.add(Material.SNOW);
+            this.config_siege_blocks = new ArrayList<BlockType>();
+            this.config_siege_blocks.add(BlockTypes.DIRT);
+            this.config_siege_blocks.add(BlockTypes.GRASS);
+            this.config_siege_blocks.add(BlockTypes.TALLGRASS);
+            this.config_siege_blocks.add(BlockTypes.COBBLESTONE);
+            this.config_siege_blocks.add(BlockTypes.GRAVEL);
+            this.config_siege_blocks.add(BlockTypes.SAND);
+            this.config_siege_blocks.add(BlockTypes.GLASS);
+            this.config_siege_blocks.add(BlockTypes.GLASS_PANE);
+            this.config_siege_blocks.add(BlockTypes.PLANKS);
+            this.config_siege_blocks.add(BlockTypes.WOOL);
+            this.config_siege_blocks.add(BlockTypes.SNOW);
 
             // build a default config entry
             ArrayList<String> defaultBreakableBlocksList = new ArrayList<String>();
             for (int i = 0; i < this.config_siege_blocks.size(); i++) {
-                defaultBreakableBlocksList.add(this.config_siege_blocks.get(i).name());
+                defaultBreakableBlocksList.add(this.config_siege_blocks.get(i).getId());
             }
 
             // try to load the list from the config file
@@ -812,14 +770,14 @@ public class GriefPrevention {
             }
 
             // parse the list of siege-breakable blocks
-            this.config_siege_blocks = new ArrayList<Material>();
+            this.config_siege_blocks = new ArrayList<BlockType>();
             for (int i = 0; i < breakableBlocksList.size(); i++) {
                 String blockName = breakableBlocksList.get(i);
-                Material material = Material.getMaterial(blockName);
-                if (material == null) {
+                Optional<BlockType> material = game.getRegistry().getType(BlockType.class, blockName);
+                if (material.isPresent()) {
                     GriefPrevention.AddLogEntry("Siege Configuration: Material not found: " + blockName + ".");
                 } else {
-                    this.config_siege_blocks.add(material);
+                    this.config_siege_blocks.add(material.get());
                 }
             }
 
@@ -920,6 +878,7 @@ public class GriefPrevention {
     }
 
     // handles slash commands
+    @SuppressWarnings("unused")
     private void registerCommands() {
         game.getCommandDispatcher().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes a claim"))
@@ -2360,48 +2319,6 @@ public class GriefPrevention {
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
     }
 
-    // helper method to resolve a player by name
-    ConcurrentHashMap<String, UUID> playerNameToIDMap = new ConcurrentHashMap<String, UUID>();
-
-    // thread to build the above cache
-    private class CacheOfflinePlayerNamesThread extends Thread {
-
-        private OfflinePlayer[] offlinePlayers;
-        private ConcurrentHashMap<String, UUID> playerNameToIDMap;
-
-        CacheOfflinePlayerNamesThread(OfflinePlayer[] offlinePlayers, ConcurrentHashMap<String, UUID> playerNameToIDMap) {
-            this.offlinePlayers = offlinePlayers;
-            this.playerNameToIDMap = playerNameToIDMap;
-        }
-
-        public void run() {
-            long now = System.currentTimeMillis();
-            final long millisecondsPerDay = 1000 * 60 * 60 * 24;
-            for (OfflinePlayer player : offlinePlayers) {
-                try {
-                    UUID playerID = player.getUniqueId();
-                    if (playerID == null)
-                        continue;
-                    long lastSeen = player.getLastPlayed();
-
-                    // if the player has been seen in the last 90 days, cache
-                    // his name/UUID pair
-                    long diff = now - lastSeen;
-                    long daysDiff = diff / millisecondsPerDay;
-                    if (daysDiff <= 90) {
-                        String playerName = player.getName();
-                        if (playerName == null)
-                            continue;
-                        this.playerNameToIDMap.put(playerName, playerID);
-                        this.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
     public Optional<User> resolvePlayerByName(String name) {
         // try online players first
         Optional<Player> targetPlayer = GriefPrevention.instance.game.getServer().getPlayer(name);
@@ -2409,7 +2326,7 @@ public class GriefPrevention {
             return Optional.of((User) targetPlayer.get());
 
         Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(name);
-        if (targetPlayer != null)
+        if (user.isPresent())
             return user;
 
         return Optional.empty();
@@ -2430,24 +2347,15 @@ public class GriefPrevention {
         }
     }
 
-    // cache for player name lookups, to save searches of all offline players
-    static void cacheUUIDNamePair(UUID playerID, String playerName) {
-        // store the reverse mapping
-        GriefPrevention.instance.playerNameToIDMap.put(playerName, playerID);
-        GriefPrevention.instance.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
-    }
-
     // string overload for above helper
     static String lookupPlayerName(String playerID) {
-        UUID id;
-        try {
-            id = UUID.fromString(playerID);
-        } catch (IllegalArgumentException ex) {
+        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(playerID);
+        if (!user.isPresent()) {
             GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + playerID);
             return "someone";
         }
 
-        return lookupPlayerName(id);
+        return user.get().getName();
     }
 
     public void onDisable() {
@@ -2499,13 +2407,12 @@ public class GriefPrevention {
             // start a task to re-check this player's inventory every minute
             // until his immunity is gone
             PvPImmunityValidationTask task = new PvPImmunityValidationTask(player);
-            this.getServer().getScheduler().scheduleSyncDelayedTask(this, task, 1200L);
+            this.game.getScheduler().createTaskBuilder().delay(1200L).execute(task).submit(this);
         }
     }
 
     static boolean isInventoryEmpty(Player player) {
         InventoryPlayer inventory = ((EntityPlayerMP) player).inventory;
-        ItemStack[] armorStacks = inventory.armorInventory;
         return inventory.mainInventory.length == 0 && inventory.armorInventory.length == 0;
     }
 
@@ -2515,16 +2422,16 @@ public class GriefPrevention {
     }
 
     // moves a player from the claim they're in to a nearby wilderness location
-    public Location ejectPlayer(Player player) {
+    public Location<World> ejectPlayer(Player player) {
         // look for a suitable location
-        Location candidateLocation = player.getLocation();
+        Location<World> candidateLocation = player.getLocation();
         while (true) {
             Claim claim = null;
             claim = GriefPrevention.instance.dataStore.getClaimAt(candidateLocation, false, null);
 
             // if there's a claim here, keep looking
             if (claim != null) {
-                candidateLocation = new Location(claim.lesserBoundaryCorner.getExtent(), claim.lesserBoundaryCorner.getBlockX() - 1,
+                candidateLocation = new Location<World>(claim.lesserBoundaryCorner.getExtent(), claim.lesserBoundaryCorner.getBlockX() - 1,
                         claim.lesserBoundaryCorner.getBlockY(), claim.lesserBoundaryCorner.getBlockZ() - 1);
                 continue;
             }
@@ -2533,9 +2440,8 @@ public class GriefPrevention {
             else {
                 // find a safe height, a couple of blocks above the surface
                 GuaranteeChunkLoaded(candidateLocation);
-                Block highestBlock = candidateLocation.getWorld().getHighestBlockAt(candidateLocation.getBlockX(), candidateLocation.getBlockZ());
-                Location destination = new Location(highestBlock.getWorld(), highestBlock.getX(), highestBlock.getY() + 2, highestBlock.getZ());
-                player.teleport(destination);
+                Location<World> destination = candidateLocation.add(candidateLocation.getExtent().getBlockMax().add(0, 2, 0).toDouble());
+                player.setLocation(destination);
                 return destination;
             }
         }
@@ -2543,10 +2449,8 @@ public class GriefPrevention {
 
     // ensures a piece of the managed world is loaded into server memory
     // (generates the chunk if necessary)
-    private static void GuaranteeChunkLoaded(Location location) {
-        Chunk chunk = location.getChunk();
-        while (!chunk.isLoaded() || !chunk.load(true))
-            ;
+    private static void GuaranteeChunkLoaded(Location<World> location) {
+        location.getExtent().loadChunk(location.getBlockPosition(), true);
     }
 
     static Text getMessage(Messages messageID, String... args) {
@@ -2577,7 +2481,7 @@ public class GriefPrevention {
     }
 
     static void sendMessage(CommandSource player, Text message, long delayInTicks) {
-        SendPlayerMessageTask task = new SendPlayerMessageTask(player, message);
+        SendPlayerMessageTask task = new SendPlayerMessageTask((Player) player, message);
         if (delayInTicks > 0) {
             GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(delayInTicks).execute(task).submit(GriefPrevention.instance);
         } else {
@@ -2595,11 +2499,11 @@ public class GriefPrevention {
         return this.config_claims_worldModes.get((location.getExtent())) == ClaimsMode.Creative;
     }
 
-    public String allowBuild(Player player, Location location) {
+    public String allowBuild(Player player, Location<World> location) {
         return this.allowBuild(player, location, location.getBlock().getType());
     }
 
-    public String allowBuild(Player player, Location location, Material material) {
+    public String allowBuild(Player player, Location<World> location, BlockType material) {
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
@@ -2611,10 +2515,10 @@ public class GriefPrevention {
         // wilderness rules
         if (claim == null) {
             // no building in the wilderness in creative mode
-            if (this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getWorld()) == ClaimsMode.SurvivalRequiringClaims) {
+            if (this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getExtent()) == ClaimsMode.SurvivalRequiringClaims) {
                 // exception: when chest claims are enabled, players who have
                 // zero land claims and are placing a chest
-                if (material != Material.CHEST || playerData.getClaims().size() > 0
+                if (material != BlockTypes.CHEST || playerData.getClaims().size() > 0
                         || GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == -1) {
                     String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                     if (player.hasPermission("griefprevention.ignoreclaims"))
@@ -2640,9 +2544,9 @@ public class GriefPrevention {
         }
     }
 
-    public String allowBreak(Player player, BlockType block, Location location) {
+    public String allowBreak(Player player, BlockSnapshot snapshot) {
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
+        Claim claim = this.dataStore.getClaimAt(snapshot.getLocation().get(), false, playerData.lastClaim);
 
         // exception: administrators in ignore claims mode, and special player
         // accounts created by server mods
@@ -2652,7 +2556,7 @@ public class GriefPrevention {
         // wilderness rules
         if (claim == null) {
             // no building in the wilderness in creative mode
-            if (this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getExtent()) == ClaimsMode.SurvivalRequiringClaims) {
+            if (this.creativeRulesApply(snapshot.getLocation().get()) || this.config_claims_worldModes.get(snapshot.getLocation().get().getExtent()) == ClaimsMode.SurvivalRequiringClaims) {
                 String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                 if (player.hasPermission("griefprevention.ignoreclaims"))
                     reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
@@ -2670,7 +2574,7 @@ public class GriefPrevention {
 
             // if not in the wilderness, then apply claim rules (permissions,
             // etc)
-            return claim.allowBreak(player, block);
+            return claim.allowBreak(player, snapshot.getState().getType());
         }
     }
 
@@ -2698,31 +2602,29 @@ public class GriefPrevention {
     public void restoreChunk(Chunk chunk, int miny, boolean aggressiveMode, long delayInTicks, Player playerReceivingVisualization) {
         // build a snapshot of this chunk, including 1 block boundary outside of
         // the chunk all the way around
-        int maxHeight = chunk.getWorld().getMaxHeight();
+        int maxHeight = chunk.getWorld().getDimension().getBuildHeight();
         BlockSnapshot[][][] snapshots = new BlockSnapshot[18][maxHeight][18];
-        Block startBlock = chunk.getBlock(0, 0, 0);
-        Location startLocation = new Location(chunk.getWorld(), startBlock.getX() - 1, 0, startBlock.getZ() - 1);
+        BlockSnapshot startBlock = chunk.createSnapshot(0, 0, 0);
+        Location<World> startLocation = new Location<World>(chunk.getWorld(), startBlock.getPosition().getX() - 1, 0, startBlock.getPosition().getZ() - 1);
         for (int x = 0; x < snapshots.length; x++) {
             for (int z = 0; z < snapshots[0][0].length; z++) {
                 for (int y = 0; y < snapshots[0].length; y++) {
-                    Block block =
-                            chunk.getWorld().getBlockAt(startLocation.getBlockX() + x, startLocation.getBlockY() + y, startLocation.getBlockZ() + z);
-                    snapshots[x][y][z] = new BlockSnapshot(block.getLocation(), block.getTypeId(), block.getData());
+                    snapshots[x][y][z] = chunk.getWorld().createSnapshot(startLocation.getBlockX() + x, startLocation.getBlockY() + y, startLocation.getBlockZ() + z);
                 }
             }
         }
 
         // create task to process those data in another thread
-        Location lesserBoundaryCorner = chunk.getBlock(0, 0, 0).getLocation();
-        Location greaterBoundaryCorner = chunk.getBlock(15, 0, 15).getLocation();
+        Location<World> lesserBoundaryCorner = chunk.createSnapshot(0, 0, 0).getLocation().get();
+        Location<World> greaterBoundaryCorner = chunk.createSnapshot(15, 0, 15).getLocation().get();
 
         // create task
         // when done processing, this task will create a main thread task to
         // actually update the world with processing results
-        RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(),
-                lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()),
+        RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getDimension().getType(),
+                lesserBoundaryCorner.getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()),
                 aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
-        GriefPrevention.instance.getServer().getScheduler().runTaskLaterAsynchronously(GriefPrevention.instance, task, delayInTicks);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delay(delayInTicks).execute(task).submit(this);
     }
 
     private void parseMaterialListFromConfig(List<String> stringsToParse, MaterialCollection materialCollection) {
@@ -2756,15 +2658,15 @@ public class GriefPrevention {
     public int getSeaLevel(World world) {
         Integer overrideValue = this.config_seaLevelOverride.get(world.getName());
         if (overrideValue == null || overrideValue == -1) {
-            return world.getSeaLevel();
+            return world.getDimension().getMinimumSpawnHeight();
         } else {
             return overrideValue;
         }
     }
 
-    private static Block getTargetNonAirBlock(Player player, int maxDistance) throws IllegalStateException {
+    /*private static BlockType getTargetNonAirBlock(Player player, int maxDistance) throws IllegalStateException {
         BlockIterator iterator = new BlockIterator(player.getLocation(), player.getEyeHeight(), maxDistance);
-        Block result = player.getLocation().getBlock().getRelative(BlockFace.UP);
+        BlockType result = player.getLocation().getRelative(Direction.UP).getBlockType();
         while (iterator.hasNext()) {
             result = iterator.next();
             if (result.getType() != Material.AIR)
@@ -2772,7 +2674,7 @@ public class GriefPrevention {
         }
 
         return result;
-    }
+    }*/
 
     public boolean containsBlockedIP(String message) {
         message = message.replace("\r\n", "");
@@ -2791,9 +2693,11 @@ public class GriefPrevention {
     }
 
     public boolean pvpRulesApply(World world) {
+        return false;
+        /* TODO
         Boolean configSetting = this.config_pvp_specifiedWorlds.get(world);
         if (configSetting != null)
             return configSetting;
-        return world.getPVP();
+        return world.getPVP(); */
     }
 }

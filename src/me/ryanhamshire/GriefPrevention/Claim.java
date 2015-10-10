@@ -337,7 +337,7 @@ public class Claim {
     }
 
     // build permission check
-    public String allowBuild(Player player, BlockType material) {
+    public String allowBuild(Player player, BlockType blockType) {
         // if we don't know who's asking, always say no (i've been told some
         // mods can make this happen somehow)
         if (player == null)
@@ -381,14 +381,14 @@ public class Claim {
         // allow for farming with /containertrust permission
         if (this.allowContainers(player) == null) {
             // do allow for farming, if player has /containertrust permission
-            if (this.placeableForFarming(material)) {
+            if (this.placeableForFarming(blockType)) {
                 return null;
             }
         }
 
         // subdivision permission inheritance
         if (this.parent != null)
-            return this.parent.allowBuild(player, material);
+            return this.parent.allowBuild(player, blockType);
 
         // failure message for all other cases
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
@@ -425,7 +425,7 @@ public class Claim {
     }
 
     // break permission check
-    public String allowBreak(Player player, BlockType material) {
+    public String allowBreak(Player player, BlockType blockType) {
         // if under siege, some blocks will be breakable
         if (this.siegeData != null || this.doorsOpen) {
             boolean breakable = false;
@@ -433,7 +433,7 @@ public class Claim {
             // search for block type in list of breakable blocks
             for (int i = 0; i < GriefPrevention.instance.config_siege_blocks.size(); i++) {
                 BlockType breakableMaterial = GriefPrevention.instance.config_siege_blocks.get(i);
-                if (breakableMaterial == material) {
+                if (breakableMaterial == blockType) {
                     breakable = true;
                     break;
                 }
@@ -450,7 +450,7 @@ public class Claim {
         }
 
         // if not under siege, build rules apply
-        return this.allowBuild(player, material);
+        return this.allowBuild(player, blockType);
     }
 
     // access permission check

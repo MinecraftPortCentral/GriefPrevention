@@ -19,22 +19,37 @@
 package me.ryanhamshire.GriefPrevention;
 
 import me.ryanhamshire.GriefPrevention.events.PreventPvPEvent;
-import net.minecraftforge.event.entity.player.EntityInteractEvent;
+import net.minecraft.entity.item.EntityFallingBlock;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import org.omg.CORBA.Environment;
+import org.spongepowered.api.block.BlockTransaction;
+import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.FallingBlock;
+import org.spongepowered.api.entity.Transform;
 import org.spongepowered.api.entity.explosive.Explosive;
 import org.spongepowered.api.entity.living.Villager;
 import org.spongepowered.api.entity.living.animal.Horse;
 import org.spongepowered.api.entity.living.monster.Creeper;
 import org.spongepowered.api.entity.living.monster.Enderman;
 import org.spongepowered.api.entity.living.monster.Monster;
+import org.spongepowered.api.entity.living.monster.Silverfish;
+import org.spongepowered.api.entity.living.monster.Wither;
+import org.spongepowered.api.entity.living.monster.Zombie;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.projectile.Projectile;
 import org.spongepowered.api.entity.projectile.ThrownPotion;
 import org.spongepowered.api.entity.projectile.source.ProjectileSource;
+import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.Order;
+import org.spongepowered.api.event.block.ChangeBlockEvent;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.potion.PotionEffectType;
+import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +60,7 @@ import java.util.List;
 import java.util.UUID;
 
 //handles events related to entities
-public class EntityEventHandler implements Listener {
+public class EntityEventHandler {
 
     // convenience reference for the singleton datastore
     private DataStore dataStore;
@@ -54,32 +69,49 @@ public class EntityEventHandler implements Listener {
         this.dataStore = dataStore;
     }
 
+    @Listener(order = Order.EARLY)
+    public void onChangeBlockBreak(ChangeBlockEvent.Break event) {
+        final Cause cause = event.getCause();
+        final Entity entity = cause.first(Entity.class).orElse(null);
+        if (entity != null) {
+            for (BlockTransaction transaction : event.getTransactions()) {
+                final BlockType originalType = transaction.getOriginal().getState().getType();
+                final BlockType finalType = transaction.getFinalReplacement().getState().getType();
+
+                if (!GriefPrevention.instance.config_endermenMoveBlocks && entity instanceof Enderman) {
+                    transaction.setIsValid(false);
+                } else if (!GriefPrevention.instance.config_silverfishBreakBlocks && entity instanceof Silverfish) {
+                    transaction.setIsValid(false);
+                } else if (GriefPrevention.instance.config_claims_worldModes.get(event.getTargetWorld()) != ClaimsMode.Disabled && cause instanceof
+                        Wither) {
+                    transaction.setIsValid(false);
+                } else if (!GriefPrevention.instance.config_zombiesBreakDoors && isTypeDoor(originalType) && entity instanceof Zombie) {
+                    transaction.setIsValid(false);
+                } else if (finalType.equals(BlockTypes.DIRT) && originalType.equals(BlockTypes.FARMLAND)) {
+                    if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
+                        transaction.setIsValid(false);
+                    } else {
+                        final Entity rider = (Entity) ((net.minecraft.entity.Entity) entity).riddenByEntity;
+                        if (rider != null && rider instanceof Player) {
+                            transaction.setIsValid(false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isTypeDoor(BlockType type) {
+        return type.equals(BlockTypes.ACACIA_DOOR) || type.equals(BlockTypes.BIRCH_DOOR) || type.equals(BlockTypes.DARK_OAK_DOOR) || type.equals
+                (BlockTypes.JUNGLE_DOOR) || type.equals(BlockTypes.SPRUCE_DOOR) || type.equals(BlockTypes.WOODEN_DOOR);
+    }
+
     // don't allow endermen to change blocks
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onEntityChangeBLock(EntityChangeBlockEvent event) {
-        if (!GriefPrevention.instance.config_endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN) {
-            event.setCancelled(true);
-        }
-
-        else if (!GriefPrevention.instance.config_silverfishBreakBlocks && event.getEntityType() == EntityType.SILVERFISH) {
-            event.setCancelled(true);
-        }
-
-        // don't allow the wither to break blocks, when the wither is
-        // determined, too expensive to constantly check for claimed blocks
-        else if (event.getEntityType() == EntityType.WITHER
-                && GriefPrevention.instance.config_claims_worldModes.get(event.getBlock().getWorld()) != ClaimsMode.Disabled) {
-            event.setCancelled(true);
-        }
-
-        // don't allow crops to be trampled
-        else if (event.getTo() == Material.DIRT && event.getBlock().getType() == Material.SOIL) {
-            event.setCancelled(true);
-        }
-
+    @Listener(ignoreCancelled = true, order = Order.EARLY)
+    public void onEntityChangeBLock(ChangeBlockEvent event) {
         // sand cannon fix - when the falling block doesn't fall straight down,
         // take additional anti-grief steps
-        else if (event.getEntityType() == EntityType.FALLING_BLOCK) {
+        if (event.getEntityType() == EntityType.FALLING_BLOCK) {
             FallingBlock entity = (FallingBlock) event.getEntity();
             Block block = event.getBlock();
 
@@ -120,29 +152,6 @@ public class EntityEventHandler implements Listener {
                         Item item = block.getWorld().dropItem(entity.getLocation(), itemStack);
                         item.setVelocity(new Vector());
                     }
-                }
-            }
-        }
-    }
-
-    // don't allow zombies to break down doors
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onZombieBreakDoor(EntityBreakDoorEvent event) {
-        if (!GriefPrevention.instance.config_zombiesBreakDoors)
-            event.setCancelled(true);
-    }
-
-    // don't allow entities to trample crops
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onEntityInteract(EntityInteractEvent event) {
-        Material material = event.getBlock().getType();
-        if (material == Material.SOIL) {
-            if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
-                event.setCancelled(true);
-            } else {
-                Entity rider = event.getEntity().getPassenger();
-                if (rider != null && rider.getType() == EntityType.PLAYER) {
-                    event.setCancelled(true);
                 }
             }
         }

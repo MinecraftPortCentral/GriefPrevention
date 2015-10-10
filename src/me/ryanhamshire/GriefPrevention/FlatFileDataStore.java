@@ -163,7 +163,7 @@ public class FlatFileDataStore extends DataStore {
                 // try to convert player name to UUID
                 Optional<User> player = null;
                 try {
-                    player = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(currentFilename);
+                    player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(currentFilename);
 
                     // if successful, rename the file using the UUID
                     if (player.isPresent()) {
@@ -188,7 +188,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
     void loadClaimData_Legacy(File[] files) throws Exception {
-        List<World> validWorlds = (List<World>) GriefPrevention.instance.getGame().getServer().getWorlds();
+        List<World> validWorlds = (List<World>) GriefPrevention.instance.game.getServer().getWorlds();
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].isFile()) // avoids folders
@@ -251,7 +251,7 @@ public class FlatFileDataStore extends DataStore {
                             owner = Optional.empty(); // administrative land claim or
                                             // subdivision
                         } else if (this.getSchemaVersion() == 0) {
-                            owner = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(ownerName);
+                            owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(ownerName);
                             if (!owner.isPresent()) {
                                 GriefPrevention.AddLogEntry("Couldn't resolve this name to a UUID: " + ownerName + ".");
                                 GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
@@ -415,7 +415,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
     Claim loadClaim(File file, ArrayList<Long> out_parentID, long claimID) throws IOException, InvalidConfigurationException, Exception {
-        return this.loadClaim(file, out_parentID, file.lastModified(), claimID, (List<World>) GriefPrevention.instance.getGame().getServer().getWorlds());
+        return this.loadClaim(file, out_parentID, file.lastModified(), claimID, (List<World>) GriefPrevention.instance.game.getServer().getWorlds());
     }
 
 
