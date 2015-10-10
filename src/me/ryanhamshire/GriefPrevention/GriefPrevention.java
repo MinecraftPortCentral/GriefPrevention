@@ -1292,7 +1292,7 @@ public class GriefPrevention {
                     this.handleTrustCommand(checkPlayer(src), null, args.<String>getOne("target").get());
                     return CommandResult.success();
                 })
-                .build(), "containertrust", "ct");
+                .build(), "permissiontrust", "pt");
 
         game.getCommandDispatcher().register(this, CommandSpec.builder()
                 .description(Texts.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
