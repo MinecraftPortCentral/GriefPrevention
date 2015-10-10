@@ -21,13 +21,18 @@ package me.ryanhamshire.GriefPrevention;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.block.trait.EnumTraits;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.biome.BiomeType;
+import org.spongepowered.api.world.biome.BiomeTypes;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 //non-main-thread task which processes world data to repair the unnatural
 //after processing is complete, creates a main thread task to make the necessary changes to the world
@@ -42,8 +47,8 @@ class RestoreNatureProcessingTask implements Runnable {
     // context about the operation
     private int miny;
     private DimensionType environment;
-    private Location lesserBoundaryCorner;
-    private Location greaterBoundaryCorner;
+    private Location<World> lesserBoundaryCorner;
+    private Location<World> greaterBoundaryCorner;
     private Player player; // absolutely must not be accessed. not thread safe.
     private BiomeType biome;
     private boolean creativeMode;
@@ -60,7 +65,7 @@ class RestoreNatureProcessingTask implements Runnable {
                                                // introduce more
 
     public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, DimensionType environment, BiomeType biome,
-            Location lesserBoundaryCorner, Location greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, boolean creativeMode,
+            Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, boolean creativeMode,
             Player player) {
         this.snapshots = snapshots;
         this.miny = miny;
@@ -96,23 +101,22 @@ class RestoreNatureProcessingTask implements Runnable {
         // like a single-block tower of iron ore or a giant penis constructed
         // with melons
         if (this.aggressiveMode || this.creativeMode) {
-            this.playerBlocks.add(Material.IRON_ORE.getId());
-            this.playerBlocks.add(Material.GOLD_ORE.getId());
-            this.playerBlocks.add(Material.DIAMOND_ORE.getId());
-            this.playerBlocks.add(Material.MELON_BLOCK.getId());
-            this.playerBlocks.add(Material.MELON_STEM.getId());
-            this.playerBlocks.add(Material.BEDROCK.getId());
-            this.playerBlocks.add(Material.COAL_ORE.getId());
-            this.playerBlocks.add(Material.PUMPKIN.getId());
-            this.playerBlocks.add(Material.PUMPKIN_STEM.getId());
-            this.playerBlocks.add(Material.MELON.getId());
+            this.playerBlocks.add(BlockTypes.IRON_ORE);
+            this.playerBlocks.add(BlockTypes.GOLD_ORE);
+            this.playerBlocks.add(BlockTypes.DIAMOND_ORE);
+            this.playerBlocks.add(BlockTypes.MELON_BLOCK);
+            this.playerBlocks.add(BlockTypes.MELON_STEM);
+            this.playerBlocks.add(BlockTypes.BEDROCK);
+            this.playerBlocks.add(BlockTypes.COAL_ORE);
+            this.playerBlocks.add(BlockTypes.PUMPKIN);
+            this.playerBlocks.add(BlockTypes.PUMPKIN_STEM);
         }
 
         if (this.aggressiveMode) {
-            this.playerBlocks.add(Material.LEAVES.getId());
-            this.playerBlocks.add(Material.LOG.getId());
-            this.playerBlocks.add(Material.LOG_2.getId());
-            this.playerBlocks.add(Material.VINE.getId());
+            this.playerBlocks.add(BlockTypes.LEAVES);
+            this.playerBlocks.add(BlockTypes.LOG);
+            this.playerBlocks.add(BlockTypes.LOG2);
+            this.playerBlocks.add(BlockTypes.VINE);
         }
     }
 
@@ -157,7 +161,7 @@ class RestoreNatureProcessingTask implements Runnable {
         // schedule main thread task to apply the result to the world
         RestoreNatureExecutionTask task =
                 new RestoreNatureExecutionTask(this.snapshots, this.miny, this.lesserBoundaryCorner, this.greaterBoundaryCorner, this.player);
-        GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().execute(task).submit(GriefPrevention.instance);
     }
 
     private void removePlayerLeaves() {
@@ -169,8 +173,8 @@ class RestoreNatureProcessingTask implements Runnable {
                 for (int y = this.seaLevel - 1; y < snapshots[0].length; y++) {
                     // note: see minecraft wiki data values for leaves
                     BlockSnapshot block = snapshots[x][y][z];
-                    if (block.typeId == Material.LEAVES.getId() && (block.data & 0x4) != 0) {
-                        block.typeId = Material.AIR.getId();
+                    if (block.getState().getType() == BlockTypes.LEAVES ) {//&& (block.data & 0x4) != 0) {
+                        block.getLocation().get().setBlock(BlockTypes.AIR.getDefaultState());
                     }
                 }
             }
@@ -183,7 +187,7 @@ class RestoreNatureProcessingTask implements Runnable {
         for (int x = 1; x < snapshots.length - 1; x++) {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                 for (int y = snapshots[0].length - 2; y > miny; y--) {
-                    if (snapshots[x][y][z].typeId != Material.SANDSTONE.getId())
+                    if (snapshots[x][y][z].getState().getType() != BlockTypes.SANDSTONE)
                         continue;
 
                     BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
@@ -194,19 +198,19 @@ class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot aboveBlock = this.snapshots[x][y + 1][z];
 
                     // skip blocks which may cause a cave-in
-                    if (aboveBlock.typeId == Material.SAND.getId() && underBlock.typeId == Material.AIR.getId())
+                    if (aboveBlock.getState().getType() == BlockTypes.SAND && underBlock.getState().getType() == BlockTypes.AIR)
                         continue;
 
                     // count adjacent non-air/non-leaf blocks
-                    if (leftBlock.typeId == Material.SAND.getId() ||
-                            rightBlock.typeId == Material.SAND.getId() ||
-                            upBlock.typeId == Material.SAND.getId() ||
-                            downBlock.typeId == Material.SAND.getId() ||
-                            aboveBlock.typeId == Material.SAND.getId() ||
-                            underBlock.typeId == Material.SAND.getId()) {
-                        snapshots[x][y][z].typeId = Material.SAND.getId();
+                    if (leftBlock.getState().getType() == BlockTypes.SAND ||
+                            rightBlock.getState().getType() == BlockTypes.SAND ||
+                            upBlock.getState().getType() == BlockTypes.SAND ||
+                            downBlock.getState().getType() == BlockTypes.SAND ||
+                            aboveBlock.getState().getType() == BlockTypes.SAND ||
+                            underBlock.getState().getType() == BlockTypes.SAND) {
+                        snapshots[x][y][z].withState(BlockTypes.SAND.getDefaultState()).restore(true, false);
                     } else {
-                        snapshots[x][y][z].typeId = Material.AIR.getId();
+                        snapshots[x][y][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                     }
                 }
             }
@@ -221,8 +225,8 @@ class RestoreNatureProcessingTask implements Runnable {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                 int thisy = this.highestY(x, z, true);
 
-                while (thisy > this.seaLevel - 1 && (this.snapshots[x][thisy][z].typeId == Material.STONE.getId()
-                        || this.snapshots[x][thisy][z].typeId == Material.SANDSTONE.getId())) {
+                while (thisy > this.seaLevel - 1 && (this.snapshots[x][thisy][z].getState().getType() == BlockTypes.STONE
+                        || this.snapshots[x][thisy][z].getState().getType() == BlockTypes.SANDSTONE)) {
                     BlockSnapshot leftBlock = this.snapshots[x + 1][thisy][z];
                     BlockSnapshot rightBlock = this.snapshots[x - 1][thisy][z];
                     BlockSnapshot upBlock = this.snapshots[x][thisy][z + 1];
@@ -230,25 +234,25 @@ class RestoreNatureProcessingTask implements Runnable {
 
                     // count adjacent non-air/non-leaf blocks
                     byte adjacentBlockCount = 0;
-                    if (leftBlock.typeId != Material.AIR.getId() && leftBlock.typeId != Material.LEAVES.getId()
-                            && leftBlock.typeId != Material.VINE.getId()) {
+                    if (leftBlock.getState().getType() != BlockTypes.AIR && leftBlock.getState().getType() != BlockTypes.LEAVES
+                            && leftBlock.getState().getType() != BlockTypes.VINE) {
                         adjacentBlockCount++;
                     }
-                    if (rightBlock.typeId != Material.AIR.getId() && rightBlock.typeId != Material.LEAVES.getId()
-                            && rightBlock.typeId != Material.VINE.getId()) {
+                    if (rightBlock.getState().getType() != BlockTypes.AIR && rightBlock.getState().getType() != BlockTypes.LEAVES
+                            && rightBlock.getState().getType() != BlockTypes.VINE) {
                         adjacentBlockCount++;
                     }
-                    if (downBlock.typeId != Material.AIR.getId() && downBlock.typeId != Material.LEAVES.getId()
-                            && downBlock.typeId != Material.VINE.getId()) {
+                    if (downBlock.getState().getType() != BlockTypes.AIR && downBlock.getState().getType() != BlockTypes.LEAVES
+                            && downBlock.getState().getType() != BlockTypes.VINE) {
                         adjacentBlockCount++;
                     }
-                    if (upBlock.typeId != Material.AIR.getId() && upBlock.typeId != Material.LEAVES.getId()
-                            && upBlock.typeId != Material.VINE.getId()) {
+                    if (upBlock.getState().getType() != BlockTypes.AIR && upBlock.getState().getType() != BlockTypes.LEAVES
+                            && upBlock.getState().getType() != BlockTypes.VINE) {
                         adjacentBlockCount++;
                     }
 
                     if (adjacentBlockCount < 3) {
-                        this.snapshots[x][thisy][z].typeId = Material.AIR.getId();
+                        this.snapshots[x][thisy][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                     }
 
                     thisy--;
@@ -261,7 +265,7 @@ class RestoreNatureProcessingTask implements Runnable {
         if (this.seaLevel < 1)
             return;
 
-        boolean jungleBiome = this.biome == Biome.JUNGLE || this.biome == Biome.JUNGLE_HILLS;
+        boolean jungleBiome = this.biome == BiomeTypes.JUNGLE || this.biome == BiomeTypes.JUNGLE_HILLS;
 
         // scan all blocks above sea level
         for (int x = 1; x < snapshots.length - 1; x++) {
@@ -270,13 +274,14 @@ class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot block = snapshots[x][y][z];
 
                     // skip non-logs
-                    if (block.typeId != Material.LOG.getId())
+                    if (block.getState().getType() != BlockTypes.LOG)
                         continue;
-                    if (block.typeId != Material.LOG_2.getId())
+                    if (block.getState().getType() != BlockTypes.LOG2)
                         continue;
 
                     // if in jungle biome, skip jungle logs
-                    if (jungleBiome && block.data == 3)
+                    Optional<? extends Enum<?>> enumProperty = block.getState().getTraitValue(EnumTraits.LOG_VARIANT);
+                    if (jungleBiome && enumProperty.isPresent() && enumProperty.get().name().equalsIgnoreCase("jungle"))
                         continue;
 
                     // examine adjacent blocks for logs
@@ -286,9 +291,9 @@ class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot downBlock = this.snapshots[x][y][z - 1];
 
                     // if any, remove the log
-                    if (leftBlock.typeId == Material.LOG.getId() || rightBlock.typeId == Material.LOG.getId()
-                            || upBlock.typeId == Material.LOG.getId() || downBlock.typeId == Material.LOG.getId()) {
-                        this.snapshots[x][y][z].typeId = Material.AIR.getId();
+                    if (leftBlock.getState().getType() == BlockTypes.LOG || rightBlock.getState().getType() == BlockTypes.LOG
+                            || upBlock.getState().getType() == BlockTypes.LOG || downBlock.getState().getType() == BlockTypes.LOG) {
+                        this.snapshots[x][y][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                     }
                 }
             }
@@ -305,8 +310,8 @@ class RestoreNatureProcessingTask implements Runnable {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                 for (int y = miny; y < snapshots[0].length - 1; y++) {
                     BlockSnapshot block = snapshots[x][y][z];
-                    if (this.playerBlocks.contains(block.typeId)) {
-                        block.typeId = Material.AIR.getId();
+                    if (this.playerBlocks.contains(block.getState().getType())) {
+                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                     }
                 }
             }
@@ -324,10 +329,10 @@ class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot block = snapshots[x][y][z];
                     BlockSnapshot underBlock = snapshots[x][y - 1][z];
 
-                    if (underBlock.typeId == Material.AIR.getId() || underBlock.typeId == Material.STATIONARY_WATER.getId()
-                            || underBlock.typeId == Material.STATIONARY_LAVA.getId() || underBlock.typeId == Material.LEAVES.getId()) {
-                        if (this.notAllowedToHang.contains(block.typeId)) {
-                            block.typeId = Material.AIR.getId();
+                    if (underBlock.getState().getType() == BlockTypes.AIR || underBlock.getState().getType() == BlockTypes.WATER
+                            || underBlock.getState().getType() == BlockTypes.LAVA || underBlock.getState().getType() == BlockTypes.LEAVES) {
+                        if (this.notAllowedToHang.contains(block.getState().getType())) {
+                            block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                         }
                     }
                 }
@@ -336,25 +341,20 @@ class RestoreNatureProcessingTask implements Runnable {
     }
 
     private void removeWallsAndTowers() {
-        int[] excludedBlocksArray = new int[] {
-                Material.CACTUS.getId(),
-                Material.LONG_GRASS.getId(),
-                Material.RED_MUSHROOM.getId(),
-                Material.BROWN_MUSHROOM.getId(),
-                Material.DEAD_BUSH.getId(),
-                Material.SAPLING.getId(),
-                Material.YELLOW_FLOWER.getId(),
-                Material.RED_ROSE.getId(),
-                Material.SUGAR_CANE_BLOCK.getId(),
-                Material.VINE.getId(),
-                Material.PUMPKIN.getId(),
-                Material.WATER_LILY.getId(),
-                Material.LEAVES.getId()
-        };
-
-        ArrayList<Integer> excludedBlocks = new ArrayList<Integer>();
-        for (int i = 0; i < excludedBlocksArray.length; i++)
-            excludedBlocks.add(excludedBlocksArray[i]);
+        List<BlockType> excludedBlocksArray = new ArrayList<BlockType>();
+        excludedBlocksArray.add(BlockTypes.CACTUS);
+        excludedBlocksArray.add(BlockTypes.TALLGRASS);
+        excludedBlocksArray.add(BlockTypes.RED_MUSHROOM);
+        excludedBlocksArray.add(BlockTypes.BROWN_MUSHROOM);
+        excludedBlocksArray.add(BlockTypes.DEADBUSH);
+        excludedBlocksArray.add(BlockTypes.SAPLING);
+        excludedBlocksArray.add(BlockTypes.YELLOW_FLOWER);
+        excludedBlocksArray.add(BlockTypes.RED_FLOWER);
+        excludedBlocksArray.add(BlockTypes.REEDS);
+        excludedBlocksArray.add(BlockTypes.VINE);
+        excludedBlocksArray.add(BlockTypes.PUMPKIN);
+        excludedBlocksArray.add(BlockTypes.WATERLILY);
+        excludedBlocksArray.add(BlockTypes.LEAVES);
 
         boolean changed;
         do {
@@ -362,20 +362,20 @@ class RestoreNatureProcessingTask implements Runnable {
             for (int x = 1; x < snapshots.length - 1; x++) {
                 for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                     int thisy = this.highestY(x, z, false);
-                    if (excludedBlocks.contains(this.snapshots[x][thisy][z].typeId))
+                    if (excludedBlocksArray.contains(this.snapshots[x][thisy][z].getState().getType()))
                         continue;
 
                     int righty = this.highestY(x + 1, z, false);
                     int lefty = this.highestY(x - 1, z, false);
                     while (lefty < thisy && righty < thisy) {
-                        this.snapshots[x][thisy--][z].typeId = Material.AIR.getId();
+                        this.snapshots[x][thisy--][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                         changed = true;
                     }
 
                     int upy = this.highestY(x, z + 1, false);
                     int downy = this.highestY(x, z - 1, false);
                     while (upy < thisy && downy < thisy) {
-                        this.snapshots[x][thisy--][z].typeId = Material.AIR.getId();
+                        this.snapshots[x][thisy--][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                         changed = true;
                     }
                 }
@@ -389,12 +389,12 @@ class RestoreNatureProcessingTask implements Runnable {
                 int y = this.highestY(x, z, true);
                 BlockSnapshot block = snapshots[x][y][z];
 
-                if (block.typeId == Material.STONE.getId() || block.typeId == Material.GRAVEL.getId() || block.typeId == Material.SOIL.getId()
-                        || block.typeId == Material.DIRT.getId() || block.typeId == Material.SANDSTONE.getId()) {
-                    if (this.biome == Biome.DESERT || this.biome == Biome.DESERT_HILLS || this.biome == Biome.BEACH) {
-                        this.snapshots[x][y][z].typeId = Material.SAND.getId();
+                if (block.getState().getType() == BlockTypes.STONE || block.getState().getType() == BlockTypes.GRAVEL || block.getState().getType() == BlockTypes.FARMLAND
+                        || block.getState().getType() == BlockTypes.DIRT || block.getState().getType() == BlockTypes.SANDSTONE) {
+                    if (this.biome == BiomeTypes.DESERT || this.biome == BiomeTypes.DESERT_HILLS || this.biome == BiomeTypes.BEACH) {
+                        this.snapshots[x][y][z].withState(BlockTypes.SAND.getDefaultState()).restore(true, false);
                     } else {
-                        this.snapshots[x][y][z].typeId = Material.GRASS.getId();
+                        this.snapshots[x][y][z].withState(BlockTypes.GRASS.getDefaultState()).restore(true, false);
                     }
                 }
             }
@@ -402,19 +402,19 @@ class RestoreNatureProcessingTask implements Runnable {
     }
 
     private void fillHolesAndTrenches() {
-        ArrayList<Integer> fillableBlocks = new ArrayList<Integer>();
-        fillableBlocks.add(Material.AIR.getId());
-        fillableBlocks.add(Material.STATIONARY_WATER.getId());
-        fillableBlocks.add(Material.STATIONARY_LAVA.getId());
-        fillableBlocks.add(Material.LONG_GRASS.getId());
+        ArrayList<BlockType> fillableBlocks = new ArrayList<BlockType>();
+        fillableBlocks.add(BlockTypes.AIR);
+        fillableBlocks.add(BlockTypes.WATER);
+        fillableBlocks.add(BlockTypes.LAVA);
+        fillableBlocks.add(BlockTypes.TALLGRASS);
 
-        ArrayList<Integer> notSuitableForFillBlocks = new ArrayList<Integer>();
-        notSuitableForFillBlocks.add(Material.LONG_GRASS.getId());
-        notSuitableForFillBlocks.add(Material.CACTUS.getId());
-        notSuitableForFillBlocks.add(Material.STATIONARY_WATER.getId());
-        notSuitableForFillBlocks.add(Material.STATIONARY_LAVA.getId());
-        notSuitableForFillBlocks.add(Material.LOG.getId());
-        notSuitableForFillBlocks.add(Material.LOG_2.getId());
+        ArrayList<BlockType> notSuitableForFillBlocks = new ArrayList<BlockType>();
+        notSuitableForFillBlocks.add(BlockTypes.TALLGRASS);
+        notSuitableForFillBlocks.add(BlockTypes.CACTUS);
+        notSuitableForFillBlocks.add(BlockTypes.WATER);
+        notSuitableForFillBlocks.add(BlockTypes.LAVA);
+        notSuitableForFillBlocks.add(BlockTypes.LOG);
+        notSuitableForFillBlocks.add(BlockTypes.LOG2);
 
         boolean changed;
         do {
@@ -423,15 +423,15 @@ class RestoreNatureProcessingTask implements Runnable {
                 for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                     for (int y = 0; y < snapshots[0].length - 1; y++) {
                         BlockSnapshot block = this.snapshots[x][y][z];
-                        if (!fillableBlocks.contains(block.typeId))
+                        if (!fillableBlocks.contains(block.getState().getType()))
                             continue;
 
                         BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
                         BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
 
-                        if (!fillableBlocks.contains(leftBlock.typeId) && !fillableBlocks.contains(rightBlock.typeId)) {
-                            if (!notSuitableForFillBlocks.contains(rightBlock.typeId)) {
-                                block.typeId = rightBlock.typeId;
+                        if (!fillableBlocks.contains(leftBlock.getState().getType()) && !fillableBlocks.contains(rightBlock.getState().getType())) {
+                            if (!notSuitableForFillBlocks.contains(rightBlock.getState().getType())) {
+                                block.withState(rightBlock.getState().getType().getDefaultState()).restore(true, false);
                                 changed = true;
                             }
                         }
@@ -439,9 +439,9 @@ class RestoreNatureProcessingTask implements Runnable {
                         BlockSnapshot upBlock = this.snapshots[x][y][z + 1];
                         BlockSnapshot downBlock = this.snapshots[x][y][z - 1];
 
-                        if (!fillableBlocks.contains(upBlock.typeId) && !fillableBlocks.contains(downBlock.typeId)) {
-                            if (!notSuitableForFillBlocks.contains(downBlock.typeId)) {
-                                block.typeId = downBlock.typeId;
+                        if (!fillableBlocks.contains(upBlock.getState().getType()) && !fillableBlocks.contains(downBlock.getState().getType())) {
+                            if (!notSuitableForFillBlocks.contains(downBlock.getState().getType())) {
+                                block.withState(downBlock.getState().getType().getDefaultState()).restore(true, false);
                                 changed = true;
                             }
                         }
@@ -464,9 +464,9 @@ class RestoreNatureProcessingTask implements Runnable {
                 for (int y = miny; y < snapshots[0].length - 1; y++) {
                     BlockSnapshot block = this.snapshots[x][y][z];
                     BlockSnapshot underBlock = this.snapshots[x][y][z];
-                    if (block.typeId == Material.STATIONARY_WATER.getId() || block.typeId == Material.STATIONARY_LAVA.getId()) {
-                        if (underBlock.typeId == Material.AIR.getId() || (underBlock.data != 0)) {
-                            block.typeId = Material.AIR.getId();
+                    if (block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.LAVA) {
+                        if (underBlock.getState().getType() == BlockTypes.AIR) { //|| (underBlock.data != 0)) {
+                            block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                         }
                     }
                 }
@@ -483,7 +483,7 @@ class RestoreNatureProcessingTask implements Runnable {
 
                         // only consider air blocks and flowing water blocks for
                         // upgrade to water source blocks
-                        if (block.typeId == Material.AIR.getId() || (block.typeId == Material.STATIONARY_WATER.getId() && block.data != 0)) {
+                        if (block.getState().getType() == BlockTypes.AIR || (block.getState().getType() == BlockTypes.WATER)) { //&& block.data != 0)) {
                             BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
                             BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
                             BlockSnapshot upBlock = this.snapshots[x][y][z + 1];
@@ -491,28 +491,27 @@ class RestoreNatureProcessingTask implements Runnable {
                             BlockSnapshot underBlock = this.snapshots[x][y - 1][z];
 
                             // block underneath MUST be source water
-                            if (underBlock.typeId != Material.STATIONARY_WATER.getId() || underBlock.data != 0)
+                            if (underBlock.getState().getType() != BlockTypes.WATER)//|| underBlock.data != 0)
                                 continue;
 
                             // count adjacent source water blocks
                             byte adjacentSourceWaterCount = 0;
-                            if (leftBlock.typeId == Material.STATIONARY_WATER.getId() && leftBlock.data == 0) {
+                            if (leftBlock.getState().getType() == BlockTypes.WATER) {// && leftBlock.data == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (rightBlock.typeId == Material.STATIONARY_WATER.getId() && rightBlock.data == 0) {
+                            if (rightBlock.getState().getType() == BlockTypes.WATER) {// rightBlock.data == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (upBlock.typeId == Material.STATIONARY_WATER.getId() && upBlock.data == 0) {
+                            if (upBlock.getState().getType() == BlockTypes.WATER) {// && upBlock.data == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (downBlock.typeId == Material.STATIONARY_WATER.getId() && downBlock.data == 0) {
+                            if (downBlock.getState().getType() == BlockTypes.WATER) {// && downBlock.data == 0) {
                                 adjacentSourceWaterCount++;
                             }
 
                             // at least two adjacent blocks must be source water
                             if (adjacentSourceWaterCount >= 2) {
-                                block.typeId = Material.STATIONARY_WATER.getId();
-                                block.data = 0;
+                                block.withState(BlockTypes.WATER.getDefaultState()).restore(true, false);
                                 changed = true;
                             }
                         }
@@ -536,9 +535,9 @@ class RestoreNatureProcessingTask implements Runnable {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                 for (int y = this.seaLevel - 1; y < snapshots[0].length - 1; y++) {
                     BlockSnapshot block = snapshots[x][y][z];
-                    if (block.typeId == Material.STATIONARY_WATER.getId() || block.typeId == Material.STATIONARY_LAVA.getId() ||
-                            block.typeId == Material.WATER.getId() || block.typeId == Material.LAVA.getId()) {
-                        block.typeId = Material.AIR.getId();
+                    if (block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.LAVA ||
+                            block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.LAVA) {
+                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
                     }
                 }
             }
@@ -549,13 +548,13 @@ class RestoreNatureProcessingTask implements Runnable {
         int y;
         for (y = snapshots[0].length - 1; y > 0; y--) {
             BlockSnapshot block = this.snapshots[x][y][z];
-            if (block.typeId != Material.AIR.getId() &&
-                    !(ignoreLeaves && block.typeId == Material.SNOW.getId()) &&
-                    !(ignoreLeaves && block.typeId == Material.LEAVES.getId()) &&
-                    !(block.typeId == Material.STATIONARY_WATER.getId()) &&
-                    !(block.typeId == Material.WATER.getId()) &&
-                    !(block.typeId == Material.LAVA.getId()) &&
-                    !(block.typeId == Material.STATIONARY_LAVA.getId())) {
+            if (block.getState().getType() != BlockTypes.AIR &&
+                    !(ignoreLeaves && block.getState().getType() == BlockTypes.SNOW) &&
+                    !(ignoreLeaves && block.getState().getType() == BlockTypes.LEAVES) &&
+                    !(block.getState().getType() == BlockTypes.WATER) &&
+                    !(block.getState().getType() == BlockTypes.FLOWING_WATER) &&
+                    !(block.getState().getType() == BlockTypes.LAVA) &&
+                    !(block.getState().getType() == BlockTypes.FLOWING_LAVA)) {
                 return y;
             }
         }
@@ -570,122 +569,122 @@ class RestoreNatureProcessingTask implements Runnable {
         // a few extra player blocks can be manually removed, but it will be
         // impossible to guess exactly which natural materials to use in manual
         // repair of an overzealous block removal
-        ArrayList<BlockType> playerBlocks = new ArrayList<BlockType>();
-        for (BlockType blockType : GriefPrevention.instance.gameRegistry.getAllOf(BlockType.class)) {
-            playerBlocks.add(blockType);
-        }
 
-        /*
-         * playerBlocks.add(BlockTypes.FIRE); playerBlocks.add(BlockTypes.BED);
-         * playerBlocks.add(BlockTypes.PLANKS);
-         * playerBlocks.add(BlockTypes.BOOKSHELF);
-         * playerBlocks.add(BlockTypes.BREWING_STAND);
-         * playerBlocks.add(BlockTypes.BRICK_BLOCK);
-         * playerBlocks.add(BlockTypes.COBBLESTONE);
-         * playerBlocks.add(BlockTypes.GLASS);
-         * playerBlocks.add(BlockTypes.LAPIS_BLOCK);
-         * playerBlocks.add(BlockTypes.DISPENSER);
-         * playerBlocks.add(BlockTypes.NOTEBLOCK);
-         * playerBlocks.add(BlockTypes.RAIL);
-         * playerBlocks.add(BlockTypes.DETECTOR_RAIL);
-         * playerBlocks.add(BlockTypes.STICKY_PISTON);
-         * playerBlocks.add(BlockTypes.PISTON);
-         * playerBlocks.add(BlockTypes.PISTON_EXTENSION);
-         * playerBlocks.add(BlockTypes.WOOL);
-         * playerBlocks.add(BlockTypes.PISTON_HEAD);
-         * playerBlocks.add(BlockTypes.GOLD_BLOCK);
-         * playerBlocks.add(BlockTypes.IRON_BLOCK);
-         * playerBlocks.add(BlockTypes.DOUBLE_STONE_SLAB);
-         * playerBlocks.add(BlockTypes.STONE_SLAB);
-         * playerBlocks.add(BlockTypes.WHEAT); playerBlocks.add(BlockTypes.TNT);
-         * playerBlocks.add(Material.MOSSY_COBBLESTONE.getId());
-         * playerBlocks.add(Material.TORCH.getId());
-         * playerBlocks.add(Material.FIRE.getId());
-         * playerBlocks.add(Material.WOOD_STAIRS.getId());
-         * playerBlocks.add(Material.CHEST.getId());
-         * playerBlocks.add(Material.REDSTONE_WIRE.getId());
-         * playerBlocks.add(Material.DIAMOND_BLOCK.getId());
-         * playerBlocks.add(Material.WORKBENCH.getId());
-         * playerBlocks.add(Material.FURNACE.getId());
-         * playerBlocks.add(Material.BURNING_FURNACE.getId());
-         * playerBlocks.add(Material.WOODEN_DOOR.getId());
-         * playerBlocks.add(Material.SIGN_POST.getId());
-         * playerBlocks.add(Material.LADDER.getId());
-         * playerBlocks.add(Material.RAILS.getId());
-         * playerBlocks.add(Material.COBBLESTONE_STAIRS.getId());
-         * playerBlocks.add(Material.WALL_SIGN.getId());
-         * playerBlocks.add(Material.STONE_PLATE.getId());
-         * playerBlocks.add(Material.LEVER.getId());
-         * playerBlocks.add(Material.IRON_DOOR_BLOCK.getId());
-         * playerBlocks.add(Material.WOOD_PLATE.getId());
-         * playerBlocks.add(Material.REDSTONE_TORCH_ON.getId());
-         * playerBlocks.add(Material.REDSTONE_TORCH_OFF.getId());
-         * playerBlocks.add(Material.STONE_BUTTON.getId());
-         * playerBlocks.add(Material.SNOW_BLOCK.getId());
-         * playerBlocks.add(Material.JUKEBOX.getId());
-         * playerBlocks.add(Material.FENCE.getId());
-         * playerBlocks.add(Material.PORTAL.getId());
-         * playerBlocks.add(Material.JACK_O_LANTERN.getId());
-         * playerBlocks.add(Material.CAKE_BLOCK.getId());
-         * playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
-         * playerBlocks.add(Material.DIODE_BLOCK_OFF.getId());
-         * playerBlocks.add(Material.TRAP_DOOR.getId());
-         * playerBlocks.add(Material.SMOOTH_BRICK.getId());
-         * playerBlocks.add(Material.HUGE_MUSHROOM_1.getId());
-         * playerBlocks.add(Material.HUGE_MUSHROOM_2.getId());
-         * playerBlocks.add(Material.IRON_FENCE.getId());
-         * playerBlocks.add(Material.THIN_GLASS.getId());
-         * playerBlocks.add(Material.MELON_STEM.getId());
-         * playerBlocks.add(Material.FENCE_GATE.getId());
-         * playerBlocks.add(Material.BRICK_STAIRS.getId());
-         * playerBlocks.add(Material.SMOOTH_STAIRS.getId());
-         * playerBlocks.add(Material.ENCHANTMENT_TABLE.getId());
-         * playerBlocks.add(Material.BREWING_STAND.getId());
-         * playerBlocks.add(Material.CAULDRON.getId());
-         * playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
-         * playerBlocks.add(Material.DIODE_BLOCK_ON.getId());
-         * playerBlocks.add(Material.WEB.getId());
-         * playerBlocks.add(Material.SPONGE.getId());
-         * playerBlocks.add(Material.GRAVEL.getId());
-         * playerBlocks.add(Material.EMERALD_BLOCK.getId());
-         * playerBlocks.add(Material.SANDSTONE.getId());
-         * playerBlocks.add(Material.WOOD_STEP.getId());
-         * playerBlocks.add(Material.WOOD_DOUBLE_STEP.getId());
-         * playerBlocks.add(Material.ENDER_CHEST.getId());
-         * playerBlocks.add(Material.SANDSTONE_STAIRS.getId());
-         * playerBlocks.add(Material.SPRUCE_WOOD_STAIRS.getId());
-         * playerBlocks.add(Material.JUNGLE_WOOD_STAIRS.getId());
-         * playerBlocks.add(Material.COMMAND.getId());
-         * playerBlocks.add(Material.BEACON.getId());
-         * playerBlocks.add(Material.COBBLE_WALL.getId());
-         * playerBlocks.add(Material.FLOWER_POT.getId());
-         * playerBlocks.add(Material.CARROT.getId());
-         * playerBlocks.add(Material.POTATO.getId());
-         * playerBlocks.add(Material.WOOD_BUTTON.getId());
-         * playerBlocks.add(Material.SKULL.getId());
-         * playerBlocks.add(Material.ANVIL.getId());
-         */
+        // TODO : add mod support
+        ArrayList<BlockType> playerBlocks = new ArrayList<BlockType>();
+
+        playerBlocks.add(BlockTypes.FIRE);
+        playerBlocks.add(BlockTypes.BED);
+        playerBlocks.add(BlockTypes.PLANKS);
+        playerBlocks.add(BlockTypes.BOOKSHELF);
+        playerBlocks.add(BlockTypes.BREWING_STAND);
+        playerBlocks.add(BlockTypes.BRICK_BLOCK);
+        playerBlocks.add(BlockTypes.COBBLESTONE);
+        playerBlocks.add(BlockTypes.GLASS);
+        playerBlocks.add(BlockTypes.LAPIS_BLOCK);
+        playerBlocks.add(BlockTypes.DISPENSER);
+        playerBlocks.add(BlockTypes.NOTEBLOCK);
+        playerBlocks.add(BlockTypes.RAIL);
+        playerBlocks.add(BlockTypes.DETECTOR_RAIL);
+        playerBlocks.add(BlockTypes.STICKY_PISTON);
+        playerBlocks.add(BlockTypes.PISTON);
+        playerBlocks.add(BlockTypes.PISTON_EXTENSION);
+        playerBlocks.add(BlockTypes.WOOL);
+        playerBlocks.add(BlockTypes.PISTON_HEAD);
+        playerBlocks.add(BlockTypes.GOLD_BLOCK);
+        playerBlocks.add(BlockTypes.IRON_BLOCK);
+        playerBlocks.add(BlockTypes.DOUBLE_STONE_SLAB);
+        playerBlocks.add(BlockTypes.STONE_SLAB);
+        playerBlocks.add(BlockTypes.WHEAT); playerBlocks.add(BlockTypes.TNT);
+        playerBlocks.add(BlockTypes.MOSSY_COBBLESTONE);
+        playerBlocks.add(BlockTypes.TORCH);
+        playerBlocks.add(BlockTypes.FIRE);
+        playerBlocks.add(BlockTypes.OAK_STAIRS);
+        playerBlocks.add(BlockTypes.CHEST);
+        playerBlocks.add(BlockTypes.REDSTONE_WIRE);
+        playerBlocks.add(BlockTypes.DIAMOND_BLOCK);
+        playerBlocks.add(BlockTypes.CRAFTING_TABLE);
+        playerBlocks.add(BlockTypes.FURNACE);
+        playerBlocks.add(BlockTypes.LIT_FURNACE);
+        playerBlocks.add(BlockTypes.WOODEN_DOOR);
+        playerBlocks.add(BlockTypes.STANDING_SIGN);
+        playerBlocks.add(BlockTypes.LADDER);
+        playerBlocks.add(BlockTypes.RAIL);
+        playerBlocks.add(BlockTypes.STONE_STAIRS);
+        playerBlocks.add(BlockTypes.WALL_SIGN);
+        playerBlocks.add(BlockTypes.STONE_PRESSURE_PLATE);
+        playerBlocks.add(BlockTypes.LEVER);
+        playerBlocks.add(BlockTypes.IRON_DOOR);
+        playerBlocks.add(BlockTypes.WOODEN_PRESSURE_PLATE);
+        playerBlocks.add(BlockTypes.REDSTONE_TORCH);
+        playerBlocks.add(BlockTypes.UNLIT_REDSTONE_TORCH);
+        playerBlocks.add(BlockTypes.STONE_BUTTON);
+        playerBlocks.add(BlockTypes.SNOW);
+        playerBlocks.add(BlockTypes.JUKEBOX);
+        playerBlocks.add(BlockTypes.FENCE);
+        playerBlocks.add(BlockTypes.PORTAL);
+        playerBlocks.add(BlockTypes.LIT_PUMPKIN);
+        playerBlocks.add(BlockTypes.CAKE);
+        playerBlocks.add(BlockTypes.UNPOWERED_REPEATER);
+        playerBlocks.add(BlockTypes.POWERED_REPEATER);
+        playerBlocks.add(BlockTypes.TRAPDOOR);
+        playerBlocks.add(BlockTypes.STONEBRICK);
+        playerBlocks.add(BlockTypes.BROWN_MUSHROOM_BLOCK);
+        playerBlocks.add(BlockTypes.RED_MUSHROOM_BLOCK);
+        playerBlocks.add(BlockTypes.IRON_BARS);
+        playerBlocks.add(BlockTypes.GLASS_PANE);
+        playerBlocks.add(BlockTypes.MELON_STEM);
+        playerBlocks.add(BlockTypes.FENCE_GATE);
+        playerBlocks.add(BlockTypes.BRICK_STAIRS);
+        playerBlocks.add(BlockTypes.STONE_BRICK_STAIRS);
+        playerBlocks.add(BlockTypes.ENCHANTING_TABLE);
+        playerBlocks.add(BlockTypes.BREWING_STAND);
+        playerBlocks.add(BlockTypes.CAULDRON);
+        playerBlocks.add(BlockTypes.WEB);
+        playerBlocks.add(BlockTypes.SPONGE);
+        playerBlocks.add(BlockTypes.GRAVEL);
+        playerBlocks.add(BlockTypes.EMERALD_BLOCK);
+        playerBlocks.add(BlockTypes.SANDSTONE);
+        playerBlocks.add(BlockTypes.WOODEN_SLAB);
+        playerBlocks.add(BlockTypes.DOUBLE_WOODEN_SLAB);
+        playerBlocks.add(BlockTypes.ENDER_CHEST);
+        playerBlocks.add(BlockTypes.SANDSTONE_STAIRS);
+        playerBlocks.add(BlockTypes.SPRUCE_STAIRS);
+        playerBlocks.add(BlockTypes.JUNGLE_STAIRS);
+        playerBlocks.add(BlockTypes.COMMAND_BLOCK);
+        playerBlocks.add(BlockTypes.BEACON);
+        playerBlocks.add(BlockTypes.COBBLESTONE_WALL);
+        playerBlocks.add(BlockTypes.FLOWER_POT);
+        playerBlocks.add(BlockTypes.CARROTS);
+        playerBlocks.add(BlockTypes.POTATOES);
+        playerBlocks.add(BlockTypes.WOODEN_BUTTON);
+        playerBlocks.add(BlockTypes.SKULL);
+        playerBlocks.add(BlockTypes.ANVIL);
 
         // these are unnatural in the standard world, but not in the nether
-        /*
-         * if(environment != Environment.NETHER) {
-         * playerBlocks.add(Material.NETHERRACK.getId());
-         * playerBlocks.add(Material.SOUL_SAND.getId());
-         * playerBlocks.add(Material.GLOWSTONE.getId());
-         * playerBlocks.add(Material.NETHER_BRICK.getId());
-         * playerBlocks.add(Material.NETHER_FENCE.getId());
-         * playerBlocks.add(Material.NETHER_BRICK_STAIRS.getId()); } //these are
-         * unnatural in the standard and nether worlds, but not in the end
-         * if(environment != Environment.THE_END) {
-         * playerBlocks.add(Material.OBSIDIAN.getId());
-         * playerBlocks.add(Material.ENDER_STONE.getId());
-         * playerBlocks.add(Material.ENDER_PORTAL_FRAME.getId()); } //these are
-         * unnatural in sandy biomes, but not elsewhere if(biome == Biome.DESERT
-         * || biome == Biome.DESERT_HILLS || biome == Biome.BEACH || environment
-         * != Environment.NORMAL) { playerBlocks.add(Material.LEAVES.getId());
-         * playerBlocks.add(Material.LOG.getId());
-         * playerBlocks.add(Material.LOG_2.getId()); }
-         */
+        if(environment.equals(DimensionTypes.NETHER)) {
+            playerBlocks.add(BlockTypes.NETHERRACK);
+            playerBlocks.add(BlockTypes.SOUL_SAND);
+            playerBlocks.add(BlockTypes.GLOWSTONE);
+            playerBlocks.add(BlockTypes.NETHER_BRICK);
+            playerBlocks.add(BlockTypes.NETHER_BRICK_FENCE);
+            playerBlocks.add(BlockTypes.NETHER_BRICK_STAIRS);
+        }
+
+        // these are unnatural in the standard and nether worlds, but not in the end
+        if(environment.equals(DimensionTypes.END)) {
+            playerBlocks.add(BlockTypes.OBSIDIAN);
+            playerBlocks.add(BlockTypes.END_STONE);
+            playerBlocks.add(BlockTypes.END_PORTAL_FRAME);
+        }
+
+        //these are unnatural in sandy biomes, but not elsewhere 
+        if(biome == BiomeTypes.DESERT || biome == BiomeTypes.DESERT_HILLS || biome == BiomeTypes.BEACH || 
+                 !environment.equals(DimensionTypes.OVERWORLD)) { 
+             playerBlocks.add(BlockTypes.LEAVES);
+             playerBlocks.add(BlockTypes.LOG);
+             playerBlocks.add(BlockTypes.LOG2);
+         }
 
         return playerBlocks;
     }

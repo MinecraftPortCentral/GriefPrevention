@@ -44,7 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-class PlayerEventHandler implements Listener {
+class PlayerEventHandler {
 
     private DataStore dataStore;
 

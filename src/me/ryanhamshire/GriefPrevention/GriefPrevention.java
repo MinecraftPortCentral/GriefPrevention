@@ -37,6 +37,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.service.event.EventManager;
 import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.text.Text;
@@ -444,12 +445,12 @@ public class GriefPrevention {
         // this is the preferred method, as it's simpler than the database
         // scenario
         if (this.dataStore == null) {
-            File oldclaimdata = new File(event.game.getSavesDirectory(), "ClaimData");
+            File oldclaimdata = new File(event.getGame().getSavesDirectory(), "ClaimData");
             if (oldclaimdata.exists()) {
                 if (!FlatFileDataStore.hasData()) {
                     File claimdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "ClaimData");
                     oldclaimdata.renameTo(claimdata);
-                    File oldplayerdata = new File(event.game.getSavesDirectory(), "PlayerData");
+                    File oldplayerdata = new File(event.getGame().getSavesDirectory(), "PlayerData");
                     File playerdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "PlayerData");
                     oldplayerdata.renameTo(playerdata);
                 }
@@ -711,7 +712,7 @@ public class GriefPrevention {
             this.parseMaterialListFromConfig(explodableStrings, this.config_mods_explodableIds);
 
             // default for claim investigation tool
-            String investigationToolMaterialName = Items.STICK.name();
+            String investigationToolMaterialName = ItemTypes.STICK.getName();
 
             // get investigation tool from config
             investigationToolMaterialName =
