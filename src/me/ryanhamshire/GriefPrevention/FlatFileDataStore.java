@@ -19,6 +19,10 @@
 package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.io.Files;
+import com.google.common.reflect.TypeToken;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
+import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.eclipse.jgit.api.errors.InvalidConfigurationException;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorage;
@@ -159,7 +163,7 @@ public class FlatFileDataStore extends DataStore {
                 // try to convert player name to UUID
                 Optional<User> player = null;
                 try {
-                    player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(currentFilename);
+                    player = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(currentFilename);
 
                     // if successful, rename the file using the UUID
                     if (player.isPresent()) {
@@ -184,7 +188,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
     void loadClaimData_Legacy(File[] files) throws Exception {
-        List<World> validWorlds = (List<World>) GriefPrevention.instance.game.getServer().getWorlds();
+        List<World> validWorlds = (List<World>) GriefPrevention.instance.getGame().getServer().getWorlds();
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].isFile()) // avoids folders
@@ -247,7 +251,7 @@ public class FlatFileDataStore extends DataStore {
                             owner = Optional.empty(); // administrative land claim or
                                             // subdivision
                         } else if (this.getSchemaVersion() == 0) {
-                            owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(ownerName);
+                            owner = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(ownerName);
                             if (!owner.isPresent()) {
                                 GriefPrevention.AddLogEntry("Couldn't resolve this name to a UUID: " + ownerName + ".");
                                 GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
@@ -411,27 +415,23 @@ public class FlatFileDataStore extends DataStore {
     }
 
     Claim loadClaim(File file, ArrayList<Long> out_parentID, long claimID) throws IOException, InvalidConfigurationException, Exception {
-        List<String> lines = Files.readLines(file, Charset.forName("UTF-8"));
-        StringBuilder builder = new StringBuilder();
-        for (String line : lines) {
-            builder.append(line).append('\n');
-        }
-
-        return this.loadClaim(builder.toString(), out_parentID, file.lastModified(), claimID, (List<World>) GriefPrevention.instance.game.getServer().getWorlds());
+        return this.loadClaim(file, out_parentID, file.lastModified(), claimID, (List<World>) GriefPrevention.instance.getGame().getServer().getWorlds());
     }
 
-    Claim loadClaim(String input, ArrayList<Long> out_parentID, long lastModifiedDate, long claimID, List<World> validWorlds)
+
+    Claim loadClaim(File claimFile, ArrayList<Long> out_parentID, long lastModifiedDate, long claimID, List<World> validWorlds)
             throws InvalidConfigurationException, Exception {
-        Claim claim = null;
-        YamlConfiguration yaml = new YamlConfiguration();
-        yaml.loadFromString(input);
+        Claim claim;
+
+        HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(claimFile).build();
+        CommentedConfigurationNode mainNode = configurationLoader.load();
 
         // boundaries
-        Location lesserBoundaryCorner = this.locationFromString(yaml.getString("Lesser Boundary Corner"), validWorlds);
-        Location greaterBoundaryCorner = this.locationFromString(yaml.getString("Greater Boundary Corner"), validWorlds);
+        Location lesserBoundaryCorner = this.locationFromString(mainNode.getNode("Lesser Boundary Corner").getString(), validWorlds);
+        Location greaterBoundaryCorner = this.locationFromString(mainNode.getNode("Greater Boundary Corner").getString(), validWorlds);
 
         // owner
-        String ownerIdentifier = yaml.getString("Owner");
+        String ownerIdentifier = mainNode.getNode("Owner").getString();
         UUID ownerID = null;
         if (!ownerIdentifier.isEmpty()) {
             try {
@@ -442,15 +442,11 @@ public class FlatFileDataStore extends DataStore {
             }
         }
 
-        List<String> builders = yaml.getStringList("Builders");
-
-        List<String> containers = yaml.getStringList("Containers");
-
-        List<String> accessors = yaml.getStringList("Accessors");
-
-        List<String> managers = yaml.getStringList("Managers");
-
-        out_parentID.add(yaml.getLong("Parent Claim ID", -1L));
+        List<String> builders = mainNode.getNode("Builders").getList(new TypeToken<String>() {});
+        List<String> containers = mainNode.getNode("Containers").getList(new TypeToken<String>() {});
+        List<String> accessors = mainNode.getNode("Accessors").getList(new TypeToken<String>() {});
+        List<String> managers = mainNode.getNode("Managers").getList(new TypeToken<String>() {});
+        out_parentID.add(mainNode.getNode("Parent Claim ID").getLong(-1L));
 
         // instantiate
         claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builders, containers, accessors, managers, claimID);
@@ -460,18 +456,17 @@ public class FlatFileDataStore extends DataStore {
         return claim;
     }
 
-    String getYamlForClaim(Claim claim) {
-        YamlConfiguration yaml = new YamlConfiguration();
+    CommentedConfigurationNode getHoconForClaim(Claim claim, CommentedConfigurationNode mainNode) {
 
         // boundaries
-        yaml.set("Lesser Boundary Corner", this.locationToString(claim.lesserBoundaryCorner));
-        yaml.set("Greater Boundary Corner", this.locationToString(claim.greaterBoundaryCorner));
+        mainNode.getNode("Lesser Boundary Corner").setValue(this.locationToString(claim.lesserBoundaryCorner));
+        mainNode.getNode("Greater Boundary Corner").setValue(this.locationToString(claim.greaterBoundaryCorner));
 
         // owner
         String ownerID = "";
         if (claim.ownerID != null)
             ownerID = claim.ownerID.toString();
-        yaml.set("Owner", ownerID);
+        mainNode.getNode("Owner").setValue(ownerID);
 
         ArrayList<String> builders = new ArrayList<String>();
         ArrayList<String> containers = new ArrayList<String>();
@@ -479,32 +474,31 @@ public class FlatFileDataStore extends DataStore {
         ArrayList<String> managers = new ArrayList<String>();
         claim.getPermissions(builders, containers, accessors, managers);
 
-        yaml.set("Builders", builders);
-        yaml.set("Containers", containers);
-        yaml.set("Accessors", accessors);
-        yaml.set("Managers", managers);
+        mainNode.getNode("Builders").setValue(builders);
+        mainNode.getNode("Containers").setValue(containers);
+        mainNode.getNode("Accessors").setValue(accessors);
+        mainNode.getNode("Managers").setValue(managers);
 
         Long parentID = -1L;
         if (claim.parent != null) {
             parentID = claim.parent.id;
         }
 
-        yaml.set("Parent Claim ID", parentID);
+        mainNode.getNode("Parent Claim ID").setValue(parentID);
 
-        return yaml.saveToString();
+        return mainNode;
     }
 
     @Override
     synchronized void writeClaimToStorage(Claim claim) {
         String claimID = String.valueOf(claim.id);
 
-        String yaml = this.getYamlForClaim(claim);
-
         try {
             // open the claim's file
-            File claimFile = new File(claimDataFolderPath + File.separator + claimID + ".yml");
-            claimFile.createNewFile();
-            Files.write(yaml.getBytes("UTF-8"), claimFile);
+            File claimFile = new File(claimDataFolderPath + File.separator + claimID + ".hocon");
+            HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(claimFile).build();
+            CommentedConfigurationNode data = this.getHoconForClaim(claim, configurationLoader.load());
+            configurationLoader.save(data);
         }
 
         // if any problem, log it

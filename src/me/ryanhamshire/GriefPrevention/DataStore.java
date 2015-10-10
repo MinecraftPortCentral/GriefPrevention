@@ -80,7 +80,7 @@ public abstract class DataStore {
     // path information, for where stuff stored on disk is well... stored
     protected final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
     final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
-    final static String configFilePath = dataLayerFolderPath + File.separator + "config.yml";
+    final static String configFilePath = dataLayerFolderPath + File.separator + "config.hocon";
     final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
     final static String softMuteFilePath = dataLayerFolderPath + File.separator + "softMute.txt";
     final static String bannedWordsFilePath = dataLayerFolderPath + File.separator + "bannedWords.txt";
