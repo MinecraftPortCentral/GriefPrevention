@@ -21,6 +21,7 @@ package me.ryanhamshire.GriefPrevention;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 //information about an ongoing siege
 public class SiegeData {
@@ -28,7 +29,7 @@ public class SiegeData {
     public Player defender;
     public Player attacker;
     public ArrayList<Claim> claims;
-    public int checkupTaskID;
+    public UUID checkupTaskID;
 
     public SiegeData(Player attacker, Player defender, Claim claim) {
         this.defender = defender;

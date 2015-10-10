@@ -18,7 +18,16 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.hanging.Hanging;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.world.Chunk;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 
@@ -32,14 +41,15 @@ class RestoreNatureExecutionTask implements Runnable {
 
     // boundaries for changes
     private int miny;
-    private Location lesserCorner;
-    private Location greaterCorner;
+    private Location<World> lesserCorner;
+    private Location<World> greaterCorner;
 
     // player who should be notified about the result (will see a visualization
     // when the restoration is complete)
     private Player player;
 
-    public RestoreNatureExecutionTask(BlockSnapshot[][][] snapshots, int miny, Location lesserCorner, Location greaterCorner, Player player) {
+    public RestoreNatureExecutionTask(BlockSnapshot[][][] snapshots, int miny, Location<World> lesserCorner, Location<World> greaterCorner,
+            Player player) {
         this.snapshots = snapshots;
         this.miny = miny;
         this.lesserCorner = lesserCorner;
@@ -59,16 +69,15 @@ class RestoreNatureExecutionTask implements Runnable {
             for (int z = 1; z < this.snapshots[0][0].length - 1; z++) {
                 for (int y = this.miny; y < this.snapshots[0].length; y++) {
                     BlockSnapshot blockUpdate = this.snapshots[x][y][z];
-                    Block currentBlock = blockUpdate.location.getBlock();
-                    if (blockUpdate.typeId != currentBlock.getTypeId() || blockUpdate.data != currentBlock.getData()) {
-                        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(blockUpdate.location, false, cachedClaim);
+                    BlockState currentBlock = blockUpdate.getLocation().get().getBlock();
+                    if (blockUpdate.getState() != currentBlock) {
+                        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(blockUpdate.getLocation().get(), false, cachedClaim);
                         if (claim != null) {
                             cachedClaim = claim;
                             break;
                         }
 
-                        currentBlock.setTypeId(blockUpdate.typeId);
-                        currentBlock.setData(blockUpdate.data);
+                        blockUpdate.getLocation().get().setBlock(blockUpdate.getState());
                     }
                 }
             }
@@ -91,8 +100,8 @@ class RestoreNatureExecutionTask implements Runnable {
             // for players, always ensure there's air where the player is
             // standing
             else {
-                Block feetBlock = entity.getLocation().getBlock();
-                feetBlock.setType(Material.AIR);
+                BlockType feetBlock = entity.getLocation().getBlock();
+                feetBlock.setType(BlockTypes.AIR);
                 feetBlock.getRelative(BlockFace.UP).setType(Material.AIR);
             }
         }

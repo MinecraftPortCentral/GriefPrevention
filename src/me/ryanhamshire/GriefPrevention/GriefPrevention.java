@@ -21,26 +21,41 @@ package me.ryanhamshire.GriefPrevention;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
-import ninja.leaping.configurate.ConfigurationNode;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.omg.CORBA.Environment;
-//import net.milkbowl.vault.economy.Economy;
 import org.spongepowered.api.Game;
+//import net.milkbowl.vault.economy.Economy;
 import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.gamemode.GameMode;
+import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.format.TextColor;
+import org.spongepowered.api.util.command.CommandSource;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.Sponge;
+import org.spongepowered.common.text.SpongeTexts;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -51,8 +66,7 @@ public class GriefPrevention {
     // for convenience, a reference to the instance of this plugin
     public static GriefPrevention instance;
 
-    @Inject
-    private Game game;
+    @Inject private Game game;
 
     public Game getGame() {
         return game;
@@ -457,17 +471,18 @@ public class GriefPrevention {
         // 20L ~ 1 second
         if (this.config_claims_blocksAccruedPerHour > 0) {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-            Sponge.getGame().getScheduler().createTaskBuilder().interval(20L * 60 * 10).execute(task);
+            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().interval(20L * 60 * 10).execute(task)
+                    .submit(GriefPrevention.instance);
         }
 
         // start the recurring cleanup event for entities in creative worlds
         EntityCleanupTask task = new EntityCleanupTask(0);
-        Sponge.getGame().getScheduler().createTaskBuilder().delay(20L * 60 * 2).execute(task);
+        GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(20L * 60 * 2).execute(task).submit(GriefPrevention.instance);
 
         // start recurring cleanup scan for unused claims belonging to inactive
         // players
         CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
-        Sponge.getGame().getScheduler().createTaskBuilder().interval(20L * 60 * 5).execute(task2);
+        GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().interval(20L * 60 * 5).execute(task2).submit(GriefPrevention.instance);
 
         // register for events
 
@@ -505,7 +520,7 @@ public class GriefPrevention {
         // namesThread.start();
 
         // load ignore lists for any already-online players
-        Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
+        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
@@ -516,8 +531,10 @@ public class GriefPrevention {
     private void loadConfig() {
         try {
             // load the config if it exists
-            //FileConfiguration config = YamlConfiguration.loadConfiguration(new File(DataStore.configFilePath));
-            //FileConfiguration outConfig = new YamlConfiguration();
+            // FileConfiguration config =
+            // YamlConfiguration.loadConfiguration(new
+            // File(DataStore.configFilePath));
+            // FileConfiguration outConfig = new YamlConfiguration();
 
             HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(new File(DataStore.configFilePath)).build();
             CommentedConfigurationNode mainNode = configurationLoader.load();
@@ -549,7 +566,7 @@ public class GriefPrevention {
                 }
 
                 // decide a default based on server type and world type
-                else if (Sponge.getGame().getServer().getDefaultWorld().get().getGameMode() == GameModes.CREATIVE) {
+                else if (GriefPrevention.instance.getGame().getServer().getDefaultWorld().get().getGameMode() == GameModes.CREATIVE) {
                     this.config_claims_worldModes.put(world, ClaimsMode.Creative);
                 } else if (world.getDimension().getType().equals(DimensionTypes.OVERWORLD)) {
                     this.config_claims_worldModes.put(world, ClaimsMode.Survival);
@@ -563,7 +580,7 @@ public class GriefPrevention {
             this.config_pvp_specifiedWorlds = new HashMap<World, Boolean>();
             for (World world : worlds) {
                 boolean pvpWorld = mainNode.getNode("GriefPrevention", "PvP", "RulesEnabledInWorld", world.getUniqueId().toString()).getBoolean();
-                //TODO
+                // TODO
 //                boolean pvpWorld = config.getBoolean("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), world.getPVP());
                 this.config_pvp_specifiedWorlds.put(world, pvpWorld);
             }
@@ -583,34 +600,43 @@ public class GriefPrevention {
             this.config_claims_lockWoodenDoors = mainNode.getNode("GriefPrevention", "Claims", "LockWoodenDoors").getBoolean(false);
             this.config_claims_lockTrapDoors = mainNode.getNode("GriefPrevention", "Claims", "LockTrapDoors").getBoolean(false);
             this.config_claims_lockFenceGates = mainNode.getNode("GriefPrevention", "Claims", "LockFenceGates").getBoolean(true);
-            this.config_claims_enderPearlsRequireAccessTrust = mainNode.getNode("GriefPrevention", "Claims", "EnderPearlsRequireAccessTrust").getBoolean(true);
+            this.config_claims_enderPearlsRequireAccessTrust =
+                    mainNode.getNode("GriefPrevention", "Claims", "EnderPearlsRequireAccessTrust").getBoolean(true);
             this.config_claims_initialBlocks = mainNode.getNode("GriefPrevention", "Claims", "InitialBlocks").getInt(100);
             this.config_claims_blocksAccruedPerHour = mainNode.getNode("GriefPrevention", "Claims", "BlocksAccruedPerHour").getInt(100);
             this.config_claims_maxAccruedBlocks = mainNode.getNode("GriefPrevention", "Claims", "MaxAccruedBlocks").getInt(80000);
             this.config_claims_abandonReturnRatio = mainNode.getNode("GriefPrevention", "Claims", "AbandonReturnRatio").getDouble(1);
-            this.config_claims_automaticClaimsForNewPlayersRadius = mainNode.getNode("GriefPrevention", "Claims", "AutomaticNewPlayerClaimsRadius").getInt(4);
-            this.config_claims_claimsExtendIntoGroundDistance = Math.abs(mainNode.getNode("GriefPrevention", "Claims", "ExtendIntoGroundDistance").getInt(5));
+            this.config_claims_automaticClaimsForNewPlayersRadius =
+                    mainNode.getNode("GriefPrevention", "Claims", "AutomaticNewPlayerClaimsRadius").getInt(4);
+            this.config_claims_claimsExtendIntoGroundDistance =
+                    Math.abs(mainNode.getNode("GriefPrevention", "Claims", "ExtendIntoGroundDistance").getInt(5));
             this.config_claims_minWidth = mainNode.getNode("GriefPrevention", "Claims", "MinimumWidth").getInt(5);
             this.config_claims_minArea = mainNode.getNode("GriefPrevention", "Claims", "MinimumArea").getInt(100);
             this.config_claims_maxDepth = mainNode.getNode("GriefPrevention", "Claims", "MaximumDepth").getInt(0);
             this.config_claims_chestClaimExpirationDays = mainNode.getNode("GriefPrevention", "Claims", "Expiration.ChestClaimDays").getInt(7);
             this.config_claims_unusedClaimExpirationDays = mainNode.getNode("GriefPrevention", "Claims", "Expiration.UnusedClaimDays").getInt(14);
             this.config_claims_expirationDays = mainNode.getNode("GriefPrevention", "Claims", "Expiration.AllClaimDays").getInt(0);
-            this.config_claims_survivalAutoNatureRestoration = mainNode.getNode("GriefPrevention", "Claims", "Expiration.AutomaticNatureRestoration.SurvivalWorlds").getBoolean(false);
+            this.config_claims_survivalAutoNatureRestoration =
+                    mainNode.getNode("GriefPrevention", "Claims", "Expiration.AutomaticNatureRestoration.SurvivalWorlds").getBoolean(false);
             this.config_claims_maxClaimsPerPlayer = mainNode.getNode("GriefPrevention", "Claims", "MaximumNumberOfClaimsPerPlayer").getInt(0);
-            this.config_claims_respectWorldGuard = mainNode.getNode("GriefPrevention", "Claims", "CreationRequiresWorldGuardBuildPermission").getBoolean(true);
-            this.config_claims_portalsRequirePermission = mainNode.getNode("GriefPrevention", "Claims", "PortalGenerationRequiresPermission").getBoolean(false);
-            this.config_claims_villagerTradingRequiresTrust = mainNode.getNode("GriefPrevention", "Claims", "VillagerTradingRequiresPermission").getBoolean(true);
+            this.config_claims_respectWorldGuard =
+                    mainNode.getNode("GriefPrevention", "Claims", "CreationRequiresWorldGuardBuildPermission").getBoolean(true);
+            this.config_claims_portalsRequirePermission =
+                    mainNode.getNode("GriefPrevention", "Claims", "PortalGenerationRequiresPermission").getBoolean(false);
+            this.config_claims_villagerTradingRequiresTrust =
+                    mainNode.getNode("GriefPrevention", "Claims", "VillagerTradingRequiresPermission").getBoolean(true);
             String accessTrustSlashCommands = mainNode.getNode("GriefPrevention", "Claims", "CommandsRequiringAccessTrust").getString("/sethome");
             this.config_claims_supplyPlayerManual = mainNode.getNode("GriefPrevention", "Claims", "DeliverManuals").getBoolean(true);
 
             this.config_spam_enabled = mainNode.getNode("GriefPrevention", "Spam", "Enabled").getBoolean(true);
             this.config_spam_loginCooldownSeconds = mainNode.getNode("GriefPrevention", "Spam", "LoginCooldownSeconds").getInt(60);
-            this.config_spam_warningMessage = mainNode.getNode("GriefPrevention", "Spam", "WarningMessage").getString("Please reduce your noise level.  Spammers will be banned.");
+            this.config_spam_warningMessage = mainNode.getNode("GriefPrevention", "Spam", "WarningMessage")
+                    .getString("Please reduce your noise level.  Spammers will be banned.");
             this.config_spam_allowedIpAddresses = mainNode.getNode("GriefPrevention", "Spam", "AllowedIpAddresses").getString("1.2.3.4; 5.6.7.8");
             this.config_spam_banOffenders = mainNode.getNode("GriefPrevention", "Spam", "BanOffenders").getBoolean(true);
             this.config_spam_banMessage = mainNode.getNode("GriefPrevention", "Spam", "BanMessage").getString("Banned for spam.");
-            String slashCommandsToMonitor = mainNode.getNode("GriefPrevention", "Spam", "MonitorSlashCommands").getString("/me;/tell;/global;/local;/w;/msg;/r;/t");
+            String slashCommandsToMonitor =
+                    mainNode.getNode("GriefPrevention", "Spam", "MonitorSlashCommands").getString("/me;/tell;/global;/local;/w;/msg;/r;/t");
             this.config_spam_deathMessageCooldownSeconds = mainNode.getNode("GriefPrevention", "Spam", "DeathMessageCooldownSeconds").getInt(60);
 
             this.config_pvp_protectFreshSpawns = mainNode.getNode("GriefPrevention", "PvP", "ProtectFreshSpawns").getBoolean(true);
@@ -623,7 +649,8 @@ public class GriefPrevention {
             this.config_economy_claimBlocksSellValue = mainNode.getNode("GriefPrevention", "Economy", "ClaimBlocksSellValue").getDouble(0);
 
             this.config_lockDeathDropsInPvpWorlds = mainNode.getNode("GriefPrevention", "ProtectItemsDroppedOnDeath", "PvPWorlds").getBoolean(false);
-            this.config_lockDeathDropsInNonPvpWorlds = mainNode.getNode("GriefPrevention", "ProtectItemsDroppedOnDeath", "NonPvPWorlds").getBoolean(true);
+            this.config_lockDeathDropsInNonPvpWorlds =
+                    mainNode.getNode("GriefPrevention", "ProtectItemsDroppedOnDeath", "NonPvPWorlds").getBoolean(true);
 
             this.config_blockClaimExplosions = mainNode.getNode("GriefPrevention", "BlockLandClaimExplosions").getBoolean(true);
             this.config_blockSurfaceCreeperExplosions = mainNode.getNode("GriefPrevention", "BlockSurfaceCreeperExplosions").getBoolean(true);
@@ -647,18 +674,25 @@ public class GriefPrevention {
             this.config_creaturesTrampleCrops = mainNode.getNode("GriefPrevention.CreaturesTrampleCrops").getBoolean(false);
             this.config_zombiesBreakDoors = mainNode.getNode("GriefPrevention.HardModeZombiesBreakDoors").getBoolean(false);
 
-            this.config_mods_ignoreClaimsAccounts = mainNode.getNode("GriefPrevention", "Mods", "PlayersIgnoringAllClaims").getList(new TypeToken<String>() {});;
+            this.config_mods_ignoreClaimsAccounts =
+                    mainNode.getNode("GriefPrevention", "Mods", "PlayersIgnoringAllClaims").getList(new TypeToken<String>() {
+                    });
+            ;
 
             if (this.config_mods_ignoreClaimsAccounts == null)
                 this.config_mods_ignoreClaimsAccounts = new ArrayList<String>();
 
             this.config_mods_accessTrustIds = new MaterialCollection();
-            List<String> accessTrustStrings = mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringAccessTrust").getList(new TypeToken<String>() {});
+            List<String> accessTrustStrings =
+                    mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringAccessTrust").getList(new TypeToken<String>() {
+                    });
 
             this.parseMaterialListFromConfig(accessTrustStrings, this.config_mods_accessTrustIds);
 
             this.config_mods_containerTrustIds = new MaterialCollection();
-            List<String> containerTrustStrings = mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringContainerTrust").getList(new TypeToken<String>() {});
+            List<String> containerTrustStrings =
+                    mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringContainerTrust").getList(new TypeToken<String>() {
+                    });
 
             // default values for container trust mod blocks
             if (containerTrustStrings == null || containerTrustStrings.size() == 0) {
@@ -669,7 +703,9 @@ public class GriefPrevention {
             this.parseMaterialListFromConfig(containerTrustStrings, this.config_mods_containerTrustIds);
 
             this.config_mods_explodableIds = new MaterialCollection();
-            List<String> explodableStrings = mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").getList(new TypeToken<String>() {});;
+            List<String> explodableStrings = mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").getList(new TypeToken<String>() {
+            });
+            ;
 
             // parse the strings from the config file
             this.parseMaterialListFromConfig(explodableStrings, this.config_mods_explodableIds);
@@ -678,7 +714,8 @@ public class GriefPrevention {
             String investigationToolMaterialName = Items.STICK.name();
 
             // get investigation tool from config
-            investigationToolMaterialName = mainNode.getNode("GriefPrevention", "Claims", "InvestigationTool").getString(investigationToolMaterialName);
+            investigationToolMaterialName =
+                    mainNode.getNode("GriefPrevention", "Claims", "InvestigationTool").getString(investigationToolMaterialName);
 
             // validate investigation tool
             this.config_claims_investigationTool = Material.getMaterial(investigationToolMaterialName);
@@ -706,7 +743,8 @@ public class GriefPrevention {
             ArrayList<String> defaultSiegeWorldNames = new ArrayList<String>();
 
             // get siege world names from the config file
-            List<String> siegeEnabledWorldNames = mainNode.getNode("GriefPrevention", "Siege", "Worlds").getList(new TypeToken<String>() {});
+            List<String> siegeEnabledWorldNames = mainNode.getNode("GriefPrevention", "Siege", "Worlds").getList(new TypeToken<String>() {
+            });
             if (siegeEnabledWorldNames == null) {
                 siegeEnabledWorldNames = defaultSiegeWorldNames;
             }
@@ -744,7 +782,9 @@ public class GriefPrevention {
             }
 
             // try to load the list from the config file
-            List<String> breakableBlocksList = mainNode.getNode("GriefPrevention", "Siege", "BreakableBlocks").getList(new TypeToken<String>() {});;
+            List<String> breakableBlocksList = mainNode.getNode("GriefPrevention", "Siege", "BreakableBlocks").getList(new TypeToken<String>() {
+            });
+            ;
 
             // if it fails, use default list instead
             if (breakableBlocksList == null || breakableBlocksList.size() == 0) {
@@ -763,9 +803,14 @@ public class GriefPrevention {
                 }
             }
 
-            this.config_pvp_noCombatInPlayerLandClaims = mainNode.getNode("GriefPrevention", "PvP", "ProtectPlayersInLandClaims", "PlayerOwnedClaims").getBoolean(this.config_siege_enabledWorlds.size() == 0);
-            this.config_pvp_noCombatInAdminLandClaims = mainNode.getNode("GriefPrevention", "PvP", "ProtectPlayersInLandClaims", "AdministrativeClaims").getBoolean(this.config_siege_enabledWorlds.size() == 0);
-            this.config_pvp_noCombatInAdminSubdivisions = mainNode.getNode("GriefPrevention", "PvP", "ProtectPlayersInLandClaims", "AdministrativeSubdivisions").getBoolean(this.config_siege_enabledWorlds.size() == 0);
+            this.config_pvp_noCombatInPlayerLandClaims = mainNode.getNode("GriefPrevention", "PvP", "ProtectPlayersInLandClaims", "PlayerOwnedClaims")
+                    .getBoolean(this.config_siege_enabledWorlds.size() == 0);
+            this.config_pvp_noCombatInAdminLandClaims =
+                    mainNode.getNode("GriefPrevention", "PvP", "ProtectPlayersInLandClaims", "AdministrativeClaims")
+                            .getBoolean(this.config_siege_enabledWorlds.size() == 0);
+            this.config_pvp_noCombatInAdminSubdivisions =
+                    mainNode.getNode("GriefPrevention", "PvP", "ProtectPlayersInLandClaims", "AdministrativeSubdivisions")
+                            .getBoolean(this.config_siege_enabledWorlds.size() == 0);
 
             // optional database settings
             this.databaseUrl = mainNode.getNode("GriefPrevention", "Database", "URL").getString("");
@@ -774,9 +819,12 @@ public class GriefPrevention {
 
             // custom logger settings
             this.config_logs_daysToKeep = mainNode.getNode("GriefPrevention", "Abridged Logs", "Days To Keep").getInt(7);
-            this.config_logs_socialEnabled = mainNode.getNode("GriefPrevention", "Abridged Logs", "Included Entry Types", "Social Activity").getBoolean(true);
-            this.config_logs_suspiciousEnabled = mainNode.getNode("GriefPrevention", "Abridged Logs", "Included Entry Types", "Suspicious Activity").getBoolean(true);
-            this.config_logs_adminEnabled = mainNode.getNode("GriefPrevention", "Abridged Logs", "Included Entry Types", "Administrative Activity").getBoolean(false);
+            this.config_logs_socialEnabled =
+                    mainNode.getNode("GriefPrevention", "Abridged Logs", "Included Entry Types", "Social Activity").getBoolean(true);
+            this.config_logs_suspiciousEnabled =
+                    mainNode.getNode("GriefPrevention", "Abridged Logs", "Included Entry Types", "Suspicious Activity").getBoolean(true);
+            this.config_logs_adminEnabled =
+                    mainNode.getNode("GriefPrevention", "Abridged Logs", "Included Entry Types", "Administrative Activity").getBoolean(false);
             this.config_logs_debugEnabled = mainNode.getNode("GriefPrevention", "Abridged Logs", "Included Entry Types", "Debug").getBoolean(false);
 
             // claims mode by world
@@ -800,7 +848,8 @@ public class GriefPrevention {
                 }
             }
 
-            // try to parse the list of commands which should be monitored for spam
+            // try to parse the list of commands which should be monitored for
+            // spam
             this.config_spam_monitorSlashCommands = new ArrayList<String>();
             commands = slashCommandsToMonitor.split(";");
             for (int i = 0; i < commands.length; i++) {
@@ -815,7 +864,8 @@ public class GriefPrevention {
                 this.config_eavesdrop_whisperCommands.add(commands[i].trim());
             }
 
-            // try to parse the list of commands which should be banned during pvp
+            // try to parse the list of commands which should be banned during
+            // pvp
             // combat
             this.config_pvp_blockedCommands = new ArrayList<String>();
             commands = bannedPvPCommandsList.split(";");
@@ -842,7 +892,7 @@ public class GriefPrevention {
     }
 
     // handles slash commands
-    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+    public boolean onCommand(CommandSource sender, Command cmd, String commandLabel, String[] args) {
 
         Player player = null;
         if (sender instanceof Player) {
@@ -2382,30 +2432,17 @@ public class GriefPrevention {
         }
     }
 
-    public OfflinePlayer resolvePlayerByName(String name) {
+    public Optional<User> resolvePlayerByName(String name) {
         // try online players first
-        Player targetPlayer = this.getServer().getPlayerExact(name);
+        Optional<Player> targetPlayer = GriefPrevention.instance.getGame().getServer().getPlayer(name);
+        if (targetPlayer.isPresent())
+            return Optional.of((User) targetPlayer.get());
+
+        Optional<User> user = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(name);
         if (targetPlayer != null)
-            return targetPlayer;
+            return user;
 
-        targetPlayer = this.getServer().getPlayer(name);
-        if (targetPlayer != null)
-            return targetPlayer;
-
-        UUID bestMatchID = null;
-
-        // try exact match first
-        bestMatchID = this.playerNameToIDMap.get(name);
-
-        // if failed, try ignore case
-        if (bestMatchID == null) {
-            bestMatchID = this.playerNameToIDMap.get(name.toLowerCase());
-        }
-        if (bestMatchID == null) {
-            return null;
-        }
-
-        return this.getServer().getOfflinePlayer(bestMatchID);
+        return Optional.empty();
     }
 
     // helper method to resolve a player name from the player's UUID
@@ -2415,9 +2452,9 @@ public class GriefPrevention {
             return "somebody";
 
         // check the cache
-        OfflinePlayer player = GriefPrevention.instance.getServer().getOfflinePlayer(playerID);
-        if (player.hasPlayedBefore() || player.isOnline()) {
-            return player.getName();
+        Optional<User> player = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(playerID);
+        if (player.isPresent() || player.get().isOnline()) {
+            return player.get().getName();
         } else {
             return "someone";
         }
@@ -2445,7 +2482,7 @@ public class GriefPrevention {
 
     public void onDisable() {
         // save data for any online players
-        Collection<Player> players = (Collection<Player>) this.getServer().getOnlinePlayers();
+        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
             UUID playerID = player.getUniqueId();
             PlayerData playerData = this.dataStore.getPlayerData(playerID);
@@ -2472,7 +2509,7 @@ public class GriefPrevention {
             return;
 
         // if player is in creative mode, do nothing
-        if (player.getGameMode() == GameMode.CREATIVE)
+        if (player.get(Keys.GAME_MODE).get() == GameModes.CREATIVE)
             return;
 
         // if the player has the damage any player permission enabled, do
@@ -2497,23 +2534,9 @@ public class GriefPrevention {
     }
 
     static boolean isInventoryEmpty(Player player) {
-        PlayerInventory inventory = player.getInventory();
-        ItemStack[] armorStacks = inventory.getArmorContents();
-
-        // check armor slots, stop if any items are found
-        for (int i = 0; i < armorStacks.length; i++) {
-            if (!(armorStacks[i] == null || armorStacks[i].getType() == Material.AIR))
-                return false;
-        }
-
-        // check other slots, stop if any items are found
-        ItemStack[] generalStacks = inventory.getContents();
-        for (int i = 0; i < generalStacks.length; i++) {
-            if (!(generalStacks[i] == null || generalStacks[i].getType() == Material.AIR))
-                return false;
-        }
-
-        return true;
+        InventoryPlayer inventory = ((EntityPlayerMP) player).inventory;
+        ItemStack[] armorStacks = inventory.armorInventory;
+        return inventory.mainInventory.length == 0 && inventory.armorInventory.length == 0;
     }
 
     // checks whether players siege in a world
@@ -2531,7 +2554,7 @@ public class GriefPrevention {
 
             // if there's a claim here, keep looking
             if (claim != null) {
-                candidateLocation = new Location(claim.lesserBoundaryCorner.getWorld(), claim.lesserBoundaryCorner.getBlockX() - 1,
+                candidateLocation = new Location(claim.lesserBoundaryCorner.getExtent(), claim.lesserBoundaryCorner.getBlockX() - 1,
                         claim.lesserBoundaryCorner.getBlockY(), claim.lesserBoundaryCorner.getBlockZ() - 1);
                 continue;
             }
@@ -2557,32 +2580,32 @@ public class GriefPrevention {
     }
 
     // sends a color-coded message to a player
-    static void sendMessage(Player player, ChatColor color, Messages messageID, String... args) {
+    static void sendMessage(Player player, TextColor color, Messages messageID, String... args) {
         sendMessage(player, color, messageID, 0, args);
     }
 
     // sends a color-coded message to a player
-    static void sendMessage(Player player, ChatColor color, Messages messageID, long delayInTicks, String... args) {
+    static void sendMessage(Player player, TextColor color, Messages messageID, long delayInTicks, String... args) {
         String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
-        sendMessage(player, color, message, delayInTicks);
+        sendMessage(player, Texts.of(color, message), delayInTicks);
     }
 
     // sends a color-coded message to a player
-    static void sendMessage(Player player, ChatColor color, String message) {
-        if (message == null || message.length() == 0)
+    static void sendMessage(Player player, Text message) {
+        if (message == Texts.of() || message == null)
             return;
 
         if (player == null) {
-            GriefPrevention.AddLogEntry(color + message);
+            GriefPrevention.AddLogEntry(SpongeTexts.toComponent(message).getUnformattedText());
         } else {
-            player.sendMessage(color + message);
+            player.sendMessage(message);
         }
     }
 
-    static void sendMessage(Player player, ChatColor color, String message, long delayInTicks) {
-        SendPlayerMessageTask task = new SendPlayerMessageTask(player, color, message);
+    static void sendMessage(Player player, Text message, long delayInTicks) {
+        SendPlayerMessageTask task = new SendPlayerMessageTask(player, message);
         if (delayInTicks > 0) {
-            GriefPrevention.instance.getServer().getScheduler().runTaskLater(GriefPrevention.instance, task, delayInTicks);
+            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(delayInTicks).execute(task).submit(GriefPrevention.instance);
         } else {
             task.run();
         }
@@ -2643,7 +2666,7 @@ public class GriefPrevention {
         }
     }
 
-    public String allowBreak(Player player, Block block, Location location) {
+    public String allowBreak(Player player, BlockType block, Location location) {
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
@@ -2655,7 +2678,7 @@ public class GriefPrevention {
         // wilderness rules
         if (claim == null) {
             // no building in the wilderness in creative mode
-            if (this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getWorld()) == ClaimsMode.SurvivalRequiringClaims) {
+            if (this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getExtent()) == ClaimsMode.SurvivalRequiringClaims) {
                 String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                 if (player.hasPermission("griefprevention.ignoreclaims"))
                     reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
@@ -2673,7 +2696,7 @@ public class GriefPrevention {
 
             // if not in the wilderness, then apply claim rules (permissions,
             // etc)
-            return claim.allowBreak(player, block.getType());
+            return claim.allowBreak(player, block);
         }
     }
 

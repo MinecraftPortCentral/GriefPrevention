@@ -18,36 +18,39 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.Texts;
+import org.spongepowered.common.text.SpongeTexts;
+
 //sends a message to a player
 //used to send delayed messages, for example help text triggered by a player's chat
 class SendPlayerMessageTask implements Runnable {
 
     private Player player;
-    private ChatColor color;
-    private String message;
+    private Text message;
 
-    public SendPlayerMessageTask(Player player, ChatColor color, String message) {
+    public SendPlayerMessageTask(Player player, Text message) {
         this.player = player;
-        this.color = color;
         this.message = message;
     }
 
     @Override
     public void run() {
         if (player == null) {
-            GriefPrevention.AddLogEntry(color + message);
+            GriefPrevention.AddLogEntry(SpongeTexts.toComponent(message).getUnformattedText());
             return;
         }
 
         // if the player is dead, save it for after his respawn
-        if (this.player.isDead()) {
+        if (((net.minecraft.entity.player.EntityPlayerMP) this.player).isDead) {
             PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.player.getUniqueId());
-            playerData.messageOnRespawn = this.color + this.message;
+            playerData.messageOnRespawn = this.message;
         }
 
         // otherwise send it immediately
         else {
-            GriefPrevention.sendMessage(this.player, this.color, this.message);
+            GriefPrevention.sendMessage(this.player, Texts.of(this.message));
         }
     }
 }

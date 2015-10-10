@@ -20,9 +20,9 @@ package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.Sponge;
 
 import java.net.InetAddress;
 import java.util.Calendar;
@@ -134,7 +134,7 @@ public class PlayerData {
     boolean dropsAreUnlocked = false;
 
     // message to send to player after he respawns
-    String messageOnRespawn = null;
+    Text messageOnRespawn = null;
 
     // player which a pet will be given to when it's right-clicked
     User petGiveawayRecipient = null;
@@ -314,7 +314,7 @@ public class PlayerData {
             int totalBlocks =
                     this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if (totalBlocks < totalClaimsArea) {
-                Optional<User> player = Sponge.getGame().getServiceManager().provide(UserStorage.class).get().get(this.playerID);
+                Optional<User> player = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(this.playerID);
                 if (player.isPresent()) {
                     GriefPrevention.AddLogEntry(player.get().getName() + " has more claimed land than blocks available.  Adding blocks to fix.",
                             CustomLogEntryTypes.Debug, true);

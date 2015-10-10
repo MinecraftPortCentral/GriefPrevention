@@ -20,13 +20,12 @@ package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockSnapshotBuilder;
-import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.Sponge;
 
 import java.util.ArrayList;
 
@@ -49,8 +48,8 @@ public class Visualization {
         // if he's online, create a task to send him the visualization
         if (player.isOnline() && visualization.elements.size() > 0
                 && visualization.elements.get(0).getLocation().get().getExtent().equals(player.getWorld())) {
-            Sponge.getGame().getScheduler().createTaskBuilder().delay(1L)
-                    .execute(new VisualizationApplicationTask(player, playerData, visualization));
+            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(1L)
+                    .execute(new VisualizationApplicationTask(player, playerData, visualization)).submit(GriefPrevention.instance);
         }
     }
 
@@ -80,11 +79,11 @@ public class Visualization {
 
                 // check player still in world where visualization exists
                 if (i == 0) {
-                    if (!player.getWorld().equals(element.location.getExtent().getWorld()))
+                    if (!player.getWorld().equals(element.getLocation().get().getExtent()))
                         return;
                 }
 
-                BlockUtils.sendBlockChange(player, element.visualizedBlock);
+                BlockUtils.sendBlockChange(player, element);
             }
 
             playerData.currentVisualization = null;
@@ -141,7 +140,7 @@ public class Visualization {
         BlockType cornerMaterial;
         BlockType accentMaterial;
 
-        ArrayList<VisualizationElement> newElements = new ArrayList<VisualizationElement>();
+        ArrayList<BlockSnapshot> newElements = new ArrayList<BlockSnapshot>();
 
         if (visualizationType == VisualizationType.Claim) {
             cornerMaterial = BlockTypes.GLOWSTONE;
@@ -181,7 +180,7 @@ public class Visualization {
         final int STEP = 10;
 
         // top line
-        BlockSnapshotBuilder snapshotBuilder = Sponge.getGame().getRegistry().createBlockSnapshotBuilder();
+        BlockSnapshotBuilder snapshotBuilder = GriefPrevention.instance.getGame().getRegistry().createBlockSnapshotBuilder();
         newElements.add(snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build());
         newElements.add(snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build());
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {
@@ -232,7 +231,8 @@ public class Visualization {
         // visualization blocks
         for (BlockSnapshot element : newElements) {
             Location<World> tempLocation = element.getLocation().get();
-            element = element.withLocation(getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent));
+            element = element.withLocation(
+                    getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent));
         }
 
         this.elements.addAll(newElements);
@@ -251,16 +251,17 @@ public class Visualization {
     // finds a block the player can probably see. this is how visualizations
     // "cling" to the ground or ceiling
     private static Location<World> getVisibleLocation(World world, int x, int y, int z, boolean waterIsTransparent) {
-        BlockState block = world.getBlock(x, y, z);
-        BlockFace direction = (isTransparent(block, waterIsTransparent)) ? BlockFace.DOWN : BlockFace.UP;
+        BlockSnapshot block = world.createSnapshot(x, y, z);
+        Direction direction = (isTransparent(block.getState().getType(), waterIsTransparent)) ? Direction.DOWN : Direction.UP;
 
-        while (block.getY() >= 1 &&
-                block.getY() < world.getMaxHeight() - 1 &&
-                (!isTransparent(block.getRelative(BlockFace.UP), waterIsTransparent) || isTransparent(block, waterIsTransparent))) {
-            block = block.getRelative(direction);
+        while (block.getPosition().getY() >= 1 &&
+                block.getPosition().getY() < world.getDimension().getBuildHeight() - 1 &&
+                (!isTransparent(block.getLocation().get().getRelative(Direction.UP).getBlockType(), waterIsTransparent)
+                        || isTransparent(block.getState().getType(), waterIsTransparent))) {
+            block = block.withLocation(block.getLocation().get().getRelative(direction));
         }
 
-        return block.getLocation();
+        return block.getLocation().get();
     }
 
     // helper method for above. allows visualization blocks to sit underneath
@@ -268,10 +269,10 @@ public class Visualization {
     private static boolean isTransparent(BlockType block, boolean waterIsTransparent) {
         return (block != BlockTypes.SNOW && (block == BlockTypes.AIR ||
                 block == BlockTypes.FENCE ||
-                block == BlockTypes.STANDING_SIGN||
+                block == BlockTypes.STANDING_SIGN ||
                 block == BlockTypes.WALL_SIGN ||
                 (waterIsTransparent && block == BlockTypes.WATER)));// ||
-                //block.isTransparent()));
+        // block.isTransparent()));
     }
 
     public static Visualization fromClaims(Iterable<Claim> claims, int height, VisualizationType type, Location locality) {

@@ -1,16 +1,14 @@
 package me.ryanhamshire.GriefPrevention.events;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import org.spongepowered.api.event.Cancellable;
+import org.spongepowered.api.event.Event;
+import org.spongepowered.api.util.event.callback.CallbackList;
 
 //if cancelled, GriefPrevention will not cancel the PvP event it's processing.
-public class PreventPvPEvent extends Event implements Cancellable {
+public class PreventPvPEvent implements Event, Cancellable {
 
-    private static final HandlerList handlers = new HandlerList();
     private boolean cancelled = false;
-
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
 
     Claim claim;
 
@@ -23,11 +21,6 @@ public class PreventPvPEvent extends Event implements Cancellable {
     }
 
     @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    @Override
     public boolean isCancelled() {
         return this.cancelled;
     }
@@ -35,5 +28,10 @@ public class PreventPvPEvent extends Event implements Cancellable {
     @Override
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
+    }
+
+    @Override
+    public CallbackList getCallbacks() {
+        return null;
     }
 }

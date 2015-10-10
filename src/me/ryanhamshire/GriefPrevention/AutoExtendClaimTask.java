@@ -3,7 +3,6 @@ package me.ryanhamshire.GriefPrevention;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.biome.BiomeType;
-import org.spongepowered.common.Sponge;
 
 import java.util.ArrayList;
 
@@ -24,7 +23,8 @@ class AutoExtendClaimTask implements Runnable {
     public void run() {
         int newY = this.getLowestBuiltY();
         if (newY < this.claim.getLesserBoundaryCorner().getBlockY()) {
-            Sponge.getGame().getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY));
+            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY))
+                    .submit(GriefPrevention.instance);
         }
     }
 

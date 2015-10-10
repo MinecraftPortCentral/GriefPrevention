@@ -19,6 +19,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.service.scheduler.Task;
 
 //checks to see whether or not a siege should end based on the locations of the players
 //for example, defender escaped or attacker gave up and left
@@ -71,10 +72,11 @@ class SiegeCheckupTask implements Runnable {
 
         // if they both left, but are still close together, the battle continues
         // (check again later)
-        else if (attacker.getWorld().equals(defender.getWorld()) && attacker.getLocation().distanceSquared(defender.getLocation()) < 2500) // 50-block
-                                                                                                                                           // radius
-                                                                                                                                           // for
-                                                                                                                                           // chasing
+        else if (attacker.getWorld().equals(defender.getWorld())
+                && attacker.getLocation().getPosition().distanceSquared(defender.getLocation().getPosition()) < 2500) // 50-block
+        // radius
+        // for
+        // chasing
         {
             this.scheduleAnotherCheck();
         }
@@ -101,7 +103,8 @@ class SiegeCheckupTask implements Runnable {
 
     // schedules another checkup later
     private void scheduleAnotherCheck() {
-        this.siegeData.checkupTaskID =
-                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, this, 20L * 30);
+        Task task =
+                GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(20L * 30).execute(this).submit(GriefPrevention.instance);
+        this.siegeData.checkupTaskID = task.getUniqueId();
     }
 }

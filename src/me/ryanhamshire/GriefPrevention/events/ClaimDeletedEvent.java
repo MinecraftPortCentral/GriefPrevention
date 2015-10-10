@@ -1,6 +1,8 @@
 package me.ryanhamshire.GriefPrevention.events;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import org.spongepowered.api.event.Event;
+import org.spongepowered.api.util.event.callback.CallbackList;
 
 /**
  * This event gets called whenever a claim is going to be deleted. This event is
@@ -9,14 +11,9 @@ import me.ryanhamshire.GriefPrevention.Claim;
  * @author Tux2
  * 
  */
-public class ClaimDeletedEvent extends Event {
+public class ClaimDeletedEvent implements Event {
 
     // Custom Event Requirements
-    private static final HandlerList handlers = new HandlerList();
-
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
 
     private Claim claim;
 
@@ -34,7 +31,7 @@ public class ClaimDeletedEvent extends Event {
     }
 
     @Override
-    public HandlerList getHandlers() {
-        return handlers;
+    public CallbackList getCallbacks() {
+        return null;
     }
 }

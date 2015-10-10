@@ -18,10 +18,10 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.Sponge;
 
 import java.util.Collection;
 
@@ -44,12 +44,13 @@ class DeliverClaimBlocksTask implements Runnable {
         // if no player specified, this task will create a player-specific task
         // for each online player, scheduled one tick apart
         if (this.player == null) {
-            Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
+            Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getGame().getServer().getOnlinePlayers();
 
             long i = 0;
             for (Player onlinePlayer : players) {
                 DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer);
-                Sponge.getGame().getScheduler().createTaskBuilder().async().delay(i++).execute(newTask);
+                GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().async().delay(i++).execute(newTask)
+                        .submit(GriefPrevention.instance);
             }
         }
 
@@ -63,9 +64,9 @@ class DeliverClaimBlocksTask implements Runnable {
                 // if he's not in a vehicle and has moved at least three blocks
                 // since the last check
                 // and he's not being pushed around by fluids
-                if (!player.isInsideVehicle() &&
-                        (lastLocation == null || lastLocation.distanceSquared(player.getLocation()) >= 0) &&
-                        !player.getLocation().getBlock().isLiquid()) {
+                if (!player.get(Keys.VEHICLE).isPresent() &&
+                        (lastLocation == null || lastLocation.getPosition().distanceSquared(player.getLocation().getPosition()) >= 0) &&
+                        !((net.minecraft.block.Block) player.getLocation().getBlockType()).getMaterial().isLiquid()) {
                     // add blocks
                     int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 6;
                     if (accruedBlocks < 0)

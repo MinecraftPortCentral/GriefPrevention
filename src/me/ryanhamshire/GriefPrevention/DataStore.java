@@ -20,6 +20,12 @@ package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.io.Files;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
+import org.spongepowered.common.Sponge;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -37,6 +43,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,15 +91,15 @@ public abstract class DataStore {
     private int currentSchemaVersion = -1; // -1 means not determined yet
 
     // video links
-    static final String SURVIVAL_VIDEO_URL = "" + ChatColor.DARK_AQUA + ChatColor.UNDERLINE + "bit.ly/mcgpuser" + ChatColor.RESET;
-    static final String CREATIVE_VIDEO_URL = "" + ChatColor.DARK_AQUA + ChatColor.UNDERLINE + "bit.ly/mcgpcrea" + ChatColor.RESET;
-    static final String SUBDIVISION_VIDEO_URL = "" + ChatColor.DARK_AQUA + ChatColor.UNDERLINE + "bit.ly/mcgpsub" + ChatColor.RESET;
+    static final String SURVIVAL_VIDEO_URL = "" + TextColors.DARK_AQUA + TextStyles.UNDERLINE + "bit.ly/mcgpuser" + TextColors.RESET;
+    static final String CREATIVE_VIDEO_URL = "" + TextColors.DARK_AQUA + TextStyles.UNDERLINE + "bit.ly/mcgpcrea" + TextColors.RESET;
+    static final String SUBDIVISION_VIDEO_URL = "" + TextColors.DARK_AQUA + TextStyles.UNDERLINE + "bit.ly/mcgpsub" + TextColors.RESET;
 
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
 
     // world guard reference, if available
-    private WorldGuardWrapper worldGuard = null;
+   // private WorldGuardWrapper worldGuard = null;
 
     protected int getSchemaVersion() {
         if (this.currentSchemaVersion >= 0) {
@@ -136,10 +143,10 @@ public abstract class DataStore {
             }
 
             // clean up any UUID conversion work
-            if (UUIDFetcher.lookupCache != null) {
+            /*if (UUIDFetcher.lookupCache != null) {
                 UUIDFetcher.lookupCache.clear();
                 UUIDFetcher.correctedNames.clear();
-            }
+            }*/
 
             GriefPrevention.AddLogEntry("Update finished.");
         }
@@ -151,14 +158,14 @@ public abstract class DataStore {
         this.setSchemaVersion(latestSchemaVersion);
 
         // try to hook into world guard
-        try {
+        /*try {
             this.worldGuard = new WorldGuardWrapper();
             GriefPrevention.AddLogEntry("Successfully hooked into WorldGuard.");
         }
         // if failed, world guard compat features will just be disabled.
         catch (ClassNotFoundException exception) {
         } catch (NoClassDefFoundError exception) {
-        }
+        }*/
     }
 
     private void loadSoftMutes() {
@@ -287,8 +294,8 @@ public abstract class DataStore {
         Iterator<String> iterator = keys.iterator();
         while (iterator.hasNext()) {
             String groupName = iterator.next();
-            Player player = GriefPrevention.instance.getServer().getPlayer(playerID);
-            if (player != null && player.hasPermission(groupName)) {
+            Optional<Player> player = Sponge.getGame().getServer().getPlayer(playerID);
+            if (player.isPresent() && player.get().hasPermission(groupName)) {
                 bonusBlocks += this.permissionToBonusBlocksMap.get(groupName);
             }
         }
@@ -402,8 +409,8 @@ public abstract class DataStore {
     // turns a location into a string, useful in data storage
     private String locationStringDelimiter = ";";
 
-    String locationToString(Location location) {
-        StringBuilder stringBuilder = new StringBuilder(location.getWorld().getName());
+    String locationToString(Location<World> location) {
+        StringBuilder stringBuilder = new StringBuilder(location.getExtent().getUniqueId().toString());
         stringBuilder.append(locationStringDelimiter);
         stringBuilder.append(location.getBlockX());
         stringBuilder.append(locationStringDelimiter);
@@ -415,7 +422,7 @@ public abstract class DataStore {
     }
 
     // turns a location string back into a location
-    Location locationFromString(String string, List<World> validWorlds) throws Exception {
+    Location<World> locationFromString(String string, List<World> validWorlds) throws Exception {
         // split the input string on the space
         String[] elements = string.split(locationStringDelimiter);
 
@@ -424,7 +431,7 @@ public abstract class DataStore {
             throw new Exception("Expected four distinct parts to the location string: \"" + string + "\"");
         }
 
-        String worldName = elements[0];
+        String worldUniqueId = elements[0];
         String xString = elements[1];
         String yString = elements[2];
         String zString = elements[3];
@@ -432,14 +439,14 @@ public abstract class DataStore {
         // identify world the claim is in
         World world = null;
         for (World w : validWorlds) {
-            if (w.getName().equalsIgnoreCase(worldName)) {
+            if (w.getUniqueId() == UUID.fromString(worldUniqueId)) {
                 world = w;
                 break;
             }
         }
 
         if (world == null) {
-            throw new Exception("World not found: \"" + worldName + "\"");
+            throw new Exception("World UUID not found: \"" + worldUniqueId + "\"");
         }
 
         // convert those numerical strings to integer values
@@ -447,7 +454,7 @@ public abstract class DataStore {
         int y = Integer.parseInt(yString);
         int z = Integer.parseInt(zString);
 
-        return new Location(world, x, y, z);
+        return new Location<World>(world, x, y, z);
     }
 
     // saves any changes to a claim to secondary storage
@@ -557,7 +564,7 @@ public abstract class DataStore {
     // return the claim
     // cachedClaim can be NULL, but will help performance if you have a
     // reasonable guess about which claim the location is in
-    synchronized public Claim getClaimAt(Location location, boolean ignoreHeight, Claim cachedClaim) {
+    synchronized public Claim getClaimAt(Location<World> location, boolean ignoreHeight, Claim cachedClaim) {
         // check cachedClaim guess first. if it's in the datastore and the
         // location is inside it, we're done
         if (cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true))
