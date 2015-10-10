@@ -44,12 +44,12 @@ class DeliverClaimBlocksTask implements Runnable {
         // if no player specified, this task will create a player-specific task
         // for each online player, scheduled one tick apart
         if (this.player == null) {
-            Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getGame().getServer().getOnlinePlayers();
+            Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
 
             long i = 0;
             for (Player onlinePlayer : players) {
                 DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer);
-                GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().async().delay(i++).execute(newTask)
+                GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delay(i++).execute(newTask)
                         .submit(GriefPrevention.instance);
             }
         }

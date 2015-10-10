@@ -18,7 +18,12 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.world.Chunk;
+import org.spongepowered.api.world.World;
+
 import java.util.Calendar;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Vector;
 
@@ -164,14 +169,20 @@ class CleanupUnusedClaimsTask implements Runnable {
         // world where there are no players currently playing, be mindful of
         // memory usage
         if (cleanupChunks) {
-            World world = claim.getLesserBoundaryCorner().getWorld();
-            Chunk lesserChunk = world.getChunkAt(claim.getLesserBoundaryCorner());
-            Chunk greaterChunk = world.getChunkAt(claim.getGreaterBoundaryCorner());
-            for (int x = lesserChunk.getX(); x <= greaterChunk.getX(); x++) {
-                for (int z = lesserChunk.getZ(); z <= greaterChunk.getZ(); z++) {
-                    Chunk chunk = world.getChunkAt(x, z);
-                    if (chunk.isLoaded()) {
-                        chunk.unload(true, true);
+            World world = claim.getLesserBoundaryCorner().getExtent();
+            final Optional<Chunk> optLesserChunk = world.getChunk(claim.getLesserBoundaryCorner().getBlockPosition());
+            final Optional<Chunk> optGreaterChunk = world.getChunk(claim.getGreaterBoundaryCorner().getBlockPosition());
+
+            if (optLesserChunk.isPresent() && optGreaterChunk.isPresent()) {
+                final Vector3i lesserChunkPos = optLesserChunk.get().getPosition();
+                final Vector3i greaterChunkPos = optGreaterChunk.get().getPosition();
+
+                for (int x = lesserChunkPos.getX(); x <= greaterChunkPos.getX(); x++) {
+                    for (int z = lesserChunkPos.getZ(); z <= greaterChunkPos.getZ(); z++) {
+                        Optional<Chunk> chunk = world.getChunk(x, 0, z);
+                        if (chunk.isPresent() && chunk.get().isLoaded()) {
+                            chunk.get().unloadChunk();
+                        }
                     }
                 }
             }

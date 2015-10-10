@@ -314,7 +314,7 @@ public class PlayerData {
             int totalBlocks =
                     this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if (totalBlocks < totalClaimsArea) {
-                Optional<User> player = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(this.playerID);
+                Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(this.playerID);
                 if (player.isPresent()) {
                     GriefPrevention.AddLogEntry(player.get().getName() + " has more claimed land than blocks available.  Adding blocks to fix.",
                             CustomLogEntryTypes.Debug, true);

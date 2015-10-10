@@ -1,5 +1,6 @@
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.biome.BiomeType;
@@ -23,7 +24,7 @@ class AutoExtendClaimTask implements Runnable {
     public void run() {
         int newY = this.getLowestBuiltY();
         if (newY < this.claim.getLesserBoundaryCorner().getBlockY()) {
-            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY))
+            GriefPrevention.instance.game.getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY))
                     .submit(GriefPrevention.instance);
         }
     }
@@ -36,17 +37,17 @@ class AutoExtendClaimTask implements Runnable {
 
         for (Chunk chunk : this.chunks) {
             BiomeType biome = chunk.getBiome(0, 0);
-            ArrayList<Integer> playerBlockIDs = RestoreNatureProcessingTask.getPlayerBlocks(this.worldType, biome);
+            ArrayList<BlockType> playerBlocks = RestoreNatureProcessingTask.getPlayerBlocks(this.worldType, biome);
 
             boolean ychanged = true;
             while (!this.yTooSmall(y) && ychanged) {
                 ychanged = false;
                 for (int x = 0; x < 16; x++) {
                     for (int z = 0; z < 16; z++) {
-                        int blockType = chunk.getBlockTypeId(x, y, z);
-                        while (!this.yTooSmall(y) && playerBlockIDs.contains(blockType)) {
+                        BlockType blockType = chunk.getBlockType(x, y, z);
+                        while (!this.yTooSmall(y) && playerBlocks.contains(blockType)) {
                             ychanged = true;
-                            blockType = chunk.getBlockTypeId(x, --y, z);
+                            blockType = chunk.getBlockType(x, --y, z);
                         }
 
                         if (this.yTooSmall(y))

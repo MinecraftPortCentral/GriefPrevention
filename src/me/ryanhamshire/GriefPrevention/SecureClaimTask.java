@@ -40,7 +40,7 @@ class SecureClaimTask implements Runnable {
             claim.doorsOpen = false;
 
             // eject bad guys
-            Collection<Player> onlinePlayers = (Collection<Player>) GriefPrevention.instance.getGame().getServer().getOnlinePlayers();
+            Collection<Player> onlinePlayers = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
             for (Player player : onlinePlayers) {
                 if (claim.contains(player.getLocation(), false, false) && claim.allowAccess(player) != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeDoorsLockedEjection);

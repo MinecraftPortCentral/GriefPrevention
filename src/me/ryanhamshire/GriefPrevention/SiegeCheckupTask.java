@@ -104,7 +104,7 @@ class SiegeCheckupTask implements Runnable {
     // schedules another checkup later
     private void scheduleAnotherCheck() {
         Task task =
-                GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(20L * 30).execute(this).submit(GriefPrevention.instance);
+                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 30).execute(this).submit(GriefPrevention.instance);
         this.siegeData.checkupTaskID = task.getUniqueId();
     }
 }

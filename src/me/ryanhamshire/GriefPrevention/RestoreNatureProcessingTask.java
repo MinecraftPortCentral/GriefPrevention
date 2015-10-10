@@ -571,7 +571,7 @@ class RestoreNatureProcessingTask implements Runnable {
         // impossible to guess exactly which natural materials to use in manual
         // repair of an overzealous block removal
         ArrayList<BlockType> playerBlocks = new ArrayList<BlockType>();
-        for (BlockType blockType : GriefPrevention.instance.getGame().getRegistry().getAllOf(BlockType.class)) {
+        for (BlockType blockType : GriefPrevention.instance.gameRegistry.getAllOf(BlockType.class)) {
             playerBlocks.add(blockType);
         }
 

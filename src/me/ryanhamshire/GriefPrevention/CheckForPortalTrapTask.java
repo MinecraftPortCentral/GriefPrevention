@@ -18,6 +18,11 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
+
 //players can be "trapped" in a portal frame if they don't have permission to break
 //solid blocks blocking them from exiting the frame
 //if that happens, we detect the problem and send them back through the portal.
@@ -27,9 +32,9 @@ class CheckForPortalTrapTask implements Runnable {
     private Player player;
 
     // where to send the player back to if he hasn't left the portal frame
-    private Location returnLocation;
+    private Location<World> returnLocation;
 
-    public CheckForPortalTrapTask(Player player, Location location) {
+    public CheckForPortalTrapTask(Player player, Location<World> location) {
         this.player = player;
         this.returnLocation = location;
     }
@@ -42,8 +47,8 @@ class CheckForPortalTrapTask implements Runnable {
 
         // otherwise if still standing in a portal frame, teleport him back
         // through
-        if (this.player.getLocation().getBlock().getType() == Material.PORTAL) {
-            this.player.teleport(this.returnLocation);
+        if (this.player.getLocation().getBlockType().equals(BlockTypes.PORTAL)) {
+            this.player.setLocation(returnLocation);
         }
     }
 }

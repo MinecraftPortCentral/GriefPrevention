@@ -48,7 +48,7 @@ public class Visualization {
         // if he's online, create a task to send him the visualization
         if (player.isOnline() && visualization.elements.size() > 0
                 && visualization.elements.get(0).getLocation().get().getExtent().equals(player.getWorld())) {
-            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(1L)
+            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1L)
                     .execute(new VisualizationApplicationTask(player, playerData, visualization)).submit(GriefPrevention.instance);
         }
     }
@@ -180,7 +180,7 @@ public class Visualization {
         final int STEP = 10;
 
         // top line
-        BlockSnapshotBuilder snapshotBuilder = GriefPrevention.instance.getGame().getRegistry().createBlockSnapshotBuilder();
+        BlockSnapshotBuilder snapshotBuilder = GriefPrevention.instance.gameRegistry.createBlockSnapshotBuilder();
         newElements.add(snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build());
         newElements.add(snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build());
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {

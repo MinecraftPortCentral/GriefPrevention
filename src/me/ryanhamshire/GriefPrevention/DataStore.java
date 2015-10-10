@@ -294,7 +294,7 @@ public abstract class DataStore {
         Iterator<String> iterator = keys.iterator();
         while (iterator.hasNext()) {
             String groupName = iterator.next();
-            Optional<Player> player = Sponge.getGame().getServer().getPlayer(playerID);
+            Optional<Player> player = GriefPrevention.instance.game.getServer().getPlayer(playerID);
             if (player.isPresent() && player.get().hasPermission(groupName)) {
                 bonusBlocks += this.permissionToBonusBlocksMap.get(groupName);
             }
@@ -553,7 +553,7 @@ public abstract class DataStore {
 
         if (fireEvent) {
             ClaimDeletedEvent ev = new ClaimDeletedEvent(claim);
-            Bukkit.getPluginManager().callEvent(ev);
+            GriefPrevention.instance.eventManager.post(ev);
         }
     }
 

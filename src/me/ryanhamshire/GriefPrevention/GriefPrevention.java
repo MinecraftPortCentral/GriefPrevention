@@ -30,12 +30,14 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.omg.CORBA.Environment;
 import org.spongepowered.api.Game;
 //import net.milkbowl.vault.economy.Economy;
+import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.service.event.EventManager;
 import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.Texts;
@@ -66,11 +68,9 @@ public class GriefPrevention {
     // for convenience, a reference to the instance of this plugin
     public static GriefPrevention instance;
 
-    @Inject private Game game;
-
-    public Game getGame() {
-        return game;
-    }
+    @Inject public Game game;
+    @Inject public EventManager eventManager;
+    @Inject public GameRegistry gameRegistry;
 
     // for logging to the console and log file
     private static Logger log = Logger.getLogger("Minecraft");
@@ -444,12 +444,12 @@ public class GriefPrevention {
         // this is the preferred method, as it's simpler than the database
         // scenario
         if (this.dataStore == null) {
-            File oldclaimdata = new File(event.getGame().getSavesDirectory(), "ClaimData");
+            File oldclaimdata = new File(event.game.getSavesDirectory(), "ClaimData");
             if (oldclaimdata.exists()) {
                 if (!FlatFileDataStore.hasData()) {
                     File claimdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "ClaimData");
                     oldclaimdata.renameTo(claimdata);
-                    File oldplayerdata = new File(event.getGame().getSavesDirectory(), "PlayerData");
+                    File oldplayerdata = new File(event.game.getSavesDirectory(), "PlayerData");
                     File playerdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "PlayerData");
                     oldplayerdata.renameTo(playerdata);
                 }
@@ -471,18 +471,18 @@ public class GriefPrevention {
         // 20L ~ 1 second
         if (this.config_claims_blocksAccruedPerHour > 0) {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().interval(20L * 60 * 10).execute(task)
+            GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(20L * 60 * 10).execute(task)
                     .submit(GriefPrevention.instance);
         }
 
         // start the recurring cleanup event for entities in creative worlds
         EntityCleanupTask task = new EntityCleanupTask(0);
-        GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(20L * 60 * 2).execute(task).submit(GriefPrevention.instance);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 60 * 2).execute(task).submit(GriefPrevention.instance);
 
         // start recurring cleanup scan for unused claims belonging to inactive
         // players
         CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
-        GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().interval(20L * 60 * 5).execute(task2).submit(GriefPrevention.instance);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(20L * 60 * 5).execute(task2).submit(GriefPrevention.instance);
 
         // register for events
 
@@ -520,7 +520,7 @@ public class GriefPrevention {
         // namesThread.start();
 
         // load ignore lists for any already-online players
-        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getGame().getServer().getOnlinePlayers();
+        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
         for (Player player : players) {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
@@ -539,7 +539,7 @@ public class GriefPrevention {
             HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(new File(DataStore.configFilePath)).build();
             CommentedConfigurationNode mainNode = configurationLoader.load();
 
-            Collection<World> worlds = getGame().getServer().getWorlds();
+            Collection<World> worlds = game.getServer().getWorlds();
 
             // decide claim mode for each world
             this.config_claims_worldModes = new ConcurrentHashMap<World, ClaimsMode>();
@@ -566,7 +566,7 @@ public class GriefPrevention {
                 }
 
                 // decide a default based on server type and world type
-                else if (GriefPrevention.instance.getGame().getServer().getDefaultWorld().get().getGameMode() == GameModes.CREATIVE) {
+                else if (GriefPrevention.instance.game.getServer().getDefaultWorld().get().getGameMode() == GameModes.CREATIVE) {
                     this.config_claims_worldModes.put(world, ClaimsMode.Creative);
                 } else if (world.getDimension().getType().equals(DimensionTypes.OVERWORLD)) {
                     this.config_claims_worldModes.put(world, ClaimsMode.Survival);
@@ -753,7 +753,7 @@ public class GriefPrevention {
             this.config_siege_enabledWorlds = new ArrayList<World>();
             for (int i = 0; i < siegeEnabledWorldNames.size(); i++) {
                 String worldName = siegeEnabledWorldNames.get(i);
-                Optional<World> world = this.getGame().getServer().getWorld(UUID.fromString(worldName));
+                Optional<World> world = this.game.getServer().getWorld(UUID.fromString(worldName));
                 if (!world.isPresent()) {
                     AddLogEntry("Error: Siege Configuration: There's no world uuid \"" + worldName + "\".  Please update your config.yml.");
                 } else {
@@ -2434,11 +2434,11 @@ public class GriefPrevention {
 
     public Optional<User> resolvePlayerByName(String name) {
         // try online players first
-        Optional<Player> targetPlayer = GriefPrevention.instance.getGame().getServer().getPlayer(name);
+        Optional<Player> targetPlayer = GriefPrevention.instance.game.getServer().getPlayer(name);
         if (targetPlayer.isPresent())
             return Optional.of((User) targetPlayer.get());
 
-        Optional<User> user = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(name);
+        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(name);
         if (targetPlayer != null)
             return user;
 
@@ -2452,7 +2452,7 @@ public class GriefPrevention {
             return "somebody";
 
         // check the cache
-        Optional<User> player = GriefPrevention.instance.getGame().getServiceManager().provide(UserStorage.class).get().get(playerID);
+        Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(playerID);
         if (player.isPresent() || player.get().isOnline()) {
             return player.get().getName();
         } else {
@@ -2482,7 +2482,7 @@ public class GriefPrevention {
 
     public void onDisable() {
         // save data for any online players
-        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getGame().getServer().getOnlinePlayers();
+        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
         for (Player player : players) {
             UUID playerID = player.getUniqueId();
             PlayerData playerData = this.dataStore.getPlayerData(playerID);
@@ -2605,7 +2605,7 @@ public class GriefPrevention {
     static void sendMessage(Player player, Text message, long delayInTicks) {
         SendPlayerMessageTask task = new SendPlayerMessageTask(player, message);
         if (delayInTicks > 0) {
-            GriefPrevention.instance.getGame().getScheduler().createTaskBuilder().delay(delayInTicks).execute(task).submit(GriefPrevention.instance);
+            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(delayInTicks).execute(task).submit(GriefPrevention.instance);
         } else {
             task.run();
         }

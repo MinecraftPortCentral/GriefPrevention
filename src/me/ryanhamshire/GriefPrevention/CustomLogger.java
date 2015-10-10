@@ -19,6 +19,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.io.Files;
+import org.spongepowered.api.service.scheduler.SchedulerService;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -49,12 +50,13 @@ class CustomLogger {
         // unless disabled, schedule recurring tasks
         int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
         if (daysToKeepLogs > 0) {
-            BukkitScheduler scheduler = GriefPrevention.instance.getServer().getScheduler();
+            SchedulerService scheduler = GriefPrevention.instance.game.getScheduler();
             final long ticksPerSecond = 20L;
             final long ticksPerDay = ticksPerSecond * 60 * 60 * 24;
-            scheduler.runTaskTimerAsynchronously(GriefPrevention.instance, new EntryWriter(), this.secondsBetweenWrites * ticksPerSecond,
-                    this.secondsBetweenWrites * ticksPerSecond);
-            scheduler.runTaskTimerAsynchronously(GriefPrevention.instance, new ExpiredLogRemover(), ticksPerDay, ticksPerDay);
+            scheduler.createTaskBuilder().async().execute(new EntryWriter()).delay(this.secondsBetweenWrites * ticksPerSecond).interval(this
+                    .secondsBetweenWrites * ticksPerSecond).submit(GriefPrevention.instance);
+            scheduler.createTaskBuilder().async().execute(new ExpiredLogRemover()).delay(ticksPerDay).interval(ticksPerDay).submit(GriefPrevention
+                    .instance);
         }
     }
 
