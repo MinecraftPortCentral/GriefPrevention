@@ -18,6 +18,9 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.BlockSnapshotBuilder;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.living.player.Player;
@@ -32,7 +35,7 @@ import java.util.ArrayList;
 //the result is that those players see new blocks, but the world hasn't been changed.  other players can't see the new blocks, either.
 public class Visualization {
 
-    public ArrayList<VisualizationElement> elements = new ArrayList<VisualizationElement>();
+    public ArrayList<BlockSnapshot> elements = new ArrayList<BlockSnapshot>();
 
     // sends a visualization to a player
     public static void Apply(Player player, Visualization visualization) {
@@ -45,7 +48,7 @@ public class Visualization {
 
         // if he's online, create a task to send him the visualization
         if (player.isOnline() && visualization.elements.size() > 0
-                && visualization.elements.get(0).location.getExtent().getWorld().equals(player.getWorld())) {
+                && visualization.elements.get(0).getLocation().get().getExtent().equals(player.getWorld())) {
             Sponge.getGame().getScheduler().createTaskBuilder().delay(1L)
                     .execute(new VisualizationApplicationTask(player, playerData, visualization));
         }
@@ -73,7 +76,7 @@ public class Visualization {
 
             // send real block information for any remaining elements
             for (int i = 0; i < visualization.elements.size(); i++) {
-                VisualizationElement element = visualization.elements.get(i);
+                BlockSnapshot element = visualization.elements.get(i);
 
                 // check player still in world where visualization exists
                 if (i == 0) {
@@ -178,70 +181,67 @@ public class Visualization {
         final int STEP = 10;
 
         // top line
-        newElements.add(new VisualizationElement(new Location<World>(world, smallx, 0, bigz), cornerMaterial, (byte) 0, Material.AIR, (byte) 0));
-        newElements.add(new VisualizationElement(new Location<World>(world, smallx + 1, 0, bigz), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+        BlockSnapshotBuilder snapshotBuilder = Sponge.getGame().getRegistry().createBlockSnapshotBuilder();
+        newElements.add(snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build());
+        newElements.add(snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build());
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {
             if (x > minx && x < maxx)
-                newElements.add(new VisualizationElement(new Location(world, x, 0, bigz), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+                newElements.add(snapshotBuilder.from(new Location<World>(world, x, 0, bigz)).blockState(accentMaterial.getDefaultState()).build());
         }
-        newElements.add(new VisualizationElement(new Location(world, bigx - 1, 0, bigz), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+        newElements.add(snapshotBuilder.from(new Location<World>(world, bigx - 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build());
 
         // bottom line
-        newElements.add(new VisualizationElement(new Location(world, smallx + 1, 0, smallz), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+        newElements.add(snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, smallz)).blockState(accentMaterial.getDefaultState()).build());
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {
             if (x > minx && x < maxx)
-                newElements.add(new VisualizationElement(new Location(world, x, 0, smallz), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+                newElements.add(snapshotBuilder.from(new Location<World>(world, x, 0, smallz)).blockState(accentMaterial.getDefaultState()).build());
         }
-        newElements.add(new VisualizationElement(new Location(world, bigx - 1, 0, smallz), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+        newElements.add(snapshotBuilder.from(new Location<World>(world, bigx - 1, 0, smallz)).blockState(accentMaterial.getDefaultState()).build());
 
         // left line
-        newElements.add(new VisualizationElement(new Location(world, smallx, 0, smallz), cornerMaterial, (byte) 0, Material.AIR, (byte) 0));
-        newElements.add(new VisualizationElement(new Location(world, smallx, 0, smallz + 1), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+        newElements.add(snapshotBuilder.from(new Location<World>(world, smallx, 0, smallz)).blockState(cornerMaterial.getDefaultState()).build());
+        newElements.add(snapshotBuilder.from(new Location<World>(world, smallx, 0, smallz + 1)).blockState(accentMaterial.getDefaultState()).build());
         for (int z = smallz + STEP; z < bigz - STEP / 2; z += STEP) {
             if (z > minz && z < maxz)
-                newElements.add(new VisualizationElement(new Location(world, smallx, 0, z), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+                newElements.add(snapshotBuilder.from(new Location<World>(world, smallx, 0, z)).blockState(accentMaterial.getDefaultState()).build());
         }
-        newElements.add(new VisualizationElement(new Location(world, smallx, 0, bigz - 1), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+        newElements.add(snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz - 1)).blockState(accentMaterial.getDefaultState()).build());
 
         // right line
-        newElements.add(new VisualizationElement(new Location(world, bigx, 0, smallz), cornerMaterial, (byte) 0, Material.AIR, (byte) 0));
-        newElements.add(new VisualizationElement(new Location(world, bigx, 0, smallz + 1), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+        newElements.add(snapshotBuilder.from(new Location<World>(world, bigx, 0, smallz)).blockState(cornerMaterial.getDefaultState()).build());
+        newElements.add(snapshotBuilder.from(new Location<World>(world, bigx, 0, smallz + 1)).blockState(accentMaterial.getDefaultState()).build());
         for (int z = smallz + STEP; z < bigz - STEP / 2; z += STEP) {
             if (z > minz && z < maxz)
-                newElements.add(new VisualizationElement(new Location(world, bigx, 0, z), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
+                newElements.add(snapshotBuilder.from(new Location<World>(world, bigx, 0, z)).blockState(accentMaterial.getDefaultState()).build());
         }
-        newElements.add(new VisualizationElement(new Location(world, bigx, 0, bigz - 1), accentMaterial, (byte) 0, Material.AIR, (byte) 0));
-        newElements.add(new VisualizationElement(new Location(world, bigx, 0, bigz), cornerMaterial, (byte) 0, Material.AIR, (byte) 0));
+        newElements.add(snapshotBuilder.from(new Location<World>(world, bigx, 0, bigz - 1)).blockState(accentMaterial.getDefaultState()).build());
+        newElements.add(snapshotBuilder.from(new Location<World>(world, bigx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build());
 
         // remove any out of range elements
         this.removeElementsOutOfRange(newElements, minx, minz, maxx, maxz);
 
         // remove any elements outside the claim
         for (int i = 0; i < newElements.size(); i++) {
-            VisualizationElement element = newElements.get(i);
-            if (!claim.contains(element.location, true, false)) {
+            BlockSnapshot element = newElements.get(i);
+            if (!claim.contains(element.getLocation().get(), true, false)) {
                 newElements.remove(i--);
             }
         }
 
         // set Y values and real block information for any remaining
         // visualization blocks
-        for (VisualizationElement element : newElements) {
-            Location tempLocation = element.location;
-            element.location =
-                    getVisibleLocation(tempLocation.getWorld(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent);
-            height = element.location.getBlockY();
-            element.realMaterial = element.location.getBlock().getType();
-            element.realData = element.location.getBlock().getData();
+        for (BlockSnapshot element : newElements) {
+            Location<World> tempLocation = element.getLocation().get();
+            element = element.withLocation(getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent));
         }
 
         this.elements.addAll(newElements);
     }
 
     // removes any elements which are out of visualization range
-    private void removeElementsOutOfRange(ArrayList<VisualizationElement> elements, int minx, int minz, int maxx, int maxz) {
+    private void removeElementsOutOfRange(ArrayList<BlockSnapshot> elements, int minx, int minz, int maxx, int maxz) {
         for (int i = 0; i < elements.size(); i++) {
-            Location location = elements.get(i).location;
+            Location<World> location = elements.get(i).getLocation().get();
             if (location.getX() < minx || location.getX() > maxx || location.getZ() < minz || location.getZ() > maxz) {
                 elements.remove(i--);
             }
@@ -250,8 +250,8 @@ public class Visualization {
 
     // finds a block the player can probably see. this is how visualizations
     // "cling" to the ground or ceiling
-    private static Location getVisibleLocation(World world, int x, int y, int z, boolean waterIsTransparent) {
-        Block block = world.getBlockAt(x, y, z);
+    private static Location<World> getVisibleLocation(World world, int x, int y, int z, boolean waterIsTransparent) {
+        BlockState block = world.getBlock(x, y, z);
         BlockFace direction = (isTransparent(block, waterIsTransparent)) ? BlockFace.DOWN : BlockFace.UP;
 
         while (block.getY() >= 1 &&
@@ -265,14 +265,13 @@ public class Visualization {
 
     // helper method for above. allows visualization blocks to sit underneath
     // partly transparent blocks like grass and fence
-    private static boolean isTransparent(Block block, boolean waterIsTransparent) {
-        return (block.getType() != Material.SNOW && (block.getType() == Material.AIR ||
-                block.getType() == Material.FENCE ||
-                block.getType() == Material.SIGN ||
-                block.getType() == Material.SIGN_POST ||
-                block.getType() == Material.WALL_SIGN ||
-                (waterIsTransparent && block.getType() == Material.STATIONARY_WATER) ||
-                block.getType().isTransparent()));
+    private static boolean isTransparent(BlockType block, boolean waterIsTransparent) {
+        return (block != BlockTypes.SNOW && (block == BlockTypes.AIR ||
+                block == BlockTypes.FENCE ||
+                block == BlockTypes.STANDING_SIGN||
+                block == BlockTypes.WALL_SIGN ||
+                (waterIsTransparent && block == BlockTypes.WATER)));// ||
+                //block.isTransparent()));
     }
 
     public static Visualization fromClaims(Iterable<Claim> claims, int height, VisualizationType type, Location locality) {

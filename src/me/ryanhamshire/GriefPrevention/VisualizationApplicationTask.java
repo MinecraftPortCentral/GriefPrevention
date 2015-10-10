@@ -18,6 +18,7 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.common.Sponge;
 
@@ -38,12 +39,12 @@ class VisualizationApplicationTask implements Runnable {
     public void run() {
         // for each element (=block) of the visualization
         for (int i = 0; i < visualization.elements.size(); i++) {
-            VisualizationElement element = visualization.elements.get(i);
+            BlockSnapshot element = visualization.elements.get(i);
 
             // send the player a fake block change event
-            if (!element.location.getExtent().isLoaded())
+            if (!element.getLocation().get().getExtent().isLoaded())
                 continue; // cheap distance check
-            BlockUtils.sendBlockChange(player, element.visualizedBlock);
+            BlockUtils.sendBlockChange(player, element);
         }
 
         // remember the visualization applied to this player for later (so it
