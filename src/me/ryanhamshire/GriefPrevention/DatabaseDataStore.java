@@ -18,6 +18,11 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.Connection;
@@ -31,6 +36,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -151,15 +157,6 @@ public class DatabaseDataStore extends DataStore {
                     namesToConvert.add(playerName);
                 }
 
-                // resolve and cache as many as possible through various means
-                try {
-                    UUIDFetcher fetcher = new UUIDFetcher(namesToConvert);
-                    fetcher.call();
-                } catch (Exception e) {
-                    GriefPrevention.AddLogEntry("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
-                    e.printStackTrace();
-                }
-
                 // reset results cursor
                 results.beforeFirst();
 
@@ -170,12 +167,12 @@ public class DatabaseDataStore extends DataStore {
 
                     // try to convert player name to UUID
                     try {
-                        UUID playerID = UUIDFetcher.getUUIDOf(playerName);
+                        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(playerName);
 
                         // if successful, update the playerdata row by replacing
                         // the player's name with the player's UUID
-                        if (playerID != null) {
-                            changes.put(playerName, playerID);
+                        if (user.isPresent()) {
+                            changes.put(playerName, user.get().getUniqueId());
                         }
                     }
                     // otherwise leave it as-is. no harm done - it won't be
@@ -210,7 +207,7 @@ public class DatabaseDataStore extends DataStore {
 
         ArrayList<Claim> claimsToRemove = new ArrayList<Claim>();
         ArrayList<Claim> subdivisionsToLoad = new ArrayList<Claim>();
-        List<World> validWorlds = Bukkit.getServer().getWorlds();
+        List<World> validWorlds = (List<World>) GriefPrevention.instance.game.getServer().getWorlds();
 
         while (results.next()) {
             try {
@@ -221,8 +218,8 @@ public class DatabaseDataStore extends DataStore {
                 long parentId = results.getLong("parentid");
                 long claimID = results.getLong("id");
 
-                Location lesserBoundaryCorner = null;
-                Location greaterBoundaryCorner = null;
+                Location<World> lesserBoundaryCorner = null;
+                Location<World> greaterBoundaryCorner = null;
                 String lesserCornerString = "(location not available)";
                 try {
                     lesserCornerString = results.getString("lessercorner");
@@ -241,21 +238,14 @@ public class DatabaseDataStore extends DataStore {
                 }
 
                 String ownerName = results.getString("owner");
-                UUID ownerID = null;
+                Optional<User> owner = null;
                 if (ownerName.isEmpty() || ownerName.startsWith("--")) {
-                    ownerID = null; // administrative land claim or subdivision
+                    owner = Optional.empty(); // administrative land claim or subdivision
                 } else if (this.getSchemaVersion() < 1) {
                     try {
-                        ownerID = UUIDFetcher.getUUIDOf(ownerName);
+                        owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(ownerName);
                     } catch (Exception ex) {
                         GriefPrevention.AddLogEntry("This owner name did not convert to a UUID: " + ownerName + ".");
-                        GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
-                    }
-                } else {
-                    try {
-                        ownerID = UUID.fromString(ownerName);
-                    } catch (Exception ex) {
-                        GriefPrevention.AddLogEntry("This owner entry is not a UUID: " + ownerName + ".");
                         GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                     }
                 }
@@ -276,7 +266,7 @@ public class DatabaseDataStore extends DataStore {
                 List<String> managerNames = Arrays.asList(managersString.split(";"));
                 managerNames = this.convertNameListToUUIDList(managerNames);
 
-                Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderNames, containerNames, accessorNames,
+                Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), builderNames, containerNames, accessorNames,
                         managerNames, claimID);
 
                 if (removeClaim) {
