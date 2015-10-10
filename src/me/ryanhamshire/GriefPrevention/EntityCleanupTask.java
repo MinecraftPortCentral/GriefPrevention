@@ -18,7 +18,13 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.vehicle.Boat;
+import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +45,7 @@ class EntityCleanupTask implements Runnable {
     @Override
     public void run() {
         ArrayList<World> worlds = new ArrayList<World>();
-        for (World world : GriefPrevention.instance.getServer().getWorlds()) {
+        for (World world : GriefPrevention.instance.game.getServer().getWorlds()) {
             if (GriefPrevention.instance.config_claims_worldModes.get(world) == ClaimsMode.Creative) {
                 worlds.add(world);
             }
@@ -48,7 +54,7 @@ class EntityCleanupTask implements Runnable {
         for (int i = 0; i < worlds.size(); i++) {
             World world = worlds.get(i);
 
-            List<Entity> entities = world.getEntities();
+            List<Entity> entities = (List<Entity>) world.getEntities();
 
             // starting and stopping point. each execution of the task scans 10%
             // of the server's (loaded) entities
@@ -62,24 +68,24 @@ class EntityCleanupTask implements Runnable {
                 if (entity instanceof Boat) // boats must be occupied
                 {
                     Boat boat = (Boat) entity;
-                    if (boat.isEmpty())
+                    if (boat.get(Keys.PASSENGER).isPresent())
                         remove = true;
                 }
 
-                else if (entity instanceof Vehicle) {
-                    Vehicle vehicle = (Vehicle) entity;
+                else if (entity.get(Keys.VEHICLE).isPresent()) {
+                    Entity vehicle = entity.get(Keys.VEHICLE).get();
 
                     // minecarts in motion must be occupied by a player
-                    if (vehicle.getVelocity().lengthSquared() != 0) {
-                        if (vehicle.isEmpty() || !(vehicle.getPassenger() instanceof Player)) {
+                    if (vehicle.get(Keys.VELOCITY).get().lengthSquared() != 0) {
+                        if (!vehicle.get(Keys.PASSENGER).isPresent() || !(vehicle.get(Keys.PASSENGER).get() instanceof Player)) {
                             remove = true;
                         }
                     }
 
                     // stationary carts must be on rails
                     else {
-                        Material material = world.getBlockAt(vehicle.getLocation()).getType();
-                        if (material != Material.RAILS && material != Material.POWERED_RAIL && material != Material.DETECTOR_RAIL) {
+                        BlockType material = world.getBlockType(vehicle.getLocation().getBlockPosition());
+                        if (material != BlockTypes.RAIL && material != BlockTypes.GOLDEN_RAIL && material != BlockTypes.DETECTOR_RAIL) {
                             remove = true;
                         }
                     }
@@ -124,6 +130,6 @@ class EntityCleanupTask implements Runnable {
         }
 
         EntityCleanupTask task = new EntityCleanupTask(nextRunPercentageStart);
-        GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 60 * 1);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 60 * 1).execute(task).submit(GriefPrevention.instance);
     }
 }
