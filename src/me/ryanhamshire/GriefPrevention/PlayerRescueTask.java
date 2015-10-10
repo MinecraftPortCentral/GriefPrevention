@@ -18,18 +18,22 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
+
 //tries to rescue a trapped player from a claim where he doesn't have permission to save himself
 //related to the /trapped slash command
 //this does run in the main thread, so it's okay to make non-thread-safe calls
 class PlayerRescueTask implements Runnable {
 
     // original location where /trapped was used
-    private Location location;
+    private Location<World> location;
 
     // player data
     private Player player;
 
-    public PlayerRescueTask(Player player, Location location) {
+    public PlayerRescueTask(Player player, Location<World> location) {
         this.player = player;
         this.location = location;
     }
@@ -47,7 +51,7 @@ class PlayerRescueTask implements Runnable {
 
         // if the player moved three or more blocks from where he used /trapped,
         // admonish him and don't save him
-        if (player.getLocation().distance(this.location) > 3) {
+        if (player.getLocation().getBlockPosition().distance(this.location.getBlockPosition()) > 3) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.RescueAbortedMoved);
             return;
         }

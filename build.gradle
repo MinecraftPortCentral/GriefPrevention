@@ -42,9 +42,10 @@ repositories {
 }
 
 dependencies {
-    compile("org.spongepowered:sponge:${project.spongeVersion}") {
+    compile("org.spongepowered:spongeapi:${project.apiVersion}") {
         transitive = true
     }
+    compile 'junit:junit:4.12'
 }
 
 if (JavaVersion.current().isJava8Compatible() || JavaVersion.current().isJava9Compatible()) {
