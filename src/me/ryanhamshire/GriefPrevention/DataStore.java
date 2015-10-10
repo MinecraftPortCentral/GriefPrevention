@@ -21,6 +21,7 @@ package me.ryanhamshire.GriefPrevention;
 import com.google.common.io.Files;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
 import net.minecraft.item.ItemStack;
+import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.api.entity.living.player.Player;
@@ -1384,7 +1385,7 @@ public abstract class DataStore {
         try
         {
             HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(new File(messagesFilePath)).build();
-            CommentedConfigurationNode mainNode = configurationLoader.load();
+            CommentedConfigurationNode mainNode = configurationLoader.load(ConfigurationOptions.defaults().setShouldCopyDefaults(true));
 
             // for each message ID
             for (int i = 0; i < messageIDs.length; i++)

@@ -28,6 +28,7 @@ import static org.spongepowered.api.util.command.args.GenericArguments.player;
 import static org.spongepowered.api.util.command.args.GenericArguments.playerOrSource;
 import static org.spongepowered.api.util.command.args.GenericArguments.string;
 
+import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
@@ -45,6 +46,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
@@ -378,7 +380,7 @@ public class GriefPrevention {
 
     // initializes well... everything
     @Listener
-    public void onPreInit(GamePreInitializationEvent event) {
+    public void onPostInit(GamePostInitializationEvent event) {
         instance = this;
 
         AddLogEntry("Grief Prevention boot start.");
@@ -673,6 +675,7 @@ public class GriefPrevention {
 
             // default values for container trust mod blocks
             if (containerTrustStrings == null || containerTrustStrings.size() == 0) {
+                containerTrustStrings = Lists.newArrayList();
                 containerTrustStrings.add(new MaterialInfo(99999, "Example - ID 99999, all data values.").toString());
             }
 
