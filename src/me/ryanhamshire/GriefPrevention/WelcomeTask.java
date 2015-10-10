@@ -1,10 +1,19 @@
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.manipulator.mutable.DisplayNameData;
+import org.spongepowered.api.data.manipulator.mutable.item.AuthorData;
+import org.spongepowered.api.data.manipulator.mutable.item.PagedData;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackBuilder;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.Texts;
 
 public class WelcomeTask implements Runnable {
 
-    private Player player;
+    private final Player player;
 
     public WelcomeTask(Player player) {
         this.player = player;
@@ -22,12 +31,19 @@ public class WelcomeTask implements Runnable {
 
         // give the player a reference book for later
         if (GriefPrevention.instance.config_claims_supplyPlayerManual) {
-            ItemFactory factory = Bukkit.getItemFactory();
-            BookMeta meta = (BookMeta) factory.getItemMeta(Material.WRITTEN_BOOK);
-
+            ItemStackBuilder factory = GriefPrevention.instance.game.getRegistry().createItemBuilder();
             DataStore datastore = GriefPrevention.instance.dataStore;
-            meta.setAuthor(datastore.getMessage(Messages.BookAuthor));
-            meta.setTitle(datastore.getMessage(Messages.BookTitle));
+            final ItemStack itemStack = factory.itemType(ItemTypes.WRITTEN_BOOK).quantity(1).build();
+
+            final AuthorData authorData = itemStack.getOrCreate(AuthorData.class).get();
+            authorData.set(Keys.BOOK_AUTHOR, Texts.of(datastore.getMessage(Messages.BookAuthor)));
+            itemStack.offer(authorData);
+
+            final DisplayNameData displayNameData = itemStack.getOrCreate(DisplayNameData.class).get();
+            displayNameData.set(Keys.DISPLAY_NAME, Texts.of(datastore.getMessage(Messages.BookTitle)));
+            displayNameData.set(Keys.SHOWS_DISPLAY_NAME, true);
+            itemStack.offer(displayNameData);
+
 
             StringBuilder page1 = new StringBuilder();
             String URL = datastore.getMessage(Messages.BookLink, DataStore.SURVIVAL_VIDEO_URL);
@@ -35,8 +51,8 @@ public class WelcomeTask implements Runnable {
 
             page1.append(URL).append("\n\n");
             page1.append(intro).append("\n\n");
-            String editToolName = GriefPrevention.instance.config_claims_modificationTool.name().replace('_', ' ').toLowerCase();
-            String infoToolName = GriefPrevention.instance.config_claims_investigationTool.name().replace('_', ' ').toLowerCase();
+            String editToolName = GriefPrevention.instance.config_claims_modificationTool.getName().replace('_', ' ').toLowerCase();
+            String infoToolName = GriefPrevention.instance.config_claims_investigationTool.getName().replace('_', ' ').toLowerCase();
             String configClaimTools = datastore.getMessage(Messages.BookTools, editToolName, infoToolName);
             page1.append(configClaimTools);
             if (GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius < 0) {
@@ -54,12 +70,19 @@ public class WelcomeTask implements Runnable {
             page2.append("/AccessTrust\n");
             page2.append("/ContainerTrust\n");
             page2.append("/PermissionTrust");
+            try {
+                final Text page2Text = Texts.legacy().from(page2.toString());
+                final Text page1Text = Texts.legacy().from(page1.toString());
 
-            meta.setPages(page1.toString(), page2.toString());
+                final PagedData pagedData = itemStack.getOrCreate(PagedData.class).get();
+                pagedData.set(pagedData.pages().add(page1Text).add(page2Text));
+                itemStack.offer(pagedData);
 
-            ItemStack item = new ItemStack(Material.WRITTEN_BOOK);
-            item.setItemMeta(meta);
-            player.getInventory().addItem(item);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            player.setItemInHand(itemStack);
         }
 
     }
