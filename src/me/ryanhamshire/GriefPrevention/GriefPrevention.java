@@ -320,16 +320,16 @@ public class GriefPrevention {
     public int config_ipLimit;
 
     // list of block IDs which should require /accesstrust for player interaction
-    public MaterialCollection config_mods_accessTrustIds;
+    public List<BlockType> config_mods_accessTrustIds;
 
     // list of block IDs which should require /containertrust for player interaction
-    public MaterialCollection config_mods_containerTrustIds;
+    public List<BlockType> config_mods_containerTrustIds;
 
     // list of player names which ALWAYS ignore claims
     public List<String> config_mods_ignoreClaimsAccounts;
 
     // list of block IDs which can be destroyed by explosions, even in claimed areas
-    public MaterialCollection config_mods_explodableIds;
+    public List<BlockType> config_mods_explodableIds;
 
     // override for sea level, because bukkit doesn't report the right value for all situations
     public HashMap<String, Integer> config_seaLevelOverride;
@@ -464,30 +464,36 @@ public class GriefPrevention {
         // register for events
         registerCommands();
 
-        // if economy is enabled
-        /*
-         * if(this.config_economy_claimBlocksPurchaseCost > 0 ||
-         * this.config_economy_claimBlocksSellValue > 0) { //try to load Vault
-         * GriefPrevention.AddLogEntry(
-         * "GriefPrevention requires Vault for economy integration.");
-         * GriefPrevention.AddLogEntry("Attempting to load Vault...");
-         * //RegisteredServiceProvider<Economy> economyProvider =
-         * getServer().getServicesManager().getRegistration(net.milkbowl.vault.
-         * economy.Economy.class); //GriefPrevention.AddLogEntry(
-         * "Vault loaded successfully!"); //ask Vault to hook into an economy
-         * plugin //GriefPrevention.AddLogEntry(
-         * "Looking for a Vault-compatible economy plugin..."); if
-         * (economyProvider != null) { GriefPrevention.economy =
-         * economyProvider.getProvider(); //on success, display success message
-         * if(GriefPrevention.economy != null) { GriefPrevention.AddLogEntry(
-         * "Hooked into economy: " + GriefPrevention.economy.getName() + ".");
-         * GriefPrevention.AddLogEntry("Ready to buy/sell claim blocks!"); }
-         * //otherwise error message else { GriefPrevention.AddLogEntry(
-         * "ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero."
-         * ); } } //another error case else { GriefPrevention.AddLogEntry(
-         * "ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero."
-         * ); } }
-         */
+        //if economy is enabled
+        /*if(this.config_economy_claimBlocksPurchaseCost > 0 || this.config_economy_claimBlocksSellValue > 0) {
+            //try to load Vault
+            GriefPrevention.AddLogEntry("GriefPrevention requires Vault for economy integration.");
+            GriefPrevention.AddLogEntry("Attempting to load Vault...");
+            RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+            GriefPrevention.AddLogEntry("Vault loaded successfully!");
+            
+            //ask Vault to hook into an economy plugin
+            GriefPrevention.AddLogEntry("Looking for a Vault-compatible economy plugin...");
+            if (economyProvider != null)  {
+                GriefPrevention.economy = economyProvider.getProvider();
+                
+                //on success, display success message
+                if(GriefPrevention.economy != null) {
+                    GriefPrevention.AddLogEntry("Hooked into economy: " + GriefPrevention.economy.getName() + ".");  
+                    GriefPrevention.AddLogEntry("Ready to buy/sell claim blocks!");
+                }
+                
+                //otherwise error message
+                else {
+                    GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
+                }               
+            }
+            
+            //another error case
+            else {
+                GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
+            }
+        }*/
 
         // cache offline players
         // User [] offlinePlayers = this.getServer().getOfflinePlayers();
@@ -716,36 +722,37 @@ public class GriefPrevention {
             if (this.config_mods_ignoreClaimsAccounts == null)
                 this.config_mods_ignoreClaimsAccounts = new ArrayList<>();
 
-            this.config_mods_accessTrustIds = new MaterialCollection();
+            this.config_mods_accessTrustIds = new ArrayList<BlockType>();
             List<String> accessTrustStrings =
                     mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringAccessTrust").getList(new TypeToken<String>() {
                     });
             mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringAccessTrust").setValue(accessTrustStrings);
 
-            this.parseMaterialListFromConfig(accessTrustStrings, this.config_mods_accessTrustIds);
+            this.parseBlockIdListFromConfig(accessTrustStrings, this.config_mods_accessTrustIds);
 
-            this.config_mods_containerTrustIds = new MaterialCollection();
+            this.config_mods_containerTrustIds = new ArrayList<BlockType>();
             List<String> containerTrustStrings =
                     mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringContainerTrust").getList(new TypeToken<String>() {
                     });
             mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringContainerTrust").setValue(containerTrustStrings);
 
             // default values for container trust mod blocks
-            if (containerTrustStrings == null || containerTrustStrings.size() == 0) {
+            // TODO
+            /*if (containerTrustStrings == null || containerTrustStrings.size() == 0) {
                 containerTrustStrings = Lists.newArrayList();
                 containerTrustStrings.add(new MaterialInfo(99999, "Example - ID 99999, all data values.").toString());
-            }
+            }*/
 
             // parse the strings from the config file
-            this.parseMaterialListFromConfig(containerTrustStrings, this.config_mods_containerTrustIds);
+            this.parseBlockIdListFromConfig(containerTrustStrings, this.config_mods_containerTrustIds);
 
-            this.config_mods_explodableIds = new MaterialCollection();
+            this.config_mods_explodableIds = new ArrayList<BlockType>();
             List<String> explodableStrings = mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").getList(new TypeToken<String>() {
             });
             mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").setValue(explodableStrings);
 
             // parse the strings from the config file
-            this.parseMaterialListFromConfig(explodableStrings, this.config_mods_explodableIds);
+            this.parseBlockIdListFromConfig(explodableStrings, this.config_mods_explodableIds);
 
             // default for claim investigation tool
             String investigationToolMaterialName = ItemTypes.STICK.getName();
@@ -841,7 +848,7 @@ public class GriefPrevention {
             for (int i = 0; i < breakableBlocksList.size(); i++) {
                 String blockName = breakableBlocksList.get(i);
                 Optional<BlockType> material = game.getRegistry().getType(BlockType.class, blockName);
-                if (material.isPresent()) {
+                if (!material.isPresent()) {
                     GriefPrevention.AddLogEntry("Siege Configuration: Material not found: " + blockName + ".");
                 } else {
                     this.config_siege_blocks.add(material.get());
@@ -2169,7 +2176,7 @@ public class GriefPrevention {
                     GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnSeparateConfirmation);
                     return  CommandResult.success();
                 })
-                .build(), "separate");
+                .build(), "unseparate");
     }
 
     void setIgnoreStatus(User ignorer, User ignoree, IgnoreMode mode) {
@@ -2706,30 +2713,28 @@ public class GriefPrevention {
         GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delay(delayInTicks).execute(task).submit(this);
     }
 
-    private void parseMaterialListFromConfig(List<String> stringsToParse, MaterialCollection materialCollection) {
-        materialCollection.clear();
-
+    private void parseBlockIdListFromConfig(List<String> stringsToParse, List<BlockType> blockTypes) {
         // for each string in the list
         for (int i = 0; i < stringsToParse.size(); i++) {
             // try to parse the string value into a material info
-            MaterialInfo materialInfo = MaterialInfo.fromString(stringsToParse.get(i));
+            Optional<BlockType> blockType = game.getRegistry().getType(BlockType.class, stringsToParse.get(i));
 
             // null value returned indicates an error parsing the string from
             // the config file
-            if (materialInfo == null) {
+            if (!blockType.isPresent()) {
                 // show error in log
-                GriefPrevention.AddLogEntry("ERROR: Unable to read a material entry from the config file.  Please update your config.yml.");
+                GriefPrevention.AddLogEntry("ERROR: Unable to read a block entry from the config file.  Please update your config.hocon.");
 
                 // update string, which will go out to config file to help user
                 // find the error entry
                 if (!stringsToParse.get(i).contains("can't")) {
-                    stringsToParse.set(i, stringsToParse.get(i) + "     <-- can't understand this entry, see BukkitDev documentation");
+                    stringsToParse.set(i, stringsToParse.get(i) + "     <-- can't understand this entry, see Sponge documentation");
                 }
             }
 
             // otherwise store the valid entry in config data
             else {
-                materialCollection.Add(materialInfo);
+                blockTypes.add(blockType.get());
             }
         }
     }

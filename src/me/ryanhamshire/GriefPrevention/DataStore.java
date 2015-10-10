@@ -80,7 +80,7 @@ public abstract class DataStore {
     Long nextClaimID = (long) 0;
 
     // path information, for where stuff stored on disk is well... stored
-    protected final static String dataLayerFolderPath = "plugins" + File.separator + "GriefPreventionData";
+    protected final static String dataLayerFolderPath = "config" + File.separator + "GriefPreventionData";
     final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
     final static String configFilePath = dataLayerFolderPath + File.separator + "config.hocon";
     final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.hocon";

@@ -18,48 +18,26 @@
 
 package me.ryanhamshire.GriefPrevention;
 
-import me.ryanhamshire.GriefPrevention.events.PreventPvPEvent;
-import net.minecraft.entity.item.EntityFallingBlock;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import org.omg.CORBA.Environment;
 import org.spongepowered.api.block.BlockTransaction;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
-import org.spongepowered.api.entity.EntityType;
-import org.spongepowered.api.entity.FallingBlock;
-import org.spongepowered.api.entity.Transform;
-import org.spongepowered.api.entity.explosive.Explosive;
-import org.spongepowered.api.entity.living.Villager;
-import org.spongepowered.api.entity.living.animal.Horse;
-import org.spongepowered.api.entity.living.monster.Creeper;
 import org.spongepowered.api.entity.living.monster.Enderman;
-import org.spongepowered.api.entity.living.monster.Monster;
 import org.spongepowered.api.entity.living.monster.Silverfish;
 import org.spongepowered.api.entity.living.monster.Wither;
 import org.spongepowered.api.entity.living.monster.Zombie;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.projectile.Projectile;
-import org.spongepowered.api.entity.projectile.ThrownPotion;
-import org.spongepowered.api.entity.projectile.source.ProjectileSource;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.potion.PotionEffectType;
 import org.spongepowered.api.potion.PotionEffectTypes;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 //handles events related to entities
 public class EntityEventHandler {
@@ -84,28 +62,24 @@ public class EntityEventHandler {
                     transaction.setIsValid(false);
                 } else if (!GriefPrevention.instance.config_silverfishBreakBlocks && entity instanceof Silverfish) {
                     transaction.setIsValid(false);
-                } else if (GriefPrevention.instance.config_claims_worldModes.get(event.getTargetWorld()) != ClaimsMode.Disabled && cause instanceof
+                } else if (GriefPrevention.instance.config_claims_worldModes.get(event.getTargetWorld()) != ClaimsMode.Disabled && entity instanceof
                         Wither) {
                     transaction.setIsValid(false);
-                } else if (!GriefPrevention.instance.config_zombiesBreakDoors && isTypeDoor(originalType) && entity instanceof Zombie) {
+                } else if (!GriefPrevention.instance.config_zombiesBreakDoors && transaction.getOriginal().get(Keys.HINGE_POSITION).isPresent() && entity
+                        instanceof Zombie) {
                     transaction.setIsValid(false);
                 } else if (finalType.equals(BlockTypes.DIRT) && originalType.equals(BlockTypes.FARMLAND)) {
                     if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
                         transaction.setIsValid(false);
                     } else {
-                        final Entity rider = (Entity) ((net.minecraft.entity.Entity) entity).riddenByEntity;
-                        if (rider != null && rider instanceof Player) {
+                        final Optional<Entity> optPassenger = entity.get(Keys.PASSENGER);
+                        if (optPassenger.isPresent() && optPassenger.get() instanceof Player) {
                             transaction.setIsValid(false);
                         }
                     }
                 }
             }
         }
-    }
-
-    private boolean isTypeDoor(BlockType type) {
-        return type.equals(BlockTypes.ACACIA_DOOR) || type.equals(BlockTypes.BIRCH_DOOR) || type.equals(BlockTypes.DARK_OAK_DOOR) || type.equals
-                (BlockTypes.JUNGLE_DOOR) || type.equals(BlockTypes.SPRUCE_DOOR) || type.equals(BlockTypes.WOODEN_DOOR);
     }
 
     // don't allow endermen to change blocks
