@@ -21,6 +21,8 @@ package me.ryanhamshire.GriefPrevention;
 import com.google.common.io.Files;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
 import net.minecraft.item.ItemStack;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.scheduler.Task;
@@ -1378,36 +1380,43 @@ public abstract class DataStore {
         this.addDefault(defaults, Messages.NoProfanity, "Please moderate your language.", null);
 
         // load the config file
-        FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));
+        try
+        {
+            HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(new File(messagesFilePath)).build();
+            CommentedConfigurationNode mainNode = configurationLoader.load();
 
-        // for each message ID
-        for (int i = 0; i < messageIDs.length; i++) {
-            // get default for this message
-            Messages messageID = messageIDs[i];
-            CustomizableMessage messageData = defaults.get(messageID.name());
+            // for each message ID
+            for (int i = 0; i < messageIDs.length; i++)
+            {
+                // get default for this message
+                Messages messageID = messageIDs[i];
+                CustomizableMessage messageData = defaults.get(messageID.name());
 
-            // if default is missing, log an error and use some fake data for
-            // now so that the plugin can run
-            if (messageData == null) {
-                GriefPrevention.AddLogEntry("Missing message for " + messageID.name() + ".  Please contact the developer.");
-                messageData =
-                        new CustomizableMessage(messageID, "Missing message!  ID: " + messageID.name() + ".  Please contact a server admin.", null);
+                // if default is missing, log an error and use some fake data for
+                // now so that the plugin can run
+                if(messageData == null)
+                {
+                    GriefPrevention.AddLogEntry("Missing message for " + messageID.name() + ".  Please contact the developer.");
+                    messageData =
+                            new CustomizableMessage(messageID, "Missing message!  ID: " + messageID.name() + ".  Please contact a server admin.", null);
+                }
+
+                // read the message from the file, use default if necessary
+                this.messages[messageID.ordinal()] = mainNode.getNode("Messages", messageID.name(), "Text").getString(messageData.text);
+                mainNode.getNode("Messages", messageID.name(), "Text").setValue(this.messages[messageID.ordinal()]);
+
+                if(messageData.notes != null)
+                {
+                    messageData.notes = mainNode.getNode("Messages", messageID.name(), "Notes").getString(messageData.notes);
+                    mainNode.getNode("Messages", messageID.name(), "Notes").setValue(messageData.notes);
+                }
             }
 
-            // read the message from the file, use default if necessary
-            this.messages[messageID.ordinal()] = config.getString("Messages." + messageID.name() + ".Text", messageData.text);
-            config.set("Messages." + messageID.name() + ".Text", this.messages[messageID.ordinal()]);
+            // save any changes
+            configurationLoader.save(mainNode);
 
-            if (messageData.notes != null) {
-                messageData.notes = config.getString("Messages." + messageID.name() + ".Notes", messageData.notes);
-                config.set("Messages." + messageID.name() + ".Notes", messageData.notes);
-            }
-        }
-
-        // save any changes
-        try {
-            config.save(DataStore.messagesFilePath);
-        } catch (IOException exception) {
+        } catch (Exception e) {
+            e.printStackTrace();
             GriefPrevention.AddLogEntry("Unable to write to the configuration file at \"" + DataStore.messagesFilePath + "\"");
         }
 
