@@ -69,7 +69,7 @@ class PlayerEventHandler {
     }
 
     // when a player chats, monitor for spam
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    /*@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     synchronized void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         if (!player.isOnline()) {
@@ -735,13 +735,8 @@ class PlayerEventHandler {
         // also send him any messaged from grief prevention he would have
         // received while dead
         if (playerData.messageOnRespawn != null) {
-            GriefPrevention.sendMessage(player, ChatColor.RESET /*
-                                                                 * color is
-                                                                 * alrady
-                                                                 * embedded in
-                                                                 * message in
-                                                                 * this case
-                                                                 */, playerData.messageOnRespawn, 40L);
+            // color is already embedded inmessage in this case
+            GriefPrevention.sendMessage(player, ChatColor.RESET, playerData.messageOnRespawn, 40L);
             playerData.messageOnRespawn = null;
         }
 
@@ -1650,10 +1645,8 @@ class PlayerEventHandler {
 
                 if (playerData == null)
                     playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false /*
-                                                                                           * ignore
-                                                                                           * height
-                                                                                           */, playerData.lastClaim);
+                // ignore height
+                Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
 
                 // no claim case
                 if (claim == null) {
@@ -2089,10 +2082,9 @@ class PlayerEventHandler {
 
             // otherwise, since not currently resizing a claim, must be starting
             // a resize, creating a new claim, or creating a subdivision
-            Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), true /*
-                                                                                      * ignore
-                                                                                      * height
-                                                                                      */, playerData.lastClaim);
+
+            // ignore height
+            Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), true, playerData.lastClaim);
 
             // if within an existing claim, he's not creating a new one
             if (claim != null) {
@@ -2411,5 +2403,5 @@ class PlayerEventHandler {
         }
 
         return result;
-    }
+    }*/
 }

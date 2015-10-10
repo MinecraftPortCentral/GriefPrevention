@@ -49,6 +49,8 @@ import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.potion.PotionEffectType;
+import org.spongepowered.api.potion.PotionEffectTypes;
+import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
@@ -107,7 +109,7 @@ public class EntityEventHandler {
     }
 
     // don't allow endermen to change blocks
-    @Listener(ignoreCancelled = true, order = Order.EARLY)
+   /* @Listener(ignoreCancelled = true, order = Order.EARLY)
     public void onEntityChangeBLock(ChangeBlockEvent event) {
         // sand cannon fix - when the falling block doesn't fall straight down,
         // take additional anti-grief steps
@@ -371,12 +373,7 @@ public class EntityEventHandler {
             event.getDrops().clear();
 
             // end it, with the dieing player being the loser
-            this.dataStore.endSiege(playerData.siegeData, null, player.getName(), true /*
-                                                                                        * ended
-                                                                                        * due
-                                                                                        * to
-                                                                                        * death
-                                                                                        */);
+            this.dataStore.endSiege(playerData.siegeData, null, player.getName(), true /ended due to death/);
         }
 
         // FEATURE: lock dropped items to player who dropped them
@@ -1021,20 +1018,21 @@ public class EntityEventHandler {
             }
         }
     }
+    */
 
     public static final HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList(
-            PotionEffectType.ABSORPTION,
-            PotionEffectType.DAMAGE_RESISTANCE,
-            PotionEffectType.FAST_DIGGING,
-            PotionEffectType.FIRE_RESISTANCE,
-            PotionEffectType.HEAL,
-            PotionEffectType.HEALTH_BOOST,
-            PotionEffectType.INCREASE_DAMAGE,
-            PotionEffectType.INVISIBILITY,
-            PotionEffectType.JUMP,
-            PotionEffectType.NIGHT_VISION,
-            PotionEffectType.REGENERATION,
-            PotionEffectType.SATURATION,
-            PotionEffectType.SPEED,
-            PotionEffectType.WATER_BREATHING));
+            PotionEffectTypes.ABSORPTION,
+            //PotionEffectTypes.DAMAGE_RESISTANCE,
+           // PotionEffectTypes.FAST_DIGGING,
+            PotionEffectTypes.FIRE_RESISTANCE,
+            //PotionEffectTypes.HEAL,
+            PotionEffectTypes.HEALTH_BOOST,
+            //PotionEffectTypes.INCREASE_DAMAGE,
+            PotionEffectTypes.INVISIBILITY,
+            //PotionEffectTypes.JUMP,
+            PotionEffectTypes.NIGHT_VISION,
+            PotionEffectTypes.REGENERATION,
+            PotionEffectTypes.SATURATION,
+            PotionEffectTypes.SPEED,
+            PotionEffectTypes.WATER_BREATHING));
 }

@@ -47,6 +47,7 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.service.event.EventManager;
 import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.text.Text;
@@ -84,6 +85,7 @@ import java.util.regex.Pattern;
 
 //import net.milkbowl.vault.economy.Economy;
 
+@Plugin(id = "GriefPrevention", name = "GriefPrevention", version = "12.7.1")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin

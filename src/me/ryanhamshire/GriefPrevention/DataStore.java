@@ -328,6 +328,7 @@ public abstract class DataStore {
 
     abstract void saveGroupBonusBlocks(String groupName, int amount);
 
+    @SuppressWarnings("serial")
     class NoTransferException extends Exception {
 
         NoTransferException(String message) {
@@ -680,8 +681,8 @@ public abstract class DataStore {
 
         // create a new claim instance (but don't save it, yet)
         Claim newClaim = new Claim(
-                new Location(world, smallx, smally, smallz),
-                new Location(world, bigx, bigy, bigz),
+                new Location<World>(world, smallx, smally, smallz),
+                new Location<World>(world, bigx, bigy, bigz),
                 ownerID,
                 new ArrayList<String>(),
                 new ArrayList<String>(),
@@ -1486,6 +1487,7 @@ public abstract class DataStore {
             this.playerData = playerData;
         }
 
+        @Override
         public void run() {
             // ensure player data is already read from file before trying to
             // save

@@ -18,6 +18,8 @@
 
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.entity.living.player.Player;
+
 //tells a player about how many claim blocks he has, etc
 //implemented as a task so that it can be delayed
 //otherwise, it's spammy when players mouse-wheel past the shovel in their hot bars
@@ -33,7 +35,7 @@ class EquipShovelProcessingTask implements Runnable {
     @Override
     public void run() {
         // if he's not holding the golden shovel anymore, do nothing
-        if (player.getItemInHand().getType() != GriefPrevention.instance.config_claims_modificationTool)
+        if (player.getItemInHand().isPresent() && player.getItemInHand().get().getItem() != GriefPrevention.instance.config_claims_modificationTool)
             return;
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
@@ -55,7 +57,7 @@ class EquipShovelProcessingTask implements Runnable {
         // link to a video demo of land claiming, based on world type
         if (GriefPrevention.instance.creativeRulesApply(player.getLocation())) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
-        } else if (GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getWorld())) {
+        } else if (GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getExtent())) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
         }
     }
