@@ -1385,7 +1385,7 @@ public abstract class DataStore {
         try
         {
             HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(new File(messagesFilePath)).build();
-            CommentedConfigurationNode mainNode = configurationLoader.load(ConfigurationOptions.defaults().setShouldCopyDefaults(true));
+            CommentedConfigurationNode mainNode = configurationLoader.load();
 
             // for each message ID
             for (int i = 0; i < messageIDs.length; i++)
