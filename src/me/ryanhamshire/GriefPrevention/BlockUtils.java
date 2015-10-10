@@ -3,9 +3,9 @@ package me.ryanhamshire.GriefPrevention;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.S23PacketBlockChange;
+import net.minecraft.util.BlockPos;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.common.util.VecHelper;
 
 public class BlockUtils {
 
@@ -15,7 +15,7 @@ public class BlockUtils {
             return;
 
         S23PacketBlockChange packet = new S23PacketBlockChange((net.minecraft.world.World) snapshot.getLocation().get().getExtent(),
-                VecHelper.toBlockPos(snapshot.getPosition()));
+                new BlockPos(snapshot.getPosition().getX(), snapshot.getPosition().getY(), snapshot.getPosition().getZ()));
 
         packet.blockState = (IBlockState) snapshot.getState();
         playermp.playerNetServerHandler.sendPacket(packet);
