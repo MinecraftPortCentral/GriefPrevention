@@ -2093,7 +2093,7 @@ public class GriefPrevention {
                     GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnSeparateConfirmation);
                     return  CommandResult.success();
                 })
-                .build(), "separate");
+                .build(), "unseparate");
     }
 
     void setIgnoreStatus(User ignorer, User ignoree, IgnoreMode mode) {
