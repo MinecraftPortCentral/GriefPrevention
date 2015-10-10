@@ -66,7 +66,6 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.text.SpongeTexts;
 
 import java.io.File;
 import java.io.IOException;
@@ -2478,7 +2477,7 @@ public class GriefPrevention {
             return;
 
         if (player == null) {
-            GriefPrevention.AddLogEntry(SpongeTexts.toComponent(message).getUnformattedText());
+            GriefPrevention.AddLogEntry(Texts.toPlain(message));
         } else {
             player.sendMessage(message);
         }
