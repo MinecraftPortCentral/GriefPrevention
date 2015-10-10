@@ -65,7 +65,8 @@ public class EntityEventHandler {
                 } else if (GriefPrevention.instance.config_claims_worldModes.get(event.getTargetWorld()) != ClaimsMode.Disabled && entity instanceof
                         Wither) {
                     transaction.setIsValid(false);
-                } else if (!GriefPrevention.instance.config_zombiesBreakDoors && isTypeDoor(originalType) && entity instanceof Zombie) {
+                } else if (!GriefPrevention.instance.config_zombiesBreakDoors && transaction.getOriginal().get(Keys.HINGE_POSITION).isPresent() && entity
+                        instanceof Zombie) {
                     transaction.setIsValid(false);
                 } else if (finalType.equals(BlockTypes.DIRT) && originalType.equals(BlockTypes.FARMLAND)) {
                     if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
@@ -79,11 +80,6 @@ public class EntityEventHandler {
                 }
             }
         }
-    }
-
-    private boolean isTypeDoor(BlockType type) {
-        return type.equals(BlockTypes.ACACIA_DOOR) || type.equals(BlockTypes.BIRCH_DOOR) || type.equals(BlockTypes.DARK_OAK_DOOR) || type.equals
-                (BlockTypes.JUNGLE_DOOR) || type.equals(BlockTypes.SPRUCE_DOOR) || type.equals(BlockTypes.WOODEN_DOOR);
     }
 
     // don't allow endermen to change blocks
