@@ -31,7 +31,6 @@ import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.Sponge;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
