@@ -45,7 +45,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
@@ -377,7 +377,7 @@ public class GriefPrevention {
 
     // initializes well... everything
     @Listener
-    public void onPreInit(GamePreInitializationEvent event) {
+    public void onPostInit(GamePostInitializationEvent event) {
         instance = this;
 
         AddLogEntry("Grief Prevention boot start.");
