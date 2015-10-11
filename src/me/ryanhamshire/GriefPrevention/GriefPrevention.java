@@ -2556,6 +2556,11 @@ public class GriefPrevention {
 
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, String... args) {
+        sendMessage(player, color, messageID, delayInTicks, Texts.of(), args);
+    }
+
+    // sends a color-coded message to a player
+    static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, Text text, String... args) {
         String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
         sendMessage(player, Texts.of(color, message), delayInTicks);
     }
@@ -2615,7 +2620,7 @@ public class GriefPrevention {
                     String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                     if (player.hasPermission("griefprevention.ignoreclaims"))
                         reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                    reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
+                    reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL_RAW);
                     return reason;
                 } else {
                     return null;
@@ -2652,7 +2657,7 @@ public class GriefPrevention {
                 String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                 if (player.hasPermission("griefprevention.ignoreclaims"))
                     reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
+                reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL_RAW);
                 return reason;
             }
 

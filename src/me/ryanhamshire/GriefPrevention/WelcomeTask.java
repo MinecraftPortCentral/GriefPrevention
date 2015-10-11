@@ -47,7 +47,7 @@ public class WelcomeTask implements Runnable {
 
 
             StringBuilder page1 = new StringBuilder();
-            String URL = datastore.getMessage(Messages.BookLink, DataStore.SURVIVAL_VIDEO_URL);
+            String URL = datastore.getMessage(Messages.BookLink, DataStore.SURVIVAL_VIDEO_URL_RAW);
             String intro = datastore.getMessage(Messages.BookIntro);
 
             page1.append(URL).append("\n\n");

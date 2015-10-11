@@ -100,9 +100,12 @@ public abstract class DataStore {
     private int currentSchemaVersion = -1; // -1 means not determined yet
 
     // video links
-    static final Text SURVIVAL_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, "bit.ly/mcgpuser", TextColors.RESET);
-    static final Text CREATIVE_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, "bit.ly/mcgpcrea", TextColors.RESET);
-    static final Text SUBDIVISION_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, "bit.ly/mcgpsub", TextColors.RESET);
+    static final String SURVIVAL_VIDEO_URL_RAW = "bit.ly/mcgpuser";
+    static final String CREATIVE_VIDEO_URL_RAW = "bit.ly/mcgpcrea";
+    static final String SUBDIVISION_VIDEO_URL_RAW = "bit.ly/mcgpsub";
+    static final Text SURVIVAL_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, SURVIVAL_VIDEO_URL_RAW, TextColors.RESET);
+    static final Text CREATIVE_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, CREATIVE_VIDEO_URL_RAW, TextColors.RESET);
+    static final Text SUBDIVISION_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, SUBDIVISION_VIDEO_URL_RAW, TextColors.RESET);
 
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
