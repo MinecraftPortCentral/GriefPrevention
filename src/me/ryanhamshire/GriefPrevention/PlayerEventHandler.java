@@ -19,36 +19,11 @@
 package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.collect.Sets;
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerRespawnEvent;
-import org.omg.CORBA.Environment;
-import org.spongepowered.api.data.key.Keys;
-import org.spongepowered.api.data.manipulator.mutable.entity.TameableData;
-import org.spongepowered.api.entity.Entity;
-import org.spongepowered.api.entity.EntityType;
-import org.spongepowered.api.entity.EntityTypes;
-import org.spongepowered.api.entity.hanging.Hanging;
-import org.spongepowered.api.entity.living.animal.Animal;
-import org.spongepowered.api.entity.living.animal.Horse;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.entity.living.player.gamemode.GameMode;
-import org.spongepowered.api.entity.vehicle.Boat;
-import org.spongepowered.api.entity.vehicle.minecart.MinecartChest;
-import org.spongepowered.api.entity.vehicle.minecart.MinecartFurnace;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.action.MessageEvent;
-import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
 import org.spongepowered.api.event.command.MessageSinkEvent;
-import org.spongepowered.api.event.command.SendCommandEvent;
-import org.spongepowered.api.event.entity.InteractEntityEvent;
-import org.spongepowered.api.item.ItemTypes;
-import org.spongepowered.api.item.inventory.Carrier;
-import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.statistic.achievement.Achievements;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
@@ -56,15 +31,9 @@ import org.spongepowered.api.text.sink.MessageSinks;
 import org.spongepowered.api.util.command.CommandSource;
 import org.spongepowered.api.world.Location;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,7 +65,7 @@ class PlayerEventHandler {
 
     // when a player chats, monitor for spam
     @Listener(order = Order.PRE)
-    synchronized void onPlayerChat(MessageSinkEvent.Chat event) {
+    public void onPlayerChat(MessageSinkEvent.Chat event) {
         Player player = event.getCause().first(Player.class).get();
         if (!player.isOnline()) {
             event.setCancelled(true);

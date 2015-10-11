@@ -19,7 +19,6 @@
 package me.ryanhamshire.GriefPrevention;
 
 import static org.spongepowered.api.util.command.CommandMessageFormatting.SPACE_TEXT;
-import static org.spongepowered.api.util.command.CommandMessageFormatting.debug;
 import static org.spongepowered.api.util.command.args.GenericArguments.firstParsing;
 import static org.spongepowered.api.util.command.args.GenericArguments.integer;
 import static org.spongepowered.api.util.command.args.GenericArguments.literal;
@@ -29,20 +28,18 @@ import static org.spongepowered.api.util.command.args.GenericArguments.player;
 import static org.spongepowered.api.util.command.args.GenericArguments.playerOrSource;
 import static org.spongepowered.api.util.command.args.GenericArguments.string;
 
-import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
-import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.api.Game;
-//import net.milkbowl.vault.economy.Economy;
 import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -55,15 +52,14 @@ import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.service.event.EventManager;
 import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.TextBuilder;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColor;
-import org.spongepowered.api.util.command.CommandSource;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.text.TextBuilder;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.command.CommandException;
 import org.spongepowered.api.util.command.CommandPermissionException;
 import org.spongepowered.api.util.command.CommandResult;
+import org.spongepowered.api.util.command.CommandSource;
 import org.spongepowered.api.util.command.spec.CommandSpec;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
@@ -85,6 +81,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+//import net.milkbowl.vault.economy.Economy;
 
 //import net.milkbowl.vault.economy.Economy;
 
@@ -509,6 +507,8 @@ public class GriefPrevention {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
 
+        game.getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
+        game.getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
         AddLogEntry("Boot finished.");
     }
 
