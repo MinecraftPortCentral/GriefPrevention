@@ -2564,7 +2564,7 @@ public class GriefPrevention {
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, Text text, String... args) {
         String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
-        if (message.isEmpty()) {
+        if (message.isEmpty() || message.equals("{0}")) {
             sendMessage(player, Texts.of(text), delayInTicks);
         } else {
             sendMessage(player, Texts.of(color, message, text), delayInTicks);
