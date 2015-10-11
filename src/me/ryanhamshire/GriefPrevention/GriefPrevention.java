@@ -507,6 +507,7 @@ public class GriefPrevention {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
 
+        game.getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
         game.getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
         game.getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
         AddLogEntry("Boot finished.");

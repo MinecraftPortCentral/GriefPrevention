@@ -39,7 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-class PlayerEventHandler {
+public class PlayerEventHandler {
 
     private DataStore dataStore;
 
