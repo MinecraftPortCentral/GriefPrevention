@@ -2551,7 +2551,7 @@ public class GriefPrevention {
 
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, TextColor color, Messages messageID, Text text, String... args) {
-        sendMessage(player, color, messageID, 0, args);
+        sendMessage(player, color, messageID, 0, text, args);
     }
 
     // sends a color-coded message to a player
@@ -2562,7 +2562,7 @@ public class GriefPrevention {
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, Text text, String... args) {
         String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
-        sendMessage(player, Texts.of(color, message), delayInTicks);
+        sendMessage(player, Texts.of(color, message, text), delayInTicks);
     }
 
     // sends a color-coded message to a player
