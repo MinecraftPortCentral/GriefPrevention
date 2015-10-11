@@ -28,6 +28,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.scheduler.Task;
 import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
@@ -99,9 +100,9 @@ public abstract class DataStore {
     private int currentSchemaVersion = -1; // -1 means not determined yet
 
     // video links
-    static final String SURVIVAL_VIDEO_URL = "" + TextColors.DARK_AQUA + TextStyles.UNDERLINE + "bit.ly/mcgpuser" + TextColors.RESET;
-    static final String CREATIVE_VIDEO_URL = "" + TextColors.DARK_AQUA + TextStyles.UNDERLINE + "bit.ly/mcgpcrea" + TextColors.RESET;
-    static final String SUBDIVISION_VIDEO_URL = "" + TextColors.DARK_AQUA + TextStyles.UNDERLINE + "bit.ly/mcgpsub" + TextColors.RESET;
+    static final Text SURVIVAL_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, "bit.ly/mcgpuser", TextColors.RESET);
+    static final Text CREATIVE_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, "bit.ly/mcgpcrea", TextColors.RESET);
+    static final Text SUBDIVISION_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, "bit.ly/mcgpsub", TextColors.RESET);
 
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();

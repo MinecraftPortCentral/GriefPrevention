@@ -2546,6 +2546,11 @@ public class GriefPrevention {
 
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
+        sendMessage(player, color, messageID, Texts.of(), args);
+    }
+
+    // sends a color-coded message to a player
+    static void sendMessage(CommandSource player, TextColor color, Messages messageID, Text text, String... args) {
         sendMessage(player, color, messageID, 0, args);
     }
 
