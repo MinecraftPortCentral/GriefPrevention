@@ -381,6 +381,8 @@ public class GriefPrevention {
     public void onPostInit(GamePostInitializationEvent event) {
         instance = this;
 
+        DataStore.resetTextObjects();
+
         AddLogEntry("Grief Prevention boot start.");
 
         this.loadConfig();

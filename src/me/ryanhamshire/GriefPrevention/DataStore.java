@@ -103,9 +103,15 @@ public abstract class DataStore {
     static final String SURVIVAL_VIDEO_URL_RAW = "bit.ly/mcgpuser";
     static final String CREATIVE_VIDEO_URL_RAW = "bit.ly/mcgpcrea";
     static final String SUBDIVISION_VIDEO_URL_RAW = "bit.ly/mcgpsub";
-    static final Text SURVIVAL_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, SURVIVAL_VIDEO_URL_RAW, TextColors.RESET);
-    static final Text CREATIVE_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, CREATIVE_VIDEO_URL_RAW, TextColors.RESET);
-    static final Text SUBDIVISION_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, SUBDIVISION_VIDEO_URL_RAW, TextColors.RESET);
+    static Text SURVIVAL_VIDEO_URL;
+    static Text CREATIVE_VIDEO_URL;
+    static Text SUBDIVISION_VIDEO_URL;
+
+    static void resetTextObjects() {
+        SURVIVAL_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, SURVIVAL_VIDEO_URL_RAW, TextColors.RESET);
+        CREATIVE_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, CREATIVE_VIDEO_URL_RAW, TextColors.RESET);
+        SUBDIVISION_VIDEO_URL = Texts.of(TextColors.DARK_AQUA, TextStyles.UNDERLINE, SUBDIVISION_VIDEO_URL_RAW, TextColors.RESET);
+    }
 
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
