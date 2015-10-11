@@ -19,11 +19,45 @@
 package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.collect.Sets;
+import com.google.common.eventbus.Subscribe;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.init.Items;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.manipulator.mutable.entity.TameableData;
+import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
+import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.entity.EntityTypes;
+import org.spongepowered.api.entity.hanging.Hanging;
+import org.spongepowered.api.entity.living.animal.Animal;
+import org.spongepowered.api.entity.living.animal.Horse;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.entity.vehicle.Boat;
+import org.spongepowered.api.entity.vehicle.minecart.MinecartChest;
+import org.spongepowered.api.entity.vehicle.minecart.MinecartFurnace;
+import org.spongepowered.api.event.GameEvent;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.action.MessageEvent;
+import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
+import org.spongepowered.api.event.cause.entity.teleport.TeleportType;
+import org.spongepowered.api.event.cause.entity.teleport.TeleportTypes;
 import org.spongepowered.api.event.command.MessageSinkEvent;
+import org.spongepowered.api.event.command.SendCommandEvent;
+import org.spongepowered.api.event.entity.DestructEntityEvent;
+import org.spongepowered.api.event.entity.DisplaceEntityEvent;
+import org.spongepowered.api.event.entity.InteractEntityEvent;
+import org.spongepowered.api.event.entity.living.player.KickPlayerEvent;
+import org.spongepowered.api.event.entity.living.player.RespawnPlayerEvent;
+import org.spongepowered.api.event.inventory.DropItemEvent;
+import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.item.inventory.Carrier;
+import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.statistic.achievement.Achievements;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
@@ -31,9 +65,13 @@ import org.spongepowered.api.text.sink.MessageSinks;
 import org.spongepowered.api.util.command.CommandSource;
 import org.spongepowered.api.world.Location;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -161,7 +199,7 @@ public class PlayerEventHandler {
     private int duplicateMessageCount = 0;
 
     // returns true if the message should be sent, false if it should be muted
-    private boolean handlePlayerChat(Player player, String message, MessageSinkEvent.Chat event) {
+    private boolean handlePlayerChat(Player player, String message, GameEvent event) {
         // FEATURE: automatically educate players about claiming land
         // watching for message format how*claim*, and will send a link to the
         // basics video
@@ -409,12 +447,14 @@ public class PlayerEventHandler {
         return false;
     }
 
-    /*
+
     // when a player uses a slash command...
     @Listener(ignoreCancelled = true, order = Order.PRE)
     synchronized void onPlayerCommandPreprocess(SendCommandEvent event) {
         String command = event.getCommand();
         String[] args = event.getArguments().split(" ");
+
+        String message = "/" + event.getCommand() + " " + event.getArguments();
 
         CommandSource source = event.getCause().first(CommandSource.class).get();
         PlayerData playerData = null;
@@ -487,10 +527,10 @@ public class PlayerEventHandler {
             }
         }
 
-        if (isMonitoredCommand) {
+        if (isMonitoredCommand && source instanceof Player) {
             // if anti spam enabled, check for spam
             if (GriefPrevention.instance.config_spam_enabled && source instanceof Player) {
-                event.setCancelled(this.handlePlayerChat((Player) source, event.getMessage(), event));
+                event.setCancelled(this.handlePlayerChat((Player) source, message, event));
             }
 
             // unless cancelled, log in abridged logs
@@ -500,7 +540,7 @@ public class PlayerEventHandler {
                     builder.append(arg + " ");
                 }
 
-                this.makeSocialLogEntry(event.getPlayer().getName(), builder.toString());
+                this.makeSocialLogEntry((((Player) source)).getName(), builder.toString());
             }
         }
 
@@ -514,18 +554,20 @@ public class PlayerEventHandler {
             }
         }
 
-        if (isMonitoredCommand) {
+        if (isMonitoredCommand && source instanceof Player) {
+            Player player = (Player) source;
+
             Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
             if (claim != null) {
                 playerData.lastClaim = claim;
                 String reason = claim.allowAccess(player);
                 if (reason != null) {
-                    GriefPrevention.sendMessage(player, TextMode.Err, reason);
+                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, reason));
                     event.setCancelled(true);
                 }
             }
         }
-    }*/
+    }
 
     static int longestNameLength = 10;
 
@@ -547,11 +589,10 @@ public class PlayerEventHandler {
     // right now
     private ConcurrentHashMap<String, Integer> ipCountHash = new ConcurrentHashMap<String, Integer>();
 
-    /*
     // when a player attempts to join the server...
-    @EventHandler(priority = EventPriority.HIGHEST)
-            void onPlayerLogin(PlayerLoginEvent event) {
-        Player player = event.getPlayer();
+    @Listener(order = Order.LAST)
+    public void onPlayerLogin(ClientConnectionEvent.Login event) {
+        Player player = event.getCause().first(Player.class).get();
 
         // all this is anti-spam code
         if (GriefPrevention.instance.config_spam_enabled) {
@@ -560,8 +601,7 @@ public class PlayerEventHandler {
             long now = Calendar.getInstance().getTimeInMillis();
 
             // if allowed to join and login cooldown enabled
-            if (GriefPrevention.instance.config_spam_loginCooldownSeconds > 0 && event.getResult() == Result.ALLOWED
-                    && !player.hasPermission("griefprevention.spam")) {
+            if (GriefPrevention.instance.config_spam_loginCooldownSeconds > 0 && !player.hasPermission("griefprevention.spam")) {
                 // determine how long since last login and cooldown remaining
                 Date lastLoginThisSession = lastLoginThisServerSessionMap.get(player.getUniqueId());
                 if (lastLoginThisSession != null) {
@@ -571,30 +611,29 @@ public class PlayerEventHandler {
 
                     // if cooldown remaining
                     if (cooldownRemaining > 0) {
-                        // DAS BOOT!
-                        event.setResult(Result.KICK_OTHER);
-                        event.setKickMessage("You must wait " + cooldownRemaining + " seconds before logging-in again.");
-                        event.disallow(event.getResult(), event.getKickMessage());
+                        // DAS BOOT!;
+                        event.setMessage(Texts.of("You must wait " + cooldownRemaining + " seconds before logging-in again."));
+                        event.setCancelled(true);
                         return;
                     }
                 }
             }
 
             // if logging-in account is banned, remember IP address for later
-            if (GriefPrevention.instance.config_smartBan && event.getResult() == Result.KICK_BANNED) {
+            /*if (GriefPrevention.instance.config_smartBan && event.getResult() == Result.KICK_BANNED) {
                 this.tempBannedIps.add(new IpBanInfo(event.getAddress(), now + this.MILLISECONDS_IN_DAY, player.getName()));
-            }
+            }*/
         }
 
         // remember the player's ip address
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        playerData.ipAddress = event.getAddress();
+        playerData.ipAddress = event.getConnection().getAddress().getAddress();
     }
 
     // when a player successfully joins the server...
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-            void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+    @Listener(ignoreCancelled = true, order = Order.LAST)
+    public void onPlayerJoin(ClientConnectionEvent.Join event) {
+        Player player = event.getCause().first(Player.class).get();
         UUID playerID = player.getUniqueId();
 
         // note login time
@@ -607,12 +646,14 @@ public class PlayerEventHandler {
 
         // if newish, prevent chat until he's moved a bit to prove he's not a
         // bot
-        if (!player.hasAchievement(Achievement.MINE_WOOD)) {
+        if (!player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
             playerData.noChatLocation = player.getLocation();
         }
 
+        boolean hasJoinedBefore = !player.getJoinData().firstPlayed().get().equals(player.getJoinData().lastPlayed().get());
+
         // if player has never played on the server before...
-        if (!player.hasPlayedBefore()) {
+        if (!hasJoinedBefore) {
             // may need pvp protection
             GriefPrevention.instance.checkPvpProtectionNeeded(player);
 
@@ -621,7 +662,7 @@ public class PlayerEventHandler {
             if (GriefPrevention.instance.config_claims_worldModes.get(player.getWorld()) == ClaimsMode.Survival
                     && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10) {
                 WelcomeTask task = new WelcomeTask(player);
-                Bukkit.getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 200L); // 10
+                event.getGame().getScheduler().createTaskBuilder().delay(200).execute(task).submit(GriefPrevention.instance); // 10
                                                                                                      // seconds
                                                                                                      // after
                                                                                                      // join
@@ -629,13 +670,13 @@ public class PlayerEventHandler {
         }
 
         // silence notifications when they're coming too fast
-        if (event.getJoinMessage() != null && this.shouldSilenceNotification()) {
-            event.setJoinMessage(null);
+        if (!event.getMessage().equals(Texts.of()) && this.shouldSilenceNotification()) {
+            event.setMessage(Texts.of());
         }
 
         // FEATURE: auto-ban accounts who use an IP address which was very
         // recently used by another banned account
-        if (GriefPrevention.instance.config_smartBan && !player.hasPlayedBefore()) {
+        if (GriefPrevention.instance.config_smartBan && !hasJoinedBefore) {
             // search temporarily banned IP addresses for this one
             for (int i = 0; i < this.tempBannedIps.size(); i++) {
                 IpBanInfo info = this.tempBannedIps.get(i);
@@ -647,22 +688,23 @@ public class PlayerEventHandler {
                 }
 
                 // if we find a match
-                else if (address.equals(playerData.ipAddress.toString())) {
+                else if (address.equals(playerData.ipAddress.toString())) {/*
+                    UserStorage storage = event.getGame().getServiceManager().provideUnchecked(UserStorage.class);
                     // if the account associated with the IP ban has been
                     // pardoned, remove all ip bans for that ip and we're done
-                    OfflinePlayer bannedPlayer = GriefPrevention.instance.getServer().getOfflinePlayer(info.bannedAccountName);
-                    if (!bannedPlayer.isBanned()) {
+                    User bannedPlayer = storage.get(info.bannedAccountName).get();
+                    /*if (!bannedPlayer.isBanned()) {
                         for (int j = 0; j < this.tempBannedIps.size(); j++) {
                             IpBanInfo info2 = this.tempBannedIps.get(j);
                             if (info2.address.toString().equals(address)) {
-                                OfflinePlayer bannedAccount = GriefPrevention.instance.getServer().getOfflinePlayer(info2.bannedAccountName);
+                                User bannedAccount = storage.get(info2.bannedAccountName).get();
                                 bannedAccount.setBanned(false);
                                 this.tempBannedIps.remove(j--);
                             }
                         }
 
                         break;
-                    }
+                    */}
 
                     // otherwise if that account is still banned, ban this
                     // account, too
@@ -672,38 +714,37 @@ public class PlayerEventHandler {
                                 + info.address.toString() + ").", CustomLogEntryTypes.AdminActivity);
 
                         // notify any online ops
-                        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getServer().getOnlinePlayers();
+                        Collection<Player> players = (Collection<Player>) event.getGame().getServer().getOnlinePlayers();
                         for (Player otherPlayer : players) {
-                            if (otherPlayer.isOp()) {
+                            /*if (otherPlayer.isOp()) {
                                 GriefPrevention.sendMessage(otherPlayer, TextMode.Success, Messages.AutoBanNotify, player.getName(),
                                         info.bannedAccountName);
-                            }
+                            }*/
                         }
 
                         // ban player
                         PlayerKickBanTask task =
                                 new PlayerKickBanTask(player, "", "GriefPrevention Smart Ban - Shared Login:" + info.bannedAccountName, true);
-                        GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
+                        event.getGame().getScheduler().createTaskBuilder().delay(10).execute(task).submit(GriefPrevention.instance);
 
                         // silence join message
-                        event.setJoinMessage("");
+                        event.setMessage(Texts.of());
 
                         break;
-                    }
                 }
             }
         }
 
         // in case player has changed his name, on successful login, update UUID
         // > Name mapping
-        GriefPrevention.cacheUUIDNamePair(player.getUniqueId(), player.getName());
+        //GriefPrevention.cacheUUIDNamePair(player.getUniqueId(), player.getName());
 
         // ensure we're not over the limit for this IP address
         InetAddress ipAddress = playerData.ipAddress;
         if (ipAddress != null) {
             String ipAddressString = ipAddress.toString();
             int ipLimit = GriefPrevention.instance.config_ipLimit;
-            if (ipLimit > 0 && !player.hasAchievement(Achievement.MINE_WOOD)) {
+            if (ipLimit > 0 && !player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
                 Integer ipCount = this.ipCountHash.get(ipAddressString);
                 if (ipCount == null)
                     ipCount = 0;
@@ -711,10 +752,10 @@ public class PlayerEventHandler {
                     // kick player
                     PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.",
                             "GriefPrevention IP-sharing limit.", false);
-                    GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 10L);
+                    event.getGame().getScheduler().createTaskBuilder().delay(10).execute(task).submit(GriefPrevention.instance);
 
                     // silence join message
-                    event.setJoinMessage("");
+                    event.setMessage(Texts.of(""));
                     return;
                 } else {
                     this.ipCountHash.put(ipAddressString, ipCount + 1);
@@ -726,10 +767,11 @@ public class PlayerEventHandler {
         new IgnoreLoaderThread(playerID, playerData.ignoredPlayers).start();
     }
 
+
     // when a player spawns, conditionally apply temporary pvp protection
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-            void onPlayerRespawn(PlayerRespawnEvent event) {
-        Player player = event.getPlayer();
+    @Listener(ignoreCancelled = true, order = Order.POST)
+    public void onPlayerRespawn(RespawnPlayerEvent event) {
+        Player player = event.getTargetEntity();
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
         playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
         playerData.lastPvpTimestamp = 0; // no longer in pvp combat
@@ -738,7 +780,7 @@ public class PlayerEventHandler {
         // received while dead
         if (playerData.messageOnRespawn != null) {
             // color is already embedded inmessage in this case
-            GriefPrevention.sendMessage(player, ChatColor.RESET, playerData.messageOnRespawn, 40L);
+            GriefPrevention.sendMessage(player, Texts.of(playerData.messageOnRespawn), 40L);
             playerData.messageOnRespawn = null;
         }
 
@@ -746,14 +788,14 @@ public class PlayerEventHandler {
     }
 
     // when a player dies...
-    @EventHandler(priority = EventPriority.LOWEST)
-            void onPlayerDeath(PlayerDeathEvent event) {
+    @Listener(order = Order.PRE)
+    public void onPlayerDeath(DestructEntityEvent.Death event) {
         // FEATURE: prevent death message spam by implementing a "cooldown
         // period" for death messages
-        PlayerData playerData = this.dataStore.getPlayerData(event.getEntity().getUniqueId());
+        PlayerData playerData = this.dataStore.getPlayerData(event.getTargetEntity().getUniqueId());
         long now = Calendar.getInstance().getTimeInMillis();
         if (now - playerData.lastDeathTimeStamp < GriefPrevention.instance.config_spam_deathMessageCooldownSeconds * 1000) {
-            event.setDeathMessage("");
+            event.setMessage(Texts.of());
         }
 
         playerData.lastDeathTimeStamp = now;
@@ -764,25 +806,25 @@ public class PlayerEventHandler {
     }
 
     // when a player gets kicked...
-    @EventHandler(priority = EventPriority.HIGHEST)
-            void onPlayerKicked(PlayerKickEvent event) {
-        Player player = event.getPlayer();
+    @Listener(order = Order.LAST)
+    public void onPlayerKicked(KickPlayerEvent event) {
+        Player player = event.getTargetEntity();
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         playerData.wasKicked = true;
     }
 
     // when a player quits...
-    @EventHandler(priority = EventPriority.HIGHEST)
-            void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
+    @Listener(order= Order.LAST)
+    public void onPlayerQuit(ClientConnectionEvent.Disconnect event) {
+        Player player = event.getTargetEntity();
         UUID playerID = player.getUniqueId();
         PlayerData playerData = this.dataStore.getPlayerData(playerID);
-        boolean isBanned;
-        if (playerData.wasKicked) {
+        boolean isBanned = false;
+/*        if (playerData.wasKicked) {
             isBanned = player.isBanned();
         } else {
             isBanned = false;
-        }
+        }*/
 
         // if banned, add IP to the temporary IP ban list
         if (isBanned && playerData.ipAddress != null) {
@@ -790,14 +832,9 @@ public class PlayerEventHandler {
             this.tempBannedIps.add(new IpBanInfo(playerData.ipAddress, now + this.MILLISECONDS_IN_DAY, player.getName()));
         }
 
-        // silence notifications when they're coming too fast
-        if (event.getQuitMessage() != null && this.shouldSilenceNotification()) {
-            event.setQuitMessage(null);
-        }
-
-        // silence notifications when the player is banned
-        if (isBanned) {
-            event.setQuitMessage(null);
+        // silence notifications when they're coming too fast, or the player is banned
+        if (this.shouldSilenceNotification() || isBanned) {
+            event.setMessage(Texts.of());
         }
 
         // make sure his data is all saved - he might have accrued some claim
@@ -808,7 +845,7 @@ public class PlayerEventHandler {
 
         // FEATURE: players in pvp combat when they log out will die
         if (GriefPrevention.instance.config_pvp_punishLogout && playerData.inPvpCombat()) {
-            player.setHealth(0);
+            player.offer(Keys.HEALTH, 0d);
         }
 
         // FEATURE: during a siege, any player who logs out dies and forfeits
@@ -816,8 +853,8 @@ public class PlayerEventHandler {
 
         // if player was involved in a siege, he forfeits
         if (playerData.siegeData != null) {
-            if (player.getHealth() > 0)
-                player.setHealth(0); // might already be zero from above, this
+            if (player.getHealthData().health().get() > 0)
+                player.offer(Keys.HEALTH, 0d); // might already be zero from above, this
                                      // avoids a double death message
         }
 
@@ -825,7 +862,7 @@ public class PlayerEventHandler {
         this.dataStore.clearCachedPlayerData(playerID);
 
         // reduce count of players with that player's IP address
-        if (GriefPrevention.instance.config_ipLimit > 0 && !player.hasAchievement(Achievement.MINE_WOOD)) {
+        if (GriefPrevention.instance.config_ipLimit > 0 && !player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
             InetAddress ipAddress = playerData.ipAddress;
             if (ipAddress != null) {
                 String ipAddressString = ipAddress.toString();
@@ -861,9 +898,13 @@ public class PlayerEventHandler {
     }
 
     // when a player drops an item
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerDropItem(PlayerDropItemEvent event) {
-        Player player = event.getPlayer();
+    @Listener(order = Order.PRE)
+    public void onPlayerDropItem(DropItemEvent.Pre event) {
+        if (!event.getCause().any(Player.class)) {
+            return;
+        }
+
+        Player player = event.getCause().first(Player.class).get();
 
         // in creative worlds, dropping items is blocked
         if (GriefPrevention.instance.creativeRulesApply(player.getLocation())) {
@@ -891,31 +932,30 @@ public class PlayerEventHandler {
     }
 
     // when a player teleports via a portal
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
-            void onPlayerPortal(PlayerPortalEvent event) {
+    @Listener(ignoreCancelled = true, order = Order.LATE)
+    public void onPlayerPortal(DisplaceEntityEvent.Teleport.TargetPlayer event) {
         // if the player isn't going anywhere, take no action
-        if (event.getTo() == null || event.getTo().getWorld() == null)
-            return;
 
         // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTo().getWorld()))
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getToTransform().getExtent()))
             return;
 
-        Player player = event.getPlayer();
+        Player player = event.getTargetEntity();
 
-        if (event.getCause() == TeleportCause.NETHER_PORTAL) {
+        if (event.getCause().any(TeleportCause.class)) {
+            TeleportType type = event.getCause().first(TeleportCause.class).get().getTeleportType();
             // FEATURE: when players get trapped in a nether portal, send them
             // back through to the other side
-            CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFrom());
-            GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 200L);
+            CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFromTransform().getLocation());
+            event.getGame().getScheduler().createTaskBuilder().delay(200).execute(task).submit(GriefPrevention.instance);
 
             // FEATURE: if the player teleporting doesn't have permission to
             // build a nether portal and none already exists at the destination,
             // cancel the teleportation
             if (GriefPrevention.instance.config_claims_portalsRequirePermission) {
-                Location destination = event.getTo();
-                if (event.useTravelAgent()) {
-                    if (event.getPortalTravelAgent().getCanCreatePortal()) {
+                Location destination = event.getToTransform().getLocation();
+                /*if (event.useTravelAgent()) {
+                    if (event.getTeleporterAgent().getCanCreatePortal()) {
                         // hypothetically find where the portal would be created
                         // if it were
                         TravelAgent agent = event.getPortalTravelAgent();
@@ -927,14 +967,14 @@ public class PlayerEventHandler {
                         // anything here
                         return;
                     }
-                }
+                }*/
 
                 // if creating a new portal
-                if (destination.getBlock().getType() != Material.PORTAL) {
+                if (destination.getBlock().getType() != BlockTypes.PORTAL) {
                     // check for a land claim and the player's permission that
                     // land claim
                     Claim claim = this.dataStore.getClaimAt(destination, false, null);
-                    if (claim != null && claim.allowBuild(player, Material.PORTAL) != null) {
+                    if (claim != null && claim.allowBuild(player, BlockTypes.PORTAL) != null) {
                         // cancel and inform about the reason
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, claim.getOwnerName());
@@ -945,22 +985,24 @@ public class PlayerEventHandler {
     }
 
     // when a player teleports
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerTeleport(PlayerTeleportEvent event) {
-        Player player = event.getPlayer();
+    @Listener(order = Order.PRE)
+    public void onPlayerTeleport(DisplaceEntityEvent.Teleport.TargetPlayer event) {
+        Player player = event.getTargetEntity();
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+
+        TeleportType type = event.getCause().first(TeleportCause.class).get().getTeleportType();
 
         // FEATURE: prevent players from using ender pearls to gain access to
         // secured claims
-        if (event.getCause() == TeleportCause.ENDER_PEARL && GriefPrevention.instance.config_claims_enderPearlsRequireAccessTrust) {
-            Claim toClaim = this.dataStore.getClaimAt(event.getTo(), false, playerData.lastClaim);
+        if (type.equals(TeleportTypes.ENDER_PEARL) && GriefPrevention.instance.config_claims_enderPearlsRequireAccessTrust) {
+            Claim toClaim = this.dataStore.getClaimAt(event.getToTransform().getLocation(), false, playerData.lastClaim);
             if (toClaim != null) {
                 playerData.lastClaim = toClaim;
                 String noAccessReason = toClaim.allowAccess(player);
                 if (noAccessReason != null) {
-                    GriefPrevention.sendMessage(player, TextMode.Err, noAccessReason);
+                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, noAccessReason));
                     event.setCancelled(true);
-                    player.getInventory().addItem(new ItemStack(Material.ENDER_PEARL));
+                    ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ender_pearl));
                 }
             }
         }
@@ -971,7 +1013,7 @@ public class PlayerEventHandler {
         if (!GriefPrevention.instance.config_siege_enabledWorlds.contains(player.getWorld()))
             return;
 
-        Location source = event.getFrom();
+        Location source = event.getFromTransform().getLocation();
         Claim sourceClaim = this.dataStore.getClaimAt(source, false, playerData.lastClaim);
         if (sourceClaim != null && sourceClaim.siegeData != null) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoTeleport);
@@ -979,7 +1021,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        Location destination = event.getTo();
+        Location destination = event.getToTransform().getLocation();
         Claim destinationClaim = this.dataStore.getClaimAt(destination, false, null);
         if (destinationClaim != null && destinationClaim.siegeData != null) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.BesiegedNoTeleport);
@@ -992,7 +1034,7 @@ public class PlayerEventHandler {
     @Listener(ignoreCancelled = true, order = Order.PRE)
     public void onPlayerInteractEntity(InteractEntityEvent.Secondary event) {
         if (!event.getCause().any(Player.class)) {
-            return;;
+            return;
         }
 
         Player player = event.getCause().first(Player.class).get();
@@ -1043,12 +1085,12 @@ public class PlayerEventHandler {
         // don't allow interaction with item frames or armor stands in claimed
         // areas without build permission
         if (entity.getType() == EntityTypes.ARMOR_STAND || entity instanceof Hanging) {
-            String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation(), ItemTypes.ITEM_FRAME);
+            /*String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation(), ItemTypes.ITEM_FRAME);
             if (noBuildReason != null) {
                 GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, noBuildReason));
                 event.setCancelled(true);
                 return;
-            }
+            }*/
         }
 
         // always allow interactions when player is in ignore claims mode
@@ -1071,7 +1113,7 @@ public class PlayerEventHandler {
         }
 
         // if the entity is a vehicle and we're preventing theft in claims
-        if (GriefPrevention.instance.config_claims_preventTheft && entity instanceof Vehicle) {
+        if (GriefPrevention.instance.config_claims_preventTheft && entity.supports(VehicleData.class)) {
             // if the entity is in a claim
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
             if (claim != null) {
@@ -1099,7 +1141,7 @@ public class PlayerEventHandler {
         }
 
         // if the entity is an animal, apply container rules
-        if ((GriefPrevention.instance.config_claims_preventTheft && entity instanceof Animals)
+        if ((GriefPrevention.instance.config_claims_preventTheft && entity instanceof Animal)
                 || (entity.getType() == EntityTypes.VILLAGER && GriefPrevention.instance.config_claims_villagerTradingRequiresTrust)) {
             // if the entity is in a claim
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
@@ -1127,7 +1169,7 @@ public class PlayerEventHandler {
                 }
             }
         }
-    }*/
+    }
 
     /*
     // when a player picks up an item...
