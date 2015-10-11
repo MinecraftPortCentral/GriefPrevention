@@ -19,6 +19,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -64,7 +65,7 @@ class DeliverClaimBlocksTask implements Runnable {
                 // if he's not in a vehicle and has moved at least three blocks
                 // since the last check
                 // and he's not being pushed around by fluids
-                if (!player.get(Keys.VEHICLE).isPresent() &&
+                if (!player.get(VehicleData.class).isPresent() &&
                         (lastLocation == null || lastLocation.getPosition().distanceSquared(player.getLocation().getPosition()) >= 0) &&
                         !((net.minecraft.block.Block) player.getLocation().getBlockType()).getMaterial().isLiquid()) {
                     // add blocks

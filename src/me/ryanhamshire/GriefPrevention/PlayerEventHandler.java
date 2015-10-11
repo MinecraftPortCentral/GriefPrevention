@@ -23,9 +23,12 @@ import com.google.common.eventbus.Subscribe;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.stats.Achievement;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
+import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
 import org.spongepowered.api.data.manipulator.mutable.entity.TameableData;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.entity.Entity;
@@ -633,7 +636,7 @@ public class PlayerEventHandler {
     // when a player successfully joins the server...
     @Listener(ignoreCancelled = true, order = Order.LAST)
     public void onPlayerJoin(ClientConnectionEvent.Join event) {
-        Player player = event.getCause().first(Player.class).get();
+        Player player = event.getTargetEntity();
         UUID playerID = player.getUniqueId();
 
         // note login time
@@ -646,11 +649,14 @@ public class PlayerEventHandler {
 
         // if newish, prevent chat until he's moved a bit to prove he's not a
         // bot
-        if (!player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
+        if (player.getOrCreate(AchievementData.class).isPresent() && !player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
             playerData.noChatLocation = player.getLocation();
         }
 
-        boolean hasJoinedBefore = !player.getJoinData().firstPlayed().get().equals(player.getJoinData().lastPlayed().get());
+        boolean hasJoinedBefore = true;
+        if (player.getOrCreate(JoinData.class).isPresent()) {
+            hasJoinedBefore = !player.getJoinData().firstPlayed().get().equals(player.getJoinData().lastPlayed().get());
+        }
 
         // if player has never played on the server before...
         if (!hasJoinedBefore) {
@@ -744,7 +750,7 @@ public class PlayerEventHandler {
         if (ipAddress != null) {
             String ipAddressString = ipAddress.toString();
             int ipLimit = GriefPrevention.instance.config_ipLimit;
-            if (ipLimit > 0 && !player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
+            if (ipLimit > 0 && (player.getOrCreate(AchievementData.class).isPresent() && !player.getAchievementData().achievements().contains(Achievements.MINE_WOOD))) {
                 Integer ipCount = this.ipCountHash.get(ipAddressString);
                 if (ipCount == null)
                     ipCount = 0;
