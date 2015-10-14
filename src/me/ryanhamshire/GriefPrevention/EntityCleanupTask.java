@@ -28,6 +28,7 @@ import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 //FEATURE: creative mode worlds get a regular entity cleanup
 
@@ -122,14 +123,13 @@ class EntityCleanupTask implements Runnable {
             }
         }
 
-        // schedule the next run of this task, in 3 minutes (20L is
-        // approximately 1 second)
+        // schedule the next run of this task, in 1 minute
         double nextRunPercentageStart = this.percentageStart + .05;
         if (nextRunPercentageStart > .99) {
             nextRunPercentageStart = 0;
         }
 
         EntityCleanupTask task = new EntityCleanupTask(nextRunPercentageStart);
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 60 * 1).execute(task).submit(GriefPrevention.instance);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
     }
 }

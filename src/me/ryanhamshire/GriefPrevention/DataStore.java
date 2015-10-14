@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 //singleton class which manages all GriefPrevention data (except for config options)
@@ -834,7 +835,7 @@ public abstract class DataStore {
         // because depending on the status of the siege at the time the task
         // runs, there may or may not be a reason to run the task again
         SiegeCheckupTask siegeTask = new SiegeCheckupTask(siegeData);
-        Task task = GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 30).execute(siegeTask).submit(GriefPrevention.instance);
+        Task task = GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(siegeTask).submit(GriefPrevention.instance);
         siegeData.checkupTaskID = task.getUniqueId();
     }
 
@@ -904,7 +905,7 @@ public abstract class DataStore {
 
                 // schedule a task to secure the claims in about 5 minutes
                 SecureClaimTask task = new SecureClaimTask(siegeData);
-                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 60 * 5).execute(task).submit(GriefPrevention.instance);
+                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(5, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
             }
         }
 

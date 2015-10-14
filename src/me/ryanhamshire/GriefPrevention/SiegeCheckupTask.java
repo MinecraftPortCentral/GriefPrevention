@@ -21,6 +21,8 @@ package me.ryanhamshire.GriefPrevention;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.service.scheduler.Task;
 
+import java.util.concurrent.TimeUnit;
+
 //checks to see whether or not a siege should end based on the locations of the players
 //for example, defender escaped or attacker gave up and left
 class SiegeCheckupTask implements Runnable {
@@ -104,7 +106,7 @@ class SiegeCheckupTask implements Runnable {
     // schedules another checkup later
     private void scheduleAnotherCheck() {
         Task task =
-                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 30).execute(this).submit(GriefPrevention.instance);
+                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(this).submit(GriefPrevention.instance);
         this.siegeData.checkupTaskID = task.getUniqueId();
     }
 }

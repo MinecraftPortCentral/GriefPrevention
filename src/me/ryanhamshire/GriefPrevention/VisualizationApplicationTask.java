@@ -21,6 +21,8 @@ package me.ryanhamshire.GriefPrevention;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.entity.living.player.Player;
 
+import java.util.concurrent.TimeUnit;
+
 //applies a visualization for a player by sending him block change packets
 class VisualizationApplicationTask implements Runnable {
 
@@ -51,7 +53,7 @@ class VisualizationApplicationTask implements Runnable {
         playerData.currentVisualization = visualization;
 
         // schedule automatic visualization reversion in 60 seconds.
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 60)
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.SECONDS)
                 .execute(new VisualizationReversionTask(player, playerData, visualization)).submit(GriefPrevention.instance);
     }
 }

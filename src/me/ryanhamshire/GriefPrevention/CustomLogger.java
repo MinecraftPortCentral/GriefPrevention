@@ -26,6 +26,7 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,11 +52,9 @@ class CustomLogger {
         int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
         if (daysToKeepLogs > 0) {
             SchedulerService scheduler = GriefPrevention.instance.game.getScheduler();
-            final long ticksPerSecond = 20L;
-            final long ticksPerDay = ticksPerSecond * 60 * 60 * 24;
-            scheduler.createTaskBuilder().async().execute(new EntryWriter()).delay(this.secondsBetweenWrites * ticksPerSecond).interval(this
-                    .secondsBetweenWrites * ticksPerSecond).submit(GriefPrevention.instance);
-            scheduler.createTaskBuilder().async().execute(new ExpiredLogRemover()).delay(ticksPerDay).interval(ticksPerDay).submit(GriefPrevention
+            scheduler.createTaskBuilder().async().execute(new EntryWriter()).delay(this.secondsBetweenWrites, TimeUnit.SECONDS).interval(this
+                    .secondsBetweenWrites, TimeUnit.SECONDS).submit(GriefPrevention.instance);
+            scheduler.createTaskBuilder().async().execute(new ExpiredLogRemover()).delay(1, TimeUnit.DAYS).interval(1, TimeUnit.DAYS).submit(GriefPrevention
                     .instance);
         }
     }

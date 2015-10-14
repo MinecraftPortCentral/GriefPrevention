@@ -50,7 +50,7 @@ class DeliverClaimBlocksTask implements Runnable {
             long i = 0;
             for (Player onlinePlayer : players) {
                 DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer);
-                GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delay(i++).execute(newTask)
+                GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delayTicks(i++).execute(newTask)
                         .submit(GriefPrevention.instance);
             }
         }

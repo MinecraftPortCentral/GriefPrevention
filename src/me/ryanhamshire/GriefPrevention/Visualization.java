@@ -48,7 +48,7 @@ public class Visualization {
         // if he's online, create a task to send him the visualization
         if (player.isOnline() && visualization.elements.size() > 0
                 && visualization.elements.get(0).getLocation().get().getExtent().equals(player.getWorld())) {
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1L)
+            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delayTicks(1L)
                     .execute(new VisualizationApplicationTask(player, playerData, visualization)).submit(GriefPrevention.instance);
         }
     }

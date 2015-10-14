@@ -445,21 +445,20 @@ public class GriefPrevention {
 
         // unless claim block accrual is disabled, start the recurring per 10
         // minute event to give claim blocks to online players
-        // 20L ~ 1 second
         if (this.config_claims_blocksAccruedPerHour > 0) {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(20L * 60 * 10).execute(task)
+            GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(10, TimeUnit.MINUTES).execute(task)
                     .submit(GriefPrevention.instance);
         }
 
         // start the recurring cleanup event for entities in creative worlds
         EntityCleanupTask task = new EntityCleanupTask(0);
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(20L * 60 * 2).execute(task).submit(GriefPrevention.instance);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(2, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
 
         // start recurring cleanup scan for unused claims belonging to inactive
         // players
         CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(20L * 60 * 5).execute(task2).submit(GriefPrevention.instance);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task2).submit(GriefPrevention.instance);
 
         // register for events
         registerCommands();
@@ -2496,7 +2495,7 @@ public class GriefPrevention {
             // start a task to re-check this player's inventory every minute
             // until his immunity is gone
             PvPImmunityValidationTask task = new PvPImmunityValidationTask(player);
-            this.game.getScheduler().createTaskBuilder().delay(1200L).execute(task).submit(this);
+            this.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(this);
         }
     }
 
@@ -2586,7 +2585,7 @@ public class GriefPrevention {
     static void sendMessage(CommandSource player, Text message, long delayInTicks) {
         SendPlayerMessageTask task = new SendPlayerMessageTask((Player) player, message);
         if (delayInTicks > 0) {
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(delayInTicks).execute(task).submit(GriefPrevention.instance);
+            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delayTicks(delayInTicks).execute(task).submit(GriefPrevention.instance);
         } else {
             task.run();
         }
@@ -2727,7 +2726,7 @@ public class GriefPrevention {
         RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getDimension().getType(),
                 lesserBoundaryCorner.getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()),
                 aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delay(delayInTicks).execute(task).submit(this);
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
     }
 
     private void parseBlockIdListFromConfig(List<String> stringsToParse, List<BlockType> blockTypes) {

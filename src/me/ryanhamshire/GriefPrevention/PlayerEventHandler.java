@@ -78,6 +78,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class PlayerEventHandler {
@@ -358,14 +359,14 @@ public class PlayerEventHandler {
                     // kick and ban
                     PlayerKickBanTask task =
                             new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage, "GriefPrevention Anti-Spam", true);
-                    event.getGame().getScheduler().createTaskBuilder().delay(1).execute(task).submit(GriefPrevention.instance);
+                    event.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPrevention.instance);
                 } else {
                     // log entry
                     GriefPrevention.AddLogEntry("Kicking " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 
                     // just kick
                     PlayerKickBanTask task = new PlayerKickBanTask(player, "", "GriefPrevention Anti-Spam", false);
-                    event.getGame().getScheduler().createTaskBuilder().delay(1).execute(task).submit(GriefPrevention.instance);
+                    event.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPrevention.instance);
                 }
 
                 return true;
@@ -668,10 +669,8 @@ public class PlayerEventHandler {
             if (GriefPrevention.instance.config_claims_worldModes.get(player.getWorld()) == ClaimsMode.Survival
                     && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10) {
                 WelcomeTask task = new WelcomeTask(player);
-                event.getGame().getScheduler().createTaskBuilder().delay(200).execute(task).submit(GriefPrevention.instance); // 10
-                                                                                                     // seconds
-                                                                                                     // after
-                                                                                                     // join
+                // 10 seconds after join
+                event.getGame().getScheduler().createTaskBuilder().delay(10, TimeUnit.SECONDS).execute(task).submit(GriefPrevention.instance);
             }
         }
 
@@ -731,7 +730,7 @@ public class PlayerEventHandler {
                         // ban player
                         PlayerKickBanTask task =
                                 new PlayerKickBanTask(player, "", "GriefPrevention Smart Ban - Shared Login:" + info.bannedAccountName, true);
-                        event.getGame().getScheduler().createTaskBuilder().delay(10).execute(task).submit(GriefPrevention.instance);
+                        event.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
 
                         // silence join message
                         event.setMessage(Texts.of());
@@ -758,7 +757,7 @@ public class PlayerEventHandler {
                     // kick player
                     PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.",
                             "GriefPrevention IP-sharing limit.", false);
-                    event.getGame().getScheduler().createTaskBuilder().delay(10).execute(task).submit(GriefPrevention.instance);
+                    event.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
 
                     // silence join message
                     event.setMessage(Texts.of(""));
@@ -953,7 +952,7 @@ public class PlayerEventHandler {
             // FEATURE: when players get trapped in a nether portal, send them
             // back through to the other side
             CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFromTransform().getLocation());
-            event.getGame().getScheduler().createTaskBuilder().delay(200).execute(task).submit(GriefPrevention.instance);
+            event.getGame().getScheduler().createTaskBuilder().delayTicks(200).execute(task).submit(GriefPrevention.instance);
 
             // FEATURE: if the player teleporting doesn't have permission to
             // build a nether portal and none already exists at the destination,
