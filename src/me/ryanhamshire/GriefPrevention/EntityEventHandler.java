@@ -103,32 +103,34 @@ public class EntityEventHandler {
     // when a creature spawns...
     @Listener(order = Order.EARLY)
     public void onSpawnEntity(SpawnEntityEvent event) {
-        final Location<World> location = event.getTargetEntity().getLocation();
-        // these rules apply only to creative worlds
-        if (!GriefPrevention.instance.creativeRulesApply(location))
-            return;
-
-        final Cause cause = event.getCause();
-        final Player player = cause.first(Player.class).orElse(null);
-        final ItemStack stack = cause.first(ItemStack.class).orElse(null);
-        final EntityType entityType = event.getTargetEntity().getType();
-        if (player != null) {
-            if (stack != null && !stack.getItem().equals(ItemTypes.SPAWN_EGG)) {
-                event.setCancelled(true);
+        for (Entity entity : event.getEntities()) {
+            final Location<World> location = entity.getLocation();
+            // these rules apply only to creative worlds
+            if (!GriefPrevention.instance.creativeRulesApply(location))
                 return;
+    
+            final Cause cause = event.getCause();
+            final Player player = cause.first(Player.class).orElse(null);
+            final ItemStack stack = cause.first(ItemStack.class).orElse(null);
+            final EntityType entityType = entity.getType();
+            if (player != null) {
+                if (stack != null && !stack.getItem().equals(ItemTypes.SPAWN_EGG)) {
+                    event.setCancelled(true);
+                    return;
+                }
+                if (!entityType.equals(EntityTypes.IRON_GOLEM) && !entityType.equals(EntityTypes.SNOWMAN) && !entityType.equals(EntityTypes
+                        .ARMOR_STAND)) {
+                    event.setCancelled(true);
+                    return;
+                }
             }
-            if (!entityType.equals(EntityTypes.IRON_GOLEM) && !entityType.equals(EntityTypes.SNOWMAN) && !entityType.equals(EntityTypes
-                    .ARMOR_STAND)) {
+    
+            // otherwise, just apply the limit on total entities per claim (and no
+            // spawning in the wilderness!)
+            Claim claim = this.dataStore.getClaimAt(location, false, null);
+            if (claim == null || claim.allowMoreEntities() != null) {
                 event.setCancelled(true);
-                return;
             }
-        }
-
-        // otherwise, just apply the limit on total entities per claim (and no
-        // spawning in the wilderness!)
-        Claim claim = this.dataStore.getClaimAt(location, false, null);
-        if (claim == null || claim.allowMoreEntities() != null) {
-            event.setCancelled(true);
         }
     }
 

@@ -431,8 +431,8 @@ public class FlatFileDataStore extends DataStore {
         CommentedConfigurationNode mainNode = configurationLoader.load();
 
         // boundaries
-        Location lesserBoundaryCorner = this.locationFromString(mainNode.getNode("Lesser Boundary Corner").getString(), validWorlds);
-        Location greaterBoundaryCorner = this.locationFromString(mainNode.getNode("Greater Boundary Corner").getString(), validWorlds);
+        Location<World> lesserBoundaryCorner = this.locationFromString(mainNode.getNode("Lesser Boundary Corner").getString(), validWorlds);
+        Location<World> greaterBoundaryCorner = this.locationFromString(mainNode.getNode("Greater Boundary Corner").getString(), validWorlds);
 
         // owner
         String ownerIdentifier = mainNode.getNode("Owner").getString();

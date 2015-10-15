@@ -24,7 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.BlockTransaction;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.concurrent.TimeUnit;
@@ -46,12 +46,12 @@ class VisualizationApplicationTask implements Runnable {
     public void run() {
         // for each element (=block) of the visualization
         for (int i = 0; i < visualization.elements.size(); i++) {
-            BlockSnapshot element = visualization.elements.get(i);
+            BlockTransaction element = visualization.elements.get(i);
 
             // send the player a fake block change event
-            if (!element.getLocation().get().getExtent().isLoaded())
+            if (!element.getFinalReplacement().getLocation().get().getExtent().isLoaded())
                 continue; // cheap distance check
-            BlockUtils.sendBlockChange(player, element);
+            BlockUtils.sendBlockChange(player, element.getFinalReplacement());
         }
 
         // remember the visualization applied to this player for later (so it
@@ -59,7 +59,7 @@ class VisualizationApplicationTask implements Runnable {
         playerData.currentVisualization = visualization;
 
         // schedule automatic visualization reversion in 60 seconds.
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.SECONDS)
+        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES)
                 .execute(new VisualizationReversionTask(player, playerData, visualization)).submit(GriefPrevention.instance);
     }
 }

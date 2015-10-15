@@ -94,76 +94,8 @@ public class BlockEventHandler {
         }
     }
 
-    // when a player places a sign...
-    @Listener(ignoreCancelled = true)
-    public void onSignChanged(ChangeSignEvent event) {
-        // send sign content to online administrators
-        if (!GriefPrevention.instance.config_signNotifications)
-            return;
-
-        Optional<Player> player = event.getCause().first(Player.class);
-        if (!player.isPresent()) {
-            return;
-        }
-
-        StringBuilder lines = new StringBuilder(" placed a sign @ " + GriefPrevention.getfriendlyLocationString(event.getTargetTile().getLocation()));
-        boolean notEmpty = false;
-        for (int i = 0; i < event.getText().lines().size(); i++) {
-            String withoutSpaces = Texts.toPlain(event.getText().lines().get(i)).replace(" ", "");
-            if (!withoutSpaces.isEmpty()) {
-                notEmpty = true;
-                lines.append("\n  " + event.getText().lines().get(i));
-            }
-        }
-
-        String signMessage = lines.toString();
-
-        // prevent signs with blocked IP addresses
-        if (!player.get().hasPermission("griefprevention.spam") && GriefPrevention.instance.containsBlockedIP(signMessage)) {
-            event.setCancelled(true);
-            return;
-        }
-
-        // if not empty and wasn't the same as the last sign, log it and
-        // remember it for later
-        PlayerData playerData = this.dataStore.getPlayerData(player.get().getUniqueId());
-        if (notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage)) {
-            GriefPrevention.AddLogEntry(player.get().getName() + lines.toString().replace("\n  ", ";"), null);
-            //PlayerEventHandler.makeSocialLogEntry(player.get().getName(), signMessage);
-            playerData.lastMessage = signMessage;
-
-            if (!player.get().hasPermission("griefprevention.eavesdropsigns")) {
-                Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
-                for (Player otherPlayer : players) {
-                    if (otherPlayer.hasPermission("griefprevention.eavesdropsigns")) {
-                        otherPlayer.sendMessage(Texts.of(TextColors.GRAY, player.get().getName(), signMessage));
-                    }
-                }
-            }
-        }
-    }
-
-    // when a player places multiple blocks...
-    /*@Listener(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onBlocksPlace(BlockMultiPlaceEvent placeEvent) {
-        Player player = placeEvent.getPlayer();
-
-        // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(placeEvent.getBlock().getWorld()))
-            return;
-
-        // make sure the player is allowed to build at the location
-        for (BlockState block : placeEvent.getReplacedBlockStates()) {
-            String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), block.getType());
-            if (noBuildReason != null) {
-                GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
-                placeEvent.setCancelled(true);
-                return;
-            }
-        }
-    }*/
-
     // when a player places a block...
+    @SuppressWarnings("unchecked")
     @Listener(ignoreCancelled = true, order = Order.LAST)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
         Optional<Player> player = event.getCause().first(Player.class);
@@ -173,11 +105,24 @@ public class BlockEventHandler {
         }
 
         for (BlockTransaction transaction : event.getTransactions()) {
+
+            BlockSnapshot block = transaction.getFinalReplacement();
+            // don't track in worlds where claims are not enabled
+            if (!GriefPrevention.instance.claimsEnabledForWorld(block.getLocation().get().getExtent())) {
+                transaction.setIsValid(false);
+                continue;
+            }
+
             // FEATURE: limit fire placement, to prevent PvP-by-fire
-    
+            if (block.getState().getType() == BlockTypes.FIRE) {
+                if (!GriefPrevention.instance.config_fireSpreads) {
+                    transaction.setIsValid(false);
+                    continue;
+                }
+            }
+
             // if placed block is fire and pvp is off, apply rules for proximity to
             // other players
-            BlockSnapshot block = transaction.getFinalReplacement();
             if (block.getState().getType() == BlockTypes.FIRE && !GriefPrevention.instance.pvpRulesApply(block.getLocation().get().getExtent())
                     && !player.get().hasPermission("griefprevention.lava")) {
                 List<Player> players = ((net.minecraft.world.World)block.getLocation().get().getExtent()).playerEntities;
@@ -187,13 +132,11 @@ public class BlockEventHandler {
                     if (!otherPlayer.equals(player.get()) && location.getBlockPosition().distanceSquared(block.getPosition()) < 9) {
                         GriefPrevention.sendMessage(player.get(), TextMode.Err, Messages.PlayerTooCloseForFire, otherPlayer.getName());
                         transaction.setIsValid(false);
+                        continue;
                     }
                 }
             }
-    
-            // don't track in worlds where claims are not enabled
-            if (!GriefPrevention.instance.claimsEnabledForWorld(block.getLocation().get().getExtent()))
-                return;
+   
     
             // make sure the player is allowed to build at the location
             String noBuildReason = GriefPrevention.instance.allowBuild(player.get(), block.getLocation().get());
@@ -351,6 +294,56 @@ public class BlockEventHandler {
             }
         }
     }
+
+    // when a player places a sign...
+    @Listener(ignoreCancelled = true)
+    public void onSignChanged(ChangeSignEvent event) {
+        // send sign content to online administrators
+        if (!GriefPrevention.instance.config_signNotifications)
+            return;
+
+        Optional<Player> player = event.getCause().first(Player.class);
+        if (!player.isPresent()) {
+            return;
+        }
+
+        StringBuilder lines = new StringBuilder(" placed a sign @ " + GriefPrevention.getfriendlyLocationString(event.getTargetTile().getLocation()));
+        boolean notEmpty = false;
+        for (int i = 0; i < event.getText().lines().size(); i++) {
+            String withoutSpaces = Texts.toPlain(event.getText().lines().get(i)).replace(" ", "");
+            if (!withoutSpaces.isEmpty()) {
+                notEmpty = true;
+                lines.append("\n  " + event.getText().lines().get(i));
+            }
+        }
+
+        String signMessage = lines.toString();
+
+        // prevent signs with blocked IP addresses
+        if (!player.get().hasPermission("griefprevention.spam") && GriefPrevention.instance.containsBlockedIP(signMessage)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // if not empty and wasn't the same as the last sign, log it and
+        // remember it for later
+        PlayerData playerData = this.dataStore.getPlayerData(player.get().getUniqueId());
+        if (notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage)) {
+            GriefPrevention.AddLogEntry(player.get().getName() + lines.toString().replace("\n  ", ";"), null);
+            //PlayerEventHandler.makeSocialLogEntry(player.get().getName(), signMessage);
+            playerData.lastMessage = signMessage;
+
+            if (!player.get().hasPermission("griefprevention.eavesdropsigns")) {
+                Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
+                for (Player otherPlayer : players) {
+                    if (otherPlayer.hasPermission("griefprevention.eavesdropsigns")) {
+                        otherPlayer.sendMessage(Texts.of(TextColors.GRAY, player.get().getName(), signMessage));
+                    }
+                }
+            }
+        }
+    }
+
 
     // blocks "pushing" other players' blocks around (pistons)
     /*@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
@@ -530,20 +523,6 @@ public class BlockEventHandler {
         } catch (NoSuchMethodError exception) {
             GriefPrevention.AddLogEntry(
                     "Your server is running an outdated version of 1.8 which has a griefing vulnerability.  Update your server (reruns buildtools.jar to get an updated server JAR file) to ensure players can't steal claimed blocks using pistons.");
-        }
-    }
-
-    // blocks are ignited ONLY by flint and steel (not by being near lava, open
-    // flames, etc), unless configured otherwise
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onBlockIgnite(BlockIgniteEvent igniteEvent) {
-        // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(igniteEvent.getBlock().getWorld()))
-            return;
-
-        if (!GriefPrevention.instance.config_fireSpreads && igniteEvent.getCause() != IgniteCause.FLINT_AND_STEEL
-                && igniteEvent.getCause() != IgniteCause.LIGHTNING) {
-            igniteEvent.setCancelled(true);
         }
     }
 

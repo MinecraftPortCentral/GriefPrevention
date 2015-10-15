@@ -39,6 +39,7 @@ import org.spongepowered.api.data.manipulator.mutable.entity.TameableData;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
+import org.spongepowered.api.entity.Item;
 import org.spongepowered.api.entity.hanging.Hanging;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.animal.Horse;
@@ -56,6 +57,7 @@ import org.spongepowered.api.event.cause.entity.teleport.TeleportType;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportTypes;
 import org.spongepowered.api.event.command.MessageSinkEvent;
 import org.spongepowered.api.event.command.SendCommandEvent;
+import org.spongepowered.api.event.entity.CollideEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.DisplaceEntityEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
@@ -910,7 +912,7 @@ public class PlayerEventHandler {
 
     // when a player drops an item
     @Listener(order = Order.PRE)
-    public void onPlayerDropItem(DropItemEvent.Pre event) {
+    public void onPlayerDropItem(DropItemEvent event) {
         if (!event.getCause().any(Player.class)) {
             return;
         }
@@ -1182,52 +1184,54 @@ public class PlayerEventHandler {
         }
     }
 
-    /*
     // when a player picks up an item...
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
-        Player player = event.getPlayer();
+    @Listener(ignoreCancelled = true, order = Order.EARLY)
+    public void onPlayerPickupItem(CollideEntityEvent event) {
+        Optional<Player> player = event.getCause().first(Player.class);
+
+        if (!player.isPresent()) {
+            return;
+        }
 
         // FEATURE: lock dropped items to player who dropped them
 
         // who owns this stack?
-        Item item = event.getItem();
-        List<MetadataValue> data = item.getMetadata("GP_ITEMOWNER");
-        if (data != null && data.size() > 0) {
-            UUID ownerID = (UUID) data.get(0).value();
+        for (Entity entity : event.getEntities()) {
+            Item item = (Item) entity;
 
-            // has that player unlocked his drops?
-            OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID);
-            String ownerName = GriefPrevention.lookupPlayerName(ownerID);
-            if (owner.isOnline() && !player.equals(owner)) {
-                PlayerData playerData = this.dataStore.getPlayerData(ownerID);
-
-                // if locked, don't allow pickup
-                if (!playerData.dropsAreUnlocked) {
-                    event.setCancelled(true);
-
-                    // if hasn't been instructed how to unlock, send explanatory
-                    // messages
-                    if (!playerData.receivedDropUnlockAdvertisement) {
-                        GriefPrevention.sendMessage(owner.getPlayer(), TextMode.Instr, Messages.DropUnlockAdvertisement);
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.PickupBlockedExplanation, ownerName);
-                        playerData.receivedDropUnlockAdvertisement = true;
+            Optional<User> owner = NbtDataHelper.getOwnerOfEntity((net.minecraft.entity.Entity) item);
+            if (owner.isPresent()) {
+                // has that player unlocked his drops?
+                if (owner.isPresent() && owner.get().isOnline() && player.get().getUniqueId() != owner.get().getUniqueId()) {
+                    PlayerData playerData = this.dataStore.getPlayerData(owner.get().getUniqueId());
+    
+                    // if locked, don't allow pickup
+                    if (!playerData.dropsAreUnlocked) {
+                        event.setCancelled(true);
+    
+                        // if hasn't been instructed how to unlock, send explanatory
+                        // messages
+                        if (!playerData.receivedDropUnlockAdvertisement) {
+                            GriefPrevention.sendMessage((Player) owner.get(), TextMode.Instr, Messages.DropUnlockAdvertisement);
+                            GriefPrevention.sendMessage(player.get(), TextMode.Err, Messages.PickupBlockedExplanation, owner.get().getName());
+                            playerData.receivedDropUnlockAdvertisement = true;
+                        }
+    
+                        return;
                     }
-
-                    return;
                 }
             }
         }
 
         // the rest of this code is specific to pvp worlds
-        if (!GriefPrevention.instance.pvpRulesApply(player.getWorld()))
+        if (!GriefPrevention.instance.pvpRulesApply(player.get().getWorld()))
             return;
 
         // if we're preventing spawn camping and the player was previously empty
         // handed...
-        if (GriefPrevention.instance.config_pvp_protectFreshSpawns && (player.getItemInHand().getType() == Material.AIR)) {
+        if (GriefPrevention.instance.config_pvp_protectFreshSpawns && !player.get().getItemInHand().isPresent()) {
             // if that player is currently immune to pvp
-            PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
+            PlayerData playerData = this.dataStore.getPlayerData(player.get().getUniqueId());
             if (playerData.pvpImmune) {
                 // if it's been less than 10 seconds since the last time he
                 // spawned, don't pick up the item
@@ -1241,13 +1245,13 @@ public class PlayerEventHandler {
                 // otherwise take away his immunity. he may be armed now. at
                 // least, he's worth killing for some loot
                 playerData.pvpImmune = false;
-                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.PvPImmunityEnd);
+                GriefPrevention.sendMessage(player.get(), TextMode.Warn, Messages.PvPImmunityEnd);
             }
         }
     }
 
     // when a player switches in-hand items
-    @EventHandler(ignoreCancelled = true)
+    /*@EventHandler(ignoreCancelled = true)
     public void onItemHeldChange(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
 
