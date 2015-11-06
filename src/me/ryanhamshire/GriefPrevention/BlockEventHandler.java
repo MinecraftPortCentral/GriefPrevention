@@ -30,11 +30,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockTransaction;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.tileentity.carrier.Dispenser;
 import org.spongepowered.api.block.tileentity.carrier.Hopper;
+import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
@@ -82,13 +82,13 @@ public class BlockEventHandler {
     public void onBlockBreak(ChangeBlockEvent.Break event) {
         Optional<Player> player = event.getCause().first(Player.class);
         if (player.isPresent()) {
-            List<BlockTransaction> transactions = event.getTransactions();
-            for (BlockTransaction transaction : transactions) {
+            List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
+            for (Transaction<BlockSnapshot> transaction : transactions) {
                 // make sure the player is allowed to break at the location
                 String noBuildReason = GriefPrevention.instance.allowBreak(player.get(), transaction.getOriginal());
                 if (noBuildReason != null) {
                     GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
-                    transaction.setIsValid(false);
+                    transaction.setValid(false);
                 }   
             }
         }
@@ -104,19 +104,19 @@ public class BlockEventHandler {
             return;
         }
 
-        for (BlockTransaction transaction : event.getTransactions()) {
+        for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
 
-            BlockSnapshot block = transaction.getFinalReplacement();
+            BlockSnapshot block = transaction.getFinal();
             // don't track in worlds where claims are not enabled
             if (!GriefPrevention.instance.claimsEnabledForWorld(block.getLocation().get().getExtent())) {
-                transaction.setIsValid(false);
+                transaction.setValid(false);
                 continue;
             }
 
             // FEATURE: limit fire placement, to prevent PvP-by-fire
             if (block.getState().getType() == BlockTypes.FIRE) {
                 if (!GriefPrevention.instance.config_fireSpreads) {
-                    transaction.setIsValid(false);
+                    transaction.setValid(false);
                     continue;
                 }
             }
@@ -131,7 +131,7 @@ public class BlockEventHandler {
                     Location<World> location = otherPlayer.getLocation();
                     if (!otherPlayer.equals(player.get()) && location.getBlockPosition().distanceSquared(block.getPosition()) < 9) {
                         GriefPrevention.sendMessage(player.get(), TextMode.Err, Messages.PlayerTooCloseForFire, otherPlayer.getName());
-                        transaction.setIsValid(false);
+                        transaction.setValid(false);
                         continue;
                     }
                 }
@@ -142,7 +142,7 @@ public class BlockEventHandler {
             String noBuildReason = GriefPrevention.instance.allowBuild(player.get(), block.getLocation().get());
             if (noBuildReason != null) {
                 GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
-                transaction.setIsValid(false);
+                transaction.setValid(false);
                 continue;
             }
     

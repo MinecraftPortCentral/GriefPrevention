@@ -63,7 +63,7 @@ import org.spongepowered.api.event.entity.DisplaceEntityEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.living.player.KickPlayerEvent;
 import org.spongepowered.api.event.entity.living.player.RespawnPlayerEvent;
-import org.spongepowered.api.event.inventory.DropItemEvent;
+import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.Carrier;
@@ -912,7 +912,7 @@ public class PlayerEventHandler {
 
     // when a player drops an item
     @Listener(order = Order.PRE)
-    public void onPlayerDropItem(DropItemEvent event) {
+    public void onPlayerDropItem(DropItemEvent.Dispense event) {
         if (!event.getCause().any(Player.class)) {
             return;
         }

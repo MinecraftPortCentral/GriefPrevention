@@ -26,7 +26,6 @@ package me.ryanhamshire.GriefPrevention.events;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import org.spongepowered.api.event.Event;
-import org.spongepowered.api.util.event.callback.CallbackList;
 
 /**
  * This event gets called whenever a claim is going to be deleted. This event is
@@ -52,10 +51,5 @@ public class ClaimDeletedEvent implements Event {
      */
     public Claim getClaim() {
         return claim;
-    }
-
-    @Override
-    public CallbackList getCallbacks() {
-        return null;
     }
 }

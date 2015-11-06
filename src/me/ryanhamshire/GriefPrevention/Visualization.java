@@ -26,9 +26,9 @@ package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockSnapshotBuilder;
-import org.spongepowered.api.block.BlockTransaction;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Location;
@@ -41,7 +41,7 @@ import java.util.ArrayList;
 //the result is that those players see new blocks, but the world hasn't been changed.  other players can't see the new blocks, either.
 public class Visualization {
 
-    public ArrayList<BlockTransaction> elements = new ArrayList<BlockTransaction>();
+    public ArrayList<Transaction<BlockSnapshot>> elements = new ArrayList<Transaction<BlockSnapshot>>();
 
     // sends a visualization to a player
     public static void Apply(Player player, Visualization visualization) {
@@ -82,7 +82,7 @@ public class Visualization {
 
             // send real block information for any remaining elements
             for (int i = 0; i < visualization.elements.size(); i++) {
-                BlockTransaction element = visualization.elements.get(i);
+                Transaction<BlockSnapshot> element = visualization.elements.get(i);
 
                 // check player still in world where visualization exists
                 if (i == 0) {
@@ -147,7 +147,7 @@ public class Visualization {
         BlockType cornerMaterial;
         BlockType accentMaterial;
 
-        ArrayList<BlockTransaction> newElements = new ArrayList<BlockTransaction>();
+        ArrayList<Transaction<BlockSnapshot>> newElements = new ArrayList<Transaction<BlockSnapshot>>();
 
         if (visualizationType == VisualizationType.Claim) {
             cornerMaterial = BlockTypes.GLOWSTONE;
@@ -189,66 +189,66 @@ public class Visualization {
         // top line
         BlockSnapshotBuilder snapshotBuilder = GriefPrevention.instance.gameRegistry.createBlockSnapshotBuilder();
         BlockSnapshot topVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx, height, bigz)).blockState(cornerMaterial.getDefaultState()).build();
-        newElements.add(new BlockTransaction(topVisualBlock1.getLocation().get().createSnapshot(), topVisualBlock1));
+        newElements.add(new Transaction<BlockSnapshot>(topVisualBlock1.getLocation().get().createSnapshot(), topVisualBlock1));
         BlockSnapshot topVisualBlock2 = snapshotBuilder.from(new Location<World>(world, smallx + 1, height, bigz)).blockState(accentMaterial.getDefaultState()).build();
-        newElements.add(new BlockTransaction(topVisualBlock2.getLocation().get().createSnapshot(), topVisualBlock2));
+        newElements.add(new Transaction<BlockSnapshot>(topVisualBlock2.getLocation().get().createSnapshot(), topVisualBlock2));
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {
             if (x > minx && x < maxx) {
                 BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, x, height, bigz)).blockState(accentMaterial.getDefaultState()).build(); 
-                newElements.add(new BlockTransaction(visualBlock.getLocation().get().createSnapshot(), visualBlock));
+                newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
         BlockSnapshot topVisualBlock3 = snapshotBuilder.from(new Location<World>(world, bigx - 1, height, bigz)).blockState(accentMaterial.getDefaultState()).build(); 
-        newElements.add(new BlockTransaction(topVisualBlock3.getLocation().get().createSnapshot(), topVisualBlock3));
+        newElements.add(new Transaction<BlockSnapshot>(topVisualBlock3.getLocation().get().createSnapshot(), topVisualBlock3));
 
         // bottom line
         BlockSnapshot bottomVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx + 1, height, smallz)).blockState(accentMaterial.getDefaultState()).build(); 
-        newElements.add(new BlockTransaction(bottomVisualBlock1.getLocation().get().createSnapshot(), bottomVisualBlock1));
+        newElements.add(new Transaction<BlockSnapshot>(bottomVisualBlock1.getLocation().get().createSnapshot(), bottomVisualBlock1));
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {
             if (x > minx && x < maxx) {
                 BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, x, height, smallz)).blockState(accentMaterial.getDefaultState()).build();
-                newElements.add(new BlockTransaction(visualBlock.getLocation().get().createSnapshot(), visualBlock));
+                newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
         BlockSnapshot bottomVisualBlock2 = snapshotBuilder.from(new Location<World>(world, bigx - 1, height, smallz)).blockState(accentMaterial.getDefaultState()).build();
-        newElements.add(new BlockTransaction(bottomVisualBlock2.getLocation().get().createSnapshot(), bottomVisualBlock2));
+        newElements.add(new Transaction<BlockSnapshot>(bottomVisualBlock2.getLocation().get().createSnapshot(), bottomVisualBlock2));
 
         // left line
         BlockSnapshot leftVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx, height, smallz)).blockState(cornerMaterial.getDefaultState()).build();
-        newElements.add(new BlockTransaction(leftVisualBlock1.getLocation().get().createSnapshot(), leftVisualBlock1));
+        newElements.add(new Transaction<BlockSnapshot>(leftVisualBlock1.getLocation().get().createSnapshot(), leftVisualBlock1));
         BlockSnapshot leftVisualBlock2 = snapshotBuilder.from(new Location<World>(world, smallx, height, smallz + 1)).blockState(accentMaterial.getDefaultState()).build();
-        newElements.add(new BlockTransaction(leftVisualBlock2.getLocation().get().createSnapshot(), leftVisualBlock2));
+        newElements.add(new Transaction<BlockSnapshot>(leftVisualBlock2.getLocation().get().createSnapshot(), leftVisualBlock2));
         for (int z = smallz + STEP; z < bigz - STEP / 2; z += STEP) {
             if (z > minz && z < maxz) {
                 BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, smallx, height, z)).blockState(accentMaterial.getDefaultState()).build();
-                newElements.add(new BlockTransaction(visualBlock.getLocation().get().createSnapshot(), visualBlock));
+                newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
         BlockSnapshot leftVisualBlock3 = snapshotBuilder.from(new Location<World>(world, smallx, height, bigz - 1)).blockState(accentMaterial.getDefaultState()).build(); 
-        newElements.add(new BlockTransaction(leftVisualBlock3.getLocation().get().createSnapshot(), leftVisualBlock3));
+        newElements.add(new Transaction<BlockSnapshot>(leftVisualBlock3.getLocation().get().createSnapshot(), leftVisualBlock3));
 
         // right line
         BlockSnapshot rightVisualBlock1 = snapshotBuilder.from(new Location<World>(world, bigx, height, smallz)).blockState(cornerMaterial.getDefaultState()).build();
-        newElements.add(new BlockTransaction(rightVisualBlock1.getLocation().get().createSnapshot(), rightVisualBlock1));
+        newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock1.getLocation().get().createSnapshot(), rightVisualBlock1));
         BlockSnapshot rightVisualBlock2 = snapshotBuilder.from(new Location<World>(world, bigx, height, smallz + 1)).blockState(accentMaterial.getDefaultState()).build(); 
-        newElements.add(new BlockTransaction(rightVisualBlock2.getLocation().get().createSnapshot(), rightVisualBlock2));
+        newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock2.getLocation().get().createSnapshot(), rightVisualBlock2));
         for (int z = smallz + STEP; z < bigz - STEP / 2; z += STEP) {
             if (z > minz && z < maxz) {
                 BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, bigx, height, z)).blockState(accentMaterial.getDefaultState()).build();
-                newElements.add(new BlockTransaction(visualBlock.getLocation().get().createSnapshot(), visualBlock));
+                newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
         BlockSnapshot rightVisualBlock3 = snapshotBuilder.from(new Location<World>(world, bigx, height, bigz - 1)).blockState(accentMaterial.getDefaultState()).build(); 
-        newElements.add(new BlockTransaction(rightVisualBlock3.getLocation().get().createSnapshot(), rightVisualBlock3));
+        newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock3.getLocation().get().createSnapshot(), rightVisualBlock3));
         BlockSnapshot rightVisualBlock4 = snapshotBuilder.from(new Location<World>(world, bigx, height, bigz)).blockState(cornerMaterial.getDefaultState()).build(); 
-        newElements.add(new BlockTransaction(rightVisualBlock4.getLocation().get().createSnapshot(), rightVisualBlock4));
+        newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock4.getLocation().get().createSnapshot(), rightVisualBlock4));
 
         // remove any out of range elements
         this.removeElementsOutOfRange(newElements, minx, minz, maxx, maxz);
 
         // remove any elements outside the claim
         for (int i = 0; i < newElements.size(); i++) {
-            BlockSnapshot element = newElements.get(i).getFinalReplacement();
+            BlockSnapshot element = newElements.get(i).getFinal();
             if (!claim.contains(element.getLocation().get(), true, false)) {
                 newElements.remove(i--);
             }
@@ -256,9 +256,9 @@ public class Visualization {
 
         // set Y values and real block information for any remaining
         // visualization blocks
-        for (BlockTransaction element : newElements) {
-            Location<World> tempLocation = element.getFinalReplacement().getLocation().get();
-            element = new BlockTransaction(element.getOriginal(), element.getFinalReplacement().withLocation(
+        for (Transaction<BlockSnapshot> element : newElements) {
+            Location<World> tempLocation = element.getFinal().getLocation().get();
+            element = new Transaction<BlockSnapshot>(element.getOriginal(), element.getFinal().withLocation(
                     getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent)));
         }
 
@@ -266,7 +266,7 @@ public class Visualization {
     }
 
     // removes any elements which are out of visualization range
-    private void removeElementsOutOfRange(ArrayList<BlockTransaction> elements, int minx, int minz, int maxx, int maxz) {
+    private void removeElementsOutOfRange(ArrayList<Transaction<BlockSnapshot>> elements, int minx, int minz, int maxx, int maxz) {
         for (int i = 0; i < elements.size(); i++) {
             Location<World> location = elements.get(i).getOriginal().getLocation().get();
             if (location.getX() < minx || location.getX() > maxx || location.getZ() < minz || location.getZ() > maxz) {

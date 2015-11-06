@@ -24,7 +24,8 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import org.spongepowered.api.block.BlockTransaction;
+import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.concurrent.TimeUnit;
@@ -46,12 +47,12 @@ class VisualizationApplicationTask implements Runnable {
     public void run() {
         // for each element (=block) of the visualization
         for (int i = 0; i < visualization.elements.size(); i++) {
-            BlockTransaction element = visualization.elements.get(i);
+            Transaction<BlockSnapshot> element = visualization.elements.get(i);
 
             // send the player a fake block change event
-            if (!element.getFinalReplacement().getLocation().get().getExtent().isLoaded())
+            if (!element.getFinal().getLocation().get().getExtent().isLoaded())
                 continue; // cheap distance check
-            BlockUtils.sendBlockChange(player, element.getFinalReplacement());
+            BlockUtils.sendBlockChange(player, element.getFinal());
         }
 
         // remember the visualization applied to this player for later (so it

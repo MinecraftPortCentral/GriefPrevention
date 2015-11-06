@@ -24,9 +24,10 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import org.spongepowered.api.block.BlockTransaction;
+import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityType;
@@ -64,35 +65,35 @@ public class EntityEventHandler {
         final Entity entity = cause.first(Entity.class).orElse(null);
         if (entity != null) {
             final EntityType entityType = entity.getType();
-            for (BlockTransaction transaction : event.getTransactions()) {
+            for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
                 final BlockType originalType = transaction.getOriginal().getState().getType();
-                final BlockType finalType = transaction.getFinalReplacement().getState().getType();
+                final BlockType finalType = transaction.getFinal().getState().getType();
 
                 if (entityType.equals(EntityTypes.ENDERMAN)) {
                     if (!GriefPrevention.instance.config_endermenMoveBlocks) {
-                        transaction.setIsValid(false);
+                        transaction.setValid(false);
                     } else {
                         // and the block is claimed
-                        if (this.dataStore.getClaimAt(transaction.getFinalReplacement().getLocation().get(), false, null) != null) {
+                        if (this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null) != null) {
                             // he doesn't get to steal it
-                            transaction.setIsValid(false);
+                            transaction.setValid(false);
                         }
                     }
                 } else if (!GriefPrevention.instance.config_silverfishBreakBlocks && entityType.equals(EntityTypes.SILVERFISH)) {
-                    transaction.setIsValid(false);
+                    transaction.setValid(false);
                 } else if (GriefPrevention.instance.config_claims_worldModes.get(event.getTargetWorld()) != ClaimsMode.Disabled && entityType
                         .equals(EntityTypes.WITHER)) {
-                    transaction.setIsValid(false);
+                    transaction.setValid(false);
                 } else if (!GriefPrevention.instance.config_zombiesBreakDoors && transaction.getOriginal().get(Keys.HINGE_POSITION).isPresent() &&
                         entityType.equals(EntityTypes.ZOMBIE)) {
-                    transaction.setIsValid(false);
+                    transaction.setValid(false);
                 } else if (finalType.equals(BlockTypes.DIRT) && originalType.equals(BlockTypes.FARMLAND)) {
                     if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
-                        transaction.setIsValid(false);
+                        transaction.setValid(false);
                     } else {
                         final Optional<Entity> optPassenger = entity.get(Keys.PASSENGER);
                         if (optPassenger.isPresent() && optPassenger.get().getType().equals(EntityTypes.PLAYER)) {
-                            transaction.setIsValid(false);
+                            transaction.setValid(false);
                         }
                     }
                 }
