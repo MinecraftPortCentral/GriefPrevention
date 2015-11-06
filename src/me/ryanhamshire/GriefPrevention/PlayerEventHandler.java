@@ -63,11 +63,14 @@ import org.spongepowered.api.event.entity.DisplaceEntityEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.living.player.KickPlayerEvent;
 import org.spongepowered.api.event.entity.living.player.RespawnPlayerEvent;
+import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.Carrier;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackSnapshot;
+import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
 import org.spongepowered.api.service.user.UserStorage;
 import org.spongepowered.api.statistic.achievement.Achievements;
 import org.spongepowered.api.text.Texts;
@@ -1251,33 +1254,32 @@ public class PlayerEventHandler {
     }
 
     // when a player switches in-hand items
-    /*@EventHandler(ignoreCancelled = true)
-    public void onItemHeldChange(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
+    @Listener(ignoreCancelled = true)
+    public void onItemHeldChange(ChangeInventoryEvent.Held event) {
+        Optional<Player> player = event.getCause().first(Player.class);
+
+        if (!player.isPresent()) {
+            return;
+        }
 
         // if he's switching to the golden shovel
-        int newSlot = event.getNewSlot();
-        ItemStack newItemStack = player.getInventory().getItem(newSlot);
-        if (newItemStack != null && newItemStack.getType() == GriefPrevention.instance.config_claims_modificationTool) {
-            // give the player his available claim blocks count and claiming
-            // instructions, but only if he keeps the shovel equipped for a
-            // minimum time, to avoid mouse wheel spam
-            if (GriefPrevention.instance.claimsEnabledForWorld(player.getWorld())) {
-                EquipShovelProcessingTask task = new EquipShovelProcessingTask(player);
-                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 15L); // 15L
-                                                                                                                                  // is
-                                                                                                                                  // approx.
-                                                                                                                                  // 3/4
-                                                                                                                                  // of
-                                                                                                                                  // a
-                                                                                                                                  // second
+        for (SlotTransaction transaction : event.getTransactions()) {
+            ItemStackSnapshot newItemStack = transaction.getFinal();
+            if (newItemStack != null && newItemStack.getType() == GriefPrevention.instance.config_claims_modificationTool) {
+                // give the player his available claim blocks count and claiming
+                // instructions, but only if he keeps the shovel equipped for a
+                // minimum time, to avoid mouse wheel spam
+                if (GriefPrevention.instance.claimsEnabledForWorld(player.get().getWorld())) {
+                    EquipShovelProcessingTask task = new EquipShovelProcessingTask(player.get());
+                    GriefPrevention.instance.game.getScheduler().createTaskBuilder().delayTicks(15).execute(task).submit(GriefPrevention.instance);
+                }
             }
         }
     }
 
     // block use of buckets within other players' claims
-    private HashSet<Material> commonAdjacentBlocks_water =
-            new HashSet<Material>(Arrays.asList(Material.WATER, Material.STATIONARY_WATER, Material.SOIL, Material.DIRT, Material.STONE));
+    /*private HashSet<BlockType> commonAdjacentBlocks_water =
+            new HashSet<BlockType>(Arrays.asList(Material.WATER, Material.STATIONARY_WATER, Material.SOIL, Material.DIRT, Material.STONE));
     private HashSet<Material> commonAdjacentBlocks_lava =
             new HashSet<Material>(Arrays.asList(Material.LAVA, Material.STATIONARY_LAVA, Material.DIRT, Material.STONE));
 
