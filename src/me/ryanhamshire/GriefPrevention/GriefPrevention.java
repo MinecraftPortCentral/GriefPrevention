@@ -1224,24 +1224,20 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Revokes a player's access to your claim(s)"))
                 .permission("griefprevention.claims")
-                .arguments(player(Texts.of("player"), game))
+                .arguments(string(Texts.of("subject")))
                 .executor((src, args) -> {
                     final Player player = checkPlayer(src);
                     // determine which claim the player is standing in
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*
-                                                                                * ignore
-                                                                                * height
-                                                                                */, null);
+                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true, null);
 
-                    String target = args.<String>getOne("player").get();
+                    String target = args.<String>getOne("subject").get();
 
                     // bracket any permissions
                     if (target.contains(".") && !target.startsWith("[") && !target.endsWith("]")) {
                         target = "[" + target + "]";
                     }
 
-                    // determine whether a single player or clearing permissions
-                    // entirely
+                    // determine whether a single player or clearing permissions entirely
                     boolean clearPermissions = false;
                     User otherPlayer = null;
                     if (target.equals("all")) {
