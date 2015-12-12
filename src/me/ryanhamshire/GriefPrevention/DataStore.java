@@ -27,13 +27,12 @@ package me.ryanhamshire.GriefPrevention;
 import com.google.common.io.Files;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
 import net.minecraft.item.ItemStack;
-import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.scheduler.Task;
-import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
@@ -1480,7 +1479,7 @@ public abstract class DataStore {
             // otherwise try to convert to a UUID
             Optional<User> player = Optional.empty();
             try {
-                player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(name);
+                player = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(name);
             } catch (Exception ex) {
             }
 

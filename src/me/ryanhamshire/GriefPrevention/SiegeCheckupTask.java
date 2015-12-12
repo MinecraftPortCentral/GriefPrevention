@@ -25,7 +25,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.service.scheduler.Task;
+import org.spongepowered.api.scheduler.Task;
 
 import java.util.concurrent.TimeUnit;
 

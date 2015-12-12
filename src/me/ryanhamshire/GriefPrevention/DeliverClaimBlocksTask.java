@@ -24,7 +24,6 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;

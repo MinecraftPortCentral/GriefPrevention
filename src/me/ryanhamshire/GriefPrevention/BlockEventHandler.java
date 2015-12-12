@@ -24,25 +24,19 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import org.spongepowered.api.item.ItemTypes;
-
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.block.tileentity.carrier.Dispenser;
-import org.spongepowered.api.block.tileentity.carrier.Hopper;
 import org.spongepowered.api.data.Transaction;
-import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
+import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -78,7 +72,8 @@ public class BlockEventHandler {
     }
 
     // when a player breaks a block...
-    @Listener(ignoreCancelled = true, order = Order.DEFAULT)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.DEFAULT)
     public void onBlockBreak(ChangeBlockEvent.Break event) {
         Optional<Player> player = event.getCause().first(Player.class);
         if (player.isPresent()) {
@@ -96,7 +91,8 @@ public class BlockEventHandler {
 
     // when a player places a block...
     @SuppressWarnings("unchecked")
-    @Listener(ignoreCancelled = true, order = Order.LAST)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.LAST)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
         Optional<Player> player = event.getCause().first(Player.class);
 
@@ -296,7 +292,8 @@ public class BlockEventHandler {
     }
 
     // when a player places a sign...
-    @Listener(ignoreCancelled = true)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener
     public void onSignChanged(ChangeSignEvent event) {
         // send sign content to online administrators
         if (!GriefPrevention.instance.config_signNotifications)

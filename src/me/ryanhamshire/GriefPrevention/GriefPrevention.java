@@ -24,15 +24,15 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import static org.spongepowered.api.util.command.CommandMessageFormatting.SPACE_TEXT;
-import static org.spongepowered.api.util.command.args.GenericArguments.firstParsing;
-import static org.spongepowered.api.util.command.args.GenericArguments.integer;
-import static org.spongepowered.api.util.command.args.GenericArguments.literal;
-import static org.spongepowered.api.util.command.args.GenericArguments.onlyOne;
-import static org.spongepowered.api.util.command.args.GenericArguments.optional;
-import static org.spongepowered.api.util.command.args.GenericArguments.player;
-import static org.spongepowered.api.util.command.args.GenericArguments.playerOrSource;
-import static org.spongepowered.api.util.command.args.GenericArguments.string;
+import static org.spongepowered.api.command.CommandMessageFormatting.SPACE_TEXT;
+import static org.spongepowered.api.command.args.GenericArguments.firstParsing;
+import static org.spongepowered.api.command.args.GenericArguments.integer;
+import static org.spongepowered.api.command.args.GenericArguments.literal;
+import static org.spongepowered.api.command.args.GenericArguments.onlyOne;
+import static org.spongepowered.api.command.args.GenericArguments.optional;
+import static org.spongepowered.api.command.args.GenericArguments.player;
+import static org.spongepowered.api.command.args.GenericArguments.playerOrSource;
+import static org.spongepowered.api.command.args.GenericArguments.string;
 
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
@@ -46,27 +46,27 @@ import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.command.CommandPermissionException;
+import org.spongepowered.api.command.CommandResult;
+import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
+import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.service.event.EventManager;
-import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.TextBuilder;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.util.command.CommandException;
-import org.spongepowered.api.util.command.CommandPermissionException;
-import org.spongepowered.api.util.command.CommandResult;
-import org.spongepowered.api.util.command.CommandSource;
-import org.spongepowered.api.util.command.spec.CommandSpec;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -427,12 +427,12 @@ public class GriefPrevention {
         // this is the preferred method, as it's simpler than the database
         // scenario
         if (this.dataStore == null) {
-            File oldclaimdata = new File(event.getGame().getSavesDirectory(), "ClaimData");
+            File oldclaimdata = new File(event.getGame().getSavesDirectory().toFile(), "ClaimData");
             if (oldclaimdata.exists()) {
                 if (!FlatFileDataStore.hasData()) {
                     File claimdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "ClaimData");
                     oldclaimdata.renameTo(claimdata);
-                    File oldplayerdata = new File(event.getGame().getSavesDirectory(), "PlayerData");
+                    File oldplayerdata = new File(event.getGame().getSavesDirectory().toFile(), "PlayerData");
                     File playerdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "PlayerData");
                     oldplayerdata.renameTo(playerdata);
                 }
@@ -974,7 +974,7 @@ public class GriefPrevention {
     // handles slash commands
     @SuppressWarnings("unused")
     private void registerCommands() {
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes a claim"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -982,7 +982,7 @@ public class GriefPrevention {
                     return this.abandonClaimHandler(player, false);
                 })
                 .build(), "abandonclaim", "unclaim", "declaim", "removeclaim", "disclaim");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes a claim and all its subdivisions"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -990,7 +990,7 @@ public class GriefPrevention {
                     return this.abandonClaimHandler(player, true);
                 })
                 .build(), "abandontoplevelclaim");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Toggles ignore claims mode"))
                 .permission("griefprevention.ignoreclaims")
                 .executor((src, args) -> {
@@ -1008,7 +1008,7 @@ public class GriefPrevention {
 
                     return CommandResult.success();
                 }).build(), "ignoreclaims", "ic");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes ALL your claims"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1042,7 +1042,7 @@ public class GriefPrevention {
                 })
         .build(), "abandonallclaims");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to restoration mode"))
                 .permission("griefprevention.restorenature")
                 .executor(((src, args) -> {
@@ -1054,7 +1054,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 }))
                 .build(), "restorenature", "rn");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to aggressive restoration mode"))
                 .permission("griefprevention.restorenatureaggressive")
                 .executor(((src, args) -> {
@@ -1067,7 +1067,7 @@ public class GriefPrevention {
                 }))
                 .build(), "restorenatureaggressive", "rna");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to fill mode"))
                 .permission("griefprotection.restorenaturefill")
                 .arguments(optional(integer(Texts.of("radius")), 2))
@@ -1086,7 +1086,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "restorenaturefill", "rnf");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player full access to your claim(s)"))
                 .extendedDescription(Texts.of("Grants a player full access to your claim(s).\n"
                         + "See also /untrust, /containertrust, /accesstrust, and /permissiontrust."))
@@ -1101,7 +1101,7 @@ public class GriefPrevention {
                 })
                 .build(), "trust", "tr");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Converts an administrative claim to a private claim"))
                 .arguments(optional(player(Texts.of("target"), game)))
                 .permission("griefprevention.transferclaim")
@@ -1148,7 +1148,7 @@ public class GriefPrevention {
                 })
         .build(), "transferclaim", "giveclaim");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Lists permissions for the claim you're standing in"))
                 .permission("griefprevention.claimls")
                 .executor((src, args) -> {
@@ -1221,7 +1221,7 @@ public class GriefPrevention {
                 })
                 .build(), "trustlist");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Revokes a player's access to your claim(s)"))
                 .permission("griefprevention.claims")
                 .arguments(player(Texts.of("player"), game))
@@ -1355,7 +1355,7 @@ public class GriefPrevention {
                 })
                 .build(), "untrust", "ut");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player entry to your claim(s) and use of your bed"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
@@ -1365,7 +1365,7 @@ public class GriefPrevention {
                 })
                 .build(), "accesstrust", "at");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player access to your claim's containers, crops, animals, bed, buttons, and levers"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
@@ -1375,7 +1375,7 @@ public class GriefPrevention {
                 })
                 .build(), "containertrust", "ct");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player permission to grant their level of permission to others"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
@@ -1385,7 +1385,7 @@ public class GriefPrevention {
                 })
                 .build(), "permissiontrust", "pt");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission("griefprevention.buysellclaimblocks")
@@ -1449,7 +1449,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "buyclaimblocks", "buyclaim");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Sell your claim blocks for server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission("griefprevention.buysellclaimblocks")
@@ -1512,7 +1512,7 @@ public class GriefPrevention {
                 })
                 .build(), "sellclaimblocks", "sellclaim");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to administrative claims mode"))
                 .permission("griefprevention.adminclaims")
                 .executor((src, args) -> {
@@ -1523,7 +1523,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "adminclaims", "ac");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool back to basic claims mode"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1536,7 +1536,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "basicclaims", "bc");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1550,7 +1550,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "subdivideclaims", "sc", "subdivideclaim");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission("griefprevention.deleteclaims")
                 .executor((src, args) -> {
@@ -1601,7 +1601,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "deleteclaim", "dc");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Toggles whether explosives may be used in a specific land claim"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1634,7 +1634,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "claimexplosions");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Delete all of another player's claims"))
                 .permission("griefprevention.deleteclaims")
                 .arguments(player(Texts.of("player"), game)) // TODO: Use user commandelement when added
@@ -1660,7 +1660,7 @@ public class GriefPrevention {
                 })
                 .build(), "deleteallclaims");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Gives a player a manual about claiming land"))
                 .permission("griefprevention.claimbook")
                 .arguments(playerOrSource(Texts.of("player"), game))
@@ -1674,7 +1674,7 @@ public class GriefPrevention {
                 })
                 .build(), "claimbook");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("List information about a player's claim blocks and claims"))
                 .arguments(onlyOne(playerOrSource(Texts.of("player"), game)))
                 .executor((src, args) -> {
@@ -1715,7 +1715,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "claimslist", "claimlist", "listclaims");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("List all administrative claims"))
                 .permission("griefprevention.adminclaims")
                 .executor((src, args) -> {
@@ -1739,7 +1739,7 @@ public class GriefPrevention {
                 })
                 .build(), "adminclaimslist");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Allows other players to pick up the items you dropped when you died"))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
@@ -1752,7 +1752,7 @@ public class GriefPrevention {
                 })
                 .build(), "unlockdrops");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes all administrative claims"))
                 .permission("griefprevention.adminclaims")
                 .executor((src, args) -> {
@@ -1773,7 +1773,7 @@ public class GriefPrevention {
                 })
                 .build(), "deletealladminclaims");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Adds or subtracts bonus claim blocks for a player"))
                 .permission("griefprevention.adjustclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
@@ -1803,7 +1803,7 @@ public class GriefPrevention {
                     User targetPlayer;
                     try {
                         UUID playerID = UUID.fromString(target);
-                        targetPlayer = game.getServiceManager().provideUnchecked(UserStorage.class).get(playerID).orElse(null);
+                        targetPlayer = game.getServiceManager().provideUnchecked(UserStorageService.class).get(playerID).orElse(null);
 
                     } catch (IllegalArgumentException e) {
                         targetPlayer = this.resolvePlayerByName(target).orElse(null);
@@ -1830,7 +1830,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "adjustbonusclaimblocks", "acb");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Updates a player's accrued claim block total"))
                 .permission("griefprevention.adjustclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
@@ -1860,7 +1860,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "setaccruedclaimblocks", "scb");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Ejects you to nearby unclaimed land. Has a substantial cooldown period"))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
@@ -1908,7 +1908,7 @@ public class GriefPrevention {
                 })
                 .build(), "trapped");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Initiates a siege versus another player"))
                 .arguments(optional(onlyOne(player(Texts.of("playerName"), game))))
                 .executor((src, args) -> {
@@ -1993,7 +1993,7 @@ public class GriefPrevention {
                 })
                 .build(), "siege");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Toggles whether a player's messages will only reach other soft-muted players"))
                 .permission("griefprevention.softmute")
                 .arguments(onlyOne(player(Texts.of("player"), game)))
@@ -2015,7 +2015,7 @@ public class GriefPrevention {
                 })
                 .build(), "softmute");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Reloads Grief Prevention's configuration settings"))
                 .permission("griefprevention.reload")
                 .executor((src, args) -> {
@@ -2026,7 +2026,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "gpreload");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Allows a player to give away a pet they tamed"))
                 .permission("griefprevention.givepet")
                 .arguments(firstParsing(literal(Texts.of("player"), "cancel"), player(Texts.of("player"), game)))
@@ -2054,7 +2054,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "givepet");
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Allows an administrator to get technical information about blocks in the world and items in hand"))
                 .permission("griefprevention.gpblockinfo")
                 .executor((src, args) -> {
@@ -2073,7 +2073,7 @@ public class GriefPrevention {
                 })
                 .build(), "gpblockinfo");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Ignores another player's chat messages"))
                 .permission("griefprevention.ignore")
                 .arguments(onlyOne(player(Texts.of("player"), game)))
@@ -2094,7 +2094,7 @@ public class GriefPrevention {
                 })
                 .build(), "ignoreplayer", "ignore");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Unignores another player's chat messages"))
                 .permission("griefprevention.ignore")
                 .arguments(onlyOne(player(Texts.of("player"), game)))
@@ -2119,7 +2119,7 @@ public class GriefPrevention {
                 })
                 .build(), "unignoreplayer", "unignore");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Lists the players you're ignoring in chat"))
                 .permission("griefprevention.ignore")
                 .executor((src, args) -> {
@@ -2150,7 +2150,7 @@ public class GriefPrevention {
                 })
                 .build(), "ignoredplayerlist", "ignores", "ignored", "ignoredlist", "listignores", "listignored", "ignoring");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Forces two players to ignore each other in chat"))
                 .permission("griefprevention.separate")
                 .arguments(onlyOne(player(Texts.of("player1"), game)), onlyOne(player(Texts.of("player2"), game)))
@@ -2168,7 +2168,7 @@ public class GriefPrevention {
                 })
                 .build(), "separate");
 
-        game.getCommandDispatcher().register(this, CommandSpec.builder()
+        game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Reverses /separate"))
                 .permission("griefprevention.separate")
                 .arguments(onlyOne(player(Texts.of("player1"), game)), onlyOne(player(Texts.of("player2"), game)))
@@ -2419,7 +2419,7 @@ public class GriefPrevention {
         if (targetPlayer.isPresent())
             return Optional.of((User) targetPlayer.get());
 
-        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(name);
+        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(name);
         if (user.isPresent())
             return user;
 
@@ -2433,7 +2433,7 @@ public class GriefPrevention {
             return "somebody";
 
         // check the cache
-        Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(playerID);
+        Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(playerID);
         if (player.isPresent() || player.get().isOnline()) {
             return player.get().getName();
         } else {
@@ -2443,7 +2443,7 @@ public class GriefPrevention {
 
     // string overload for above helper
     static String lookupPlayerName(String playerID) {
-        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(playerID);
+        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(playerID);
         if (!user.isPresent()) {
             GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + playerID);
             return "someone";

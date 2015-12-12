@@ -25,7 +25,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -320,7 +320,7 @@ public class PlayerData {
             int totalBlocks =
                     this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if (totalBlocks < totalClaimsArea) {
-                Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(this.playerID);
+                Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(this.playerID);
                 if (player.isPresent()) {
                     GriefPrevention.AddLogEntry(player.get().getName() + " has more claimed land than blocks available.  Adding blocks to fix.",
                             CustomLogEntryTypes.Debug, true);

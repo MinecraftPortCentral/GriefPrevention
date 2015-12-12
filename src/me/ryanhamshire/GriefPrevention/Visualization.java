@@ -25,7 +25,6 @@
 package me.ryanhamshire.GriefPrevention;
 
 import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockSnapshotBuilder;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
@@ -187,7 +186,7 @@ public class Visualization {
         final int STEP = 10;
 
         // top line
-        BlockSnapshotBuilder snapshotBuilder = GriefPrevention.instance.gameRegistry.createBlockSnapshotBuilder();
+        BlockSnapshot.Builder snapshotBuilder = GriefPrevention.instance.gameRegistry.createBuilder(BlockSnapshot.Builder.class);
         BlockSnapshot topVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx, height, bigz)).blockState(cornerMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(topVisualBlock1.getLocation().get().createSnapshot(), topVisualBlock1));
         BlockSnapshot topVisualBlock2 = snapshotBuilder.from(new Location<World>(world, smallx + 1, height, bigz)).blockState(accentMaterial.getDefaultState()).build();

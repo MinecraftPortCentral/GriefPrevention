@@ -25,13 +25,10 @@
 package me.ryanhamshire.GriefPrevention;
 
 import com.google.common.collect.Sets;
-import com.google.common.eventbus.Subscribe;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Items;
-import net.minecraft.stats.Achievement;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
 import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
@@ -63,20 +60,20 @@ import org.spongepowered.api.event.entity.DisplaceEntityEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.living.player.KickPlayerEvent;
 import org.spongepowered.api.event.entity.living.player.RespawnPlayerEvent;
+import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.Carrier;
-import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
-import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.statistic.achievement.Achievements;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.sink.MessageSinks;
-import org.spongepowered.api.util.command.CommandSource;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 
 import java.net.InetAddress;
@@ -464,7 +461,8 @@ public class PlayerEventHandler {
 
 
     // when a player uses a slash command...
-    @Listener(ignoreCancelled = true, order = Order.PRE)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.PRE)
     synchronized void onPlayerCommandPreprocess(SendCommandEvent event) {
         String command = event.getCommand();
         String[] args = event.getArguments().split(" ");
@@ -646,7 +644,8 @@ public class PlayerEventHandler {
     }
 
     // when a player successfully joins the server...
-    @Listener(ignoreCancelled = true, order = Order.LAST)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.LAST)
     public void onPlayerJoin(ClientConnectionEvent.Join event) {
         Player player = event.getTargetEntity();
         UUID playerID = player.getUniqueId();
@@ -785,7 +784,8 @@ public class PlayerEventHandler {
 
 
     // when a player spawns, conditionally apply temporary pvp protection
-    @Listener(ignoreCancelled = true, order = Order.POST)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.POST)
     public void onPlayerRespawn(RespawnPlayerEvent event) {
         Player player = event.getTargetEntity();
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
@@ -948,7 +948,8 @@ public class PlayerEventHandler {
     }
 
     // when a player teleports via a portal
-    @Listener(ignoreCancelled = true, order = Order.LATE)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.LATE)
     public void onPlayerPortal(DisplaceEntityEvent.Teleport.TargetPlayer event) {
         // if the player isn't going anywhere, take no action
 
@@ -1047,7 +1048,8 @@ public class PlayerEventHandler {
     }
 
     // when a player interacts with an entity...
-    @Listener(ignoreCancelled = true, order = Order.PRE)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.PRE)
     public void onPlayerInteractEntity(InteractEntityEvent.Secondary event) {
         if (!event.getCause().any(Player.class)) {
             return;
@@ -1087,7 +1089,7 @@ public class PlayerEventHandler {
                 }
                 if (!GriefPrevention.instance.pvpRulesApply(entity.getLocation().getExtent())) {
                     // otherwise disallow
-                    User owner = event.getGame().getServiceManager().provideUnchecked(UserStorage.class).get(ownerID).get();
+                    User owner = event.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(ownerID).get();
                     String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, owner.getName());
                     if (player.hasPermission("griefprevention.ignoreclaims"))
                         message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
@@ -1188,7 +1190,8 @@ public class PlayerEventHandler {
     }
 
     // when a player picks up an item...
-    @Listener(ignoreCancelled = true, order = Order.EARLY)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener(order = Order.EARLY)
     public void onPlayerPickupItem(CollideEntityEvent event) {
         Optional<Player> player = event.getCause().first(Player.class);
 
@@ -1254,7 +1257,8 @@ public class PlayerEventHandler {
     }
 
     // when a player switches in-hand items
-    @Listener(ignoreCancelled = true)
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener
     public void onItemHeldChange(ChangeInventoryEvent.Held event) {
         Optional<Player> player = event.getCause().first(Player.class);
 

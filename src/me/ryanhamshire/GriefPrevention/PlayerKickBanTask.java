@@ -26,17 +26,11 @@ package me.ryanhamshire.GriefPrevention;
 
 
 import com.mojang.authlib.GameProfile;
-import net.minecraft.command.CommandException;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.BanList;
 import net.minecraft.server.management.UserListBansEntry;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.service.ban.BanService;
-import org.spongepowered.api.text.Texts;
-
-import java.util.Date;
 
 //kicks or bans a player
 //need a task for this because async threads (like the chat event handlers) can't kick or ban.

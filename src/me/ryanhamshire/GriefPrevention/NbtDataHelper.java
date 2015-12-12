@@ -27,7 +27,7 @@ package me.ryanhamshire.GriefPrevention;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.service.user.UserStorageService;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -52,7 +52,7 @@ public class NbtDataHelper {
                     return Optional.of((User)player);
                 }
                 // player is not online, get user from storage if one exists
-                return GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(uuid);
+                return GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(uuid);
             }
         }
         return Optional.empty();

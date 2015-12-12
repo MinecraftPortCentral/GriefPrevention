@@ -29,7 +29,7 @@ import com.google.common.reflect.TypeToken;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.user.UserStorage;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -167,7 +167,7 @@ public class FlatFileDataStore extends DataStore {
                 // try to convert player name to UUID
                 Optional<User> player = null;
                 try {
-                    player = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(currentFilename);
+                    player = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(currentFilename);
 
                     // if successful, rename the file using the UUID
                     if (player.isPresent()) {
@@ -255,7 +255,7 @@ public class FlatFileDataStore extends DataStore {
                             owner = Optional.empty(); // administrative land claim or
                                             // subdivision
                         } else if (this.getSchemaVersion() == 0) {
-                            owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorage.class).get().get(ownerName);
+                            owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(ownerName);
                             if (!owner.isPresent()) {
                                 GriefPrevention.AddLogEntry("Couldn't resolve this name to a UUID: " + ownerName + ".");
                                 GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());

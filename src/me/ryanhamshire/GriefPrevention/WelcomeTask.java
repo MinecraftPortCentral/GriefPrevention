@@ -32,7 +32,6 @@ import org.spongepowered.api.data.manipulator.mutable.item.PagedData;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.item.inventory.ItemStackBuilder;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.Texts;
 
@@ -56,7 +55,7 @@ public class WelcomeTask implements Runnable {
 
         // give the player a reference book for later
         if (GriefPrevention.instance.config_claims_supplyPlayerManual) {
-            ItemStackBuilder factory = GriefPrevention.instance.game.getRegistry().createItemBuilder();
+            ItemStack.Builder factory = GriefPrevention.instance.game.getRegistry().createBuilder(ItemStack.Builder.class);
             DataStore datastore = GriefPrevention.instance.dataStore;
             final ItemStack itemStack = factory.itemType(ItemTypes.WRITTEN_BOOK).quantity(1).build();
 
