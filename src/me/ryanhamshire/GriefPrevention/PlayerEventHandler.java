@@ -27,6 +27,7 @@ package me.ryanhamshire.GriefPrevention;
 import com.google.common.collect.Sets;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.data.key.Keys;
@@ -34,6 +35,7 @@ import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
 import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
 import org.spongepowered.api.data.manipulator.mutable.entity.TameableData;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
+import org.spongepowered.api.data.property.entity.EyeLocationProperty;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.Item;
@@ -49,6 +51,7 @@ import org.spongepowered.api.event.GameEvent;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.action.MessageEvent;
+import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportType;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportTypes;
@@ -1203,6 +1206,9 @@ public class PlayerEventHandler {
 
         // who owns this stack?
         for (Entity entity : event.getEntities()) {
+            if (!(entity instanceof Item)) {
+                continue;
+            }
             Item item = (Item) entity;
 
             Optional<User> owner = NbtDataHelper.getOwnerOfEntity((net.minecraft.entity.Entity) item);
@@ -1281,6 +1287,111 @@ public class PlayerEventHandler {
         }
     }
 
+    @Listener
+    public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event) {
+        Optional<Player> playerOpt = event.getCause().first(Player.class);
+
+        if (!playerOpt.isPresent() || !playerOpt.get().getItemInHand().isPresent()) {
+            return;
+        }
+
+        Player player = playerOpt.get();
+        BlockSnapshot clickedBlock = event.getTargetBlock();
+
+        // don't care about left-clicking on most blocks, this is probably a
+        // break action
+        PlayerData playerData = null;
+
+        // if he's investigating a claim
+         if (player.getItemInHand().get().getItem() == GriefPrevention.instance.config_claims_investigationTool) {
+            // if claims are disabled in this world, do nothing
+            if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()))
+                return;
+
+            // if holding shift (sneaking), show all claims in area
+            if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission("griefprevention.visualizenearbyclaims")) {
+                // find nearby claims
+                Set<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
+
+                // visualize boundaries
+                Visualization visualization =
+                        Visualization.fromClaims(claims, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
+                Visualization.Apply(player, visualization);
+
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
+
+                return;
+            }
+
+            // FEATURE: shovel and stick can be used from a distance away
+            /*if (clickedBlock.getState().getType() == BlockTypes.AIR) {
+                // try to find a far away non-air block along line of sight
+                clickedBlock = getTargetBlock(player, 100);
+                clickedBlockType = clickedBlock.getType();
+            }*/
+
+            // if no block, stop here
+            if (clickedBlock == null) {
+                return;
+            }
+
+            // air indicates too far away
+            if (clickedBlock.getState().getType() == BlockTypes.AIR) {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
+                Visualization.Revert(player);
+                return;
+            }
+
+            if (playerData == null)
+                playerData = this.dataStore.getPlayerData(player.getUniqueId());
+            // ignore height
+            Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
+
+            // no claim case
+            if (claim == null) {
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
+                Visualization.Revert(player);
+            }
+
+            // claim case
+            else {
+                playerData.lastClaim = claim;
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
+
+                // visualize boundary
+                Visualization visualization =
+                        Visualization.FromClaim(claim, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
+                Visualization.Apply(player, visualization);
+
+                // if can resize this claim, tell about the boundaries
+                if (claim.allowEdit(player) == null) {
+                    // TODO
+                    //GriefPrevention.sendMessage(player, TextMode.Info, "", "  " + claim.getWidth() + "x" + claim.getHeight() + "=" + claim.getArea());
+                }
+
+                // if deleteclaims permission, tell about the player's
+                // offline time
+                if (!claim.isAdminClaim() && player.hasPermission("griefprevention.deleteclaims")) {
+                    if (claim.parent != null) {
+                        claim = claim.parent;
+                    }
+                    PlayerData otherPlayerData = this.dataStore.getPlayerData(claim.ownerID);
+                    Date lastLogin = otherPlayerData.getLastLogin();
+                    Date now = new Date();
+                    long daysElapsed = (now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24);
+
+                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.PlayerOfflineTime, String.valueOf(daysElapsed));
+
+                    // drop the data we just loaded, if the player isn't
+                    // online
+                    if (!GriefPrevention.instance.game.getServer().getPlayer(claim.ownerID).isPresent())
+                        this.dataStore.clearCachedPlayerData(claim.ownerID);
+                }
+            }
+
+            return;
+        }
+    }
     // block use of buckets within other players' claims
     /*private HashSet<BlockType> commonAdjacentBlocks_water =
             new HashSet<BlockType>(Arrays.asList(Material.WATER, Material.STATIONARY_WATER, Material.SOIL, Material.DIRT, Material.STONE));

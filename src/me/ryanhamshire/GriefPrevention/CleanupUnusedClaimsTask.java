@@ -36,7 +36,7 @@ import java.util.Vector;
 //FEATURE: automatically remove claims owned by inactive players which:
 //...aren't protecting much OR
 //...are a free new player claim (and the player has no other claims) OR
-//...because the player has been gone a REALLY long time, and that expiration has been configured in config.yml
+//...because the player has been gone a REALLY long time, and that expiration has been configured in config.hocon
 
 //runs every 1 minute in the main thread
 class CleanupUnusedClaimsTask implements Runnable {

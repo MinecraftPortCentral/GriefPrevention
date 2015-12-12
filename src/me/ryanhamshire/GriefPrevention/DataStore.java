@@ -149,7 +149,7 @@ public abstract class DataStore {
             playerDataFolder.mkdirs();
         }
 
-        // load up all the messages from messages.yml
+        // load up all the messages from messages.hocon
         this.loadMessages();
         GriefPrevention.AddLogEntry("Customizable messages loaded.");
 

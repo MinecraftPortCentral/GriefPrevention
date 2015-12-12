@@ -114,7 +114,7 @@ public class GriefPrevention {
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
 
-    // configuration variables, loaded/saved from a config.yml
+    // configuration variables, loaded/saved from a config.hocon
 
     // claim mode for each world
     public ConcurrentHashMap<World, ClaimsMode> config_claims_worldModes;
@@ -416,7 +416,7 @@ public class GriefPrevention {
                 this.dataStore = databaseStore;
             } catch (Exception e) {
                 GriefPrevention.AddLogEntry(
-                        "Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
+                        "Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.hocon so that GriefPrevention can use the file system to store data.");
                 e.printStackTrace();
                 return;
             }
@@ -774,7 +774,7 @@ public class GriefPrevention {
             Optional<ItemType> investigationTool = game.getRegistry().getType(ItemType.class, investigationToolMaterialName);
             if (!investigationTool.isPresent()) {
                 GriefPrevention.AddLogEntry(
-                        "ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
+                        "ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.hocon.");
                 this.config_claims_investigationTool = ItemTypes.STICK;
             } else {
                 this.config_claims_investigationTool = investigationTool.get();
@@ -792,7 +792,7 @@ public class GriefPrevention {
             Optional<ItemType> modificationTool = game.getRegistry().getType(ItemType.class, modificationToolMaterialName);
             if (!modificationTool.isPresent()) {
                 GriefPrevention.AddLogEntry("ERROR: Material " + modificationToolMaterialName
-                        + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
+                        + " not found.  Defaulting to the golden shovel.  Please update your config.hocon.");
                 this.config_claims_modificationTool = ItemTypes.GOLDEN_SHOVEL;
             } else {
                 this.config_claims_modificationTool = modificationTool.get();
@@ -815,7 +815,7 @@ public class GriefPrevention {
                 String worldName = siegeEnabledWorldNames.get(i);
                 Optional<World> world = this.game.getServer().getWorld(UUID.fromString(worldName));
                 if (!world.isPresent()) {
-                    AddLogEntry("Error: Siege Configuration: There's no world uuid \"" + worldName + "\".  Please update your config.yml.");
+                    AddLogEntry("Error: Siege Configuration: There's no world uuid \"" + worldName + "\".  Please update your config.hocon.");
                 } else {
                     this.config_siege_enabledWorlds.add(world.get());
                 }
@@ -1327,11 +1327,7 @@ public class GriefPrevention {
                             }
                             boolean targetIsManager = claim.managers.contains(idToDrop);
                             if (targetIsManager && claim.allowEdit(player) != null) // only
-                            // claim
-                            // owners
-                            // can
-                            // untrust
-                            // managers
+                            // claim owners can untrust managers
                             {
                                 throw new CommandException(getMessage(Messages.ManagersDontUntrustManagers, claim.getOwnerName()));
                             } else {

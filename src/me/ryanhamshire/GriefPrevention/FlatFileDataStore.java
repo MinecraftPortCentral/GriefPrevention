@@ -357,8 +357,8 @@ public class FlatFileDataStore extends DataStore {
                 if (files[i].getName().startsWith("_"))
                     continue;
 
-                // delete any which don't end in .yml
-                if (!files[i].getName().endsWith(".yml")) {
+                // delete any which don't end in .hocon
+                if (!files[i].getName().endsWith(".hocon")) {
                     files[i].delete();
                     continue;
                 }
@@ -377,7 +377,7 @@ public class FlatFileDataStore extends DataStore {
                 catch (Exception e) {
                     claimID = this.nextClaimID;
                     this.incrementNextClaimID();
-                    File newFile = new File(claimDataFolderPath + File.separator + String.valueOf(this.nextClaimID) + ".yml");
+                    File newFile = new File(claimDataFolderPath + File.separator + String.valueOf(this.nextClaimID) + ".hocon");
                     files[i].renameTo(newFile);
                     files[i] = newFile;
                 }
@@ -523,7 +523,7 @@ public class FlatFileDataStore extends DataStore {
         String claimID = String.valueOf(claim.id);
 
         // remove from disk
-        File claimFile = new File(claimDataFolderPath + File.separator + claimID + ".yml");
+        File claimFile = new File(claimDataFolderPath + File.separator + claimID + ".hocon");
         if (claimFile.exists() && !claimFile.delete()) {
             GriefPrevention.AddLogEntry("Error: Unable to delete claim file \"" + claimFile.getAbsolutePath() + "\".");
         }
