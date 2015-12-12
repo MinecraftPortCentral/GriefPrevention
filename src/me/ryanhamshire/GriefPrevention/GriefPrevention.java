@@ -41,6 +41,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
+import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -57,7 +58,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
+import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
@@ -324,16 +325,16 @@ public class GriefPrevention {
     public int config_ipLimit;
 
     // list of block IDs which should require /accesstrust for player interaction
-    public List<BlockType> config_mods_accessTrustIds;
+    public List<BlockInfo> config_mods_accessTrustIds;
 
     // list of block IDs which should require /containertrust for player interaction
-    public List<BlockType> config_mods_containerTrustIds;
+    public List<BlockInfo> config_mods_containerTrustIds;
 
     // list of player names which ALWAYS ignore claims
     public List<String> config_mods_ignoreClaimsAccounts;
 
     // list of block IDs which can be destroyed by explosions, even in claimed areas
-    public List<BlockType> config_mods_explodableIds;
+    public List<BlockInfo> config_mods_explodableIds;
 
     // override for sea level, because bukkit doesn't report the right value for all situations
     public HashMap<String, Integer> config_seaLevelOverride;
@@ -384,7 +385,7 @@ public class GriefPrevention {
 
     // initializes well... everything
     @Listener
-    public void onPostInit(GamePostInitializationEvent event) {
+    public void onServerStarted(GameStartedServerEvent event) {
         instance = this;
 
         DataStore.resetTextObjects();
@@ -730,7 +731,7 @@ public class GriefPrevention {
             if (this.config_mods_ignoreClaimsAccounts == null)
                 this.config_mods_ignoreClaimsAccounts = new ArrayList<>();
 
-            this.config_mods_accessTrustIds = new ArrayList<BlockType>();
+            this.config_mods_accessTrustIds = new ArrayList<BlockInfo>();
             List<String> accessTrustStrings =
                     mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringAccessTrust").getList(new TypeToken<String>() {
                     });
@@ -738,7 +739,7 @@ public class GriefPrevention {
 
             this.parseBlockIdListFromConfig(accessTrustStrings, this.config_mods_accessTrustIds);
 
-            this.config_mods_containerTrustIds = new ArrayList<BlockType>();
+            this.config_mods_containerTrustIds = new ArrayList<BlockInfo>();
             List<String> containerTrustStrings =
                     mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringContainerTrust").getList(new TypeToken<String>() {
                     });
@@ -754,7 +755,7 @@ public class GriefPrevention {
             // parse the strings from the config file
             this.parseBlockIdListFromConfig(containerTrustStrings, this.config_mods_containerTrustIds);
 
-            this.config_mods_explodableIds = new ArrayList<BlockType>();
+            this.config_mods_explodableIds = new ArrayList<BlockInfo>();
             List<String> explodableStrings = mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").getList(new TypeToken<String>() {
             });
             mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").setValue(explodableStrings);
@@ -900,7 +901,7 @@ public class GriefPrevention {
 
             // claims mode by world
             for (World world : this.config_claims_worldModes.keySet()) {
-                mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getUniqueId()).setValue(this.config_claims_worldModes.get(world).name());
+                mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getUniqueId().toString()).setValue(this.config_claims_worldModes.get(world).name());
             }
 
             try {
@@ -2727,11 +2728,31 @@ public class GriefPrevention {
         GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
     }
 
-    private void parseBlockIdListFromConfig(List<String> stringsToParse, List<BlockType> blockTypes) {
+    private void parseBlockIdListFromConfig(List<String> stringsToParse, List<BlockInfo> blockTypes) {
         // for each string in the list
         for (int i = 0; i < stringsToParse.size(); i++) {
             // try to parse the string value into a material info
-            Optional<BlockType> blockType = game.getRegistry().getType(BlockType.class, stringsToParse.get(i));
+            String blockInfo = stringsToParse.get(i);
+            // validate block info
+            int count = StringUtils.countMatches(blockInfo, ":");
+            int meta = 0;
+            if (count == 2) {
+                // grab meta
+                int lastIndex = blockInfo.lastIndexOf(":");
+                try {
+                    if (blockInfo.length() >= lastIndex + 1) {
+                        meta = Integer.parseInt(blockInfo.substring(lastIndex+1, blockInfo.length()));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                blockInfo = blockInfo.substring(0, lastIndex);
+            } else if (count > 2) {
+                GriefPrevention.AddLogEntry("ERROR: Invalid block entry " + blockInfo + " found in config. Skipping...");
+                continue;
+            }
+
+            Optional<BlockType> blockType = game.getRegistry().getType(BlockType.class, blockInfo);
 
             // null value returned indicates an error parsing the string from
             // the config file
@@ -2748,7 +2769,7 @@ public class GriefPrevention {
 
             // otherwise store the valid entry in config data
             else {
-                blockTypes.add(blockType.get());
+                blockTypes.add(new BlockInfo(blockType.get(), meta));
             }
         }
     }

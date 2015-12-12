@@ -74,7 +74,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
     @Override
-            void initialize() throws Exception {
+    void initialize() throws Exception {
         // ensure data folders exist
         boolean newDataStore = false;
         File playerDataFolder = new File(playerDataFolderPath);
@@ -383,9 +383,7 @@ public class FlatFileDataStore extends DataStore {
                 }
 
                 try {
-                    ArrayList<Long> out_parentID = new ArrayList<Long>(); // hacky
-                                                                          // output
-                                                                          // parameter
+                    ArrayList<Long> out_parentID = new ArrayList<Long>(); // hacky output parameter
                     Claim claim = this.loadClaim(files[i], out_parentID, claimID);
                     if (out_parentID.size() == 0 || out_parentID.get(0) == -1) {
                         this.addClaim(claim, false);

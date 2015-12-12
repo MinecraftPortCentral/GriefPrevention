@@ -464,7 +464,7 @@ public abstract class DataStore {
         // identify world the claim is in
         World world = null;
         for (World w : validWorlds) {
-            if (w.getUniqueId() == UUID.fromString(worldUniqueId)) {
+            if (w.getUniqueId().equals(UUID.fromString(worldUniqueId))) {
                 world = w;
                 break;
             }
