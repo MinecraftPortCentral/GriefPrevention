@@ -48,6 +48,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -87,12 +89,12 @@ public abstract class DataStore {
     Long nextClaimID = (long) 0;
 
     // path information, for where stuff stored on disk is well... stored
-    protected final static String dataLayerFolderPath = "config" + File.separator + "GriefPreventionData";
-    final static String playerDataFolderPath = dataLayerFolderPath + File.separator + "PlayerData";
-    final static String configFilePath = dataLayerFolderPath + File.separator + "config.hocon";
-    final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.hocon";
-    final static String softMuteFilePath = dataLayerFolderPath + File.separator + "softMute.txt";
-    final static String bannedWordsFilePath = dataLayerFolderPath + File.separator + "bannedWords.txt";
+    protected final static Path dataLayerFolderPath = Paths.get("config").resolve("GriefPreventionData");
+    final static Path playerDataFolderPath = dataLayerFolderPath.resolve("PlayerData");
+    final static Path configFilePath = dataLayerFolderPath.resolve("config.hocon");
+    final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.hocon");
+    final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
+    final static Path bannedWordsFilePath = dataLayerFolderPath .resolve("bannedWords.txt");
 
     // the latest version of the data schema implemented here
     protected static final int latestSchemaVersion = 2;
@@ -144,7 +146,7 @@ public abstract class DataStore {
         GriefPrevention.AddLogEntry(this.claims.size() + " total claims loaded.");
 
         // ensure data folders exist
-        File playerDataFolder = new File(playerDataFolderPath);
+        File playerDataFolder = playerDataFolderPath.toFile();
         if (!playerDataFolder.exists()) {
             playerDataFolder.mkdirs();
         }
@@ -193,7 +195,7 @@ public abstract class DataStore {
     }
 
     private void loadSoftMutes() {
-        File softMuteFile = new File(softMuteFilePath);
+        File softMuteFile = softMuteFilePath.toFile();
         if (softMuteFile.exists()) {
             BufferedReader inStream = null;
             try {
@@ -235,7 +237,7 @@ public abstract class DataStore {
 
     List<String> loadBannedWords() {
         try {
-            File bannedWordsFile = new File(bannedWordsFilePath);
+            File bannedWordsFile = bannedWordsFilePath.toFile();
             if (!bannedWordsFile.exists()) {
                 Files.touch(bannedWordsFile);
                 String defaultWords =
@@ -277,7 +279,7 @@ public abstract class DataStore {
 
         try {
             // open the file and write the new value
-            File softMuteFile = new File(softMuteFilePath);
+            File softMuteFile = softMuteFilePath.toFile();
             softMuteFile.createNewFile();
             outStream = new BufferedWriter(new FileWriter(softMuteFile));
 
@@ -1399,7 +1401,7 @@ public abstract class DataStore {
         // load the config file
         try
         {
-            HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(new File(messagesFilePath)).build();
+            HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setPath(messagesFilePath).build();
             CommentedConfigurationNode mainNode = configurationLoader.load();
 
             // for each message ID

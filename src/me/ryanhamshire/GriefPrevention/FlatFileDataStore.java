@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -58,12 +59,12 @@ import java.util.regex.Matcher;
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore {
 
-    private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
-    private final static String nextClaimIdFilePath = claimDataFolderPath + File.separator + "_nextClaimID";
-    private final static String schemaVersionFilePath = dataLayerFolderPath + File.separator + "_schemaVersion";
+    private final static Path claimDataFolderPath = dataLayerFolderPath.resolve("ClaimData");
+    private final static Path nextClaimIdFilePath = claimDataFolderPath.resolve("_nextClaimID");
+    private final static Path schemaVersionFilePath = dataLayerFolderPath.resolve("_schemaVersion");
 
     static boolean hasData() {
-        File claimsDataFolder = new File(claimDataFolderPath);
+        File claimsDataFolder = claimDataFolderPath.toFile();
 
         return claimsDataFolder.exists();
     }
@@ -77,8 +78,8 @@ public class FlatFileDataStore extends DataStore {
     void initialize() throws Exception {
         // ensure data folders exist
         boolean newDataStore = false;
-        File playerDataFolder = new File(playerDataFolderPath);
-        File claimDataFolder = new File(claimDataFolderPath);
+        File playerDataFolder = playerDataFolderPath.toFile();
+        File claimDataFolder = claimDataFolderPath.toFile();
         if (!playerDataFolder.exists() || !claimDataFolder.exists()) {
             newDataStore = true;
             playerDataFolder.mkdirs();
@@ -129,7 +130,7 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // load next claim number from file
-        File nextClaimIdFile = new File(nextClaimIdFilePath);
+        File nextClaimIdFile = nextClaimIdFilePath.toFile();
         if (nextClaimIdFile.exists()) {
             BufferedReader inStream = null;
             try {
@@ -502,6 +503,9 @@ public class FlatFileDataStore extends DataStore {
         try {
             // open the claim's file
             File claimFile = new File(claimDataFolderPath + File.separator + claimID + ".hocon");
+            if (!claimFile.exists()) {
+                claimFile.createNewFile();
+            }
             HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setFile(claimFile).build();
             CommentedConfigurationNode data = this.getHoconForClaim(claim, configurationLoader.load());
             configurationLoader.save(data);
@@ -656,7 +660,7 @@ public class FlatFileDataStore extends DataStore {
 
         try {
             // open the file and write the new value
-            File nextClaimIdFile = new File(nextClaimIdFilePath);
+            File nextClaimIdFile = nextClaimIdFilePath.toFile();
             nextClaimIdFile.createNewFile();
             outStream = new BufferedWriter(new FileWriter(nextClaimIdFile));
 
@@ -726,7 +730,7 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // migrate players
-        File playerDataFolder = new File(playerDataFolderPath);
+        File playerDataFolder = playerDataFolderPath.toFile();
         File[] files = playerDataFolder.listFiles();
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
@@ -759,20 +763,20 @@ public class FlatFileDataStore extends DataStore {
         File claimsBackupFolder;
         File playersBackupFolder;
         do {
-            String claimsFolderBackupPath = claimDataFolderPath;
+            String claimsFolderBackupPath = claimDataFolderPath.toString();
             if (i > 0)
                 claimsFolderBackupPath += String.valueOf(i);
             claimsBackupFolder = new File(claimsFolderBackupPath);
 
-            String playersFolderBackupPath = playerDataFolderPath;
+            String playersFolderBackupPath = playerDataFolderPath.toString();
             if (i > 0)
                 playersFolderBackupPath += String.valueOf(i);
             playersBackupFolder = new File(playersFolderBackupPath);
             i++;
         } while (claimsBackupFolder.exists() || playersBackupFolder.exists());
 
-        File claimsFolder = new File(claimDataFolderPath);
-        File playersFolder = new File(playerDataFolderPath);
+        File claimsFolder = claimDataFolderPath.toFile();
+        File playersFolder = playerDataFolderPath.toFile();
 
         claimsFolder.renameTo(claimsBackupFolder);
         playersFolder.renameTo(playersBackupFolder);
@@ -789,7 +793,7 @@ public class FlatFileDataStore extends DataStore {
 
     @Override
             int getSchemaVersionFromStorage() {
-        File schemaVersionFile = new File(schemaVersionFilePath);
+        File schemaVersionFile = schemaVersionFilePath.toFile();
         if (schemaVersionFile.exists()) {
             BufferedReader inStream = null;
             int schemaVersion = 0;
@@ -823,7 +827,7 @@ public class FlatFileDataStore extends DataStore {
 
         try {
             // open the file and write the new value
-            File schemaVersionFile = new File(schemaVersionFilePath);
+            File schemaVersionFile = schemaVersionFilePath.toFile();
             schemaVersionFile.createNewFile();
             outStream = new BufferedWriter(new FileWriter(schemaVersionFile));
 
