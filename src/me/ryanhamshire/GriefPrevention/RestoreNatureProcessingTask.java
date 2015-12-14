@@ -678,7 +678,7 @@ class RestoreNatureProcessingTask implements Runnable {
         }
 
         // these are unnatural in the standard and nether worlds, but not in the end
-        if(environment.equals(DimensionTypes.END)) {
+        if(environment.equals(DimensionTypes.THE_END)) {
             playerBlocks.add(BlockTypes.OBSIDIAN);
             playerBlocks.add(BlockTypes.END_STONE);
             playerBlocks.add(BlockTypes.END_PORTAL_FRAME);

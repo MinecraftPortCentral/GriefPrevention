@@ -325,16 +325,16 @@ public class GriefPrevention {
     public int config_ipLimit;
 
     // list of block IDs which should require /accesstrust for player interaction
-    public List<BlockInfo> config_mods_accessTrustIds;
+    public List<ItemInfo> config_mods_accessTrustIds;
 
     // list of block IDs which should require /containertrust for player interaction
-    public List<BlockInfo> config_mods_containerTrustIds;
+    public List<ItemInfo> config_mods_containerTrustIds;
 
     // list of player names which ALWAYS ignore claims
     public List<String> config_mods_ignoreClaimsAccounts;
 
     // list of block IDs which can be destroyed by explosions, even in claimed areas
-    public List<BlockInfo> config_mods_explodableIds;
+    public List<ItemInfo> config_mods_explodableIds;
 
     // override for sea level, because bukkit doesn't report the right value for all situations
     public HashMap<String, Integer> config_seaLevelOverride;
@@ -540,8 +540,8 @@ public class GriefPrevention {
             this.config_claims_worldModes = new ConcurrentHashMap<World, ClaimsMode>();
             for (World world : worlds) {
                 // is it specified in the config file?
-                String configSetting = mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getUniqueId().toString()).getString();
-                mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getUniqueId().toString()).setValue(configSetting);
+                String configSetting = mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getProperties().getWorldName()).getString();
+                mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getProperties().getWorldName()).setValue(configSetting);
                 if (configSetting != null) {
                     ClaimsMode claimsMode = this.configStringToClaimsMode(configSetting);
                     if (claimsMode != null) {
@@ -575,18 +575,20 @@ public class GriefPrevention {
             // pvp worlds list
             this.config_pvp_specifiedWorlds = new HashMap<World, Boolean>();
             for (World world : worlds) {
-                boolean pvpWorld = mainNode.getNode("GriefPrevention", "PvP", "RulesEnabledInWorld", world.getUniqueId().toString()).getBoolean();
-                mainNode.getNode("GriefPrevention", "PvP", "RulesEnabledInWorld", world.getUniqueId().toString()).setValue(pvpWorld);
-                // TODO
-//                boolean pvpWorld = config.getBoolean("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), world.getPVP());
+                CommentedConfigurationNode configNode = mainNode.getNode("GriefPrevention", "PvP", "RulesEnabledInWorld", world.getProperties().getWorldName());
+                boolean pvpWorld = true;
+                if (!configNode.isVirtual()) {
+                    pvpWorld = world.getProperties().isPVPEnabled();
+                }
+                mainNode.getNode("GriefPrevention", "PvP", "RulesEnabledInWorld", world.getProperties().getWorldName()).setValue(pvpWorld);
                 this.config_pvp_specifiedWorlds.put(world, pvpWorld);
             }
 
             // sea level
             this.config_seaLevelOverride = new HashMap<String, Integer>();
             for (World world : worlds) {
-                int seaLevelOverride = mainNode.getNode("GriefPrevention", "SeaLevelOverrides", world.getUniqueId().toString()).getInt(-1);
-                mainNode.getNode("GriefPrevention", "SeaLevelOverrides", world.getUniqueId().toString()).setValue(seaLevelOverride);
+                int seaLevelOverride = mainNode.getNode("GriefPrevention", "SeaLevelOverrides", world.getProperties().getWorldName()).getInt(-1);
+                mainNode.getNode("GriefPrevention", "SeaLevelOverrides", world.getProperties().getWorldName()).setValue(seaLevelOverride);
                 this.config_seaLevelOverride.put(world.getName(), seaLevelOverride);
             }
 
@@ -731,7 +733,7 @@ public class GriefPrevention {
             if (this.config_mods_ignoreClaimsAccounts == null)
                 this.config_mods_ignoreClaimsAccounts = new ArrayList<>();
 
-            this.config_mods_accessTrustIds = new ArrayList<BlockInfo>();
+            this.config_mods_accessTrustIds = new ArrayList<ItemInfo>();
             List<String> accessTrustStrings =
                     mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringAccessTrust").getList(new TypeToken<String>() {
                     });
@@ -739,7 +741,7 @@ public class GriefPrevention {
 
             this.parseBlockIdListFromConfig(accessTrustStrings, this.config_mods_accessTrustIds);
 
-            this.config_mods_containerTrustIds = new ArrayList<BlockInfo>();
+            this.config_mods_containerTrustIds = new ArrayList<ItemInfo>();
             List<String> containerTrustStrings =
                     mainNode.getNode("GriefPrevention", "Mods", "BlockIdsRequiringContainerTrust").getList(new TypeToken<String>() {
                     });
@@ -755,7 +757,7 @@ public class GriefPrevention {
             // parse the strings from the config file
             this.parseBlockIdListFromConfig(containerTrustStrings, this.config_mods_containerTrustIds);
 
-            this.config_mods_explodableIds = new ArrayList<BlockInfo>();
+            this.config_mods_explodableIds = new ArrayList<ItemInfo>();
             List<String> explodableStrings = mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").getList(new TypeToken<String>() {
             });
             mainNode.getNode("GriefPrevention", "Mods", "BlockIdsExplodable").setValue(explodableStrings);
@@ -901,7 +903,7 @@ public class GriefPrevention {
 
             // claims mode by world
             for (World world : this.config_claims_worldModes.keySet()) {
-                mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getUniqueId().toString()).setValue(this.config_claims_worldModes.get(world).name());
+                mainNode.getNode("GriefPrevention", "Claims", "Mode", world.getProperties().getWorldName()).setValue(this.config_claims_worldModes.get(world).name());
             }
 
             try {
@@ -2462,8 +2464,7 @@ public class GriefPrevention {
         AddLogEntry("GriefPrevention disabled.");
     }
 
-    // called when a player spawns, applies protection for that player if
-    // necessary
+    // called when a player spawns, applies protection for that player if necessary
     public void checkPvpProtectionNeeded(Player player) {
         // if anti spawn camping feature is not enabled, do nothing
         if (!this.config_pvp_protectFreshSpawns)
@@ -2477,8 +2478,7 @@ public class GriefPrevention {
         if (player.get(Keys.GAME_MODE).get() == GameModes.CREATIVE)
             return;
 
-        // if the player has the damage any player permission enabled, do
-        // nothing
+        // if the player has the damage any player permission enabled, do nothing
         if (player.hasPermission("griefprevention.nopvpimmunity"))
             return;
 
@@ -2569,6 +2569,10 @@ public class GriefPrevention {
         }
     }
 
+    static void sendMessage(CommandSource player, TextColor color, String message) {
+        sendMessage(player, Texts.of(color, message));
+    }
+
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, Text message) {
         if (message == Texts.of() || message == null)
@@ -2601,10 +2605,6 @@ public class GriefPrevention {
     }
 
     public String allowBuild(Player player, Location<World> location) {
-        return this.allowBuild(player, location, location.getBlock().getType());
-    }
-
-    public String allowBuild(Player player, Location<World> location, BlockType material) {
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
@@ -2617,9 +2617,8 @@ public class GriefPrevention {
         if (claim == null) {
             // no building in the wilderness in creative mode
             if (this.creativeRulesApply(location) || this.config_claims_worldModes.get(location.getExtent()) == ClaimsMode.SurvivalRequiringClaims) {
-                // exception: when chest claims are enabled, players who have
-                // zero land claims and are placing a chest
-                if (material != BlockTypes.CHEST || playerData.getClaims().size() > 0
+                // exception: when chest claims are enabled, players who have zero land claims and are placing a chest
+                if (!player.getItemInHand().isPresent() || player.getItemInHand().get().getItem() != ItemTypes.CHEST || playerData.getClaims().size() > 0
                         || GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius == -1) {
                     String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                     if (player.hasPermission("griefprevention.ignoreclaims"))
@@ -2641,7 +2640,7 @@ public class GriefPrevention {
         else {
             // cache the claim for later reference
             playerData.lastClaim = claim;
-            return claim.allowBuild(player, material);
+            return claim.allowBuild(player, location.getBlockType());
         }
     }
 
@@ -2675,7 +2674,7 @@ public class GriefPrevention {
 
             // if not in the wilderness, then apply claim rules (permissions,
             // etc)
-            return claim.allowBreak(player, snapshot.getState().getType());
+            return claim.allowBreak(player, snapshot.getLocation().get().getBlockType());
         }
     }
 
@@ -2728,14 +2727,14 @@ public class GriefPrevention {
         GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
     }
 
-    private void parseBlockIdListFromConfig(List<String> stringsToParse, List<BlockInfo> blockTypes) {
+    private void parseBlockIdListFromConfig(List<String> stringsToParse, List<ItemInfo> blockTypes) {
         // for each string in the list
         for (int i = 0; i < stringsToParse.size(); i++) {
             // try to parse the string value into a material info
             String blockInfo = stringsToParse.get(i);
             // validate block info
             int count = StringUtils.countMatches(blockInfo, ":");
-            int meta = 0;
+            int meta = -1;
             if (count == 2) {
                 // grab meta
                 int lastIndex = blockInfo.lastIndexOf(":");
@@ -2756,7 +2755,7 @@ public class GriefPrevention {
 
             // null value returned indicates an error parsing the string from
             // the config file
-            if (!blockType.isPresent()) {
+            if (!blockType.isPresent() || !blockType.get().getItem().isPresent()) {
                 // show error in log
                 GriefPrevention.AddLogEntry("ERROR: Unable to read a block entry from the config file.  Please update your config.hocon.");
 
@@ -2769,7 +2768,7 @@ public class GriefPrevention {
 
             // otherwise store the valid entry in config data
             else {
-                blockTypes.add(new BlockInfo(blockType.get(), meta));
+                blockTypes.add(new ItemInfo(blockType.get().getItem().get(), meta));
             }
         }
     }
@@ -2812,11 +2811,11 @@ public class GriefPrevention {
     }
 
     public boolean pvpRulesApply(World world) {
-        return false;
-        /* TODO
         Boolean configSetting = this.config_pvp_specifiedWorlds.get(world);
-        if (configSetting != null)
+        if (configSetting != null) {
             return configSetting;
-        return world.getPVP(); */
+        }
+
+        return world.getProperties().isPVPEnabled();
     }
 }

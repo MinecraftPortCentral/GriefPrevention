@@ -24,14 +24,14 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.item.ItemType;
 
-public class BlockInfo {
+public class ItemInfo {
 
-    public final BlockType type;
+    public final ItemType type;
     public final int meta;
 
-    public BlockInfo(BlockType type, int meta) {
+    public ItemInfo(ItemType type, int meta) {
         this.type = type;
         this.meta = meta;
     }

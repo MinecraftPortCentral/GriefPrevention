@@ -218,7 +218,7 @@ public class Claim {
 
     // main constructor. note that only creating a claim instance does nothing -
     // a claim must be added to the data store to be effective
-    Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs,
+    Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs,
             List<String> accessorIDs, List<String> managerIDs, Long id) {
         // modification date
         this.modifiedDate = Calendar.getInstance().getTime();
@@ -280,7 +280,7 @@ public class Claim {
     public boolean isNear(Location<World> location, int howNear) {
         Claim claim = new Claim(new Location<World>(this.lesserBoundaryCorner.getExtent(), this.lesserBoundaryCorner.getBlockX() - howNear,
                 this.lesserBoundaryCorner.getBlockY(), this.lesserBoundaryCorner.getBlockZ() - howNear),
-                new Location(this.greaterBoundaryCorner.getExtent(), this.greaterBoundaryCorner.getBlockX() + howNear,
+                new Location<World>(this.greaterBoundaryCorner.getExtent(), this.greaterBoundaryCorner.getBlockX() + howNear,
                         this.greaterBoundaryCorner.getBlockY(), this.greaterBoundaryCorner.getBlockZ() + howNear),
                 null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null);
 
