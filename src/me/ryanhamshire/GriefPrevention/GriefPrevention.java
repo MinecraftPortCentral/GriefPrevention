@@ -69,6 +69,7 @@ import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.TextBuilder;
 import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Chunk;
@@ -80,6 +81,8 @@ import org.spongepowered.common.util.IpSet;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -404,8 +407,6 @@ public class GriefPrevention {
     public void onServerStarted(GameStartedServerEvent event) {
         instance = this;
 
-        DataStore.resetTextObjects();
-
         AddLogEntry("Grief Prevention boot start.");
 
         this.loadConfig();
@@ -414,8 +415,7 @@ public class GriefPrevention {
 
         AddLogEntry("Finished loading configuration.");
 
-        // when datastore initializes, it loads player and claim data, and posts
-        // some stats to the log
+        // when datastore initializes, it loads player and claim data, and posts some stats to the log
         if (this.databaseUrl.length() > 0) {
             try {
                 DatabaseDataStore databaseStore = new DatabaseDataStore(this.databaseUrl, this.databaseUserName, this.databasePassword);
@@ -1566,7 +1566,7 @@ public class GriefPrevention {
                     playerData.shovelMode = ShovelMode.Subdivide;
                     playerData.claimSubdividing = null;
                     GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
-                    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, DataStore.SUBDIVISION_VIDEO_URL);
+                    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2);
 
                     return CommandResult.success();
                 })
@@ -1577,18 +1577,14 @@ public class GriefPrevention {
                 .executor((src, args) -> {
                     final Player player = checkPlayer(src);
                     // determine which claim the player is standing in
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*
-                                                                                * ignore
-                                                                                * height
-                                                                                */, null);
+                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /* ignore height */, null);
 
                     if (claim == null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
                     }
 
                     else {
-                        // deleting an admin claim additionally requires the adminclaims
-                        // permission
+                        // deleting an admin claim additionally requires the adminclaims permission
                         if (!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims")) {
                             PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
                             if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
@@ -1703,8 +1699,7 @@ public class GriefPrevention {
                     // player whose claims will be listed
                     User otherPlayer = args.<User>getOne("player").get();
 
-                    // otherwise if no permission to delve into another player's claims
-                    // data
+                    // otherwise if no permission to delve into another player's claims data
                     if (otherPlayer != src && !src.hasPermission("griefprevention.claimslistother")) {
                         throw new CommandPermissionException();
                     }
@@ -1897,8 +1892,7 @@ public class GriefPrevention {
                         return CommandResult.empty();
                     }
 
-                    // if the player isn't in a claim or has permission to build, tell
-                    // him to man up
+                    // if the player isn't in a claim or has permission to build, tell him to man up
                     if (claim == null || claim.allowBuild(player, BlockTypes.AIR) == null) {
                         throw new CommandException(getMessage(Messages.NotTrappedHere));
                     }
@@ -1909,8 +1903,7 @@ public class GriefPrevention {
                         throw new CommandException(getMessage(Messages.TrappedWontWorkHere));
                     }
 
-                    // if the player is in an administrative claim, he should contact an
-                    // admin
+                    // if the player is in an administrative claim, he should contact an admin
                     if (claim.isAdminClaim()) {
                         throw new CommandException(getMessage(Messages.TrappedWontWorkHere));
                     }
@@ -1959,8 +1952,7 @@ public class GriefPrevention {
                     }
                     Player defender = defenderOpt.orElseThrow(() -> new CommandException(Texts.of("No player was matched")));
 
-                    // victim must not have the permission which makes him immune to
-                    // siege
+                    // victim must not have the permission which makes him immune to siege
                     if (defender.hasPermission("griefprevention.siegeimmune")) {
                         throw new CommandException(getMessage(Messages.SiegeImmune));
                     }
@@ -2296,14 +2288,10 @@ public class GriefPrevention {
 
     }
 
-    // helper method keeps the trust commands consistent and eliminates
-    // duplicate code
+    // helper method keeps the trust commands consistent and eliminates duplicate code
     private void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) throws CommandException {
         // determine which claim the player is standing in
-        Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*
-                                                                            * ignore
-                                                                            * height
-                                                                            */, null);
+        Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /* ignore height */, null);
 
         // validate player or group argument
         String permission = null;
@@ -2463,10 +2451,11 @@ public class GriefPrevention {
     }
 
     // string overload for above helper
-    static String lookupPlayerName(String playerID) {
-        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(playerID);
+    static String lookupPlayerName(String uuid) {
+        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(UUID.fromString(uuid));
+
         if (!user.isPresent()) {
-            GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + playerID);
+            GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
             return "someone";
         }
 
@@ -2560,8 +2549,7 @@ public class GriefPrevention {
         }
     }
 
-    // ensures a piece of the managed world is loaded into server memory
-    // (generates the chunk if necessary)
+    // ensures a piece of the managed world is loaded into server memory (generates the chunk if necessary)
     private static void GuaranteeChunkLoaded(Location<World> location) {
         location.getExtent().loadChunk(location.getBlockPosition(), true);
     }
@@ -2572,27 +2560,12 @@ public class GriefPrevention {
 
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
-        sendMessage(player, color, messageID, Texts.of(), args);
-    }
-
-    // sends a color-coded message to a player
-    static void sendMessage(CommandSource player, TextColor color, Messages messageID, Text text, String... args) {
-        sendMessage(player, color, messageID, 0, text, args);
+        sendMessage(player, color, messageID, 0, args);
     }
 
     // sends a color-coded message to a player
     static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, String... args) {
-        sendMessage(player, color, messageID, delayInTicks, Texts.of(), args);
-    }
-
-    // sends a color-coded message to a player
-    static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, Text text, String... args) {
-        String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
-        if (message.isEmpty() || message.equals("{0}")) {
-            sendMessage(player, Texts.of(text), delayInTicks);
-        } else {
-            sendMessage(player, Texts.of(color, message, text), delayInTicks);
-        }
+        sendMessage(player, GriefPrevention.instance.dataStore.parseMessage(messageID, color, args), delayInTicks);
     }
 
     static void sendMessage(CommandSource player, TextColor color, String message) {

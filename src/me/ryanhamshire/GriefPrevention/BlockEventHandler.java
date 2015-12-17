@@ -29,13 +29,17 @@ import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
+import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
 import org.spongepowered.api.event.filter.IsCancelled;
+import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -43,6 +47,7 @@ import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,9 +87,75 @@ public class BlockEventHandler {
                 // make sure the player is allowed to break at the location
                 String noBuildReason = GriefPrevention.instance.allowBreak(player.get(), transaction.getOriginal());
                 if (noBuildReason != null) {
-                    GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
+                    if (event.getCause().root().get() instanceof Player) {
+                        GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
+                    }
                     transaction.setValid(false);
                 }   
+            }
+        }
+    }
+
+    // Handle items being dropped into claims
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener
+    public void onDropItem(DropItemEvent.Dispense event) {
+        Optional<Player> player = event.getCause().first(Player.class);
+
+        if (!player.isPresent()) {
+            return;
+        }
+
+        Location<World> location = player.get().getLocation();
+        Claim claim = this.dataStore.getClaimAt(location, false, null);
+        if (claim != null) {
+            String reason = claim.allowAccess(player.get());
+            if (reason != null) {
+                if (event.getCause().root().get() instanceof Player) {
+                    GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Warn, Messages.NoDropsAllowed));
+                }
+                event.setCancelled(true);
+            }
+        }
+     }
+
+    // Handle fluids flowing into claims
+    @Listener
+    public void onBlockNotify(NotifyNeighborBlockEvent event) {
+        Optional<User> user = event.getCause().first(User.class);
+        Optional<BlockSnapshot> blockSource = event.getCause().first(BlockSnapshot.class);
+
+        if (!user.isPresent() || !blockSource.isPresent()) {
+            return;
+        }
+
+        Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
+        while (iterator.hasNext()) {
+            Direction direction = iterator.next();
+            Location<World> location = blockSource.get().getLocation().get().getRelative(direction);
+            Claim claim = this.dataStore.getClaimAt(location, false, null);
+            if (claim != null) {
+                String reason = claim.allowAccess(user.get());
+                if (reason != null) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener
+    public void onBlockChange(ChangeBlockEvent event) {
+        Optional<User> user = event.getCause().first(User.class);
+
+        if (!user.isPresent()) {
+            return;
+        }
+
+        for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
+            Claim claim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
+            if (claim !=null && claim.allowAccess(user.get()) != null) {
+                transaction.setValid(false);
             }
         }
     }
@@ -100,14 +171,14 @@ public class BlockEventHandler {
             return;
         }
 
+        // don't track in worlds where claims are not enabled
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld())) {
+            return;
+        }
+
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
 
             BlockSnapshot block = transaction.getFinal();
-            // don't track in worlds where claims are not enabled
-            if (!GriefPrevention.instance.claimsEnabledForWorld(block.getLocation().get().getExtent())) {
-                transaction.setValid(false);
-                continue;
-            }
 
             // FEATURE: limit fire placement, to prevent PvP-by-fire
             if (block.getState().getType() == BlockTypes.FIRE) {
@@ -117,8 +188,7 @@ public class BlockEventHandler {
                 }
             }
 
-            // if placed block is fire and pvp is off, apply rules for proximity to
-            // other players
+            // if placed block is fire and pvp is off, apply rules for proximity to other players
             if (block.getState().getType() == BlockTypes.FIRE && !GriefPrevention.instance.pvpRulesApply(block.getLocation().get().getExtent())
                     && !player.get().hasPermission("griefprevention.lava")) {
                 List<Player> players = ((net.minecraft.world.World)block.getLocation().get().getExtent()).playerEntities;
@@ -126,7 +196,9 @@ public class BlockEventHandler {
                     Player otherPlayer = players.get(i);
                     Location<World> location = otherPlayer.getLocation();
                     if (!otherPlayer.equals(player.get()) && location.getBlockPosition().distanceSquared(block.getPosition()) < 9) {
-                        GriefPrevention.sendMessage(player.get(), TextMode.Err, Messages.PlayerTooCloseForFire, otherPlayer.getName());
+                        if (event.getCause().root().get() instanceof Player) {
+                            GriefPrevention.sendMessage(player.get(), TextMode.Err, Messages.PlayerTooCloseForFire, otherPlayer.getName());
+                        }
                         transaction.setValid(false);
                         continue;
                     }
@@ -137,7 +209,9 @@ public class BlockEventHandler {
             // make sure the player is allowed to build at the location
             String noBuildReason = GriefPrevention.instance.allowBuild(player.get(), block.getLocation().get());
             if (noBuildReason != null) {
-                GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
+                if (event.getCause().root().get() instanceof Player) {
+                    GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
+                }
                 transaction.setValid(false);
                 continue;
             }
@@ -154,8 +228,7 @@ public class BlockEventHandler {
                     GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Instr, Messages.ClaimExplosivesAdvertisement));
                 }
     
-                // if the player has permission for the claim and he's placing UNDER
-                // the claim
+                // if the player has permission for the claim and he's placing UNDER the claim
                 if (block.getPosition().getY() <= claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player.get(), block.getState().getType()) == null) {
                     // extend the claim downward
                     this.dataStore.extendClaim(claim, block.getPosition().getY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance);
@@ -217,7 +290,7 @@ public class BlockEventHandler {
                         Visualization.Apply(player.get(), visualization);
                     }
     
-                    GriefPrevention.sendMessage(player.get(), TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
+                    GriefPrevention.sendMessage(player.get(), TextMode.Instr, Messages.SurvivalBasicsVideo2);
                 }
     
                 // check to see if this chest is in a claim, and warn when it isn't
@@ -260,7 +333,7 @@ public class BlockEventHandler {
                         playerData.buildWarningTimestamp = now;
     
                         if (playerData.getClaims().size() < 2) {
-                            GriefPrevention.sendMessage(player.get(), TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
+                            GriefPrevention.sendMessage(player.get(), TextMode.Instr, Messages.SurvivalBasicsVideo2);
                         }
     
                         if (playerData.lastClaim != null) {

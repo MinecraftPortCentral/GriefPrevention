@@ -30,6 +30,7 @@ import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -346,8 +347,9 @@ public class Claim {
     public String allowBuild(Player player, BlockType blockType) {
         // if we don't know who's asking, always say no (i've been told some
         // mods can make this happen somehow)
-        if (player == null)
+        if (player == null) {
             return "";
+        }
 
         // when a player tries to build in a claim, if he's under siege, the
         // siege may extend to include the new claim
@@ -355,8 +357,9 @@ public class Claim {
 
         // admin claims can always be modified by admins, no exceptions
         if (this.isAdminClaim()) {
-            if (player.hasPermission("griefprevention.adminclaims"))
+            if (player.hasPermission("griefprevention.adminclaims")) {
                 return null;
+        }
         }
 
         // no building while under siege
@@ -371,18 +374,20 @@ public class Claim {
         }
 
         // owners can make changes, or admins with ignore claims mode enabled
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims)
+        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims) {
             return null;
+        }
 
         // anyone with explicit build permission can make changes
-        if (this.hasExplicitPermission(player, ClaimPermission.Build))
+        if (this.hasExplicitPermission(player, ClaimPermission.Build)) {
             return null;
+        }
 
-        // also everyone is a member of the "public", so check for public
-        // permission
+        // also everyone is a member of the "public", so check for public permission
         ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
-        if (ClaimPermission.Build == permissionLevel)
+        if (ClaimPermission.Build == permissionLevel) {
             return null;
+        }
 
         // allow for farming with /containertrust permission
         if (this.allowContainers(player) == null) {
@@ -393,18 +398,23 @@ public class Claim {
         }
 
         // subdivision permission inheritance
-        if (this.parent != null)
+        if (this.parent != null) {
             return this.parent.allowBuild(player, blockType);
+        }
 
         // failure message for all other cases
-        String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
-        if (player.hasPermission("griefprevention.ignoreclaims"))
+        String reason = "";
+        if (blockType != BlockTypes.FLOWING_WATER && blockType != BlockTypes.FLOWING_LAVA) {
+            reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
+        }
+        if (player.hasPermission("griefprevention.ignoreclaims")) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        }
 
         return reason;
     }
 
-    private boolean hasExplicitPermission(Player player, ClaimPermission level) {
+    private boolean hasExplicitPermission(User player, ClaimPermission level) {
         String playerID = player.getUniqueId().toString();
         Set<String> keys = this.playerIDToClaimPermissionMap.keySet();
         Iterator<String> iterator = keys.iterator();
@@ -460,43 +470,51 @@ public class Claim {
     }
 
     // access permission check
-    public String allowAccess(Player player) {
-        // following a siege where the defender lost, the claim will allow
-        // everyone access for a time
-        if (this.doorsOpen)
+    public String allowAccess(User player) {
+        // following a siege where the defender lost, the claim will allow everyone access for a time
+        if (this.doorsOpen) {
             return null;
+        }
 
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (player.hasPermission("griefprevention.adminclaims"))
+            if (player.hasPermission("griefprevention.adminclaims")) {
                 return null;
+            }
         }
 
         // claim owner and admins in ignoreclaims mode have access
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims)
+        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims) {
             return null;
+        }
 
         // look for explicit individual access, inventory, or build permission
-        if (this.hasExplicitPermission(player, ClaimPermission.Access))
+        if (this.hasExplicitPermission(player, ClaimPermission.Access)) {
             return null;
-        if (this.hasExplicitPermission(player, ClaimPermission.Inventory))
+        }
+        if (this.hasExplicitPermission(player, ClaimPermission.Inventory)) {
             return null;
-        if (this.hasExplicitPermission(player, ClaimPermission.Build))
+        }
+        if (this.hasExplicitPermission(player, ClaimPermission.Build)) {
             return null;
+        }
 
         // also check for public permission
         ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
-        if (ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Access == permissionLevel)
+        if (ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Access == permissionLevel) {
             return null;
+        }
 
         // permission inheritance for subdivisions
-        if (this.parent != null)
+        if (this.parent != null) {
             return this.parent.allowAccess(player);
+        }
 
         // catch-all error message for all other cases
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
-        if (player.hasPermission("griefprevention.ignoreclaims"))
+        if (player.hasPermission("griefprevention.ignoreclaims")) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        }
         return reason;
     }
 
@@ -550,8 +568,7 @@ public class Claim {
 
     // grant permission check, relatively simple
     public String allowGrantPermission(Player player) {
-        // if we don't know who's asking, always say no (i've been told some
-        // mods can make this happen somehow)
+        // if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
         if (player == null)
             return "";
 
@@ -610,8 +627,7 @@ public class Claim {
     }
 
     // gets ALL permissions
-    // useful for making copies of permissions during a claim resize and listing
-    // all permissions in a claim
+    // useful for making copies of permissions during a claim resize and listing all permissions in a claim
     public void getPermissions(ArrayList<String> builders, ArrayList<String> containers, ArrayList<String> accessors, ArrayList<String> managers) {
         // loop through all the entries in the hash map
         Iterator<Map.Entry<String, ClaimPermission>> mappingsIterator = this.playerIDToClaimPermissionMap.entrySet().iterator();
@@ -635,13 +651,14 @@ public class Claim {
     }
 
     // returns a copy of the location representing lower x, y, z limits
+    @SuppressWarnings("unchecked")
     public Location<World> getLesserBoundaryCorner() {
         return (Location<World>) this.lesserBoundaryCorner.copy();
     }
 
     // returns a copy of the location representing upper x, y, z limits
-    // NOTE: remember upper Y will always be ignored, all claims always extend
-    // to the sky
+    // NOTE: remember upper Y will always be ignored, all claims always extend to the sky
+    @SuppressWarnings("unchecked")
     public Location<World> getGreaterBoundaryCorner() {
         return (Location<World>) this.greaterBoundaryCorner.copy();
     }
@@ -660,8 +677,7 @@ public class Claim {
 
     // whether or not a location is in a claim
     // ignoreHeight = true means location UNDER the claim will return TRUE
-    // excludeSubdivisions = true means that locations inside subdivisions of
-    // the claim will return FALSE
+    // excludeSubdivisions = true means that locations inside subdivisions of the claim will return FALSE
     public boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeSubdivisions) {
         // not in the same world implies false
         if (!location.getExtent().equals(this.lesserBoundaryCorner.getExtent()))

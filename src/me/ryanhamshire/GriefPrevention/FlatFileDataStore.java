@@ -615,8 +615,9 @@ public class FlatFileDataStore extends DataStore {
     public void overrideSavePlayerData(UUID playerID, PlayerData playerData) {
         // never save data for the "administrative" account. null for claim
         // owner ID indicates administrative account
-        if (playerID == null)
+        if (playerID == null) {
             return;
+        }
 
         StringBuilder fileContent = new StringBuilder();
         try {
@@ -639,7 +640,7 @@ public class FlatFileDataStore extends DataStore {
             fileContent.append("\n");
 
             // write data to file
-            File playerDataFile = new File(playerDataFolderPath + File.separator + playerID.toString());
+            File playerDataFile = playerDataFolderPath.resolve(playerID.toString()).toFile();
             Files.write(fileContent.toString().getBytes("UTF-8"), playerDataFile);
         }
 
