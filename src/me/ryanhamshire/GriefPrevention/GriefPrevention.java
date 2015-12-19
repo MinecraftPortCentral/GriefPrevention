@@ -47,6 +47,7 @@ import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.GameRegistry;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -65,24 +66,21 @@ import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.TextBuilder;
 import org.spongepowered.api.text.Texts;
-import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.config.SpongeConfig.Type;
 import org.spongepowered.common.util.IpSet;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -98,10 +96,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//import net.milkbowl.vault.economy.Economy;
-
-//import net.milkbowl.vault.economy.Economy;
-
 @Plugin(id = "GriefPrevention", name = "GriefPrevention", version = "12.7.1")
 public class GriefPrevention {
 
@@ -111,6 +105,7 @@ public class GriefPrevention {
     @Inject public Game game;
     @Inject public EventManager eventManager;
     @Inject public GameRegistry gameRegistry;
+    @Inject public PluginContainer pluginContainer;
 
     // for logging to the console and log file
     private static Logger log = Logger.getLogger("Minecraft");
@@ -444,12 +439,12 @@ public class GriefPrevention {
         // this is the preferred method, as it's simpler than the database
         // scenario
         if (this.dataStore == null) {
-            File oldclaimdata = new File(event.getGame().getSavesDirectory().toFile(), "ClaimData");
+            File oldclaimdata = new File(Sponge.getGame().getSavesDirectory().toFile(), "ClaimData");
             if (oldclaimdata.exists()) {
                 if (!FlatFileDataStore.hasData()) {
                     File claimdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "ClaimData");
                     oldclaimdata.renameTo(claimdata);
-                    File oldplayerdata = new File(event.getGame().getSavesDirectory().toFile(), "PlayerData");
+                    File oldplayerdata = new File(Sponge.getGame().getSavesDirectory().toFile(), "PlayerData");
                     File playerdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "PlayerData");
                     oldplayerdata.renameTo(playerdata);
                 }
@@ -1132,7 +1127,7 @@ public class GriefPrevention {
 
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Converts an administrative claim to a private claim"))
-                .arguments(optional(player(Texts.of("target"), game)))
+                .arguments(optional(player(Texts.of("target"))))
                 .permission("griefprevention.transferclaim")
                 .executor((src, args) -> {
                     final Player player = checkPlayer(src);
@@ -1654,7 +1649,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Delete all of another player's claims"))
                 .permission("griefprevention.deleteclaims")
-                .arguments(player(Texts.of("player"), game)) // TODO: Use user commandelement when added
+                .arguments(player(Texts.of("player"))) // TODO: Use user commandelement when added
                 .executor((src, args) -> {
                     final Player player = checkPlayer(src);
 
@@ -1680,7 +1675,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Gives a player a manual about claiming land"))
                 .permission("griefprevention.claimbook")
-                .arguments(playerOrSource(Texts.of("player"), game))
+                .arguments(playerOrSource(Texts.of("player")))
                 .executor((src, args) -> {
                     for (Player otherPlayer : args.<Player>getAll("player")) {
                         WelcomeTask task = new WelcomeTask(otherPlayer);
@@ -1693,7 +1688,7 @@ public class GriefPrevention {
 
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("List information about a player's claim blocks and claims"))
-                .arguments(onlyOne(playerOrSource(Texts.of("player"), game)))
+                .arguments(onlyOne(playerOrSource(Texts.of("player"))))
                 .executor((src, args) -> {
 
                     // player whose claims will be listed
@@ -1924,7 +1919,7 @@ public class GriefPrevention {
 
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Initiates a siege versus another player"))
-                .arguments(optional(onlyOne(player(Texts.of("playerName"), game))))
+                .arguments(optional(onlyOne(player(Texts.of("playerName")))))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
 
@@ -2009,7 +2004,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Toggles whether a player's messages will only reach other soft-muted players"))
                 .permission("griefprevention.softmute")
-                .arguments(onlyOne(player(Texts.of("player"), game)))
+                .arguments(onlyOne(player(Texts.of("player"))))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
 
@@ -2042,7 +2037,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Allows a player to give away a pet they tamed"))
                 .permission("griefprevention.givepet")
-                .arguments(firstParsing(literal(Texts.of("player"), "cancel"), player(Texts.of("player"), game)))
+                .arguments(firstParsing(literal(Texts.of("player"), "cancel"), player(Texts.of("player"))))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
 
@@ -2089,7 +2084,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Ignores another player's chat messages"))
                 .permission("griefprevention.ignore")
-                .arguments(onlyOne(player(Texts.of("player"), game)))
+                .arguments(onlyOne(player(Texts.of("player"))))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
 
@@ -2110,7 +2105,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Unignores another player's chat messages"))
                 .permission("griefprevention.ignore")
-                .arguments(onlyOne(player(Texts.of("player"), game)))
+                .arguments(onlyOne(player(Texts.of("player"))))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
 
@@ -2166,7 +2161,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Forces two players to ignore each other in chat"))
                 .permission("griefprevention.separate")
-                .arguments(onlyOne(player(Texts.of("player1"), game)), onlyOne(player(Texts.of("player2"), game)))
+                .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
                     // validate target players
@@ -2184,7 +2179,7 @@ public class GriefPrevention {
         game.getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Reverses /separate"))
                 .permission("griefprevention.separate")
-                .arguments(onlyOne(player(Texts.of("player1"), game)), onlyOne(player(Texts.of("player2"), game)))
+                .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
                     // validate target players

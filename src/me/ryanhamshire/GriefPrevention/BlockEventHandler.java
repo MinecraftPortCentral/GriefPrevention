@@ -33,6 +33,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
+import org.spongepowered.api.event.block.CollideBlockEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
 import org.spongepowered.api.event.filter.IsCancelled;
@@ -87,7 +88,7 @@ public class BlockEventHandler {
                 // make sure the player is allowed to break at the location
                 String noBuildReason = GriefPrevention.instance.allowBreak(player.get(), transaction.getOriginal());
                 if (noBuildReason != null) {
-                    if (event.getCause().root().get() instanceof Player) {
+                    if (event.getCause().root() instanceof Player) {
                         GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
                     }
                     transaction.setValid(false);
@@ -111,7 +112,7 @@ public class BlockEventHandler {
         if (claim != null) {
             String reason = claim.allowAccess(player.get());
             if (reason != null) {
-                if (event.getCause().root().get() instanceof Player) {
+                if (event.getCause().root() instanceof Player) {
                     GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Warn, Messages.NoDropsAllowed));
                 }
                 event.setCancelled(true);
@@ -140,6 +141,21 @@ public class BlockEventHandler {
                     iterator.remove();
                 }
             }
+        }
+    }
+
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener
+    public void onBlockCollide(CollideBlockEvent event) {
+        Optional<User> user = event.getCause().first(User.class);
+
+        if (!user.isPresent()) {
+            return;
+        }
+
+        Claim claim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
+        if (claim !=null && claim.allowAccess(user.get()) != null) {
+            event.setCancelled(true);
         }
     }
 
@@ -196,7 +212,7 @@ public class BlockEventHandler {
                     Player otherPlayer = players.get(i);
                     Location<World> location = otherPlayer.getLocation();
                     if (!otherPlayer.equals(player.get()) && location.getBlockPosition().distanceSquared(block.getPosition()) < 9) {
-                        if (event.getCause().root().get() instanceof Player) {
+                        if (event.getCause().root() instanceof Player) {
                             GriefPrevention.sendMessage(player.get(), TextMode.Err, Messages.PlayerTooCloseForFire, otherPlayer.getName());
                         }
                         transaction.setValid(false);
@@ -209,7 +225,7 @@ public class BlockEventHandler {
             // make sure the player is allowed to build at the location
             String noBuildReason = GriefPrevention.instance.allowBuild(player.get(), block.getLocation().get());
             if (noBuildReason != null) {
-                if (event.getCause().root().get() instanceof Player) {
+                if (event.getCause().root() instanceof Player) {
                     GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
                 }
                 transaction.setValid(false);

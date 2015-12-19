@@ -29,8 +29,8 @@ import com.google.common.collect.Sets;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandSource;
@@ -51,7 +51,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.vehicle.Boat;
 import org.spongepowered.api.entity.vehicle.minecart.MinecartChest;
 import org.spongepowered.api.entity.vehicle.minecart.MinecartFurnace;
-import org.spongepowered.api.event.GameEvent;
+import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.action.MessageEvent;
@@ -65,8 +65,8 @@ import org.spongepowered.api.event.entity.CollideEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.DisplaceEntityEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
-import org.spongepowered.api.event.entity.living.player.KickPlayerEvent;
-import org.spongepowered.api.event.entity.living.player.RespawnPlayerEvent;
+import org.spongepowered.api.event.entity.living.humanoid.player.KickPlayerEvent;
+import org.spongepowered.api.event.entity.living.humanoid.player.RespawnPlayerEvent;
 import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
@@ -385,14 +385,14 @@ public class PlayerEventHandler {
                     // kick and ban
                     PlayerKickBanTask task =
                             new PlayerKickBanTask(player, GriefPrevention.instance.config_spam_banMessage, "GriefPrevention Anti-Spam", true);
-                    event.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPrevention.instance);
+                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPrevention.instance);
                 } else {
                     // log entry
                     GriefPrevention.AddLogEntry("Kicking " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 
                     // just kick
                     PlayerKickBanTask task = new PlayerKickBanTask(player, "", "GriefPrevention Anti-Spam", false);
-                    event.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPrevention.instance);
+                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPrevention.instance);
                 }
 
                 return true;
@@ -493,7 +493,7 @@ public class PlayerEventHandler {
         // if a whisper
         if (GriefPrevention.instance.config_eavesdrop_whisperCommands.contains(command) && args.length > 1) {
             // determine target player, might be NULL
-            Player targetPlayer = event.getGame().getServer().getPlayer(args[1]).orElse(null);
+            Player targetPlayer = Sponge.getGame().getServer().getPlayer(args[1]).orElse(null);
 
             // if eavesdrop enabled and sender doesn't have the eavesdrop
             // permission, eavesdrop
@@ -509,7 +509,7 @@ public class PlayerEventHandler {
 
                     String logMessage = logMessageBuilder.toString();
 
-                    Collection<Player> players = (Collection<Player>) event.getGame().getServer().getOnlinePlayers();
+                    Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                     for (Player onlinePlayer : players) {
                         if (onlinePlayer.hasPermission("griefprevention.eavesdrop") && !onlinePlayer.equals(targetPlayer)) {
                             onlinePlayer.sendMessage(Texts.of(TextColors.GRAY + logMessage));
@@ -697,7 +697,7 @@ public class PlayerEventHandler {
                     && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10) {
                 WelcomeTask task = new WelcomeTask(player);
                 // 10 seconds after join
-                event.getGame().getScheduler().createTaskBuilder().delay(10, TimeUnit.SECONDS).execute(task).submit(GriefPrevention.instance);
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(10, TimeUnit.SECONDS).execute(task).submit(GriefPrevention.instance);
             }
         }
 
@@ -746,7 +746,7 @@ public class PlayerEventHandler {
                                 + info.address.toString() + ").", CustomLogEntryTypes.AdminActivity);
 
                         // notify any online ops
-                        Collection<Player> players = (Collection<Player>) event.getGame().getServer().getOnlinePlayers();
+                        Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                         for (Player otherPlayer : players) {
                             /*if (otherPlayer.isOp()) {
                                 GriefPrevention.sendMessage(otherPlayer, TextMode.Success, Messages.AutoBanNotify, player.getName(),
@@ -757,7 +757,7 @@ public class PlayerEventHandler {
                         // ban player
                         PlayerKickBanTask task =
                                 new PlayerKickBanTask(player, "", "GriefPrevention Smart Ban - Shared Login:" + info.bannedAccountName, true);
-                        event.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
+                        Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
 
                         // silence join message
                         event.setMessage(Texts.of());
@@ -784,7 +784,7 @@ public class PlayerEventHandler {
                     // kick player
                     PlayerKickBanTask task = new PlayerKickBanTask(player, "Sorry, there are too many players logged in with your IP address.",
                             "GriefPrevention IP-sharing limit.", false);
-                    event.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
+                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
 
                     // silence join message
                     event.setMessage(Texts.of(""));
@@ -934,7 +934,7 @@ public class PlayerEventHandler {
     // when a player drops an item
     @Listener(order = Order.PRE)
     public void onPlayerDropItem(DropItemEvent.Dispense event) {
-        if (!event.getCause().any(Player.class)) {
+        if (!event.getCause().containsType(Player.class)) {
             return;
         }
 
@@ -977,12 +977,12 @@ public class PlayerEventHandler {
 
         Player player = event.getTargetEntity();
 
-        if (event.getCause().any(TeleportCause.class)) {
+        if (event.getCause().containsType(TeleportCause.class)) {
             TeleportType type = event.getCause().first(TeleportCause.class).get().getTeleportType();
             // FEATURE: when players get trapped in a nether portal, send them
             // back through to the other side
             CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFromTransform().getLocation());
-            event.getGame().getScheduler().createTaskBuilder().delayTicks(200).execute(task).submit(GriefPrevention.instance);
+            Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(200).execute(task).submit(GriefPrevention.instance);
 
             // FEATURE: if the player teleporting doesn't have permission to
             // build a nether portal and none already exists at the destination,
@@ -1048,7 +1048,7 @@ public class PlayerEventHandler {
         if (!GriefPrevention.instance.config_siege_enabledWorlds.contains(player.getWorld()))
             return;
 
-        Location source = event.getFromTransform().getLocation();
+        Location<World> source = event.getFromTransform().getLocation();
         Claim sourceClaim = this.dataStore.getClaimAt(source, false, playerData.lastClaim);
         if (sourceClaim != null && sourceClaim.siegeData != null) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoTeleport);
@@ -1056,7 +1056,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        Location destination = event.getToTransform().getLocation();
+        Location<World> destination = event.getToTransform().getLocation();
         Claim destinationClaim = this.dataStore.getClaimAt(destination, false, null);
         if (destinationClaim != null && destinationClaim.siegeData != null) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.BesiegedNoTeleport);
@@ -1069,7 +1069,7 @@ public class PlayerEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener(order = Order.PRE)
     public void onPlayerInteractEntity(InteractEntityEvent.Secondary event) {
-        if (!event.getCause().any(Player.class)) {
+        if (!event.getCause().containsType(Player.class)) {
             return;
         }
 
@@ -1107,8 +1107,8 @@ public class PlayerEventHandler {
                 }
                 if (!GriefPrevention.instance.pvpRulesApply(entity.getLocation().getExtent())) {
                     // otherwise disallow
-                    if (event.getCause().root().get() instanceof Player) {
-                        User owner = event.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(ownerID).get();
+                    if (event.getCause().root() instanceof Player) {
+                        User owner = Sponge.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(ownerID).get();
                         String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, owner.getName());
                         if (player.hasPermission("griefprevention.ignoreclaims"))
                             message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);

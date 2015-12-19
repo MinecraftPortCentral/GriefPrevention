@@ -25,7 +25,9 @@
 package me.ryanhamshire.GriefPrevention.events;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.spongepowered.api.event.Event;
+import org.spongepowered.api.event.cause.Cause;
 
 /**
  * This event gets called whenever a claim is going to be deleted. This event is
@@ -51,5 +53,10 @@ public class ClaimDeletedEvent implements Event {
      */
     public Claim getClaim() {
         return claim;
+    }
+
+    @Override
+    public Cause getCause() {
+        return Cause.of(GriefPrevention.instance.pluginContainer);
     }
 }

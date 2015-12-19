@@ -422,6 +422,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
 
+    @SuppressWarnings("serial")
     Claim loadClaim(File claimFile, ArrayList<Long> out_parentID, long lastModifiedDate, long claimID, List<World> validWorlds)
             throws Exception {
         Claim claim;

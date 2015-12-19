@@ -25,8 +25,10 @@
 package me.ryanhamshire.GriefPrevention.events;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.spongepowered.api.event.Cancellable;
 import org.spongepowered.api.event.Event;
+import org.spongepowered.api.event.cause.Cause;
 
 //if cancelled, GriefPrevention will not cancel the PvP event it's processing.
 public class PreventPvPEvent implements Event, Cancellable {
@@ -51,5 +53,10 @@ public class PreventPvPEvent implements Event, Cancellable {
     @Override
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
+    }
+
+    @Override
+    public Cause getCause() {
+        return Cause.of(GriefPrevention.instance.pluginContainer);
     }
 }
