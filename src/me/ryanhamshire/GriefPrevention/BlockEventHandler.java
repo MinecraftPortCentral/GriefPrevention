@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -420,7 +421,7 @@ public class BlockEventHandler {
             playerData.lastMessage = signMessage;
 
             if (!player.get().hasPermission("griefprevention.eavesdropsigns")) {
-                Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
+                Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                 for (Player otherPlayer : players) {
                     if (otherPlayer.hasPermission("griefprevention.eavesdropsigns")) {
                         otherPlayer.sendMessage(Texts.of(TextColors.GRAY, player.get().getName(), signMessage));

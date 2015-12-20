@@ -63,7 +63,7 @@ class PlayerRescueTask implements Runnable {
         }
 
         // otherwise find a place to teleport him
-        Location destination = GriefPrevention.instance.ejectPlayer(this.player);
+        Location<World> destination = GriefPrevention.instance.ejectPlayer(this.player);
 
         // log entry, in case admins want to investigate the "trap"
         GriefPrevention.AddLogEntry("Rescued trapped player " + player.getName() + " from " + GriefPrevention.getfriendlyLocationString(this.location)

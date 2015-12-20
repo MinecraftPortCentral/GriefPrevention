@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
@@ -48,7 +49,7 @@ class AutoExtendClaimTask implements Runnable {
     public void run() {
         int newY = this.getLowestBuiltY();
         if (newY < this.claim.getLesserBoundaryCorner().getBlockY()) {
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY))
+            Sponge.getGame().getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY))
                     .submit(GriefPrevention.instance);
         }
     }

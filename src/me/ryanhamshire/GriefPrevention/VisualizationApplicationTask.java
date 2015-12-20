@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -60,7 +61,7 @@ class VisualizationApplicationTask implements Runnable {
         playerData.currentVisualization = visualization;
 
         // schedule automatic visualization reversion in 60 seconds.
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES)
+        Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES)
                 .execute(new VisualizationReversionTask(player, playerData, visualization)).submit(GriefPrevention.instance);
     }
 }

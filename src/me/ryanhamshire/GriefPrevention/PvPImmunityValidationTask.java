@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.concurrent.TimeUnit;
@@ -54,7 +55,7 @@ class PvPImmunityValidationTask implements Runnable {
             GriefPrevention.sendMessage(player, TextMode.Warn, Messages.PvPImmunityEnd);
         } else {
             // otherwise check again in one minute
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(this).submit(GriefPrevention.instance);
+            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(this).submit(GriefPrevention.instance);
         }
     }
 }

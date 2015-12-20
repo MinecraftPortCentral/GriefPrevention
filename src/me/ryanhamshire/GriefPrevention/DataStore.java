@@ -31,6 +31,7 @@ import net.minecraft.item.ItemStack;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.apache.commons.lang3.StringUtils;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.scheduler.Task;
@@ -318,7 +319,7 @@ public abstract class DataStore {
         Iterator<String> iterator = keys.iterator();
         while (iterator.hasNext()) {
             String groupName = iterator.next();
-            Optional<Player> player = GriefPrevention.instance.game.getServer().getPlayer(playerID);
+            Optional<Player> player = Sponge.getGame().getServer().getPlayer(playerID);
             if (player.isPresent() && player.get().hasPermission(groupName)) {
                 bonusBlocks += this.permissionToBonusBlocksMap.get(groupName);
             }
@@ -577,7 +578,7 @@ public abstract class DataStore {
 
         if (fireEvent) {
             ClaimDeletedEvent ev = new ClaimDeletedEvent(claim);
-            GriefPrevention.instance.eventManager.post(ev);
+            Sponge.getGame().getEventManager().post(ev);
         }
     }
 
@@ -846,7 +847,7 @@ public abstract class DataStore {
         // because depending on the status of the siege at the time the task
         // runs, there may or may not be a reason to run the task again
         SiegeCheckupTask siegeTask = new SiegeCheckupTask(siegeData);
-        Task task = GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(siegeTask).submit(GriefPrevention.instance);
+        Task task = Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(siegeTask).submit(GriefPrevention.instance);
         siegeData.checkupTaskID = task.getUniqueId();
     }
 
@@ -900,30 +901,30 @@ public abstract class DataStore {
         }
 
         // cancel the siege checkup task
-        GriefPrevention.instance.game.getScheduler().getTaskById(siegeData.checkupTaskID).get().cancel();
+        Sponge.getGame().getScheduler().getTaskById(siegeData.checkupTaskID).get().cancel();
 
         // notify everyone who won and lost
         if (winnerName != null && loserName != null) {
-            GriefPrevention.instance.game.getServer().getBroadcastSink().sendMessage(Texts.of(winnerName + " defeated " + loserName + " in siege warfare!"));
+            Sponge.getGame().getServer().getBroadcastSink().sendMessage(Texts.of(winnerName + " defeated " + loserName + " in siege warfare!"));
         }
 
         // if the claim should be opened to looting
         if (grantAccess) {
-            Optional<Player> winner = GriefPrevention.instance.game.getServer().getPlayer(winnerName);
+            Optional<Player> winner = Sponge.getGame().getServer().getPlayer(winnerName);
             if (winner.isPresent()) {
                 // notify the winner
                 GriefPrevention.sendMessage(winner.get(), TextMode.Success, Messages.SiegeWinDoorsOpen);
 
                 // schedule a task to secure the claims in about 5 minutes
                 SecureClaimTask task = new SecureClaimTask(siegeData);
-                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(5, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(5, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
             }
         }
 
         // if the siege ended due to death, transfer inventory to winner
         if (death) {
-            Optional<Player> winner = GriefPrevention.instance.game.getServer().getPlayer(winnerName);
-            Optional<Player> loser = GriefPrevention.instance.game.getServer().getPlayer(loserName);
+            Optional<Player> winner = Sponge.getGame().getServer().getPlayer(winnerName);
+            Optional<Player> loser = Sponge.getGame().getServer().getPlayer(loserName);
             if (winner.isPresent() && loser.isPresent()) {
                 // get loser's inventory, then clear it
                 net.minecraft.entity.player.EntityPlayerMP loserPlayer = (net.minecraft.entity.player.EntityPlayerMP) loser.get();
@@ -938,15 +939,12 @@ public abstract class DataStore {
                 loserPlayer.inventory.clear();
 
                 // try to add it to the winner's inventory
-                for (int j = 0; j < loserItems.size(); j++) {
-                    if (loserItems.get(j) == null || loserItems.get(j).stackSize == 0)
-                        continue;
-
-                    boolean added = winnerPlayer.inventory.addItemStackToInventory(loserItems.get(j));
+                Iterator<ItemStack> iterator = loserItems.iterator();
+                while (iterator.hasNext()) {
+                    ItemStack loserItem = iterator.next();
+                    boolean added = winnerPlayer.inventory.addItemStackToInventory(loserItem);
                     if (added) {
-                        loserItems.remove(j);
-                    } else {
-                        break;
+                        iterator.remove();
                     }
                 }
 
@@ -985,10 +983,7 @@ public abstract class DataStore {
         PlayerData defenderData = this.getPlayerData(defender.getUniqueId());
         if (defenderData.lastSiegeEndTimeStamp > 0) {
             long now = System.currentTimeMillis();
-            if (now - defenderData.lastSiegeEndTimeStamp > 1000 * 60 * 15) // 15
-                                                                           // minutes
-                                                                           // in
-                                                                           // milliseconds
+            if (now - defenderData.lastSiegeEndTimeStamp > 1000 * 60 * 15) // 15 minutes in milliseconds
             {
                 return true;
             }
@@ -1262,7 +1257,7 @@ public abstract class DataStore {
         this.addDefault(Messages.NewClaimTooNarrow, "This claim would be too small.  Any claim must be at least {0} blocks wide.",
                 "0: minimum claim width");
         this.addDefault(Messages.ResizeClaimInsufficientArea,
-                "This claim would be too small.  Any claim must use at least {0} total claim blocks.", "0: minimum claim area");
+                "The selected claim size of {0} blocks({1}x{2}) would be too small. A claim must use at least {3} total claim blocks.");
         this.addDefault(Messages.CreateClaimInsufficientBlocks,
                 "You don't have enough blocks to claim that entire area.  You need {0} more blocks.", "0: additional blocks needed");
         this.addDefault(Messages.AbandonClaimAdvertisement, "To delete another claim and free up some blocks, use /AbandonClaim.");
@@ -1523,7 +1518,7 @@ public abstract class DataStore {
             // otherwise try to convert to a UUID
             Optional<User> player = Optional.empty();
             try {
-                player = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(name);
+                player = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(name);
             } catch (Exception ex) {
             }
 

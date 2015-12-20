@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;
@@ -50,12 +51,12 @@ class DeliverClaimBlocksTask implements Runnable {
         // if no player specified, this task will create a player-specific task
         // for each online player, scheduled one tick apart
         if (this.player == null) {
-            Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
+            Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
 
             long i = 0;
             for (Player onlinePlayer : players) {
                 DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer);
-                GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delayTicks(i++).execute(newTask)
+                Sponge.getGame().getScheduler().createTaskBuilder().async().delayTicks(i++).execute(newTask)
                         .submit(GriefPrevention.instance);
             }
         }

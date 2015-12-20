@@ -230,7 +230,7 @@ public class PlayerEventHandler {
     private int duplicateMessageCount = 0;
 
     // returns true if the message should be sent, false if it should be muted
-    private boolean handlePlayerChat(Player player, String message, GameEvent event) {
+    private boolean handlePlayerChat(Player player, String message, Event event) {
         // FEATURE: automatically educate players about claiming land
         // watching for message format how*claim*, and will send a link to the basics video
         if (this.howToClaimPattern == null) {
@@ -246,8 +246,7 @@ public class PlayerEventHandler {
         }
 
         // FEATURE: automatically educate players about the /trapped command
-        // check for "trapped" or "stuck" to educate players about the /trapped
-        // command
+        // check for "trapped" or "stuck" to educate players about the /trapped command
         if (!message.contains("/trapped") && (message.contains("trapped") || message.contains("stuck")
                 || message.contains(this.dataStore.getMessage(Messages.TrappedChatKeyword)))) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrappedInstructions, 10L);
@@ -801,7 +800,6 @@ public class PlayerEventHandler {
 
 
     // when a player spawns, conditionally apply temporary pvp protection
-    @IsCancelled(Tristate.UNDEFINED)
     @Listener(order = Order.POST)
     public void onPlayerRespawn(RespawnPlayerEvent event) {
         Player player = event.getTargetEntity();
@@ -881,14 +879,12 @@ public class PlayerEventHandler {
             player.offer(Keys.HEALTH, 0d);
         }
 
-        // FEATURE: during a siege, any player who logs out dies and forfeits
-        // the siege
+        // FEATURE: during a siege, any player who logs out dies and forfeits the siege
 
         // if player was involved in a siege, he forfeits
         if (playerData.siegeData != null) {
             if (player.getHealthData().health().get() > 0)
-                player.offer(Keys.HEALTH, 0d); // might already be zero from above, this
-                                     // avoids a double death message
+                player.offer(Keys.HEALTH, 0d); // might already be zero from above, this avoids a double death message
         }
 
         // drop data about this player
@@ -965,64 +961,15 @@ public class PlayerEventHandler {
         }
     }
 
-    // when a player teleports via a portal
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener(order = Order.LATE)
-    public void onPlayerPortal(DisplaceEntityEvent.Teleport.TargetPlayer event) {
-        // if the player isn't going anywhere, take no action
-
-        // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getToTransform().getExtent()))
-            return;
-
-        Player player = event.getTargetEntity();
-
-        if (event.getCause().containsType(TeleportCause.class)) {
-            TeleportType type = event.getCause().first(TeleportCause.class).get().getTeleportType();
-            // FEATURE: when players get trapped in a nether portal, send them
-            // back through to the other side
-            CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFromTransform().getLocation());
-            Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(200).execute(task).submit(GriefPrevention.instance);
-
-            // FEATURE: if the player teleporting doesn't have permission to
-            // build a nether portal and none already exists at the destination,
-            // cancel the teleportation
-            if (GriefPrevention.instance.config_claims_portalsRequirePermission) {
-                Location destination = event.getToTransform().getLocation();
-                /*if (event.useTravelAgent()) {
-                    if (event.getTeleporterAgent().getCanCreatePortal()) {
-                        // hypothetically find where the portal would be created
-                        // if it were
-                        TravelAgent agent = event.getPortalTravelAgent();
-                        agent.setCanCreatePortal(false);
-                        destination = agent.findOrCreate(destination);
-                        agent.setCanCreatePortal(true);
-                    } else {
-                        // if not able to create a portal, we don't have to do
-                        // anything here
-                        return;
-                    }
-                }*/
-
-                // if creating a new portal
-                if (destination.getBlock().getType() != BlockTypes.PORTAL) {
-                    // check for a land claim and the player's permission that
-                    // land claim
-                    Claim claim = this.dataStore.getClaimAt(destination, false, null);
-                    if (claim != null && claim.allowBuild(player, BlockTypes.PORTAL) != null) {
-                        // cancel and inform about the reason
-                        event.setCancelled(true);
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, claim.getOwnerName());
-                    }
-                }
-            }
-        }
-    }
-
     // when a player teleports
     @Listener(order = Order.PRE)
     public void onPlayerTeleport(DisplaceEntityEvent.Teleport.TargetPlayer event) {
         Player player = event.getTargetEntity();
+        // these rules only apply to siege worlds only
+        if (!GriefPrevention.instance.config_siege_enabledWorlds.contains(player.getWorld())) {
+            return;
+        }
+
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 
         TeleportType type = event.getCause().first(TeleportCause.class).get().getTeleportType();
@@ -1044,10 +991,6 @@ public class PlayerEventHandler {
 
         // FEATURE: prevent teleport abuse to win sieges
 
-        // these rules only apply to siege worlds only
-        if (!GriefPrevention.instance.config_siege_enabledWorlds.contains(player.getWorld()))
-            return;
-
         Location<World> source = event.getFromTransform().getLocation();
         Claim sourceClaim = this.dataStore.getClaimAt(source, false, playerData.lastClaim);
         if (sourceClaim != null && sourceClaim.siegeData != null) {
@@ -1062,6 +1005,47 @@ public class PlayerEventHandler {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.BesiegedNoTeleport);
             event.setCancelled(true);
             return;
+        }
+
+        // don't track in worlds where claims are not enabled
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getToTransform().getExtent()))
+            return;
+
+        if (event.getCause().containsType(TeleportCause.class)) {
+            // FEATURE: when players get trapped in a nether portal, send them back through to the other side
+            CheckForPortalTrapTask task = new CheckForPortalTrapTask(player, event.getFromTransform().getLocation());
+            Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(200).execute(task).submit(GriefPrevention.instance);
+
+            // FEATURE: if the player teleporting doesn't have permission to
+            // build a nether portal and none already exists at the destination, cancel the teleportation
+            if (GriefPrevention.instance.config_claims_portalsRequirePermission) {
+                destination = event.getToTransform().getLocation();
+                /*if (event.useTravelAgent()) {
+                    if (event.getTeleporterAgent().getCanCreatePortal()) {
+                        // hypothetically find where the portal would be created
+                        // if it were
+                        TravelAgent agent = event.getPortalTravelAgent();
+                        agent.setCanCreatePortal(false);
+                        destination = agent.findOrCreate(destination);
+                        agent.setCanCreatePortal(true);
+                    } else {
+                        // if not able to create a portal, we don't have to do
+                        // anything here
+                        return;
+                    }
+                }*/
+
+                // if creating a new portal
+                if (destination.getBlock().getType() != BlockTypes.PORTAL) {
+                    // check for a land claim and the player's permission that land claim
+                    Claim claim = this.dataStore.getClaimAt(destination, false, null);
+                    if (claim != null && claim.allowBuild(player, BlockTypes.PORTAL) != null) {
+                        // cancel and inform about the reason
+                        event.setCancelled(true);
+                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, claim.getOwnerName());
+                    }
+                }
+            }
         }
     }
 
@@ -1241,6 +1225,21 @@ public class PlayerEventHandler {
                 if (owner.isPresent() && owner.get().isOnline() && player.get().getUniqueId() != owner.get().getUniqueId()) {
                     PlayerData playerData = this.dataStore.getPlayerData(owner.get().getUniqueId());
     
+                    // FEATURE: lock dropped items to player who dropped them
+
+                    World world = entity.getWorld();
+
+                    // decide whether or not to apply this feature to this situation
+                    // (depends on the world where it happens)
+                    boolean isPvPWorld = GriefPrevention.instance.pvpRulesApply(world);
+                    if ((isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInPvpWorlds) ||
+                            (!isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInNonPvpWorlds)) {
+
+                        // allow the player to receive a message about how to unlock any drops
+                        playerData.dropsAreUnlocked = false;
+                        playerData.receivedDropUnlockAdvertisement = false;
+                    }
+
                     // if locked, don't allow pickup
                     if (!playerData.dropsAreUnlocked) {
                         event.setCancelled(true);
@@ -1302,7 +1301,7 @@ public class PlayerEventHandler {
                 // minimum time, to avoid mouse wheel spam
                 if (GriefPrevention.instance.claimsEnabledForWorld(player.get().getWorld())) {
                     EquipShovelProcessingTask task = new EquipShovelProcessingTask(player.get());
-                    GriefPrevention.instance.game.getScheduler().createTaskBuilder().delayTicks(15).execute(task).submit(GriefPrevention.instance);
+                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(15).execute(task).submit(GriefPrevention.instance);
                 }
             }
         }
@@ -1403,9 +1402,6 @@ public class PlayerEventHandler {
         if (playerData != null && !playerData.ignoreClaims && playerClaim != null && playerClaim.allowAccess(player) != null) {
             event.setCancelled(true);
         }
-
-        System.out.println("GP InteractBlockEvent.Secondary target = " + event.getTargetBlock());
-        //event.setCancelled(true);
 
         // if creating a new portal
         if (GriefPrevention.instance.config_claims_portalsRequirePermission && clickedBlock.getState().getType() != BlockTypes.PORTAL) {
@@ -1711,7 +1707,7 @@ public class PlayerEventHandler {
                         GriefPrevention.sendMessage(player, TextMode.Info, Messages.PlayerOfflineTime, String.valueOf(daysElapsed));
     
                         // drop the data we just loaded, if the player isn't online
-                        if (!GriefPrevention.instance.game.getServer().getPlayer(claim.ownerID).isPresent())
+                        if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent())
                             this.dataStore.clearCachedPlayerData(claim.ownerID);
                     }
                 }
@@ -2039,7 +2035,7 @@ public class PlayerEventHandler {
                             } else {
                                 PlayerData ownerData = this.dataStore.getPlayerData(ownerID);
                                 claimBlocksRemaining = ownerData.getRemainingClaimBlocks();
-                                Optional<User> owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(ownerID);
+                                Optional<User> owner = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(ownerID);
                                 if (owner.isPresent() && !owner.get().isOnline()) {
                                     this.dataStore.clearCachedPlayerData(ownerID);
                                 }
@@ -2274,7 +2270,7 @@ public class PlayerEventHandler {
                         int newArea = newClaimWidth * newClaimHeight;
                         if (newArea < GriefPrevention.instance.config_claims_minArea) {
                             if (newArea != 1) {
-                                GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimInsufficientArea,
+                                GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimInsufficientArea, String.valueOf(newArea), String.valueOf(newClaimWidth), String.valueOf(newClaimHeight),
                                         String.valueOf(GriefPrevention.instance.config_claims_minArea));
                             }
             
@@ -2352,7 +2348,7 @@ public class PlayerEventHandler {
                             }
                         }
             
-                        GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().execute(new AutoExtendClaimTask(newClaim, snapshots, world.getDimension().getType())).submit(GriefPrevention.instance);
+                        Sponge.getGame().getScheduler().createTaskBuilder().async().execute(new AutoExtendClaimTask(newClaim, snapshots, world.getDimension().getType())).submit(GriefPrevention.instance);
                     }
                 }
 
@@ -2364,7 +2360,7 @@ public class PlayerEventHandler {
     public void onWorldSave(SaveWorldEvent event) {
         // save data for any online players
         // TODO: only save data if changed
-        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
+        Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
             UUID playerID = player.getUniqueId();
             PlayerData playerData = this.dataStore.getPlayerData(playerID);
@@ -2481,34 +2477,6 @@ public class PlayerEventHandler {
             GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
             bucketEvent.setCancelled(true);
             return;
-        }
-    }
-
-    // educates a player about /adminclaims and /acb, if he can use them
-    private void tryAdvertiseAdminAlternatives(Player player) {
-        if (player.hasPermission("griefprevention.adminclaims") && player.hasPermission("griefprevention.adjustclaimblocks")) {
-            GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACandACB);
-        } else if (player.hasPermission("griefprevention.adminclaims")) {
-            GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseAdminClaims);
-        } else if (player.hasPermission("griefprevention.adjustclaimblocks")) {
-            GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACB);
-        }
-    }
-
-    // determines whether a block type is an inventory holder. uses a caching
-    // strategy to save cpu time
-    private ConcurrentHashMap<Integer, Boolean> inventoryHolderCache = new ConcurrentHashMap<Integer, Boolean>();
-
-    private boolean isInventoryHolder(Block clickedBlock) {
-        Integer cacheKey = clickedBlock.getTypeId();
-        Boolean cachedValue = this.inventoryHolderCache.get(cacheKey);
-        if (cachedValue != null) {
-            return cachedValue.booleanValue();
-
-        } else {
-            boolean isHolder = clickedBlock.getState() instanceof InventoryHolder;
-            this.inventoryHolderCache.put(cacheKey, isHolder);
-            return isHolder;
         }
     }
 

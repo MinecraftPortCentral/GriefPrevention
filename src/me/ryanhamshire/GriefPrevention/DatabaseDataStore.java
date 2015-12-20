@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.world.Location;
@@ -173,7 +174,7 @@ public class DatabaseDataStore extends DataStore {
 
                     // try to convert player name to UUID
                     try {
-                        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(playerName);
+                        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(playerName);
 
                         // if successful, update the playerdata row by replacing
                         // the player's name with the player's UUID
@@ -213,7 +214,7 @@ public class DatabaseDataStore extends DataStore {
 
         ArrayList<Claim> claimsToRemove = new ArrayList<Claim>();
         ArrayList<Claim> subdivisionsToLoad = new ArrayList<Claim>();
-        List<World> validWorlds = (List<World>) GriefPrevention.instance.game.getServer().getWorlds();
+        List<World> validWorlds = (List<World>) Sponge.getGame().getServer().getWorlds();
 
         while (results.next()) {
             try {
@@ -249,7 +250,7 @@ public class DatabaseDataStore extends DataStore {
                     owner = Optional.empty(); // administrative land claim or subdivision
                 } else if (this.getSchemaVersion() < 1) {
                     try {
-                        owner = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(ownerName);
+                        owner = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(ownerName);
                     } catch (Exception ex) {
                         GriefPrevention.AddLogEntry("This owner name did not convert to a UUID: " + ownerName + ".");
                         GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());

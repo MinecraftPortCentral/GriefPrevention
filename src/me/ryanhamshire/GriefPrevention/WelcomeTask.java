@@ -25,6 +25,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import net.minecraft.entity.player.EntityPlayer;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.DisplayNameData;
 import org.spongepowered.api.data.manipulator.mutable.item.AuthorData;
@@ -43,6 +44,7 @@ public class WelcomeTask implements Runnable {
         this.player = player;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void run() {
         // abort if player has logged out since this task was scheduled
@@ -55,7 +57,7 @@ public class WelcomeTask implements Runnable {
 
         // give the player a reference book for later
         if (GriefPrevention.instance.config_claims_supplyPlayerManual) {
-            ItemStack.Builder factory = GriefPrevention.instance.game.getRegistry().createBuilder(ItemStack.Builder.class);
+            ItemStack.Builder factory = Sponge.getGame().getRegistry().createBuilder(ItemStack.Builder.class);
             DataStore datastore = GriefPrevention.instance.dataStore;
             final ItemStack itemStack = factory.itemType(ItemTypes.WRITTEN_BOOK).quantity(1).build();
 

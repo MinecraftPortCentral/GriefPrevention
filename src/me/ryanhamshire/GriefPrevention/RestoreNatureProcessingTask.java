@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -62,13 +63,11 @@ class RestoreNatureProcessingTask implements Runnable {
     private boolean aggressiveMode;
 
     // two lists of materials
-    private ArrayList<BlockType> notAllowedToHang; // natural blocks which don't
-                                                   // naturally hang in their
-                                                   // air
-    private ArrayList<BlockType> playerBlocks; // a "complete" list of
-                                               // player-placed blocks. MUST BE
-                                               // MAINTAINED as patches
-                                               // introduce more
+    // natural blocks which don't naturally hang in their air
+    private ArrayList<BlockType> notAllowedToHang;
+
+    // a "complete" list of player-placed blocks. MUST BE MAINTAINED as patches introduce more
+    private ArrayList<BlockType> playerBlocks;
 
     public RestoreNatureProcessingTask(BlockSnapshot[][][] snapshots, int miny, DimensionType environment, BiomeType biome,
             Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, int seaLevel, boolean aggressiveMode, boolean creativeMode,
@@ -100,12 +99,9 @@ class RestoreNatureProcessingTask implements Runnable {
         this.playerBlocks = new ArrayList<BlockType>();
         this.playerBlocks.addAll(RestoreNatureProcessingTask.getPlayerBlocks(this.environment, this.biome));
 
-        // in aggressive or creative world mode, also treat these blocks as user
-        // placed, to be removed
-        // this is helpful in the few cases where griefers intentionally use
-        // natural blocks to grief,
-        // like a single-block tower of iron ore or a giant penis constructed
-        // with melons
+        // in aggressive or creative world mode, also treat these blocks as user placed, to be removed 
+        // this is helpful in the few cases where griefers intentionally use natural blocks to grief, 
+        // like a single-block tower of iron ore or a giant penis constructed with melons
         if (this.aggressiveMode || this.creativeMode) {
             this.playerBlocks.add(BlockTypes.IRON_ORE);
             this.playerBlocks.add(BlockTypes.GOLD_ORE);
@@ -167,7 +163,7 @@ class RestoreNatureProcessingTask implements Runnable {
         // schedule main thread task to apply the result to the world
         RestoreNatureExecutionTask task =
                 new RestoreNatureExecutionTask(this.snapshots, this.miny, this.lesserBoundaryCorner, this.greaterBoundaryCorner, this.player);
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().execute(task).submit(GriefPrevention.instance);
+        Sponge.getGame().getScheduler().createTaskBuilder().execute(task).submit(GriefPrevention.instance);
     }
 
     private void removePlayerLeaves() {

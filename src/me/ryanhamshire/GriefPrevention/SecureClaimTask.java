@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.Collection;
@@ -46,7 +47,7 @@ class SecureClaimTask implements Runnable {
             claim.doorsOpen = false;
 
             // eject bad guys
-            Collection<Player> onlinePlayers = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
+            Collection<Player> onlinePlayers = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
             for (Player player : onlinePlayers) {
                 if (claim.contains(player.getLocation(), false, false) && claim.allowAccess(player) != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeDoorsLockedEjection);

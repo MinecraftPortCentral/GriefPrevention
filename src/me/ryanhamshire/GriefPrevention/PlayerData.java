@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
@@ -94,16 +95,20 @@ public class PlayerData {
     boolean wasKicked = false;
 
     // spam
-    private Date lastLogin = null; // when the player last logged into the
-                                   // server
-    public String lastMessage = ""; // the player's last chat message, or slash
-                                    // command complete with parameters
-    public Date lastMessageTimestamp = new Date(); // last time the player sent
-                                                   // a chat message or used a
-                                                   // monitored slash command
-    public int spamCount = 0; // number of consecutive "spams"
-    public boolean spamWarned = false; // whether the player recently received a
-                                       // warning
+    // when the player last logged into the server
+    private Date lastLogin = null;
+
+    // the player's last chat message, or slash command complete with parameters
+    public String lastMessage = "";
+
+    // last time the player sent a chat message or used a monitored slash command
+    public Date lastMessageTimestamp = new Date();
+
+    // number of consecutive "spams"
+    public int spamCount = 0;
+
+    // whether the player recently received a warning
+    public boolean spamWarned = false;
 
     // visualization
     public Visualization currentVisualization = null;
@@ -147,14 +152,11 @@ public class PlayerData {
     // timestamp for last "you're building outside your land claims" message
     Long buildWarningTimestamp = null;
 
-    // spot where a player can't talk, used to mute new players until they've
-    // moved a little
-    // this is an anti-bot strategy.
+    // spot where a player can't talk, used to mute new players until they've moved a little this is an anti-bot strategy.
     Location<World> noChatLocation = null;
 
     // ignore list
-    // true means invisible (admin-forced ignore), false means player-created
-    // ignore
+    // true means invisible (admin-forced ignore), false means player-created ignore
     public ConcurrentHashMap<UUID, Boolean> ignoredPlayers = new ConcurrentHashMap<UUID, Boolean>();
     public boolean ignoreListChanged = false;
 
@@ -163,15 +165,15 @@ public class PlayerData {
 
     // whether or not this player is "in" pvp combat
     public boolean inPvpCombat() {
-        if (this.lastPvpTimestamp == 0)
+        if (this.lastPvpTimestamp == 0) {
             return false;
+        }
 
         long now = Calendar.getInstance().getTimeInMillis();
 
         long elapsed = now - this.lastPvpTimestamp;
 
-        if (elapsed > GriefPrevention.instance.config_pvp_combatTimeoutSeconds * 1000) // X
-                                                                                       // seconds
+        if (elapsed > GriefPrevention.instance.config_pvp_combatTimeoutSeconds * 1000) // X seconds
         {
             this.lastPvpTimestamp = 0;
             return false;
@@ -197,8 +199,9 @@ public class PlayerData {
 
     // don't load data from secondary storage until it's needed
     public int getAccruedClaimBlocks() {
-        if (this.accruedClaimBlocks == null)
+        if (this.accruedClaimBlocks == null) {
             this.loadDataFromSecondaryStorage();
+        }
 
         // if player is over accrued limit, accrued limit was probably reduced
         // in config file AFTER he accrued
@@ -319,7 +322,7 @@ public class PlayerData {
             int totalBlocks =
                     this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if (totalBlocks < totalClaimsArea) {
-                Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(this.playerID);
+                Optional<User> player = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(this.playerID);
                 if (player.isPresent()) {
                     GriefPrevention.AddLogEntry(player.get().getName() + " has more claimed land than blocks available.  Adding blocks to fix.",
                             CustomLogEntryTypes.Debug, true);

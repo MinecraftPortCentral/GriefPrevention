@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.scheduler.Task;
 
@@ -48,8 +49,7 @@ class SiegeCheckupTask implements Runnable {
         // where is the defender?
         Claim defenderClaim = dataStore.getClaimAt(defender.getLocation(), false, null);
 
-        // if this is a new claim and he has some permission there, extend the
-        // siege to include it
+        // if this is a new claim and he has some permission there, extend the siege to include it
         if (defenderClaim != null) {
             String noAccessReason = defenderClaim.allowAccess(defender);
             if (defenderClaim.canSiege(defender) && noAccessReason == null) {
@@ -58,8 +58,7 @@ class SiegeCheckupTask implements Runnable {
             }
         }
 
-        // determine who's close enough to the siege area to be considered
-        // "still here"
+        // determine who's close enough to the siege area to be considered "still here"
         boolean attackerRemains = this.playerRemains(attacker);
         boolean defenderRemains = this.playerRemains(defender);
 
@@ -78,13 +77,9 @@ class SiegeCheckupTask implements Runnable {
             dataStore.endSiege(this.siegeData, defender.getName(), attacker.getName(), false);
         }
 
-        // if they both left, but are still close together, the battle continues
-        // (check again later)
+        // if they both left, but are still close together, the battle continues (check again later) 50-block radius for chasing
         else if (attacker.getWorld().equals(defender.getWorld())
-                && attacker.getLocation().getPosition().distanceSquared(defender.getLocation().getPosition()) < 2500) // 50-block
-        // radius
-        // for
-        // chasing
+                && attacker.getLocation().getPosition().distanceSquared(defender.getLocation().getPosition()) < 2500)
         {
             this.scheduleAnotherCheck();
         }
@@ -112,7 +107,7 @@ class SiegeCheckupTask implements Runnable {
     // schedules another checkup later
     private void scheduleAnotherCheck() {
         Task task =
-                GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(this).submit(GriefPrevention.instance);
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(this).submit(GriefPrevention.instance);
         this.siegeData.checkupTaskID = task.getUniqueId();
     }
 }

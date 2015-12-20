@@ -39,14 +39,13 @@ import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.item.ItemStack;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.apache.commons.lang3.StringUtils;
-import org.spongepowered.api.Game;
-import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -60,7 +59,6 @@ import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
-import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.item.ItemType;
@@ -101,10 +99,6 @@ public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
     public static GriefPrevention instance;
-
-    @Inject public Game game;
-    @Inject public EventManager eventManager;
-    @Inject public GameRegistry gameRegistry;
     @Inject public PluginContainer pluginContainer;
 
     // for logging to the console and log file
@@ -122,9 +116,6 @@ public class GriefPrevention {
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode rootNode = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
             .setHeader(HEADER));
-
-    // this tracks item stacks expected to drop which will need protection
-    ArrayList<PendingItemProtection> pendingItemWatchList = new ArrayList<PendingItemProtection>();
 
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
@@ -465,18 +456,18 @@ public class GriefPrevention {
         // minute event to give claim blocks to online players
         if (this.config_claims_blocksAccruedPerHour > 0) {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(10, TimeUnit.MINUTES).execute(task)
+            Sponge.getGame().getScheduler().createTaskBuilder().interval(10, TimeUnit.MINUTES).execute(task)
                     .submit(GriefPrevention.instance);
         }
 
         // start the recurring cleanup event for entities in creative worlds
         EntityCleanupTask task = new EntityCleanupTask(0);
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(2, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
+        Sponge.getGame().getScheduler().createTaskBuilder().delay(2, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
 
         // start recurring cleanup scan for unused claims belonging to inactive
         // players
         CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task2).submit(GriefPrevention.instance);
+        Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task2).submit(GriefPrevention.instance);
 
         // register for events
         registerCommands();
@@ -521,14 +512,14 @@ public class GriefPrevention {
         // namesThread.start();
 
         // load ignore lists for any already-online players
-        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
+        Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
 
-        game.getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
-        game.getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
-        game.getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
+        Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
+        Sponge.getGame().getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
+        Sponge.getGame().getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
         AddLogEntry("Boot finished.");
     }
 
@@ -555,7 +546,7 @@ public class GriefPrevention {
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
                     .setHeader(HEADER));
 
-            Collection<World> worlds = game.getServer().getWorlds();
+            Collection<World> worlds = Sponge.getGame().getServer().getWorlds();
 
             // decide claim mode for each world
             this.config_claims_worldModes = new ConcurrentHashMap<World, ClaimsMode>();
@@ -583,7 +574,7 @@ public class GriefPrevention {
                 }
 
                 // decide a default based on server type and world type
-                else if (GriefPrevention.instance.game.getServer().getDefaultWorld().get().getGameMode() == GameModes.CREATIVE) {
+                else if (Sponge.getGame().getServer().getDefaultWorld().get().getGameMode() == GameModes.CREATIVE) {
                     this.config_claims_worldModes.put(world, ClaimsMode.Creative);
                 } else if (world.getDimension().getType().equals(DimensionTypes.OVERWORLD)) {
                     this.config_claims_worldModes.put(world, ClaimsMode.Survival);
@@ -795,7 +786,7 @@ public class GriefPrevention {
             this.rootNode.getNode("GriefPrevention", "Claims", "InvestigationTool").setValue(investigationToolMaterialName);
 
             // validate investigation tool
-            Optional<ItemType> investigationTool = game.getRegistry().getType(ItemType.class, investigationToolMaterialName);
+            Optional<ItemType> investigationTool = Sponge.getGame().getRegistry().getType(ItemType.class, investigationToolMaterialName);
             if (!investigationTool.isPresent()) {
                 GriefPrevention.AddLogEntry(
                         "ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.hocon.");
@@ -813,7 +804,7 @@ public class GriefPrevention {
 
             // validate modification tool
             this.config_claims_modificationTool = null;
-            Optional<ItemType> modificationTool = game.getRegistry().getType(ItemType.class, modificationToolMaterialName);
+            Optional<ItemType> modificationTool = Sponge.getGame().getRegistry().getType(ItemType.class, modificationToolMaterialName);
             if (!modificationTool.isPresent()) {
                 GriefPrevention.AddLogEntry("ERROR: Material " + modificationToolMaterialName
                         + " not found.  Defaulting to the golden shovel.  Please update your config.hocon.");
@@ -837,9 +828,9 @@ public class GriefPrevention {
             this.config_siege_enabledWorlds = new ArrayList<World>();
             for (int i = 0; i < siegeEnabledWorldNames.size(); i++) {
                 String worldName = siegeEnabledWorldNames.get(i);
-                Optional<World> world = this.game.getServer().getWorld(UUID.fromString(worldName));
+                Optional<World> world = Sponge.getGame().getServer().getWorld(worldName);
                 if (!world.isPresent()) {
-                    AddLogEntry("Error: Siege Configuration: There's no world uuid \"" + worldName + "\".  Please update your config.hocon.");
+                    AddLogEntry("Error: Siege Configuration: There's no world \"" + worldName + "\".  Please update your config.hocon.");
                 } else {
                     this.config_siege_enabledWorlds.add(world.get());
                 }
@@ -879,7 +870,7 @@ public class GriefPrevention {
             this.config_siege_blocks = new ArrayList<BlockType>();
             for (int i = 0; i < breakableBlocksList.size(); i++) {
                 String blockName = breakableBlocksList.get(i);
-                Optional<BlockType> material = game.getRegistry().getType(BlockType.class, blockName);
+                Optional<BlockType> material = Sponge.getGame().getRegistry().getType(BlockType.class, blockName);
                 if (!material.isPresent()) {
                     GriefPrevention.AddLogEntry("Siege Configuration: Material not found: " + blockName + ".");
                 } else {
@@ -934,8 +925,7 @@ public class GriefPrevention {
                 AddLogEntry("Unable to write to the configuration file at \"" + DataStore.configFilePath + "\"");
             }
 
-            // try to parse the list of commands requiring access trust in land
-            // claims
+            // try to parse the list of commands requiring access trust in land claims
             this.config_claims_commandsRequiringAccessTrust = new ArrayList<String>();
             String[] commands = accessTrustSlashCommands.split(";");
             for (int i = 0; i < commands.length; i++) {
@@ -944,25 +934,21 @@ public class GriefPrevention {
                 }
             }
 
-            // try to parse the list of commands which should be monitored for
-            // spam
+            // try to parse the list of commands which should be monitored for spam
             this.config_spam_monitorSlashCommands = new ArrayList<String>();
             commands = slashCommandsToMonitor.split(";");
             for (int i = 0; i < commands.length; i++) {
                 this.config_spam_monitorSlashCommands.add(commands[i].trim());
             }
 
-            // try to parse the list of commands which should be included in
-            // eavesdropping
+            // try to parse the list of commands which should be included in eavesdropping
             this.config_eavesdrop_whisperCommands = new ArrayList<String>();
             commands = whisperCommandsToMonitor.split(";");
             for (int i = 0; i < commands.length; i++) {
                 this.config_eavesdrop_whisperCommands.add(commands[i].trim());
             }
 
-            // try to parse the list of commands which should be banned during
-            // pvp
-            // combat
+            // try to parse the list of commands which should be banned during pvp combat
             this.config_pvp_blockedCommands = new ArrayList<String>();
             commands = bannedPvPCommandsList.split(";");
             for (int i = 0; i < commands.length; i++) {
@@ -998,7 +984,7 @@ public class GriefPrevention {
     // handles slash commands
     @SuppressWarnings("unused")
     private void registerCommands() {
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes a claim"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1006,7 +992,7 @@ public class GriefPrevention {
                     return this.abandonClaimHandler(player, false);
                 })
                 .build(), "abandonclaim", "unclaim", "declaim", "removeclaim", "disclaim");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes a claim and all its subdivisions"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1014,7 +1000,7 @@ public class GriefPrevention {
                     return this.abandonClaimHandler(player, true);
                 })
                 .build(), "abandontoplevelclaim");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Toggles ignore claims mode"))
                 .permission("griefprevention.ignoreclaims")
                 .executor((src, args) -> {
@@ -1032,7 +1018,7 @@ public class GriefPrevention {
 
                     return CommandResult.success();
                 }).build(), "ignoreclaims", "ic");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes ALL your claims"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1066,7 +1052,7 @@ public class GriefPrevention {
                 })
         .build(), "abandonallclaims");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to restoration mode"))
                 .permission("griefprevention.restorenature")
                 .executor(((src, args) -> {
@@ -1078,7 +1064,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 }))
                 .build(), "restorenature", "rn");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to aggressive restoration mode"))
                 .permission("griefprevention.restorenatureaggressive")
                 .executor(((src, args) -> {
@@ -1091,7 +1077,7 @@ public class GriefPrevention {
                 }))
                 .build(), "restorenatureaggressive", "rna");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to fill mode"))
                 .permission("griefprotection.restorenaturefill")
                 .arguments(optional(integer(Texts.of("radius")), 2))
@@ -1110,7 +1096,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "restorenaturefill", "rnf");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player full access to your claim(s)"))
                 .extendedDescription(Texts.of("Grants a player full access to your claim(s).\n"
                         + "See also /untrust, /containertrust, /accesstrust, and /permissiontrust."))
@@ -1125,7 +1111,7 @@ public class GriefPrevention {
                 })
                 .build(), "trust", "tr");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Converts an administrative claim to a private claim"))
                 .arguments(optional(player(Texts.of("target"))))
                 .permission("griefprevention.transferclaim")
@@ -1172,7 +1158,7 @@ public class GriefPrevention {
                 })
         .build(), "transferclaim", "giveclaim");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Lists permissions for the claim you're standing in"))
                 .permission("griefprevention.claimls")
                 .executor((src, args) -> {
@@ -1245,7 +1231,7 @@ public class GriefPrevention {
                 })
                 .build(), "trustlist");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Revokes a player's access to your claim(s)"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("subject")))
@@ -1371,7 +1357,7 @@ public class GriefPrevention {
                 })
                 .build(), "untrust", "ut");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player entry to your claim(s) and use of your bed"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
@@ -1381,7 +1367,7 @@ public class GriefPrevention {
                 })
                 .build(), "accesstrust", "at");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player access to your claim's containers, crops, animals, bed, buttons, and levers"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
@@ -1391,7 +1377,7 @@ public class GriefPrevention {
                 })
                 .build(), "containertrust", "ct");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Grants a player permission to grant their level of permission to others"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
@@ -1401,7 +1387,7 @@ public class GriefPrevention {
                 })
                 .build(), "permissiontrust", "pt");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission("griefprevention.buysellclaimblocks")
@@ -1465,7 +1451,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "buyclaimblocks", "buyclaim");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Sell your claim blocks for server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission("griefprevention.buysellclaimblocks")
@@ -1528,7 +1514,7 @@ public class GriefPrevention {
                 })
                 .build(), "sellclaimblocks", "sellclaim");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to administrative claims mode"))
                 .permission("griefprevention.adminclaims")
                 .executor((src, args) -> {
@@ -1539,7 +1525,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "adminclaims", "ac");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool back to basic claims mode"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1552,7 +1538,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "basicclaims", "bc");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1566,7 +1552,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "subdivideclaims", "sc", "subdivideclaim");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission("griefprevention.deleteclaims")
                 .executor((src, args) -> {
@@ -1613,7 +1599,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "deleteclaim", "dc");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Toggles whether explosives may be used in a specific land claim"))
                 .permission("griefprevention.claims")
                 .executor((src, args) -> {
@@ -1646,7 +1632,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "claimexplosions");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Delete all of another player's claims"))
                 .permission("griefprevention.deleteclaims")
                 .arguments(player(Texts.of("player"))) // TODO: Use user commandelement when added
@@ -1672,7 +1658,7 @@ public class GriefPrevention {
                 })
                 .build(), "deleteallclaims");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Gives a player a manual about claiming land"))
                 .permission("griefprevention.claimbook")
                 .arguments(playerOrSource(Texts.of("player")))
@@ -1686,7 +1672,7 @@ public class GriefPrevention {
                 })
                 .build(), "claimbook");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("List information about a player's claim blocks and claims"))
                 .arguments(onlyOne(playerOrSource(Texts.of("player"))))
                 .executor((src, args) -> {
@@ -1726,7 +1712,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "claimslist", "claimlist", "listclaims");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("List all administrative claims"))
                 .permission("griefprevention.adminclaims")
                 .executor((src, args) -> {
@@ -1750,7 +1736,7 @@ public class GriefPrevention {
                 })
                 .build(), "adminclaimslist");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Allows other players to pick up the items you dropped when you died"))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
@@ -1763,7 +1749,7 @@ public class GriefPrevention {
                 })
                 .build(), "unlockdrops");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Deletes all administrative claims"))
                 .permission("griefprevention.adminclaims")
                 .executor((src, args) -> {
@@ -1784,7 +1770,7 @@ public class GriefPrevention {
                 })
                 .build(), "deletealladminclaims");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Adds or subtracts bonus claim blocks for a player"))
                 .permission("griefprevention.adjustclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
@@ -1814,7 +1800,7 @@ public class GriefPrevention {
                     User targetPlayer;
                     try {
                         UUID playerID = UUID.fromString(target);
-                        targetPlayer = game.getServiceManager().provideUnchecked(UserStorageService.class).get(playerID).orElse(null);
+                        targetPlayer = Sponge.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(playerID).orElse(null);
 
                     } catch (IllegalArgumentException e) {
                         targetPlayer = this.resolvePlayerByName(target).orElse(null);
@@ -1841,7 +1827,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "adjustbonusclaimblocks", "acb");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Updates a player's accrued claim block total"))
                 .permission("griefprevention.adjustclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
@@ -1871,7 +1857,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "setaccruedclaimblocks", "scb");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Ejects you to nearby unclaimed land. Has a substantial cooldown period"))
                 .executor((src, args) -> {
                     Player player = checkPlayer(src);
@@ -1908,7 +1894,7 @@ public class GriefPrevention {
 
                     // create a task to rescue this player in a little while
                     PlayerRescueTask task = new PlayerRescueTask(player, player.getLocation());
-                    game.getScheduler().createTaskBuilder()
+                    Sponge.getGame().getScheduler().createTaskBuilder()
                             .delay(1, TimeUnit.SECONDS)
                             .execute(task)
                             .submit(this);
@@ -1917,7 +1903,7 @@ public class GriefPrevention {
                 })
                 .build(), "trapped");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Initiates a siege versus another player"))
                 .arguments(optional(onlyOne(player(Texts.of("playerName")))))
                 .executor((src, args) -> {
@@ -1943,7 +1929,7 @@ public class GriefPrevention {
                     // if a player name was specified, use that
                     Optional<Player> defenderOpt = args.<Player>getOne("playerName");
                     if (!defenderOpt.isPresent() && attackerData.lastPvpPlayer.length() > 0) {
-                        defenderOpt = game.getServer().getPlayer(attackerData.lastPvpPlayer);
+                        defenderOpt = Sponge.getGame().getServer().getPlayer(attackerData.lastPvpPlayer);
                     }
                     Player defender = defenderOpt.orElseThrow(() -> new CommandException(Texts.of("No player was matched")));
 
@@ -1967,7 +1953,7 @@ public class GriefPrevention {
 
                     // defender must have some level of permission there to be protected
                     if (defenderClaim == null || defenderClaim.allowAccess(defender) != null) {
-                        throw new CommandException(getMessage(Messages.NotSiegableThere));
+                        throw new CommandException(getMessage(Messages.NotSiegableThere, defender.getName()));
                     }
 
                     // attacker must be close to the claim he wants to siege
@@ -2001,7 +1987,7 @@ public class GriefPrevention {
                 })
                 .build(), "siege");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Toggles whether a player's messages will only reach other soft-muted players"))
                 .permission("griefprevention.softmute")
                 .arguments(onlyOne(player(Texts.of("player"))))
@@ -2023,7 +2009,7 @@ public class GriefPrevention {
                 })
                 .build(), "softmute");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Reloads Grief Prevention's configuration settings"))
                 .permission("griefprevention.reload")
                 .executor((src, args) -> {
@@ -2034,7 +2020,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "gpreload");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Allows a player to give away a pet they tamed"))
                 .permission("griefprevention.givepet")
                 .arguments(firstParsing(literal(Texts.of("player"), "cancel"), player(Texts.of("player"))))
@@ -2062,7 +2048,7 @@ public class GriefPrevention {
                     return CommandResult.success();
                 })
                 .build(), "givepet");
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Allows an administrator to get technical information about blocks in the world and items in hand"))
                 .permission("griefprevention.gpblockinfo")
                 .executor((src, args) -> {
@@ -2081,7 +2067,7 @@ public class GriefPrevention {
                 })
                 .build(), "gpblockinfo");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Ignores another player's chat messages"))
                 .permission("griefprevention.ignore")
                 .arguments(onlyOne(player(Texts.of("player"))))
@@ -2102,7 +2088,7 @@ public class GriefPrevention {
                 })
                 .build(), "ignoreplayer", "ignore");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Unignores another player's chat messages"))
                 .permission("griefprevention.ignore")
                 .arguments(onlyOne(player(Texts.of("player"))))
@@ -2127,7 +2113,7 @@ public class GriefPrevention {
                 })
                 .build(), "unignoreplayer", "unignore");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Lists the players you're ignoring in chat"))
                 .permission("griefprevention.ignore")
                 .executor((src, args) -> {
@@ -2158,7 +2144,7 @@ public class GriefPrevention {
                 })
                 .build(), "ignoredplayerlist", "ignores", "ignored", "ignoredlist", "listignores", "listignored", "ignoring");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Forces two players to ignore each other in chat"))
                 .permission("griefprevention.separate")
                 .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
@@ -2176,7 +2162,7 @@ public class GriefPrevention {
                 })
                 .build(), "separate");
 
-        game.getCommandManager().register(this, CommandSpec.builder()
+        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
                 .description(Texts.of("Reverses /separate"))
                 .permission("griefprevention.separate")
                 .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
@@ -2419,11 +2405,11 @@ public class GriefPrevention {
 
     public Optional<User> resolvePlayerByName(String name) {
         // try online players first
-        Optional<Player> targetPlayer = GriefPrevention.instance.game.getServer().getPlayer(name);
+        Optional<Player> targetPlayer = Sponge.getGame().getServer().getPlayer(name);
         if (targetPlayer.isPresent())
             return Optional.of((User) targetPlayer.get());
 
-        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(name);
+        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(name);
         if (user.isPresent())
             return user;
 
@@ -2437,7 +2423,7 @@ public class GriefPrevention {
             return "somebody";
 
         // check the cache
-        Optional<User> player = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(playerID);
+        Optional<User> player = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(playerID);
         if (player.isPresent() || player.get().isOnline()) {
             return player.get().getName();
         } else {
@@ -2447,8 +2433,7 @@ public class GriefPrevention {
 
     // string overload for above helper
     static String lookupPlayerName(String uuid) {
-        Optional<User> user = GriefPrevention.instance.game.getServiceManager().provide(UserStorageService.class).get().get(UUID.fromString(uuid));
-
+        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(UUID.fromString(uuid));
         if (!user.isPresent()) {
             GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
             return "someone";
@@ -2459,7 +2444,7 @@ public class GriefPrevention {
 
     public void onDisable() {
         // save data for any online players
-        Collection<Player> players = (Collection<Player>) GriefPrevention.instance.game.getServer().getOnlinePlayers();
+        Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
             UUID playerID = player.getUniqueId();
             PlayerData playerData = this.dataStore.getPlayerData(playerID);
@@ -2477,20 +2462,24 @@ public class GriefPrevention {
     // called when a player spawns, applies protection for that player if necessary
     public void checkPvpProtectionNeeded(Player player) {
         // if anti spawn camping feature is not enabled, do nothing
-        if (!this.config_pvp_protectFreshSpawns)
+        if (!this.config_pvp_protectFreshSpawns) {
             return;
+        }
 
         // if pvp is disabled, do nothing
-        if (!pvpRulesApply(player.getWorld()))
+        if (!pvpRulesApply(player.getWorld())) {
             return;
+        }
 
         // if player is in creative mode, do nothing
-        if (player.get(Keys.GAME_MODE).get() == GameModes.CREATIVE)
+        if (player.get(Keys.GAME_MODE).get() == GameModes.CREATIVE) {
             return;
+        }
 
         // if the player has the damage any player permission enabled, do nothing
-        if (player.hasPermission("griefprevention.nopvpimmunity"))
+        if (player.hasPermission("griefprevention.nopvpimmunity")) {
             return;
+        }
 
         // check inventory for well, anything
         if (GriefPrevention.isInventoryEmpty(player)) {
@@ -2504,13 +2493,23 @@ public class GriefPrevention {
             // start a task to re-check this player's inventory every minute
             // until his immunity is gone
             PvPImmunityValidationTask task = new PvPImmunityValidationTask(player);
-            this.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(this);
+            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(this);
         }
     }
 
     static boolean isInventoryEmpty(Player player) {
         InventoryPlayer inventory = ((EntityPlayerMP) player).inventory;
-        return inventory.mainInventory.length == 0 && inventory.armorInventory.length == 0;
+        for (ItemStack stack : inventory.mainInventory) {
+            if (stack != null) {
+                return false;
+            }
+        }
+        for (ItemStack stack : inventory.armorInventory) {
+            if (stack != null) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // checks whether players siege in a world
@@ -2582,7 +2581,7 @@ public class GriefPrevention {
     static void sendMessage(CommandSource player, Text message, long delayInTicks) {
         SendPlayerMessageTask task = new SendPlayerMessageTask((Player) player, message);
         if (delayInTicks > 0) {
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delayTicks(delayInTicks).execute(task).submit(GriefPrevention.instance);
+            Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(delayInTicks).execute(task).submit(GriefPrevention.instance);
         } else {
             task.run();
         }
@@ -2718,7 +2717,7 @@ public class GriefPrevention {
         RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getDimension().getType(),
                 lesserBoundaryCorner.getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()),
                 aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
+        Sponge.getGame().getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
     }
 
     private void parseBlockIdListFromConfig(List<String> stringsToParse, List<ItemInfo> blockTypes) {
@@ -2745,7 +2744,7 @@ public class GriefPrevention {
                 continue;
             }
 
-            Optional<BlockType> blockType = game.getRegistry().getType(BlockType.class, blockInfo);
+            Optional<BlockType> blockType = Sponge.getGame().getRegistry().getType(BlockType.class, blockInfo);
 
             // null value returned indicates an error parsing the string from
             // the config file

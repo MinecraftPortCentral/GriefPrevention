@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
@@ -52,7 +53,7 @@ class EntityCleanupTask implements Runnable {
     @Override
     public void run() {
         ArrayList<World> worlds = new ArrayList<World>();
-        for (World world : GriefPrevention.instance.game.getServer().getWorlds()) {
+        for (World world : Sponge.getGame().getServer().getWorlds()) {
             if (GriefPrevention.instance.config_claims_worldModes.get(world) == ClaimsMode.Creative) {
                 worlds.add(world);
             }
@@ -136,6 +137,6 @@ class EntityCleanupTask implements Runnable {
         }
 
         EntityCleanupTask task = new EntityCleanupTask(nextRunPercentageStart);
-        GriefPrevention.instance.game.getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
+        Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
     }
 }

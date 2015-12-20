@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -54,7 +55,7 @@ public class Visualization {
         // if he's online, create a task to send him the visualization
         if (player.isOnline() && visualization.elements.size() > 0
                 && visualization.elements.get(0).getOriginal().getLocation().get().getExtent().equals(player.getWorld())) {
-            GriefPrevention.instance.game.getScheduler().createTaskBuilder().delayTicks(1L)
+            Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(1L)
                     .execute(new VisualizationApplicationTask(player, playerData, visualization)).submit(GriefPrevention.instance);
         }
     }
@@ -186,7 +187,7 @@ public class Visualization {
         final int STEP = 10;
 
         // top line
-        BlockSnapshot.Builder snapshotBuilder = GriefPrevention.instance.gameRegistry.createBuilder(BlockSnapshot.Builder.class);
+        BlockSnapshot.Builder snapshotBuilder = Sponge.getGame().getRegistry().createBuilder(BlockSnapshot.Builder.class);
         BlockSnapshot topVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(topVisualBlock1.getLocation().get().createSnapshot(), topVisualBlock1));
         BlockSnapshot topVisualBlock2 = snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build();
