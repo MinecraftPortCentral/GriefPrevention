@@ -28,11 +28,11 @@ import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 
 //just a few constants for text color codes
-class TextMode {
+public class TextMode {
 
-    final static TextColor Info = TextColors.AQUA;
-    final static TextColor Instr = TextColors.YELLOW;
-    final static TextColor Warn = TextColors.GOLD;
-    final static TextColor Err = TextColors.RED;
-    final static TextColor Success = TextColors.GREEN;
+    public final static TextColor Info = TextColors.AQUA;
+    public final static TextColor Instr = TextColors.YELLOW;
+    public final static TextColor Warn = TextColors.GOLD;
+    public final static TextColor Err = TextColors.RED;
+    public final static TextColor Success = TextColors.GREEN;
 }

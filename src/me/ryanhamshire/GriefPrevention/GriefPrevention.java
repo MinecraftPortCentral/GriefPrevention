@@ -37,6 +37,7 @@ import static org.spongepowered.api.command.args.GenericArguments.string;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
+import me.ryanhamshire.GriefPrevention.command.CommandGriefPrevention;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
@@ -520,6 +521,7 @@ public class GriefPrevention {
         Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
         Sponge.getGame().getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
         Sponge.getGame().getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
+        Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand(), "griefprevention", "gp");
         AddLogEntry("Boot finished.");
     }
 
