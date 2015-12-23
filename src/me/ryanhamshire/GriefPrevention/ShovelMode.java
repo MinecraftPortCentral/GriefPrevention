@@ -25,7 +25,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 //enumeration for golden shovel modes
-enum ShovelMode {
+public enum ShovelMode {
     Basic,
     Admin,
     Subdivide,

@@ -24,20 +24,56 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import static org.spongepowered.api.command.CommandMessageFormatting.SPACE_TEXT;
-import static org.spongepowered.api.command.args.GenericArguments.firstParsing;
 import static org.spongepowered.api.command.args.GenericArguments.integer;
-import static org.spongepowered.api.command.args.GenericArguments.literal;
 import static org.spongepowered.api.command.args.GenericArguments.onlyOne;
 import static org.spongepowered.api.command.args.GenericArguments.optional;
 import static org.spongepowered.api.command.args.GenericArguments.player;
 import static org.spongepowered.api.command.args.GenericArguments.playerOrSource;
 import static org.spongepowered.api.command.args.GenericArguments.string;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
-import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
+import me.ryanhamshire.GriefPrevention.command.CommandAbandonAllClaims;
+import me.ryanhamshire.GriefPrevention.command.CommandAbandonClaim;
+import me.ryanhamshire.GriefPrevention.command.CommandAccessTrust;
+import me.ryanhamshire.GriefPrevention.command.CommandAdjustBonusClaimBlocks;
+import me.ryanhamshire.GriefPrevention.command.CommandAdminClaims;
+import me.ryanhamshire.GriefPrevention.command.CommandAdminClaimsList;
+import me.ryanhamshire.GriefPrevention.command.CommandBasicClaims;
+import me.ryanhamshire.GriefPrevention.command.CommandBuyClaimBlocks;
+import me.ryanhamshire.GriefPrevention.command.CommandClaimBook;
+import me.ryanhamshire.GriefPrevention.command.CommandClaimExplosions;
+import me.ryanhamshire.GriefPrevention.command.CommandClaimsList;
+import me.ryanhamshire.GriefPrevention.command.CommandContainerTrust;
+import me.ryanhamshire.GriefPrevention.command.CommandDeleteAllAdminClaims;
+import me.ryanhamshire.GriefPrevention.command.CommandDeleteAllClaims;
+import me.ryanhamshire.GriefPrevention.command.CommandDeleteClaim;
+import me.ryanhamshire.GriefPrevention.command.CommandGivePet;
+import me.ryanhamshire.GriefPrevention.command.CommandGpBlockInfo;
+import me.ryanhamshire.GriefPrevention.command.CommandGpReload;
 import me.ryanhamshire.GriefPrevention.command.CommandGriefPrevention;
+import me.ryanhamshire.GriefPrevention.command.CommandIgnoreClaim;
+import me.ryanhamshire.GriefPrevention.command.CommandIgnorePlayer;
+import me.ryanhamshire.GriefPrevention.command.CommandIgnoredPlayerList;
+import me.ryanhamshire.GriefPrevention.command.CommandPermissionTrust;
+import me.ryanhamshire.GriefPrevention.command.CommandRestoreNature;
+import me.ryanhamshire.GriefPrevention.command.CommandRestoreNatureAggressive;
+import me.ryanhamshire.GriefPrevention.command.CommandRestoreNatureFill;
+import me.ryanhamshire.GriefPrevention.command.CommandSellClaimBlocks;
+import me.ryanhamshire.GriefPrevention.command.CommandSeparate;
+import me.ryanhamshire.GriefPrevention.command.CommandSetAccruedClaimBlocks;
+import me.ryanhamshire.GriefPrevention.command.CommandSiege;
+import me.ryanhamshire.GriefPrevention.command.CommandSoftMute;
+import me.ryanhamshire.GriefPrevention.command.CommandSubdivideClaims;
+import me.ryanhamshire.GriefPrevention.command.CommandTransferClaim;
+import me.ryanhamshire.GriefPrevention.command.CommandTrapped;
+import me.ryanhamshire.GriefPrevention.command.CommandTrust;
+import me.ryanhamshire.GriefPrevention.command.CommandTrustList;
+import me.ryanhamshire.GriefPrevention.command.CommandUnignorePlayer;
+import me.ryanhamshire.GriefPrevention.command.CommandUnlockDrops;
+import me.ryanhamshire.GriefPrevention.command.CommandUnseparate;
+import me.ryanhamshire.GriefPrevention.command.CommandUntrust;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
@@ -52,9 +88,9 @@ import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandException;
-import org.spongepowered.api.command.CommandPermissionException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
@@ -68,10 +104,8 @@ import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.TextBuilder;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.format.TextColor;
-import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -82,13 +116,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -372,6 +406,11 @@ public class GriefPrevention {
     // offline, for notication messages
     public static final int NOTIFICATION_SECONDS = 20;
 
+    private static final Map<String, Boolean> FLAG_BOOLEANS = ImmutableMap.<String, Boolean>builder()
+            .put("allow", true)
+            .put("deny", false)
+            .build();
+    
     // adds a server log entry
     public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
         if (customLogType != null && GriefPrevention.instance.customLogger != null) {
@@ -470,9 +509,6 @@ public class GriefPrevention {
         CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
         Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task2).submit(GriefPrevention.instance);
 
-        // register for events
-        registerCommands();
-
         //if economy is enabled
         /*if(this.config_economy_claimBlocksPurchaseCost > 0 || this.config_economy_claimBlocksSellValue > 0) {
             //try to load Vault
@@ -526,7 +562,7 @@ public class GriefPrevention {
     }
 
     @SuppressWarnings("serial")
-    private void loadConfig() {
+    public void loadConfig() {
         try {
             Files.createDirectories(DataStore.configFilePath.getParent());
             if (Files.notExists(DataStore.configFilePath)) {
@@ -975,7 +1011,7 @@ public class GriefPrevention {
         }
     }
 
-    private Player checkPlayer(CommandSource source) throws CommandException {
+    public static Player checkPlayer(CommandSource source) throws CommandException {
         if (source instanceof Player) {
             return ((Player) source);
         } else {
@@ -983,1207 +1019,288 @@ public class GriefPrevention {
         }
     }
 
-    // handles slash commands
-    @SuppressWarnings("unused")
-    private void registerCommands() {
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+    // handles sub commands
+    public HashMap<List<String>, CommandSpec> registerSubCommands() {
+        HashMap<List<String>, CommandSpec> subcommands = new HashMap<List<String>, CommandSpec>();
+
+        subcommands.put(Arrays.asList("abandonclaim", "unclaim", "declaim", "removeclaim", "disclaim"), CommandSpec.builder()
                 .description(Texts.of("Deletes a claim"))
                 .permission("griefprevention.claims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    return this.abandonClaimHandler(player, false);
-                })
-                .build(), "abandonclaim", "unclaim", "declaim", "removeclaim", "disclaim");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandAbandonClaim(false))
+                .build());
+        
+        subcommands.put(Arrays.asList("abandontoplevelclaim"), CommandSpec.builder()
                 .description(Texts.of("Deletes a claim and all its subdivisions"))
                 .permission("griefprevention.claims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    return this.abandonClaimHandler(player, true);
-                })
-                .build(), "abandontoplevelclaim");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandAbandonClaim(true))
+                .build());
+        
+        subcommands.put(Arrays.asList("ignoreclaims", "ic"), CommandSpec.builder()
                 .description(Texts.of("Toggles ignore claims mode"))
                 .permission("griefprevention.ignoreclaims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-
-                    playerData.ignoreClaims = !playerData.ignoreClaims;
-
-                    // toggle ignore claims mode on or off
-                    if (!playerData.ignoreClaims) {
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.RespectingClaims);
-                    } else {
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.IgnoringClaims);
-                    }
-
-                    return CommandResult.success();
-                }).build(), "ignoreclaims", "ic");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandIgnoreClaim())
+                .build());
+        
+        subcommands.put(Arrays.asList("flag"), CommandSpec.builder()
+                .description(Texts.of("Gets/Sets various claim flags in the claim you are standing in"))
+                .permission("griefprevention.commands.flag")
+                .child(CommandSpec.builder()
+                        .arguments(GenericArguments.choices(Texts.of("state"), FLAG_BOOLEANS))
+                        .executor((src, args) -> {
+                            boolean state = args.<Boolean>getOne("state").get();
+                            return CommandResult.success();
+                        })
+                        .build(), "spawn-mobs")
+                .build());
+        
+        subcommands.put(Arrays.asList("abandonallclaims"), CommandSpec.builder()
                 .description(Texts.of("Deletes ALL your claims"))
                 .permission("griefprevention.claims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // count claims
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    int originalClaimCount = playerData.getClaims().size();
+                .executor(new CommandAbandonAllClaims())
+                .build());
 
-                    // check count
-                    if (originalClaimCount == 0) {
-                        throw new CommandException(getMessage(Messages.YouHaveNoClaims));
-                    }
-
-                    // adjust claim blocks
-                    for (Claim claim : playerData.getClaims()) {
-                        playerData.setAccruedClaimBlocks(
-                                playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - this.config_claims_abandonReturnRatio))));
-                    }
-
-                    // delete them
-                    this.dataStore.deleteClaimsForPlayer(player.getUniqueId(), false);
-
-                    // inform the player
-                    int remainingBlocks = playerData.getRemainingClaimBlocks();
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.SuccessfulAbandon, String.valueOf(remainingBlocks));
-
-                    // revert any current visualization
-                    Visualization.Revert(player);
-
-                    return CommandResult.success();
-                })
-        .build(), "abandonallclaims");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("restorenature", "rn"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to restoration mode"))
                 .permission("griefprevention.restorenature")
-                .executor(((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // change shovel mode
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    playerData.shovelMode = ShovelMode.RestoreNature;
-                    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RestoreNatureActivate);
-                    return CommandResult.success();
-                }))
-                .build(), "restorenature", "rn");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandRestoreNature())
+                .build());
+        
+        subcommands.put(Arrays.asList("restorenatureaggressive", "rna"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to aggressive restoration mode"))
                 .permission("griefprevention.restorenatureaggressive")
-                .executor(((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // change shovel mode
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    playerData.shovelMode = ShovelMode.RestoreNatureAggressive;
-                    GriefPrevention.sendMessage(player, TextMode.Warn, Messages.RestoreNatureAggressiveActivate);
-                    return CommandResult.success();
-                }))
-                .build(), "restorenatureaggressive", "rna");
+                .executor(new CommandRestoreNatureAggressive())
+                .build());
 
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("restorenaturefill", "rnf"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to fill mode"))
                 .permission("griefprotection.restorenaturefill")
                 .arguments(optional(integer(Texts.of("radius")), 2))
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // change shovel mode
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    playerData.shovelMode = ShovelMode.RestoreNatureFill;
-
-                    // set radius based on arguments
-                    playerData.fillRadius = args.<Integer>getOne("radius").get();
-                    if (playerData.fillRadius < 0)
-                        playerData.fillRadius = 2;
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.FillModeActive, String.valueOf(playerData.fillRadius));
-                    return CommandResult.success();
-                })
-                .build(), "restorenaturefill", "rnf");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandRestoreNatureFill())
+                .build());
+        
+        subcommands.put(Arrays.asList("trust", "tr"), CommandSpec.builder()
                 .description(Texts.of("Grants a player full access to your claim(s)"))
                 .extendedDescription(Texts.of("Grants a player full access to your claim(s).\n"
                         + "See also /untrust, /containertrust, /accesstrust, and /permissiontrust."))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("subject")))
-                .executor((src, args) -> {
+                .executor(new CommandTrust())
+                .build());
 
-                    // most trust commands use this helper method, it keeps them
-                    // consistent
-                    this.handleTrustCommand(checkPlayer(src), ClaimPermission.Build, args.<String>getOne("subject").get());
-                    return CommandResult.success();
-                })
-                .build(), "trust", "tr");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("transferclaim", "giveclaim"), CommandSpec.builder()
                 .description(Texts.of("Converts an administrative claim to a private claim"))
                 .arguments(optional(player(Texts.of("target"))))
                 .permission("griefprevention.transferclaim")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // which claim is the user in?
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true, null);
-                    if (claim == null) {
-                        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferClaimMissing);
-                        return CommandResult.empty();
-                    }
+                .executor(new CommandTransferClaim())
+                .build());
 
-                    // check additional permission for admin claims
-                    if (claim.isAdminClaim() && !player.hasPermission("griefprevention.adminclaims")) {
-                        throw new CommandException(getMessage(Messages.TransferClaimPermission));
-                    }
-
-                    UUID newOwnerID = null; // no argument = make an admin claim
-                    String ownerName = "admin";
-
-                    Optional<User> targetOpt = args.<User>getOne("target");
-                    if (targetOpt.isPresent()) {
-                        User targetPlayer = targetOpt.get();
-                        newOwnerID = targetPlayer.getUniqueId();
-                        ownerName = targetPlayer.getName();
-                    }
-
-                    // change ownerhsip
-                    try {
-                        this.dataStore.changeClaimOwner(claim, newOwnerID);
-                    } catch (NoTransferException e) {
-                        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
-                        return CommandResult.empty();
-                    }
-
-                    // confirm
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.TransferSuccess);
-                    GriefPrevention.AddLogEntry(player.getName() + " transferred a claim at "
-                                    + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + ownerName + ".",
-                            CustomLogEntryTypes.AdminActivity);
-
-                    return CommandResult.success();
-
-                })
-        .build(), "transferclaim", "giveclaim");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("trustlist"), CommandSpec.builder()
                 .description(Texts.of("Lists permissions for the claim you're standing in"))
                 .permission("griefprevention.claimls")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true, null);
+                .executor(new CommandTrustList())
+                .build());
 
-                    // if no claim here, error message
-                    if (claim == null) {
-                        throw new CommandException(getMessage(Messages.TrustListNoClaim));
-                    }
-
-                    // if no permission to manage permissions, error message
-                    String errorMessage = claim.allowGrantPermission(player);
-                    if (errorMessage != null) {
-                        throw new CommandException(Texts.of(errorMessage));
-                    }
-
-                    // otherwise build a list of explicit permissions by permission
-                    // level
-                    // and send that to the player
-                    ArrayList<String> builders = new ArrayList<>();
-                    ArrayList<String> containers = new ArrayList<>();
-                    ArrayList<String> accessors = new ArrayList<>();
-                    ArrayList<String> managers = new ArrayList<>();
-                    claim.getPermissions(builders, containers, accessors, managers);
-
-                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrustListHeader);
-
-                    TextBuilder permissions = Texts.builder(">").color(TextColors.GOLD);
-
-                    if (managers.size() > 0) {
-                        for (int i = 0; i < managers.size(); i++)
-                            permissions.append(SPACE_TEXT, Texts.of(this.trustEntryToPlayerName(managers.get(i))));
-                    }
-
-                    player.sendMessage(permissions.build());
-                    permissions = Texts.builder(">").color(TextColors.YELLOW);
-
-                    if (builders.size() > 0) {
-                        for (int i = 0; i < builders.size(); i++)
-                            permissions.append(SPACE_TEXT, Texts.of(this.trustEntryToPlayerName(builders.get(i))));
-                    }
-
-                    player.sendMessage(permissions.build());
-                    permissions = Texts.builder(">").color(TextColors.GREEN);
-
-                    if (containers.size() > 0) {
-                        for (int i = 0; i < containers.size(); i++)
-                            permissions.append(SPACE_TEXT, Texts.of(this.trustEntryToPlayerName(containers.get(i))));
-                    }
-
-                    player.sendMessage(permissions.build());
-                    permissions = Texts.builder(">").color(TextColors.BLUE);
-
-                    if (accessors.size() > 0) {
-                        for (int i = 0; i < accessors.size(); i++)
-                            permissions.append(SPACE_TEXT, Texts.of(this.trustEntryToPlayerName(accessors.get(i))));
-                    }
-
-                    player.sendMessage(permissions.build());
-
-                    player.sendMessage(Texts.of(
-                                    Texts.of(TextColors.GOLD, this.dataStore.getMessage(Messages.Manage)), SPACE_TEXT,
-                                    Texts.of(TextColors.YELLOW, this.dataStore.getMessage(Messages.Build)), SPACE_TEXT,
-                            Texts.of(TextColors.GREEN, this.dataStore.getMessage(Messages.Containers)), SPACE_TEXT,
-                            Texts.of(TextColors.BLUE, this.dataStore.getMessage(Messages.Access))));
-
-                    return CommandResult.success();
-
-                })
-                .build(), "trustlist");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("untrust", "ut"), CommandSpec.builder()
                 .description(Texts.of("Revokes a player's access to your claim(s)"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("subject")))
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // determine which claim the player is standing in
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true, null);
+                .executor(new CommandUntrust())
+                .build());
 
-                    String target = args.<String>getOne("subject").get();
-
-                    // bracket any permissions
-                    if (target.contains(".") && !target.startsWith("[") && !target.endsWith("]")) {
-                        target = "[" + target + "]";
-                    }
-
-                    // determine whether a single player or clearing permissions entirely
-                    boolean clearPermissions = false;
-                    User otherPlayer = null;
-                    if (target.equals("all")) {
-                        if (claim == null || claim.allowEdit(player) == null) {
-                            clearPermissions = true;
-                        } else {
-                            throw new CommandException(getMessage(Messages.ClearPermsOwnerOnly));
-                        }
-                    }
-
-                    else {
-                        // validate player argument or group argument
-                        if (!target.startsWith("[") || !target.endsWith("]")) {
-                            otherPlayer = this.resolvePlayerByName(target).orElse(null);
-                            if (!clearPermissions && otherPlayer == null && !target.equals("public")) {
-                                throw new CommandException(getMessage(Messages.PlayerNotFound2));
-                            }
-
-                            // correct to proper casing
-                            if (otherPlayer != null)
-                                target = otherPlayer.getName();
-                        }
-                    }
-
-                    // if no claim here, apply changes to all his claims
-                    if (claim == null) {
-                        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                        for (int i = 0; i < playerData.getClaims().size(); i++) {
-                            claim = playerData.getClaims().get(i);
-
-                            // if untrusting "all" drop all permissions
-                            if (clearPermissions) {
-                                claim.clearPermissions();
-                            }
-
-                            // otherwise drop individual permissions
-                            else {
-                                String idToDrop = target;
-                                if (otherPlayer != null) {
-                                    idToDrop = otherPlayer.getUniqueId().toString();
-                                }
-                                claim.dropPermission(idToDrop);
-                                claim.managers.remove(idToDrop);
-                            }
-
-                            // save changes
-                            this.dataStore.saveClaim(claim);
-                        }
-
-                        // beautify for output
-                        if (target.equals("public")) {
-                            target = "the public";
-                        }
-
-                        // confirmation message
-                        if (!clearPermissions) {
-                            GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustIndividualAllClaims, target);
-                        } else {
-                            GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustEveryoneAllClaims);
-                        }
-                    }
-
-                    // otherwise, apply changes to only this claim
-                    else if (claim.allowGrantPermission(player) != null) {
-                        throw new CommandException(getMessage(Messages.NoPermissionTrust, claim.getOwnerName()));
-                    } else {
-                        // if clearing all
-                        if (clearPermissions) {
-                            // requires owner
-                            if (claim.allowEdit(player) != null) {
-                                throw new CommandException(getMessage(Messages.UntrustAllOwnerOnly));
-                            }
-
-                            claim.clearPermissions();
-                            GriefPrevention.sendMessage(player, TextMode.Success, Messages.ClearPermissionsOneClaim);
-                        }
-
-                        // otherwise individual permission drop
-                        else {
-                            String idToDrop = target;
-                            if (otherPlayer != null) {
-                                idToDrop = otherPlayer.getUniqueId().toString();
-                            }
-                            boolean targetIsManager = claim.managers.contains(idToDrop);
-                            if (targetIsManager && claim.allowEdit(player) != null) // only
-                            // claim owners can untrust managers
-                            {
-                                throw new CommandException(getMessage(Messages.ManagersDontUntrustManagers, claim.getOwnerName()));
-                            } else {
-                                claim.dropPermission(idToDrop);
-                                claim.managers.remove(idToDrop);
-
-                                // beautify for output
-                                if (target.equals("public")) {
-                                    target = "the public";
-                                }
-
-                                GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustIndividualSingleClaim, target);
-                            }
-                        }
-
-                        // save changes
-                        this.dataStore.saveClaim(claim);
-                    }
-                    return CommandResult.success();
-
-                })
-                .build(), "untrust", "ut");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("accesstrust", "at"), CommandSpec.builder()
                 .description(Texts.of("Grants a player entry to your claim(s) and use of your bed"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
-                .executor((src, args) -> {
-                    this.handleTrustCommand(checkPlayer(src), ClaimPermission.Access, args.<String>getOne("target").get());
-                    return CommandResult.success();
-                })
-                .build(), "accesstrust", "at");
+                .executor(new CommandAccessTrust())
+                .build());
 
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("containertrust", "ct"), CommandSpec.builder()
                 .description(Texts.of("Grants a player access to your claim's containers, crops, animals, bed, buttons, and levers"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
-                .executor((src, args) -> {
-                    this.handleTrustCommand(checkPlayer(src), ClaimPermission.Inventory, args.<String>getOne("target").get());
-                    return CommandResult.success();
-                })
-                .build(), "containertrust", "ct");
+                .executor(new CommandContainerTrust())
+                .build());
 
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("permissiontrust", "pt"), CommandSpec.builder()
                 .description(Texts.of("Grants a player permission to grant their level of permission to others"))
                 .permission("griefprevention.claims")
                 .arguments(string(Texts.of("target")))
-                .executor((src, args) -> {
-                    this.handleTrustCommand(checkPlayer(src), null, args.<String>getOne("target").get());
-                    return CommandResult.success();
-                })
-                .build(), "permissiontrust", "pt");
+                .executor(new CommandPermissionTrust())
+                .build());
 
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("buyclaimblocks", "buyclaim"), CommandSpec.builder()
                 .description(Texts.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission("griefprevention.buysellclaimblocks")
                 .arguments(optional(integer(Texts.of("numberOfBlocks"))))
-                .executor((src, args) -> {
-                    // TODO: Implement economy
-                    /*final Player player = checkPlayer(src);
-                    // if economy is disabled, don't do anything
-                    if (GriefPrevention.economy == null) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
-                        return true;
-                    }
-
-                    // if purchase disabled, send error message
-                    if (GriefPrevention.instance.config_economy_claimBlocksPurchaseCost == 0) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.OnlySellBlocks);
-                        return true;
-                    }
-
-                    Optional<Integer> blockCountOpt = args.getOne("numberOfBlocks");
-
-                    // if no parameter, just tell player cost per block and balance
-                    if (!blockCountOpt.isPresent()) {
-                        GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockPurchaseCost,
-                                String.valueOf(GriefPrevention.instance.config_economy_claimBlocksPurchaseCost),
-                                String.valueOf(GriefPrevention.economy.getBalance(player)));
-                        return false;
-                    } else {
-                        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-
-                        // try to parse number of blocks
-                        int blockCount = blockCountOpt.get();
-
-                        if (blockCount <= 0) {
-                            throw new CommandException(Texts.of("Invalid block count of lte 0"));
-                        }
-
-                        // if the player can't afford his purchase, send error message
-                        double balance = economy.getBalance(player);
-                        double totalCost = blockCount * GriefPrevention.instance.config_economy_claimBlocksPurchaseCost;
-                        if (totalCost > balance) {
-                            GriefPrevention.sendMessage(player, TextMode.Err, Messages.InsufficientFunds, String.valueOf(totalCost),
-                                    String.valueOf(balance));
-                        }
-
-                        // otherwise carry out transaction
-                        else {
-                            // withdraw cost
-                            economy.withdrawPlayer(player, totalCost);
-
-                            // add blocks
-                            playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);
-                            this.dataStore.savePlayerData(player.getUniqueId(), playerData);
-
-                            // inform player
-                            GriefPrevention.sendMessage(player, TextMode.Success, Messages.PurchaseConfirmation, String.valueOf(totalCost),
-                                    String.valueOf(playerData.getRemainingClaimBlocks()));
-                        }
-
-                    }*/
-                    return CommandResult.success();
-                })
-                .build(), "buyclaimblocks", "buyclaim");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandBuyClaimBlocks())
+                .build());
+        
+        subcommands.put(Arrays.asList("sellclaimblocks", "sellclaim"), CommandSpec.builder()
                 .description(Texts.of("Sell your claim blocks for server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission("griefprevention.buysellclaimblocks")
                 .arguments(optional(integer(Texts.of("numberOfBlocks"))))
-                .executor((src, args) -> {
-                    // TODO: Implement economy
-                    /*final Player player = checkPlayer(src);
-                    // if economy is disabled, don't do anything
-                    if (GriefPrevention.economy == null) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
-                        return true;
-                    }
+                .executor(new CommandSellClaimBlocks())
+                .build());
 
-                    // if disabled, error message
-                    if (GriefPrevention.instance.config_economy_claimBlocksSellValue == 0) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.OnlyPurchaseBlocks);
-                        return true;
-                    }
-
-                    // load player data
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    int availableBlocks = playerData.getRemainingClaimBlocks();
-
-                    Optional<Integer> blockCountOpt = args.getOne("numberOfBlocks");
-                    // if no amount provided, just tell player value per block sold, and
-                    // how many he can sell
-                    if (!blockCountOpt.isPresent()) {
-                        GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue,
-                                String.valueOf(GriefPrevention.instance.config_economy_claimBlocksSellValue), String.valueOf(availableBlocks));
-                        return false;
-                    }
-
-                    // parse number of blocks
-                    int blockCount = blockCountOpt.get();
-
-                    if (blockCount <= 0) {
-                        throw new CommandException(Texts.of("Invalid block count of lte 0"));
-                    }
-
-                    // if he doesn't have enough blocks, tell him so
-                    if (blockCount > availableBlocks) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotEnoughBlocksForSale);
-                    }
-
-                    // otherwise carry out the transaction
-                    else {
-                        // compute value and deposit it
-                        double totalValue = blockCount * GriefPrevention.instance.config_economy_claimBlocksSellValue;
-                        economy.depositPlayer(player, totalValue);
-
-                        // subtract blocks
-                        playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() - blockCount);
-                        this.dataStore.savePlayerData(player.getUniqueId(), playerData);
-
-                        // inform player
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.BlockSaleConfirmation, String.valueOf(totalValue),
-                                String.valueOf(playerData.getRemainingClaimBlocks()));
-                    }*/
-                    return CommandResult.success();
-                })
-                .build(), "sellclaimblocks", "sellclaim");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("adminclaims", "ac"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to administrative claims mode"))
                 .permission("griefprevention.adminclaims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    playerData.shovelMode = ShovelMode.Admin;
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdminClaimsMode);
-                    return CommandResult.success();
-                })
-                .build(), "adminclaims", "ac");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandAdminClaims())
+                .build());
+        
+        subcommands.put(Arrays.asList("basicclaims", "bc"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool back to basic claims mode"))
                 .permission("griefprevention.claims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    playerData.shovelMode = ShovelMode.Basic;
-                    playerData.claimSubdividing = null;
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.BasicClaimsMode);
-
-                    return CommandResult.success();
-                })
-                .build(), "basicclaims", "bc");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandBasicClaims())
+                .build());
+        
+        subcommands.put(Arrays.asList("subdivideclaims", "sc", "subdivideclaim"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
                 .permission("griefprevention.claims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    playerData.shovelMode = ShovelMode.Subdivide;
-                    playerData.claimSubdividing = null;
-                    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
-                    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2);
-
-                    return CommandResult.success();
-                })
-                .build(), "subdivideclaims", "sc", "subdivideclaim");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandSubdivideClaims())
+                .build());
+        
+        subcommands.put(Arrays.asList("deleteclaim", "dc"), CommandSpec.builder()
                 .description(Texts.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission("griefprevention.deleteclaims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // determine which claim the player is standing in
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /* ignore height */, null);
-
-                    if (claim == null) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
-                    }
-
-                    else {
-                        // deleting an admin claim additionally requires the adminclaims permission
-                        if (!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims")) {
-                            PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                            if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
-                                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);
-                                playerData.warnedAboutMajorDeletion = true;
-                            } else {
-                                claim.removeSurfaceFluids(null);
-                                this.dataStore.deleteClaim(claim, true);
-
-                                // if in a creative mode world, /restorenature the claim
-                                if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
-                                    GriefPrevention.instance.restoreClaim(claim, 0);
-                                }
-
-                                GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteSuccess);
-                                GriefPrevention.AddLogEntry(
-                                        player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
-                                                + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
-                                        CustomLogEntryTypes.AdminActivity);
-
-                                // revert any current visualization
-                                Visualization.Revert(player);
-
-                                playerData.warnedAboutMajorDeletion = false;
-                            }
-                        } else {
-                            GriefPrevention.sendMessage(player, TextMode.Err, Messages.CantDeleteAdminClaim);
-                        }
-                    }
-
-                    return CommandResult.success();
-                })
-                .build(), "deleteclaim", "dc");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandDeleteClaim())
+                .build());
+        
+        subcommands.put(Arrays.asList("claimexplosions"), CommandSpec.builder()
                 .description(Texts.of("Toggles whether explosives may be used in a specific land claim"))
                 .permission("griefprevention.claims")
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
-                    // determine which claim the player is standing in
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*
-                                                                                * ignore
-                                                                                * height
-                                                                                */, null);
-
-                    if (claim == null) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
-                    }
-
-                    else {
-                        String noBuildReason = claim.allowBuild(player, BlockTypes.STONE);
-                        if (noBuildReason != null) {
-                            throw new CommandException(Texts.of(noBuildReason));
-                        }
-
-                        if (claim.areExplosivesAllowed) {
-                            claim.areExplosivesAllowed = false;
-                            GriefPrevention.sendMessage(player, TextMode.Success, Messages.ExplosivesDisabled);
-                        } else {
-                            claim.areExplosivesAllowed = true;
-                            GriefPrevention.sendMessage(player, TextMode.Success, Messages.ExplosivesEnabled);
-                        }
-                    }
-
-                    return CommandResult.success();
-                })
-                .build(), "claimexplosions");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandClaimExplosions())
+                .build());
+        
+        subcommands.put(Arrays.asList("deleteallclaims"), CommandSpec.builder()
                 .description(Texts.of("Delete all of another player's claims"))
                 .permission("griefprevention.deleteclaims")
                 .arguments(player(Texts.of("player"))) // TODO: Use user commandelement when added
-                .executor((src, args) -> {
-                    final Player player = checkPlayer(src);
+                .executor(new CommandDeleteAllClaims())
+                .build());
 
-                    // try to find that player
-                    User otherPlayer = args.<User>getOne("player").get();
-
-                    // delete all that player's claims
-                    this.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId(), true);
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
-                    if (player != null) {
-                        GriefPrevention.AddLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
-                                CustomLogEntryTypes.AdminActivity);
-
-                        // revert any current visualization
-                        Visualization.Revert(player);
-                    }
-
-                    return CommandResult.success();
-                })
-                .build(), "deleteallclaims");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("claimbook"), CommandSpec.builder()
                 .description(Texts.of("Gives a player a manual about claiming land"))
                 .permission("griefprevention.claimbook")
                 .arguments(playerOrSource(Texts.of("player")))
-                .executor((src, args) -> {
-                    for (Player otherPlayer : args.<Player>getAll("player")) {
-                        WelcomeTask task = new WelcomeTask(otherPlayer);
-                        task.run();
-                    }
+                .executor(new CommandClaimBook())
+                .build());
 
-                    return CommandResult.success();
-                })
-                .build(), "claimbook");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("claimslist", "claimlist", "listclaims"), CommandSpec.builder()
                 .description(Texts.of("List information about a player's claim blocks and claims"))
                 .arguments(onlyOne(playerOrSource(Texts.of("player"))))
-                .executor((src, args) -> {
-
-                    // player whose claims will be listed
-                    User otherPlayer = args.<User>getOne("player").get();
-
-                    // otherwise if no permission to delve into another player's claims data
-                    if (otherPlayer != src && !src.hasPermission("griefprevention.claimslistother")) {
-                        throw new CommandPermissionException();
-                    }
-
-                    // load the target player's data
-                    PlayerData playerData = this.dataStore.getPlayerData(otherPlayer.getUniqueId());
-                    Vector<Claim> claims = playerData.getClaims();
-                    GriefPrevention.sendMessage(src, TextMode.Instr, Messages.StartBlockMath,
-                            String.valueOf(playerData.getAccruedClaimBlocks()),
-                            String.valueOf((playerData.getBonusClaimBlocks() + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))),
-                            String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks()
-                                    + this.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))));
-                    if (claims.size() > 0) {
-                        GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);
-                        for (int i = 0; i < playerData.getClaims().size(); i++) {
-                            Claim claim = playerData.getClaims().get(i);
-                            GriefPrevention.sendMessage(src, Texts.of(TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner())
-                                    + this.dataStore.getMessage(Messages.ContinueBlockMath, String.valueOf(claim.getArea()))));
-                        }
-
-                        GriefPrevention.sendMessage(src, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks()));
-                    }
-
-                    // drop the data we just loaded, if the player isn't online
-                    if (!otherPlayer.isOnline())
-                        this.dataStore.clearCachedPlayerData(otherPlayer.getUniqueId());
-
-
-                    return CommandResult.success();
-                })
-                .build(), "claimslist", "claimlist", "listclaims");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandClaimsList())
+                .build());
+        
+        subcommands.put(Arrays.asList("adminclaimslist"), CommandSpec.builder()
                 .description(Texts.of("List all administrative claims"))
                 .permission("griefprevention.adminclaims")
-                .executor((src, args) -> {
-                    // find admin claims
-                    List<Claim> claims = new ArrayList<>();
-                    for (Claim claim : this.dataStore.claims) {
-                        if (claim.ownerID == null) { // admin claim
-                            claims.add(claim);
-                        }
-                    }
+                .executor(new CommandAdminClaimsList())
+                .build());
 
-                    if (claims.size() > 0) {
-                        GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);
-                        for (int i = 0; i < claims.size(); i++) {
-                            Claim claim = claims.get(i);
-                            GriefPrevention.sendMessage(src, Texts.of(TextMode.Instr, getfriendlyLocationString(claim.getLesserBoundaryCorner())));
-                        }
-                    }
-
-                    return CommandResult.success();
-                })
-                .build(), "adminclaimslist");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("unlockdrops"), CommandSpec.builder()
                 .description(Texts.of("Allows other players to pick up the items you dropped when you died"))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
+                .executor(new CommandUnlockDrops())
+                .build());
 
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    playerData.dropsAreUnlocked = true;
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.DropUnlockConfirmation);
-
-                    return CommandResult.success();
-                })
-                .build(), "unlockdrops");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("deletealladminclaims"), CommandSpec.builder()
                 .description(Texts.of("Deletes all administrative claims"))
                 .permission("griefprevention.adminclaims")
-                .executor((src, args) -> {
-                    args.checkPermission(src, "griefprevention.deleteclaims");
-                    Player player = checkPlayer(src);
+                .executor(new CommandDeleteAllAdminClaims())
+                .build());
 
-                    // delete all admin claims
-                    this.dataStore.deleteClaimsForPlayer(null, true); // null for owner
-                    // id indicates an administrative claim
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
-                    GriefPrevention.AddLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
-
-                    // revert any current visualization
-                    Visualization.Revert(player);
-
-                    return CommandResult.success();
-                })
-                .build(), "deletealladminclaims");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("adjustbonusclaimblocks", "acb"), CommandSpec.builder()
                 .description(Texts.of("Adds or subtracts bonus claim blocks for a player"))
                 .permission("griefprevention.adjustclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
-
-                    // parse the adjustment amount
-                    int adjustment = args.<Integer>getOne("amount").get();
-                    String target = args.<String>getOne("player").get();
-
-                    // if granting blocks to all players with a specific permission
-                    if (target.startsWith("[") && target.endsWith("]")) {
-                        String permissionIdentifier = target.substring(1, target.length() - 1);
-                        int newTotal = this.dataStore.adjustGroupBonusBlocks(permissionIdentifier, adjustment);
-
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdjustGroupBlocksSuccess, permissionIdentifier,
-                                String.valueOf(adjustment), String.valueOf(newTotal));
-                        if (player != null)
-                            GriefPrevention
-                                    .AddLogEntry(
-                                            player.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
-
-                        return CommandResult.success();
-                    }
-
-                    // otherwise, find the specified player
-                    User targetPlayer;
-                    try {
-                        UUID playerID = UUID.fromString(target);
-                        targetPlayer = Sponge.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(playerID).orElse(null);
-
-                    } catch (IllegalArgumentException e) {
-                        targetPlayer = this.resolvePlayerByName(target).orElse(null);
-                    }
-
-                    if (targetPlayer == null) {
-                        throw new CommandException(getMessage(Messages.PlayerNotFound2));
-                    }
-
-                    // give blocks to player
-                    PlayerData playerData = this.dataStore.getPlayerData(targetPlayer.getUniqueId());
-                    playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
-                    this.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
-
-                    GriefPrevention
-                            .sendMessage(player, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment),
-                                    String.valueOf(playerData.getBonusClaimBlocks()));
-                    if (player != null)
-                        GriefPrevention.AddLogEntry(
-                                player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".",
-                                CustomLogEntryTypes.AdminActivity);
-
-
-                    return CommandResult.success();
-                })
-                .build(), "adjustbonusclaimblocks", "acb");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandAdjustBonusClaimBlocks())
+                .build());
+        
+        subcommands.put(Arrays.asList("setaccruedclaimblocks", "scb"), CommandSpec.builder()
                 .description(Texts.of("Updates a player's accrued claim block total"))
                 .permission("griefprevention.adjustclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
-
-                    // parse the adjustment amount
-                    int newAmount = args.<Integer>getOne("amount").get();
-
-                    // find the specified player
-                    User targetPlayer = args.<String>getOne("player")
-                            .flatMap(this::resolvePlayerByName)
-                            .orElseThrow(() -> new CommandException(getMessage(Messages.PlayerNotFound2)));
-
-                    // set player's blocks
-                    PlayerData playerData = this.dataStore.getPlayerData(targetPlayer.getUniqueId());
-                    playerData.setAccruedClaimBlocks(newAmount);
-                    this.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.SetClaimBlocksSuccess);
-                    if (player != null)
-                        GriefPrevention.AddLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".",
-                                CustomLogEntryTypes.AdminActivity);
-
-
-
-                    return CommandResult.success();
-                })
-                .build(), "setaccruedclaimblocks", "scb");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandSetAccruedClaimBlocks())
+                .build());
+        
+        subcommands.put(Arrays.asList("trapped"), CommandSpec.builder()
                 .description(Texts.of("Ejects you to nearby unclaimed land. Has a substantial cooldown period"))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
+                .executor(new CommandTrapped())
+                .build());
 
-                    // FEATURE: empower players who get "stuck" in an area where they
-                    // don't have permission to build to save themselves
-
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
-
-                    // if another /trapped is pending, ignore this slash command
-                    if (playerData.pendingTrapped) {
-                        return CommandResult.empty();
-                    }
-
-                    // if the player isn't in a claim or has permission to build, tell him to man up
-                    if (claim == null || claim.allowBuild(player, BlockTypes.AIR) == null) {
-                        throw new CommandException(getMessage(Messages.NotTrappedHere));
-                    }
-
-                    // if the player is in the nether or end, he's screwed (there's no
-                    // way to programmatically find a safe place for him)
-                    if (player.getWorld().getDimension().getType() != DimensionTypes.OVERWORLD) {
-                        throw new CommandException(getMessage(Messages.TrappedWontWorkHere));
-                    }
-
-                    // if the player is in an administrative claim, he should contact an admin
-                    if (claim.isAdminClaim()) {
-                        throw new CommandException(getMessage(Messages.TrappedWontWorkHere));
-                    }
-
-                    // send instructions
-                    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RescuePending);
-
-                    // create a task to rescue this player in a little while
-                    PlayerRescueTask task = new PlayerRescueTask(player, player.getLocation());
-                    Sponge.getGame().getScheduler().createTaskBuilder()
-                            .delay(1, TimeUnit.SECONDS)
-                            .execute(task)
-                            .submit(this);
-
-                    return CommandResult.success();
-                })
-                .build(), "trapped");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("siege"), CommandSpec.builder()
                 .description(Texts.of("Initiates a siege versus another player"))
                 .arguments(optional(onlyOne(player(Texts.of("playerName")))))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
+                .executor(new CommandSiege())
+                .build());
 
-                    // error message for when siege mode is disabled
-                    if (!this.siegeEnabledForWorld(player.getWorld())) {
-                        throw new CommandException(getMessage(Messages.NonSiegeWorld));
-                    }
-
-                    // can't start a siege when you're already involved in one
-                    Player attacker = player;
-                    PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
-                    if (attackerData.siegeData != null) {
-                        throw new CommandException(getMessage(Messages.AlreadySieging));
-                    }
-
-                    // can't start a siege when you're protected from pvp combat
-                    if (attackerData.pvpImmune) {
-                        throw new CommandException(getMessage(Messages.CantFightWhileImmune));
-                    }
-
-                    // if a player name was specified, use that
-                    Optional<Player> defenderOpt = args.<Player>getOne("playerName");
-                    if (!defenderOpt.isPresent() && attackerData.lastPvpPlayer.length() > 0) {
-                        defenderOpt = Sponge.getGame().getServer().getPlayer(attackerData.lastPvpPlayer);
-                    }
-                    Player defender = defenderOpt.orElseThrow(() -> new CommandException(Texts.of("No player was matched")));
-
-                    // victim must not have the permission which makes him immune to siege
-                    if (defender.hasPermission("griefprevention.siegeimmune")) {
-                        throw new CommandException(getMessage(Messages.SiegeImmune));
-                    }
-
-                    // victim must not be under siege already
-                    PlayerData defenderData = this.dataStore.getPlayerData(defender.getUniqueId());
-                    if (defenderData.siegeData != null) {
-                        throw new CommandException(getMessage(Messages.AlreadyUnderSiegePlayer));
-                    }
-
-                    // victim must not be pvp immune
-                    if (defenderData.pvpImmune) {
-                        throw new CommandException(getMessage(Messages.NoSiegeDefenseless));
-                    }
-
-                    Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, null);
-
-                    // defender must have some level of permission there to be protected
-                    if (defenderClaim == null || defenderClaim.allowAccess(defender) != null) {
-                        throw new CommandException(getMessage(Messages.NotSiegableThere, defender.getName()));
-                    }
-
-                    // attacker must be close to the claim he wants to siege
-                    if (!defenderClaim.isNear(attacker.getLocation(), 25)) {
-                        throw new CommandException(getMessage(Messages.SiegeTooFarAway));
-                    }
-
-                    // claim can't be under siege already
-                    if (defenderClaim.siegeData != null) {
-                        throw new CommandException(getMessage(Messages.AlreadyUnderSiegeArea));
-                    }
-
-                    // can't siege admin claims
-                    if (defenderClaim.isAdminClaim()) {
-                        throw new CommandException(getMessage(Messages.NoSiegeAdminClaim));
-                    }
-
-                    // can't be on cooldown
-                    if (dataStore.onCooldown(attacker, defender, defenderClaim)) {
-                        throw new CommandException(getMessage(Messages.SiegeOnCooldown));
-                    }
-
-                    // start the siege
-                    dataStore.startSiege(attacker, defender, defenderClaim);
-
-                    // confirmation message for attacker, warning message for defender
-                    GriefPrevention.sendMessage(defender, TextMode.Warn, Messages.SiegeAlert, attacker.getName());
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.SiegeConfirmed, defender.getName());
-
-                    return CommandResult.success();
-                })
-                .build(), "siege");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("softmute"), CommandSpec.builder()
                 .description(Texts.of("Toggles whether a player's messages will only reach other soft-muted players"))
                 .permission("griefprevention.softmute")
                 .arguments(onlyOne(player(Texts.of("player"))))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
+                .executor(new CommandSoftMute())
+                .build());
 
-                    // find the specified player
-                    User targetPlayer = args.<User>getOne("player").get();
-
-                    // toggle mute for player
-                    boolean isMuted = this.dataStore.toggleSoftMute(targetPlayer.getUniqueId());
-                    if (isMuted) {
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.SoftMuted, targetPlayer.getName());
-                    } else {
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnSoftMuted, targetPlayer.getName());
-                    }
-
-                    return CommandResult.success();
-                })
-                .build(), "softmute");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("gpreload"), CommandSpec.builder()
                 .description(Texts.of("Reloads Grief Prevention's configuration settings"))
                 .permission("griefprevention.reload")
-                .executor((src, args) -> {
-                    this.loadConfig();
-                        GriefPrevention.sendMessage(src, Texts.of(TextMode.Success,
-                                "Configuration updated. If you have updated your Grief Prevention JAR, you still need to restart your server."));
-
-                    return CommandResult.success();
-                })
-                .build(), "gpreload");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .executor(new CommandGpReload())
+                .build());
+        
+        subcommands.put(Arrays.asList("givepet"), CommandSpec.builder()
                 .description(Texts.of("Allows a player to give away a pet they tamed"))
                 .permission("griefprevention.givepet")
-                .arguments(firstParsing(literal(Texts.of("player"), "cancel"), player(Texts.of("player"))))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
-
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-
-                    // special case: cancellation
-                    if (args.getOne("player").orElse(false).equals(true)) {
-                        playerData.petGiveawayRecipient = null;
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetTransferCancellation);
-                        return CommandResult.success();
-                    }
-
-                    // find the specified player
-                    User targetPlayer = args.<User>getOne("player").get();
-
-                    // remember the player's ID for later pet transfer
-                    playerData.petGiveawayRecipient = targetPlayer;
-
-                    // send instructions
-                    GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ReadyToTransferPet);
-
-                    return CommandResult.success();
-                })
-                .build(), "givepet");
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+                .arguments(GenericArguments.firstParsing(GenericArguments.literal(Texts.of("player"), "cancel"), player(Texts.of("player"))))
+                .executor(new CommandGivePet())
+                .build());
+        
+        subcommands.put(Arrays.asList("gpblockinfo"), CommandSpec.builder()
                 .description(Texts.of("Allows an administrator to get technical information about blocks in the world and items in hand"))
                 .permission("griefprevention.gpblockinfo")
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
-                    throw new CommandException(Texts.of("Information about block-in-hand must be redesigned for Sponge")); // TODO: Handle sponge's w
-                    // worldview
-                    /*
-                    ItemStack inHand = player.getItemInHand().orElse(null);
+                .executor(new CommandGpBlockInfo())
+                .build());
 
-                    player.sendMessage("In Hand: " + String.format("%s(%d:%d)", inHand.getType().name(), inHand.getTypeId(), inHand.getData().getData()));
-
-                    Block inWorld = GriefPrevention.getTargetNonAirBlock(player, 300);
-                    player.sendMessage("In World: " + String.format("%s(%d:%d)", inWorld.getType().name(), inWorld.getTypeId(), inWorld.getData()));
-
-                    return CommandResult.success();*/
-                })
-                .build(), "gpblockinfo");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("ignoreplayer", "ignore"), CommandSpec.builder()
                 .description(Texts.of("Ignores another player's chat messages"))
                 .permission("griefprevention.ignore")
                 .arguments(onlyOne(player(Texts.of("player"))))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
+                .executor(new CommandIgnorePlayer())
+                .build());
 
-                    // validate target player
-                    Player targetPlayer = args.<Player>getOne("player").get();
-                    if (targetPlayer.hasPermission("griefprevention.notignorable")) {
-                        throw new CommandException(getMessage(Messages.PlayerNotIgnorable));
-                    }
-
-                    this.setIgnoreStatus(player, targetPlayer, IgnoreMode.StandardIgnore);
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.IgnoreConfirmation);
-
-                    return CommandResult.success();
-                })
-                .build(), "ignoreplayer", "ignore");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("unignoreplayer", "unignore"), CommandSpec.builder()
                 .description(Texts.of("Unignores another player's chat messages"))
                 .permission("griefprevention.ignore")
                 .arguments(onlyOne(player(Texts.of("player"))))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
+                .executor(new CommandUnignorePlayer())
+                .build());
 
-                    // validate target player
-                    User targetPlayer = args.<User>getOne("player").get();
+        subcommands.put(Arrays.asList("ignoredplayerlist", "ignores", "ignored", "ignoredlist", "listignores", "listignored", "ignoring"), 
+                CommandSpec.builder()
+                    .description(Texts.of("Lists the players you're ignoring in chat"))
+                    .permission("griefprevention.ignore")
+                    .executor(new CommandIgnoredPlayerList())
+                    .build());
 
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
-                    if (ignoreStatus == null || ignoreStatus == true) {
-                        throw new CommandException(getMessage(Messages.NotIgnoringPlayer));
-                    }
-
-                    this.setIgnoreStatus(player, targetPlayer, IgnoreMode.None);
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnIgnoreConfirmation);
-
-
-                    return CommandResult.success();
-                })
-                .build(), "unignoreplayer", "unignore");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
-                .description(Texts.of("Lists the players you're ignoring in chat"))
-                .permission("griefprevention.ignore")
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
-
-                    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                    StringBuilder builder = new StringBuilder();
-                    for (Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet()) {
-                        if (entry.getValue() != null) {
-                            // if not an admin ignore, add it to the list
-                            if (!entry.getValue()) {
-                                builder.append(GriefPrevention.lookupPlayerName(entry.getKey()));
-                                builder.append(" ");
-                            }
-                        }
-                    }
-
-                    String list = builder.toString().trim();
-                    if (list.isEmpty()) {
-                        GriefPrevention.sendMessage(player, TextMode.Info, Messages.NotIgnoringAnyone);
-                    } else {
-                        GriefPrevention.sendMessage(player, Texts.of(TextMode.Info, list));
-                    }
-
-
-
-                    return CommandResult.success();
-                })
-                .build(), "ignoredplayerlist", "ignores", "ignored", "ignoredlist", "listignores", "listignored", "ignoring");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("separate"), CommandSpec.builder()
                 .description(Texts.of("Forces two players to ignore each other in chat"))
                 .permission("griefprevention.separate")
                 .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
-                    // validate target players
-                    User targetPlayer = args.<User>getOne("player1").get();
+                .executor(new CommandSeparate())
+                .build());
 
-                    User targetPlayer2 = args.<User>getOne("player2").get();
-
-                    this.setIgnoreStatus(targetPlayer, targetPlayer2, IgnoreMode.AdminIgnore);
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.SeparateConfirmation);
-                    return  CommandResult.success();
-                })
-                .build(), "separate");
-
-        Sponge.getGame().getCommandManager().register(this, CommandSpec.builder()
+        subcommands.put(Arrays.asList("unseparate"), CommandSpec.builder()
                 .description(Texts.of("Reverses /separate"))
                 .permission("griefprevention.separate")
                 .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
-                .executor((src, args) -> {
-                    Player player = checkPlayer(src);
-                    // validate target players
-                    User targetPlayer = args.<User>getOne("player1").get();
-                    User targetPlayer2 = args.<User>getOne("player2").get();
-
-                    this.setIgnoreStatus(targetPlayer, targetPlayer2, IgnoreMode.None);
-                    this.setIgnoreStatus(targetPlayer2, targetPlayer, IgnoreMode.None);
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnSeparateConfirmation);
-                    return  CommandResult.success();
-                })
-                .build(), "unseparate");
+                .executor(new CommandUnseparate())
+                .build());
+        
+        return subcommands;
     }
 
-    void setIgnoreStatus(User ignorer, User ignoree, IgnoreMode mode) {
+    public void setIgnoreStatus(User ignorer, User ignoree, IgnoreMode mode) {
         PlayerData playerData = this.dataStore.getPlayerData(ignorer.getUniqueId());
         if (mode == IgnoreMode.None) {
             playerData.ignoredPlayers.remove(ignoree.getUniqueId());
@@ -2198,11 +1315,11 @@ public class GriefPrevention {
         }
     }
 
-    enum IgnoreMode {
+    public enum IgnoreMode {
         None, StandardIgnore, AdminIgnore
     }
 
-    private String trustEntryToPlayerName(String entry) {
+    public String trustEntryToPlayerName(String entry) {
         if (entry.startsWith("[") || entry.equals("public")) {
             return entry;
         } else {
@@ -2212,197 +1329,6 @@ public class GriefPrevention {
 
     public static String getfriendlyLocationString(Location<World> location) {
         return location.getExtent().getName() + ": x" + location.getBlockX() + ", z" + location.getBlockZ();
-    }
-
-    private CommandResult abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-
-        // which claim is being abandoned?
-        Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*
-                                                                            * ignore
-                                                                            * height
-                                                                            */, null);
-        if (claim == null) {
-            GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
-        }
-
-        // verify ownership
-        else if (claim.allowEdit(player) != null) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
-        }
-
-        // warn if has children and we're not explicitly deleting a top level
-        // claim
-        else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
-            GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
-            return CommandResult.empty();
-        }
-
-        else {
-            // delete it
-            claim.removeSurfaceFluids(null);
-            this.dataStore.deleteClaim(claim, true);
-
-            // if in a creative mode world, restore the claim area
-            if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
-                GriefPrevention.AddLogEntry(
-                        player.getName() + " abandoned a claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
-                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
-                GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
-            }
-
-            // adjust claim blocks when abandoning a top level claim
-            if (claim.parent == null) {
-                playerData.setAccruedClaimBlocks(
-                        playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - this.config_claims_abandonReturnRatio))));
-            }
-
-            // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks();
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
-
-            // revert any current visualization
-            Visualization.Revert(player);
-
-            playerData.warnedAboutMajorDeletion = false;
-        }
-
-        return CommandResult.success();
-
-    }
-
-    // helper method keeps the trust commands consistent and eliminates duplicate code
-    private void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) throws CommandException {
-        // determine which claim the player is standing in
-        Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /* ignore height */, null);
-
-        // validate player or group argument
-        String permission = null;
-        User otherPlayer = null;
-        UUID recipientID = null;
-        if (recipientName.startsWith("[") && recipientName.endsWith("]")) {
-            permission = recipientName.substring(1, recipientName.length() - 1);
-            if (permission == null || permission.isEmpty()) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.InvalidPermissionID);
-                return;
-            }
-        }
-
-        else if (recipientName.contains(".")) {
-            permission = recipientName;
-        }
-
-        else {
-            otherPlayer = this.resolvePlayerByName(recipientName).orElse(null);
-            if (otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all")) {
-                throw new CommandException(getMessage(Messages.PlayerNotFound2));
-            }
-
-            if (otherPlayer != null) {
-                recipientName = otherPlayer.getName();
-                recipientID = otherPlayer.getUniqueId();
-            } else {
-                recipientName = "public";
-            }
-        }
-
-        // determine which claims should be modified
-        ArrayList<Claim> targetClaims = new ArrayList<Claim>();
-        if (claim == null) {
-            PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-            for (int i = 0; i < playerData.getClaims().size(); i++) {
-                targetClaims.add(playerData.getClaims().get(i));
-            }
-        } else {
-            // check permission here
-            if (claim.allowGrantPermission(player) != null) {
-                throw new CommandException(getMessage(Messages.NoPermissionTrust, claim.getOwnerName()));
-            }
-
-            // see if the player has the level of permission he's trying to
-            // grant
-            String errorMessage = null;
-
-            // permission level null indicates granting permission trust
-            if (permissionLevel == null) {
-                errorMessage = claim.allowEdit(player);
-                if (errorMessage != null) {
-                    errorMessage = "Only " + claim.getOwnerName() + " can grant /PermissionTrust here.";
-                }
-            }
-
-            // otherwise just use the ClaimPermission enum values
-            else {
-                switch (permissionLevel) {
-                    case Access:
-                        errorMessage = claim.allowAccess(player);
-                        break;
-                    case Inventory:
-                        errorMessage = claim.allowContainers(player);
-                        break;
-                    default:
-                        errorMessage = claim.allowBuild(player, BlockTypes.AIR);
-                }
-            }
-
-            // error message for trying to grant a permission the player doesn't
-            // have
-            if (errorMessage != null) {
-                throw new CommandException(getMessage(Messages.CantGrantThatPermission));
-            }
-
-            targetClaims.add(claim);
-        }
-
-        // if we didn't determine which claims to modify, tell the player to be
-        // specific
-        if (targetClaims.size() == 0) {
-            throw new CommandException(getMessage(Messages.GrantPermissionNoClaim));
-        }
-
-        // apply changes
-        for (int i = 0; i < targetClaims.size(); i++) {
-            Claim currentClaim = targetClaims.get(i);
-            String identifierToAdd = recipientName;
-            if (permission != null) {
-                identifierToAdd = "[" + permission + "]";
-            } else if (recipientID != null) {
-                identifierToAdd = recipientID.toString();
-            }
-
-            if (permissionLevel == null) {
-                if (!currentClaim.managers.contains(identifierToAdd)) {
-                    currentClaim.managers.add(identifierToAdd);
-                }
-            } else {
-                currentClaim.setPermission(identifierToAdd, permissionLevel);
-            }
-            this.dataStore.saveClaim(currentClaim);
-        }
-
-        // notify player
-        if (recipientName.equals("public"))
-            recipientName = this.dataStore.getMessage(Messages.CollectivePublic);
-        String permissionDescription;
-        if (permissionLevel == null) {
-            permissionDescription = this.dataStore.getMessage(Messages.PermissionsPermission);
-        } else if (permissionLevel == ClaimPermission.Build) {
-            permissionDescription = this.dataStore.getMessage(Messages.BuildPermission);
-        } else if (permissionLevel == ClaimPermission.Access) {
-            permissionDescription = this.dataStore.getMessage(Messages.AccessPermission);
-        } else // ClaimPermission.Inventory
-        {
-            permissionDescription = this.dataStore.getMessage(Messages.ContainersPermission);
-        }
-
-        String location;
-        if (claim == null) {
-            location = this.dataStore.getMessage(Messages.LocationAllClaims);
-        } else {
-            location = this.dataStore.getMessage(Messages.LocationCurrentClaim);
-        }
-
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
     }
 
     public Optional<User> resolvePlayerByName(String name) {
@@ -2416,21 +1342,6 @@ public class GriefPrevention {
             return user;
 
         return Optional.empty();
-    }
-
-    // helper method to resolve a player name from the player's UUID
-    static String lookupPlayerName(UUID playerID) {
-        // parameter validation
-        if (playerID == null)
-            return "somebody";
-
-        // check the cache
-        Optional<User> player = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(playerID);
-        if (player.isPresent() || player.get().isOnline()) {
-            return player.get().getName();
-        } else {
-            return "someone";
-        }
     }
 
     // string overload for above helper
@@ -2550,26 +1461,26 @@ public class GriefPrevention {
         location.getExtent().loadChunk(location.getBlockPosition(), true);
     }
 
-    static Text getMessage(Messages messageID, String... args) {
+    public static Text getMessage(Messages messageID, String... args) {
         return Texts.of(GriefPrevention.instance.dataStore.getMessage(messageID, args));
     }
 
     // sends a color-coded message to a player
-    static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
+    public static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
         sendMessage(player, color, messageID, 0, args);
     }
 
     // sends a color-coded message to a player
-    static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, String... args) {
+    public static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, String... args) {
         sendMessage(player, GriefPrevention.instance.dataStore.parseMessage(messageID, color, args), delayInTicks);
     }
 
-    static void sendMessage(CommandSource player, TextColor color, String message) {
+    public static void sendMessage(CommandSource player, TextColor color, String message) {
         sendMessage(player, Texts.of(color, message));
     }
 
     // sends a color-coded message to a player
-    static void sendMessage(CommandSource player, Text message) {
+    public static void sendMessage(CommandSource player, Text message) {
         if (message == Texts.of() || message == null)
             return;
 
@@ -2580,7 +1491,7 @@ public class GriefPrevention {
         }
     }
 
-    static void sendMessage(CommandSource player, Text message, long delayInTicks) {
+    public static void sendMessage(CommandSource player, Text message, long delayInTicks) {
         SendPlayerMessageTask task = new SendPlayerMessageTask((Player) player, message);
         if (delayInTicks > 0) {
             Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(delayInTicks).execute(task).submit(GriefPrevention.instance);
@@ -2595,7 +1506,7 @@ public class GriefPrevention {
     }
 
     // determines whether creative anti-grief rules apply at a location
-    boolean creativeRulesApply(Location<World> location) {
+    public boolean creativeRulesApply(Location<World> location) {
         return this.config_claims_worldModes.get((location.getExtent())) == ClaimsMode.Creative;
     }
 
