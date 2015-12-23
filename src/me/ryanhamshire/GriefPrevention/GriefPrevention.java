@@ -2550,12 +2550,12 @@ public class GriefPrevention {
         location.getExtent().loadChunk(location.getBlockPosition(), true);
     }
 
-    static Text getMessage(Messages messageID, String... args) {
+    public static Text getMessage(Messages messageID, String... args) {
         return Texts.of(GriefPrevention.instance.dataStore.getMessage(messageID, args));
     }
 
     // sends a color-coded message to a player
-    static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
+    public static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
         sendMessage(player, color, messageID, 0, args);
     }
 
@@ -2595,7 +2595,7 @@ public class GriefPrevention {
     }
 
     // determines whether creative anti-grief rules apply at a location
-    boolean creativeRulesApply(Location<World> location) {
+    public boolean creativeRulesApply(Location<World> location) {
         return this.config_claims_worldModes.get((location.getExtent())) == ClaimsMode.Creative;
     }
 
