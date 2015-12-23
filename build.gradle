@@ -40,10 +40,10 @@ repositories {
 }
 
 dependencies {
-    compile("org.spongepowered:spongeapi:${project.apiVersion}") {
-        transitive = true
-    }
-    compile 'junit:junit:4.12'
+    compile("org.spongepowered:spongeapi:${project.apiVersion}")
+	compile("org.spongepowered:spongeforge:1.8-1577-2.1-DEV-957") {
+		exclude module: 'spongecommon'
+	}
 }
 
 sourceSets {

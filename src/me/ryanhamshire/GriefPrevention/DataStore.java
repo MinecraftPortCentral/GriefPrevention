@@ -527,7 +527,7 @@ public abstract class DataStore {
         this.deleteClaim(claim, true);
     }
 
-    synchronized void deleteClaim(Claim claim, boolean fireEvent) {
+    public synchronized void deleteClaim(Claim claim, boolean fireEvent) {
         // delete any children
         for (int j = 0; j < claim.children.size(); j++) {
             this.deleteClaim(claim.children.get(j--), true);
@@ -960,7 +960,7 @@ public abstract class DataStore {
     }
 
     // timestamp for each siege cooldown to end
-    private HashMap<String, Long> siegeCooldownRemaining = new HashMap<String, Long>();
+    public HashMap<String, Long> siegeCooldownRemaining = new HashMap<String, Long>();
 
     // whether or not a sieger can siege a particular victim or claim,
     // considering only cooldowns
