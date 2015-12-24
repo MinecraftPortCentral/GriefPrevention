@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import me.ryanhamshire.GriefPrevention.command.CommandHelper;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
@@ -672,7 +673,7 @@ public class Claim {
         if (this.ownerID == null)
             return GriefPrevention.instance.dataStore.getMessage(Messages.OwnerNameForAdminClaims);
 
-        return GriefPrevention.lookupPlayerName(this.ownerID);
+        return CommandHelper.lookupPlayerName(this.ownerID);
     }
 
     // whether or not a location is in a claim

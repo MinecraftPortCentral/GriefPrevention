@@ -1,0 +1,24 @@
+package me.ryanhamshire.GriefPrevention.command;
+
+import me.ryanhamshire.GriefPrevention.ClaimPermission;
+import me.ryanhamshire.GriefPrevention.GriefPrevention;
+import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.command.CommandResult;
+import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.command.args.CommandContext;
+import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.text.Texts;
+
+public class CommandContainerTrust implements CommandExecutor {
+
+    @Override
+    public CommandResult execute(CommandSource src, CommandContext ctx) {
+        try {
+            CommandHelper.handleTrustCommand(GriefPrevention.checkPlayer(src), ClaimPermission.Inventory,
+                    ctx.<String>getOne("target").get());
+        } catch (CommandException e) {
+            src.sendMessage(Texts.of("An error occurred while executing that command."));
+        }
+        return CommandResult.success();
+    }
+}

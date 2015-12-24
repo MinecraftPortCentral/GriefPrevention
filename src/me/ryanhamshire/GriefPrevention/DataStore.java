@@ -84,7 +84,7 @@ public abstract class DataStore {
     protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<>();
 
     // in-memory cache for claim data
-    ArrayList<Claim> claims = new ArrayList<Claim>();
+    public ArrayList<Claim> claims = new ArrayList<Claim>();
     ConcurrentHashMap<String, ArrayList<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
 
     // in-memory cache for messages
@@ -255,7 +255,7 @@ public abstract class DataStore {
     }
 
     // updates soft mute map and data file
-    boolean toggleSoftMute(UUID playerID) {
+    public boolean toggleSoftMute(UUID playerID) {
         boolean newValue = !this.isSoftMuted(playerID);
 
         this.softMuteMap.put(playerID, newValue);
@@ -306,14 +306,14 @@ public abstract class DataStore {
     }
 
     // removes cached player data from memory
-    synchronized void clearCachedPlayerData(UUID playerID) {
+    public synchronized void clearCachedPlayerData(UUID playerID) {
         this.playerNameToPlayerDataMap.remove(playerID);
     }
 
     // gets the number of bonus blocks a player has from his permissions
     // Bukkit doesn't allow for checking permissions of an offline player.
     // this will return 0 when he's offline, and the correct number when online.
-    synchronized int getGroupBonusBlocks(UUID playerID) {
+    public synchronized int getGroupBonusBlocks(UUID playerID) {
         int bonusBlocks = 0;
         Set<String> keys = permissionToBonusBlocksMap.keySet();
         Iterator<String> iterator = keys.iterator();
@@ -347,7 +347,7 @@ public abstract class DataStore {
     abstract void saveGroupBonusBlocks(String groupName, int amount);
 
     @SuppressWarnings("serial")
-    class NoTransferException extends Exception {
+    public class NoTransferException extends Exception {
 
         NoTransferException(String message) {
             super(message);

@@ -25,16 +25,25 @@
 package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.ClaimPermission;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
 import me.ryanhamshire.GriefPrevention.Visualization;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Texts;
+
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.UUID;
 
 public class CommandHelper {
 
@@ -51,9 +60,9 @@ public class CommandHelper {
 
         // which claim is being abandoned?
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /*
-                                                                            * ignore
-                                                                            * height
-                                                                            */, null);
+         * ignore
+         * height
+         */, null);
         if (claim == null) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
         }
@@ -69,7 +78,6 @@ public class CommandHelper {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
             return CommandResult.empty();
         }
-
         else {
             // delete it
             claim.removeSurfaceFluids(null);
@@ -101,5 +109,152 @@ public class CommandHelper {
 
         return CommandResult.success();
 
+    }
+
+    // helper method to resolve a player name from the player's UUID
+    public static String lookupPlayerName(UUID playerID) {
+        // parameter validation
+        if (playerID == null)
+            return "somebody";
+
+        // check the cache
+        Optional<User> player = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(playerID);
+        if (player.isPresent() || player.get().isOnline()) {
+            return player.get().getName();
+        } else {
+            return "someone";
+        }
+    }
+
+    // helper method keeps the trust commands consistent and eliminates duplicate code
+    public static void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) throws CommandException {
+        // determine which claim the player is standing in
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /* ignore height */, null);
+
+        // validate player or group argument
+        String permission = null;
+        User otherPlayer = null;
+        UUID recipientID = null;
+        if (recipientName.startsWith("[") && recipientName.endsWith("]")) {
+            permission = recipientName.substring(1, recipientName.length() - 1);
+            if (permission == null || permission.isEmpty()) {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.InvalidPermissionID);
+                return;
+            }
+        }
+        else if (recipientName.contains(".")) {
+            permission = recipientName;
+        }
+        else {
+            otherPlayer = GriefPrevention.instance.resolvePlayerByName(recipientName).orElse(null);
+            if (otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all")) {
+                throw new CommandException(GriefPrevention.getMessage(Messages.PlayerNotFound2));
+            }
+
+            if (otherPlayer != null) {
+                recipientName = otherPlayer.getName();
+                recipientID = otherPlayer.getUniqueId();
+            } else {
+                recipientName = "public";
+            }
+        }
+
+        // determine which claims should be modified
+        ArrayList<Claim> targetClaims = new ArrayList<Claim>();
+        if (claim == null) {
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            for (int i = 0; i < playerData.getClaims().size(); i++) {
+                targetClaims.add(playerData.getClaims().get(i));
+            }
+        } else {
+            // check permission here
+            if (claim.allowGrantPermission(player) != null) {
+                throw new CommandException(GriefPrevention.getMessage(Messages.NoPermissionTrust, claim.getOwnerName()));
+            }
+
+            // see if the player has the level of permission he's trying to
+            // grant
+            String errorMessage = null;
+
+            // permission level null indicates granting permission trust
+            if (permissionLevel == null) {
+                errorMessage = claim.allowEdit(player);
+                if (errorMessage != null) {
+                    errorMessage = "Only " + claim.getOwnerName() + " can grant /PermissionTrust here.";
+                }
+            }
+
+            // otherwise just use the ClaimPermission enum values
+            else {
+                switch (permissionLevel) {
+                    case Access:
+                        errorMessage = claim.allowAccess(player);
+                        break;
+                    case Inventory:
+                        errorMessage = claim.allowContainers(player);
+                        break;
+                    default:
+                        errorMessage = claim.allowBuild(player, BlockTypes.AIR);
+                }
+            }
+
+            // error message for trying to grant a permission the player doesn't
+            // have
+            if (errorMessage != null) {
+                throw new CommandException(GriefPrevention.getMessage(Messages.CantGrantThatPermission));
+            }
+
+            targetClaims.add(claim);
+        }
+
+        // if we didn't determine which claims to modify, tell the player to be
+        // specific
+        if (targetClaims.size() == 0) {
+            throw new CommandException(GriefPrevention.getMessage(Messages.GrantPermissionNoClaim));
+        }
+
+        // apply changes
+        for (int i = 0; i < targetClaims.size(); i++) {
+            Claim currentClaim = targetClaims.get(i);
+            String identifierToAdd = recipientName;
+            if (permission != null) {
+                identifierToAdd = "[" + permission + "]";
+            } else if (recipientID != null) {
+                identifierToAdd = recipientID.toString();
+            }
+
+            if (permissionLevel == null) {
+                if (!currentClaim.managers.contains(identifierToAdd)) {
+                    currentClaim.managers.add(identifierToAdd);
+                }
+            } else {
+                currentClaim.setPermission(identifierToAdd, permissionLevel);
+            }
+            GriefPrevention.instance.dataStore.saveClaim(currentClaim);
+        }
+
+        // notify player
+        if (recipientName.equals("public"))
+            recipientName = GriefPrevention.instance.dataStore.getMessage(Messages.CollectivePublic);
+        String permissionDescription;
+        if (permissionLevel == null) {
+            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.PermissionsPermission);
+        } else if (permissionLevel == ClaimPermission.Build) {
+            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.BuildPermission);
+        } else if (permissionLevel == ClaimPermission.Access) {
+            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.AccessPermission);
+        } else // ClaimPermission.Inventory
+        {
+            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.ContainersPermission);
+        }
+
+        String location;
+        if (claim == null) {
+            location = GriefPrevention.instance.dataStore.getMessage(Messages.LocationAllClaims);
+        } else {
+            location = GriefPrevention.instance.dataStore.getMessage(Messages.LocationCurrentClaim);
+        }
+
+        GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
     }
 }

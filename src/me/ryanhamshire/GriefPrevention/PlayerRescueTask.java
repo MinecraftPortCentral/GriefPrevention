@@ -31,7 +31,7 @@ import org.spongepowered.api.world.World;
 //tries to rescue a trapped player from a claim where he doesn't have permission to save himself
 //related to the /trapped slash command
 //this does run in the main thread, so it's okay to make non-thread-safe calls
-class PlayerRescueTask implements Runnable {
+public class PlayerRescueTask implements Runnable {
 
     // original location where /trapped was used
     private Location<World> location;

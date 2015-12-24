@@ -1357,7 +1357,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        PlayerData playerData = playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         // exception for blocks on a specific watch list
         if (!this.onLeftClickWatchList(clickedBlock.getState().getType()) && clickedBlock.getState().getType().getItem().isPresent() && !GriefPrevention.instance.config_mods_accessTrustIds
                 .contains(new ItemInfo(clickedBlock.getState().getType().getItem().get(), ((IBlockState)clickedBlock.getState()).getBlock().getMetaFromState((IBlockState)clickedBlock.getState())))) {
