@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.ClaimsMode;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
@@ -30,7 +31,7 @@ public class CommandAbandonClaim implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // which claim is being abandoned?
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(),
@@ -57,7 +58,7 @@ public class CommandAbandonClaim implements CommandExecutor {
             GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
             // if in a creative mode world, restore the claim area
-            if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
+            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)) {
                 GriefPrevention.AddLogEntry(
                         player.getName() + " abandoned a claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
@@ -66,12 +67,12 @@ public class CommandAbandonClaim implements CommandExecutor {
 
             // adjust claim blocks when abandoning a top level claim
             if (claim.parent == null) {
-                playerData.setAccruedClaimBlocks(
-                        playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.instance.config_claims_abandonReturnRatio))));
+                playerData.setAccruedClaimBlocks(player.getWorld(),
+                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.abandonReturnRatio))));
             }
 
             // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks();
+            int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
 
             // revert any current visualization

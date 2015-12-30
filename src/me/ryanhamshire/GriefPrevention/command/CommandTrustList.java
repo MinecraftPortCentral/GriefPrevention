@@ -52,9 +52,7 @@ public class CommandTrustList implements CommandExecutor {
             }
         }
 
-        // otherwise build a list of explicit permissions by permission
-        // level
-        // and send that to the player
+        // otherwise build a list of explicit permissions by permission level and send that to the player
         ArrayList<String> builders = new ArrayList<>();
         ArrayList<String> containers = new ArrayList<>();
         ArrayList<String> accessors = new ArrayList<>();

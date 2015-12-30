@@ -22,8 +22,8 @@ public class CommandIgnoreClaim implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
 
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         playerData.ignoreClaims = !playerData.ignoreClaims;
 
         // toggle ignore claims mode on or off

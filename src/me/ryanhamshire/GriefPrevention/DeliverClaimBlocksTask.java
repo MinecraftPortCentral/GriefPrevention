@@ -64,7 +64,7 @@ class DeliverClaimBlocksTask implements Runnable {
         // otherwise, deliver claim blocks to the specified player
         else {
             DataStore dataStore = GriefPrevention.instance.dataStore;
-            PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
             Location<World> lastLocation = playerData.lastAfkCheckLocation;
             try {
@@ -76,12 +76,13 @@ class DeliverClaimBlocksTask implements Runnable {
                         !((net.minecraft.block.Block) player.getLocation().getBlockType()).getMaterial().isLiquid()) {
                     // add blocks
                     int accruedBlocks = GriefPrevention.instance.config_claims_blocksAccruedPerHour / 6;
-                    if (accruedBlocks < 0)
+                    if (accruedBlocks < 0) {
                         accruedBlocks = 1;
+                    }
 
                     GriefPrevention.AddLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
 
-                    playerData.accrueBlocks(accruedBlocks);
+                    playerData.worldStorageData.get(player.getWorld().getUniqueId()).getConfig().accruedClaimBlocks += accruedBlocks;
 
                     // intentionally NOT saving data here to reduce overall
                     // secondary storage access frequency

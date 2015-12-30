@@ -1,10 +1,10 @@
 package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
+import me.ryanhamshire.GriefPrevention.GriefPrevention.IgnoreMode;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
-import me.ryanhamshire.GriefPrevention.GriefPrevention.IgnoreMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -28,7 +28,7 @@ public class CommandUnignorePlayer implements CommandExecutor {
         // validate target player
         User targetPlayer = args.<User>getOne("player").get();
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
         if (ignoreStatus == null || ignoreStatus == true) {
             try {
@@ -39,7 +39,7 @@ public class CommandUnignorePlayer implements CommandExecutor {
             }
         }
 
-        GriefPrevention.instance.setIgnoreStatus(player, targetPlayer, IgnoreMode.None);
+        GriefPrevention.instance.setIgnoreStatus(player.getWorld(), player, targetPlayer, IgnoreMode.None);
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnIgnoreConfirmation);
 

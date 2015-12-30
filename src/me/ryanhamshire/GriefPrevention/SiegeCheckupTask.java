@@ -51,7 +51,7 @@ class SiegeCheckupTask implements Runnable {
 
         // if this is a new claim and he has some permission there, extend the siege to include it
         if (defenderClaim != null) {
-            String noAccessReason = defenderClaim.allowAccess(defender);
+            String noAccessReason = defenderClaim.allowAccess(defender.getWorld(), defender);
             if (defenderClaim.canSiege(defender) && noAccessReason == null) {
                 this.siegeData.claims.add(defenderClaim);
                 defenderClaim.siegeData = this.siegeData;

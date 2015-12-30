@@ -29,7 +29,7 @@ import org.spongepowered.api.entity.living.player.Player;
 //tells a player about how many claim blocks he has, etc
 //implemented as a task so that it can be delayed
 //otherwise, it's spammy when players mouse-wheel past the shovel in their hot bars
-class EquipShovelProcessingTask implements Runnable {
+public class EquipShovelProcessingTask implements Runnable {
 
     // player data
     private Player player;
@@ -41,10 +41,10 @@ class EquipShovelProcessingTask implements Runnable {
     @Override
     public void run() {
         // if he's not holding the golden shovel anymore, do nothing
-        if (player.getItemInHand().isPresent() && player.getItemInHand().get().getItem() != GriefPrevention.instance.config_claims_modificationTool)
+        if (player.getItemInHand().isPresent() && player.getItemInHand().get().getItem().getId() != GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.modificationTool)
             return;
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // reset any work he might have been doing
         playerData.lastShovelLocation = null;
@@ -57,11 +57,11 @@ class EquipShovelProcessingTask implements Runnable {
         }
 
         // tell him how many claim blocks he has available
-        int remainingBlocks = playerData.getRemainingClaimBlocks();
+        int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
         GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RemainingBlocks, String.valueOf(remainingBlocks));
 
         // link to a video demo of land claiming, based on world type
-        if (GriefPrevention.instance.creativeRulesApply(player.getLocation())) {
+        if (GriefPrevention.instance.claimModeIsActive(player.getLocation().getExtent(), ClaimsMode.Creative)) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsVideo2);
         } else if (GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getExtent())) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);

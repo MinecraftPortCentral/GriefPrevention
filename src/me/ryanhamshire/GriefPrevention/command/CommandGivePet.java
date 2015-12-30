@@ -24,7 +24,7 @@ public class CommandGivePet implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // special case: cancellation
         if (args.getOne("player").orElse(false).equals(true)) {

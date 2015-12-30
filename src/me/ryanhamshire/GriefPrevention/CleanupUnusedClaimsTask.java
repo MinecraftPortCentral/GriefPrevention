@@ -41,6 +41,9 @@ import java.util.Vector;
 //runs every 1 minute in the main thread
 class CleanupUnusedClaimsTask implements Runnable {
 
+    @Override
+    public void run() { }
+/* temp disabled
     int nextClaimIndex;
 
     CleanupUnusedClaimsTask() {
@@ -193,5 +196,5 @@ class CleanupUnusedClaimsTask implements Runnable {
                 }
             }
         }
-    }
+    }*/
 }

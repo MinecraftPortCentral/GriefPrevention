@@ -26,6 +26,7 @@ package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimPermission;
+import me.ryanhamshire.GriefPrevention.ClaimsMode;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
@@ -56,7 +57,7 @@ public class CommandHelper {
     }
 
     public static CommandResult abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // which claim is being abandoned?
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /*
@@ -84,7 +85,7 @@ public class CommandHelper {
             GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
             // if in a creative mode world, restore the claim area
-            if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
+            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)) {
                 GriefPrevention.AddLogEntry(
                         player.getName() + " abandoned a claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
@@ -93,12 +94,12 @@ public class CommandHelper {
 
             // adjust claim blocks when abandoning a top level claim
             if (claim.parent == null) {
-                playerData.setAccruedClaimBlocks(
-                        playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.instance.config_claims_abandonReturnRatio))));
+                playerData.setAccruedClaimBlocks(player.getWorld(),
+                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.abandonReturnRatio))));
             }
 
             // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks();
+            int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
 
             // revert any current visualization
@@ -162,18 +163,15 @@ public class CommandHelper {
         // determine which claims should be modified
         ArrayList<Claim> targetClaims = new ArrayList<Claim>();
         if (claim == null) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-            for (int i = 0; i < playerData.getClaims().size(); i++) {
-                targetClaims.add(playerData.getClaims().get(i));
-            }
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            targetClaims.addAll(playerData.playerWorldClaims.get(player.getWorld().getUniqueId()));
         } else {
             // check permission here
             if (claim.allowGrantPermission(player) != null) {
                 throw new CommandException(GriefPrevention.getMessage(Messages.NoPermissionTrust, claim.getOwnerName()));
             }
 
-            // see if the player has the level of permission he's trying to
-            // grant
+            // see if the player has the level of permission he's trying to grant
             String errorMessage = null;
 
             // permission level null indicates granting permission trust
@@ -188,7 +186,7 @@ public class CommandHelper {
             else {
                 switch (permissionLevel) {
                     case Access:
-                        errorMessage = claim.allowAccess(player);
+                        errorMessage = claim.allowAccess(player.getWorld(), player);
                         break;
                     case Inventory:
                         errorMessage = claim.allowContainers(player);
@@ -198,8 +196,7 @@ public class CommandHelper {
                 }
             }
 
-            // error message for trying to grant a permission the player doesn't
-            // have
+            // error message for trying to grant a permission the player doesn't have
             if (errorMessage != null) {
                 throw new CommandException(GriefPrevention.getMessage(Messages.CantGrantThatPermission));
             }
@@ -207,8 +204,7 @@ public class CommandHelper {
             targetClaims.add(claim);
         }
 
-        // if we didn't determine which claims to modify, tell the player to be
-        // specific
+        // if we didn't determine which claims to modify, tell the player to be specific
         if (targetClaims.size() == 0) {
             throw new CommandException(GriefPrevention.getMessage(Messages.GrantPermissionNoClaim));
         }

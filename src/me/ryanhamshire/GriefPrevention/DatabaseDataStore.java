@@ -24,14 +24,14 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -136,12 +136,12 @@ public class DatabaseDataStore extends DataStore {
         // if there's nothing yet, add it
         if (!results.next()) {
             statement.execute("INSERT INTO griefprevention_nextclaimid VALUES(0);");
-            this.nextClaimID = (long) 0;
+            //this.nextClaimID = (long) 0;
         }
 
         // otherwise load it
         else {
-            this.nextClaimID = results.getLong("nextid");
+            //this.nextClaimID = results.getLong("nextid");
         }
 
         if (this.getSchemaVersion() == 0) {
@@ -188,8 +188,7 @@ public class DatabaseDataStore extends DataStore {
                     }
                 }
 
-                // refresh data connection in case data migration took a long
-                // time
+                // refresh data connection in case data migration took a long time
                 this.refreshDataConnection();
 
                 for (String name : changes.keySet()) {
@@ -230,10 +229,11 @@ public class DatabaseDataStore extends DataStore {
                 String lesserCornerString = "(location not available)";
                 try {
                     lesserCornerString = results.getString("lessercorner");
-                    lesserBoundaryCorner = this.locationFromString(lesserCornerString, validWorlds);
+                    Vector3i lesserPos = positionFromString(lesserCornerString);
+                   // lesserBoundaryCorner = positionFromString(lesserCornerString);
 
                     String greaterCornerString = results.getString("greatercorner");
-                    greaterBoundaryCorner = this.locationFromString(greaterCornerString, validWorlds);
+                   //greaterBoundaryCorner = positionFromString(greaterCornerString);
                 } catch (Exception e) {
                     if (e.getMessage().contains("World not found")) {
                         removeClaim = true;
@@ -274,7 +274,7 @@ public class DatabaseDataStore extends DataStore {
                 managerNames = this.convertNameListToUUIDList(managerNames);
 
                 Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), builderNames, containerNames, accessorNames,
-                        managerNames, claimID);
+                        managerNames, UUID.randomUUID());
 
                 if (removeClaim) {
                     claimsToRemove.add(claim);
@@ -322,10 +322,9 @@ public class DatabaseDataStore extends DataStore {
         super.initialize();
     }
 
+    // see datastore.cs. this will ALWAYS be a top level claim
     @Override
-    synchronized void writeClaimToStorage(Claim claim) // see datastore.cs. this
-                                                       // will ALWAYS be a top
-                                                       // level claim
+    synchronized void writeClaimToStorage(Claim claim)
     {
         try {
             this.refreshDataConnection();
@@ -336,14 +335,14 @@ public class DatabaseDataStore extends DataStore {
             // write claim data to the database
             this.writeClaimData(claim);
         } catch (SQLException e) {
-            GriefPrevention.AddLogEntry("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
+            //GriefPrevention.AddLogEntry("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
             GriefPrevention.AddLogEntry(e.getMessage());
         }
     }
 
     // actually writes claim data to the database
     synchronized private void writeClaimData(Claim claim) throws SQLException {
-        String lesserCornerString = this.locationToString(claim.getLesserBoundaryCorner());
+        /*String lesserCornerString = this.locationToString(claim.getLesserBoundaryCorner());
         String greaterCornerString = this.locationToString(claim.getGreaterBoundaryCorner());
         String owner = "";
         if (claim.ownerID != null)
@@ -403,7 +402,7 @@ public class DatabaseDataStore extends DataStore {
         } catch (SQLException e) {
             GriefPrevention.AddLogEntry("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
             GriefPrevention.AddLogEntry(e.getMessage());
-        }
+        }*/
     }
 
     // deletes a claim from the database
@@ -421,7 +420,7 @@ public class DatabaseDataStore extends DataStore {
         }
     }
 
-    @Override
+    /*@Override
     synchronized PlayerData getPlayerDataFromStorage(UUID playerID) {
         PlayerData playerData = new PlayerData();
         playerData.playerID = playerID;
@@ -445,7 +444,7 @@ public class DatabaseDataStore extends DataStore {
         }
 
         return playerData;
-    }
+    }*/
 
     // saves changes to player data. MUST be called after you're done making
     // changes, otherwise a reload will lose them
@@ -456,10 +455,10 @@ public class DatabaseDataStore extends DataStore {
         if (playerID == null)
             return;
 
-        this.savePlayerData(playerID.toString(), playerData);
+        //this.savePlayerData(playerID.toString(), playerData);
     }
 
-    private void savePlayerData(String playerID, PlayerData playerData) {
+   /* private void savePlayerData(String playerID, PlayerData playerData) {
         try {
             this.refreshDataConnection();
 
@@ -476,17 +475,17 @@ public class DatabaseDataStore extends DataStore {
             e.printStackTrace(new PrintWriter(errors));
             GriefPrevention.AddLogEntry(playerID + " " + errors.toString(), CustomLogEntryTypes.Exception);
         }
-    }
+    }*/
 
     @Override
     synchronized void incrementNextClaimID() {
-        this.setNextClaimID(this.nextClaimID + 1);
+        //this.setNextClaimID(this.nextClaimID + 1);
     }
 
     // sets the next claim ID. used by incrementNextClaimID() above, and also
     // while migrating data from a flat file data store
     synchronized void setNextClaimID(long nextID) {
-        this.nextClaimID = nextID;
+       // this.nextClaimID = nextID;
 
         try {
             this.refreshDataConnection();
@@ -522,7 +521,6 @@ public class DatabaseDataStore extends DataStore {
         }
     }
 
-    @Override
     synchronized void close() {
         if (this.databaseConnection != null) {
             try {
@@ -591,4 +589,23 @@ public class DatabaseDataStore extends DataStore {
             GriefPrevention.AddLogEntry(e.getMessage());
         }
     }
+
+    @Override
+            PlayerData getPlayerDataFromStorage(UUID playerID) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void createPlayerWorldData(World world, Player player) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public PlayerData getPlayerData(World world, UUID playerID) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 }

@@ -33,12 +33,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 //loads ignore data from file into a hash map
-class IgnoreLoaderThread extends Thread {
+public class IgnoreLoaderThread extends Thread {
 
     private UUID playerToLoad;
     private ConcurrentHashMap<UUID, Boolean> destinationMap;
 
-    IgnoreLoaderThread(UUID playerToLoad, ConcurrentHashMap<UUID, Boolean> destinationMap) {
+    public IgnoreLoaderThread(UUID playerToLoad, ConcurrentHashMap<UUID, Boolean> destinationMap) {
         this.playerToLoad = playerToLoad;
         this.destinationMap = destinationMap;
         this.setPriority(MIN_PRIORITY);

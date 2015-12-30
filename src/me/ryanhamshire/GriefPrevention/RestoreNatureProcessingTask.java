@@ -56,7 +56,8 @@ class RestoreNatureProcessingTask implements Runnable {
     private DimensionType environment;
     private Location<World> lesserBoundaryCorner;
     private Location<World> greaterBoundaryCorner;
-    private Player player; // absolutely must not be accessed. not thread safe.
+    // absolutely must not be accessed. not thread safe.
+    private Player player;
     private BiomeType biome;
     private boolean creativeMode;
     private int seaLevel;

@@ -24,27 +24,19 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.BlockType;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.data.key.Keys;
-import org.spongepowered.api.entity.Entity;
-import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.vehicle.Boat;
-import org.spongepowered.api.world.World;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 //FEATURE: creative mode worlds get a regular entity cleanup
 
 //this main thread task revisits the location of a partially chopped tree from several minutes ago
 //if any part of the tree is still there and nothing else has been built in its place, remove the remaining parts
 class EntityCleanupTask implements Runnable {
 
+    @Override
+    public void run() {
+        // TODO - temp disabled
+    }
+
     // where to start cleaning in the list of entities
-    private double percentageStart;
+   /* private double percentageStart;
 
     public EntityCleanupTask(double percentageStart) {
         this.percentageStart = percentageStart;
@@ -138,5 +130,5 @@ class EntityCleanupTask implements Runnable {
 
         EntityCleanupTask task = new EntityCleanupTask(nextRunPercentageStart);
         Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
-    }
+    }*/
 }

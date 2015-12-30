@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.ClaimsMode;
 import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
@@ -35,7 +36,7 @@ public class CommandDeleteClaim implements CommandExecutor {
         else {
             // deleting an admin claim additionally requires the adminclaims permission
             if (!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims")) {
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
                 if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
                     GriefPrevention.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);
                     playerData.warnedAboutMajorDeletion = true;
@@ -44,7 +45,7 @@ public class CommandDeleteClaim implements CommandExecutor {
                     GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
                     // if in a creative mode world, /restorenature the claim
-                    if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
+                    if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)) {
                         GriefPrevention.instance.restoreClaim(claim, 0);
                     }
 

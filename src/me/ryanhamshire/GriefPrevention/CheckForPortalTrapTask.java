@@ -32,7 +32,7 @@ import org.spongepowered.api.world.World;
 //players can be "trapped" in a portal frame if they don't have permission to break
 //solid blocks blocking them from exiting the frame
 //if that happens, we detect the problem and send them back through the portal.
-class CheckForPortalTrapTask implements Runnable {
+public class CheckForPortalTrapTask implements Runnable {
 
     // player who recently teleported via nether portal
     private Player player;

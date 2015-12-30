@@ -45,7 +45,7 @@ public class Visualization {
 
     // sends a visualization to a player
     public static void Apply(Player player, Visualization visualization) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // if he has any current visualization, clear it first
         if (playerData.currentVisualization != null) {
@@ -66,7 +66,7 @@ public class Visualization {
         if (!player.isOnline())
             return;
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         Visualization visualization = playerData.currentVisualization;
 

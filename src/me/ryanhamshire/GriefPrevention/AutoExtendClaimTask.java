@@ -33,7 +33,7 @@ import org.spongepowered.api.world.biome.BiomeType;
 import java.util.ArrayList;
 
 //automatically extends a claim downward based on block types detected
-class AutoExtendClaimTask implements Runnable {
+public class AutoExtendClaimTask implements Runnable {
 
     private Claim claim;
     private ArrayList<Chunk> chunks;
@@ -89,7 +89,7 @@ class AutoExtendClaimTask implements Runnable {
     }
 
     private boolean yTooSmall(int y) {
-        return y == 0 || y <= GriefPrevention.instance.config_claims_maxDepth;
+        return y == 0 || y <= GriefPrevention.getActiveConfig(this.claim.world).getConfig().claim.maxClaimDepth;
     }
 
     // runs in the main execution thread, where it can safely change claims and

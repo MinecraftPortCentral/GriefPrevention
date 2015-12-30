@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class WordFinder {
+public class WordFinder {
 
     private Pattern pattern;
 
-    WordFinder(List<String> wordsToFind) {
+    public WordFinder(List<String> wordsToFind) {
         StringBuilder patternBuilder = new StringBuilder();
         for (String word : wordsToFind) {
             patternBuilder.append("|(([^\\w]|^)" + Pattern.quote(word) + "([^\\w]|$))");
@@ -47,7 +47,7 @@ class WordFinder {
         this.pattern = Pattern.compile(patternString, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     }
 
-    boolean hasMatch(String input) {
+    public boolean hasMatch(String input) {
         Matcher matcher = this.pattern.matcher(input);
         return matcher.find();
     }

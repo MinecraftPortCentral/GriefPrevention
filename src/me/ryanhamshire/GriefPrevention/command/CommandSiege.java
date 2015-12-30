@@ -29,7 +29,7 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // error message for when siege mode is disabled
-        if (!GriefPrevention.instance.siegeEnabledForWorld(player.getWorld())) {
+        if (!GriefPrevention.getActiveConfig(player.getWorld()).getConfig().siege.siegeEnabled) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.NonSiegeWorld));
             } catch (CommandException e) {
@@ -40,7 +40,7 @@ public class CommandSiege implements CommandExecutor {
 
         // can't start a siege when you're already involved in one
         Player attacker = player;
-        PlayerData attackerData = GriefPrevention.instance.dataStore.getPlayerData(attacker.getUniqueId());
+        PlayerData attackerData = GriefPrevention.instance.dataStore.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
         if (attackerData.siegeData != null) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.AlreadySieging));
@@ -85,7 +85,7 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // victim must not be under siege already
-        PlayerData defenderData = GriefPrevention.instance.dataStore.getPlayerData(defender.getUniqueId());
+        PlayerData defenderData = GriefPrevention.instance.dataStore.getPlayerData(defender.getWorld(), defender.getUniqueId());
         if (defenderData.siegeData != null) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.AlreadyUnderSiegePlayer));
@@ -108,7 +108,7 @@ public class CommandSiege implements CommandExecutor {
         Claim defenderClaim = GriefPrevention.instance.dataStore.getClaimAt(defender.getLocation(), false, null);
 
         // defender must have some level of permission there to be protected
-        if (defenderClaim == null || defenderClaim.allowAccess(defender) != null) {
+        if (defenderClaim == null || defenderClaim.allowAccess(defender.getWorld(), defender) != null) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.NotSiegableThere, defender.getName()));
             } catch (CommandException e) {

@@ -12,8 +12,8 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Texts;
 
-import java.util.UUID;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 public class CommandIgnoredPlayerList implements CommandExecutor {
 
@@ -27,7 +27,7 @@ public class CommandIgnoredPlayerList implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         StringBuilder builder = new StringBuilder();
         for (Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet()) {
             if (entry.getValue() != null) {

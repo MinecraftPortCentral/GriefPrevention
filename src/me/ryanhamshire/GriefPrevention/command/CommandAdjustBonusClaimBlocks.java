@@ -68,13 +68,13 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
         }
 
         // give blocks to player
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetPlayer.getUniqueId());
-        playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
-        GriefPrevention.instance.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), targetPlayer.getUniqueId());
+        playerData.setBonusClaimBlocks(player.getWorld(), playerData.getBonusClaimBlocks(player.getWorld()) + adjustment);
+        playerData.worldStorageData.get(player.getWorld().getUniqueId()).save();
 
         GriefPrevention
                 .sendMessage(player, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment),
-                        String.valueOf(playerData.getBonusClaimBlocks()));
+                        String.valueOf(playerData.getBonusClaimBlocks(player.getWorld())));
         if (player != null)
             GriefPrevention.AddLogEntry(
                     player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".",

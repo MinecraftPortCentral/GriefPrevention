@@ -13,6 +13,8 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 
+import java.util.List;
+
 public class CommandUntrust implements CommandExecutor {
 
     @Override
@@ -71,13 +73,12 @@ public class CommandUntrust implements CommandExecutor {
 
         // if no claim here, apply changes to all his claims
         if (claim == null) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-            for (int i = 0; i < playerData.getClaims().size(); i++) {
-                claim = playerData.getClaims().get(i);
-
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            List<Claim> claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
+            for (Claim playerClaim : claimList) {
                 // if untrusting "all" drop all permissions
                 if (clearPermissions) {
-                    claim.clearPermissions();
+                    playerClaim.clearPermissions();
                 }
 
                 // otherwise drop individual permissions
@@ -86,12 +87,12 @@ public class CommandUntrust implements CommandExecutor {
                     if (otherPlayer != null) {
                         idToDrop = otherPlayer.getUniqueId().toString();
                     }
-                    claim.dropPermission(idToDrop);
-                    claim.managers.remove(idToDrop);
+                    playerClaim.dropPermission(idToDrop);
+                    playerClaim.managers.remove(idToDrop);
                 }
 
                 // save changes
-                GriefPrevention.instance.dataStore.saveClaim(claim);
+                GriefPrevention.instance.dataStore.saveClaim(playerClaim);
             }
 
             // beautify for output
@@ -105,10 +106,8 @@ public class CommandUntrust implements CommandExecutor {
             } else {
                 GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustEveryoneAllClaims);
             }
-        }
-
-        // otherwise, apply changes to only this claim
-        else if (claim.allowGrantPermission(player) != null) {
+        } else if (claim.allowGrantPermission(player) != null) {
+            // otherwise, apply changes to only this claim
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.NoPermissionTrust, claim.getOwnerName()));
             } catch (CommandException e) {

@@ -52,7 +52,7 @@ public class PlayerRescueTask implements Runnable {
 
         // he no longer has a pending /trapped slash command, so he can try to
         // use it again now
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         playerData.pendingTrapped = false;
 
         // if the player moved three or more blocks from where he used /trapped,

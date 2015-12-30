@@ -23,7 +23,8 @@ public class CommandAdminClaims implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.Admin;
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdminClaimsMode);
         return CommandResult.success();

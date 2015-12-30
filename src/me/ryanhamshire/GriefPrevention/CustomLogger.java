@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class CustomLogger {
+public class CustomLogger {
 
     private final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm");
     private final SimpleDateFormat filenameFormat = new SimpleDateFormat("yyyy_MM_dd");
@@ -56,7 +56,7 @@ class CustomLogger {
         this.DeleteExpiredLogs();
 
         // unless disabled, schedule recurring tasks
-        int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
+        int daysToKeepLogs = GriefPrevention.getGlobalConfig().getConfig().logging.loggingDaysToKeep;
         if (daysToKeepLogs > 0) {
             Scheduler scheduler = Sponge.getGame().getScheduler();
             scheduler.createTaskBuilder().async().execute(new EntryWriter()).delay(this.secondsBetweenWrites, TimeUnit.SECONDS).interval(this
@@ -70,7 +70,7 @@ class CustomLogger {
 
     void AddEntry(String entry, CustomLogEntryTypes entryType) {
         // if disabled, do nothing
-        int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
+        int daysToKeepLogs = GriefPrevention.getGlobalConfig().getConfig().logging.loggingDaysToKeep;
         if (daysToKeepLogs == 0)
             return;
 
@@ -88,13 +88,13 @@ class CustomLogger {
     private boolean isEnabledType(CustomLogEntryTypes entryType) {
         if (entryType == CustomLogEntryTypes.Exception)
             return true;
-        if (entryType == CustomLogEntryTypes.SocialActivity && !GriefPrevention.instance.config_logs_socialEnabled)
+        if (entryType == CustomLogEntryTypes.SocialActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingSocialActions)
             return false;
-        if (entryType == CustomLogEntryTypes.SuspiciousActivity && !GriefPrevention.instance.config_logs_suspiciousEnabled)
+        if (entryType == CustomLogEntryTypes.SuspiciousActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingSuspiciousActivity)
             return false;
-        if (entryType == CustomLogEntryTypes.AdminActivity && !GriefPrevention.instance.config_logs_adminEnabled)
+        if (entryType == CustomLogEntryTypes.AdminActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingAdminActivity)
             return false;
-        if (entryType == CustomLogEntryTypes.Debug && !GriefPrevention.instance.config_logs_debugEnabled)
+        if (entryType == CustomLogEntryTypes.Debug && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug)
             return false;
 
         return true;
@@ -130,7 +130,7 @@ class CustomLogger {
             File[] files = logFolder.listFiles();
 
             // delete any created before x days ago
-            int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
+            int daysToKeepLogs = GriefPrevention.getGlobalConfig().getConfig().logging.loggingDaysToKeep;
             Calendar expirationBoundary = Calendar.getInstance();
             expirationBoundary.add(Calendar.DATE, -daysToKeepLogs);
             for (int i = 0; i < files.length; i++) {

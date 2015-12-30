@@ -25,6 +25,8 @@
 package me.ryanhamshire.GriefPrevention;
 
 import me.ryanhamshire.GriefPrevention.command.CommandHelper;
+import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
@@ -32,6 +34,7 @@ import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -57,33 +60,32 @@ public class Claim {
     // two locations, which together define the boundaries of the claim
     // note that the upper Y value is always ignored, because claims ALWAYS
     // extend up to the sky
-    Location<World> lesserBoundaryCorner;
-    Location<World> greaterBoundaryCorner;
+    public Location<World> lesserBoundaryCorner;
+    public Location<World> greaterBoundaryCorner;
+    public World world;
 
     // modification date. this comes from the file timestamp during load, and is
     // updated with runtime changes
     public Date modifiedDate;
 
     // id number. unique to this claim, never changes.
-    Long id = null;
+    UUID id = null;
 
     // ownerID. for admin claims, this is NULL
-    // use getOwnerName() to get a friendly name (will be "an administrator" for
-    // admin claims)
+    // use getOwnerName() to get a friendly name (will be "an administrator" for admin claims)
     public UUID ownerID;
 
-    // list of players who (beyond the claim owner) have permission to grant
-    // permissions in this claim
+    public ClaimStorageData claimData;
+
+    // list of players who (beyond the claim owner) have permission to grant permissions in this claim
     public ArrayList<String> managers = new ArrayList<String>();
 
     // permissions for this claim, see ClaimPermission class
     private HashMap<String, ClaimPermission> playerIDToClaimPermissionMap = new HashMap<String, ClaimPermission>();
 
     // whether or not this claim is in the data store
-    // if a claim instance isn't in the data store, it isn't "active" - players
-    // can't interract with it
-    // why keep this? so that claims which have been removed from the data store
-    // can be correctly
+    // if a claim instance isn't in the data store, it isn't "active" - players can't interract with it
+    // why keep this? so that claims which have been removed from the data store can be correctly
     // ignored even though they may have references floating around
     public boolean inDataStore = false;
 
@@ -97,13 +99,14 @@ public class Claim {
     // note subdivisions themselves never have children
     public ArrayList<Claim> children = new ArrayList<Claim>();
 
-    // information about a siege involving this claim. null means no siege is
-    // impacting this claim
+    // information about a siege involving this claim. null means no siege is impacting this claim
     public SiegeData siegeData = null;
 
-    // following a siege, buttons/levers are unlocked temporarily. this
-    // represents that state
+    // following a siege, buttons/levers are unlocked temporarily. This represents that state
     public boolean doorsOpen = false;
+
+    // items not allowed to be used in claim
+    public Map<ItemType, List<Integer>> bannedItemIds;
 
     // whether or not this is an administrative claim
     // administrative claims are created and maintained by players with the
@@ -116,7 +119,7 @@ public class Claim {
     }
 
     // accessor for ID
-    public Long getID() {
+    public UUID getID() {
         return this.id;
     }
 
@@ -132,7 +135,7 @@ public class Claim {
         if (this.isAdminClaim())
             return false;
 
-        if (this.allowAccess(defender) != null)
+        if (this.allowAccess(defender.getWorld(), defender) != null)
             return false;
 
         return true;
@@ -152,7 +155,7 @@ public class Claim {
             return;
 
         // only in creative mode worlds
-        if (!GriefPrevention.instance.creativeRulesApply(this.lesserBoundaryCorner))
+        if (!GriefPrevention.instance.claimModeIsActive(this.lesserBoundaryCorner.getExtent(), ClaimsMode.Creative))
             return;
 
         Location<World> lesser = this.getLesserBoundaryCorner();
@@ -220,8 +223,8 @@ public class Claim {
 
     // main constructor. note that only creating a claim instance does nothing -
     // a claim must be added to the data store to be effective
-    Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs,
-            List<String> accessorIDs, List<String> managerIDs, Long id) {
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs,
+            List<String> accessorIDs, List<String> managerIDs, UUID id) {
         // modification date
         this.modifiedDate = Calendar.getInstance().getTime();
 
@@ -231,6 +234,7 @@ public class Claim {
         // store corners
         this.lesserBoundaryCorner = lesserBoundaryCorner;
         this.greaterBoundaryCorner = greaterBoundaryCorner;
+        this.world = lesserBoundaryCorner.getExtent();
 
         // owner
         this.ownerID = ownerID;
@@ -369,13 +373,13 @@ public class Claim {
         }
 
         // no building while in pvp combat
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-        if (playerData.inPvpCombat()) {
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        if (playerData.inPvpCombat(player.getWorld())) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPvP);
         }
 
         // owners can make changes, or admins with ignore claims mode enabled
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims) {
+        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoreClaims) {
             return null;
         }
 
@@ -448,9 +452,10 @@ public class Claim {
             boolean breakable = false;
 
             // search for block type in list of breakable blocks
-            for (int i = 0; i < GriefPrevention.instance.config_siege_blocks.size(); i++) {
-                BlockType breakableMaterial = GriefPrevention.instance.config_siege_blocks.get(i);
-                if (breakableMaterial == blockType) {
+            for (int i = 0; i < GriefPrevention.getActiveConfig(player.getWorld()).getConfig().siege.breakableSiegeBlocks.size(); i++) {
+                String blockTypeId = GriefPrevention.getActiveConfig(player.getWorld()).getConfig().siege.breakableSiegeBlocks.get(i);
+                Optional<BlockType> breakableBlockType = Sponge.getGame().getRegistry().getType(BlockType.class, blockTypeId);
+                if (breakableBlockType.isPresent() && breakableBlockType.get() == blockType) {
                     breakable = true;
                     break;
                 }
@@ -471,7 +476,7 @@ public class Claim {
     }
 
     // access permission check
-    public String allowAccess(User player) {
+    public String allowAccess(World world, User player) {
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
@@ -508,7 +513,7 @@ public class Claim {
 
         // permission inheritance for subdivisions
         if (this.parent != null) {
-            return this.parent.allowAccess(player);
+            return this.parent.allowAccess(world, player);
         }
 
         // catch-all error message for all other cases
@@ -521,13 +526,11 @@ public class Claim {
 
     // inventory permission check
     public String allowContainers(Player player) {
-        // if we don't know who's asking, always say no (i've been told some
-        // mods can make this happen somehow)
+        // if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
         if (player == null)
             return "";
 
-        // trying to access inventory in a claim may extend an existing siege to
-        // include this claim
+        // trying to access inventory in a claim may extend an existing siege to include this claim
         GriefPrevention.instance.dataStore.tryExtendSiege(player, this);
 
         // if under siege, nobody accesses containers
@@ -536,7 +539,7 @@ public class Claim {
         }
 
         // owner and administrators in ignoreclaims mode have access
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims)
+        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoreClaims)
             return null;
 
         // admin claims need adminclaims permission only.
@@ -791,7 +794,7 @@ public class Claim {
             return this.parent.allowMoreEntities();
 
         // this rule only applies to creative mode worlds
-        if (!GriefPrevention.instance.creativeRulesApply(this.getLesserBoundaryCorner()))
+        if (!GriefPrevention.instance.claimModeIsActive(this.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative))
             return null;
 
         // admin claims aren't restricted
@@ -858,7 +861,7 @@ public class Claim {
         // scan the claim for player placed blocks
         double score = 0;
 
-        boolean creativeMode = GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner);
+        boolean creativeMode = GriefPrevention.instance.claimModeIsActive(lesserBoundaryCorner.getExtent(), ClaimsMode.Creative);
 
         for (int x = this.lesserBoundaryCorner.getBlockX(); x <= this.greaterBoundaryCorner.getBlockX(); x++) {
             for (int z = this.lesserBoundaryCorner.getBlockZ(); z <= this.greaterBoundaryCorner.getBlockZ(); z++) {
@@ -927,5 +930,22 @@ public class Claim {
         }
 
         return chunkStrings;
+    }
+
+    public ClaimStorageData getClaimData() {
+        return this.claimData;
+    }
+
+    public boolean isItemBlacklisted(ItemType type, int meta) {
+        String nonMetaItemString = type.getId();
+        String metaItemString = type.getId() + ":" + meta;
+        // TODO: fix possible NPE here
+        if (this.claimData.getConfig().protectionBlacklist.contains(nonMetaItemString)) {
+            return true;
+        } else if (this.claimData.getConfig().protectionBlacklist.contains(metaItemString)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

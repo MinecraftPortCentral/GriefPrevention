@@ -25,7 +25,13 @@
 package me.ryanhamshire.GriefPrevention;
 
 import com.flowpowered.math.vector.Vector3d;
+import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
+import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.DimensionConfig;
+import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.GlobalConfig;
+import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.WorldConfig;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
 import net.minecraft.item.ItemStack;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -58,8 +64,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,14 +82,17 @@ import java.util.regex.Pattern;
 public abstract class DataStore {
 
     // in-memory cache for player data
-    protected ConcurrentHashMap<UUID, PlayerData> playerNameToPlayerDataMap = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<UUID, PlayerData> playerUniqueIdToPlayerDataMap = new ConcurrentHashMap<>();
 
     // in-memory cache for group (permission-based) data
     protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<>();
 
     // in-memory cache for claim data
-    public ArrayList<Claim> claims = new ArrayList<Claim>();
+    public Map<World, List<Claim>> worldClaims = Maps.newHashMap();
     ConcurrentHashMap<String, ArrayList<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
+    public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
+    public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
+    public static GriefPreventionConfig<GlobalConfig> globalConfig;
 
     // in-memory cache for messages
     protected EnumMap<Messages, CustomizableMessage> messages = new EnumMap<>(Messages.class);
@@ -93,14 +100,11 @@ public abstract class DataStore {
     // pattern for unique user identifiers (UUIDs)
     protected final static Pattern uuidpattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
-    // next claim ID
-    Long nextClaimID = (long) 0;
-
     // path information, for where stuff stored on disk is well... stored
-    protected final static Path dataLayerFolderPath = Paths.get("config").resolve("GriefPreventionData");
+    protected final static Path dataLayerFolderPath = Paths.get("config").resolve("GriefPrevention");
     final static Path playerDataFolderPath = dataLayerFolderPath.resolve("PlayerData");
-    final static Path configFilePath = dataLayerFolderPath.resolve("config.hocon");
-    final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.hocon");
+    final static Path configFilePath = dataLayerFolderPath.resolve("config.conf");
+    final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
     final static Path bannedWordsFilePath = dataLayerFolderPath .resolve("bannedWords.txt");
 
@@ -123,9 +127,6 @@ public abstract class DataStore {
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
 
-    // world guard reference, if available
-   // private WorldGuardWrapper worldGuard = null;
-
     protected int getSchemaVersion() {
         if (this.currentSchemaVersion >= 0) {
             return this.currentSchemaVersion;
@@ -142,7 +143,11 @@ public abstract class DataStore {
 
     // initialization!
     void initialize() throws Exception {
-        GriefPrevention.AddLogEntry(this.claims.size() + " total claims loaded.");
+        int count = 0;
+        for (List<Claim> claimList : this.worldClaims.values()) {
+            count += claimList.size();
+        }
+        GriefPrevention.AddLogEntry(count + " total claims loaded.");
 
         // ensure data folders exist
         File playerDataFolder = playerDataFolderPath.toFile();
@@ -154,43 +159,11 @@ public abstract class DataStore {
         this.loadMessages();
         GriefPrevention.AddLogEntry("Customizable messages loaded.");
 
-        // if converting up from an earlier schema version, write all claims
-        // back to storage using the latest format
-        if (this.getSchemaVersion() < latestSchemaVersion) {
-            GriefPrevention.AddLogEntry("Please wait.  Updating data format.");
-
-            for (Claim claim : this.claims) {
-                this.saveClaim(claim);
-
-                for (Claim subClaim : claim.children) {
-                    this.saveClaim(subClaim);
-                }
-            }
-
-            // clean up any UUID conversion work
-            /*if (UUIDFetcher.lookupCache != null) {
-                UUIDFetcher.lookupCache.clear();
-                UUIDFetcher.correctedNames.clear();
-            }*/
-
-            GriefPrevention.AddLogEntry("Update finished.");
-        }
-
         // load list of soft mutes
         this.loadSoftMutes();
 
         // make a note of the data store schema version
         this.setSchemaVersion(latestSchemaVersion);
-
-        // try to hook into world guard
-        /*try {
-            this.worldGuard = new WorldGuardWrapper();
-            GriefPrevention.AddLogEntry("Successfully hooked into WorldGuard.");
-        }
-        // if failed, world guard compat features will just be disabled.
-        catch (ClassNotFoundException exception) {
-        } catch (NoClassDefFoundError exception) {
-        }*/
     }
 
     private void loadSoftMutes() {
@@ -234,7 +207,7 @@ public abstract class DataStore {
         }
     }
 
-    List<String> loadBannedWords() {
+    public List<String> loadBannedWords() {
         try {
             File bannedWordsFile = bannedWordsFilePath.toFile();
             if (!bannedWordsFile.exists()) {
@@ -307,7 +280,7 @@ public abstract class DataStore {
 
     // removes cached player data from memory
     public synchronized void clearCachedPlayerData(UUID playerID) {
-        this.playerNameToPlayerDataMap.remove(playerID);
+        this.playerUniqueIdToPlayerDataMap.remove(playerID);
     }
 
     // gets the number of bonus blocks a player has from his permissions
@@ -365,14 +338,14 @@ public abstract class DataStore {
         // determine current claim owner
         PlayerData ownerData = null;
         if (!claim.isAdminClaim()) {
-            ownerData = this.getPlayerData(claim.ownerID);
+            ownerData = this.getPlayerData(claim.world, claim.ownerID);
         }
 
         // determine new owner
         PlayerData newOwnerData = null;
 
         if (newOwnerID != null) {
-            newOwnerData = this.getPlayerData(newOwnerID);
+            newOwnerData = this.getPlayerData(claim.world, newOwnerID);
         }
 
         // transfer
@@ -381,11 +354,11 @@ public abstract class DataStore {
 
         // adjust blocks and other records
         if (ownerData != null) {
-            ownerData.getClaims().remove(claim);
+            ownerData.playerWorldClaims.get(claim.world.getUniqueId()).remove(claim);
         }
 
         if (newOwnerData != null) {
-            newOwnerData.getClaims().add(claim);
+            newOwnerData.playerWorldClaims.get(claim.world).add(claim);
         }
     }
 
@@ -404,7 +377,14 @@ public abstract class DataStore {
         }
 
         // add it and mark it as added
-        this.claims.add(newClaim);
+        if (this.worldClaims.get(newClaim.world) == null) {
+            List<Claim> newClaims = new ArrayList<>();
+            newClaims.add(newClaim);
+            this.worldClaims.put(newClaim.world, newClaims);
+        } else {
+            this.worldClaims.get(newClaim.world).add(newClaim);
+        }
+
         ArrayList<String> chunkStrings = newClaim.getChunkStrings();
         for (String chunkString : chunkStrings) {
             ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkString);
@@ -421,8 +401,8 @@ public abstract class DataStore {
         // except for administrative claims (which have no owner), update the
         // owner's playerData with the new claim
         if (!newClaim.isAdminClaim() && writeToStorage) {
-            PlayerData ownerData = this.getPlayerData(newClaim.ownerID);
-            ownerData.getClaims().add(newClaim);
+            PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
+            ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
         }
 
         // make sure the claim is saved to disk
@@ -434,9 +414,8 @@ public abstract class DataStore {
     // turns a location into a string, useful in data storage
     private String locationStringDelimiter = ";";
 
-    String locationToString(Location<World> location) {
-        StringBuilder stringBuilder = new StringBuilder(location.getExtent().getUniqueId().toString());
-        stringBuilder.append(locationStringDelimiter);
+    String positionToString(Location<World> location) {
+        StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(location.getBlockX());
         stringBuilder.append(locationStringDelimiter);
         stringBuilder.append(location.getBlockY());
@@ -447,39 +426,25 @@ public abstract class DataStore {
     }
 
     // turns a location string back into a location
-    Location<World> locationFromString(String string, List<World> validWorlds) throws Exception {
+    Vector3i positionFromString(String string) throws Exception {
         // split the input string on the space
         String[] elements = string.split(locationStringDelimiter);
 
-        // expect four elements - world name, X, Y, and Z, respectively
-        if (elements.length < 4) {
+        // expect three elements - X, Y, and Z, respectively
+        if (elements.length < 3) {
             throw new Exception("Expected four distinct parts to the location string: \"" + string + "\"");
         }
 
-        String worldUniqueId = elements[0];
-        String xString = elements[1];
-        String yString = elements[2];
-        String zString = elements[3];
-
-        // identify world the claim is in
-        World world = null;
-        for (World w : validWorlds) {
-            if (w.getUniqueId().equals(UUID.fromString(worldUniqueId))) {
-                world = w;
-                break;
-            }
-        }
-
-        if (world == null) {
-            throw new Exception("World UUID not found: \"" + worldUniqueId + "\"");
-        }
+        String xString = elements[0];
+        String yString = elements[1];
+        String zString = elements[2];
 
         // convert those numerical strings to integer values
         int x = Integer.parseInt(xString);
         int y = Integer.parseInt(yString);
         int z = Integer.parseInt(zString);
 
-        return new Location<World>(world, x, y, z);
+        return new Vector3i(x, y, z);
     }
 
     // saves any changes to a claim to secondary storage
@@ -487,8 +452,7 @@ public abstract class DataStore {
         // ensure a unique identifier for the claim which will be used to name
         // the file on disk
         if (claim.id == null) {
-            claim.id = this.nextClaimID;
-            this.incrementNextClaimID();
+            claim.id = UUID.randomUUID();
         }
 
         this.writeClaimToStorage(claim);
@@ -503,22 +467,7 @@ public abstract class DataStore {
     // retrieves player data from memory or secondary storage, as necessary
     // if the player has never been on the server before, this will return a
     // fresh player data with default values
-    synchronized public PlayerData getPlayerData(UUID playerID) {
-        // first, look in memory
-        PlayerData playerData = this.playerNameToPlayerDataMap.get(playerID);
-
-        // if not there, build a fresh instance with some blanks for what may be
-        // in secondary storage
-        if (playerData == null) {
-            playerData = new PlayerData();
-            playerData.playerID = playerID;
-
-            // shove that new player data into the hash map cache
-            this.playerNameToPlayerDataMap.put(playerID, playerData);
-        }
-
-        return playerData;
-    }
+    public abstract PlayerData getPlayerData(World world, UUID playerID);
 
     abstract PlayerData getPlayerDataFromStorage(UUID playerID);
 
@@ -543,9 +492,11 @@ public abstract class DataStore {
         claim.inDataStore = false;
 
         // remove from memory
-        for (int i = 0; i < this.claims.size(); i++) {
-            if (claims.get(i).id.equals(claim.id)) {
-                this.claims.remove(i);
+        Iterator<Claim> iterator = this.worldClaims.get(claim.world).iterator();
+        while (iterator.hasNext()) {
+            Claim worldClaim = iterator.next();
+            if (worldClaim.id == claim.id) {
+                iterator.remove();
                 break;
             }
         }
@@ -566,14 +517,8 @@ public abstract class DataStore {
 
         // update player data
         if (claim.ownerID != null) {
-            PlayerData ownerData = this.getPlayerData(claim.ownerID);
-            for (int i = 0; i < ownerData.getClaims().size(); i++) {
-                if (ownerData.getClaims().get(i).id.equals(claim.id)) {
-                    ownerData.getClaims().remove(i);
-                    break;
-                }
-            }
-            this.savePlayerData(claim.ownerID, ownerData);
+            PlayerData ownerData = this.getPlayerData(claim.world, claim.ownerID);
+            ownerData.playerWorldClaims.get(claim.world.getUniqueId()).remove(claim);
         }
 
         if (fireEvent) {
@@ -585,8 +530,7 @@ public abstract class DataStore {
     abstract void deleteClaimFromSecondaryStorage(Claim claim);
 
     // gets the claim at a specific location
-    // ignoreHeight = TRUE means that a location UNDER an existing claim will
-    // return the claim
+    // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
     // cachedClaim can be NULL, but will help performance if you have a
     // reasonable guess about which claim the location is in
     synchronized public Claim getClaimAt(Location<World> location, boolean ignoreHeight, Claim cachedClaim) {
@@ -621,22 +565,15 @@ public abstract class DataStore {
     }
 
     // finds a claim by ID
-    public synchronized Claim getClaim(long id) {
-        for (Claim claim : this.claims) {
-            if (claim.inDataStore && claim.getID() == id)
+    public synchronized Claim getClaim(World world, UUID id) {
+        List<Claim> claimList = this.worldClaims.get(world);
+        for (Claim claim : claimList) {
+            if (claim.inDataStore && claim.getID() == id) {
                 return claim;
+            }
         }
 
         return null;
-    }
-
-    // returns a read-only access point for the list of all land claims
-    // if you need to make changes, use provided methods like .deleteClaim() and
-    // .createClaim().
-    // this will ensure primary memory (RAM) and secondary memory (disk,
-    // database) stay in sync
-    public Collection<Claim> getClaims() {
-        return Collections.unmodifiableCollection(this.claims);
     }
 
     // gets an almost-unique, persistent identifier string for a chunk
@@ -656,12 +593,11 @@ public abstract class DataStore {
     // negative quantity available)
     // DOES check for world guard regions where the player doesn't have
     // permission
-    // does NOT check a player has permission to create a claim, or enough claim
-    // blocks.
+    // does NOT check a player has permission to create a claim, or enough claim blocks.
     // does NOT check minimum claim size constraints
     // does NOT visualize the new claim for any players
     synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent,
-            Long id, Player creatingPlayer) {
+            UUID id, Player creatingPlayer) {
         CreateClaimResult result = new CreateClaimResult();
 
         int smallx, bigx, smally, bigy, smallz, bigz;
@@ -692,7 +628,7 @@ public abstract class DataStore {
         }
 
         // creative mode claims always go to bedrock
-        if (GriefPrevention.instance.config_claims_worldModes.get(world) == ClaimsMode.Creative) {
+        if (GriefPrevention.instance.claimModeIsActive(world, ClaimsMode.Creative)) {
             smally = 2;
         }
 
@@ -714,18 +650,20 @@ public abstract class DataStore {
         if (newClaim.parent != null) {
             claimsToCheck = newClaim.parent.children;
         } else {
-            claimsToCheck = this.claims;
+            claimsToCheck = (ArrayList<Claim>) this.worldClaims.get(world);
         }
 
-        for (int i = 0; i < claimsToCheck.size(); i++) {
-            Claim otherClaim = claimsToCheck.get(i);
-
-            // if we find an existing claim which will be overlapped
-            if (otherClaim.id != newClaim.id && otherClaim.inDataStore && otherClaim.overlaps(newClaim)) {
-                // result = fail, return conflicting claim
-                result.succeeded = false;
-                result.claim = otherClaim;
-                return result;
+        if (claimsToCheck != null) {
+            for (int i = 0; i < claimsToCheck.size(); i++) {
+                Claim otherClaim = claimsToCheck.get(i);
+    
+                // if we find an existing claim which will be overlapped
+                if (otherClaim.id != newClaim.id && otherClaim.inDataStore && otherClaim.overlaps(newClaim)) {
+                    // result = fail, return conflicting claim
+                    result.succeeded = false;
+                    result.claim = otherClaim;
+                    return result;
+                }
             }
         }
 
@@ -746,22 +684,6 @@ public abstract class DataStore {
         result.succeeded = true;
         result.claim = newClaim;
         return result;
-    }
-
-    // saves changes to player data to secondary storage. MUST be called after
-    // you're done making changes, otherwise a reload will lose them
-    public void savePlayerDataSync(UUID playerID, PlayerData playerData) {
-        // ensure player data is already read from file before trying to save
-        playerData.getAccruedClaimBlocks();
-        playerData.getClaims();
-
-        this.asyncSavePlayerData(playerID, playerData);
-    }
-
-    // saves changes to player data to secondary storage. MUST be called after
-    // you're done making changes, otherwise a reload will lose them
-    public void savePlayerData(UUID playerID, PlayerData playerData) {
-        new SavePlayerDataThread(playerID, playerData).start();
     }
 
     public void asyncSavePlayerData(UUID playerID, PlayerData playerData) {
@@ -805,8 +727,8 @@ public abstract class DataStore {
     // extends a claim to a new depth
     // respects the max depth config variable
     synchronized public void extendClaim(Claim claim, int newDepth) {
-        if (newDepth < GriefPrevention.instance.config_claims_maxDepth) {
-            newDepth = GriefPrevention.instance.config_claims_maxDepth;
+        if (newDepth < GriefPrevention.getActiveConfig(claim.world).getConfig().claim.maxClaimDepth) {
+            newDepth = GriefPrevention.getActiveConfig(claim.world).getConfig().claim.maxClaimDepth;
         }
 
         if (claim.parent != null) {
@@ -836,8 +758,8 @@ public abstract class DataStore {
     synchronized public void startSiege(Player attacker, Player defender, Claim defenderClaim) {
         // fill-in the necessary SiegeData instance
         SiegeData siegeData = new SiegeData(attacker, defender, defenderClaim);
-        PlayerData attackerData = this.getPlayerData(attacker.getUniqueId());
-        PlayerData defenderData = this.getPlayerData(defender.getUniqueId());
+        PlayerData attackerData = this.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
+        PlayerData defenderData = this.getPlayerData(defender.getWorld(), defender.getUniqueId());
         attackerData.siegeData = siegeData;
         defenderData.siegeData = siegeData;
         defenderClaim.siegeData = siegeData;
@@ -876,10 +798,10 @@ public abstract class DataStore {
             grantAccess = true;
         }
 
-        PlayerData attackerData = this.getPlayerData(siegeData.attacker.getUniqueId());
+        PlayerData attackerData = this.getPlayerData(siegeData.attacker.getWorld(), siegeData.attacker.getUniqueId());
         attackerData.siegeData = null;
 
-        PlayerData defenderData = this.getPlayerData(siegeData.defender.getUniqueId());
+        PlayerData defenderData = this.getPlayerData(siegeData.defender.getWorld(), siegeData.defender.getUniqueId());
         defenderData.siegeData = null;
         defenderData.lastSiegeEndTimeStamp = System.currentTimeMillis();
 
@@ -980,7 +902,7 @@ public abstract class DataStore {
         }
 
         // look for genderal defender cooldown
-        PlayerData defenderData = this.getPlayerData(defender.getUniqueId());
+        PlayerData defenderData = this.getPlayerData(defender.getWorld(), defender.getUniqueId());
         if (defenderData.lastSiegeEndTimeStamp > 0) {
             long now = System.currentTimeMillis();
             if (now - defenderData.lastSiegeEndTimeStamp > 1000 * 60 * 15) // 15 minutes in milliseconds
@@ -1006,7 +928,7 @@ public abstract class DataStore {
 
     // extend a siege, if it's possible to do so
     synchronized void tryExtendSiege(Player player, Claim claim) {
-        PlayerData playerData = this.getPlayerData(player.getUniqueId());
+        PlayerData playerData = this.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // player must be sieged
         if (playerData.siegeData == null)
@@ -1021,7 +943,7 @@ public abstract class DataStore {
             return;
 
         // player must have some level of permission to be sieged in a claim
-        if (claim.allowAccess(player) != null)
+        if (claim.allowAccess(player.getWorld(), player) != null)
             return;
 
         // otherwise extend the siege
@@ -1033,11 +955,13 @@ public abstract class DataStore {
     synchronized public void deleteClaimsForPlayer(UUID playerID, boolean deleteCreativeClaims) {
         // make a list of the player's claims
         ArrayList<Claim> claimsToDelete = new ArrayList<Claim>();
-        for (int i = 0; i < this.claims.size(); i++) {
-            Claim claim = this.claims.get(i);
-            if ((playerID == claim.ownerID || (playerID != null && playerID.equals(claim.ownerID)))
-                    && (deleteCreativeClaims || !GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())))
-                claimsToDelete.add(claim);
+        for (Map.Entry<World, List<Claim>> mapEntry : this.worldClaims.entrySet()) {
+            List<Claim> claimList = mapEntry.getValue();
+            for (Claim claim : claimList) {
+                if ((playerID == claim.ownerID || (playerID != null && playerID.equals(claim.ownerID)))
+                        && (deleteCreativeClaims || !GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)))
+                    claimsToDelete.add(claim);
+            }
         }
 
         // delete them one by one
@@ -1048,7 +972,7 @@ public abstract class DataStore {
             this.deleteClaim(claim, true);
 
             // if in a creative mode world, delete the claim
-            if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
+            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)) {
                 GriefPrevention.instance.restoreClaim(claim, 0);
             }
         }
@@ -1093,9 +1017,9 @@ public abstract class DataStore {
             // save those changes
             this.saveClaim(result.claim);
 
-            // make original claim ineffective (it's still in the hash map, so
-            // let's make it ignored)
+            // make original claim ineffective (it's still in the hash map, so let's make it ignored)
             claim.inDataStore = false;
+            this.deleteClaim(claim);
         }
 
         return result;
@@ -1531,29 +1455,8 @@ public abstract class DataStore {
         return resultNames;
     }
 
-    abstract void close();
-
-    private class SavePlayerDataThread extends Thread {
-
-        private UUID playerID;
-        private PlayerData playerData;
-
-        SavePlayerDataThread(UUID playerID, PlayerData playerData) {
-            this.playerID = playerID;
-            this.playerData = playerData;
-        }
-
-        @Override
-        public void run() {
-            // ensure player data is already read from file before trying to save
-            playerData.getAccruedClaimBlocks();
-            playerData.getClaims();
-            asyncSavePlayerData(this.playerID, this.playerData);
-        }
-    }
-
     // gets all the claims "near" a location
-    Set<Claim> getNearbyClaims(Location<World> location) {
+    public Set<Claim> getNearbyClaims(Location<World> location) {
         Set<Claim> claims = new HashSet<Claim>();
 
         Optional<Chunk> lesserChunk = location.getExtent().getChunk(location.sub(150, 0, 150).getBlockPosition());
@@ -1576,4 +1479,6 @@ public abstract class DataStore {
 
         return claims;
     }
+
+    public abstract void createPlayerWorldData(World world, Player player);
 }

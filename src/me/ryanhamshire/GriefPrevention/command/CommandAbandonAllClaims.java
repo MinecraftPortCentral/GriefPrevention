@@ -13,6 +13,8 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 
+import java.util.List;
+
 public class CommandAbandonAllClaims implements CommandExecutor {
 
     @Override
@@ -25,8 +27,8 @@ public class CommandAbandonAllClaims implements CommandExecutor {
             return CommandResult.success();
         }
         // count claims
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-        int originalClaimCount = playerData.getClaims().size();
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        int originalClaimCount = playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size();
 
         // check count
         if (originalClaimCount == 0) {
@@ -39,16 +41,17 @@ public class CommandAbandonAllClaims implements CommandExecutor {
         }
 
         // adjust claim blocks
-        for (Claim claim : playerData.getClaims()) {
-            playerData.setAccruedClaimBlocks(
-                    playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.instance.config_claims_abandonReturnRatio))));
+        List<Claim> claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
+        for (Claim claim : claimList) {
+            playerData.setAccruedClaimBlocks(player.getWorld(),
+                    playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.abandonReturnRatio))));
         }
 
         // delete them
         GriefPrevention.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId(), false);
 
         // inform the player
-        int remainingBlocks = playerData.getRemainingClaimBlocks();
+        int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.SuccessfulAbandon, String.valueOf(remainingBlocks));
 
         // revert any current visualization

@@ -10,10 +10,11 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Texts;
 
-import java.util.Vector;
+import java.util.List;
 
 public class CommandClaimsList implements CommandExecutor {
 
@@ -33,29 +34,29 @@ public class CommandClaimsList implements CommandExecutor {
             }
         }
 
+        Player player = (Player) src;
         // load the target player's data
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(otherPlayer.getUniqueId());
-        Vector<Claim> claims = playerData.getClaims();
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), otherPlayer.getUniqueId());
+        List<Claim> claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
         GriefPrevention.sendMessage(src, TextMode.Instr, Messages.StartBlockMath,
-                String.valueOf(playerData.getAccruedClaimBlocks()),
-                String.valueOf((playerData.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))),
-                String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks()
+                String.valueOf(playerData.getAccruedClaimBlocks(player.getWorld())),
+                String.valueOf((playerData.getBonusClaimBlocks(player.getWorld()) + GriefPrevention.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))),
+                String.valueOf((playerData.getAccruedClaimBlocks(player.getWorld()) + playerData.getBonusClaimBlocks(player.getWorld())
                         + GriefPrevention.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))));
-        if (claims.size() > 0) {
+        if (claimList.size() > 0) {
             GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);
-            for (int i = 0; i < playerData.getClaims().size(); i++) {
-                Claim claim = playerData.getClaims().get(i);
+            for (Claim claim : claimList) {
                 GriefPrevention.sendMessage(src, Texts.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())
                         + GriefPrevention.instance.dataStore.getMessage(Messages.ContinueBlockMath, String.valueOf(claim.getArea()))));
             }
 
-            GriefPrevention.sendMessage(src, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks()));
+            GriefPrevention.sendMessage(src, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks(player.getWorld())));
         }
 
         // drop the data we just loaded, if the player isn't online
-        if (!otherPlayer.isOnline())
+        if (!otherPlayer.isOnline()) {
             GriefPrevention.instance.dataStore.clearCachedPlayerData(otherPlayer.getUniqueId());
-
+        }
 
         return CommandResult.success();
     }
