@@ -490,7 +490,7 @@ public class Claim {
         }
 
         // claim owner and admins in ignoreclaims mode have access
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).ignoreClaims) {
+        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(world, player.getUniqueId()).ignoreClaims) {
             return null;
         }
 

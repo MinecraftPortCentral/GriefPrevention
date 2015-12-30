@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -16,7 +16,7 @@ import org.spongepowered.api.text.Texts;
 
 import java.util.List;
 
-public class CommandClaimsList implements CommandExecutor {
+public class CommandClaimList implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {

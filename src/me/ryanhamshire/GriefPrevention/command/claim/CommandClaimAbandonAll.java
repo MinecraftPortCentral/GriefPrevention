@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -15,7 +15,7 @@ import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.List;
 
-public class CommandAbandonAllClaims implements CommandExecutor {
+public class CommandClaimAbandonAll implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
