@@ -33,39 +33,23 @@ import static org.spongepowered.api.command.args.GenericArguments.string;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import me.ryanhamshire.GriefPrevention.command.CommandAbandonAllClaims;
-import me.ryanhamshire.GriefPrevention.command.CommandAbandonClaim;
 import me.ryanhamshire.GriefPrevention.command.CommandAccessTrust;
 import me.ryanhamshire.GriefPrevention.command.CommandAdjustBonusClaimBlocks;
-import me.ryanhamshire.GriefPrevention.command.CommandAdminClaims;
-import me.ryanhamshire.GriefPrevention.command.CommandAdminClaimsList;
-import me.ryanhamshire.GriefPrevention.command.CommandBasicClaims;
-import me.ryanhamshire.GriefPrevention.command.CommandBuyClaimBlocks;
-import me.ryanhamshire.GriefPrevention.command.CommandClaimBook;
-import me.ryanhamshire.GriefPrevention.command.CommandClaimExplosions;
-import me.ryanhamshire.GriefPrevention.command.CommandClaimsList;
 import me.ryanhamshire.GriefPrevention.command.CommandContainerTrust;
-import me.ryanhamshire.GriefPrevention.command.CommandDeleteAllAdminClaims;
-import me.ryanhamshire.GriefPrevention.command.CommandDeleteAllClaims;
-import me.ryanhamshire.GriefPrevention.command.CommandDeleteClaim;
 import me.ryanhamshire.GriefPrevention.command.CommandGivePet;
 import me.ryanhamshire.GriefPrevention.command.CommandGpBlockInfo;
 import me.ryanhamshire.GriefPrevention.command.CommandGpReload;
 import me.ryanhamshire.GriefPrevention.command.CommandGriefPrevention;
-import me.ryanhamshire.GriefPrevention.command.CommandIgnoreClaim;
 import me.ryanhamshire.GriefPrevention.command.CommandIgnorePlayer;
 import me.ryanhamshire.GriefPrevention.command.CommandIgnoredPlayerList;
 import me.ryanhamshire.GriefPrevention.command.CommandPermissionTrust;
 import me.ryanhamshire.GriefPrevention.command.CommandRestoreNature;
 import me.ryanhamshire.GriefPrevention.command.CommandRestoreNatureAggressive;
 import me.ryanhamshire.GriefPrevention.command.CommandRestoreNatureFill;
-import me.ryanhamshire.GriefPrevention.command.CommandSellClaimBlocks;
 import me.ryanhamshire.GriefPrevention.command.CommandSeparate;
 import me.ryanhamshire.GriefPrevention.command.CommandSetAccruedClaimBlocks;
 import me.ryanhamshire.GriefPrevention.command.CommandSiege;
 import me.ryanhamshire.GriefPrevention.command.CommandSoftMute;
-import me.ryanhamshire.GriefPrevention.command.CommandSubdivideClaims;
-import me.ryanhamshire.GriefPrevention.command.CommandTransferClaim;
 import me.ryanhamshire.GriefPrevention.command.CommandTrapped;
 import me.ryanhamshire.GriefPrevention.command.CommandTrust;
 import me.ryanhamshire.GriefPrevention.command.CommandTrustList;
@@ -73,6 +57,24 @@ import me.ryanhamshire.GriefPrevention.command.CommandUnignorePlayer;
 import me.ryanhamshire.GriefPrevention.command.CommandUnlockDrops;
 import me.ryanhamshire.GriefPrevention.command.CommandUnseparate;
 import me.ryanhamshire.GriefPrevention.command.CommandUntrust;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimAbandon;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimAbandonAll;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimBasic;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimAdmin;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimAdminList;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaim;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimBook;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimBuy;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimExplosions;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimFlag;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimIgnore;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimList;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimTransfer;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimSell;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimSubdivide;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimDelete;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimDeleteAll;
+import me.ryanhamshire.GriefPrevention.command.claim.CommandClaimDeleteAllAdmin;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.DimensionConfig;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.GlobalConfig;
@@ -398,56 +400,21 @@ public class GriefPrevention {
     public HashMap<List<String>, CommandSpec> registerSubCommands() {
         HashMap<List<String>, CommandSpec> subcommands = new HashMap<List<String>, CommandSpec>();
 
-        subcommands.put(Arrays.asList("abandonclaim", "unclaim", "declaim", "removeclaim", "disclaim"), CommandSpec.builder()
-                .description(Texts.of("Deletes a claim"))
-                .permission("griefprevention.claims")
-                .executor(new CommandAbandonClaim(false))
-                .build());
-        
-        subcommands.put(Arrays.asList("abandontoplevelclaim"), CommandSpec.builder()
-                .description(Texts.of("Deletes a claim and all its subdivisions"))
-                .permission("griefprevention.claims")
-                .executor(new CommandAbandonClaim(true))
-                .build());
-        
-        subcommands.put(Arrays.asList("ignoreclaims", "ic"), CommandSpec.builder()
-                .description(Texts.of("Toggles ignore claims mode"))
-                .permission("griefprevention.ignoreclaims")
-                .executor(new CommandIgnoreClaim())
-                .build());
-        
-        subcommands.put(Arrays.asList("flag"), CommandSpec.builder()
-                .description(Texts.of("Gets/Sets various claim flags in the claim you are standing in"))
-                .permission("griefprevention.commands.flag")
-                .child(CommandSpec.builder()
-                        .arguments(GenericArguments.choices(Texts.of("state"), FLAG_BOOLEANS))
-                        .executor((src, args) -> {
-                            return CommandResult.success();
-                        })
-                        .build(), "spawn-mobs")
-                .build());
-        
-        subcommands.put(Arrays.asList("abandonallclaims"), CommandSpec.builder()
-                .description(Texts.of("Deletes ALL your claims"))
-                .permission("griefprevention.claims")
-                .executor(new CommandAbandonAllClaims())
-                .build());
-
         subcommands.put(Arrays.asList("restorenature", "rn"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to restoration mode"))
-                .permission("griefprevention.restorenature")
+                .permission("griefprevention.command.restorenature")
                 .executor(new CommandRestoreNature())
                 .build());
         
         subcommands.put(Arrays.asList("restorenatureaggressive", "rna"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to aggressive restoration mode"))
-                .permission("griefprevention.restorenatureaggressive")
+                .permission("griefprevention.command.restorenatureaggressive")
                 .executor(new CommandRestoreNatureAggressive())
                 .build());
 
         subcommands.put(Arrays.asList("restorenaturefill", "rnf"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to fill mode"))
-                .permission("griefprotection.restorenaturefill")
+                .permission("griefprotection.command.restorenaturefill")
                 .arguments(optional(integer(Texts.of("radius")), 2))
                 .executor(new CommandRestoreNatureFill())
                 .build());
@@ -456,196 +423,242 @@ public class GriefPrevention {
                 .description(Texts.of("Grants a player full access to your claim(s)"))
                 .extendedDescription(Texts.of("Grants a player full access to your claim(s).\n"
                         + "See also /untrust, /containertrust, /accesstrust, and /permissiontrust."))
-                .permission("griefprevention.claims")
+                .permission("griefprevention.command.trust")
                 .arguments(string(Texts.of("subject")))
                 .executor(new CommandTrust())
                 .build());
 
-        subcommands.put(Arrays.asList("transferclaim", "giveclaim"), CommandSpec.builder()
-                .description(Texts.of("Converts an administrative claim to a private claim"))
-                .arguments(optional(player(Texts.of("target"))))
-                .permission("griefprevention.transferclaim")
-                .executor(new CommandTransferClaim())
-                .build());
-
         subcommands.put(Arrays.asList("trustlist"), CommandSpec.builder()
                 .description(Texts.of("Lists permissions for the claim you're standing in"))
-                .permission("griefprevention.claimls")
+                .permission("griefprevention.command.trustlist")
                 .executor(new CommandTrustList())
                 .build());
 
         subcommands.put(Arrays.asList("untrust", "ut"), CommandSpec.builder()
                 .description(Texts.of("Revokes a player's access to your claim(s)"))
-                .permission("griefprevention.claims")
+                .permission("griefprevention.command.untrust")
                 .arguments(string(Texts.of("subject")))
                 .executor(new CommandUntrust())
                 .build());
 
         subcommands.put(Arrays.asList("accesstrust", "at"), CommandSpec.builder()
                 .description(Texts.of("Grants a player entry to your claim(s) and use of your bed"))
-                .permission("griefprevention.claims")
+                .permission("griefprevention.command.accesstrust")
                 .arguments(string(Texts.of("target")))
                 .executor(new CommandAccessTrust())
                 .build());
 
         subcommands.put(Arrays.asList("containertrust", "ct"), CommandSpec.builder()
                 .description(Texts.of("Grants a player access to your claim's containers, crops, animals, bed, buttons, and levers"))
-                .permission("griefprevention.claims")
+                .permission("griefprevention.command.containertrust")
                 .arguments(string(Texts.of("target")))
                 .executor(new CommandContainerTrust())
                 .build());
 
         subcommands.put(Arrays.asList("permissiontrust", "pt"), CommandSpec.builder()
                 .description(Texts.of("Grants a player permission to grant their level of permission to others"))
-                .permission("griefprevention.claims")
+                .permission("griefprevention.command.permissiontrust")
                 .arguments(string(Texts.of("target")))
                 .executor(new CommandPermissionTrust())
                 .build());
+        
+        HashMap<List<String>, CommandSpec> claimSubcommands = new HashMap<List<String>, CommandSpec>();
 
-        subcommands.put(Arrays.asList("buyclaimblocks", "buyclaim"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("abandontoplevel"), CommandSpec.builder()
+                .description(Texts.of("Deletes a claim and all its subdivisions"))
+                .permission("griefprevention.command.claim.abandontoplevel")
+                .executor(new CommandClaimAbandon(true))
+                .build());
+        
+        claimSubcommands.put(Arrays.asList("ignore", "i"), CommandSpec.builder()
+                .description(Texts.of("Toggles ignore claims mode"))
+                .permission("griefprevention.command.claim.ignore")
+                .executor(new CommandClaimIgnore())
+                .build());
+        
+        claimSubcommands.put(Arrays.asList("abandonall"), CommandSpec.builder()
+                .description(Texts.of("Deletes ALL your claims"))
+                .permission("griefprevention.command.claim.abandonall")
+                .executor(new CommandClaimAbandonAll())
+                .build());
+        
+        claimSubcommands.put(Arrays.asList("buyblocks", "buy"), CommandSpec.builder()
                 .description(Texts.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
-                .permission("griefprevention.buysellclaimblocks")
+                .permission("griefprevention.command.claim.buy")
                 .arguments(optional(integer(Texts.of("numberOfBlocks"))))
-                .executor(new CommandBuyClaimBlocks())
+                .executor(new CommandClaimBuy())
                 .build());
         
-        subcommands.put(Arrays.asList("sellclaimblocks", "sellclaim"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("sellblocks", "sell"), CommandSpec.builder()
                 .description(Texts.of("Sell your claim blocks for server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
-                .permission("griefprevention.buysellclaimblocks")
+                .permission("griefprevention.command.claim.sell")
                 .arguments(optional(integer(Texts.of("numberOfBlocks"))))
-                .executor(new CommandSellClaimBlocks())
+                .executor(new CommandClaimSell())
                 .build());
 
-        subcommands.put(Arrays.asList("adminclaims", "ac"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("admin", "a"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to administrative claims mode"))
-                .permission("griefprevention.adminclaims")
-                .executor(new CommandAdminClaims())
+                .permission("griefprevention.command.claim.admin")
+                .executor(new CommandClaimAdmin())
                 .build());
         
-        subcommands.put(Arrays.asList("basicclaims", "bc"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("basic", "b"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool back to basic claims mode"))
-                .permission("griefprevention.claims")
-                .executor(new CommandBasicClaims())
+                .permission("griefprevention.command.claim.basic")
+                .executor(new CommandClaimBasic())
                 .build());
         
-        subcommands.put(Arrays.asList("subdivideclaims", "sc", "subdivideclaim"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("subdivide", "s"), CommandSpec.builder()
                 .description(Texts.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
-                .permission("griefprevention.claims")
-                .executor(new CommandSubdivideClaims())
+                .permission("griefprevention.command.claim.subdivide")
+                .executor(new CommandClaimSubdivide())
                 .build());
         
-        subcommands.put(Arrays.asList("deleteclaim", "dc"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("delete", "d"), CommandSpec.builder()
                 .description(Texts.of("Deletes the claim you're standing in, even if it's not your claim"))
-                .permission("griefprevention.deleteclaims")
-                .executor(new CommandDeleteClaim())
+                .permission("griefprevention.dcommand.claim.delete")
+                .executor(new CommandClaimDelete())
                 .build());
         
-        subcommands.put(Arrays.asList("claimexplosions"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("transfer", "give"), CommandSpec.builder()
+                .description(Texts.of("Converts an administrative claim to a private claim"))
+                .arguments(optional(player(Texts.of("target"))))
+                .permission("griefprevention.command.claim.transfer")
+                .executor(new CommandClaimTransfer())
+                .build());
+        
+        claimSubcommands.put(Arrays.asList("explosions"), CommandSpec.builder()
                 .description(Texts.of("Toggles whether explosives may be used in a specific land claim"))
-                .permission("griefprevention.claims")
+                .permission("griefprevention.command.claim.explosions")
                 .executor(new CommandClaimExplosions())
                 .build());
         
-        subcommands.put(Arrays.asList("deleteallclaims"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("deleteall"), CommandSpec.builder()
                 .description(Texts.of("Delete all of another player's claims"))
-                .permission("griefprevention.deleteclaims")
+                .permission("griefprevention.command.claim.deleteall")
                 .arguments(player(Texts.of("player"))) // TODO: Use user commandelement when added
-                .executor(new CommandDeleteAllClaims())
+                .executor(new CommandClaimDeleteAll())
                 .build());
 
-        subcommands.put(Arrays.asList("claimbook"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("book"), CommandSpec.builder()
                 .description(Texts.of("Gives a player a manual about claiming land"))
-                .permission("griefprevention.claimbook")
+                .permission("griefprevention.command.claim.book")
                 .arguments(playerOrSource(Texts.of("player")))
                 .executor(new CommandClaimBook())
                 .build());
 
-        subcommands.put(Arrays.asList("claimslist", "claimlist", "listclaims"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("list"), CommandSpec.builder()
                 .description(Texts.of("List information about a player's claim blocks and claims"))
+                .permission("griefprevention.command.claim.list")
                 .arguments(onlyOne(playerOrSource(Texts.of("player"))))
-                .executor(new CommandClaimsList())
+                .executor(new CommandClaimList())
                 .build());
         
-        subcommands.put(Arrays.asList("adminclaimslist"), CommandSpec.builder()
+        claimSubcommands.put(Arrays.asList("flag"), CommandSpec.builder()
+                .description(Texts.of("Gets/Sets various claim flags in the claim you are standing in"))
+                .permission("griefprevention.command.claim.flag")
+                .arguments(GenericArguments.seq(
+                        GenericArguments.onlyOne(GenericArguments.string(Texts.of("flag"))),
+                        GenericArguments.onlyOne(GenericArguments.bool(Texts.of("value")))))
+                .executor(new CommandClaimFlag())
+                .build());
+        
+        claimSubcommands.put(Arrays.asList("abandon", "remove"), CommandSpec.builder()
+                .description(Texts.of("Deletes a claim"))
+                .permission("griefprevention.command.claim.abandon")
+                .executor(new CommandClaimAbandon(false))
+                .build());
+        
+        claimSubcommands.put(Arrays.asList("adminlist"), CommandSpec.builder()
                 .description(Texts.of("List all administrative claims"))
-                .permission("griefprevention.adminclaims")
-                .executor(new CommandAdminClaimsList())
+                .permission("griefprevention.command.claim.adminlist")
+                .executor(new CommandClaimAdminList())
+                .build());
+        
+        claimSubcommands.put(Arrays.asList("deletealladmin"), CommandSpec.builder()
+                .description(Texts.of("Deletes all administrative claims"))
+                .permission("griefprevention.command.claim.deletealladmin")
+                .executor(new CommandClaimDeleteAllAdmin())
+                .build());
+        
+        subcommands.put(Arrays.asList("claim"), CommandSpec.builder()
+                .description(Texts.of("Claims land"))
+                .permission("griefprevention.command.claim")
+                .children(claimSubcommands)
+                .executor(new CommandClaim())
                 .build());
 
         subcommands.put(Arrays.asList("unlockdrops"), CommandSpec.builder()
                 .description(Texts.of("Allows other players to pick up the items you dropped when you died"))
+                .permission("griefprevention.command.unlockdrops")
                 .executor(new CommandUnlockDrops())
-                .build());
-
-        subcommands.put(Arrays.asList("deletealladminclaims"), CommandSpec.builder()
-                .description(Texts.of("Deletes all administrative claims"))
-                .permission("griefprevention.adminclaims")
-                .executor(new CommandDeleteAllAdminClaims())
                 .build());
 
         subcommands.put(Arrays.asList("adjustbonusclaimblocks", "acb"), CommandSpec.builder()
                 .description(Texts.of("Adds or subtracts bonus claim blocks for a player"))
-                .permission("griefprevention.adjustclaimblocks")
+                .permission("griefprevention.command.adjustclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
                 .executor(new CommandAdjustBonusClaimBlocks())
                 .build());
         
         subcommands.put(Arrays.asList("setaccruedclaimblocks", "scb"), CommandSpec.builder()
                 .description(Texts.of("Updates a player's accrued claim block total"))
-                .permission("griefprevention.adjustclaimblocks")
+                .permission("griefprevention.command.setaccruedclaimblocks")
                 .arguments(string(Texts.of("player")), integer(Texts.of("amount")))
                 .executor(new CommandSetAccruedClaimBlocks())
                 .build());
         
         subcommands.put(Arrays.asList("trapped"), CommandSpec.builder()
                 .description(Texts.of("Ejects you to nearby unclaimed land. Has a substantial cooldown period"))
+                .permission("griefprevention.command.trapped")
                 .executor(new CommandTrapped())
                 .build());
 
         subcommands.put(Arrays.asList("siege"), CommandSpec.builder()
                 .description(Texts.of("Initiates a siege versus another player"))
                 .arguments(optional(onlyOne(player(Texts.of("playerName")))))
+                .permission("griefprevention.command.siege")
                 .executor(new CommandSiege())
                 .build());
 
         subcommands.put(Arrays.asList("softmute"), CommandSpec.builder()
                 .description(Texts.of("Toggles whether a player's messages will only reach other soft-muted players"))
-                .permission("griefprevention.softmute")
+                .permission("griefprevention.comand.softmute")
                 .arguments(onlyOne(player(Texts.of("player"))))
                 .executor(new CommandSoftMute())
                 .build());
 
-        subcommands.put(Arrays.asList("gpreload"), CommandSpec.builder()
+        subcommands.put(Arrays.asList("reload"), CommandSpec.builder()
                 .description(Texts.of("Reloads Grief Prevention's configuration settings"))
-                .permission("griefprevention.reload")
+                .permission("griefprevention.command.reload")
                 .executor(new CommandGpReload())
                 .build());
         
         subcommands.put(Arrays.asList("givepet"), CommandSpec.builder()
                 .description(Texts.of("Allows a player to give away a pet they tamed"))
-                .permission("griefprevention.givepet")
+                .permission("griefprevention.command.givepet")
                 .arguments(GenericArguments.firstParsing(GenericArguments.literal(Texts.of("player"), "cancel"), player(Texts.of("player"))))
                 .executor(new CommandGivePet())
                 .build());
         
         subcommands.put(Arrays.asList("gpblockinfo"), CommandSpec.builder()
                 .description(Texts.of("Allows an administrator to get technical information about blocks in the world and items in hand"))
-                .permission("griefprevention.gpblockinfo")
+                .permission("griefprevention.command.gpblockinfo")
                 .executor(new CommandGpBlockInfo())
                 .build());
 
         subcommands.put(Arrays.asList("ignoreplayer", "ignore"), CommandSpec.builder()
                 .description(Texts.of("Ignores another player's chat messages"))
-                .permission("griefprevention.ignore")
+                .permission("griefprevention.command.ignore")
                 .arguments(onlyOne(player(Texts.of("player"))))
                 .executor(new CommandIgnorePlayer())
                 .build());
 
         subcommands.put(Arrays.asList("unignoreplayer", "unignore"), CommandSpec.builder()
                 .description(Texts.of("Unignores another player's chat messages"))
-                .permission("griefprevention.ignore")
+                .permission("griefprevention.command.unignore")
                 .arguments(onlyOne(player(Texts.of("player"))))
                 .executor(new CommandUnignorePlayer())
                 .build());
@@ -653,20 +666,20 @@ public class GriefPrevention {
         subcommands.put(Arrays.asList("ignoredplayerlist", "ignores", "ignored", "ignoredlist", "listignores", "listignored", "ignoring"), 
                 CommandSpec.builder()
                     .description(Texts.of("Lists the players you're ignoring in chat"))
-                    .permission("griefprevention.ignore")
+                    .permission("griefprevention.command.ignores")
                     .executor(new CommandIgnoredPlayerList())
                     .build());
 
         subcommands.put(Arrays.asList("separate"), CommandSpec.builder()
                 .description(Texts.of("Forces two players to ignore each other in chat"))
-                .permission("griefprevention.separate")
+                .permission("griefprevention.command.separate")
                 .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
                 .executor(new CommandSeparate())
                 .build());
 
         subcommands.put(Arrays.asList("unseparate"), CommandSpec.builder()
                 .description(Texts.of("Reverses /separate"))
-                .permission("griefprevention.separate")
+                .permission("griefprevention.command.unseparate")
                 .arguments(onlyOne(player(Texts.of("player1"))), onlyOne(player(Texts.of("player2"))))
                 .executor(new CommandUnseparate())
                 .build());

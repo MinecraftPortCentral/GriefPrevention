@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;

@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
@@ -15,7 +15,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 
-public class CommandDeleteClaim implements CommandExecutor {
+public class CommandClaimDelete implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {

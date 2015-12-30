@@ -1,11 +1,11 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 
-public class CommandSellClaimBlocks implements CommandExecutor {
+public class CommandClaimSell implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {

@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
@@ -12,7 +12,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 
-public class CommandBasicClaims implements CommandExecutor {
+public class CommandClaimSubdivide implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -25,9 +25,10 @@ public class CommandBasicClaims implements CommandExecutor {
         }
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        playerData.shovelMode = ShovelMode.Basic;
+        playerData.shovelMode = ShovelMode.Subdivide;
         playerData.claimSubdividing = null;
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.BasicClaimsMode);
+        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
+        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2);
 
         return CommandResult.success();
     }

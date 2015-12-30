@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
@@ -17,7 +17,7 @@ import org.spongepowered.api.entity.living.player.User;
 import java.util.Optional;
 import java.util.UUID;
 
-public class CommandTransferClaim implements CommandExecutor {
+public class CommandClaimTransfer implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {

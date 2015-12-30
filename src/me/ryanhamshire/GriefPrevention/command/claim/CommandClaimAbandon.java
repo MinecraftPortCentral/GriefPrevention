@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command;
+package me.ryanhamshire.GriefPrevention.command.claim;
 
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
@@ -14,11 +14,11 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 
-public class CommandAbandonClaim implements CommandExecutor {
+public class CommandClaimAbandon implements CommandExecutor {
 
     private boolean deleteTopLevelClaim;
 
-    public CommandAbandonClaim(boolean deleteTopLevelClaim) {
+    public CommandClaimAbandon(boolean deleteTopLevelClaim) {
         this.deleteTopLevelClaim = deleteTopLevelClaim;
     }
 
