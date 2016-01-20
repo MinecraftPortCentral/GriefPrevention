@@ -41,6 +41,7 @@ import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.effect.potion.PotionEffectType;
 import org.spongepowered.api.effect.potion.PotionEffectTypes;
 import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.entity.EntitySnapshot;
 import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.Item;
@@ -121,7 +122,7 @@ public class EntityEventHandler {
                     if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
                         transaction.setValid(false);
                     } else {
-                        final Optional<Entity> optPassenger = entity.get(Keys.PASSENGER);
+                        final Optional<EntitySnapshot> optPassenger = entity.get(Keys.PASSENGER);
                         if (optPassenger.isPresent() && optPassenger.get().getType().equals(EntityTypes.PLAYER)) {
                             transaction.setValid(false);
                         }
@@ -546,7 +547,7 @@ public class EntityEventHandler {
     public void onEntityDeath(DestructEntityEvent.Death event) {
         Living entity = event.getTargetEntity();
 
-        if (!(entity instanceof Player) && !event.getCause().first(EntityDamageSource.class).isPresent()) {
+        if (!(entity instanceof Player) || !event.getCause().first(EntityDamageSource.class).isPresent()) {
             return;
         }
         // don't do the rest in worlds where claims are not enabled
@@ -561,7 +562,7 @@ public class EntityEventHandler {
         // if involved in a siege
         if (playerData.siegeData != null) { 
             // end it, with the dying player being the loser
-            this.dataStore.endSiege(playerData.siegeData, damageSource.getSource() != null ? ((net.minecraft.entity.Entity) damageSource.getSource()).getCommandSenderName() : null, player.getName(), true /*ended due to death*/);
+            this.dataStore.endSiege(playerData.siegeData, damageSource.getSource() != null ? ((net.minecraft.entity.Entity) damageSource.getSource()).getName() : null, player.getName(), true /*ended due to death*/);
         }
     }
 

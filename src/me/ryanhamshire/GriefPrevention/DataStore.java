@@ -43,7 +43,6 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
@@ -827,7 +826,7 @@ public abstract class DataStore {
 
         // notify everyone who won and lost
         if (winnerName != null && loserName != null) {
-            Sponge.getGame().getServer().getBroadcastSink().sendMessage(Texts.of(winnerName + " defeated " + loserName + " in siege warfare!"));
+            Sponge.getGame().getServer().getBroadcastChannel().send(Text.of(winnerName + " defeated " + loserName + " in siege warfare!"));
         }
 
         // if the claim should be opened to looting
@@ -1373,7 +1372,7 @@ public abstract class DataStore {
 
     public Text parseMessage(Messages messageID, TextColor color, String...args) {
         String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
-        Text textMessage = Texts.of(color, message);
+        Text textMessage = Text.of(color, message);
         List<String> urls = extractUrls(message);
         if (urls.isEmpty()) {
             return textMessage;
@@ -1386,10 +1385,10 @@ public abstract class DataStore {
 
             if (msgPart != null && !msgPart.equals("")) {
                 try {
-                    textMessage = Texts.of(color, msgPart, TextColors.GREEN, TextActions.openUrl(new URL(url)), url);
+                    textMessage = Text.of(color, msgPart, TextColors.GREEN, TextActions.openUrl(new URL(url)), url);
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
-                    return Texts.of(message);
+                    return Text.of(message);
                 }
             }
 
@@ -1398,7 +1397,7 @@ public abstract class DataStore {
         }
 
         if (message != null && !message.equals("")) {
-            textMessage = Texts.of(textMessage, " ", color, message);
+            textMessage = Text.of(textMessage, " ", color, message);
         }
 
         return textMessage;

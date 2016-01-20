@@ -8,7 +8,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class CommandClaimAdminList implements CommandExecutor {
             GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);
             for (int i = 0; i < claims.size(); i++) {
                 Claim claim = claims.get(i);
-                GriefPrevention.sendMessage(src, Texts.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())));
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())));
             }
         }
 

@@ -34,7 +34,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.common.text.SpongeTexts;
 
 public class WelcomeTask implements Runnable {
 
@@ -62,11 +62,11 @@ public class WelcomeTask implements Runnable {
             final ItemStack itemStack = factory.itemType(ItemTypes.WRITTEN_BOOK).quantity(1).build();
 
             final AuthorData authorData = itemStack.getOrCreate(AuthorData.class).get();
-            authorData.set(Keys.BOOK_AUTHOR, Texts.of(datastore.getMessage(Messages.BookAuthor)));
+            authorData.set(Keys.BOOK_AUTHOR, Text.of(datastore.getMessage(Messages.BookAuthor)));
             itemStack.offer(authorData);
 
             final DisplayNameData displayNameData = itemStack.getOrCreate(DisplayNameData.class).get();
-            displayNameData.set(Keys.DISPLAY_NAME, Texts.of(datastore.getMessage(Messages.BookTitle)));
+            displayNameData.set(Keys.DISPLAY_NAME, Text.of(datastore.getMessage(Messages.BookTitle)));
             displayNameData.set(Keys.SHOWS_DISPLAY_NAME, true);
             itemStack.offer(displayNameData);
 
@@ -97,8 +97,8 @@ public class WelcomeTask implements Runnable {
             page2.append("/ContainerTrust\n");
             page2.append("/PermissionTrust");
             try {
-                final Text page2Text = Texts.legacy().from(page2.toString());
-                final Text page1Text = Texts.legacy().from(page1.toString());
+                final Text page2Text = SpongeTexts.fromLegacy(page2.toString());
+                final Text page1Text = SpongeTexts.fromLegacy(page1.toString());
 
                 final PagedData pagedData = itemStack.getOrCreate(PagedData.class).get();
                 pagedData.set(pagedData.pages().add(page1Text).add(page2Text));

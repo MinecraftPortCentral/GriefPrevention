@@ -12,7 +12,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 import java.util.List;
 
@@ -46,7 +46,7 @@ public class CommandClaimList implements CommandExecutor {
         if (claimList.size() > 0) {
             GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);
             for (Claim claim : claimList) {
-                GriefPrevention.sendMessage(src, Texts.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())
                         + GriefPrevention.instance.dataStore.getMessage(Messages.ContinueBlockMath, String.valueOf(claim.getArea()))));
             }
 

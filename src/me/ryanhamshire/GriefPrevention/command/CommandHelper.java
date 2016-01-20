@@ -40,7 +40,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorageService;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -52,7 +52,7 @@ public class CommandHelper {
         if (source instanceof Player) {
             return ((Player) source);
         } else {
-            throw new CommandException(Texts.of("You must be a player to run this command!"));
+            throw new CommandException(Text.of("You must be a player to run this command!"));
         }
     }
 

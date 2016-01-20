@@ -10,7 +10,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 import java.util.Map.Entry;
 import java.util.UUID;
@@ -43,7 +43,7 @@ public class CommandIgnoredPlayerList implements CommandExecutor {
         if (list.isEmpty()) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.NotIgnoringAnyone);
         } else {
-            GriefPrevention.sendMessage(player, Texts.of(TextMode.Info, list));
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Info, list));
         }
 
 

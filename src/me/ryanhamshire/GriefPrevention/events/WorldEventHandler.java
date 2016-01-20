@@ -1,17 +1,21 @@
 package me.ryanhamshire.GriefPrevention.events;
 
+import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.DataStore;
+import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.DimensionConfig;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.Type;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.world.ConstructWorldEvent;
+import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.world.DimensionType;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 public class WorldEventHandler {
 
@@ -34,4 +38,13 @@ public class WorldEventHandler {
         DataStore.worldConfigMap.put(event.getWorldProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD, rootConfigPath.resolve(dimType.getId()).resolve(event.getWorldProperties().getWorldName()).resolve("world.conf")));
     }
 
+    @Listener
+    public void onWorldSave(SaveWorldEvent event) {
+        List<Claim> claimList = GriefPrevention.instance.dataStore.worldClaims.get(event.getTargetWorld());
+        if (claimList != null) {
+            for (Claim claim : claimList) {
+                claim.claimData.save();
+            }
+        }
+    }
 }

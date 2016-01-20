@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.0.2'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-20160116.192356-17'
     }
 }
 
@@ -41,7 +41,7 @@ repositories {
 
 dependencies {
     compile("org.spongepowered:spongeapi:${project.apiVersion}")
-	compile("org.spongepowered:spongeforge:1.8-1577-2.1-DEV-957") {
+	compile("org.spongepowered:spongeforge:1.8.9-1694-3.1.0-BETA-1065") {
 		exclude module: 'spongecommon'
 	}
 }

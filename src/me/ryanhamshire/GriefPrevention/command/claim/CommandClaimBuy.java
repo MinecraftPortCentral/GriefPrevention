@@ -38,7 +38,7 @@ public class CommandClaimBuy implements CommandExecutor {
             int blockCount = blockCountOpt.get();
 
             if (blockCount <= 0) {
-                throw new CommandException(Texts.of("Invalid block count of lte 0"));
+                throw new CommandException(Text.of("Invalid block count of lte 0"));
             }
 
             // if the player can't afford his purchase, send error message

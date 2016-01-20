@@ -62,7 +62,7 @@ public class PlayerKickBanTask implements Runnable {
             MinecraftServer minecraftserver = MinecraftServer.getServer();
             GameProfile gameprofile = minecraftserver.getPlayerProfileCache().getGameProfileForUsername(player.getName());
 
-            UserListBansEntry userlistbansentry = new UserListBansEntry(gameprofile, null, ((EntityPlayer) player).getCommandSenderName(),
+            UserListBansEntry userlistbansentry = new UserListBansEntry(gameprofile, null, ((EntityPlayer) player).getName(),
                                                                         null, this.reason);
             minecraftserver.getConfigurationManager().getBannedPlayers().addEntry(userlistbansentry);
             EntityPlayerMP entityplayermp = minecraftserver.getConfigurationManager().getPlayerByUsername(this.player.getName());

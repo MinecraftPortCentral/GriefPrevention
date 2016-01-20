@@ -32,6 +32,7 @@ import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
 import me.ryanhamshire.GriefPrevention.Visualization;
 import me.ryanhamshire.GriefPrevention.VisualizationType;
+import net.minecraft.entity.player.EntityPlayer;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -47,7 +48,7 @@ import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
 import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.Tristate;
@@ -99,7 +100,7 @@ public class BlockEventHandler {
                 String noBuildReason = GriefPrevention.instance.allowBreak(player.get(), transaction.getOriginal());
                 if (noBuildReason != null) {
                     if (event.getCause().root() instanceof Player) {
-                        GriefPrevention.sendMessage(player.get(), Texts.of(TextMode.Err, noBuildReason));
+                        GriefPrevention.sendMessage(player.get(), Text.of(TextMode.Err, noBuildReason));
                     }
                     transaction.setValid(false);
                 }   
@@ -124,7 +125,7 @@ public class BlockEventHandler {
             String reason = claim.allowAccess(player.getWorld(), player);
             if (reason != null) {
                 if (event.getCause().root() instanceof Player) {
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Warn, Messages.NoDropsAllowed));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, Messages.NoDropsAllowed));
                 }
                 event.setCancelled(true);
             }
@@ -222,9 +223,9 @@ public class BlockEventHandler {
             // if placed block is fire and pvp is off, apply rules for proximity to other players
             if (block.getState().getType() == BlockTypes.FIRE && !GriefPrevention.instance.pvpRulesApply(block.getLocation().get().getExtent())
                     && !player.hasPermission("griefprevention.lava")) {
-                List<Player> players = ((net.minecraft.world.World)block.getLocation().get().getExtent()).playerEntities;
+                List<EntityPlayer> players = ((net.minecraft.world.World)block.getLocation().get().getExtent()).playerEntities;
                 for (int i = 0; i < players.size(); i++) {
-                    Player otherPlayer = players.get(i);
+                    Player otherPlayer = (Player) players.get(i);
                     Location<World> location = otherPlayer.getLocation();
                     if (!otherPlayer.equals(player) && location.getBlockPosition().distanceSquared(block.getPosition()) < 9) {
                         if (event.getCause().root() instanceof Player) {
@@ -241,7 +242,7 @@ public class BlockEventHandler {
             String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation().get());
             if (noBuildReason != null) {
                 if (event.getCause().root() instanceof Player) {
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, noBuildReason));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, noBuildReason));
                 }
                 transaction.setValid(false);
                 continue;
@@ -256,8 +257,8 @@ public class BlockEventHandler {
     
                 // warn about TNT not destroying claimed blocks
                 if (block.getState().getType().equals(BlockTypes.TNT) && !claim.areExplosivesAllowed && playerData.siegeData == null) {
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Warn, Messages.NoTNTDamageClaims));
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Instr, Messages.ClaimExplosivesAdvertisement));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, Messages.NoTNTDamageClaims));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Instr, Messages.ClaimExplosivesAdvertisement));
                 }
     
                 // if the player has permission for the claim and he's placing UNDER the claim
@@ -274,7 +275,7 @@ public class BlockEventHandler {
                 // places a chest otherwise if there's no claim, the player is placing a chest, and new player automatic claims are enabled
                 // if the chest is too deep underground, don't create the claim and explain why
                 if (GriefPrevention.instance.config_claims_preventTheft && block.getPosition().getY() < GriefPrevention.getActiveConfig(claim.world).getConfig().claim.maxClaimDepth) {
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Warn, Messages.TooDeepToClaim));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, Messages.TooDeepToClaim));
                     return;
                 }
     
@@ -286,7 +287,7 @@ public class BlockEventHandler {
                     if (GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.claimRadius == 0) {
                         this.dataStore.createClaim(block.getLocation().get().getExtent(), block.getPosition().getX(), block.getPosition().getX(), block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(),
                                 player.getUniqueId(), null, UUID.randomUUID(), player);
-                        GriefPrevention.sendMessage(player, Texts.of(TextMode.Success, Messages.ChestClaimConfirmation));
+                        GriefPrevention.sendMessage(player, Text.of(TextMode.Success, Messages.ChestClaimConfirmation));
                     }
     
                     // otherwise, create a claim in the area around the chest
@@ -403,7 +404,7 @@ public class BlockEventHandler {
         StringBuilder lines = new StringBuilder(" placed a sign @ " + GriefPrevention.getfriendlyLocationString(event.getTargetTile().getLocation()));
         boolean notEmpty = false;
         for (int i = 0; i < event.getText().lines().size(); i++) {
-            String withoutSpaces = Texts.toPlain(event.getText().lines().get(i)).replace(" ", "");
+            String withoutSpaces = Text.of(event.getText().lines().get(i)).toPlain().replace(" ", "");
             if (!withoutSpaces.isEmpty()) {
                 notEmpty = true;
                 lines.append("\n  " + event.getText().lines().get(i));
@@ -430,7 +431,7 @@ public class BlockEventHandler {
                 Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                 for (Player otherPlayer : players) {
                     if (otherPlayer.hasPermission("griefprevention.eavesdropsigns")) {
-                        otherPlayer.sendMessage(Texts.of(TextColors.GRAY, player.getName(), signMessage));
+                        otherPlayer.sendMessage(Text.of(TextColors.GRAY, player.getName(), signMessage));
                     }
                 }
             }

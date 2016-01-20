@@ -27,7 +27,7 @@ package me.ryanhamshire.GriefPrevention.command;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.annotation.NonnullByDefault;
 
@@ -44,8 +44,8 @@ public class CommandGriefPrevention {
      */
     public static CommandSpec getCommand() {
         return CommandSpec.builder()
-                .description(Texts.of("Text description"))
-                .extendedDescription(Texts.of("commands:\n",
+                .description(Text.of("Text description"))
+                .extendedDescription(Text.of("commands:\n",
                         INDENT, title("abandonallclaims"), LONG_INDENT, "Deletes ALL your claims\n",
                         INDENT, title("abandonclaim"), LONG_INDENT, "Deletes a claim\n",
                         INDENT, title("abandontoplevelclaim"), LONG_INDENT, "Deletes a claim and all its subdivisions\n",
@@ -56,6 +56,6 @@ public class CommandGriefPrevention {
     }
 
     private static Text title(String title) {
-        return Texts.of(TextColors.GREEN, title);
+        return Text.of(TextColors.GREEN, title);
     }
 }

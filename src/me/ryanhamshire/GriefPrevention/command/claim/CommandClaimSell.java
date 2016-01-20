@@ -40,7 +40,7 @@ public class CommandClaimSell implements CommandExecutor {
         int blockCount = blockCountOpt.get();
 
         if (blockCount <= 0) {
-            throw new CommandException(Texts.of("Invalid block count of lte 0"));
+            throw new CommandException(Text.of("Invalid block count of lte 0"));
         }
 
         // if he doesn't have enough blocks, tell him so

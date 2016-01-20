@@ -75,12 +75,10 @@ import org.spongepowered.api.entity.vehicle.minecart.MinecartFurnace;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
-import org.spongepowered.api.event.action.MessageEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportType;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportTypes;
-import org.spongepowered.api.event.command.MessageSinkEvent;
 import org.spongepowered.api.event.command.SendCommandEvent;
 import org.spongepowered.api.event.entity.CollideEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
@@ -91,8 +89,9 @@ import org.spongepowered.api.event.entity.living.humanoid.player.RespawnPlayerEv
 import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.message.MessageChannelEvent;
+import org.spongepowered.api.event.message.MessageEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
-import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.Carrier;
@@ -101,9 +100,10 @@ import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.statistic.achievement.Achievements;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.channel.MessageReceiver;
+import org.spongepowered.api.text.channel.type.FixedMessageChannel;
 import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.text.sink.MessageSinks;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.util.blockray.BlockRay;
@@ -156,35 +156,36 @@ public class PlayerEventHandler {
 
     // when a player chats, monitor for spam
     @Listener(order = Order.PRE)
-    public void onPlayerChat(MessageSinkEvent.Chat event) {
+    public void onPlayerChat(MessageChannelEvent.Chat event) {
         Player player = event.getCause().first(Player.class).get();
         if (!player.isOnline()) {
             event.setCancelled(true);
             return;
         }
 
-        String message = Texts.toPlain(event.getMessage());
+        String message = Text.of(event.getMessage()).toPlain();
 
         boolean muted = this.handlePlayerChat(player, message, event);
-        Iterable<CommandSource> recipients = event.getSink().getRecipients();
+        Iterable<MessageReceiver> recipients = event.getChannel().get().getMembers();
+        //Iterable<CommandSource> recipients = event.getSink().getRecipients();
 
         // muted messages go out to only the sender
         if (muted) {
-            event.setSink(MessageSinks.to(Sets.newHashSet(player)));
+            event.setChannel(player.getMessageChannel());
         }
 
         // soft muted messages go out to all soft muted players
         else if (this.dataStore.isSoftMuted(player.getUniqueId())) {
             String notificationMessage = "(Muted " + player.getName() + "): " + message;
             Set<CommandSource> recipientsToKeep = new HashSet<>();
-            for (CommandSource recipient : recipients) {
+            for (MessageReceiver recipient : recipients) {
                 if (recipient instanceof Player && this.dataStore.isSoftMuted(((Player) recipient).getUniqueId())) {
-                    recipientsToKeep.add(recipient);
-                } else if (recipient.hasPermission("griefprevention.eavesdrop")) {
-                    recipient.sendMessage(Texts.of(TextColors.GRAY, notificationMessage));
+                    recipientsToKeep.add((Player) recipient);
+                } else if (((Player) recipient).hasPermission("griefprevention.eavesdrop")) {
+                    recipient.sendMessage(Text.of(TextColors.GRAY, notificationMessage));
                 }
             }
-            event.setSink(MessageSinks.to(recipientsToKeep));
+            event.setChannel(new FixedMessageChannel(recipientsToKeep));
 
             GriefPrevention.AddLogEntry(notificationMessage, CustomLogEntryTypes.Debug, true);
         }
@@ -192,7 +193,7 @@ public class PlayerEventHandler {
         // troll and excessive profanity filter
         else if (!player.hasPermission("griefprevention.spam") && this.bannedWordFinder.hasMatch(message)) {
             // limit recipients to sender
-            event.setSink(MessageSinks.to(Sets.newHashSet(player)));
+            event.setChannel(player.getMessageChannel());
 
             // if player not new warn for the first infraction per play session.
             if (player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
@@ -222,25 +223,25 @@ public class PlayerEventHandler {
             // based on ignore lists, remove some of the audience
             Set<CommandSource> recipientsToRemove = new HashSet<>();
             PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-            for (CommandSource recipient : recipients) {
+            for (MessageReceiver recipient : recipients) {
                 if (recipient instanceof Player) {
                     Player reciever = (Player) recipient;
 
                     if (playerData.ignoredPlayers.containsKey(reciever.getUniqueId())) {
-                        recipientsToRemove.add(recipient);
+                        recipientsToRemove.add((Player) recipient);
                     } else {
                         PlayerData targetPlayerData = this.dataStore.getPlayerData(reciever.getWorld(), reciever.getUniqueId());
                         if (targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId())) {
-                            recipientsToRemove.add(recipient);
+                            recipientsToRemove.add((Player) recipient);
                         }
                     }
                 }
             }
 
-            Set<CommandSource> newRecipients = Sets.newHashSet(event.getSink().getRecipients().iterator());
+            Set<MessageReceiver> newRecipients = Sets.newHashSet(event.getChannel().get().getMembers().iterator());
             newRecipients.removeAll(recipientsToRemove);
 
-            event.setSink(MessageSinks.to(newRecipients));
+            event.setChannel(new FixedMessageChannel(newRecipients));
         }
     }
 
@@ -305,7 +306,7 @@ public class PlayerEventHandler {
             // exception for strings containing forward slash to avoid changing
             // a case-sensitive URL
             if (event instanceof MessageEvent) {
-                ((MessageEvent) event).setMessage(Texts.of(message.toLowerCase()));
+                ((MessageEvent) event).setMessage(Text.of(message.toLowerCase()));
             }
         }
 
@@ -356,8 +357,7 @@ public class PlayerEventHandler {
         }
 
         // if the message was mostly non-alpha-numerics or doesn't include much
-        // whitespace, consider it a spam (probably ansi art or random text
-        // gibberish)
+        // whitespace, consider it a spam (probably ansi art or random text gibberish)
         if (mutedReason == null && message.length() > 5) {
             int symbolsCount = 0;
             int whitespaceCount = 0;
@@ -416,15 +416,13 @@ public class PlayerEventHandler {
                 return true;
             }
 
-            // cancel any messages while at or above the third spam level and
-            // issue warnings
-            // anything above level 2, mute and warn
+            // cancel any messages while at or above the third spam level and issue warnings anything above level 2, mute and warn
             if (playerData.spamCount >= 4) {
                 if (mutedReason == null) {
                     mutedReason = "too-frequent text";
                 }
                 if (!playerData.spamWarned) {
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Warn, GriefPrevention.getGlobalConfig().getConfig().spam.banWarningMessage), 10L);
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, GriefPrevention.getGlobalConfig().getConfig().spam.banWarningMessage), 10L);
                     GriefPrevention.AddLogEntry("Warned " + player.getName() + " about spam penalties.", CustomLogEntryTypes.Debug, true);
                     playerData.spamWarned = true;
                 }
@@ -435,8 +433,7 @@ public class PlayerEventHandler {
                 GriefPrevention.AddLogEntry("Muted " + mutedReason + ".");
                 GriefPrevention.AddLogEntry("Muted " + player.getName() + " " + mutedReason + ":" + message, CustomLogEntryTypes.Debug, true);
 
-                // cancelling the event guarantees other players don't receive
-                // the message
+                // cancelling the event guarantees other players don't receive the message
                 return true;
             }
         }
@@ -450,8 +447,7 @@ public class PlayerEventHandler {
         return false;
     }
 
-    // if two strings are 75% identical, they're too close to follow each other
-    // in the chat
+    // if two strings are 75% identical, they're too close to follow each other in the chat
     private boolean stringsAreSimilar(String message, String lastMessage) {
         // determine which is shorter
         String shorterString, longerString;
@@ -534,7 +530,7 @@ public class PlayerEventHandler {
                     Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                     for (Player onlinePlayer : players) {
                         if (onlinePlayer.hasPermission("griefprevention.eavesdrop") && !onlinePlayer.equals(targetPlayer)) {
-                            onlinePlayer.sendMessage(Texts.of(TextColors.GRAY + logMessage));
+                            onlinePlayer.sendMessage(Text.of(TextColors.GRAY + logMessage));
                         }
                     }
                 }
@@ -611,7 +607,7 @@ public class PlayerEventHandler {
                 playerData.lastClaim = claim;
                 String reason = claim.allowAccess(player.getWorld(), player);
                 if (reason != null) {
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, reason));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, reason));
                     event.setCancelled(true);
                 }
             }
@@ -661,7 +657,7 @@ public class PlayerEventHandler {
                     // if cooldown remaining
                     if (cooldownRemaining > 0) {
                         // DAS BOOT!;
-                        event.setMessage(Texts.of("You must wait " + cooldownRemaining + " seconds before logging-in again."));
+                        event.setMessage(Text.of("You must wait " + cooldownRemaining + " seconds before logging-in again."));
                         event.setCancelled(true);
                         return;
                     }
@@ -720,8 +716,8 @@ public class PlayerEventHandler {
         }
 
         // silence notifications when they're coming too fast
-        if (!event.getMessage().equals(Texts.of()) && this.shouldSilenceNotification()) {
-            event.setMessage(Texts.of());
+        if (!event.getMessage().equals(Text.of()) && this.shouldSilenceNotification()) {
+            event.setMessage(Text.of());
         }
 
         // FEATURE: auto-ban accounts who use an IP address which was very
@@ -778,7 +774,7 @@ public class PlayerEventHandler {
                         Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
 
                         // silence join message
-                        event.setMessage(Texts.of());
+                        event.setMessage(Text.of());
 
                         break;
                 }
@@ -805,7 +801,7 @@ public class PlayerEventHandler {
                     Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPrevention.instance);
 
                     // silence join message
-                    event.setMessage(Texts.of(""));
+                    event.setMessage(Text.of(""));
                     return;
                 } else {
                     this.ipCountHash.put(ipAddressString, ipCount + 1);
@@ -830,7 +826,7 @@ public class PlayerEventHandler {
         // received while dead
         if (playerData.messageOnRespawn != null) {
             // color is already embedded inmessage in this case
-            GriefPrevention.sendMessage(player, Texts.of(playerData.messageOnRespawn), 40L);
+            GriefPrevention.sendMessage(player, Text.of(playerData.messageOnRespawn), 40L);
             playerData.messageOnRespawn = null;
         }
 
@@ -849,7 +845,7 @@ public class PlayerEventHandler {
         long now = Calendar.getInstance().getTimeInMillis();
 
         if (now - playerData.lastDeathTimeStamp < GriefPrevention.getGlobalConfig().getConfig().spam.deathMessageCooldown * 1000) {
-            event.setMessage(Texts.of());
+            event.setMessage(Text.of());
         }
 
         playerData.lastDeathTimeStamp = now;
@@ -888,7 +884,7 @@ public class PlayerEventHandler {
 
         // silence notifications when they're coming too fast, or the player is banned
         if (this.shouldSilenceNotification() || isBanned) {
-            event.setMessage(Texts.of());
+            event.setMessage(Text.of());
         } else {
             // make sure his data is all saved - he might have accrued some claim
             // blocks while playing that were not saved immediately
@@ -1004,7 +1000,7 @@ public class PlayerEventHandler {
                 playerData.lastClaim = toClaim;
                 String noAccessReason = toClaim.allowAccess(player.getWorld(), player);
                 if (noAccessReason != null) {
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, noAccessReason));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, noAccessReason));
                     event.setCancelled(true);
                     ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ender_pearl));
                 }
@@ -1118,7 +1114,7 @@ public class PlayerEventHandler {
                         String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, owner.getName());
                         if (player.hasPermission("griefprevention.ignoreclaims"))
                             message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                        GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, message));
+                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
                     }
                     event.setCancelled(true);
                     return;
@@ -1138,7 +1134,7 @@ public class PlayerEventHandler {
         if (entity.getType() == EntityTypes.ARMOR_STAND || entity instanceof Hanging) {
             /*String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation(), ItemTypes.ITEM_FRAME);
             if (noBuildReason != null) {
-                GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, noBuildReason));
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, noBuildReason));
                 event.setCancelled(true);
                 return;
             }*/
@@ -1173,7 +1169,7 @@ public class PlayerEventHandler {
                 if (entity instanceof Carrier) {
                     String noContainersReason = claim.allowContainers(player);
                     if (noContainersReason != null) {
-                        GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, noContainersReason));
+                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, noContainersReason));
                         event.setCancelled(true);
                         return;
                     }
@@ -1183,7 +1179,7 @@ public class PlayerEventHandler {
                 else if (entity instanceof Boat) {
                     String noAccessReason = claim.allowAccess(player.getWorld(), player);
                     if (noAccessReason != null) {
-                        player.sendMessage(Texts.of(noAccessReason));
+                        player.sendMessage(Text.of(noAccessReason));
                         event.setCancelled(true);
                         return;
                     }
@@ -1201,7 +1197,7 @@ public class PlayerEventHandler {
                     String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
                     if (player.hasPermission("griefprevention.ignoreclaims"))
                         message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, message));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
                     event.setCancelled(true);
                     return;
                 }
@@ -1215,7 +1211,7 @@ public class PlayerEventHandler {
                 String failureReason = claim.allowContainers(player);
                 if (failureReason != null) {
                     event.setCancelled(true);
-                    GriefPrevention.sendMessage(player, Texts.of(TextMode.Err, failureReason));
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, failureReason));
                     return;
                 }
             }
@@ -1706,10 +1702,8 @@ public class PlayerEventHandler {
                     GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
                     Visualization.Revert(player);
                     return;
-                }
-
+                } else {
                 // claim case
-                else {
                     playerData.lastClaim = claim;
                     GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
     
@@ -1737,8 +1731,9 @@ public class PlayerEventHandler {
                         GriefPrevention.sendMessage(player, TextMode.Info, Messages.PlayerOfflineTime, String.valueOf(daysElapsed));
     
                         // drop the data we just loaded, if the player isn't online
-                        if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent())
+                        if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {
                             this.dataStore.clearCachedPlayerData(claim.ownerID);
+                        }
                     }
                 }
                 return;

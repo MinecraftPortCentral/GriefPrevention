@@ -11,7 +11,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 public class CommandClaim implements CommandExecutor {
 
@@ -30,12 +30,12 @@ public class CommandClaim implements CommandExecutor {
         
         if(claim != null)
         {
-        GriefPrevention.sendMessage(src, Texts.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())
+        GriefPrevention.sendMessage(src, Text.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())
                 + GriefPrevention.instance.dataStore.getMessage(Messages.ContinueBlockMath, String.valueOf(claim.getArea()))));
         }
         else
         {
-            GriefPrevention.sendMessage(src, Texts.of(TextMode.Err, "No claim in your current location."));
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
         }
 
         return CommandResult.success();

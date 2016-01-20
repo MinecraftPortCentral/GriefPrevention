@@ -6,7 +6,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 public class CommandPermissionTrust implements CommandExecutor {
 
@@ -15,7 +15,7 @@ public class CommandPermissionTrust implements CommandExecutor {
         try {
             CommandHelper.handleTrustCommand(GriefPrevention.checkPlayer(src), null, ctx.<String>getOne("target").get());
         } catch (CommandException e) {
-            src.sendMessage(Texts.of("An error occurred while executing that command."));
+            src.sendMessage(Text.of("An error occurred while executing that command."));
         }
         return CommandResult.success();
     }

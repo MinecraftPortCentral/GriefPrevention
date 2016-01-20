@@ -10,7 +10,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 public class CommandClaimFlag implements CommandExecutor {
 
@@ -33,10 +33,10 @@ public class CommandClaimFlag implements CommandExecutor {
             if (player.hasPermission("griefprevention.command.claim.flag." + flag.toLowerCase())) {
                 setFlagValue(src, claim, flag, value);
             } else {
-                GriefPrevention.sendMessage(src, Texts.of(TextMode.Err, "No permission to use this flag."));
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
             }
         } else {
-            GriefPrevention.sendMessage(src, Texts.of(TextMode.Err, "No claim found."));
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim found."));
         }
         return CommandResult.success();
     }
@@ -55,8 +55,8 @@ public class CommandClaimFlag implements CommandExecutor {
             case "mobdamage":
                 claim.getClaimData().getConfig().flags.mobDamage = value;
                 break;
-            case "mobspawning":
-                claim.getClaimData().getConfig().flags.mobSpawning = value;
+            case "spawn-monsters":
+                claim.getClaimData().getConfig().flags.spawnMonsters = value;
                 break;
             case "sleepinbeds":
                 claim.getClaimData().getConfig().flags.sleepInBeds = value;
@@ -65,9 +65,9 @@ public class CommandClaimFlag implements CommandExecutor {
                 claim.getClaimData().getConfig().flags.waterFlow = value;
                 break;
             default:
-                GriefPrevention.sendMessage(src, Texts.of(TextMode.Err, "Flag invalid."));
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Flag invalid."));
                 return;
         }
-        GriefPrevention.sendMessage(src, Texts.of(TextMode.Success, "Set flag value."));
+        GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Set flag value."));
     }
 }

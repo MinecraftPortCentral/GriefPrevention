@@ -58,8 +58,8 @@ public class ClaimStorageData {
     public static final String FLAGS_ITEM_DROP = "item-drop";
     public static final String FLAGS_SPAWN_MONSTERS = "spawn-monsters";
     public static final String FLAGS_SPAWN_PASSIVES = "spawn-passives";
-    public static final String FLAGS_SPAWN_AMBIENT = "spawn-ambient";
-    public static final String FLAGS_SPAWN_AQUATIC = "spawn-aquatic";
+    public static final String FLAGS_SPAWN_AMBIENTS = "spawn-ambient";
+    public static final String FLAGS_SPAWN_AQUATICS = "spawn-aquatic";
     public static final String FLAGS_SPAWN_ANY = "spawn-any";
     public static final String FLAGS_SLEEP = "sleep";
     public static final String FLAGS_WATER_FLOW = "water-flow";
@@ -173,8 +173,14 @@ public class ClaimStorageData {
         public boolean explosions = false;
         @Setting(value = FLAGS_MOB_DAMAGE, comment = "Mobs can damage players.")
         public boolean mobDamage = true;
-        @Setting(value = FLAGS_SPAWN_MONSTERS, comment = "Mobs can spawn.")
-        public boolean mobSpawning = true;
+        @Setting(value = FLAGS_SPAWN_MONSTERS, comment = "Monsters can spawn.")
+        public boolean spawnMonsters = true;
+        @Setting(value = FLAGS_SPAWN_PASSIVES, comment = "Passives can spawn.")
+        public boolean spawnPassives = true;
+        @Setting(value = FLAGS_SPAWN_AMBIENTS, comment = "Ambients can spawn.")
+        public boolean spawnAmbients = true;
+        @Setting(value = FLAGS_SPAWN_AQUATICS, comment = "Aquatics can spawn.")
+        public boolean spawnAquatics = true;
         @Setting(value = FLAGS_SLEEP, comment = "Players can sleep in beds.")
         public boolean sleepInBeds = true;
         @Setting(value = FLAGS_ITEM_DROP, comment = "Items can drop.")

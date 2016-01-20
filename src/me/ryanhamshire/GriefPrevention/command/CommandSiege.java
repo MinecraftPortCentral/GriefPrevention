@@ -12,7 +12,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 import java.util.Optional;
 
@@ -68,7 +68,7 @@ public class CommandSiege implements CommandExecutor {
 
         Player defender;
         try {
-            defender = defenderOpt.orElseThrow(() -> new CommandException(Texts.of("No player was matched")));
+            defender = defenderOpt.orElseThrow(() -> new CommandException(Text.of("No player was matched")));
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
