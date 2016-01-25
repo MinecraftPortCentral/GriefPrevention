@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command.claim;
+package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.WelcomeTask;
 import org.spongepowered.api.command.CommandResult;

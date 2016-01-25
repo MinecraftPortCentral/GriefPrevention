@@ -1,4 +1,4 @@
-package me.ryanhamshire.GriefPrevention.command.claim;
+package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -11,12 +11,17 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
 
-public class CommandClaimDeleteAll implements CommandExecutor {
+public class CommandClaimDeleteAllAdmin implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
+        try {
+            ctx.checkPermission(src, "griefprevention.deleteclaims");
+        } catch (CommandException e) {
+            src.sendMessage(e.getText());
+            return CommandResult.success();
+        }
         Player player;
         try {
             player = GriefPrevention.checkPlayer(src);
@@ -25,20 +30,15 @@ public class CommandClaimDeleteAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        // try to find that player
-        User otherPlayer = ctx.<User>getOne("player").get();
+        // delete all admin claims
+        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(null, true); // null for owner
+        // id indicates an administrative claim
 
-        // delete all that player's claims
-        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId(), true);
+        GriefPrevention.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
+        GriefPrevention.AddLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
-        if (player != null) {
-            GriefPrevention.AddLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
-                    CustomLogEntryTypes.AdminActivity);
-
-            // revert any current visualization
-            Visualization.Revert(player);
-        }
+        // revert any current visualization
+        Visualization.Revert(player);
 
         return CommandResult.success();
     }
