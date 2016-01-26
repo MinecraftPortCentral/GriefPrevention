@@ -176,6 +176,19 @@ public class BlockEventHandler {
         }
     }
 
+    @Listener(order = Order.EARLY)
+    public void onImpactEvent(CollideBlockEvent.Impact event) {
+        Optional<User> user = event.getCause().first(User.class);
+        if (!user.isPresent()) {
+            return;
+        }
+
+        Claim targetClaim = this.dataStore.getClaimAt(event.getImpactPoint(), false, null);
+        if (targetClaim !=null && targetClaim.allowAccess(targetClaim.world, user.get()) != null) {
+            event.setCancelled(true);
+        }
+    }
+
     @IsCancelled(Tristate.UNDEFINED)
     @Listener
     public void onBlockChangePost(ChangeBlockEvent.Post event) {
