@@ -185,6 +185,19 @@ public class EntityEventHandler {
         }
 
         DamageSource damageSource = damageSourceOpt.get();
+        Claim claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, null);
+        if (claim != null) {
+            // check mob-player-damage flag
+            if (damageSource instanceof EntityDamageSource && event.getTargetEntity() instanceof Player) {
+                EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
+                if (entityDamageSource.getSource() instanceof Monster) {
+                    if (!claim.getClaimData().getConfig().flags.mobPlayerDamage) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+        }
         // protect pets from environmental damage types which could be easily caused by griefers
         if (event.getTargetEntity() instanceof EntityTameable && !GriefPrevention.instance.pvpRulesApply(event.getTargetEntity().getWorld())) {
             EntityTameable tameable = (EntityTameable) event.getTargetEntity();
@@ -315,7 +328,7 @@ public class EntityEventHandler {
                 cachedClaim = playerData.lastClaim;
             }
 
-            Claim claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, cachedClaim);
+            claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, cachedClaim);
 
             // if it's claimed
             if (claim != null) {
@@ -400,7 +413,7 @@ public class EntityEventHandler {
                 cachedClaim = playerData.lastClaim;
             }
 
-            Claim claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, cachedClaim);
+            claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, cachedClaim);
 
             // if it's claimed
             if (claim != null) {
