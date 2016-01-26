@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention.events;
 
+import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.DataStore;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -142,17 +143,18 @@ public class BlockEventHandler {
             return;
         }
 
+        Claim sourceClaim = this.dataStore.getClaimAt(blockSource.get().getLocation().get(), false, null);
         Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
         while (iterator.hasNext()) {
             Direction direction = iterator.next();
             Location<World> location = blockSource.get().getLocation().get().getRelative(direction);
-            if ((blockSource.get().getState().getType() == BlockTypes.WATER || blockSource.get().getState().getType() == BlockTypes.FLOWING_WATER) && (location.getBlock().getType() == BlockTypes.FLOWING_LAVA || location.getBlock().getType() == BlockTypes.LAVA)) {
+            Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
+            if (sourceClaim == null && targetClaim != null) {
                 iterator.remove();
-            }
-            Claim claim = this.dataStore.getClaimAt(location, false, null);
-            if (claim != null) {
-                String reason = claim.allowAccess(claim.world, user.get());
-                if (reason != null) {
+            } else if (sourceClaim != null && targetClaim != null) {
+                Claim sourceTopLevelClaim = sourceClaim.parent != null ? sourceClaim.parent : sourceClaim;
+                Claim targetTopLevelClaim = targetClaim.parent != null ? targetClaim.parent : targetClaim;
+                if (sourceTopLevelClaim != targetTopLevelClaim) {
                     iterator.remove();
                 }
             }
@@ -176,17 +178,40 @@ public class BlockEventHandler {
 
     @IsCancelled(Tristate.UNDEFINED)
     @Listener
-    public void onBlockChange(ChangeBlockEvent event) {
+    public void onBlockChangePost(ChangeBlockEvent.Post event) {
         Optional<User> user = event.getCause().first(User.class);
+        Optional<BlockSnapshot> blockSource = event.getCause().first(BlockSnapshot.class);
 
-        if (!user.isPresent()) {
+        if (!user.isPresent() && !blockSource.isPresent()) {
             return;
         }
 
+        Claim sourceClaim = null;
+        if (blockSource.isPresent()) {
+            sourceClaim = this.dataStore.getClaimAt(blockSource.get().getLocation().get(), false, null);
+        }
+
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-            Claim claim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
-            if (claim !=null && claim.allowAccess(claim.world, user.get()) != null) {
-                transaction.setValid(false);
+            Vector3i pos = transaction.getFinal().getPosition();
+            if (blockSource.isPresent()) {
+                Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
+                if (sourceClaim == null && targetClaim != null) {
+                    event.setCancelled(true);
+                    return;
+                } else if (sourceClaim != null && targetClaim != null) {
+                    Claim sourceTopLevelClaim = sourceClaim.parent != null ? sourceClaim.parent : sourceClaim;
+                    Claim targetTopLevelClaim = targetClaim.parent != null ? targetClaim.parent : targetClaim;
+                    if (sourceTopLevelClaim != targetTopLevelClaim) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+            } else if (user.isPresent()) {
+                Claim claim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
+                if (claim !=null && claim.allowAccess(claim.world, user.get()) != null) {
+                    event.setCancelled(true);
+                    return;
+                }
             }
         }
     }
