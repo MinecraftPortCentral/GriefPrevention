@@ -691,9 +691,9 @@ public class PlayerEventHandler {
         this.lastLoginThisServerSessionMap.put(playerID, nowDate);
 
         // if newish, prevent chat until he's moved a bit to prove he's not a bot
-        if (player.getOrCreate(AchievementData.class).isPresent() && !player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
-            playerData.noChatLocation = player.getLocation();
-        }
+        //if (player.getOrCreate(AchievementData.class).isPresent() && !player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
+        //    playerData.noChatLocation = player.getLocation();
+        //}
 
         boolean hasJoinedBefore = true;
         if (player.getOrCreate(JoinData.class).isPresent()) {
