@@ -1337,7 +1337,7 @@ public class PlayerEventHandler {
     }
 
     static BlockSnapshot getTargetBlock(Player player, int maxDistance) throws IllegalStateException {
-        BlockRay<World> blockRay = BlockRay.from(player).direction(Vector3d.UP).blockLimit(maxDistance).build();
+        BlockRay<World> blockRay = BlockRay.from(player).blockLimit(maxDistance).build();
 
         while (blockRay.hasNext()) {
             BlockRayHit<World> blockRayHit = blockRay.next();
