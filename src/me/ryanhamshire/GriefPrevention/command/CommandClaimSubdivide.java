@@ -1,8 +1,9 @@
-package me.ryanhamshire.GriefPrevention.command.claim;
+package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
+import me.ryanhamshire.GriefPrevention.ShovelMode;
 import me.ryanhamshire.GriefPrevention.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -11,7 +12,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 
-public class CommandClaimIgnore implements CommandExecutor {
+public class CommandClaimSubdivide implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -24,14 +25,10 @@ public class CommandClaimIgnore implements CommandExecutor {
         }
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        playerData.ignoreClaims = !playerData.ignoreClaims;
-
-        // toggle ignore claims mode on or off
-        if (!playerData.ignoreClaims) {
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.RespectingClaims);
-        } else {
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.IgnoringClaims);
-        }
+        playerData.shovelMode = ShovelMode.Subdivide;
+        playerData.claimSubdividing = null;
+        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
+        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2);
 
         return CommandResult.success();
     }

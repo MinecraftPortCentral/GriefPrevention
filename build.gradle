@@ -29,6 +29,7 @@ ext {
 minecraft {
     forgeVersion = project.forgeVersion
     mappings = project.mcpMappings
+    runDir = "run"
 }
 
 repositories {
