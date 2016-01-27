@@ -204,9 +204,6 @@ public class GriefPrevention {
     // list of block IDs which can be destroyed by explosions, even in claimed areas
     public List<ItemInfo> config_mods_explodableIds;
 
-    // override for sea level, because bukkit doesn't report the right value for all situations
-    public HashMap<String, Integer> config_seaLevelOverride;
-
     // how far away to search from a tree trunk for its branch blocks
     public static final int TREE_RADIUS = 5;
 
@@ -980,12 +977,7 @@ public class GriefPrevention {
     }
 
     public int getSeaLevel(World world) {
-        Integer overrideValue = this.config_seaLevelOverride.get(world.getName());
-        if (overrideValue == null || overrideValue == -1) {
-            return world.getDimension().getMinimumSpawnHeight();
-        } else {
-            return overrideValue;
-        }
+        return world.getDimension().getMinimumSpawnHeight();
     }
 
     public boolean containsBlockedIP(String message) {

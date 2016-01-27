@@ -1765,9 +1765,9 @@ public class PlayerEventHandler {
                 return;
             }
 
-                // if it's a golden shovel
-                else if (!materialInHand.getId().equals(GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.modificationTool))
+                if (!materialInHand.getId().equals(GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.modificationTool)) {
                     return;
+                }
             
                 // disable golden shovel while under siege
                 if (playerData == null)
@@ -1811,7 +1811,7 @@ public class PlayerEventHandler {
                     }
             
                     // figure out which chunk to repair
-                    Chunk chunk = player.getWorld().getChunk(clickedBlock.getLocation().get().getBlockPosition()).get();
+                    Chunk chunk = player.getWorld().getChunk(clickedBlock.getLocation().get().getBlockX() >> 4, 0, clickedBlock.getLocation().get().getBlockZ() >> 4).get();
             
                     // start the repair process
             
@@ -2363,8 +2363,8 @@ public class PlayerEventHandler {
                         Location<World> greaterCorner = newClaim.getGreaterBoundaryCorner();
                         World world = lesserCorner.getExtent();
                         ArrayList<Chunk> snapshots = new ArrayList<Chunk>();
-                        for (int chunkx = lesserCorner.getBlockX() / 16; chunkx <= greaterCorner.getBlockX() / 16; chunkx++) {
-                            for (int chunkz = lesserCorner.getBlockZ() / 16; chunkz <= greaterCorner.getBlockZ() / 16; chunkz++) {
+                        for (int chunkx = lesserCorner.getBlockX() >> 4; chunkx <= greaterCorner.getBlockX() >> 4; chunkx++) {
+                            for (int chunkz = lesserCorner.getBlockZ() >> 4; chunkz <= greaterCorner.getBlockZ() >> 4; chunkz++) {
                                 if (world.getChunk(chunkx, 0, chunkz).isPresent()) {
                                     snapshots.add(world.getChunk(chunkx, 0, chunkz).get());
                                 }

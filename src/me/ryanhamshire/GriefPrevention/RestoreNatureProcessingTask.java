@@ -36,6 +36,7 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.biome.BiomeType;
 import org.spongepowered.api.world.biome.BiomeTypes;
+import org.spongepowered.common.interfaces.block.IMixinBlockState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -154,8 +155,7 @@ class RestoreNatureProcessingTask implements Runnable {
         // remove water/lava above sea level
         this.removeDumpedFluids();
 
-        // cover surface stone and gravel with sand or grass, as the biome
-        // requires
+        // cover surface stone and gravel with sand or grass, as the biome requires
         this.coverSurfaceStone();
 
         // remove any player-placed leaves
@@ -176,8 +176,8 @@ class RestoreNatureProcessingTask implements Runnable {
                 for (int y = this.seaLevel - 1; y < snapshots[0].length; y++) {
                     // note: see minecraft wiki data values for leaves
                     BlockSnapshot block = snapshots[x][y][z];
-                    if (block.getState().getType() == BlockTypes.LEAVES ) {//&& (block.data & 0x4) != 0) {
-                        block.getLocation().get().setBlock(BlockTypes.AIR.getDefaultState());
+                    if (block.getState().getType() == BlockTypes.LEAVES && ((((IMixinBlockState) block.getState()).getStateMeta()) & 0x4) != 0) {
+                        snapshots[x][y][z] = block.withState(BlockTypes.AIR.getDefaultState());
                     }
                 }
             }
@@ -211,9 +211,9 @@ class RestoreNatureProcessingTask implements Runnable {
                             downBlock.getState().getType() == BlockTypes.SAND ||
                             aboveBlock.getState().getType() == BlockTypes.SAND ||
                             underBlock.getState().getType() == BlockTypes.SAND) {
-                        snapshots[x][y][z].withState(BlockTypes.SAND.getDefaultState()).restore(true, false);
+                        snapshots[x][y][z] = snapshots[x][y][z].withState(BlockTypes.SAND.getDefaultState());
                     } else {
-                        snapshots[x][y][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        snapshots[x][y][z] = snapshots[x][y][z].withState(BlockTypes.AIR.getDefaultState());
                     }
                 }
             }
@@ -255,7 +255,7 @@ class RestoreNatureProcessingTask implements Runnable {
                     }
 
                     if (adjacentBlockCount < 3) {
-                        this.snapshots[x][thisy][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        this.snapshots[x][thisy][z] = this.snapshots[x][thisy][z].withState(BlockTypes.AIR.getDefaultState());
                     }
 
                     thisy--;
@@ -296,7 +296,7 @@ class RestoreNatureProcessingTask implements Runnable {
                     // if any, remove the log
                     if (leftBlock.getState().getType() == BlockTypes.LOG || rightBlock.getState().getType() == BlockTypes.LOG
                             || upBlock.getState().getType() == BlockTypes.LOG || downBlock.getState().getType() == BlockTypes.LOG) {
-                        this.snapshots[x][y][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        this.snapshots[x][y][z] = this.snapshots[x][y][z].withState(BlockTypes.AIR.getDefaultState());
                     }
                 }
             }
@@ -314,7 +314,7 @@ class RestoreNatureProcessingTask implements Runnable {
                 for (int y = miny; y < snapshots[0].length - 1; y++) {
                     BlockSnapshot block = snapshots[x][y][z];
                     if (this.playerBlocks.contains(block.getState().getType())) {
-                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        snapshots[x][y][z] = block.withState(BlockTypes.AIR.getDefaultState());
                     }
                 }
             }
@@ -335,7 +335,7 @@ class RestoreNatureProcessingTask implements Runnable {
                     if (underBlock.getState().getType() == BlockTypes.AIR || underBlock.getState().getType() == BlockTypes.WATER
                             || underBlock.getState().getType() == BlockTypes.LAVA || underBlock.getState().getType() == BlockTypes.LEAVES) {
                         if (this.notAllowedToHang.contains(block.getState().getType())) {
-                            block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                            snapshots[x][y][z] = block.withState(BlockTypes.AIR.getDefaultState());
                         }
                     }
                 }
@@ -371,14 +371,14 @@ class RestoreNatureProcessingTask implements Runnable {
                     int righty = this.highestY(x + 1, z, false);
                     int lefty = this.highestY(x - 1, z, false);
                     while (lefty < thisy && righty < thisy) {
-                        this.snapshots[x][thisy--][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        this.snapshots[x][thisy--][z] = this.snapshots[x][thisy--][z].withState(BlockTypes.AIR.getDefaultState());
                         changed = true;
                     }
 
                     int upy = this.highestY(x, z + 1, false);
                     int downy = this.highestY(x, z - 1, false);
                     while (upy < thisy && downy < thisy) {
-                        this.snapshots[x][thisy--][z].withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        this.snapshots[x][thisy--][z] = this.snapshots[x][thisy--][z].withState(BlockTypes.AIR.getDefaultState());
                         changed = true;
                     }
                 }
@@ -395,9 +395,9 @@ class RestoreNatureProcessingTask implements Runnable {
                 if (block.getState().getType() == BlockTypes.STONE || block.getState().getType() == BlockTypes.GRAVEL || block.getState().getType() == BlockTypes.FARMLAND
                         || block.getState().getType() == BlockTypes.DIRT || block.getState().getType() == BlockTypes.SANDSTONE) {
                     if (this.biome == BiomeTypes.DESERT || this.biome == BiomeTypes.DESERT_HILLS || this.biome == BiomeTypes.BEACH) {
-                        this.snapshots[x][y][z].withState(BlockTypes.SAND.getDefaultState()).restore(true, false);
+                        this.snapshots[x][y][z] = this.snapshots[x][y][z].withState(BlockTypes.SAND.getDefaultState());
                     } else {
-                        this.snapshots[x][y][z].withState(BlockTypes.GRASS.getDefaultState()).restore(true, false);
+                        this.snapshots[x][y][z] = this.snapshots[x][y][z].withState(BlockTypes.GRASS.getDefaultState());
                     }
                 }
             }
@@ -426,15 +426,16 @@ class RestoreNatureProcessingTask implements Runnable {
                 for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                     for (int y = 0; y < snapshots[0].length - 1; y++) {
                         BlockSnapshot block = this.snapshots[x][y][z];
-                        if (!fillableBlocks.contains(block.getState().getType()))
+                        if (!fillableBlocks.contains(block.getState().getType())) {
                             continue;
+                        }
 
                         BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
                         BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
 
                         if (!fillableBlocks.contains(leftBlock.getState().getType()) && !fillableBlocks.contains(rightBlock.getState().getType())) {
                             if (!notSuitableForFillBlocks.contains(rightBlock.getState().getType())) {
-                                block.withState(rightBlock.getState().getType().getDefaultState()).restore(true, false);
+                                this.snapshots[x][y][z] = block.withState(rightBlock.getState().getType().getDefaultState());
                                 changed = true;
                             }
                         }
@@ -444,7 +445,7 @@ class RestoreNatureProcessingTask implements Runnable {
 
                         if (!fillableBlocks.contains(upBlock.getState().getType()) && !fillableBlocks.contains(downBlock.getState().getType())) {
                             if (!notSuitableForFillBlocks.contains(downBlock.getState().getType())) {
-                                block.withState(downBlock.getState().getType().getDefaultState()).restore(true, false);
+                                this.snapshots[x][y][z] = block.withState(downBlock.getState().getType().getDefaultState());
                                 changed = true;
                             }
                         }
@@ -466,10 +467,10 @@ class RestoreNatureProcessingTask implements Runnable {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                 for (int y = miny; y < snapshots[0].length - 1; y++) {
                     BlockSnapshot block = this.snapshots[x][y][z];
-                    BlockSnapshot underBlock = this.snapshots[x][y][z];
+                    BlockSnapshot underBlock = this.snapshots[x][y - 1][z];
                     if (block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.LAVA) {
-                        if (underBlock.getState().getType() == BlockTypes.AIR) { //|| (underBlock.data != 0)) {
-                            block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        if (underBlock.getState().getType() == BlockTypes.AIR || ((((IMixinBlockState) underBlock.getState()).getStateMeta()) != 0)) {
+                            this.snapshots[x][y][z] = block.withState(BlockTypes.AIR.getDefaultState());
                         }
                     }
                 }
@@ -484,9 +485,8 @@ class RestoreNatureProcessingTask implements Runnable {
                     for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                         BlockSnapshot block = snapshots[x][y][z];
 
-                        // only consider air blocks and flowing water blocks for
-                        // upgrade to water source blocks
-                        if (block.getState().getType() == BlockTypes.AIR || (block.getState().getType() == BlockTypes.WATER)) { //&& block.data != 0)) {
+                        // only consider air blocks and flowing water blocks for upgrade to water source blocks
+                        if (block.getState().getType() == BlockTypes.AIR || (block.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) block.getState()).getStateMeta()) != 0)) {
                             BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
                             BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
                             BlockSnapshot upBlock = this.snapshots[x][y][z + 1];
@@ -494,27 +494,27 @@ class RestoreNatureProcessingTask implements Runnable {
                             BlockSnapshot underBlock = this.snapshots[x][y - 1][z];
 
                             // block underneath MUST be source water
-                            if (underBlock.getState().getType() != BlockTypes.WATER)//|| underBlock.data != 0)
+                            if (underBlock.getState().getType() != BlockTypes.WATER || (((IMixinBlockState) underBlock.getState()).getStateMeta()) != 0)
                                 continue;
 
                             // count adjacent source water blocks
                             byte adjacentSourceWaterCount = 0;
-                            if (leftBlock.getState().getType() == BlockTypes.WATER) {// && leftBlock.data == 0) {
+                            if (leftBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) leftBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (rightBlock.getState().getType() == BlockTypes.WATER) {// rightBlock.data == 0) {
+                            if (rightBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) rightBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (upBlock.getState().getType() == BlockTypes.WATER) {// && upBlock.data == 0) {
+                            if (upBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) upBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (downBlock.getState().getType() == BlockTypes.WATER) {// && downBlock.data == 0) {
+                            if (downBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) downBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
 
                             // at least two adjacent blocks must be source water
                             if (adjacentSourceWaterCount >= 2) {
-                                block.withState(BlockTypes.WATER.getDefaultState()).restore(true, false);
+                                snapshots[x][y][z] = block.withState(BlockTypes.WATER.getDefaultState());
                                 changed = true;
                             }
                         }
@@ -540,7 +540,7 @@ class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot block = snapshots[x][y][z];
                     if (block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.LAVA ||
                             block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.LAVA) {
-                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        snapshots[x][y][z] = block.withState(BlockTypes.AIR.getDefaultState());
                     }
                 }
             }
@@ -598,7 +598,8 @@ class RestoreNatureProcessingTask implements Runnable {
         playerBlocks.add(BlockTypes.IRON_BLOCK);
         playerBlocks.add(BlockTypes.DOUBLE_STONE_SLAB);
         playerBlocks.add(BlockTypes.STONE_SLAB);
-        playerBlocks.add(BlockTypes.WHEAT); playerBlocks.add(BlockTypes.TNT);
+        playerBlocks.add(BlockTypes.WHEAT);
+        playerBlocks.add(BlockTypes.TNT);
         playerBlocks.add(BlockTypes.MOSSY_COBBLESTONE);
         playerBlocks.add(BlockTypes.TORCH);
         playerBlocks.add(BlockTypes.FIRE);

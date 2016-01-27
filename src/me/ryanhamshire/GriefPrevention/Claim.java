@@ -899,8 +899,8 @@ public class Claim {
         ArrayList<Chunk> chunks = new ArrayList<Chunk>();
 
         World world = this.getLesserBoundaryCorner().getExtent();
-        Optional<Chunk> lesserChunk = this.getLesserBoundaryCorner().getExtent().getChunk(this.getLesserBoundaryCorner().getBlockPosition());
-        Optional<Chunk> greaterChunk = this.getGreaterBoundaryCorner().getExtent().getChunk(this.getGreaterBoundaryCorner().getBlockPosition());
+        Optional<Chunk> lesserChunk = this.getLesserBoundaryCorner().getExtent().getChunk(this.getLesserBoundaryCorner().getBlockX() >> 4, 0, this.getLesserBoundaryCorner().getBlockZ() >> 4);
+        Optional<Chunk> greaterChunk = this.getGreaterBoundaryCorner().getExtent().getChunk(this.getGreaterBoundaryCorner().getBlockX() >> 4, 0, this.getGreaterBoundaryCorner().getBlockZ() >> 4);
 
         if (lesserChunk.isPresent() && greaterChunk.isPresent()) {
             for (int x = lesserChunk.get().getPosition().getX(); x <= greaterChunk.get().getPosition().getX(); x++) {

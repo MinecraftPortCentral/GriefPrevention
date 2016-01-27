@@ -85,29 +85,25 @@ class RestoreNatureExecutionTask implements Runnable {
                             break;
                         }
 
-                        blockUpdate.getLocation().get().setBlock(blockUpdate.getState());
+                        blockUpdate.restore(true, false);
                     }
                 }
             }
         }
 
         // clean up any entities in the chunk, ensure no players are suffocated
-        Optional<Chunk> chunk = this.lesserCorner.getExtent().getChunk(this.lesserCorner.getBlockPosition());
+        Optional<Chunk> chunk = this.lesserCorner.getExtent().getChunk(this.lesserCorner.getBlockX() >> 4, 0, this.lesserCorner.getBlockZ() >> 4);
         if (chunk.isPresent()) {
-            ArrayList<Entity> entities = (ArrayList<Entity>) chunk.get().getEntities();
-            for (int i = 0; i < entities.size(); i++) {
-                Entity entity = entities.get(i);
+            for (Entity entity : chunk.get().getEntities()) {
                 if (!(entity instanceof Player || entity instanceof Animal)) {
-                    // hanging entities (paintings, item frames) are protected when
-                    // they're in land claims
+                    // hanging entities (paintings, item frames) are protected when they're in land claims
                     if (!(entity instanceof Hanging) || GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null) == null) {
                         // everything else is removed
                         entity.remove();
                     }
                 }
     
-                // for players, always ensure there's air where the player is
-                // standing
+                // for players, always ensure there's air where the player is standing
                 else {
                     entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState());
                     entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState());
