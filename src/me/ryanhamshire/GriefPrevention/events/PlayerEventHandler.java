@@ -1898,19 +1898,16 @@ public class PlayerEventHandler {
                                     break;
                                 }
             
-                                // only replace air, spilling water, snow, long
-                                // grass
+                                // only replace air, spilling water, snow, long grass
                                 if (block.getState().getType() == BlockTypes.AIR || block.getState().getType() == BlockTypes.SNOW
                                         || (block.getState().getType() == BlockTypes.WATER)
                                         || block.getState().getType() == BlockTypes.TALLGRASS) {
-                                    // if the top level, always use the default
-                                    // filler picked above
+                                    // if the top level, always use the default filler picked above
                                     if (y == maxHeight) {
-                                        block = block.withState(defaultFiller.getDefaultState());
+                                        block.withState(defaultFiller.getDefaultState()).restore(true, false);
                                     }
             
-                                    // otherwise look to neighbors for an
-                                    // appropriate fill block
+                                    // otherwise look to neighbors for an appropriate fill block
                                     else {
                                         Location<World> eastBlock = block.getLocation().get().getRelative(Direction.EAST);
                                         Location<World> westBlock = block.getLocation().get().getRelative(Direction.WEST);
@@ -1920,19 +1917,19 @@ public class PlayerEventHandler {
                                         // first, check lateral neighbors (ideally,
                                         // want to keep natural layers)
                                         if (allowedFillBlocks.contains(eastBlock.getBlockType())) {
-                                            block = block.withState(eastBlock.getBlock());
+                                            block.withState(eastBlock.getBlock()).restore(true, false);
                                         } else if (allowedFillBlocks.contains(westBlock.getBlockType())) {
-                                            block = block.withState(westBlock.getBlock());
+                                            block.withState(westBlock.getBlock()).restore(true, false);
                                         } else if (allowedFillBlocks.contains(northBlock.getBlockType())) {
-                                            block = block.withState(northBlock.getBlock());
+                                            block.withState(northBlock.getBlock()).restore(true, false);
                                         } else if (allowedFillBlocks.contains(southBlock.getBlockType())) {
-                                            block = block.withState(southBlock.getBlock());
+                                            block.withState(southBlock.getBlock()).restore(true, false);
                                         }
             
                                         // if all else fails, use the default filler
                                         // selected above
                                         else {
-                                            block = block.withState(defaultFiller.getDefaultState());
+                                            block.withState(defaultFiller.getDefaultState()).restore(true, false);
                                         }
                                     }
                                 }
