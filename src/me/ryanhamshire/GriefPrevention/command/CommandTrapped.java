@@ -80,7 +80,7 @@ public class CommandTrapped  implements CommandExecutor {
         Sponge.getGame().getScheduler().createTaskBuilder()
                 .delay(1, TimeUnit.SECONDS)
                 .execute(task)
-                .submit(this);
+                .submit(GriefPrevention.instance);
 
         return CommandResult.success();
     }

@@ -718,7 +718,7 @@ public class GriefPrevention {
     }
 
     // moves a player from the claim they're in to a nearby wilderness location
-    public Location<World> ejectPlayer(Player player) {
+    public boolean ejectPlayer(Player player) {
         // look for a suitable location
         Location<World> candidateLocation = player.getLocation();
         while (true) {
@@ -736,9 +736,7 @@ public class GriefPrevention {
             else {
                 // find a safe height, a couple of blocks above the surface
                 GuaranteeChunkLoaded(candidateLocation);
-                Location<World> destination = candidateLocation.add(candidateLocation.getExtent().getBlockMax().add(0, 2, 0).toDouble());
-                player.setLocation(destination);
-                return destination;
+                return player.setLocationSafely(player.getLocation().add(0, 2, 0));
             }
         }
     }
@@ -919,7 +917,7 @@ public class GriefPrevention {
         }
 
         // create task to process those data in another thread
-        Location<World> lesserBoundaryCorner = chunk.createSnapshot(0, 0, 0).getLocation().get();
+        Location<World> lesserBoundaryCorner = startBlock.getLocation().get();
         Location<World> greaterBoundaryCorner = chunk.createSnapshot(15, 0, 15).getLocation().get();
 
         // create task
