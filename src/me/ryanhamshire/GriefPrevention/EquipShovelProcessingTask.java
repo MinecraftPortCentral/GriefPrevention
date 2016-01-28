@@ -41,7 +41,7 @@ public class EquipShovelProcessingTask implements Runnable {
     @Override
     public void run() {
         // if he's not holding the golden shovel anymore, do nothing
-        if (player.getItemInHand().isPresent() && !player.getItemInHand().get().getItem().getId().equals(GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.modificationTool)) {
+        if (!player.getItemInHand().isPresent() || (!player.getItemInHand().get().getItem().getId().equals(GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.modificationTool))) {
             return;
         }
 
