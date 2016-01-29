@@ -26,11 +26,11 @@ package me.ryanhamshire.GriefPrevention;
 
 import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -597,13 +597,13 @@ public class DatabaseDataStore extends DataStore {
     }
 
     @Override
-    public void createPlayerWorldData(World world, Player player) {
+    public PlayerData createPlayerWorldStorageData(WorldProperties worldProperties, UUID playerUniqueId) {
         // TODO Auto-generated method stub
-        
+       return null;
     }
 
     @Override
-    public PlayerData getPlayerData(World world, UUID playerID) {
+    public PlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         // TODO Auto-generated method stub
         return null;
     }

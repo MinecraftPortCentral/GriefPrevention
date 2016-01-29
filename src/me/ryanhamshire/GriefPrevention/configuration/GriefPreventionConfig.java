@@ -11,6 +11,7 @@ import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
+import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.util.Functional;
 import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.util.IpSet;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -58,7 +60,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     // CLAIM
     public static final String CLAIM_MODULE_ENABLED = "enable-claims";
     public static final String CLAIM_ACCESSTRUST_COMMANDS = "accesstrust-commands";
-    public static final String CLAIM_BANNED_ITEMS = "banned-item-ids";
+    public static final String CLAIM_BANNED_ITEM_IDS = "banned-item-ids";
     public static final String CLAIM_ABANDON_RETURN_RATIO = "abandon-return-ratio";
     public static final String CLAIM_AUTO_RADIUS = "auto-claim-radius";
     public static final String CLAIM_BLOCKS_ACCRUED_PER_HOUR = "blocks-accrued-per-hour";
@@ -78,6 +80,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     public static final String CLAIM_MODE = "claims-mode";
     public static final String CLAIM_FIRE_SPREADS_OUTSIDE = "fire-spreads-outside";
     public static final String CLAIM_ALWAYS_IGNORE_CLAIMS = "always-ignore-claims";
+    public static final String CLAIM_IGNORED_ENTITY_IDS = "ignored-entity-ids";
 
     // DATABASE
     public static final String DATABASE_PASSWORD = "password";
@@ -125,6 +128,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     // SIEGE
     public static final String SIEGE_ENABLED = "enable-sieges";
     public static final String SIEGE_BREAKABLE_BLOCKS = "breakable-blocks";
+    public static final String SIEGE_WINNER_ACCESSIBLE_BLOCKS = "winner-accessible-blocks";
 
     // SPAM
     public static final String SPAM_MONITOR_ENABLED = "enable-spam-monitor";
@@ -248,7 +252,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     public static class ClaimCategory extends Category {
-        @Setting(value = CLAIM_BANNED_ITEMS, comment = "Contains list of banned item ids on server.")
+        @Setting(value = CLAIM_BANNED_ITEM_IDS, comment = "Contains list of banned item ids on server.")
         public List<String> bannedItemIds = new ArrayList<>();
         @Setting(value = CLAIM_ABANDON_RETURN_RATIO, comment = "The portion of claim blocks returned to a player when a claim is abandoned.")
         public double abandonReturnRatio = 1.0;
@@ -291,7 +295,9 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         @Setting(value = CLAIM_FIRE_SPREADS_OUTSIDE, comment = "Whether fire spreads outside of claims.")
         public boolean fireSpreadOutsideClaim = false;
         @Setting(value = CLAIM_ALWAYS_IGNORE_CLAIMS, comment = "List of player uuid's which ALWAYS ignore claims.")
-        public ArrayList<String> alwaysIgnoreClaimsList = new ArrayList<>();
+        public List<String> alwaysIgnoreClaimsList = new ArrayList<>();
+        @Setting(value = CLAIM_IGNORED_ENTITY_IDS, comment = "List of entity id's that ignore protection.")
+        public List<String> ignoredEntityIds = new ArrayList<>();
     }
 
     @ConfigSerializable
@@ -384,7 +390,19 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         @Setting(value = SIEGE_ENABLED, comment = "Whether sieges are allowed or not.")
         public boolean siegeEnabled = true;
         @Setting(value = SIEGE_BREAKABLE_BLOCKS, comment = "which blocks will be breakable in siege mode.")
-        public List<String> breakableSiegeBlocks = new ArrayList<>();
+        public List<String> breakableSiegeBlocks = new ArrayList<String>(
+                Arrays.asList(ItemTypes.SAND.getId(), ItemTypes.GRAVEL.getId(), ItemTypes.GRASS.getId(),
+                              ItemTypes.TALLGRASS.getId(), ItemTypes.GLASS.getId(), ItemTypes.DYE.getId(),
+                              ItemTypes.SNOW.getId(), ItemTypes.STAINED_GLASS.getId(), ItemTypes.COBBLESTONE.getId()));
+        @Setting(value = SIEGE_WINNER_ACCESSIBLE_BLOCKS, comment = "which blocks the siege winner can access in the loser's claim.")
+        public List<String> winnerAccessibleBlocks = new ArrayList<String>(
+                Arrays.asList(ItemTypes.ACACIA_DOOR.getId(), ItemTypes.ACACIA_FENCE.getId(), ItemTypes.ACACIA_FENCE_GATE.getId(),
+                              ItemTypes.BIRCH_DOOR.getId(), ItemTypes.BIRCH_FENCE.getId(), ItemTypes.BIRCH_FENCE_GATE.getId(),
+                              ItemTypes.DARK_OAK_DOOR.getId(), ItemTypes.DARK_OAK_FENCE.getId(), ItemTypes.DARK_OAK_FENCE_GATE.getId(),
+                              ItemTypes.FENCE.getId(), ItemTypes.FENCE_GATE.getId(), ItemTypes.IRON_DOOR.getId(),
+                              ItemTypes.IRON_TRAPDOOR.getId(), ItemTypes.WOODEN_DOOR.getId(), ItemTypes.STONE_BUTTON.getId(),
+                              ItemTypes.WOODEN_BUTTON.getId(), ItemTypes.HEAVY_WEIGHTED_PRESSURE_PLATE.getId(), ItemTypes.LIGHT_WEIGHTED_PRESSURE_PLATE.getId(),
+                              ItemTypes.LEVER.getId()));
     }
 
     @ConfigSerializable

@@ -52,7 +52,7 @@ public class PlayerRescueTask implements Runnable {
 
         // he no longer has a pending /trapped slash command, so he can try to
         // use it again now
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld().getProperties(), player.getUniqueId());
         playerData.pendingTrapped = false;
 
         // if the player moved three or more blocks from where he used /trapped,
@@ -63,10 +63,10 @@ public class PlayerRescueTask implements Runnable {
         }
 
         // otherwise find a place to teleport him
-        Location<World> destination = GriefPrevention.instance.ejectPlayer(this.player);
+        boolean result = GriefPrevention.instance.ejectPlayer(this.player);
 
         // log entry, in case admins want to investigate the "trap"
         GriefPrevention.AddLogEntry("Rescued trapped player " + player.getName() + " from " + GriefPrevention.getfriendlyLocationString(this.location)
-                + " to " + GriefPrevention.getfriendlyLocationString(destination) + ".");
+                + " to " + GriefPrevention.getfriendlyLocationString(player.getLocation()) + ".");
     }
 }

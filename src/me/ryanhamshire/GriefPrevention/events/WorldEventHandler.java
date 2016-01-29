@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention.events;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.CleanupUnusedClaimsTask;
 import me.ryanhamshire.GriefPrevention.DataStore;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class WorldEventHandler {
 
@@ -36,11 +38,14 @@ public class WorldEventHandler {
         DataStore.dimensionConfigMap.put(event.getWorldProperties().getUniqueId(), new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
         // create world config
         DataStore.worldConfigMap.put(event.getWorldProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD, rootConfigPath.resolve(dimType.getId()).resolve(event.getWorldProperties().getWorldName()).resolve("world.conf")));
+        // run cleanup task
+        CleanupUnusedClaimsTask task = new CleanupUnusedClaimsTask(event.getWorldProperties());
+        Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
     }
 
     @Listener
     public void onWorldSave(SaveWorldEvent event) {
-        List<Claim> claimList = GriefPrevention.instance.dataStore.worldClaims.get(event.getTargetWorld());
+        List<Claim> claimList = GriefPrevention.instance.dataStore.worldClaims.get(event.getTargetWorld().getUniqueId());
         if (claimList != null) {
             for (Claim claim : claimList) {
                 claim.claimData.save();

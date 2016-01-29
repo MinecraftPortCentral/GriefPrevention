@@ -31,6 +31,7 @@ import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
+import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import net.minecraft.entity.passive.EntityTameable;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -50,7 +51,6 @@ import org.spongepowered.api.entity.living.Aquatic;
 import org.spongepowered.api.entity.living.Creature;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.Villager;
-import org.spongepowered.api.entity.living.animal.Horse;
 import org.spongepowered.api.entity.living.monster.Monster;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -112,7 +112,7 @@ public class EntityEventHandler {
                     }
                 } else if (!GriefPrevention.instance.config_silverfishBreakBlocks && entityType.equals(EntityTypes.SILVERFISH)) {
                     transaction.setValid(false);
-                } else if (!GriefPrevention.instance.claimModeIsActive(event.getTargetWorld(), ClaimsMode.Disabled) && entityType
+                } else if (!GriefPrevention.instance.claimModeIsActive(event.getTargetWorld().getProperties(), ClaimsMode.Disabled) && entityType
                         .equals(EntityTypes.WITHER)) {
                     transaction.setValid(false);
                 } else if (!GriefPrevention.instance.config_zombiesBreakDoors && transaction.getOriginal().get(Keys.HINGE_POSITION).isPresent() &&
@@ -138,7 +138,7 @@ public class EntityEventHandler {
         for (Entity entity : event.getEntities()) {
             final Location<World> location = entity.getLocation();
             // these rules apply only to creative worlds
-            if (!GriefPrevention.instance.claimModeIsActive(location.getExtent(), ClaimsMode.Creative))
+            if (!GriefPrevention.instance.claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative))
                 return;
     
             final Cause cause = event.getCause();
@@ -171,11 +171,6 @@ public class EntityEventHandler {
     public void onEntityDamage(DamageEntityEvent event) {
         // monsters are never protected
         if (event.getTargetEntity() instanceof Monster) {
-            return;
-        }
-
-        // horse protections can be disabled
-        if (event.getTargetEntity() instanceof Horse && !GriefPrevention.instance.config_claims_protectHorses) {
             return;
         }
 
@@ -234,17 +229,18 @@ public class EntityEventHandler {
             }
         }
 
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(event.getTargetEntity().getWorld().getProperties());
         // if the attacker is a player and defender is a player (pvp combat)
         if (attacker != null && event.getTargetEntity() instanceof Player && GriefPrevention.instance.pvpRulesApply(attacker.getWorld())) {
             // FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
             Player defender = (Player) (event.getTargetEntity());
 
             if (attacker != defender) {
-                PlayerData defenderData = this.dataStore.getPlayerData(defender.getWorld(), defender.getUniqueId());
-                PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
+                PlayerData defenderData = this.dataStore.getPlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
+                PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
 
                 // otherwise if protecting spawning players
-                if (GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectFreshSpawns) {
+                if (activeConfig.getConfig().pvp.protectFreshSpawns) {
                     if (defenderData.pvpImmune) {
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.ThatPlayerPvPImmune);
@@ -259,16 +255,16 @@ public class EntityEventHandler {
                 }
 
                 // FEATURE: prevent players from engaging in PvP combat inside land claims (when it's disabled)
-                if (!GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInClaims || !GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInAdminClaims) {
+                if (!activeConfig.getConfig().pvp.protectPlayersInClaims || !activeConfig.getConfig().pvp.protectPlayersInAdminClaims) {
                     Claim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, attackerData.lastClaim);
                     if (!attackerData.ignoreClaims) {
                         // ignore claims mode allows for pvp inside land claims
                         if (attackerClaim != null && !attackerData.inPvpCombat(defender.getWorld()) &&
                            (attackerClaim.isAdminClaim() && attackerClaim.parent == null
-                         && GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInAdminClaims ||
+                         && activeConfig.getConfig().pvp.protectPlayersInAdminClaims ||
                             attackerClaim.isAdminClaim() && attackerClaim.parent != null
-                         && GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInAdminSubClaims
-                         || !attackerClaim.isAdminClaim() && GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInClaims)) {
+                         && activeConfig.getConfig().pvp.protectPlayersInAdminSubClaims
+                         || !attackerClaim.isAdminClaim() && activeConfig.getConfig().pvp.protectPlayersInClaims)) {
                             attackerData.lastClaim = attackerClaim;
                             PreventPvPEvent pvpEvent = new PreventPvPEvent(attackerClaim);
                             Sponge.getGame().getEventManager().post(pvpEvent);
@@ -283,11 +279,11 @@ public class EntityEventHandler {
                         if (defenderClaim != null &&
                                 !defenderData.inPvpCombat(defender.getWorld()) &&
                                 (defenderClaim.isAdminClaim() && defenderClaim.parent == null
-                                        && GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInAdminClaims ||
+                                        && activeConfig.getConfig().pvp.protectPlayersInAdminClaims ||
                                         defenderClaim.isAdminClaim() && defenderClaim.parent != null
-                                                && GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInAdminSubClaims
+                                                && activeConfig.getConfig().pvp.protectPlayersInAdminSubClaims
                                         ||
-                                        !defenderClaim.isAdminClaim() && GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInClaims)) {
+                                        !defenderClaim.isAdminClaim() && activeConfig.getConfig().pvp.protectPlayersInClaims)) {
                             defenderData.lastClaim = defenderClaim;
                             PreventPvPEvent pvpEvent = new PreventPvPEvent(defenderClaim);
                             Sponge.getGame().getEventManager().post(pvpEvent);
@@ -308,7 +304,7 @@ public class EntityEventHandler {
         // might find ways to steal anyway if theft protection is enabled
 
         // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld()))
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties()))
             return;
 
         // if the damaged entity is a claimed item frame or armor stand, the
@@ -316,15 +312,16 @@ public class EntityEventHandler {
         if (event.getTargetEntity().getType() == EntityTypes.ITEM_FRAME
                 || event.getTargetEntity().getType() == EntityTypes.ARMOR_STAND
                 || event.getTargetEntity().getType() == EntityTypes.VILLAGER) {
-            // allow for disabling villager protections in the config
-            if (event.getTargetEntity().getType() == EntityTypes.VILLAGER && !GriefPrevention.instance.config_claims_protectCreatures)
+            // TODO - add support with claim flags
+            if (event.getTargetEntity().getType() == EntityTypes.VILLAGER) {
                 return;
+            }
 
             // decide whether it's claimed
             Claim cachedClaim = null;
             PlayerData playerData = null;
             if (attacker != null) {
-                playerData = this.dataStore.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
+                playerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
                 cachedClaim = playerData.lastClaim;
             }
 
@@ -354,8 +351,7 @@ public class EntityEventHandler {
         }
 
         // if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
-        if (((event.getTargetEntity() instanceof Creature || event.getTargetEntity() instanceof Aquatic)
-                && GriefPrevention.instance.config_claims_protectCreatures)) {
+        if (((event.getTargetEntity() instanceof Creature || event.getTargetEntity() instanceof Aquatic))) {
             // if entity is tameable and has an owner, apply special rules
             if (event.getTargetEntity() instanceof EntityTameable) {
                 EntityTameable tameable = (EntityTameable) event.getTargetEntity();
@@ -371,7 +367,7 @@ public class EntityEventHandler {
                             return;
 
                         // allow for admin override
-                        PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
+                        PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
                         if (attackerData.ignoreClaims)
                             return;
 
@@ -409,7 +405,7 @@ public class EntityEventHandler {
             }
 
             if (attacker != null) {
-                playerData = this.dataStore.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
+                playerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
                 cachedClaim = playerData.lastClaim;
             }
 
@@ -503,19 +499,19 @@ public class EntityEventHandler {
         //if attacker not a player, do nothing
         if(attacker == null) return;
 
-        PlayerData defenderData = this.dataStore.getPlayerData(defender.getWorld(), defender.getUniqueId());
-        PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
+        PlayerData defenderData = this.dataStore.getPlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
+        PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
         Claim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, null);
         Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, null);
 
         if(attacker != defender) {
             long now = Calendar.getInstance().getTimeInMillis();
             if (defenderClaim != null) {
-                if (GriefPrevention.getActiveConfig(defender.getWorld()).getConfig().pvp.protectPlayersInClaims) {
+                if (GriefPrevention.getActiveConfig(defender.getWorld().getProperties()).getConfig().pvp.protectPlayersInClaims) {
                     return;
                 }
             } else if (attackerClaim != null) {
-                if (GriefPrevention.getActiveConfig(attacker.getWorld()).getConfig().pvp.protectPlayersInClaims) {
+                if (GriefPrevention.getActiveConfig(attacker.getWorld().getProperties()).getConfig().pvp.protectPlayersInClaims) {
                     return;
                 }
             }
@@ -536,14 +532,14 @@ public class EntityEventHandler {
 
         Living livingEntity = (Living) event.getCause().root();
         // special rule for creative worlds: killed entities don't drop items or experience orbs
-        if (GriefPrevention.instance.claimModeIsActive(livingEntity.getLocation().getExtent(), ClaimsMode.Creative)) {
+        if (GriefPrevention.instance.claimModeIsActive(livingEntity.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
             event.setCancelled(true);
             return;
         }
 
         if (livingEntity instanceof Player) {
             Player player = (Player) livingEntity;
-            PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            PlayerData playerData = this.dataStore.getPlayerData(player.getWorld().getProperties(), player.getUniqueId());
 
             // if involved in a siege
             if (playerData.siegeData != null) { 
@@ -564,12 +560,12 @@ public class EntityEventHandler {
             return;
         }
         // don't do the rest in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld().getProperties())) {
             return;
         }
 
         Player player = (Player) entity;
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld().getProperties(), player.getUniqueId());
         EntityDamageSource damageSource = event.getCause().first(EntityDamageSource.class).get();
 
         // if involved in a siege
@@ -584,7 +580,7 @@ public class EntityEventHandler {
     public void onItemSpawn(SpawnEntityEvent event) {
         if (event.getEntities().get(0) instanceof Item) {
             // if in a creative world, cancel the event (don't drop items on the ground)
-            if (GriefPrevention.instance.claimModeIsActive(event.getEntities().get(0).getLocation().getExtent(), ClaimsMode.Creative)) {
+            if (GriefPrevention.instance.claimModeIsActive(event.getEntities().get(0).getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
                 event.setCancelled(true);
                 return;
             }

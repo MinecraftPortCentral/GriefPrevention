@@ -28,6 +28,7 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.biome.BiomeType;
 
 import java.util.ArrayList;
@@ -36,10 +37,10 @@ import java.util.ArrayList;
 public class AutoExtendClaimTask implements Runnable {
 
     private Claim claim;
-    private ArrayList<Chunk> chunks;
+    private ArrayList<Location<Chunk>> chunks;
     private DimensionType worldType;
 
-    public AutoExtendClaimTask(Claim claim, ArrayList<Chunk> chunks, DimensionType worldType) {
+    public AutoExtendClaimTask(Claim claim, ArrayList<Location<Chunk>> chunks, DimensionType worldType) {
         this.claim = claim;
         this.chunks = chunks;
         this.worldType = worldType;
@@ -60,8 +61,8 @@ public class AutoExtendClaimTask implements Runnable {
         if (this.yTooSmall(y))
             return y;
 
-        for (Chunk chunk : this.chunks) {
-            BiomeType biome = chunk.getBiome(0, 0);
+        for (Location<Chunk> chunk : this.chunks) {
+            BiomeType biome = chunk.getBiome();
             ArrayList<BlockType> playerBlocks = RestoreNatureProcessingTask.getPlayerBlocks(this.worldType, biome);
 
             boolean ychanged = true;
@@ -69,10 +70,10 @@ public class AutoExtendClaimTask implements Runnable {
                 ychanged = false;
                 for (int x = 0; x < 16; x++) {
                     for (int z = 0; z < 16; z++) {
-                        BlockType blockType = chunk.getBlockType(x, y, z);
+                        BlockType blockType = chunk.add(0, y, 0).getBlockType();
                         while (!this.yTooSmall(y) && playerBlocks.contains(blockType)) {
                             ychanged = true;
-                            blockType = chunk.getBlockType(x, --y, z);
+                            blockType = chunk.add(0, --y, 0).getBlockType();
                         }
 
                         if (this.yTooSmall(y))
@@ -89,7 +90,7 @@ public class AutoExtendClaimTask implements Runnable {
     }
 
     private boolean yTooSmall(int y) {
-        return y == 0 || y <= GriefPrevention.getActiveConfig(this.claim.world).getConfig().claim.maxClaimDepth;
+        return y == 0 || y <= GriefPrevention.getActiveConfig(this.claim.world.getProperties()).getConfig().claim.maxClaimDepth;
     }
 
     // runs in the main execution thread, where it can safely change claims and

@@ -26,11 +26,13 @@ package me.ryanhamshire.GriefPrevention;
 
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
+import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.GriefPrevention.configuration.PlayerStorageData;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.world.storage.SpongePlayerDataHandler;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -43,34 +45,33 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore {
 
     private final static Path schemaVersionFilePath = dataLayerFolderPath.resolve("_schemaVersion");
-    private final static Path loginDataFolderPath = dataLayerFolderPath.resolve("LoginData");
     private final static Path worldsConfigFolderPath = dataLayerFolderPath.resolve("worlds");
     protected final static Path claimDataPath = Paths.get("GriefPreventionData", "ClaimData");
     protected final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
 
-    // initialization!
-    public FlatFileDataStore() throws Exception {
-        this.initialize();
+    public FlatFileDataStore() {
     }
 
     @Override
     void initialize() throws Exception {
         // ensure data folders exist
-        File loginDataFolder = loginDataFolderPath.toFile();
         File worldsDataFolder = worldsConfigFolderPath.toFile();
 
-        if (!loginDataFolder.exists() || !worldsDataFolder.exists()) {
-            loginDataFolder.mkdirs();
+        if (!worldsDataFolder.exists()) {
             worldsDataFolder.mkdirs();
         }
 
@@ -117,6 +118,15 @@ public class FlatFileDataStore extends DataStore {
         Path rootPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getGame().getServer().getDefaultWorld().get().getWorldName());
 
         for (World world : Sponge.getGame().getServer().getWorlds()) {
+            // check if claims are supported
+            GriefPreventionConfig<GriefPreventionConfig.WorldConfig> worldConfig = DataStore.worldConfigMap.get(world.getUniqueId());
+            if (worldConfig != null && worldConfig.getConfig().configEnabled && !worldConfig.getConfig().claim.allowClaims) {
+                GriefPrevention.AddLogEntry("Error - World '" + world.getName() + "' does not allow claims. Skipping...");
+                continue;
+            }
+            // run cleanup task
+            CleanupUnusedClaimsTask task = new CleanupUnusedClaimsTask(world.getProperties());
+            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
             // check if world has existing data
             Path worldClaimDataPath = Paths.get(world.getName()).resolve(claimDataPath);
             Path worldPlayerDataPath = Paths.get(world.getName()).resolve(playerDataPath);
@@ -126,11 +136,15 @@ public class FlatFileDataStore extends DataStore {
             }
             if (Files.exists(rootPath.resolve(worldClaimDataPath))) {
                 File[] files = rootPath.resolve(worldClaimDataPath).toFile().listFiles();
-                 this.loadClaimData(files);
+                this.loadClaimData(files);
             } else {
                 Files.createDirectories(rootPath.resolve(worldClaimDataPath));
             }
 
+            if (Files.exists(rootPath.resolve(worldPlayerDataPath))) {
+                File[] files = rootPath.resolve(worldPlayerDataPath).toFile().listFiles();
+                this.loadPlayerData(world.getProperties(), files);
+            }
             if (!Files.exists(rootPath.resolve(worldPlayerDataPath))) {
                 Files.createDirectories(rootPath.resolve(worldPlayerDataPath));
             }
@@ -165,8 +179,7 @@ public class FlatFileDataStore extends DataStore {
                     }
                 }
 
-                // if there's any problem with the file's content, log an error
-                // message and skip it
+                // if there's any problem with the file's content, log an error message and skip it
                 catch (Exception e) {
                     if (e.getMessage() != null && e.getMessage().contains("World not found")) {
                         files[i].delete();
@@ -189,11 +202,44 @@ public class FlatFileDataStore extends DataStore {
         }
     }
 
-    Claim loadClaim(File file, ArrayList<UUID> out_parentID, UUID claimID) throws IOException, Exception {
-        return this.loadClaim(file, out_parentID, file.lastModified(), claimID, (List<World>) Sponge.getGame().getServer().getWorlds());
+    void loadPlayerData(WorldProperties worldProperties, File[] files) throws Exception {
+        ConcurrentHashMap<Claim, UUID> orphans = new ConcurrentHashMap<>();
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].isFile()) // avoids folders
+            {
+                // the filename is the claim ID. try to parse it
+                UUID playerUUID;
+
+                try {
+                    playerUUID = UUID.fromString(files[i].getName());
+                } catch (Exception e) {
+                    GriefPrevention.AddLogEntry("ERROR!! could not read player file " + files[i].getAbsolutePath());
+                    continue;
+                }
+
+                try {
+                    this.createPlayerWorldStorageData(worldProperties, playerUUID);
+                }
+
+                // if there's any problem with the file's content, log an error message and skip it
+                catch (Exception e) {
+                    if (e.getMessage() != null && e.getMessage().contains("World not found")) {
+                        files[i].delete();
+                    } else {
+                        StringWriter errors = new StringWriter();
+                        e.printStackTrace(new PrintWriter(errors));
+                        GriefPrevention.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
+                    }
+                }
+            }
+        }
     }
 
-    Claim loadClaim(File claimFile, ArrayList<UUID> out_parentID, long lastModifiedDate, UUID claimID, List<World> validWorlds)
+    Claim loadClaim(File file, ArrayList<UUID> out_parentID, UUID claimID) throws IOException, Exception {
+        return this.loadClaim(file, out_parentID, file.lastModified(), claimID);
+    }
+
+    Claim loadClaim(File claimFile, ArrayList<UUID> out_parentID, long lastModifiedDate, UUID claimID)
             throws Exception {
         Claim claim;
 
@@ -202,7 +248,7 @@ public class FlatFileDataStore extends DataStore {
         // identify world the claim is in
         String worldUniqueId = claimData.getConfig().worldUniqueId;
         World world = null;
-        for (World w : validWorlds) {
+        for (World w : Sponge.getGame().getServer().getWorlds()) {
             if (w.getUniqueId().equals(UUID.fromString(worldUniqueId))) {
                 world = w;
                 break;
@@ -246,10 +292,10 @@ public class FlatFileDataStore extends DataStore {
         claim.world = lesserBoundaryCorner.getExtent();
         claim.claimData = claimData;
 
-        if (this.worldClaims.get(world) == null) {
-            this.worldClaims.put(world, new ArrayList<Claim>());
+        if (this.worldClaims.get(world.getProperties().getUniqueId()) == null) {
+            this.worldClaims.put(world.getProperties().getUniqueId(), new ArrayList<Claim>());
         } else {
-            this.worldClaims.get(world).add(claim);
+            this.worldClaims.get(world.getProperties().getUniqueId()).add(claim);
         }
         return claim;
     }
@@ -321,52 +367,39 @@ public class FlatFileDataStore extends DataStore {
     }
 
     @Override
-    public PlayerData getPlayerData(World world, UUID playerUniqueId) {
+    public PlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         PlayerData playerData = this.playerUniqueIdToPlayerDataMap.get(playerUniqueId);
         if (playerData != null) {
             return playerData;
         }
 
-        Path rootPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getGame().getServer().getDefaultWorld().get().getWorldName());
-        Path playerFilePath = null;
-        if (world.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-            playerFilePath = rootPath.resolve(playerDataPath).resolve(playerUniqueId.toString());
-        } else {
-            playerFilePath = rootPath.resolve(world.getName()).resolve(playerDataPath).resolve(playerUniqueId.toString());
-        }
 
-        PlayerStorageData storageData = new PlayerStorageData(playerFilePath, playerUniqueId, GriefPrevention.getActiveConfig(world).getConfig().general.claimInitialBlocks);
-        playerData = new PlayerData();
-        playerData.playerID = playerUniqueId;
-        playerData.worldStorageData.put(world.getUniqueId(), storageData);
-
-        // shove that new player data into the hash map cache
-        this.playerUniqueIdToPlayerDataMap.put(playerUniqueId, playerData);
-        playerData.initializePlayerWorldClaims(world);
-        return playerData;
+        return createPlayerWorldStorageData(worldProperties, playerUniqueId);
     }
 
     @Override
-    public void createPlayerWorldData(World world, Player player) {
-        if (this.playerUniqueIdToPlayerDataMap.get(player.getUniqueId()) == null) {
-            return;
+    public PlayerData createPlayerWorldStorageData(WorldProperties worldProperties, UUID playerUniqueId) {
+        PlayerData playerData = this.playerUniqueIdToPlayerDataMap.get(playerUniqueId);
+        if (playerData != null) {
+            return playerData;
         }
-   
-        PlayerData playerData = this.playerUniqueIdToPlayerDataMap.get(player.getUniqueId());
-        if (playerData.worldStorageData.get(world.getUniqueId()) != null) {
-            return;
-        }
-
         Path rootPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getGame().getServer().getDefaultWorld().get().getWorldName());
         Path playerFilePath = null;
-        if (player.getWorld().getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-            playerFilePath = rootPath.resolve(playerDataPath).resolve(player.getUniqueId().toString());
+        if (worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
+            playerFilePath = rootPath.resolve(playerDataPath).resolve(playerUniqueId.toString());
         } else {
-            playerFilePath = rootPath.resolve(player.getWorld().getName()).resolve(playerDataPath).resolve(player.getUniqueId().toString());
+            playerFilePath = rootPath.resolve(worldProperties.getWorldName()).resolve(playerDataPath).resolve(playerUniqueId.toString());
         }
-        PlayerStorageData storageData = new PlayerStorageData(playerFilePath, player.getUniqueId(), GriefPrevention.getActiveConfig(world).getConfig().general.claimInitialBlocks);
-        playerData.worldStorageData.put(world.getUniqueId(), storageData);
-        playerData.initializePlayerWorldClaims(world);
+
+        PlayerStorageData storageData = new PlayerStorageData(playerFilePath, playerUniqueId, GriefPrevention.getActiveConfig(worldProperties).getConfig().general.claimInitialBlocks);
+        playerData = new PlayerData();
+        playerData.playerID = playerUniqueId;
+        playerData.worldStorageData.put(worldProperties.getUniqueId(), storageData);
+
+        // shove that new player data into the hash map cache
+        this.playerUniqueIdToPlayerDataMap.put(playerUniqueId, playerData);
+        playerData.initializePlayerWorldClaims(worldProperties);
+        return playerData;
     }
 
     // grants a group (players with a specific permission) bonus claim blocks as

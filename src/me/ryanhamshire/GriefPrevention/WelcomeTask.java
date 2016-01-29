@@ -56,7 +56,7 @@ public class WelcomeTask implements Runnable {
         GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);
 
         // give the player a reference book for later
-        if (GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.deliverManuals) {
+        if (GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.deliverManuals) {
             ItemStack.Builder factory = Sponge.getGame().getRegistry().createBuilder(ItemStack.Builder.class);
             DataStore datastore = GriefPrevention.instance.dataStore;
             final ItemStack itemStack = factory.itemType(ItemTypes.WRITTEN_BOOK).quantity(1).build();
@@ -77,11 +77,11 @@ public class WelcomeTask implements Runnable {
 
             page1.append(URL).append("\n\n");
             page1.append(intro).append("\n\n");
-            String editToolName = GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.modificationTool.replace('_', ' ').toLowerCase();
-            String infoToolName = GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.investigationTool.replace('_', ' ').toLowerCase();
+            String editToolName = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.modificationTool.replace('_', ' ').toLowerCase();
+            String infoToolName = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.investigationTool.replace('_', ' ').toLowerCase();
             String configClaimTools = datastore.getMessage(Messages.BookTools, editToolName, infoToolName);
             page1.append(configClaimTools);
-            if (GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.claimRadius < 0) {
+            if (GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimRadius < 0) {
                 page1.append(datastore.getMessage(Messages.BookDisabledChestClaims));
             }
 

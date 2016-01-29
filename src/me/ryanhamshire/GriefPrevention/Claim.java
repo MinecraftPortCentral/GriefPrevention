@@ -155,7 +155,7 @@ public class Claim {
             return;
 
         // only in creative mode worlds
-        if (!GriefPrevention.instance.claimModeIsActive(this.lesserBoundaryCorner.getExtent(), ClaimsMode.Creative))
+        if (!GriefPrevention.instance.claimModeIsActive(this.lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative))
             return;
 
         Location<World> lesser = this.getLesserBoundaryCorner();
@@ -452,8 +452,8 @@ public class Claim {
             boolean breakable = false;
 
             // search for block type in list of breakable blocks
-            for (int i = 0; i < GriefPrevention.getActiveConfig(player.getWorld()).getConfig().siege.breakableSiegeBlocks.size(); i++) {
-                String blockTypeId = GriefPrevention.getActiveConfig(player.getWorld()).getConfig().siege.breakableSiegeBlocks.get(i);
+            for (int i = 0; i < GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.breakableSiegeBlocks.size(); i++) {
+                String blockTypeId = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.breakableSiegeBlocks.get(i);
                 Optional<BlockType> breakableBlockType = Sponge.getGame().getRegistry().getType(BlockType.class, blockTypeId);
                 if (breakableBlockType.isPresent() && breakableBlockType.get() == blockType) {
                     breakable = true;
@@ -794,7 +794,7 @@ public class Claim {
             return this.parent.allowMoreEntities();
 
         // this rule only applies to creative mode worlds
-        if (!GriefPrevention.instance.claimModeIsActive(this.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative))
+        if (!GriefPrevention.instance.claimModeIsActive(this.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative))
             return null;
 
         // admin claims aren't restricted
@@ -861,7 +861,7 @@ public class Claim {
         // scan the claim for player placed blocks
         double score = 0;
 
-        boolean creativeMode = GriefPrevention.instance.claimModeIsActive(lesserBoundaryCorner.getExtent(), ClaimsMode.Creative);
+        boolean creativeMode = GriefPrevention.instance.claimModeIsActive(lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative);
 
         for (int x = this.lesserBoundaryCorner.getBlockX(); x <= this.greaterBoundaryCorner.getBlockX(); x++) {
             for (int z = this.lesserBoundaryCorner.getBlockZ(); z <= this.greaterBoundaryCorner.getBlockZ(); z++) {

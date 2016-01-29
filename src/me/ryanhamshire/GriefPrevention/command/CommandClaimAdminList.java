@@ -9,11 +9,11 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class CommandClaimAdminList implements CommandExecutor {
 
@@ -21,7 +21,7 @@ public class CommandClaimAdminList implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         // find admin claims
         List<Claim> claims = new ArrayList<>();
-        for (Map.Entry<World, List<Claim>> mapEntry : GriefPrevention.instance.dataStore.worldClaims.entrySet()) {
+        for (Map.Entry<UUID, List<Claim>> mapEntry : GriefPrevention.instance.dataStore.worldClaims.entrySet()) {
             List<Claim> claimList = mapEntry.getValue();
             for (Claim claim : claimList) {
                 if (claim.ownerID == null) { // admin claim

@@ -49,6 +49,7 @@ import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -87,7 +88,7 @@ public abstract class DataStore {
     protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<>();
 
     // in-memory cache for claim data
-    public Map<World, List<Claim>> worldClaims = Maps.newHashMap();
+    public Map<UUID, List<Claim>> worldClaims = Maps.newHashMap();
     ConcurrentHashMap<String, ArrayList<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
     public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
     public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
@@ -337,14 +338,14 @@ public abstract class DataStore {
         // determine current claim owner
         PlayerData ownerData = null;
         if (!claim.isAdminClaim()) {
-            ownerData = this.getPlayerData(claim.world, claim.ownerID);
+            ownerData = this.getPlayerData(claim.world.getProperties(), claim.ownerID);
         }
 
         // determine new owner
         PlayerData newOwnerData = null;
 
         if (newOwnerID != null) {
-            newOwnerData = this.getPlayerData(claim.world, newOwnerID);
+            newOwnerData = this.getPlayerData(claim.world.getProperties(), newOwnerID);
         }
 
         // transfer
@@ -372,16 +373,23 @@ public abstract class DataStore {
             if (writeToStorage) {
                 this.saveClaim(newClaim);
             }
+
+            PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
+            if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
+                ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
+            }
+
+            ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
             return;
         }
 
         // add it and mark it as added
-        if (this.worldClaims.get(newClaim.world) == null) {
+        if (this.worldClaims.get(newClaim.world.getProperties().getUniqueId()) == null) {
             List<Claim> newClaims = new ArrayList<>();
             newClaims.add(newClaim);
-            this.worldClaims.put(newClaim.world, newClaims);
+            this.worldClaims.put(newClaim.world.getProperties().getUniqueId(), newClaims);
         } else {
-            this.worldClaims.get(newClaim.world).add(newClaim);
+            this.worldClaims.get(newClaim.world.getProperties().getUniqueId()).add(newClaim);
         }
 
         ArrayList<String> chunkStrings = newClaim.getChunkStrings();
@@ -397,17 +405,17 @@ public abstract class DataStore {
 
         newClaim.inDataStore = true;
 
-        // except for administrative claims (which have no owner), update the
-        // owner's playerData with the new claim
-        if (!newClaim.isAdminClaim() && writeToStorage) {
-            PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
-            ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
-        }
-
         // make sure the claim is saved to disk
         if (writeToStorage) {
             this.saveClaim(newClaim);
         }
+
+        PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
+        if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
+            ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
+        }
+        
+        ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
     }
 
     // turns a location into a string, useful in data storage
@@ -466,7 +474,11 @@ public abstract class DataStore {
     // retrieves player data from memory or secondary storage, as necessary
     // if the player has never been on the server before, this will return a
     // fresh player data with default values
-    public abstract PlayerData getPlayerData(World world, UUID playerID);
+    public PlayerData getPlayerData(World world, UUID playerID) {
+        return getPlayerData(world.getProperties(), playerID);
+    }
+
+    public abstract PlayerData getPlayerData(WorldProperties worldProperties, UUID playerID);
 
     abstract PlayerData getPlayerDataFromStorage(UUID playerID);
 
@@ -491,7 +503,7 @@ public abstract class DataStore {
         claim.inDataStore = false;
 
         // remove from memory
-        Iterator<Claim> iterator = this.worldClaims.get(claim.world).iterator();
+        Iterator<Claim> iterator = this.worldClaims.get(claim.world.getProperties().getUniqueId()).iterator();
         while (iterator.hasNext()) {
             Claim worldClaim = iterator.next();
             if (worldClaim.id == claim.id) {
@@ -565,7 +577,7 @@ public abstract class DataStore {
 
     // finds a claim by ID
     public synchronized Claim getClaim(World world, UUID id) {
-        List<Claim> claimList = this.worldClaims.get(world);
+        List<Claim> claimList = this.worldClaims.get(world.getProperties().getUniqueId());
         for (Claim claim : claimList) {
             if (claim.inDataStore && claim.getID() == id) {
                 return claim;
@@ -627,7 +639,7 @@ public abstract class DataStore {
         }
 
         // creative mode claims always go to bedrock
-        if (GriefPrevention.instance.claimModeIsActive(world, ClaimsMode.Creative)) {
+        if (GriefPrevention.instance.claimModeIsActive(world.getProperties(), ClaimsMode.Creative)) {
             smally = 2;
         }
 
@@ -649,7 +661,7 @@ public abstract class DataStore {
         if (newClaim.parent != null) {
             claimsToCheck = newClaim.parent.children;
         } else {
-            claimsToCheck = (ArrayList<Claim>) this.worldClaims.get(world);
+            claimsToCheck = (ArrayList<Claim>) this.worldClaims.get(world.getProperties().getUniqueId());
         }
 
         if (claimsToCheck != null) {
@@ -726,8 +738,8 @@ public abstract class DataStore {
     // extends a claim to a new depth
     // respects the max depth config variable
     synchronized public void extendClaim(Claim claim, int newDepth) {
-        if (newDepth < GriefPrevention.getActiveConfig(claim.world).getConfig().claim.maxClaimDepth) {
-            newDepth = GriefPrevention.getActiveConfig(claim.world).getConfig().claim.maxClaimDepth;
+        if (newDepth < GriefPrevention.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth) {
+            newDepth = GriefPrevention.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth;
         }
 
         if (claim.parent != null) {
@@ -954,11 +966,11 @@ public abstract class DataStore {
     synchronized public void deleteClaimsForPlayer(UUID playerID, boolean deleteCreativeClaims) {
         // make a list of the player's claims
         ArrayList<Claim> claimsToDelete = new ArrayList<Claim>();
-        for (Map.Entry<World, List<Claim>> mapEntry : this.worldClaims.entrySet()) {
+        for (Map.Entry<UUID, List<Claim>> mapEntry : this.worldClaims.entrySet()) {
             List<Claim> claimList = mapEntry.getValue();
             for (Claim claim : claimList) {
                 if ((playerID == claim.ownerID || (playerID != null && playerID.equals(claim.ownerID)))
-                        && (deleteCreativeClaims || !GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)))
+                        && (deleteCreativeClaims || !GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)))
                     claimsToDelete.add(claim);
             }
         }
@@ -971,7 +983,7 @@ public abstract class DataStore {
             this.deleteClaim(claim, true);
 
             // if in a creative mode world, delete the claim
-            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)) {
+            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
                 GriefPrevention.instance.restoreClaim(claim, 0);
             }
         }
@@ -1479,5 +1491,5 @@ public abstract class DataStore {
         return claims;
     }
 
-    public abstract void createPlayerWorldData(World world, Player player);
+    public abstract PlayerData createPlayerWorldStorageData(WorldProperties worldProperties, UUID playerUUID);
 }

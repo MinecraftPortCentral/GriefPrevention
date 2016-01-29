@@ -41,7 +41,7 @@ public class EquipShovelProcessingTask implements Runnable {
     @Override
     public void run() {
         // if he's not holding the golden shovel anymore, do nothing
-        if (!player.getItemInHand().isPresent() || (!player.getItemInHand().get().getItem().getId().equals(GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.modificationTool))) {
+        if (!player.getItemInHand().isPresent() || (!player.getItemInHand().get().getItem().getId().equals(GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.modificationTool))) {
             return;
         }
 
@@ -62,9 +62,9 @@ public class EquipShovelProcessingTask implements Runnable {
         GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RemainingBlocks, String.valueOf(remainingBlocks));
 
         // link to a video demo of land claiming, based on world type
-        if (GriefPrevention.instance.claimModeIsActive(player.getLocation().getExtent(), ClaimsMode.Creative)) {
+        if (GriefPrevention.instance.claimModeIsActive(player.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.CreativeBasicsVideo2);
-        } else if (GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getExtent())) {
+        } else if (GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getExtent().getProperties())) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);
         }
     }

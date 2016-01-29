@@ -112,6 +112,7 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -119,7 +120,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,20 +147,8 @@ public class GriefPrevention {
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
 
-    // whether containers and crafting blocks are protectable
-    public boolean config_claims_preventTheft;
-
-    // whether claimed animals may be injured by players without permission
-    public boolean config_claims_protectCreatures;
-
     // whether open flint+steel flames should be protected - optional because it's expensive
     public boolean config_claims_protectFires;
-
-    // whether horses on a claim should be protected by that claim's rules
-    public boolean config_claims_protectHorses;
-
-    // whether buttons and switches are protectable
-    public boolean config_claims_preventButtonsSwitches;
 
     // whether wooden doors should be locked by default (require /accesstrust)
     public boolean config_claims_lockWoodenDoors;
@@ -276,6 +264,7 @@ public class GriefPrevention {
         if (this.dataStore == null) {
             try {
                 this.dataStore = new FlatFileDataStore();
+                this.dataStore.initialize();
             } catch (Exception e) {
                 GriefPrevention.AddLogEntry("Unable to initialize the file system data store.  Details:");
                 GriefPrevention.AddLogEntry(e.getMessage());
@@ -297,11 +286,6 @@ public class GriefPrevention {
         // start the recurring cleanup event for entities in creative worlds
         //EntityCleanupTask task = new EntityCleanupTask(0);
         //Sponge.getGame().getScheduler().createTaskBuilder().delay(2, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
-
-        // start recurring cleanup scan for unused claims belonging to inactive
-        // players
-        CleanupUnusedClaimsTask task2 = new CleanupUnusedClaimsTask();
-        Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task2).submit(GriefPrevention.instance);
 
         //if economy is enabled
         /*if(this.config_economy_claimBlocksPurchaseCost > 0 || this.config_economy_claimBlocksSellValue > 0) {
@@ -409,23 +393,25 @@ public class GriefPrevention {
         subcommands.put(Arrays.asList("claim"), CommandSpec.builder().description(Text.of("Claims land")).permission("griefprevention.command.claim")
                 .executor(new CommandClaim()).build());
 
-        subcommands.put(Arrays.asList("claimabandon", "claimremove"), CommandSpec.builder().description(Text.of("Deletes a claim"))
+        subcommands.put(Arrays.asList("abandonclaim", "claimabandon", "claimremove"), CommandSpec.builder().description(Text.of("Deletes a claim"))
                 .permission("griefprevention.command.claim.abandon").executor(new CommandClaimAbandon(false)).build());
 
-        subcommands.put(Arrays.asList("claimabandonall"), CommandSpec.builder().description(Text.of("Deletes ALL your claims"))
+        subcommands.put(Arrays.asList("abandonallclaims", "claimabandonall"), CommandSpec.builder().description(Text.of("Deletes ALL your claims"))
                 .permission("griefprevention.command.claim.abandonall").executor(new CommandClaimAbandonAll()).build());
 
-        subcommands.put(Arrays.asList("claimabandontoplevel"), CommandSpec.builder().description(Text.of("Deletes a claim and all its subdivisions"))
+        subcommands.put(Arrays.asList("abandontoplevelclaim", "claimabandontoplevel"), CommandSpec.builder().description(Text.of("Deletes a claim "
+                + "and all its subdivisions"))
                 .permission("griefprevention.command.claim.abandontoplevel").executor(new CommandClaimAbandon(true)).build());
 
-        subcommands.put(Arrays.asList("claimadmin", "claima"),
+        subcommands.put(Arrays.asList("adminclaims", "claimadmin", "claima"),
                 CommandSpec.builder().description(Text.of("Switches the shovel tool to administrative claims mode"))
                         .permission("griefprevention.command.claim.admin").executor(new CommandClaimAdmin()).build());
 
-        subcommands.put(Arrays.asList("claimadminlist"), CommandSpec.builder().description(Text.of("List all administrative claims"))
+        subcommands.put(Arrays.asList("adminclaimslist", "claimadminlist"), CommandSpec.builder().description(Text.of("List all administrative "
+                + "claims"))
                 .permission("griefprevention.command.claim.adminlist").executor(new CommandClaimAdminList()).build());
 
-        subcommands.put(Arrays.asList("claimbasic", "claimb"),
+        subcommands.put(Arrays.asList("basicclaims", "claimbasic", "claimb"),
                 CommandSpec.builder().description(Text.of("Switches the shovel tool back to basic claims mode"))
                         .permission("griefprevention.command.claim.basic").executor(new CommandClaimBasic()).build());
 
@@ -434,22 +420,23 @@ public class GriefPrevention {
                         .permission("griefprevention.command.claim.book").arguments(playerOrSource(Text.of("player")))
                         .executor(new CommandClaimBook()).build());
 
-        subcommands.put(Arrays.asList("claimbuyblocks", "claimbuy"), CommandSpec.builder()
+        subcommands.put(Arrays.asList("buyclaimblocks", "claimbuyblocks"), CommandSpec.builder()
                 .description(Text.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission("griefprevention.command.claim.buy").arguments(optional(integer(Text.of("numberOfBlocks"))))
                 .executor(new CommandClaimBuy()).build());
 
-        subcommands.put(Arrays.asList("claimdelete", "claimd"),
+        subcommands.put(Arrays.asList("claimdelete", "claimd", "deleteclaim"),
                 CommandSpec.builder().description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
                         .permission("griefprevention.dcommand.claim.delete").executor(new CommandClaimDelete()).build());
 
-        subcommands.put(Arrays.asList("claimdeleteall"),
+        subcommands.put(Arrays.asList("claimdeleteall", "deleteallclaims"),
                 CommandSpec.builder().description(Text.of("Delete all of another player's claims"))
                         .permission("griefprevention.command.claim.deleteall").arguments(player(Text.of("player")))
                         .executor(new CommandClaimDeleteAll()).build());
 
-        subcommands.put(Arrays.asList("claimdeletealladmin"), CommandSpec.builder().description(Text.of("Deletes all administrative claims"))
+        subcommands.put(Arrays.asList("claimdeletealladmin", "deletealladminclaims"), CommandSpec.builder().description(Text.of("Deletes all "
+                + "administrative claims"))
                 .permission("griefprevention.command.claim.deletealladmin").executor(new CommandClaimDeleteAllAdmin()).build());
 
         subcommands
@@ -462,10 +449,10 @@ public class GriefPrevention {
                                                 optional(onlyOne(GenericArguments.remainingJoinedStrings(Text.of("value"))))))))
                 .executor(new CommandClaimFlag()).build());
 
-        subcommands.put(Arrays.asList("claimignore", "claimi"), CommandSpec.builder().description(Text.of("Toggles ignore claims mode"))
+        subcommands.put(Arrays.asList("claimignore", "ignoreclaims"), CommandSpec.builder().description(Text.of("Toggles ignore claims mode"))
                 .permission("griefprevention.command.claim.ignore").executor(new CommandClaimIgnore()).build());
 
-        subcommands.put(Arrays.asList("claimlist"),
+        subcommands.put(Arrays.asList("claimslist", "claimlist"),
                 CommandSpec.builder().description(Text.of("List information about a player's claim blocks and claims"))
                         .permission("griefprevention.command.claim.list").arguments(onlyOne(playerOrSource(Text.of("player"))))
                         .executor(new CommandClaimList()).build());
@@ -478,11 +465,11 @@ public class GriefPrevention {
                                 .permission("griefprevention.command.claim.sell").arguments(optional(integer(Text.of("numberOfBlocks"))))
                                 .executor(new CommandClaimSell()).build());
 
-        subcommands.put(Arrays.asList("claimsubdivide", "claims"),
+        subcommands.put(Arrays.asList("claimsubdivide", "subdivideclaims", "sc"),
                 CommandSpec.builder().description(Text.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
                         .permission("griefprevention.command.claim.subdivide").executor(new CommandClaimSubdivide()).build());
 
-        subcommands.put(Arrays.asList("claimtransfer", "claimgive"),
+        subcommands.put(Arrays.asList("claimtransfer", "claimgive", "transferclaim"),
                 CommandSpec.builder().description(Text.of("Converts an administrative claim to a private claim"))
                         .arguments(optional(player(Text.of("target")))).permission("griefprevention.command.claim.transfer")
                         .executor(new CommandClaimTransfer()).build());
@@ -667,7 +654,7 @@ public class GriefPrevention {
     // called when a player spawns, applies protection for that player if necessary
     public void checkPvpProtectionNeeded(Player player) {
         // if anti spawn camping feature is not enabled, do nothing
-        if (!GriefPrevention.getActiveConfig(player.getWorld()).getConfig().pvp.protectFreshSpawns) {
+        if (!GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().pvp.protectFreshSpawns) {
             return;
         }
 
@@ -785,9 +772,9 @@ public class GriefPrevention {
         }
     }
 
-    public static GriefPreventionConfig<?> getActiveConfig(World world) {
-        GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(world.getUniqueId());
-        GriefPreventionConfig<DimensionConfig> dimConfig = DataStore.dimensionConfigMap.get(world.getUniqueId());
+    public static GriefPreventionConfig<?> getActiveConfig(WorldProperties worldProperties) {
+        GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldProperties.getUniqueId());
+        GriefPreventionConfig<DimensionConfig> dimConfig = DataStore.dimensionConfigMap.get(worldProperties.getUniqueId());
         if (worldConfig.getConfig().configEnabled) {
             return worldConfig;
         } else if (dimConfig.getConfig().configEnabled) {
@@ -802,12 +789,12 @@ public class GriefPrevention {
     }
 
     // checks whether players can create claims in a world
-    public boolean claimsEnabledForWorld(World world) {
-        return GriefPrevention.getActiveConfig(world).getConfig().claim.allowClaims;
+    public boolean claimsEnabledForWorld(WorldProperties worldProperties) {
+        return GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.allowClaims;
     }
 
-    public boolean claimModeIsActive(World world, ClaimsMode mode) {
-        return GriefPrevention.getActiveConfig(world).getConfig().claim.claimMode == mode.ordinal();
+    public boolean claimModeIsActive(WorldProperties worldProperties, ClaimsMode mode) {
+        return GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.claimMode == mode.ordinal();
     }
 
     public String allowBuild(Player player, Location<World> location) {
@@ -815,16 +802,16 @@ public class GriefPrevention {
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
         // exception: administrators in ignore claims mode and special player accounts created by server mods
-        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(location.getExtent()).getConfig().claim.alwaysIgnoreClaimsList.contains(player.getUniqueId().toString()))
+        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().claim.alwaysIgnoreClaimsList.contains(player.getUniqueId().toString()))
             return null;
 
         // wilderness rules
         if (claim == null) {
             // no building in the wilderness in creative mode
-            if (claimModeIsActive(location.getExtent(), ClaimsMode.Creative) || claimModeIsActive(location.getExtent(), ClaimsMode.SurvivalRequiringClaims)) {
+            if (claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative) || claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.SurvivalRequiringClaims)) {
                 // exception: when chest claims are enabled, players who have zero land claims and are placing a chest
                 if (!player.getItemInHand().isPresent() || player.getItemInHand().get().getItem() != ItemTypes.CHEST || playerData.playerWorldClaims.get(location.getExtent().getUniqueId()).size() > 0
-                        || GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.claimRadius == -1) {
+                        || GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimRadius == -1) {
                     String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                     if (player.hasPermission("griefprevention.ignoreclaims"))
                         reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
@@ -855,13 +842,13 @@ public class GriefPrevention {
 
         // exception: administrators in ignore claims mode, and special player
         // accounts created by server mods
-        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.alwaysIgnoreClaimsList.contains(player.getUniqueId().toString()))
+        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.alwaysIgnoreClaimsList.contains(player.getUniqueId().toString()))
             return null;
 
         // wilderness rules
         if (claim == null) {
             // no building in the wilderness in creative mode
-            if (claimModeIsActive(snapshot.getLocation().get().getExtent(), ClaimsMode.Creative) || claimModeIsActive(snapshot.getLocation().get().getExtent(), ClaimsMode.SurvivalRequiringClaims)) {
+            if (claimModeIsActive(snapshot.getLocation().get().getExtent().getProperties(), ClaimsMode.Creative) || claimModeIsActive(snapshot.getLocation().get().getExtent().getProperties(), ClaimsMode.SurvivalRequiringClaims)) {
                 String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                 if (player.hasPermission("griefprevention.ignoreclaims"))
                     reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
@@ -920,12 +907,10 @@ public class GriefPrevention {
         Location<World> lesserBoundaryCorner = startBlock.getLocation().get();
         Location<World> greaterBoundaryCorner = chunk.createSnapshot(15, 0, 15).getLocation().get();
 
-        // create task
-        // when done processing, this task will create a main thread task to
-        // actually update the world with processing results
+        // create task when done processing, this task will create a main thread task to actually update the world with processing results
         RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getDimension().getType(),
                 lesserBoundaryCorner.getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()),
-                aggressiveMode, claimModeIsActive(lesserBoundaryCorner.getExtent(), ClaimsMode.Creative), playerReceivingVisualization);
+                aggressiveMode, claimModeIsActive(lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative), playerReceivingVisualization);
         Sponge.getGame().getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
     }
 
@@ -995,7 +980,7 @@ public class GriefPrevention {
     }
 
     public boolean pvpRulesApply(World world) {
-        Boolean configSetting = GriefPrevention.getActiveConfig(world).getConfig().pvp.rulesEnabled;
+        Boolean configSetting = GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.rulesEnabled;
         if (configSetting != null) {
             return configSetting;
         }
@@ -1003,12 +988,12 @@ public class GriefPrevention {
         return world.getProperties().isPVPEnabled();
     }
 
-    public static boolean isItemBanned(World world, ItemType type, int meta) {
+    public static boolean isItemBanned(WorldProperties worldProperties, ItemType type, int meta) {
         String nonMetaItemString = type.getId();
         String metaItemString = type.getId() + ":" + meta;
-        if (GriefPrevention.getActiveConfig(world).getConfig().general.bannedItemList.contains(nonMetaItemString)) {
+        if (GriefPrevention.getActiveConfig(worldProperties).getConfig().general.bannedItemList.contains(nonMetaItemString)) {
             return true;
-        } else if (GriefPrevention.getActiveConfig(world).getConfig().general.bannedItemList.contains(metaItemString)) {
+        } else if (GriefPrevention.getActiveConfig(worldProperties).getConfig().general.bannedItemList.contains(metaItemString)) {
             return true;
         } else {
             return false;

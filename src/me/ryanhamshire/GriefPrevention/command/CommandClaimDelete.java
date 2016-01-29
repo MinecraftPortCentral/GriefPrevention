@@ -45,7 +45,7 @@ public class CommandClaimDelete implements CommandExecutor {
                     GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
                     // if in a creative mode world, /restorenature the claim
-                    if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)) {
+                    if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
                         GriefPrevention.instance.restoreClaim(claim, 0);
                     }
 

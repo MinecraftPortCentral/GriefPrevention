@@ -58,7 +58,7 @@ public class CommandClaimAbandon implements CommandExecutor {
             GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
             // if in a creative mode world, restore the claim area
-            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent(), ClaimsMode.Creative)) {
+            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
                 GriefPrevention.AddLogEntry(
                         player.getName() + " abandoned a claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
@@ -68,7 +68,7 @@ public class CommandClaimAbandon implements CommandExecutor {
             // adjust claim blocks when abandoning a top level claim
             if (claim.parent == null) {
                 playerData.setAccruedClaimBlocks(player.getWorld(),
-                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.abandonReturnRatio))));
+                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.abandonReturnRatio))));
             }
 
             // tell the player how many claim blocks he has left

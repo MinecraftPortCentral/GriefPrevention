@@ -44,7 +44,7 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         List<Claim> claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
         for (Claim claim : claimList) {
             playerData.setAccruedClaimBlocks(player.getWorld(),
-                    playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld()).getConfig().claim.abandonReturnRatio))));
+                    playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.abandonReturnRatio))));
         }
 
         // delete them

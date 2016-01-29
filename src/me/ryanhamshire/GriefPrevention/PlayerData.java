@@ -30,6 +30,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ public class PlayerData {
     // the player's claims
     public Map<UUID, List<Claim>> playerWorldClaims = Maps.newHashMap();
 
+    // world uuid -> storage
     public Map<UUID, PlayerStorageData> worldStorageData = Maps.newHashMap();
 
     // where this player was the last time we checked on him for earning claim blocks
@@ -162,7 +164,7 @@ public class PlayerData {
 
         long elapsed = now - this.lastPvpTimestamp;
 
-        if (elapsed > GriefPrevention.getActiveConfig(world).getConfig().pvp.combatTimeout * 1000) // X seconds
+        if (elapsed > GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.combatTimeout * 1000) // X seconds
         {
             this.lastPvpTimestamp = 0;
             return false;
@@ -191,7 +193,7 @@ public class PlayerData {
         // in config file AFTER he accrued
         // in that case, leave his blocks where they are
         int currentTotal = this.worldStorageData.get(world.getUniqueId()).getConfig().accruedClaimBlocks;
-        if (currentTotal >= GriefPrevention.getActiveConfig(world).getConfig().claim.maxAccruedBlocks) {
+        if (currentTotal >= GriefPrevention.getActiveConfig(world.getProperties()).getConfig().claim.maxAccruedBlocks) {
             return currentTotal;
         }
 
@@ -210,37 +212,30 @@ public class PlayerData {
         this.worldStorageData.get(world.getUniqueId()).getConfig().bonusClaimBlocks = bonusClaimBlocks;
     }
 
-    public Date getLastLogin() {
-        return this.lastLogin;
-    }
-
-    public void setLastLogin(Date lastLogin) {
-        this.lastLogin = lastLogin;
-    }
-
-    public void initializePlayerWorldClaims(World world) {
-        if (this.playerWorldClaims.get(world.getUniqueId()) != null) {
+    public void initializePlayerWorldClaims(WorldProperties worldProperties) {
+        if (this.playerWorldClaims.get(worldProperties.getUniqueId()) != null) {
             return;
         }
 
-        this.playerWorldClaims.put(world.getUniqueId(), new ArrayList<Claim>());
+        this.playerWorldClaims.put(worldProperties.getUniqueId(), new ArrayList<Claim>());
 
         // find all the claims for world belonging to this player
         DataStore dataStore = GriefPrevention.instance.dataStore;
-        if (dataStore.worldClaims.get(world.getUniqueId()) == null) {
+
+        if (dataStore.worldClaims.get(worldProperties.getUniqueId()) == null) {
             return; // no claims
         }
 
-        List<Claim> claimList = dataStore.worldClaims.get(world.getUniqueId());
+        List<Claim> claimList = dataStore.worldClaims.get(worldProperties.getUniqueId());
         for (Claim claim : claimList) {
             System.out.println("Found claim " + claim);
             if (!claim.inDataStore) {
-                dataStore.worldClaims.remove(claim);
+                dataStore.worldClaims.get(worldProperties.getUniqueId()).remove(claim);
                 continue;
             }
 
             if (playerID.equals(claim.ownerID)) {
-                this.playerWorldClaims.get(world.getUniqueId()).add(claim);
+                this.playerWorldClaims.get(worldProperties.getUniqueId()).add(claim);
             }
         }
     }
