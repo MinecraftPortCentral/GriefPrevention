@@ -200,7 +200,9 @@ public class BlockEventHandler {
                     if (event.getCause().root() instanceof Player) {
                         GriefPrevention.sendMessage(player.get(), Text.of(TextMode.Err, noBuildReason));
                     }
-                    transaction.setValid(false);
+
+                    event.setCancelled(true);
+                    return;
                 }
             }
         }
