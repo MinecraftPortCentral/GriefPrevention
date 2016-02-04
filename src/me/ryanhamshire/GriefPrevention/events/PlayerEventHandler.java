@@ -1069,7 +1069,7 @@ public class PlayerEventHandler {
     // when a player interacts with an entity...
     @IsCancelled(Tristate.UNDEFINED)
     @Listener(order = Order.PRE)
-    public void onPlayerInteractEntity(InteractEntityEvent.Secondary event) {
+    public void onPlayerInteractEntity(InteractEntityEvent event) {
         if (!event.getCause().containsType(Player.class)) {
             return;
         }
@@ -1090,6 +1090,17 @@ public class PlayerEventHandler {
 
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
+        // always allow interactions when player is in ignore claims mode
+        if (playerData.ignoreClaims) {
+            return;
+        }
+
+        if (event instanceof InteractEntityEvent.Primary) {
+            if (claim != null && claim.allowAccess(player.getWorld(), player) != null) {
+                event.setCancelled(true);
+            }
+            return;
+        }
         // if entity is tameable and has an owner, apply special rules
         if (entity.supports(TameableData.class)) {
             TameableData data = entity.getOrCreate(TameableData.class).get();
@@ -1140,10 +1151,6 @@ public class PlayerEventHandler {
                 return;
             }*/
         }
-
-        // always allow interactions when player is in ignore claims mode
-        if (playerData.ignoreClaims)
-            return;
 
         // don't allow container access during pvp combat
         if ((entity instanceof MinecartChest || entity instanceof MinecartFurnace)) {
