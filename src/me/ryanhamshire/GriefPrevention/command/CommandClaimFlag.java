@@ -43,9 +43,9 @@ public class CommandClaimFlag implements CommandExecutor {
 
         if (claim != null) {
             if (flag.isPresent() && value.isPresent()) {
-                if (player.hasPermission("griefprevention.command.claim.flag." + flag.get().toLowerCase())) {
-                    if ((Object) value.get() instanceof Boolean) {
-                        setFlagValue(src, claim, flag.get(), Boolean.parseBoolean(value.get()));
+                if (playerData.ignoreClaims || player.hasPermission("griefprevention.command.claim.flag." + flag.get().toLowerCase())) {
+                    if (value.get().equalsIgnoreCase("true") || value.get().equalsIgnoreCase("false")) {
+                        setFlagValue(src, claim, flag.get(), Boolean.valueOf(value.get()));
                     } else if (value.get().contains(",") && !ctx.hasAny("r")) {
                         ArrayList<String> input = Lists.newArrayList();
                         input.addAll(Arrays.asList(value.get().split("\\s*,\\s*")));
