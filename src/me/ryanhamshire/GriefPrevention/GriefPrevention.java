@@ -101,10 +101,12 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
+import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColor;
@@ -218,6 +220,13 @@ public class GriefPrevention {
 
     public static synchronized void AddLogEntry(String entry) {
         AddLogEntry(entry, CustomLogEntryTypes.Debug);
+    }
+
+    @Listener
+    public void onChangeServiceProvider(ChangeServiceProviderEvent event) {
+        if (event.getNewProvider() instanceof PermissionService) {
+            ((PermissionService) event.getNewProvider()).registerContextCalculator(new ClaimContextCalculator());
+        }
     }
 
     // initializes well... everything
