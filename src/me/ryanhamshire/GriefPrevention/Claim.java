@@ -35,6 +35,8 @@ import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.item.ItemType;
+import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.context.ContextSource;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -55,7 +57,7 @@ import java.util.UUID;
 //represents a player claim
 //creating an instance doesn't make an effective claim
 //only claims which have been added to the datastore have any effect
-public class Claim {
+public class Claim implements ContextSource {
 
     // two locations, which together define the boundaries of the claim
     // note that the upper Y value is always ignored, because claims ALWAYS
@@ -63,6 +65,9 @@ public class Claim {
     public Location<World> lesserBoundaryCorner;
     public Location<World> greaterBoundaryCorner;
     public World world;
+
+    // Permission Context
+    public Context context;
 
     // modification date. this comes from the file timestamp during load, and is
     // updated with runtime changes
@@ -947,5 +952,10 @@ public class Claim {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public Context getContext() {
+        return this.context;
     }
 }

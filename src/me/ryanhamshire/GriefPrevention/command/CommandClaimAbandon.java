@@ -1,5 +1,6 @@
 package me.ryanhamshire.GriefPrevention.command;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -13,6 +14,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.service.context.Context;
 
 public class CommandClaimAbandon implements CommandExecutor {
 
@@ -34,8 +36,7 @@ public class CommandClaimAbandon implements CommandExecutor {
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // which claim is being abandoned?
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(),
-                true /* ignore height */, null);
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
         if (claim == null) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
         }
@@ -55,6 +56,8 @@ public class CommandClaimAbandon implements CommandExecutor {
         else {
             // delete it
             claim.removeSurfaceFluids(null);
+            // remove all context permissions
+            player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
             GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
             // if in a creative mode world, restore the claim area

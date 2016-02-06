@@ -26,6 +26,7 @@ package me.ryanhamshire.GriefPrevention;
 
 import com.flowpowered.math.vector.Vector3d;
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
@@ -41,11 +42,13 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -364,6 +367,12 @@ public abstract class DataStore {
 
     // adds a claim to the datastore, making it an effective claim
     synchronized void addClaim(Claim newClaim, boolean writeToStorage) {
+        PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
+        if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
+            ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
+        }
+        ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
+
         // subdivisions are added under their parent, not directly to the hash map for direct search
         if (newClaim.parent != null) {
             if (!newClaim.parent.children.contains(newClaim)) {
@@ -374,12 +383,6 @@ public abstract class DataStore {
                 this.saveClaim(newClaim);
             }
 
-            PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
-            if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
-                ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
-            }
-
-            ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
             return;
         }
 
@@ -409,13 +412,6 @@ public abstract class DataStore {
         if (writeToStorage) {
             this.saveClaim(newClaim);
         }
-
-        PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
-        if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
-            ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
-        }
-        
-        ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
     }
 
     // turns a location into a string, useful in data storage
@@ -652,7 +648,7 @@ public abstract class DataStore {
                 new ArrayList<String>(),
                 new ArrayList<String>(),
                 new ArrayList<String>(),
-                id);
+                id == null ? UUID.randomUUID() : id);
 
         newClaim.parent = parent;
 
@@ -678,16 +674,9 @@ public abstract class DataStore {
             }
         }
 
-        // if worldguard is installed, also prevent claims from overlapping any
-        // worldguard regions
-        /*if (GriefPrevention.instance.config_claims_respectWorldGuard && this.worldGuard != null && creatingPlayer != null) {
-            if (!this.worldGuard.canBuild(newClaim.lesserBoundaryCorner, newClaim.greaterBoundaryCorner, creatingPlayer)) {
-                result.succeeded = false;
-                result.claim = null;
-                return result;
-            }
-        }*/
-
+        newClaim.context = new Context("claim", newClaim.id.toString());
+        // Assign owner full flag permissions in claim context
+        creatingPlayer.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), "griefprevention.command.claim.flag", Tristate.TRUE);
         // otherwise add this new claim to the data store to make it effective
         this.addClaim(newClaim, true);
 

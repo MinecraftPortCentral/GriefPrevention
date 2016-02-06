@@ -1,5 +1,6 @@
 package me.ryanhamshire.GriefPrevention.command;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
@@ -43,6 +44,8 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         // adjust claim blocks
         List<Claim> claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
         for (Claim claim : claimList) {
+            // remove all context permissions
+            player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
             playerData.setAccruedClaimBlocks(player.getWorld(),
                     playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.abandonReturnRatio))));
         }
