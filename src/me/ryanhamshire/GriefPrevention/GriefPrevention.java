@@ -34,6 +34,7 @@ import static org.spongepowered.api.command.args.GenericArguments.string;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.command.CommandAccessTrust;
+import me.ryanhamshire.GriefPrevention.command.CommandAddFlagPermission;
 import me.ryanhamshire.GriefPrevention.command.CommandAdjustBonusClaimBlocks;
 import me.ryanhamshire.GriefPrevention.command.CommandClaim;
 import me.ryanhamshire.GriefPrevention.command.CommandClaimAbandon;
@@ -122,6 +123,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -451,12 +453,25 @@ public class GriefPrevention {
         subcommands
                 .put(Arrays.asList("claimflag"),
                         CommandSpec.builder().description(Text.of("Gets/Sets various claim flags in the claim you are standing in"))
-                                .permission(
-                                        "griefprevention.command.claim.flag")
+                                .permission("griefprevention.command.claim.flag")
                                 .arguments(GenericArguments.firstParsing(GenericArguments.flags().flag("-r", "r")
                                         .buildWith(GenericArguments.seq(optional(onlyOne(string(Text.of("flag")))),
                                                 optional(onlyOne(GenericArguments.remainingJoinedStrings(Text.of("value"))))))))
                 .executor(new CommandClaimFlag()).build());
+        
+        HashMap<String, String> targetChoices = new HashMap<>();
+        targetChoices.put("player", "player");
+        targetChoices.put("group", "group");
+        
+        subcommands.put(Arrays.asList("addflagpermission"), CommandSpec.builder()
+                .description(Text.of("Adds flag permission to target."))
+                .permission("griefprevention.command.claim.flag")
+                .arguments(GenericArguments.seq(
+                        GenericArguments.choices(Text.of("target"), targetChoices, true),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
+        .executor(new CommandAddFlagPermission()).build());
 
         subcommands.put(Arrays.asList("claimignore", "ignoreclaims"), CommandSpec.builder().description(Text.of("Toggles ignore claims mode"))
                 .permission("griefprevention.command.claim.ignore").executor(new CommandClaimIgnore()).build());
