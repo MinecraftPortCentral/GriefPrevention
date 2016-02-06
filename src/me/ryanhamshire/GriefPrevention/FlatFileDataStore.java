@@ -29,6 +29,7 @@ import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.GriefPrevention.configuration.PlayerStorageData;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -291,6 +292,7 @@ public class FlatFileDataStore extends DataStore {
         claim.id = claimID;
         claim.world = lesserBoundaryCorner.getExtent();
         claim.claimData = claimData;
+        claim.context = new Context("claim", claim.id.toString());
 
         if (this.worldClaims.get(world.getProperties().getUniqueId()) == null) {
             this.worldClaims.put(world.getProperties().getUniqueId(), new ArrayList<Claim>());
