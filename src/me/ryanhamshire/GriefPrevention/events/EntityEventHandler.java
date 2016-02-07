@@ -24,13 +24,16 @@
  */
 package me.ryanhamshire.GriefPrevention.events;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
 import me.ryanhamshire.GriefPrevention.DataStore;
+import me.ryanhamshire.GriefPrevention.FlagPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
+import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import net.minecraft.entity.passive.EntityTameable;
 import org.spongepowered.api.Sponge;
@@ -47,6 +50,7 @@ import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.Item;
 import org.spongepowered.api.entity.explosive.Explosive;
+import org.spongepowered.api.entity.living.Ambient;
 import org.spongepowered.api.entity.living.Aquatic;
 import org.spongepowered.api.entity.living.Creature;
 import org.spongepowered.api.entity.living.Living;
@@ -64,6 +68,7 @@ import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
+import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
@@ -79,6 +84,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 //handles events related to entities
 public class EntityEventHandler {
@@ -135,11 +141,49 @@ public class EntityEventHandler {
     // when a creature spawns...
     @Listener(order = Order.EARLY)
     public void onSpawnEntity(SpawnEntityEvent event) {
+        Optional<User> user = event.getCause().first(User.class);
+        event.filterEntities(new Predicate<Entity>() {
+            @Override
+            public boolean test(Entity entity) {
+                Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
+                if (claim != null) {
+                    if (user.isPresent()) {
+                        User spongeUser = user.get();
+                        if (spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions.PERMISSION_SPAWN_ANY) == Tristate.FALSE) {
+                            return false;
+                        } else if (entity instanceof Ambient && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
+                                .PERMISSION_SPAWN_AMBIENTS) == Tristate.FALSE) {
+                            return false;
+                        } else if (entity instanceof Aquatic && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
+                                .PERMISSION_SPAWN_AQUATICS) == Tristate.FALSE) {
+                            return false;
+                        } else if (entity instanceof Monster && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
+                                .PERMISSION_SPAWN_MONSTERS) == Tristate.FALSE) {
+                            return false;
+                        } else if (entity instanceof Creature && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
+                                .PERMISSION_SPAWN_PASSIVES) == Tristate.FALSE) {
+                            return false;
+                        }
+                    }
+                    ClaimStorageData.ClaimDataNode claimStorageData = claim.getClaimData().getConfig();
+                    if (!claimStorageData.flags.spawnAny) {
+                        return false;
+                    } else if (!claimStorageData.flags.spawnAmbient && entity instanceof Ambient) {
+                        return false;
+                    } else if (!claimStorageData.flags.spawnAquatic && entity instanceof Aquatic) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+
         for (Entity entity : event.getEntities()) {
             final Location<World> location = entity.getLocation();
             // these rules apply only to creative worlds
-            if (!GriefPrevention.instance.claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative))
+            if (!GriefPrevention.instance.claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative)) {
                 return;
+            }
     
             final Cause cause = event.getCause();
             final Player player = cause.first(Player.class).orElse(null);

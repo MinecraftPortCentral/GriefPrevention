@@ -148,6 +148,8 @@ public class GriefPrevention {
     // this handles data storage, like player and region data
     public DataStore dataStore;
 
+    public PermissionService permissionService;
+
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
 
@@ -244,6 +246,7 @@ public class GriefPrevention {
 
         AddLogEntry("Finished loading configuration.");
 
+        this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).get();
         // when datastore initializes, it loads player and claim data, and posts some stats to the log
         // TODO - add proper DB support
         /*if (this.databaseUrl.length() > 0) {

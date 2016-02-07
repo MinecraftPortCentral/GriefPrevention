@@ -82,6 +82,7 @@ public class ClaimStorageData {
     public static final String FLAGS_PROJECTILES_PLAYER = "projectiles-player";
     public static final String FLAGS_PROJECTILES_MONSTER = "projectiles-monster";
     public static final String FLAGS_PROJECTILES_ANY = "projectiles-any";
+    public static final String FLAGS_FORCE_DENY_ALL = "force-deny-all";
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public ClaimStorageData(Path path) {
@@ -108,33 +109,31 @@ public class ClaimStorageData {
     }
 
     public void initDefaultValues() {
-        ClaimStorageData.flags.put(FLAGS_BLOCK_PLACE, true);
-        ClaimStorageData.flags.put(FLAGS_BLOCK_BREAK, true);
-        ClaimStorageData.flags.put(FLAGS_INTERACT_PRIMARY, true);
-        ClaimStorageData.flags.put(FLAGS_INTERACT_SECONDARY, true);
-        ClaimStorageData.flags.put(FLAGS_INVENTORY, true);
+        ClaimStorageData.flags.put(FLAGS_BLOCK_BREAK, false);
+        ClaimStorageData.flags.put(FLAGS_BLOCK_COMMANDS, Lists.newArrayList());
+        ClaimStorageData.flags.put(FLAGS_BLOCK_PLACE, false);
         ClaimStorageData.flags.put(FLAGS_EXPLOSIONS, false);
-        ClaimStorageData.flags.put(FLAGS_MOB_BLOCK_DAMAGE, true);
-        ClaimStorageData.flags.put(FLAGS_MOB_PLAYER_DAMAGE, true);
-        ClaimStorageData.flags.put(FLAGS_MOB_RIDING, true);
+        ClaimStorageData.flags.put(FLAGS_FIRE_SPREAD, false);
+        ClaimStorageData.flags.put(FLAGS_INTERACT_PRIMARY, false);
+        ClaimStorageData.flags.put(FLAGS_INTERACT_SECONDARY, false);
+        ClaimStorageData.flags.put(FLAGS_INVENTORY, false);
         ClaimStorageData.flags.put(FLAGS_ITEM_DROP, true);
         ClaimStorageData.flags.put(FLAGS_ITEM_PICKUP, true);
         ClaimStorageData.flags.put(FLAGS_ITEM_USE, true);
-        ClaimStorageData.flags.put(FLAGS_PORTAL_USE, true);
-        ClaimStorageData.flags.put(FLAGS_PVP, true);
+        ClaimStorageData.flags.put(FLAGS_MOB_BLOCK_DAMAGE, false);
+        ClaimStorageData.flags.put(FLAGS_MOB_PLAYER_DAMAGE, true);
+        ClaimStorageData.flags.put(FLAGS_MOB_RIDING, true);
+        ClaimStorageData.flags.put(FLAGS_PORTAL_USE, false);
+        ClaimStorageData.flags.put(FLAGS_PROJECTILES_PLAYER, false);
+        ClaimStorageData.flags.put(FLAGS_PROJECTILES_MONSTER, true);
+        ClaimStorageData.flags.put(FLAGS_PROJECTILES_ANY, true);
+        ClaimStorageData.flags.put(FLAGS_PVP, false);
         ClaimStorageData.flags.put(FLAGS_SPAWN_MONSTERS, true);
         ClaimStorageData.flags.put(FLAGS_SPAWN_PASSIVES, true);
         ClaimStorageData.flags.put(FLAGS_SPAWN_AMBIENTS, true);
         ClaimStorageData.flags.put(FLAGS_SPAWN_AQUATICS, true);
         ClaimStorageData.flags.put(FLAGS_SPAWN_ANY, true);
         ClaimStorageData.flags.put(FLAGS_SLEEP, true);
-        ClaimStorageData.flags.put(FLAGS_WATER_FLOW, true);
-        ClaimStorageData.flags.put(FLAGS_LAVA_FLOW, true);
-        ClaimStorageData.flags.put(FLAGS_FIRE_SPREAD, false);
-        ClaimStorageData.flags.put(FLAGS_BLOCK_COMMANDS, Lists.newArrayList());
-        ClaimStorageData.flags.put(FLAGS_PROJECTILES_PLAYER, true);
-        ClaimStorageData.flags.put(FLAGS_PROJECTILES_MONSTER, true);
-        ClaimStorageData.flags.put(FLAGS_PROJECTILES_ANY, true);
     }
     
     public void save() {
@@ -265,6 +264,8 @@ public class ClaimStorageData {
         public boolean projectilesMonster = (boolean) ClaimStorageData.flags.get(FLAGS_PROJECTILES_MONSTER);
         @Setting(value = FLAGS_PROJECTILES_ANY, comment = "Allow/deny any projectiles.")
         public boolean projectilesAny = (boolean) ClaimStorageData.flags.get(FLAGS_PROJECTILES_ANY);
+        @Setting(value = FLAGS_FORCE_DENY_ALL, comment = "Only intended if you want to explicitly ignore all checking for player permissions.")
+        public boolean forceDenyAll = false;
     }
 
     @ConfigSerializable

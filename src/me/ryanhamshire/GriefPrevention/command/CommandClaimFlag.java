@@ -2,6 +2,7 @@ package me.ryanhamshire.GriefPrevention.command;
 
 import com.google.common.collect.Lists;
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.FlagPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
@@ -43,7 +44,7 @@ public class CommandClaimFlag implements CommandExecutor {
 
         if (claim != null) {
             if (flag.isPresent() && value.isPresent()) {
-                if (playerData.ignoreClaims || player.hasPermission("griefprevention.command.claim.flag." + flag.get().toLowerCase())) {
+                if (playerData.ignoreClaims || player.hasPermission(FlagPermissions.PERMISSION_FLAGS_COMMAND + "." + flag.get().toLowerCase())) {
                     if (value.get().equalsIgnoreCase("true") || value.get().equalsIgnoreCase("false")) {
                         setFlagValue(src, claim, flag.get(), Boolean.valueOf(value.get()));
                     } else if (value.get().contains(",") && !ctx.hasAny("r")) {
