@@ -101,8 +101,8 @@ class RestoreNatureProcessingTask implements Runnable {
         this.playerBlocks = new ArrayList<BlockType>();
         this.playerBlocks.addAll(RestoreNatureProcessingTask.getPlayerBlocks(this.environment, this.biome));
 
-        // in aggressive or creative world mode, also treat these blocks as user placed, to be removed 
-        // this is helpful in the few cases where griefers intentionally use natural blocks to grief, 
+        // in aggressive or creative world mode, also treat these blocks as user placed, to be removed
+        // this is helpful in the few cases where griefers intentionally use natural blocks to grief,
         // like a single-block tower of iron ore or a giant penis constructed with melons
         if (this.aggressiveMode || this.creativeMode) {
             this.playerBlocks.add(BlockTypes.IRON_ORE);
@@ -283,7 +283,7 @@ class RestoreNatureProcessingTask implements Runnable {
                         continue;
 
                     // if in jungle biome, skip jungle logs
-                    Optional<? extends Enum<?>> enumProperty = block.getState().getTraitValue(EnumTraits.LOG_VARIANT);
+                    Optional<? extends Enum<?>> enumProperty = (Optional) block.getState().getTraitValue(EnumTraits.LOG_VARIANT);
                     if (jungleBiome && enumProperty.isPresent() && enumProperty.get().name().equalsIgnoreCase("jungle"))
                         continue;
 
@@ -682,9 +682,9 @@ class RestoreNatureProcessingTask implements Runnable {
             playerBlocks.add(BlockTypes.END_PORTAL_FRAME);
         }
 
-        //these are unnatural in sandy biomes, but not elsewhere 
-        if(biome == BiomeTypes.DESERT || biome == BiomeTypes.DESERT_HILLS || biome == BiomeTypes.BEACH || 
-                 !environment.equals(DimensionTypes.OVERWORLD)) { 
+        //these are unnatural in sandy biomes, but not elsewhere
+        if(biome == BiomeTypes.DESERT || biome == BiomeTypes.DESERT_HILLS || biome == BiomeTypes.BEACH ||
+                 !environment.equals(DimensionTypes.OVERWORLD)) {
              playerBlocks.add(BlockTypes.LEAVES);
              playerBlocks.add(BlockTypes.LOG);
              playerBlocks.add(BlockTypes.LOG2);
