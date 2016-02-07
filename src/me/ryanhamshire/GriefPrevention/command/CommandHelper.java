@@ -272,7 +272,7 @@ public class CommandHelper {
                     Optional<Player> targetPlayer = Sponge.getServer().getPlayer(name);
                     if (targetPlayer.isPresent()) {
                         Subject subj = targetPlayer.get().getContainingCollection().get(targetPlayer.get().getIdentifier());
-                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), "griefprevention.claim.flag.command." + flag,
+                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
                                 Tristate.fromBoolean(Boolean.valueOf(value)));
                         player.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", target, " ", name, "."));
                     } else {
@@ -282,7 +282,7 @@ public class CommandHelper {
                     PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
                     Subject subj = service.getGroupSubjects().get(name);
                     if (subj != null) {
-                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), "griefprevention.command.claim.flag." + flag,
+                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
                                 Tristate.fromBoolean(Boolean.valueOf(value)));
                         player.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", target, " ", name, "."));
                     } else {
