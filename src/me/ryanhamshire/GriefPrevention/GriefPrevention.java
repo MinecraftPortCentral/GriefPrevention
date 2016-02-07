@@ -209,7 +209,7 @@ public class GriefPrevention {
             .put("allow", true)
             .put("deny", false)
             .build();
-    
+
     // adds a server log entry
     public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
         if (customLogType != null && GriefPrevention.instance.customLogger != null) {
@@ -309,24 +309,24 @@ public class GriefPrevention {
             GriefPrevention.AddLogEntry("Attempting to load Vault...");
             RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
             GriefPrevention.AddLogEntry("Vault loaded successfully!");
-            
+
             //ask Vault to hook into an economy plugin
             GriefPrevention.AddLogEntry("Looking for a Vault-compatible economy plugin...");
             if (economyProvider != null)  {
                 GriefPrevention.economy = economyProvider.getProvider();
-                
+
                 //on success, display success message
                 if(GriefPrevention.economy != null) {
-                    GriefPrevention.AddLogEntry("Hooked into economy: " + GriefPrevention.economy.getName() + ".");  
+                    GriefPrevention.AddLogEntry("Hooked into economy: " + GriefPrevention.economy.getName() + ".");
                     GriefPrevention.AddLogEntry("Ready to buy/sell claim blocks!");
                 }
-                
+
                 //otherwise error message
                 else {
                     GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
-                }               
+                }
             }
-            
+
             //another error case
             else {
                 GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
@@ -397,12 +397,12 @@ public class GriefPrevention {
 
         subcommands.put(Arrays.asList("accesstrust", "at"),
                 CommandSpec.builder().description(Text.of("Grants a player entry to your claim(s) and use of your bed"))
-                        .permission("griefprevention.command.accesstrust").arguments(string(Text.of("target"))).executor(new CommandAccessTrust())
+                        .permission(GPPermissions.COMMAND_ACCESSTRUST).arguments(string(Text.of("target"))).executor(new CommandAccessTrust())
                         .build());
 
         subcommands.put(Arrays.asList("adjustbonusclaimblocks", "acb"),
                 CommandSpec.builder().description(Text.of("Adds or subtracts bonus claim blocks for a player"))
-                        .permission("griefprevention.command.adjustclaimblocks").arguments(string(Text.of("player")), integer(Text.of("amount")))
+                        .permission(GPPermissions.COMMAND_ADJUST_BONUS_CLAIM_BLOCKS).arguments(string(Text.of("player")), integer(Text.of("amount")))
                         .executor(new CommandAdjustBonusClaimBlocks()).build());
 
         subcommands.put(Arrays.asList("claim"), CommandSpec.builder().description(Text.of("Claims land")).permission("griefprevention.command.claim")
@@ -457,19 +457,19 @@ public class GriefPrevention {
         subcommands
                 .put(Arrays.asList("claimflag"),
                         CommandSpec.builder().description(Text.of("Gets/Sets various claim flags in the claim you are standing in"))
-                                .permission("griefprevention.command.claim.flag")
+                                .permission(GPPermissions.COMMAND_CLAIMFLAG)
                                 .arguments(GenericArguments.firstParsing(GenericArguments.flags().flag("-r", "r")
                                         .buildWith(GenericArguments.seq(optional(onlyOne(string(Text.of("flag")))),
                                                 optional(onlyOne(GenericArguments.remainingJoinedStrings(Text.of("value"))))))))
-                .executor(new CommandClaimFlag()).build());
-        
+                .executor(new CommandClaimFlag(GPPermissions.COMMAND_CLAIMFLAG)).build());
+
         HashMap<String, String> targetChoices = new HashMap<>();
         targetChoices.put("player", "player");
         targetChoices.put("group", "group");
-        
+
         subcommands.put(Arrays.asList("addflagpermission"), CommandSpec.builder()
                 .description(Text.of("Adds flag permission to target."))
-                .permission("griefprevention.command.claim.flag")
+                .permission(GPPermissions.COMMAND_CLAIMFLAG)
                 .arguments(GenericArguments.seq(
                         GenericArguments.choices(Text.of("target"), targetChoices, true),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
@@ -479,7 +479,7 @@ public class GriefPrevention {
 
         subcommands.put(Arrays.asList("addflagcmdpermission"), CommandSpec.builder()
                 .description(Text.of("Adds flag command permission to target."))
-                .permission("griefprevention.command.claim.flag")
+                .permission(GPPermissions.COMMAND_CLAIMFLAG)
                 .arguments(GenericArguments.seq(
                         GenericArguments.choices(Text.of("target"), targetChoices, true),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),

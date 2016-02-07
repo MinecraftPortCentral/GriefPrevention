@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
 import me.ryanhamshire.GriefPrevention.DataStore;
-import me.ryanhamshire.GriefPrevention.FlagPermissions;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
@@ -68,7 +68,6 @@ import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
-import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
@@ -137,7 +136,7 @@ public class EntityEventHandler {
             }
         }
     }
-
+    
     // when a creature spawns...
     @Listener(order = Order.EARLY)
     public void onSpawnEntity(SpawnEntityEvent event) {
@@ -149,19 +148,19 @@ public class EntityEventHandler {
                 if (claim != null) {
                     if (user.isPresent()) {
                         User spongeUser = user.get();
-                        if (spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions.PERMISSION_SPAWN_ANY) == Tristate.FALSE) {
+                        if (spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), GPPermissions.SPAWN_ANY) == Tristate.FALSE) {
                             return false;
-                        } else if (entity instanceof Ambient && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
-                                .PERMISSION_SPAWN_AMBIENTS) == Tristate.FALSE) {
+                        } else if (entity instanceof Ambient && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), GPPermissions
+                                .SPAWN_AMBIENTS) == Tristate.FALSE) {
                             return false;
-                        } else if (entity instanceof Aquatic && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
-                                .PERMISSION_SPAWN_AQUATICS) == Tristate.FALSE) {
+                        } else if (entity instanceof Aquatic && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), GPPermissions
+                                .SPAWN_AQUATICS) == Tristate.FALSE) {
                             return false;
-                        } else if (entity instanceof Monster && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
-                                .PERMISSION_SPAWN_MONSTERS) == Tristate.FALSE) {
+                        } else if (entity instanceof Monster && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), GPPermissions
+                                .SPAWN_MONSTERS) == Tristate.FALSE) {
                             return false;
-                        } else if (entity instanceof Creature && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), FlagPermissions
-                                .PERMISSION_SPAWN_PASSIVES) == Tristate.FALSE) {
+                        } else if (entity instanceof Creature && spongeUser.getPermissionValue(ImmutableSet.of(claim.getContext()), GPPermissions
+                                .SPAWN_PASSIVES) == Tristate.FALSE) {
                             return false;
                         }
                     }
@@ -184,7 +183,7 @@ public class EntityEventHandler {
             if (!GriefPrevention.instance.claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative)) {
                 return;
             }
-    
+
             final Cause cause = event.getCause();
             final Player player = cause.first(Player.class).orElse(null);
             final ItemStack stack = cause.first(ItemStack.class).orElse(null);
@@ -200,7 +199,7 @@ public class EntityEventHandler {
                     return;
                 }
             }
-    
+
             // otherwise, just apply the limit on total entities per claim (and no spawning in the wilderness!)
             Claim claim = this.dataStore.getClaimAt(location, false, null);
             if (claim == null || claim.allowMoreEntities() != null) {
@@ -586,7 +585,7 @@ public class EntityEventHandler {
             PlayerData playerData = this.dataStore.getPlayerData(player.getWorld().getProperties(), player.getUniqueId());
 
             // if involved in a siege
-            if (playerData.siegeData != null) { 
+            if (playerData.siegeData != null) {
                 // end it, with the dieing player being the loser
                 this.dataStore.endSiege(playerData.siegeData, event.getCause().first(Player.class).isPresent() ? event.getCause().first(Player.class).get().getName() : null, player.getName(), true /*ended due to death*/);
                 // don't drop items as usual, they will be sent to the siege winner
@@ -613,7 +612,7 @@ public class EntityEventHandler {
         EntityDamageSource damageSource = event.getCause().first(EntityDamageSource.class).get();
 
         // if involved in a siege
-        if (playerData.siegeData != null) { 
+        if (playerData.siegeData != null) {
             // end it, with the dying player being the loser
             this.dataStore.endSiege(playerData.siegeData, damageSource.getSource() != null ? ((net.minecraft.entity.Entity) damageSource.getSource()).getName() : null, player.getName(), true /*ended due to death*/);
         }

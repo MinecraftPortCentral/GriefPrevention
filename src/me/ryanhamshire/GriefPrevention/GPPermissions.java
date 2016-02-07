@@ -24,14 +24,14 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-public class FlagPermissions {
+public class GPPermissions {
 
-    // Flag protection permissions
+    // Flag override permissions
     public static final String PERMISSION_BLOCK_PLACE = "griefprevention.claim.flag.block-place";
     public static final String PERMISSION_BLOCK_BREAK = "griefprevention.claim.flag.block-break";
     public static final String PERMISSION_INTERACT_PRIMARY = "griefprevention.claim.flag.interact-primary";
     public static final String PERMISSION_INTERACT_SECONDARY = "griefprevention.claim.flag.interact-secondary";
-    public static final String PERMISSION_EXPLOSIONS = "griefprevention.claim.flag.explosions";
+    public static final String EXPLOSIONS = "griefprevention.claim.flag.explosions";
     public static final String PERMISSION_MOB_BLOCK_DAMAGE = "griefprevention.claim.flag.mob-block-damage";
     public static final String PERMISSION_MOB_PLAYER_DAMAGE = "griefprevention.claim.flag.mob-player-damage";
     public static final String PERMISSION_MOB_RIDING = "griefprevention.claim.flag.mob-riding";
@@ -40,11 +40,11 @@ public class FlagPermissions {
     public static final String PERMISSION_ITEM_USE = "griefprevention.claim.flag.item-use";
     public static final String PERMISSION_PORTAL_USE = "griefprevention.claim.flag.portal-use";
     public static final String PERMISSION_PVP = "griefprevention.claim.flag.pvp";
-    public static final String PERMISSION_SPAWN_MONSTERS = "griefprevention.claim.flag.spawn-monsters";
-    public static final String PERMISSION_SPAWN_PASSIVES = "griefprevention.claim.flag.spawn-passives";
-    public static final String PERMISSION_SPAWN_AMBIENTS = "griefprevention.claim.flag.spawn-ambients";
-    public static final String PERMISSION_SPAWN_AQUATICS = "griefprevention.claim.flag.spawn-aquatics";
-    public static final String PERMISSION_SPAWN_ANY = "griefprevention.claim.flag.spawn-any";
+    public static final String SPAWN_MONSTERS = "griefprevention.claim.flag.spawn-monsters";
+    public static final String SPAWN_PASSIVES = "griefprevention.claim.flag.spawn-passives";
+    public static final String SPAWN_AMBIENTS = "griefprevention.claim.flag.spawn-ambients";
+    public static final String SPAWN_AQUATICS = "griefprevention.claim.flag.spawn-aquatics";
+    public static final String SPAWN_ANY = "griefprevention.claim.flag.spawn-any";
     public static final String PERMISSION_SLEEP = "griefprevention.claim.flag.sleep";
     public static final String PERMISSION_FIRE_SPREAD = "griefprevention.claim.flag.fire-spread";
     public static final String PERMISSION_BLOCK_COMMANDS = "griefprevention.claim.flag.block-commands";
@@ -53,6 +53,7 @@ public class FlagPermissions {
     public static final String PERMISSION_PROJECTILES_ANY = "griefprevention.claim.flag.projectiles-any";
     public static final String PERMISSION_FORCE_DENY_ALL = "griefprevention.claim.flag.force-deny-all";
 
-    // Flag command permissions
-    public static final String PERMISSION_FLAGS_COMMAND = "griefprevention.claim.flag.command";
+    public static final String COMMAND_CLAIMFLAG = "griefprevention.command.claimflag";
+    public static final String COMMAND_ACCESSTRUST = "griefprevention.command.accesstrust";
+    public static final String COMMAND_ADJUST_BONUS_CLAIM_BLOCKS = "griefprevention.command.adjustclaimblocks";
 }
