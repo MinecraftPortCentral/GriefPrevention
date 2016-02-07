@@ -108,6 +108,7 @@ import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.service.economy.EconomyService;
 import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
@@ -150,6 +151,8 @@ public class GriefPrevention {
     public DataStore dataStore;
 
     public PermissionService permissionService;
+
+    public Optional<EconomyService> economyService;
 
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
@@ -248,6 +251,9 @@ public class GriefPrevention {
         AddLogEntry("Finished loading configuration.");
 
         this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).get();
+
+        this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
+
         // when datastore initializes, it loads player and claim data, and posts some stats to the log
         // TODO - add proper DB support
         /*if (this.databaseUrl.length() > 0) {
@@ -303,38 +309,14 @@ public class GriefPrevention {
         //Sponge.getGame().getScheduler().createTaskBuilder().delay(2, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
 
         //if economy is enabled
-        /*if(this.config_economy_claimBlocksPurchaseCost > 0 || this.config_economy_claimBlocksSellValue > 0) {
-            //try to load Vault
-            GriefPrevention.AddLogEntry("GriefPrevention requires Vault for economy integration.");
-            GriefPrevention.AddLogEntry("Attempting to load Vault...");
-            RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
-            GriefPrevention.AddLogEntry("Vault loaded successfully!");
-
-            //ask Vault to hook into an economy plugin
-            GriefPrevention.AddLogEntry("Looking for a Vault-compatible economy plugin...");
-            if (economyProvider != null)  {
-                GriefPrevention.economy = economyProvider.getProvider();
-
-                //on success, display success message
-                if(GriefPrevention.economy != null) {
-                    GriefPrevention.AddLogEntry("Hooked into economy: " + GriefPrevention.economy.getName() + ".");
-                    GriefPrevention.AddLogEntry("Ready to buy/sell claim blocks!");
-                }
-
-                //otherwise error message
-                else {
-                    GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
-                }
-            }
-
-            //another error case
-            else {
-                GriefPrevention.AddLogEntry("ERROR: Vault was unable to find a supported economy plugin.  Either install a Vault-compatible economy plugin, or set both of the economy config variables to zero.");
-            }
-        }*/
+        if(this.economyService.isPresent()) {
+            GriefPrevention.AddLogEntry("GriefPrevention economy integration enabled.");
+            GriefPrevention.AddLogEntry("Hooked into economy: " + Sponge.getServiceManager().getRegistration(EconomyService.class).get().getPlugin().getId() + ".");
+            GriefPrevention.AddLogEntry("Ready to buy/sell claim blocks!");
+        }
 
         // load ignore lists for any already-online players
-        Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
+        Collection<Player> players = Sponge.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoredPlayers).start();
         }
@@ -671,23 +653,6 @@ public class GriefPrevention {
 
         return user.get().getName();
     }
-
-   /* public void onDisable() {
-        // save data for any online players
-        Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
-        for (Player player : players) {
-            UUID playerID = player.getUniqueId();
-            PlayerData playerData = this.dataStore.getPlayerData(playerID);
-            this.dataStore.savePlayerDataSync(playerID, playerData);
-        }
-
-        this.dataStore.close();
-
-        // dump any remaining unwritten log entries
-        this.customLogger.WriteEntries();
-
-        AddLogEntry("GriefPrevention disabled.");
-    }*/
 
     // called when a player spawns, applies protection for that player if necessary
     public void checkPvpProtectionNeeded(Player player) {
