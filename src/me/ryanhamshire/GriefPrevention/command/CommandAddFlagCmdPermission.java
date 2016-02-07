@@ -21,7 +21,7 @@ import org.spongepowered.api.util.Tristate;
 
 import java.util.Optional;
 
-public class CommandAddFlagPermission implements CommandExecutor {
+public class CommandAddFlagCmdPermission implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -33,6 +33,6 @@ public class CommandAddFlagPermission implements CommandExecutor {
             return CommandResult.success();
         }
 
-        return CommandHelper.handleFlagPermission(player, ctx, "griefprevention.claim.flag.");
+        return CommandHelper.handleFlagPermission(player, ctx, "griefprevention.claim.flag.command.");
     }
 }

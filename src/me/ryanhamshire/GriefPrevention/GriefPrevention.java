@@ -34,6 +34,7 @@ import static org.spongepowered.api.command.args.GenericArguments.string;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.command.CommandAccessTrust;
+import me.ryanhamshire.GriefPrevention.command.CommandAddFlagCmdPermission;
 import me.ryanhamshire.GriefPrevention.command.CommandAddFlagPermission;
 import me.ryanhamshire.GriefPrevention.command.CommandAdjustBonusClaimBlocks;
 import me.ryanhamshire.GriefPrevention.command.CommandClaim;
@@ -475,6 +476,16 @@ public class GriefPrevention {
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
         .executor(new CommandAddFlagPermission()).build());
+
+        subcommands.put(Arrays.asList("addflagcmdpermission"), CommandSpec.builder()
+                .description(Text.of("Adds flag command permission to target."))
+                .permission("griefprevention.command.claim.flag")
+                .arguments(GenericArguments.seq(
+                        GenericArguments.choices(Text.of("target"), targetChoices, true),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
+                .executor(new CommandAddFlagCmdPermission()).build());
 
         subcommands.put(Arrays.asList("claimignore", "ignoreclaims"), CommandSpec.builder().description(Text.of("Toggles ignore claims mode"))
                 .permission("griefprevention.command.claim.ignore").executor(new CommandClaimIgnore()).build());

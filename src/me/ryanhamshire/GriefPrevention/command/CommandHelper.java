@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention.command;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimPermission;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
@@ -32,15 +33,21 @@ import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
 import me.ryanhamshire.GriefPrevention.Visualization;
+import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.service.permission.PermissionService;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Tristate;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -248,5 +255,47 @@ public class CommandHelper {
         }
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
+    }
+
+    public static CommandResult handleFlagPermission(Player player, CommandContext ctx, String permission) {
+        String target = ctx.<String>getOne("target").get();
+        String name = ctx.<String>getOne("name").get();
+        String flag = ctx.<String>getOne("flag").get();
+        String value = ctx.<String>getOne("value").get();
+
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
+
+        if (claim != null) {
+            if (ClaimStorageData.flags.containsKey(flag)) {
+                if (target.equalsIgnoreCase("player")) {
+                    Optional<Player> targetPlayer = Sponge.getServer().getPlayer(name);
+                    if (targetPlayer.isPresent()) {
+                        Subject subj = targetPlayer.get().getContainingCollection().get(targetPlayer.get().getIdentifier());
+                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), "griefprevention.claim.flag.command." + flag,
+                                Tristate.fromBoolean(Boolean.valueOf(value)));
+                        player.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", target, " ", name, "."));
+                    } else {
+                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+                    }
+                } else if (target.equalsIgnoreCase("group")) {
+                    PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
+                    Subject subj = service.getGroupSubjects().get(name);
+                    if (subj != null) {
+                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), "griefprevention.command.claim.flag." + flag,
+                                Tristate.fromBoolean(Boolean.valueOf(value)));
+                        player.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", target, " ", name, "."));
+                    } else {
+                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid group."));
+                    }
+                }
+            } else {
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid flag."));
+            }
+        } else {
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found."));
+        }
+
+        return CommandResult.success();
     }
 }

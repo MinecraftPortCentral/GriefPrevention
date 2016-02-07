@@ -114,12 +114,14 @@ public class ClaimStorageData {
         ClaimStorageData.flags.put(FLAGS_BLOCK_PLACE, false);
         ClaimStorageData.flags.put(FLAGS_EXPLOSIONS, false);
         ClaimStorageData.flags.put(FLAGS_FIRE_SPREAD, false);
+        ClaimStorageData.flags.put(FLAGS_FORCE_DENY_ALL, false);
         ClaimStorageData.flags.put(FLAGS_INTERACT_PRIMARY, false);
         ClaimStorageData.flags.put(FLAGS_INTERACT_SECONDARY, false);
         ClaimStorageData.flags.put(FLAGS_INVENTORY, false);
         ClaimStorageData.flags.put(FLAGS_ITEM_DROP, true);
         ClaimStorageData.flags.put(FLAGS_ITEM_PICKUP, true);
         ClaimStorageData.flags.put(FLAGS_ITEM_USE, true);
+        ClaimStorageData.flags.put(FLAGS_LAVA_FLOW, true);
         ClaimStorageData.flags.put(FLAGS_MOB_BLOCK_DAMAGE, false);
         ClaimStorageData.flags.put(FLAGS_MOB_PLAYER_DAMAGE, true);
         ClaimStorageData.flags.put(FLAGS_MOB_RIDING, true);
@@ -134,6 +136,7 @@ public class ClaimStorageData {
         ClaimStorageData.flags.put(FLAGS_SPAWN_AQUATICS, true);
         ClaimStorageData.flags.put(FLAGS_SPAWN_ANY, true);
         ClaimStorageData.flags.put(FLAGS_SLEEP, true);
+        ClaimStorageData.flags.put(FLAGS_WATER_FLOW, true);
     }
     
     public void save() {
@@ -265,7 +268,7 @@ public class ClaimStorageData {
         @Setting(value = FLAGS_PROJECTILES_ANY, comment = "Allow/deny any projectiles.")
         public boolean projectilesAny = (boolean) ClaimStorageData.flags.get(FLAGS_PROJECTILES_ANY);
         @Setting(value = FLAGS_FORCE_DENY_ALL, comment = "Only intended if you want to explicitly ignore all checking for player permissions.")
-        public boolean forceDenyAll = false;
+        public boolean forceDenyAll = (boolean) ClaimStorageData.flags.get(FLAGS_FORCE_DENY_ALL);
     }
 
     @ConfigSerializable
