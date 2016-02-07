@@ -267,7 +267,7 @@ public class CommandHelper {
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
 
         if (claim != null) {
-            if (ClaimStorageData.flags.containsKey(flag)) {
+            if (claim.getClaimData().getConfig().flags.flagMap.containsKey(flag)) {
                 if (target.equalsIgnoreCase("player")) {
                     Optional<Player> targetPlayer = Sponge.getServer().getPlayer(name);
                     if (targetPlayer.isPresent()) {

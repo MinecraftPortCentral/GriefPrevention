@@ -67,9 +67,9 @@ public class CommandClaimFlag implements CommandExecutor {
                 }
             } else {
                 List<Text> flagList = Lists.newArrayList();
-                for (String flagName : ClaimStorageData.flags.keySet()) {
+                for (String flagName : claim.getClaimData().getConfig().flags.flagMap.keySet()) {
                     Text flagValue = Text.builder().append(Text.of(TextColors.GRAY, "Flag: ", flagName, "\n")).append(Text.builder()
-                            .append(Text.of(TextColors.GOLD, "Value: "), Text.of(ClaimStorageData.flags.get(flagName).toString()), Text.of("\n"))
+                            .append(Text.of(TextColors.GOLD, "Value: "), Text.of(claim.getClaimData().getConfig().flags.flagMap.get(flagName).toString()), Text.of("\n"))
                             .build()).build();
                     flagList.add(flagValue);
                 }
@@ -86,9 +86,9 @@ public class CommandClaimFlag implements CommandExecutor {
     }
 
     public static void setFlagValue(CommandSource src, Claim claim, String flag, Object value) {
-        if (ClaimStorageData.flags.get(flag) != null) {
-            if (ClaimStorageData.flags.get(flag).getClass().equals(value.getClass())) {
-                ClaimStorageData.flags.replace(flag, value);
+        if (claim.getClaimData().getConfig().flags.flagMap.get(flag) != null) {
+            if (claim.getClaimData().getConfig().flags.flagMap.get(flag).getClass().equals(value.getClass())) {
+                claim.getClaimData().getConfig().flags.flagMap.replace(flag, value);
                 src.sendMessage(Text.of(TextColors.GREEN, "Set value of ", flag, " to ", value.toString()));
             } else {
                 src.sendMessage(Text.of(TextColors.RED, "Value types not compatible!"));
@@ -100,12 +100,12 @@ public class CommandClaimFlag implements CommandExecutor {
 
     @SuppressWarnings("unchecked")
     public static void removeFromFlagValue(CommandSource src, Claim claim, String flag, ArrayList<String> value) {
-        if (ClaimStorageData.flags.get(flag) != null) {
-            if (ClaimStorageData.flags.get(flag).getClass().equals(value.getClass())) {
-                ArrayList<String> newValue = (ArrayList<String>) ClaimStorageData.flags.get(flag);
+        if (claim.getClaimData().getConfig().flags.flagMap.get(flag) != null) {
+            if (claim.getClaimData().getConfig().flags.flagMap.get(flag).getClass().equals(value.getClass())) {
+                ArrayList<String> newValue = (ArrayList<String>) claim.getClaimData().getConfig().flags.flagMap.get(flag);
                 newValue.removeAll(value);
-                ClaimStorageData.flags.replace(flag, newValue);
-                src.sendMessage(Text.of(TextColors.GREEN, "Set value of ", flag, " to ", ClaimStorageData.flags.get(flag).toString()));
+                claim.getClaimData().getConfig().flags.flagMap.replace(flag, newValue);
+                src.sendMessage(Text.of(TextColors.GREEN, "Set value of ", flag, " to ",claim.getClaimData().getConfig().flags.flagMap.get(flag).toString()));
             } else {
                 src.sendMessage(Text.of(TextColors.RED, "Value types not compatible!"));
             }

@@ -39,8 +39,6 @@ public class ClaimStorageData {
     private ObjectMapper<ClaimDataNode>.BoundInstance configMapper;
     private ClaimDataNode configBase;
     public Path filePath;
-
-    public static HashMap<String, Object> flags = new HashMap<>();
     
     // MAIN
     public static final String MAIN_WORLD_UUID = "world-uuid";
@@ -53,7 +51,6 @@ public class ClaimStorageData {
     public static final String MAIN_ACCESSORS = "accessors";
     public static final String MAIN_MANAGERS = "managers";
     public static final String MAIN_PROTECTION_BLACKLIST = "bypass-protection-items";
-
     public static final String FLAGS_BLOCK_PLACE = "block-place";
     public static final String FLAGS_BLOCK_BREAK = "block-break";
     public static final String FLAGS_INTERACT_PRIMARY = "interact-primary";
@@ -86,7 +83,6 @@ public class ClaimStorageData {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public ClaimStorageData(Path path) {
-        initDefaultValues();
         this.filePath = path;
         try {
             Files.createDirectories(path.getParent());
@@ -106,37 +102,6 @@ public class ClaimStorageData {
 
     public ClaimDataNode getConfig() {
         return this.configBase;
-    }
-
-    public void initDefaultValues() {
-        ClaimStorageData.flags.put(FLAGS_BLOCK_BREAK, false);
-        ClaimStorageData.flags.put(FLAGS_BLOCK_COMMANDS, Lists.newArrayList());
-        ClaimStorageData.flags.put(FLAGS_BLOCK_PLACE, false);
-        ClaimStorageData.flags.put(FLAGS_EXPLOSIONS, false);
-        ClaimStorageData.flags.put(FLAGS_FIRE_SPREAD, false);
-        ClaimStorageData.flags.put(FLAGS_FORCE_DENY_ALL, false);
-        ClaimStorageData.flags.put(FLAGS_INTERACT_PRIMARY, false);
-        ClaimStorageData.flags.put(FLAGS_INTERACT_SECONDARY, false);
-        ClaimStorageData.flags.put(FLAGS_INVENTORY, false);
-        ClaimStorageData.flags.put(FLAGS_ITEM_DROP, true);
-        ClaimStorageData.flags.put(FLAGS_ITEM_PICKUP, true);
-        ClaimStorageData.flags.put(FLAGS_ITEM_USE, true);
-        ClaimStorageData.flags.put(FLAGS_LAVA_FLOW, true);
-        ClaimStorageData.flags.put(FLAGS_MOB_BLOCK_DAMAGE, false);
-        ClaimStorageData.flags.put(FLAGS_MOB_PLAYER_DAMAGE, true);
-        ClaimStorageData.flags.put(FLAGS_MOB_RIDING, true);
-        ClaimStorageData.flags.put(FLAGS_PORTAL_USE, false);
-        ClaimStorageData.flags.put(FLAGS_PROJECTILES_PLAYER, false);
-        ClaimStorageData.flags.put(FLAGS_PROJECTILES_MONSTER, true);
-        ClaimStorageData.flags.put(FLAGS_PROJECTILES_ANY, true);
-        ClaimStorageData.flags.put(FLAGS_PVP, false);
-        ClaimStorageData.flags.put(FLAGS_SPAWN_MONSTERS, true);
-        ClaimStorageData.flags.put(FLAGS_SPAWN_PASSIVES, true);
-        ClaimStorageData.flags.put(FLAGS_SPAWN_AMBIENTS, true);
-        ClaimStorageData.flags.put(FLAGS_SPAWN_AQUATICS, true);
-        ClaimStorageData.flags.put(FLAGS_SPAWN_ANY, true);
-        ClaimStorageData.flags.put(FLAGS_SLEEP, true);
-        ClaimStorageData.flags.put(FLAGS_WATER_FLOW, true);
     }
     
     public void save() {
@@ -213,65 +178,101 @@ public class ClaimStorageData {
     @ConfigSerializable
     public static class ClaimDataFlagsCategory extends Category {
         @Setting(value = FLAGS_BLOCK_PLACE, comment = "Allow/deny placing blocks.")
-        public boolean blockPlace = (boolean) ClaimStorageData.flags.get(FLAGS_BLOCK_PLACE);
+        public boolean blockPlace = (boolean) this.flagMap.get(FLAGS_BLOCK_PLACE);
         @Setting(value = FLAGS_BLOCK_BREAK, comment = "Allow/deny breaking blocks.")
-        public boolean blockBreak = (boolean) ClaimStorageData.flags.get(FLAGS_BLOCK_BREAK);
+        public boolean blockBreak = (boolean) this.flagMap.get(FLAGS_BLOCK_BREAK);
         @Setting(value = FLAGS_INTERACT_PRIMARY, comment = "Allow/deny left-clicking.")
-        public boolean interactPrimary = (boolean) ClaimStorageData.flags.get(FLAGS_INTERACT_PRIMARY);
+        public boolean interactPrimary = (boolean) this.flagMap.get(FLAGS_INTERACT_PRIMARY);
         @Setting(value = FLAGS_INTERACT_SECONDARY, comment = "Allow/deny right-clicking.")
-        public boolean interactSecondary = (boolean) ClaimStorageData.flags.get(FLAGS_INTERACT_SECONDARY);
+        public boolean interactSecondary = (boolean) this.flagMap.get(FLAGS_INTERACT_SECONDARY);
         @Setting(value = FLAGS_INVENTORY, comment = "Allow/deny blocks with inventories.")
-        public boolean inventory = (boolean) ClaimStorageData.flags.get(FLAGS_INVENTORY);
+        public boolean inventory = (boolean) this.flagMap.get(FLAGS_INVENTORY);
         @Setting(value = FLAGS_EXPLOSIONS, comment = "Allow/deny explosions.")
-        public boolean explosions = (boolean) ClaimStorageData.flags.get(FLAGS_EXPLOSIONS);
+        public boolean explosions = (boolean) this.flagMap.get(FLAGS_EXPLOSIONS);
         @Setting(value = FLAGS_MOB_BLOCK_DAMAGE, comment = "Allow/deny mob block damage.")
-        public boolean mobBlockDamage = (boolean) ClaimStorageData.flags.get(FLAGS_MOB_BLOCK_DAMAGE);
+        public boolean mobBlockDamage = (boolean) this.flagMap.get(FLAGS_MOB_BLOCK_DAMAGE);
         @Setting(value = FLAGS_MOB_PLAYER_DAMAGE, comment = "Allow/deny mob player damage.")
-        public boolean mobPlayerDamage = (boolean) ClaimStorageData.flags.get(FLAGS_MOB_PLAYER_DAMAGE);
+        public boolean mobPlayerDamage = (boolean) this.flagMap.get(FLAGS_MOB_PLAYER_DAMAGE);
         @Setting(value = FLAGS_MOB_RIDING, comment = "Allow/deny mob riding.")
-        public boolean mobRiding = (boolean) ClaimStorageData.flags.get(FLAGS_MOB_RIDING);
+        public boolean mobRiding = (boolean) this.flagMap.get(FLAGS_MOB_RIDING);
         @Setting(value = FLAGS_ITEM_DROP, comment = "Allow/deny item drops.")
-        public boolean itemDrop = (boolean) ClaimStorageData.flags.get(FLAGS_ITEM_DROP);
+        public boolean itemDrop = (boolean) this.flagMap.get(FLAGS_ITEM_DROP);
         @Setting(value = FLAGS_ITEM_PICKUP, comment = "Allow/deny picking up items.")
-        public boolean itemPickup = (boolean) ClaimStorageData.flags.get(FLAGS_ITEM_PICKUP);
+        public boolean itemPickup = (boolean) this.flagMap.get(FLAGS_ITEM_PICKUP);
         @Setting(value = FLAGS_ITEM_USE, comment = "Allow/deny item use.")
-        public boolean itemUse = (boolean) ClaimStorageData.flags.get(FLAGS_ITEM_USE);
+        public boolean itemUse = (boolean) this.flagMap.get(FLAGS_ITEM_USE);
         @Setting(value = FLAGS_PORTAL_USE, comment = "Allow/deny portal use.")
-        public boolean portalUse = (boolean) ClaimStorageData.flags.get(FLAGS_PORTAL_USE);
+        public boolean portalUse = (boolean) this.flagMap.get(FLAGS_PORTAL_USE);
         @Setting(value = FLAGS_PVP, comment = "Allow/deny pvp.")
-        public boolean pvp = (boolean) ClaimStorageData.flags.get(FLAGS_PVP);
+        public boolean pvp = (boolean) this.flagMap.get(FLAGS_PVP);
         @Setting(value = FLAGS_SPAWN_MONSTERS, comment = "Allow/deny the spawning of monsters.")
-        public boolean spawnMonsters = (boolean) ClaimStorageData.flags.get(FLAGS_SPAWN_MONSTERS);
+        public boolean spawnMonsters = (boolean) this.flagMap.get(FLAGS_SPAWN_MONSTERS);
         @Setting(value = FLAGS_SPAWN_PASSIVES, comment = "Allow/deny the spawning of passive mobs.")
-        public boolean spawnPassives = (boolean) ClaimStorageData.flags.get(FLAGS_SPAWN_PASSIVES);
+        public boolean spawnPassives = (boolean) this.flagMap.get(FLAGS_SPAWN_PASSIVES);
         @Setting(value = FLAGS_SPAWN_AMBIENTS, comment = "Allow/deny the spawning of ambient mobs.")
-        public boolean spawnAmbient = (boolean) ClaimStorageData.flags.get(FLAGS_SPAWN_AMBIENTS);
+        public boolean spawnAmbient = (boolean) this.flagMap.get(FLAGS_SPAWN_AMBIENTS);
         @Setting(value = FLAGS_SPAWN_AQUATICS, comment = "Allow/deny the spawning of aquatic mobs.")
-        public boolean spawnAquatic = (boolean) ClaimStorageData.flags.get(FLAGS_SPAWN_AQUATICS);
+        public boolean spawnAquatic = (boolean) this.flagMap.get(FLAGS_SPAWN_AQUATICS);
         @Setting(value = FLAGS_SPAWN_ANY, comment = "Allow/deny the spawning of any mobs.")
-        public boolean spawnAny = (boolean) ClaimStorageData.flags.get(FLAGS_SPAWN_ANY);
+        public boolean spawnAny = (boolean) this.flagMap.get(FLAGS_SPAWN_ANY);
         @Setting(value = FLAGS_SLEEP, comment = "Allow/deny sleep.")
-        public boolean sleep = (boolean) ClaimStorageData.flags.get(FLAGS_SLEEP);
+        public boolean sleep = (boolean) this.flagMap.get(FLAGS_SLEEP);
         @Setting(value = FLAGS_WATER_FLOW, comment = "Allow/deny water flow.")
-        public boolean waterFlow = (boolean) ClaimStorageData.flags.get(FLAGS_WATER_FLOW);
+        public boolean waterFlow = (boolean) this.flagMap.get(FLAGS_WATER_FLOW);
         @Setting(value = FLAGS_LAVA_FLOW, comment = "Allow/deny lava flow.")
-        public boolean lavaFlow = (boolean) ClaimStorageData.flags.get(FLAGS_LAVA_FLOW);
+        public boolean lavaFlow = (boolean) this.flagMap.get(FLAGS_LAVA_FLOW);
         @Setting(value = FLAGS_FIRE_SPREAD, comment = "Allow/deny fire spread.")
-        public boolean fireSpread = (boolean) ClaimStorageData.flags.get(FLAGS_FIRE_SPREAD);
+        public boolean fireSpread = (boolean) this.flagMap.get(FLAGS_FIRE_SPREAD);
         @SuppressWarnings("unchecked")
         @Setting(value = FLAGS_BLOCK_COMMANDS, comment = "Blocked commands.")
-        public List<String> blockCommands = (List<String>) ClaimStorageData.flags.get(FLAGS_BLOCK_COMMANDS);
+        public List<String> blockCommands = (List<String>) this.flagMap.get(FLAGS_BLOCK_COMMANDS);
         @Setting(value = FLAGS_PROJECTILES_PLAYER, comment = "Allow/deny player projectiles.")
-        public boolean projectilesPlayer = (boolean) ClaimStorageData.flags.get(FLAGS_PROJECTILES_PLAYER);
+        public boolean projectilesPlayer = (boolean) this.flagMap.get(FLAGS_PROJECTILES_PLAYER);
         @Setting(value = FLAGS_PROJECTILES_MONSTER, comment = "Allow/deny monster projectiles.")
-        public boolean projectilesMonster = (boolean) ClaimStorageData.flags.get(FLAGS_PROJECTILES_MONSTER);
+        public boolean projectilesMonster = (boolean) this.flagMap.get(FLAGS_PROJECTILES_MONSTER);
         @Setting(value = FLAGS_PROJECTILES_ANY, comment = "Allow/deny any projectiles.")
-        public boolean projectilesAny = (boolean) ClaimStorageData.flags.get(FLAGS_PROJECTILES_ANY);
+        public boolean projectilesAny = (boolean) this.flagMap.get(FLAGS_PROJECTILES_ANY);
         @Setting(value = FLAGS_FORCE_DENY_ALL, comment = "Only intended if you want to explicitly ignore all checking for player permissions.")
-        public boolean forceDenyAll = (boolean) ClaimStorageData.flags.get(FLAGS_FORCE_DENY_ALL);
+        public boolean forceDenyAll = (boolean) this.flagMap.get(FLAGS_FORCE_DENY_ALL);
     }
 
     @ConfigSerializable
     private static class Category {
+        public HashMap<String, Object> flagMap = new HashMap<>();
+
+        public Category() {
+            initDefaultFlagValues();
+        }
+
+        public void initDefaultFlagValues() {
+            this.flagMap.put(FLAGS_BLOCK_BREAK, false);
+            this.flagMap.put(FLAGS_BLOCK_COMMANDS, Lists.newArrayList());
+            this.flagMap.put(FLAGS_BLOCK_PLACE, false);
+            this.flagMap.put(FLAGS_EXPLOSIONS, false);
+            this.flagMap.put(FLAGS_FIRE_SPREAD, false);
+            this.flagMap.put(FLAGS_FORCE_DENY_ALL, false);
+            this.flagMap.put(FLAGS_INTERACT_PRIMARY, false);
+            this.flagMap.put(FLAGS_INTERACT_SECONDARY, false);
+            this.flagMap.put(FLAGS_INVENTORY, false);
+            this.flagMap.put(FLAGS_ITEM_DROP, false);
+            this.flagMap.put(FLAGS_ITEM_PICKUP, true);
+            this.flagMap.put(FLAGS_ITEM_USE, true);
+            this.flagMap.put(FLAGS_LAVA_FLOW, true);
+            this.flagMap.put(FLAGS_MOB_BLOCK_DAMAGE, false);
+            this.flagMap.put(FLAGS_MOB_PLAYER_DAMAGE, true);
+            this.flagMap.put(FLAGS_MOB_RIDING, true);
+            this.flagMap.put(FLAGS_PORTAL_USE, true);
+            this.flagMap.put(FLAGS_PROJECTILES_PLAYER, false);
+            this.flagMap.put(FLAGS_PROJECTILES_MONSTER, true);
+            this.flagMap.put(FLAGS_PROJECTILES_ANY, true);
+            this.flagMap.put(FLAGS_PVP, false);
+            this.flagMap.put(FLAGS_SPAWN_MONSTERS, true);
+            this.flagMap.put(FLAGS_SPAWN_PASSIVES, true);
+            this.flagMap.put(FLAGS_SPAWN_AMBIENTS, true);
+            this.flagMap.put(FLAGS_SPAWN_AQUATICS, true);
+            this.flagMap.put(FLAGS_SPAWN_ANY, true);
+            this.flagMap.put(FLAGS_SLEEP, true);
+            this.flagMap.put(FLAGS_WATER_FLOW, true);
+        }
     }
 }
