@@ -36,6 +36,7 @@ import me.ryanhamshire.GriefPrevention.TextMode;
 import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import net.minecraft.entity.passive.EntityTameable;
+import net.minecraft.world.Explosion;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -71,6 +72,7 @@ import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.filter.IsCancelled;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.user.UserStorageService;
@@ -136,7 +138,37 @@ public class EntityEventHandler {
             }
         }
     }
-    
+
+    @Listener
+    public void onExplosion(ExplosionEvent.Pre event) {
+        Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(event.getTargetWorld().getLocation(event.getExplosion().getOrigin()), false, null);
+
+        if (claim == null) {
+            return;
+        }
+
+        net.minecraft.entity.Entity mcEntity = ((Explosion) event.getExplosion()).exploder;
+        boolean checked = false;
+
+        if (mcEntity != null) {
+            Entity entity = (Entity) mcEntity;
+
+            Optional<UUID> uuid = entity.getCreator();
+            if (uuid.isPresent()) {
+                Optional<User> user = Sponge.getServiceManager().provide(UserStorageService.class).get().get(uuid.get());
+                if(user.isPresent()) {
+                    Tristate value = user.get().getPermissionValue(ImmutableSet.of(claim.getContext()), GPPermissions.EXPLOSIONS);
+                    if (value != Tristate.UNDEFINED) {
+                        event.setCancelled(!value.asBoolean());
+                        return;
+                    }
+                };
+            }
+        }
+
+        event.setCancelled(!claim.getClaimData().getConfig().flags.explosions);
+    }
+
     // when a creature spawns...
     @Listener(order = Order.EARLY)
     public void onSpawnEntity(SpawnEntityEvent event) {
@@ -631,7 +663,6 @@ public class EntityEventHandler {
             return;
         }
     }
-
     public static final HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList(
             PotionEffectTypes.ABSORPTION,
             //PotionEffectTypes.DAMAGE_RESISTANCE,

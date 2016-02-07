@@ -41,7 +41,7 @@ public class ClaimStorageData {
     private ObjectMapper<ClaimDataNode>.BoundInstance configMapper;
     private ClaimDataNode configBase;
     public Path filePath;
-    
+
     // MAIN
     public static final String MAIN_WORLD_UUID = "world-uuid";
     public static final String MAIN_OWNER_UUID = "owner-uuid";
@@ -105,7 +105,7 @@ public class ClaimStorageData {
     public ClaimDataNode getConfig() {
         return this.configBase;
     }
-    
+
     public void save() {
         try {
             this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));

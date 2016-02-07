@@ -94,8 +94,6 @@ public class Claim implements ContextSource {
     // ignored even though they may have references floating around
     public boolean inDataStore = false;
 
-    public boolean areExplosivesAllowed = false;
-
     // parent claim
     // only used for claim subdivisions. top level claims have null here
     public Claim parent = null;
