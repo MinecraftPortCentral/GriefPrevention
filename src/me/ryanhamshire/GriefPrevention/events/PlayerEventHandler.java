@@ -1394,7 +1394,7 @@ public class PlayerEventHandler {
         if (claim == null) {
             return;
         } else {
-            if (claim.allowBreak(player, player.getLocation()) != null) {
+            if (GriefPrevention.instance.allowBreak(player, player.getLocation()) != null) {
                 event.setCancelled(true);
                 return;
             }
@@ -1785,7 +1785,7 @@ public class PlayerEventHandler {
 
                 Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
                 if (claim != null) {
-                    String reason = claim.allowBreak(player, clickedBlock.getLocation().get());
+                    String reason = GriefPrevention.instance.allowBreak(player, clickedBlock.getLocation().get());
                     if (reason != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, reason);
                         event.setCancelled(true);

@@ -39,6 +39,7 @@ import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -502,8 +503,17 @@ public class Claim implements ContextSource {
             }
         }
 
-        // if not under siege, build rules apply
-        return this.allowBuild(user, location);
+        if (GriefPrevention.instance.permPluginInstalled) {
+            Set contextSet = ImmutableSet.of(getContext());
+            if (user.getPermissionValue(contextSet, GPPermissions.BLOCK_BREAK) == Tristate.FALSE) {
+                return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission);
+            } else if (user.getPermissionValue(ImmutableSet.of(getContext()), GPPermissions.BLOCK_BREAK) == Tristate.TRUE) {
+                return null;
+            }
+        }
+
+        // If we reached this point, allow the break
+        return null;
     }
 
     // access permission check
