@@ -1393,6 +1393,11 @@ public class PlayerEventHandler {
         Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, null);
         if (claim == null) {
             return;
+        } else {
+            if (claim.allowBreak(player, player.getLocation()) != null) {
+                event.setCancelled(true);
+                return;
+            }
         }
         // exception for blocks on a specific watch list
         if (!this.onLeftClickWatchList(clickedBlock.getState().getType()) && clickedBlock.getState().getType().getItem().isPresent()
