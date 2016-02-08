@@ -263,7 +263,7 @@ public class GriefPrevention {
 
         this.permPluginInstalled = !Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase
                 ("sponge");
-        
+
         // when datastore initializes, it loads player and claim data, and posts some stats to the log
         // TODO - add proper DB support
         /*if (this.databaseUrl.length() > 0) {

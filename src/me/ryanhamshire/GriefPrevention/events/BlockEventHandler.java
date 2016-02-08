@@ -307,12 +307,6 @@ public class BlockEventHandler {
             if (claim != null) {
                 playerData.lastClaim = claim;
 
-                // warn about TNT not destroying claimed blocks
-                if (block.getState().getType().equals(BlockTypes.TNT) && !claim.areExplosivesAllowed && playerData.siegeData == null) {
-                    GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, Messages.NoTNTDamageClaims));
-                    GriefPrevention.sendMessage(player, Text.of(TextMode.Instr, Messages.ClaimExplosivesAdvertisement));
-                }
-
                 // if the player has permission for the claim and he's placing UNDER the claim
                 if (block.getPosition().getY() <= claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player, block.getLocation().get()) ==
                         null) {

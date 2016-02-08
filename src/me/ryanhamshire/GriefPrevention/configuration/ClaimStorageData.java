@@ -51,35 +51,38 @@ public class ClaimStorageData {
     public static final String MAIN_ACCESSORS = "accessors";
     public static final String MAIN_MANAGERS = "managers";
     public static final String MAIN_PROTECTION_BLACKLIST = "bypass-protection-items";
-    public static final String FLAGS_BLOCK_PLACE = "block-place";
+
+    // FLAGS
     public static final String FLAGS_BLOCK_BREAK = "block-break";
+    public static final String FLAGS_BLOCK_COMMANDS = "block-commands";
+    public static final String FLAGS_BLOCK_NOTIFY = "block-notify";
+    public static final String FLAGS_BLOCK_PLACE = "block-place";
+    public static final String FLAGS_EXPLOSIONS = "explosions";
+    public static final String FLAGS_FIRE_SPREAD = "fire-spread";
+    public static final String FLAGS_FORCE_DENY_ALL = "force-deny-all";
+    public static final String FLAGS_IGNITE = "ignite";
     public static final String FLAGS_INTERACT_PRIMARY = "interact-primary";
     public static final String FLAGS_INTERACT_SECONDARY = "interact-secondary";
     public static final String FLAGS_INVENTORY = "inventory";
-    public static final String FLAGS_EXPLOSIONS = "explosions";
-    public static final String FLAGS_IGNITE = "ignite";
-    public static final String FLAGS_MOB_BLOCK_DAMAGE = "mob-block-damage";
-    public static final String FLAGS_MOB_PLAYER_DAMAGE = "mob-player-damage";
-    public static final String FLAGS_MOB_RIDING = "mob-riding";
     public static final String FLAGS_ITEM_DROP = "item-drop";
     public static final String FLAGS_ITEM_PICKUP = "item-pickup";
     public static final String FLAGS_ITEM_USE = "item-use";
-    public static final String FLAGS_PORTAL_USE = "portal-use";
-    public static final String FLAGS_PVP = "pvp";
-    public static final String FLAGS_SPAWN_MONSTERS = "spawn-monsters";
-    public static final String FLAGS_SPAWN_PASSIVES = "spawn-passives";
-    public static final String FLAGS_SPAWN_AMBIENTS = "spawn-ambient";
-    public static final String FLAGS_SPAWN_AQUATICS = "spawn-aquatic";
-    public static final String FLAGS_SPAWN_ANY = "spawn-any";
-    public static final String FLAGS_SLEEP = "sleep";
-    public static final String FLAGS_WATER_FLOW = "water-flow";
     public static final String FLAGS_LAVA_FLOW = "lava-flow";
-    public static final String FLAGS_FIRE_SPREAD = "fire-spread";
-    public static final String FLAGS_BLOCK_COMMANDS = "block-commands";
-    public static final String FLAGS_PROJECTILES_PLAYER = "projectiles-player";
-    public static final String FLAGS_PROJECTILES_MONSTER = "projectiles-monster";
+    public static final String FLAGS_MOB_BLOCK_DAMAGE = "mob-block-damage";
+    public static final String FLAGS_MOB_PLAYER_DAMAGE = "mob-player-damage";
+    public static final String FLAGS_MOB_RIDING = "mob-riding";
+    public static final String FLAGS_PORTAL_USE = "portal-use";
     public static final String FLAGS_PROJECTILES_ANY = "projectiles-any";
-    public static final String FLAGS_FORCE_DENY_ALL = "force-deny-all";
+    public static final String FLAGS_PROJECTILES_MONSTER = "projectiles-monster";
+    public static final String FLAGS_PROJECTILES_PLAYER = "projectiles-player";
+    public static final String FLAGS_PVP = "pvp";
+    public static final String FLAGS_SLEEP = "sleep";
+    public static final String FLAGS_SPAWN_AMBIENTS = "spawn-ambient";
+    public static final String FLAGS_SPAWN_ANY = "spawn-any";
+    public static final String FLAGS_SPAWN_AQUATICS = "spawn-aquatic";
+    public static final String FLAGS_SPAWN_PASSIVES = "spawn-passives";
+    public static final String FLAGS_SPAWN_MONSTERS = "spawn-monsters";
+    public static final String FLAGS_WATER_FLOW = "water-flow";
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public ClaimStorageData(Path path) {
@@ -179,68 +182,71 @@ public class ClaimStorageData {
     @ConfigSerializable
     public static class ClaimDataFlagsCategory extends Category {
 
-        @Setting(value = FLAGS_BLOCK_PLACE, comment = "Allow/deny placing blocks.")
-        public boolean blockPlace = false;
         @Setting(value = FLAGS_BLOCK_BREAK, comment = "Allow/deny breaking blocks.")
         public boolean blockBreak = false;
+        @SuppressWarnings("unchecked")
+        @Setting(value = FLAGS_BLOCK_COMMANDS, comment = "Blocked commands.")
+        public List<String> blockCommands = new ArrayList<>();
+        @Setting(value = FLAGS_BLOCK_NOTIFY, comment = "Allow/deny notifying blocks.")
+        public boolean blockNotify = false;
+        @Setting(value = FLAGS_BLOCK_PLACE, comment = "Allow/deny placing blocks.")
+        public boolean blockPlace = false;
+        @Setting(value = FLAGS_EXPLOSIONS, comment = "Allow/deny explosions.")
+        public boolean explosions = false;
+        @Setting(value = FLAGS_FIRE_SPREAD, comment = "Allow/deny fire spread.")
+        public boolean fireSpread = false;
+        @Setting(value = FLAGS_FORCE_DENY_ALL, comment = "Only intended if you want to explicitly ignore all checking for player permissions.")
+        public boolean forceDenyAll = false;
         @Setting(value = FLAGS_INTERACT_PRIMARY, comment = "Allow/deny left-clicking.")
         public boolean interactPrimary = false;
         @Setting(value = FLAGS_INTERACT_SECONDARY, comment = "Allow/deny right-clicking.")
         public boolean interactSecondary = false;
         @Setting(value = FLAGS_INVENTORY, comment = "Allow/deny blocks with inventories.")
         public boolean inventory = false;
-        @Setting(value = FLAGS_EXPLOSIONS, comment = "Allow/deny explosions.")
-        public boolean explosions = false;
-        @Setting(value = FLAGS_MOB_BLOCK_DAMAGE, comment = "Allow/deny mob block damage.")
-        public boolean mobBlockDamage = false;
-        @Setting(value = FLAGS_MOB_PLAYER_DAMAGE, comment = "Allow/deny mob player damage.")
-        public boolean mobPlayerDamage = false;
-        @Setting(value = FLAGS_MOB_RIDING, comment = "Allow/deny mob riding.")
-        public boolean mobRiding = false;
         @Setting(value = FLAGS_ITEM_DROP, comment = "Allow/deny item drops.")
         public boolean itemDrop = false;
         @Setting(value = FLAGS_ITEM_PICKUP, comment = "Allow/deny picking up items.")
         public boolean itemPickup = false;
         @Setting(value = FLAGS_ITEM_USE, comment = "Allow/deny item use.")
         public boolean itemUse = false;
+        @Setting(value = FLAGS_LAVA_FLOW, comment = "Allow/deny lava flow.")
+        public boolean lavaFlow = true;
+        @Setting(value = FLAGS_MOB_BLOCK_DAMAGE, comment = "Allow/deny mob block damage.")
+        public boolean mobBlockDamage = false;
+        @Setting(value = FLAGS_MOB_PLAYER_DAMAGE, comment = "Allow/deny mob player damage.")
+        public boolean mobPlayerDamage = false;
+        @Setting(value = FLAGS_MOB_RIDING, comment = "Allow/deny mob riding.")
+        public boolean mobRiding = false;
         @Setting(value = FLAGS_PORTAL_USE, comment = "Allow/deny portal use.")
         public boolean portalUse = true;
+        @Setting(value = FLAGS_PROJECTILES_ANY, comment = "Allow/deny any projectiles.")
+        public boolean projectilesAny = true;
+        @Setting(value = FLAGS_PROJECTILES_MONSTER, comment = "Allow/deny monster projectiles.")
+        public boolean projectilesMonster = true;
+        @Setting(value = FLAGS_PROJECTILES_PLAYER, comment = "Allow/deny player projectiles.")
+        public boolean projectilesPlayer = false;
         @Setting(value = FLAGS_PVP, comment = "Allow/deny pvp.")
         public boolean pvp = false;
+        @Setting(value = FLAGS_SLEEP, comment = "Allow/deny sleep.")
+        public boolean sleep = true;
+        @Setting(value = FLAGS_SPAWN_AMBIENTS, comment = "Allow/deny the spawning of ambient mobs.")
+        public boolean spawnAmbient = true;
+        @Setting(value = FLAGS_SPAWN_ANY, comment = "Allow/deny the spawning of any mobs.")
+        public boolean spawnAny = true;
+        @Setting(value = FLAGS_SPAWN_AQUATICS, comment = "Allow/deny the spawning of aquatic mobs.")
+        public boolean spawnAquatic = true;
         @Setting(value = FLAGS_SPAWN_MONSTERS, comment = "Allow/deny the spawning of monsters.")
         public boolean spawnMonsters = true;
         @Setting(value = FLAGS_SPAWN_PASSIVES, comment = "Allow/deny the spawning of passive mobs.")
         public boolean spawnPassives = true;
-        @Setting(value = FLAGS_SPAWN_AMBIENTS, comment = "Allow/deny the spawning of ambient mobs.")
-        public boolean spawnAmbient = true;
-        @Setting(value = FLAGS_SPAWN_AQUATICS, comment = "Allow/deny the spawning of aquatic mobs.")
-        public boolean spawnAquatic = true;
-        @Setting(value = FLAGS_SPAWN_ANY, comment = "Allow/deny the spawning of any mobs.")
-        public boolean spawnAny = true;
-        @Setting(value = FLAGS_SLEEP, comment = "Allow/deny sleep.")
-        public boolean sleep = true;
         @Setting(value = FLAGS_WATER_FLOW, comment = "Allow/deny water flow.")
         public boolean waterFlow = true;
-        @Setting(value = FLAGS_LAVA_FLOW, comment = "Allow/deny lava flow.")
-        public boolean lavaFlow = true;
-        @Setting(value = FLAGS_FIRE_SPREAD, comment = "Allow/deny fire spread.")
-        public boolean fireSpread = false;
-        @SuppressWarnings("unchecked")
-        @Setting(value = FLAGS_BLOCK_COMMANDS, comment = "Blocked commands.")
-        public List<String> blockCommands = new ArrayList<>();
-        @Setting(value = FLAGS_PROJECTILES_PLAYER, comment = "Allow/deny player projectiles.")
-        public boolean projectilesPlayer = false;
-        @Setting(value = FLAGS_PROJECTILES_MONSTER, comment = "Allow/deny monster projectiles.")
-        public boolean projectilesMonster = true;
-        @Setting(value = FLAGS_PROJECTILES_ANY, comment = "Allow/deny any projectiles.")
-        public boolean projectilesAny = true;
-        @Setting(value = FLAGS_FORCE_DENY_ALL, comment = "Only intended if you want to explicitly ignore all checking for player permissions.")
-        public boolean forceDenyAll = false;
 
         public Map<String, Object> getFlagMap() {
             Map<String, Object> flagMap = Maps.newHashMap();
             flagMap.put(FLAGS_BLOCK_BREAK, this.blockBreak);
             flagMap.put(FLAGS_BLOCK_COMMANDS, this.blockCommands);
+            flagMap.put(FLAGS_BLOCK_NOTIFY, this.blockNotify);
             flagMap.put(FLAGS_BLOCK_PLACE, this.blockPlace);
             flagMap.put(FLAGS_EXPLOSIONS, this.explosions);
             flagMap.put(FLAGS_FIRE_SPREAD, this.fireSpread);
@@ -277,6 +283,9 @@ public class ClaimStorageData {
                     return;
                 case FLAGS_BLOCK_COMMANDS:
                     this.blockCommands = (List<String>) value;
+                    return;
+                case FLAGS_BLOCK_NOTIFY:
+                    this.blockNotify = (boolean) value;
                     return;
                 case FLAGS_BLOCK_PLACE:
                     this.blockPlace = (boolean) value;
@@ -367,6 +376,8 @@ public class ClaimStorageData {
                     return this.blockBreak;
                 case FLAGS_BLOCK_COMMANDS:
                     return this.blockCommands;
+                case FLAGS_BLOCK_NOTIFY:
+                    return this.blockNotify;
                 case FLAGS_BLOCK_PLACE:
                     return this.blockPlace;
                 case FLAGS_EXPLOSIONS:
