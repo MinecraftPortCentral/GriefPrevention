@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.GriefPrevention.command.CommandHelper;
 import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
 import org.spongepowered.api.Sponge;
@@ -35,6 +36,7 @@ import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.item.ItemType;
+import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
 import org.spongepowered.api.world.Chunk;
@@ -424,6 +426,10 @@ public class Claim implements ContextSource {
             }
         }
 
+        if (GriefPrevention.instance.permPluginInstalled && user.hasPermission(ImmutableSet.of(getContext()), GPPermissions.BLOCK_PLACE)) {
+            return null;
+        }
+
         // subdivision permission inheritance
         if (this.parent != null) {
             return this.parent.allowBuild(user, location);
@@ -533,6 +539,12 @@ public class Claim implements ContextSource {
         // also check for public permission
         ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
         if (ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel || ClaimPermission.Access == permissionLevel) {
+            return null;
+        }
+
+        // Check for TNT and explosions flag
+        if (GriefPrevention.instance.permPluginInstalled && player.getItemInHand().isPresent() && player.getItemInHand().get()
+                .getItem().equals(ItemTypes.TNT) && player.hasPermission(ImmutableSet.of(getContext()), GPPermissions.EXPLOSIONS)) {
             return null;
         }
 

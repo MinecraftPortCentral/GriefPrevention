@@ -152,7 +152,7 @@ public class EntityEventHandler {
         net.minecraft.entity.Entity mcEntity = ((Explosion) event.getExplosion()).exploder;
         boolean checked = false;
 
-        if (mcEntity != null) {
+        if (GriefPrevention.instance.permPluginInstalled && mcEntity != null) {
             Entity entity = (Entity) mcEntity;
 
             Optional<UUID> uuid = entity.getCreator();

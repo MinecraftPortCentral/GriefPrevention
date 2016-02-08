@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.GriefPrevention.events;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import me.ryanhamshire.GriefPrevention.AutoExtendClaimTask;
 import me.ryanhamshire.GriefPrevention.CheckForPortalTrapTask;
@@ -1436,7 +1437,8 @@ public class PlayerEventHandler {
         Claim playerClaim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, null);
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
 
-        if (itemType.isPresent() && GriefPrevention.isItemBanned(player.getWorld().getProperties(), itemType.get(), ((IMixinBlockState) clickedBlock.getState()).getStateMeta())) {
+        if (itemType.isPresent() && GriefPrevention.isItemBanned(player.getWorld().getProperties(), itemType.get(), (
+                (IMixinBlockState) clickedBlock.getState()).getStateMeta())) {
             event.setCancelled(true);
             return;
         } else {
