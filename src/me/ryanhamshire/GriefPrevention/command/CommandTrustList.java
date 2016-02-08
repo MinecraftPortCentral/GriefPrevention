@@ -64,39 +64,43 @@ public class CommandTrustList implements CommandExecutor {
         Builder permissions = Text.builder(">").color(TextColors.GOLD);
 
         if (managers.size() > 0) {
-            for (int i = 0; i < managers.size(); i++)
+            for (int i = 0; i < managers.size(); i++) {
                 permissions.append(SPACE_TEXT, Text.of(GriefPrevention.instance.trustEntryToPlayerName(managers.get(i))));
+            }
         }
 
         player.sendMessage(permissions.build());
         permissions = Text.builder(">").color(TextColors.YELLOW);
 
         if (builders.size() > 0) {
-            for (int i = 0; i < builders.size(); i++)
+            for (int i = 0; i < builders.size(); i++) {
                 permissions.append(SPACE_TEXT, Text.of(GriefPrevention.instance.trustEntryToPlayerName(builders.get(i))));
+            }
         }
 
         player.sendMessage(permissions.build());
         permissions = Text.builder(">").color(TextColors.GREEN);
 
         if (containers.size() > 0) {
-            for (int i = 0; i < containers.size(); i++)
+            for (int i = 0; i < containers.size(); i++) {
                 permissions.append(SPACE_TEXT, Text.of(GriefPrevention.instance.trustEntryToPlayerName(containers.get(i))));
+            }
         }
 
         player.sendMessage(permissions.build());
         permissions = Text.builder(">").color(TextColors.BLUE);
 
         if (accessors.size() > 0) {
-            for (int i = 0; i < accessors.size(); i++)
+            for (int i = 0; i < accessors.size(); i++) {
                 permissions.append(SPACE_TEXT, Text.of(GriefPrevention.instance.trustEntryToPlayerName(accessors.get(i))));
+            }
         }
 
         player.sendMessage(permissions.build());
 
         player.sendMessage(Text.of(
-                        Text.of(TextColors.GOLD, GriefPrevention.instance.dataStore.getMessage(Messages.Manage)), SPACE_TEXT,
-                        Text.of(TextColors.YELLOW, GriefPrevention.instance.dataStore.getMessage(Messages.Build)), SPACE_TEXT,
+                Text.of(TextColors.GOLD, GriefPrevention.instance.dataStore.getMessage(Messages.Manage)), SPACE_TEXT,
+                Text.of(TextColors.YELLOW, GriefPrevention.instance.dataStore.getMessage(Messages.Build)), SPACE_TEXT,
                 Text.of(TextColors.GREEN, GriefPrevention.instance.dataStore.getMessage(Messages.Containers)), SPACE_TEXT,
                 Text.of(TextColors.BLUE, GriefPrevention.instance.dataStore.getMessage(Messages.Access))));
 

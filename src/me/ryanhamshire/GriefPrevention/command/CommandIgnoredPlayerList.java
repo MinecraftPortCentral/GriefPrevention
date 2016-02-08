@@ -46,8 +46,6 @@ public class CommandIgnoredPlayerList implements CommandExecutor {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Info, list));
         }
 
-
-
         return CommandResult.success();
     }
 }

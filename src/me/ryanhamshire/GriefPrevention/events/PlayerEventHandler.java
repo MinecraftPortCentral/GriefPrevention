@@ -33,6 +33,7 @@ import me.ryanhamshire.GriefPrevention.CreateClaimResult;
 import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
 import me.ryanhamshire.GriefPrevention.DataStore;
 import me.ryanhamshire.GriefPrevention.EquipShovelProcessingTask;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.IpBanInfo;
 import me.ryanhamshire.GriefPrevention.Messages;
@@ -1058,7 +1059,7 @@ public class PlayerEventHandler {
                 if (destination.getBlock().getType() != BlockTypes.PORTAL) {
                     // check for a land claim and the player's permission that land claim
                     Claim claim = this.dataStore.getClaimAt(destination, false, null);
-                    if (claim != null && claim.allowBuild(player, BlockTypes.PORTAL) != null) {
+                    if (claim != null && claim.allowBuild(player, destination) != null) {
                         // cancel and inform about the reason
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, claim.getOwnerName());
@@ -1126,7 +1127,7 @@ public class PlayerEventHandler {
                     if (event.getCause().root() instanceof Player) {
                         User owner = Sponge.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(ownerID).get();
                         String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, owner.getName());
-                        if (player.hasPermission("griefprevention.ignoreclaims"))
+                        if (player.hasPermission(GPPermissions.IGNORE_CLAIMS))
                             message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
                     }
@@ -1176,7 +1177,7 @@ public class PlayerEventHandler {
             if (claim != null) {
                 // for storage entities, apply container rules (this is a potential theft)
                 if (entity instanceof Carrier) {
-                    String noContainersReason = claim.allowContainers(player);
+                    String noContainersReason = claim.allowContainers(player, entity.getLocation());
                     if (noContainersReason != null) {
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Err, noContainersReason));
                         event.setCancelled(true);
@@ -1202,9 +1203,9 @@ public class PlayerEventHandler {
             // if the entity is in a claim
             claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
             if (claim != null) {
-                if (claim.allowContainers(player) != null) {
+                if (claim.allowContainers(player, entity.getLocation()) != null) {
                     String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
-                    if (player.hasPermission("griefprevention.ignoreclaims"))
+                    if (player.hasPermission(GPPermissions.IGNORE_CLAIMS))
                         message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
                     event.setCancelled(true);
@@ -1218,7 +1219,7 @@ public class PlayerEventHandler {
                 .getItemInHand().get().getItem().equals(ItemTypes.LEAD)) {
             claim = this.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
             if (claim != null) {
-                String failureReason = claim.allowContainers(player);
+                String failureReason = claim.allowContainers(player, entity.getLocation());
                 if (failureReason != null) {
                     event.setCancelled(true);
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, failureReason));
@@ -1404,7 +1405,7 @@ public class PlayerEventHandler {
                     if (claim != null) {
                         playerData.lastClaim = claim;
 
-                        String noBuildReason = claim.allowBuild(player, BlockTypes.AIR);
+                        String noBuildReason = claim.allowBuild(player, clickedBlock.getLocation().get());
                         if (noBuildReason != null) {
                             event.setCancelled(true);
                             GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuildingOutsideClaims, noBuildReason);
@@ -1456,7 +1457,7 @@ public class PlayerEventHandler {
         // if creating a new portal
         if (GriefPrevention.instance.config_claims_portalsRequirePermission && clickedBlock.getState().getType() != BlockTypes.PORTAL) {
             // check for a land claim and the player's permission to that land claim
-            if (playerClaim != null && playerClaim.allowBuild(player, BlockTypes.PORTAL) != null) {
+            if (playerClaim != null && playerClaim.allowBuild(player, clickedBlock.getLocation().get()) != null) {
                 // cancel and inform about the reason
                 event.setCancelled(true);
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, playerClaim.getOwnerName());
@@ -1498,8 +1499,8 @@ public class PlayerEventHandler {
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
             if (claim != null) {
                 playerData.lastClaim = claim;
-
-                String noContainersReason = claim.allowContainers(player);
+        
+                String noContainersReason = claim.allowContainers(player, clickedBlock.getLocation().get());
                 if (noContainersReason != null) {
                     event.setCancelled(true);
                     GriefPrevention.sendMessage(player, TextMode.Err, noContainersReason);
@@ -1597,7 +1598,7 @@ public class PlayerEventHandler {
                 playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
             if (claim != null) {
-                String noBuildReason = claim.allowBuild(player, clickedBlock.getState().getType());
+                String noBuildReason = claim.allowBuild(player, clickedBlock.getLocation().get());
                 if (noBuildReason != null) {
                     event.setCancelled(true);
                     GriefPrevention.sendMessage(player, TextMode.Err, noBuildReason);
@@ -1776,7 +1777,7 @@ public class PlayerEventHandler {
 
                 Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
                 if (claim != null) {
-                    String reason = claim.allowBreak(player, clickedBlock.getLocation().get().getBlockType());
+                    String reason = claim.allowBreak(player, clickedBlock.getLocation().get());
                     if (reason != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, reason);
                         event.setCancelled(true);

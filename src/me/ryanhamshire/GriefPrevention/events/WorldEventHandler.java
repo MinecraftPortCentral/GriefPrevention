@@ -35,9 +35,11 @@ public class WorldEventHandler {
         }
         // create/load configs
         // create dimension config
-        DataStore.dimensionConfigMap.put(event.getWorldProperties().getUniqueId(), new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
+        DataStore.dimensionConfigMap.put(event.getWorldProperties().getUniqueId(),
+                new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
         // create world config
-        DataStore.worldConfigMap.put(event.getWorldProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD, rootConfigPath.resolve(dimType.getId()).resolve(event.getWorldProperties().getWorldName()).resolve("world.conf")));
+        DataStore.worldConfigMap.put(event.getWorldProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
+                rootConfigPath.resolve(dimType.getId()).resolve(event.getWorldProperties().getWorldName()).resolve("world.conf")));
         // run cleanup task
         CleanupUnusedClaimsTask task = new CleanupUnusedClaimsTask(event.getWorldProperties());
         Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);

@@ -48,8 +48,9 @@ public class WelcomeTask implements Runnable {
     @Override
     public void run() {
         // abort if player has logged out since this task was scheduled
-        if (!this.player.isOnline())
+        if (!this.player.isOnline()) {
             return;
+        }
 
         // offer advice and a helpful link
         GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AvoidGriefClaimLand);
@@ -77,8 +78,12 @@ public class WelcomeTask implements Runnable {
 
             page1.append(URL).append("\n\n");
             page1.append(intro).append("\n\n");
-            String editToolName = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.modificationTool.replace('_', ' ').toLowerCase();
-            String infoToolName = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.investigationTool.replace('_', ' ').toLowerCase();
+            String editToolName =
+                    GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.modificationTool.replace('_', ' ')
+                            .toLowerCase();
+            String infoToolName =
+                    GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.investigationTool.replace('_', ' ')
+                            .toLowerCase();
             String configClaimTools = datastore.getMessage(Messages.BookTools, editToolName, infoToolName);
             page1.append(configClaimTools);
             if (GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimRadius < 0) {

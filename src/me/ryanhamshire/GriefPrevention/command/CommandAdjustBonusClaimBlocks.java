@@ -40,10 +40,11 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
 
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdjustGroupBlocksSuccess, permissionIdentifier,
                     String.valueOf(adjustment), String.valueOf(newTotal));
-            if (player != null)
+            if (player != null) {
                 GriefPrevention
                         .AddLogEntry(
                                 player.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
+            }
 
             return CommandResult.success();
         }
@@ -75,10 +76,11 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
         GriefPrevention
                 .sendMessage(player, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment),
                         String.valueOf(playerData.getBonusClaimBlocks(player.getWorld())));
-        if (player != null)
+        if (player != null) {
             GriefPrevention.AddLogEntry(
                     player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".",
                     CustomLogEntryTypes.AdminActivity);
+        }
 
 
         return CommandResult.success();

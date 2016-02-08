@@ -76,8 +76,9 @@ class RestoreNatureProcessingTask implements Runnable {
             Player player) {
         this.snapshots = snapshots;
         this.miny = miny;
-        if (this.miny < 0)
+        if (this.miny < 0) {
             this.miny = 0;
+        }
         this.environment = environment;
         this.lesserBoundaryCorner = lesserBoundaryCorner;
         this.greaterBoundaryCorner = greaterBoundaryCorner;
@@ -168,8 +169,9 @@ class RestoreNatureProcessingTask implements Runnable {
     }
 
     private void removePlayerLeaves() {
-        if (this.seaLevel < 1)
+        if (this.seaLevel < 1) {
             return;
+        }
 
         for (int x = 1; x < snapshots.length - 1; x++) {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
@@ -190,8 +192,9 @@ class RestoreNatureProcessingTask implements Runnable {
         for (int x = 1; x < snapshots.length - 1; x++) {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                 for (int y = snapshots[0].length - 2; y > miny; y--) {
-                    if (snapshots[x][y][z].getState().getType() != BlockTypes.SANDSTONE)
+                    if (snapshots[x][y][z].getState().getType() != BlockTypes.SANDSTONE) {
                         continue;
+                    }
 
                     BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
                     BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
@@ -201,8 +204,9 @@ class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot aboveBlock = this.snapshots[x][y + 1][z];
 
                     // skip blocks which may cause a cave-in
-                    if (aboveBlock.getState().getType() == BlockTypes.SAND && underBlock.getState().getType() == BlockTypes.AIR)
+                    if (aboveBlock.getState().getType() == BlockTypes.SAND && underBlock.getState().getType() == BlockTypes.AIR) {
                         continue;
+                    }
 
                     // count adjacent non-air/non-leaf blocks
                     if (leftBlock.getState().getType() == BlockTypes.SAND ||
@@ -221,8 +225,9 @@ class RestoreNatureProcessingTask implements Runnable {
     }
 
     private void reduceStone() {
-        if (this.seaLevel < 1)
+        if (this.seaLevel < 1) {
             return;
+        }
 
         for (int x = 1; x < snapshots.length - 1; x++) {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
@@ -265,8 +270,9 @@ class RestoreNatureProcessingTask implements Runnable {
     }
 
     private void reduceLogs() {
-        if (this.seaLevel < 1)
+        if (this.seaLevel < 1) {
             return;
+        }
 
         boolean jungleBiome = this.biome == BiomeTypes.JUNGLE || this.biome == BiomeTypes.JUNGLE_HILLS;
 
@@ -277,15 +283,18 @@ class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot block = snapshots[x][y][z];
 
                     // skip non-logs
-                    if (block.getState().getType() != BlockTypes.LOG)
+                    if (block.getState().getType() != BlockTypes.LOG) {
                         continue;
-                    if (block.getState().getType() != BlockTypes.LOG2)
+                    }
+                    if (block.getState().getType() != BlockTypes.LOG2) {
                         continue;
+                    }
 
                     // if in jungle biome, skip jungle logs
-                    Optional<? extends Enum<?>> enumProperty = (Optional) block.getState().getTraitValue(EnumTraits.LOG_VARIANT);
-                    if (jungleBiome && enumProperty.isPresent() && enumProperty.get().name().equalsIgnoreCase("jungle"))
+                    Optional<? extends Enum<?>> enumProperty = block.getState().getTraitValue(EnumTraits.LOG_VARIANT);
+                    if (jungleBiome && enumProperty.isPresent() && enumProperty.get().name().equalsIgnoreCase("jungle")) {
                         continue;
+                    }
 
                     // examine adjacent blocks for logs
                     BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
@@ -305,8 +314,9 @@ class RestoreNatureProcessingTask implements Runnable {
 
     private void removePlayerBlocks() {
         int miny = this.miny;
-        if (miny < 1)
+        if (miny < 1) {
             miny = 1;
+        }
 
         // remove all player blocks
         for (int x = 1; x < snapshots.length - 1; x++) {
@@ -323,8 +333,9 @@ class RestoreNatureProcessingTask implements Runnable {
 
     private void removeHanging() {
         int miny = this.miny;
-        if (miny < 1)
+        if (miny < 1) {
             miny = 1;
+        }
 
         for (int x = 1; x < snapshots.length - 1; x++) {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
@@ -365,8 +376,9 @@ class RestoreNatureProcessingTask implements Runnable {
             for (int x = 1; x < snapshots.length - 1; x++) {
                 for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                     int thisy = this.highestY(x, z, false);
-                    if (excludedBlocksArray.contains(this.snapshots[x][thisy][z].getState().getType()))
+                    if (excludedBlocksArray.contains(this.snapshots[x][thisy][z].getState().getType())) {
                         continue;
+                    }
 
                     int righty = this.highestY(x + 1, z, false);
                     int lefty = this.highestY(x - 1, z, false);
@@ -392,7 +404,8 @@ class RestoreNatureProcessingTask implements Runnable {
                 int y = this.highestY(x, z, true);
                 BlockSnapshot block = snapshots[x][y][z];
 
-                if (block.getState().getType() == BlockTypes.STONE || block.getState().getType() == BlockTypes.GRAVEL || block.getState().getType() == BlockTypes.FARMLAND
+                if (block.getState().getType() == BlockTypes.STONE || block.getState().getType() == BlockTypes.GRAVEL
+                        || block.getState().getType() == BlockTypes.FARMLAND
                         || block.getState().getType() == BlockTypes.DIRT || block.getState().getType() == BlockTypes.SANDSTONE) {
                     if (this.biome == BiomeTypes.DESERT || this.biome == BiomeTypes.DESERT_HILLS || this.biome == BiomeTypes.BEACH) {
                         this.snapshots[x][y][z] = this.snapshots[x][y][z].withState(BlockTypes.SAND.getDefaultState());
@@ -457,8 +470,9 @@ class RestoreNatureProcessingTask implements Runnable {
 
     private void fixWater() {
         int miny = this.miny;
-        if (miny < 1)
+        if (miny < 1) {
             miny = 1;
+        }
 
         boolean changed;
 
@@ -486,7 +500,8 @@ class RestoreNatureProcessingTask implements Runnable {
                         BlockSnapshot block = snapshots[x][y][z];
 
                         // only consider air blocks and flowing water blocks for upgrade to water source blocks
-                        if (block.getState().getType() == BlockTypes.AIR || (block.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) block.getState()).getStateMeta()) != 0)) {
+                        if (block.getState().getType() == BlockTypes.AIR || (block.getState().getType() == BlockTypes.WATER
+                                && (((IMixinBlockState) block.getState()).getStateMeta()) != 0)) {
                             BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
                             BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
                             BlockSnapshot upBlock = this.snapshots[x][y][z + 1];
@@ -494,21 +509,26 @@ class RestoreNatureProcessingTask implements Runnable {
                             BlockSnapshot underBlock = this.snapshots[x][y - 1][z];
 
                             // block underneath MUST be source water
-                            if (underBlock.getState().getType() != BlockTypes.WATER || (((IMixinBlockState) underBlock.getState()).getStateMeta()) != 0)
+                            if (underBlock.getState().getType() != BlockTypes.WATER
+                                    || (((IMixinBlockState) underBlock.getState()).getStateMeta()) != 0) {
                                 continue;
+                            }
 
                             // count adjacent source water blocks
                             byte adjacentSourceWaterCount = 0;
-                            if (leftBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) leftBlock.getState()).getStateMeta()) == 0) {
+                            if (leftBlock.getState().getType() == BlockTypes.WATER
+                                    && (((IMixinBlockState) leftBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (rightBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) rightBlock.getState()).getStateMeta()) == 0) {
+                            if (rightBlock.getState().getType() == BlockTypes.WATER
+                                    && (((IMixinBlockState) rightBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
                             if (upBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) upBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (downBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) downBlock.getState()).getStateMeta()) == 0) {
+                            if (downBlock.getState().getType() == BlockTypes.WATER
+                                    && (((IMixinBlockState) downBlock.getState()).getStateMeta()) == 0) {
                                 adjacentSourceWaterCount++;
                             }
 
@@ -525,15 +545,17 @@ class RestoreNatureProcessingTask implements Runnable {
     }
 
     private void removeDumpedFluids() {
-        if (this.seaLevel < 1)
+        if (this.seaLevel < 1) {
             return;
+        }
 
         // remove any surface water or lava above sea level, presumed to be
         // placed by players
         // sometimes, this is naturally generated. but replacing it is very easy
         // with a bucket, so overall this is a good plan
-        if (this.environment.equals(DimensionTypes.NETHER))
+        if (this.environment.equals(DimensionTypes.NETHER)) {
             return;
+        }
         for (int x = 1; x < snapshots.length - 1; x++) {
             for (int z = 1; z < snapshots[0][0].length - 1; z++) {
                 for (int y = this.seaLevel - 1; y < snapshots[0].length - 1; y++) {
@@ -666,7 +688,7 @@ class RestoreNatureProcessingTask implements Runnable {
         playerBlocks.add(BlockTypes.ANVIL);
 
         // these are unnatural in the standard world, but not in the nether
-        if(environment.equals(DimensionTypes.NETHER)) {
+        if (environment.equals(DimensionTypes.NETHER)) {
             playerBlocks.add(BlockTypes.NETHERRACK);
             playerBlocks.add(BlockTypes.SOUL_SAND);
             playerBlocks.add(BlockTypes.GLOWSTONE);
@@ -676,19 +698,19 @@ class RestoreNatureProcessingTask implements Runnable {
         }
 
         // these are unnatural in the standard and nether worlds, but not in the end
-        if(environment.equals(DimensionTypes.THE_END)) {
+        if (environment.equals(DimensionTypes.THE_END)) {
             playerBlocks.add(BlockTypes.OBSIDIAN);
             playerBlocks.add(BlockTypes.END_STONE);
             playerBlocks.add(BlockTypes.END_PORTAL_FRAME);
         }
 
-        //these are unnatural in sandy biomes, but not elsewhere
-        if(biome == BiomeTypes.DESERT || biome == BiomeTypes.DESERT_HILLS || biome == BiomeTypes.BEACH ||
-                 !environment.equals(DimensionTypes.OVERWORLD)) {
-             playerBlocks.add(BlockTypes.LEAVES);
-             playerBlocks.add(BlockTypes.LOG);
-             playerBlocks.add(BlockTypes.LOG2);
-         }
+        //these are unnatural in sandy biomes, but not elsewhere 
+        if (biome == BiomeTypes.DESERT || biome == BiomeTypes.DESERT_HILLS || biome == BiomeTypes.BEACH ||
+                !environment.equals(DimensionTypes.OVERWORLD)) {
+            playerBlocks.add(BlockTypes.LEAVES);
+            playerBlocks.add(BlockTypes.LOG);
+            playerBlocks.add(BlockTypes.LOG2);
+        }
 
         return playerBlocks;
     }

@@ -50,7 +50,7 @@ public class NbtDataHelper {
                 // get player if online
                 EntityPlayer player = entity.worldObj.getPlayerEntityByUUID(uuid);
                 if (player != null) {
-                    return Optional.of((User)player);
+                    return Optional.of((User) player);
                 }
                 // player is not online, get user from storage if one exists
                 return Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(uuid);

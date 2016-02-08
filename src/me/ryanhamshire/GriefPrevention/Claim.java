@@ -115,8 +115,9 @@ public class Claim implements ContextSource {
     // administrative claims are created and maintained by players with the
     // griefprevention.adminclaims permission.
     public boolean isAdminClaim() {
-        if (this.parent != null)
+        if (this.parent != null) {
             return this.parent.isAdminClaim();
+        }
 
         return (this.ownerID == null);
     }
@@ -135,11 +136,13 @@ public class Claim implements ContextSource {
     // players may only siege someone when he's not in an admin claim
     // and when he has some level of permission in the claim
     public boolean canSiege(Player defender) {
-        if (this.isAdminClaim())
+        if (this.isAdminClaim()) {
             return false;
+        }
 
-        if (this.allowAccess(defender.getWorld(), defender) != null)
+        if (this.allowAccess(defender.getWorld(), defender) != null) {
             return false;
+        }
 
         return true;
     }
@@ -150,36 +153,42 @@ public class Claim implements ContextSource {
     // it may be null
     public void removeSurfaceFluids(Claim exclusionClaim) {
         // don't do this for administrative claims
-        if (this.isAdminClaim())
+        if (this.isAdminClaim()) {
             return;
+        }
 
         // don't do it for very large claims
-        if (this.getArea() > 10000)
+        if (this.getArea() > 10000) {
             return;
+        }
 
         // only in creative mode worlds
-        if (!GriefPrevention.instance.claimModeIsActive(this.lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative))
+        if (!GriefPrevention.instance.claimModeIsActive(this.lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative)) {
             return;
+        }
 
         Location<World> lesser = this.getLesserBoundaryCorner();
         Location<World> greater = this.getGreaterBoundaryCorner();
 
-        if (lesser.getExtent().getDimension().getType().equals(DimensionTypes.NETHER))
+        if (lesser.getExtent().getDimension().getType().equals(DimensionTypes.NETHER)) {
             return; // don't clean up lava in the nether
+        }
 
         int seaLevel = 0; // clean up all fluids in the end
 
         // respect sea level in normal worlds
-        if (lesser.getExtent().getDimension().getType().equals(DimensionTypes.OVERWORLD))
+        if (lesser.getExtent().getDimension().getType().equals(DimensionTypes.OVERWORLD)) {
             seaLevel = GriefPrevention.instance.getSeaLevel(lesser.getExtent());
+        }
 
         for (int x = lesser.getBlockX(); x <= greater.getBlockX(); x++) {
             for (int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++) {
                 for (int y = seaLevel - 1; y <= lesser.getExtent().getDimension().getBuildHeight(); y++) {
                     // dodge the exclusion claim
                     BlockSnapshot block = lesser.getExtent().createSnapshot(x, y, z);
-                    if (exclusionClaim != null && exclusionClaim.contains(block.getLocation().get(), true, false))
+                    if (exclusionClaim != null && exclusionClaim.contains(block.getLocation().get(), true, false)) {
                         continue;
+                    }
 
                     if (block.getState().getType() == BlockTypes.LAVA || block.getState().getType() == BlockTypes.FLOWING_WATER
                             || block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.FLOWING_LAVA) {
@@ -198,14 +207,16 @@ public class Claim implements ContextSource {
         Location<World> greater = this.getGreaterBoundaryCorner();
 
         // don't bother for very large claims, too expensive
-        if (this.getArea() > 10000)
+        if (this.getArea() > 10000) {
             return false;
+        }
 
         int seaLevel = 0; // clean up all fluids in the end
 
         // respect sea level in normal worlds
-        if (lesser.getExtent().getDimension().getType().equals(DimensionTypes.OVERWORLD))
+        if (lesser.getExtent().getDimension().getType().equals(DimensionTypes.OVERWORLD)) {
             seaLevel = GriefPrevention.instance.getSeaLevel(lesser.getExtent());
+        }
 
         for (int x = lesser.getBlockX(); x <= greater.getBlockX(); x++) {
             for (int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++) {
@@ -226,7 +237,8 @@ public class Claim implements ContextSource {
 
     // main constructor. note that only creating a claim instance does nothing -
     // a claim must be added to the data store to be effective
-    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs,
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID ownerID, List<String> builderIDs,
+            List<String> containerIDs,
             List<String> accessorIDs, List<String> managerIDs, UUID id) {
         // modification date
         this.modifiedDate = Calendar.getInstance().getTime();
@@ -303,22 +315,25 @@ public class Claim implements ContextSource {
     public String allowEdit(Player player) {
         // if we don't know who's asking, always say no (i've been told some
         // mods can make this happen somehow)
-        if (player == null)
+        if (player == null) {
             return "";
+        }
 
         // special cases...
 
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (player.hasPermission("griefprevention.adminclaims"))
+            if (player.hasPermission("griefprevention.adminclaims")) {
                 return null;
+            }
         }
 
         // anyone with deleteclaims permission can modify non-admin claims at
         // any time
         else {
-            if (player.hasPermission("griefprevention.deleteclaims"))
+            if (player.hasPermission("griefprevention.deleteclaims")) {
                 return null;
+            }
         }
 
         // no resizing, deleting, and so forth while under siege
@@ -332,8 +347,9 @@ public class Claim implements ContextSource {
         }
 
         // permission inheritance for subdivisions
-        if (this.parent != null)
+        if (this.parent != null) {
             return this.parent.allowEdit(player);
+        }
 
         // error message if all else fails
         return GriefPrevention.instance.dataStore.getMessage(Messages.OnlyOwnersModifyClaims, this.getOwnerName());
@@ -352,22 +368,24 @@ public class Claim implements ContextSource {
     }
 
     // build permission check
-    public String allowBuild(Player player, BlockType blockType) {
+    public String allowBuild(User user, Location<World> location) {
         // if we don't know who's asking, always say no (i've been told some
         // mods can make this happen somehow)
-        if (player == null) {
+        if (user == null) {
             return "";
         }
 
         // when a player tries to build in a claim, if he's under siege, the
         // siege may extend to include the new claim
-        GriefPrevention.instance.dataStore.tryExtendSiege(player, this);
+        if (user instanceof Player) {
+            GriefPrevention.instance.dataStore.tryExtendSiege((Player) user, this);
+        }
 
         // admin claims can always be modified by admins, no exceptions
         if (this.isAdminClaim()) {
-            if (player.hasPermission("griefprevention.adminclaims")) {
+            if (user.hasPermission("griefprevention.adminclaims")) {
                 return null;
-        }
+            }
         }
 
         // no building while under siege
@@ -376,18 +394,19 @@ public class Claim implements ContextSource {
         }
 
         // no building while in pvp combat
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.inPvpCombat(player.getWorld())) {
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(location.getExtent(), user.getUniqueId());
+        if (playerData.inPvpCombat(location.getExtent())) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPvP);
         }
 
         // owners can make changes, or admins with ignore claims mode enabled
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoreClaims) {
+        if (user.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(location.getExtent(), user.getUniqueId())
+                .ignoreClaims) {
             return null;
         }
 
         // anyone with explicit build permission can make changes
-        if (this.hasExplicitPermission(player, ClaimPermission.Build)) {
+        if (this.hasExplicitPermission(user, ClaimPermission.Build)) {
             return null;
         }
 
@@ -398,24 +417,24 @@ public class Claim implements ContextSource {
         }
 
         // allow for farming with /containertrust permission
-        if (this.allowContainers(player) == null) {
+        if (this.allowContainers(user, location) == null) {
             // do allow for farming, if player has /containertrust permission
-            if (this.placeableForFarming(blockType)) {
+            if (this.placeableForFarming(location.getBlock().getType())) {
                 return null;
             }
         }
 
         // subdivision permission inheritance
         if (this.parent != null) {
-            return this.parent.allowBuild(player, blockType);
+            return this.parent.allowBuild(user, location);
         }
 
         // failure message for all other cases
         String reason = "";
-        if (blockType != BlockTypes.FLOWING_WATER && blockType != BlockTypes.FLOWING_LAVA) {
+        if (location.getBlock().getType() != BlockTypes.FLOWING_WATER && location.getBlock().getType() != BlockTypes.FLOWING_LAVA) {
             reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
         }
-        if (player.hasPermission("griefprevention.ignoreclaims")) {
+        if (user.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
         }
 
@@ -428,20 +447,21 @@ public class Claim implements ContextSource {
         Iterator<String> iterator = keys.iterator();
         while (iterator.hasNext()) {
             String identifier = iterator.next();
-            if (playerID.equalsIgnoreCase(identifier) && this.playerIDToClaimPermissionMap.get(identifier) == level)
+            if (playerID.equalsIgnoreCase(identifier) && this.playerIDToClaimPermissionMap.get(identifier) == level) {
                 return true;
-
-            else if (identifier.startsWith("[") && identifier.endsWith("]")) {
+            } else if (identifier.startsWith("[") && identifier.endsWith("]")) {
                 // drop the brackets
                 String permissionIdentifier = identifier.substring(1, identifier.length() - 1);
 
                 // defensive coding
-                if (permissionIdentifier == null || permissionIdentifier.isEmpty())
+                if (permissionIdentifier == null || permissionIdentifier.isEmpty()) {
                     continue;
+                }
 
                 // check permission
-                if (player.hasPermission(permissionIdentifier) && this.playerIDToClaimPermissionMap.get(identifier) == level)
+                if (player.hasPermission(permissionIdentifier) && this.playerIDToClaimPermissionMap.get(identifier) == level) {
                     return true;
+                }
             }
         }
 
@@ -449,16 +469,18 @@ public class Claim implements ContextSource {
     }
 
     // break permission check
-    public String allowBreak(Player player, BlockType blockType) {
+    public String allowBreak(User user, Location<World> location) {
         // if under siege, some blocks will be breakable
         if (this.siegeData != null || this.doorsOpen) {
             boolean breakable = false;
 
             // search for block type in list of breakable blocks
-            for (int i = 0; i < GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.breakableSiegeBlocks.size(); i++) {
-                String blockTypeId = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.breakableSiegeBlocks.get(i);
+            for (int i = 0; i < GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().siege.breakableSiegeBlocks.size();
+                 i++) {
+                String blockTypeId =
+                        GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().siege.breakableSiegeBlocks.get(i);
                 Optional<BlockType> breakableBlockType = Sponge.getGame().getRegistry().getType(BlockType.class, blockTypeId);
-                if (breakableBlockType.isPresent() && breakableBlockType.get() == blockType) {
+                if (breakableBlockType.isPresent() && breakableBlockType.get() == location.getBlockType()) {
                     breakable = true;
                     break;
                 }
@@ -467,7 +489,7 @@ public class Claim implements ContextSource {
             // custom error messages for siege mode
             if (!breakable) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NonSiegeMaterial);
-            } else if (player.getUniqueId().equals(this.ownerID)) {
+            } else if (user.getUniqueId().equals(this.ownerID)) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NoOwnerBuildUnderSiege);
             } else {
                 return null;
@@ -475,7 +497,7 @@ public class Claim implements ContextSource {
         }
 
         // if not under siege, build rules apply
-        return this.allowBuild(player, blockType);
+        return this.allowBuild(user, location);
     }
 
     // access permission check
@@ -521,20 +543,23 @@ public class Claim implements ContextSource {
 
         // catch-all error message for all other cases
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
-        if (player.hasPermission("griefprevention.ignoreclaims")) {
+        if (player.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
         }
         return reason;
     }
 
     // inventory permission check
-    public String allowContainers(Player player) {
+    public String allowContainers(User user, Location<World> location) {
         // if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
-        if (player == null)
+        if (user == null) {
             return "";
+        }
 
         // trying to access inventory in a claim may extend an existing siege to include this claim
-        GriefPrevention.instance.dataStore.tryExtendSiege(player, this);
+        if (user instanceof Player) {
+            GriefPrevention.instance.dataStore.tryExtendSiege((Player) user, this);
+        }
 
         // if under siege, nobody accesses containers
         if (this.siegeData != null) {
@@ -542,70 +567,83 @@ public class Claim implements ContextSource {
         }
 
         // owner and administrators in ignoreclaims mode have access
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoreClaims)
+        if (user.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(location.getExtent(), user.getUniqueId())
+                .ignoreClaims) {
             return null;
+        }
 
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (player.hasPermission("griefprevention.adminclaims"))
+            if (user.hasPermission("griefprevention.adminclaims")) {
                 return null;
+            }
         }
 
         // check for explicit individual container or build permission
-        if (this.hasExplicitPermission(player, ClaimPermission.Inventory))
+        if (this.hasExplicitPermission(user, ClaimPermission.Inventory)) {
             return null;
-        if (this.hasExplicitPermission(player, ClaimPermission.Build))
+        }
+        if (this.hasExplicitPermission(user, ClaimPermission.Build)) {
             return null;
+        }
 
         // check for public container or build permission
         ClaimPermission permissionLevel = this.playerIDToClaimPermissionMap.get("public");
-        if (ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel)
+        if (ClaimPermission.Build == permissionLevel || ClaimPermission.Inventory == permissionLevel) {
             return null;
+        }
 
         // permission inheritance for subdivisions
-        if (this.parent != null)
-            return this.parent.allowContainers(player);
+        if (this.parent != null) {
+            return this.parent.allowContainers(user, location);
+        }
 
         // error message for all other cases
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
-        if (player.hasPermission("griefprevention.ignoreclaims"))
+        if (user.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        }
         return reason;
     }
 
     // grant permission check, relatively simple
     public String allowGrantPermission(Player player) {
         // if we don't know who's asking, always say no (i've been told some mods can make this happen somehow)
-        if (player == null)
+        if (player == null) {
             return "";
+        }
 
         // anyone who can modify the claim can do this
-        if (this.allowEdit(player) == null)
+        if (this.allowEdit(player) == null) {
             return null;
+        }
 
         // anyone who's in the managers (/PermissionTrust) list can do this
         for (int i = 0; i < this.managers.size(); i++) {
             String managerID = this.managers.get(i);
-            if (player.getUniqueId().toString().equals(managerID))
+            if (player.getUniqueId().toString().equals(managerID)) {
                 return null;
-
-            else if (managerID.startsWith("[") && managerID.endsWith("]")) {
+            } else if (managerID.startsWith("[") && managerID.endsWith("]")) {
                 managerID = managerID.substring(1, managerID.length() - 1);
-                if (managerID == null || managerID.isEmpty())
+                if (managerID == null || managerID.isEmpty()) {
                     continue;
-                if (player.hasPermission(managerID))
+                }
+                if (player.hasPermission(managerID)) {
                     return null;
+                }
             }
         }
 
         // permission inheritance for subdivisions
-        if (this.parent != null)
+        if (this.parent != null) {
             return this.parent.allowGrantPermission(player);
+        }
 
         // generic error message
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoPermissionTrust, this.getOwnerName());
-        if (player.hasPermission("griefprevention.ignoreclaims"))
+        if (player.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        }
         return reason;
     }
 
@@ -673,11 +711,13 @@ public class Claim implements ContextSource {
     // returns a friendly owner name (for admin claims, returns "an
     // administrator" as the owner)
     public String getOwnerName() {
-        if (this.parent != null)
+        if (this.parent != null) {
             return this.parent.getOwnerName();
+        }
 
-        if (this.ownerID == null)
+        if (this.ownerID == null) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.OwnerNameForAdminClaims);
+        }
 
         return CommandHelper.lookupPlayerName(this.ownerID);
     }
@@ -687,8 +727,9 @@ public class Claim implements ContextSource {
     // excludeSubdivisions = true means that locations inside subdivisions of the claim will return FALSE
     public boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeSubdivisions) {
         // not in the same world implies false
-        if (!location.getExtent().equals(this.lesserBoundaryCorner.getExtent()))
+        if (!location.getExtent().equals(this.lesserBoundaryCorner.getExtent())) {
             return false;
+        }
 
         double x = location.getX();
         double y = location.getY();
@@ -701,8 +742,9 @@ public class Claim implements ContextSource {
                 z >= this.lesserBoundaryCorner.getZ() &&
                 z < this.greaterBoundaryCorner.getZ() + 1;
 
-        if (!inClaim)
+        if (!inClaim) {
             return false;
+        }
 
         // additional check for subdivisions
         // you're only in a subdivision when you're also in its parent claim
@@ -736,82 +778,97 @@ public class Claim implements ContextSource {
         // bad - it hurts mine too.
         // try drawing pictures to visualize test cases.
 
-        if (!this.lesserBoundaryCorner.getExtent().equals(otherClaim.getLesserBoundaryCorner().getExtent()))
+        if (!this.lesserBoundaryCorner.getExtent().equals(otherClaim.getLesserBoundaryCorner().getExtent())) {
             return false;
+        }
 
         // first, check the corners of this claim aren't inside any existing
         // claims
-        if (otherClaim.contains(this.lesserBoundaryCorner, true, false))
+        if (otherClaim.contains(this.lesserBoundaryCorner, true, false)) {
             return true;
-        if (otherClaim.contains(this.greaterBoundaryCorner, true, false))
+        }
+        if (otherClaim.contains(this.greaterBoundaryCorner, true, false)) {
             return true;
+        }
         if (otherClaim.contains(
                 new Location<World>(this.lesserBoundaryCorner.getExtent(), this.lesserBoundaryCorner.getBlockX(), 0,
                         this.greaterBoundaryCorner.getBlockZ()),
-                true, false))
+                true, false)) {
             return true;
+        }
         if (otherClaim.contains(
                 new Location<World>(this.lesserBoundaryCorner.getExtent(), this.greaterBoundaryCorner.getBlockX(), 0,
                         this.lesserBoundaryCorner.getBlockZ()),
-                true, false))
+                true, false)) {
             return true;
+        }
 
         // verify that no claim's lesser boundary point is inside this new
         // claim, to cover the "existing claim is entirely inside new claim"
         // case
-        if (this.contains(otherClaim.getLesserBoundaryCorner(), true, false))
+        if (this.contains(otherClaim.getLesserBoundaryCorner(), true, false)) {
             return true;
+        }
 
         // verify this claim doesn't band across an existing claim, either
         // horizontally or vertically
         if (this.getLesserBoundaryCorner().getBlockZ() <= otherClaim.getGreaterBoundaryCorner().getBlockZ() &&
                 this.getLesserBoundaryCorner().getBlockZ() >= otherClaim.getLesserBoundaryCorner().getBlockZ() &&
                 this.getLesserBoundaryCorner().getBlockX() < otherClaim.getLesserBoundaryCorner().getBlockX() &&
-                this.getGreaterBoundaryCorner().getBlockX() > otherClaim.getGreaterBoundaryCorner().getBlockX())
+                this.getGreaterBoundaryCorner().getBlockX() > otherClaim.getGreaterBoundaryCorner().getBlockX()) {
             return true;
+        }
 
         if (this.getGreaterBoundaryCorner().getBlockZ() <= otherClaim.getGreaterBoundaryCorner().getBlockZ() &&
                 this.getGreaterBoundaryCorner().getBlockZ() >= otherClaim.getLesserBoundaryCorner().getBlockZ() &&
                 this.getLesserBoundaryCorner().getBlockX() < otherClaim.getLesserBoundaryCorner().getBlockX() &&
-                this.getGreaterBoundaryCorner().getBlockX() > otherClaim.getGreaterBoundaryCorner().getBlockX())
+                this.getGreaterBoundaryCorner().getBlockX() > otherClaim.getGreaterBoundaryCorner().getBlockX()) {
             return true;
+        }
 
         if (this.getLesserBoundaryCorner().getBlockX() <= otherClaim.getGreaterBoundaryCorner().getBlockX() &&
                 this.getLesserBoundaryCorner().getBlockX() >= otherClaim.getLesserBoundaryCorner().getBlockX() &&
                 this.getLesserBoundaryCorner().getBlockZ() < otherClaim.getLesserBoundaryCorner().getBlockZ() &&
-                this.getGreaterBoundaryCorner().getBlockZ() > otherClaim.getGreaterBoundaryCorner().getBlockZ())
+                this.getGreaterBoundaryCorner().getBlockZ() > otherClaim.getGreaterBoundaryCorner().getBlockZ()) {
             return true;
+        }
 
         if (this.getGreaterBoundaryCorner().getBlockX() <= otherClaim.getGreaterBoundaryCorner().getBlockX() &&
                 this.getGreaterBoundaryCorner().getBlockX() >= otherClaim.getLesserBoundaryCorner().getBlockX() &&
                 this.getLesserBoundaryCorner().getBlockZ() < otherClaim.getLesserBoundaryCorner().getBlockZ() &&
-                this.getGreaterBoundaryCorner().getBlockZ() > otherClaim.getGreaterBoundaryCorner().getBlockZ())
+                this.getGreaterBoundaryCorner().getBlockZ() > otherClaim.getGreaterBoundaryCorner().getBlockZ()) {
             return true;
+        }
 
         return false;
     }
 
     // whether more entities may be added to a claim
     public String allowMoreEntities() {
-        if (this.parent != null)
+        if (this.parent != null) {
             return this.parent.allowMoreEntities();
+        }
 
         // this rule only applies to creative mode worlds
-        if (!GriefPrevention.instance.claimModeIsActive(this.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative))
+        if (!GriefPrevention.instance.claimModeIsActive(this.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
             return null;
+        }
 
         // admin claims aren't restricted
-        if (this.isAdminClaim())
+        if (this.isAdminClaim()) {
             return null;
+        }
 
         // don't apply this rule to very large claims
-        if (this.getArea() > 10000)
+        if (this.getArea() > 10000) {
             return null;
+        }
 
         // determine maximum allowable entity count, based on claim size
         int maxEntities = this.getArea() / 50;
-        if (maxEntities == 0)
+        if (maxEntities == 0) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.ClaimTooSmallForEntities);
+        }
 
         // count current entities (ignoring players)
         int totalEntities = 0;
@@ -822,14 +879,16 @@ public class Claim implements ContextSource {
                 Entity entity = entities.get(i);
                 if (!(entity instanceof Player) && this.contains(entity.getLocation(), false, false)) {
                     totalEntities++;
-                    if (totalEntities > maxEntities)
+                    if (totalEntities > maxEntities) {
                         entity.remove();
+                    }
                 }
             }
         }
 
-        if (totalEntities > maxEntities)
+        if (totalEntities > maxEntities) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.TooManyEntitiesInClaim);
+        }
 
         return null;
     }
@@ -840,17 +899,21 @@ public class Claim implements ContextSource {
         Location<World> thisCorner = this.getLesserBoundaryCorner();
         Location<World> otherCorner = otherClaim.getLesserBoundaryCorner();
 
-        if (thisCorner.getBlockX() > otherCorner.getBlockX())
+        if (thisCorner.getBlockX() > otherCorner.getBlockX()) {
             return true;
+        }
 
-        if (thisCorner.getBlockX() < otherCorner.getBlockX())
+        if (thisCorner.getBlockX() < otherCorner.getBlockX()) {
             return false;
+        }
 
-        if (thisCorner.getBlockZ() > otherCorner.getBlockZ())
+        if (thisCorner.getBlockZ() > otherCorner.getBlockZ()) {
             return true;
+        }
 
-        if (thisCorner.getBlockZ() < otherCorner.getBlockZ())
+        if (thisCorner.getBlockZ() < otherCorner.getBlockZ()) {
             return false;
+        }
 
         return thisCorner.getExtent().getUniqueId().compareTo(otherCorner.getExtent().getUniqueId()) < 0;
     }
@@ -902,8 +965,10 @@ public class Claim implements ContextSource {
         ArrayList<Chunk> chunks = new ArrayList<Chunk>();
 
         World world = this.getLesserBoundaryCorner().getExtent();
-        Optional<Chunk> lesserChunk = this.getLesserBoundaryCorner().getExtent().getChunk(this.getLesserBoundaryCorner().getBlockX() >> 4, 0, this.getLesserBoundaryCorner().getBlockZ() >> 4);
-        Optional<Chunk> greaterChunk = this.getGreaterBoundaryCorner().getExtent().getChunk(this.getGreaterBoundaryCorner().getBlockX() >> 4, 0, this.getGreaterBoundaryCorner().getBlockZ() >> 4);
+        Optional<Chunk> lesserChunk = this.getLesserBoundaryCorner().getExtent()
+                .getChunk(this.getLesserBoundaryCorner().getBlockX() >> 4, 0, this.getLesserBoundaryCorner().getBlockZ() >> 4);
+        Optional<Chunk> greaterChunk = this.getGreaterBoundaryCorner().getExtent()
+                .getChunk(this.getGreaterBoundaryCorner().getBlockX() >> 4, 0, this.getGreaterBoundaryCorner().getBlockZ() >> 4);
 
         if (lesserChunk.isPresent() && greaterChunk.isPresent()) {
             for (int x = lesserChunk.get().getPosition().getX(); x <= greaterChunk.get().getPosition().getX(); x++) {

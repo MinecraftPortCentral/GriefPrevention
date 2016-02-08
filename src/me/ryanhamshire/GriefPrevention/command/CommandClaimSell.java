@@ -59,7 +59,7 @@ public class CommandClaimSell implements CommandExecutor {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue,
                     String.valueOf(activeConfig.getConfig().economy.economyClaimBlockSell), String.valueOf(availableBlocks));
             return CommandResult.success();
-        }  else {
+        } else {
             int blockCount = blockCountOpt.get();
             // try to parse number of blocks
             if (blockCount <= 0) {
@@ -73,7 +73,8 @@ public class CommandClaimSell implements CommandExecutor {
             // attempt to compute value and deposit it
             double totalValue = blockCount * activeConfig.getConfig().economy.economyClaimBlockSell;
             TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).get().deposit
-                    (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalValue), Cause.of(GriefPrevention.instance));
+                    (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalValue),
+                            Cause.of(GriefPrevention.instance));
 
 
             if (transactionResult.getResult() != ResultType.SUCCESS) {

@@ -7,7 +7,6 @@ import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.PlayerRescueTask;
 import me.ryanhamshire.GriefPrevention.TextMode;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -18,7 +17,7 @@ import org.spongepowered.api.world.DimensionTypes;
 
 import java.util.concurrent.TimeUnit;
 
-public class CommandTrapped  implements CommandExecutor {
+public class CommandTrapped implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -42,7 +41,7 @@ public class CommandTrapped  implements CommandExecutor {
         }
 
         // if the player isn't in a claim or has permission to build, tell him to man up
-        if (claim == null || claim.allowBuild(player, BlockTypes.AIR) == null) {
+        if (claim == null || claim.allowBuild(player, player.getLocation()) == null) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.NotTrappedHere));
             } catch (CommandException e) {

@@ -65,7 +65,7 @@ public class DatabaseDataStore extends DataStore {
     }
 
     @Override
-            void initialize() throws Exception {
+    void initialize() throws Exception {
         try {
             // load the java driver for mySQL
             Class.forName("com.mysql.jdbc.Driver");
@@ -88,10 +88,13 @@ public class DatabaseDataStore extends DataStore {
             statement.execute("CREATE TABLE IF NOT EXISTS griefprevention_nextclaimid (nextid INT(15));");
 
             statement.execute(
-                    "CREATE TABLE IF NOT EXISTS griefprevention_claimdata (id INT(15), owner VARCHAR(50), lessercorner VARCHAR(100), greatercorner VARCHAR(100), builders VARCHAR(1000), containers VARCHAR(1000), accessors VARCHAR(1000), managers VARCHAR(1000), parentid INT(15));");
+                    "CREATE TABLE IF NOT EXISTS griefprevention_claimdata (id INT(15), owner VARCHAR(50), lessercorner VARCHAR(100), greatercorner "
+                            + "VARCHAR(100), builders VARCHAR(1000), containers VARCHAR(1000), accessors VARCHAR(1000), managers VARCHAR(1000), "
+                            + "parentid INT(15));");
 
             statement.execute(
-                    "CREATE TABLE IF NOT EXISTS griefprevention_playerdata (name VARCHAR(50), lastlogin DATETIME, accruedblocks INT(15), bonusblocks INT(15));");
+                    "CREATE TABLE IF NOT EXISTS griefprevention_playerdata (name VARCHAR(50), lastlogin DATETIME, accruedblocks INT(15), "
+                            + "bonusblocks INT(15));");
 
             statement.execute("CREATE TABLE IF NOT EXISTS griefprevention_schemaversion (version INT(15));");
 
@@ -118,12 +121,14 @@ public class DatabaseDataStore extends DataStore {
             String name = results.getString("name");
 
             // ignore non-groups. all group names start with a dollar sign.
-            if (!name.startsWith("$"))
+            if (!name.startsWith("$")) {
                 continue;
+            }
 
             String groupName = name.substring(1);
-            if (groupName == null || groupName.isEmpty())
+            if (groupName == null || groupName.isEmpty()) {
                 continue; // defensive coding, avoid unlikely cases
+            }
 
             int groupBonusBlocks = results.getInt("bonusblocks");
 
@@ -230,10 +235,10 @@ public class DatabaseDataStore extends DataStore {
                 try {
                     lesserCornerString = results.getString("lessercorner");
                     Vector3i lesserPos = positionFromString(lesserCornerString);
-                   // lesserBoundaryCorner = positionFromString(lesserCornerString);
+                    // lesserBoundaryCorner = positionFromString(lesserCornerString);
 
                     String greaterCornerString = results.getString("greatercorner");
-                   //greaterBoundaryCorner = positionFromString(greaterCornerString);
+                    //greaterBoundaryCorner = positionFromString(greaterCornerString);
                 } catch (Exception e) {
                     if (e.getMessage().contains("World not found")) {
                         removeClaim = true;
@@ -273,8 +278,9 @@ public class DatabaseDataStore extends DataStore {
                 List<String> managerNames = Arrays.asList(managersString.split(";"));
                 managerNames = this.convertNameListToUUIDList(managerNames);
 
-                Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), builderNames, containerNames, accessorNames,
-                        managerNames, UUID.randomUUID());
+                Claim claim =
+                        new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), builderNames, containerNames, accessorNames,
+                                managerNames, UUID.randomUUID());
 
                 if (removeClaim) {
                     claimsToRemove.add(claim);
@@ -324,8 +330,7 @@ public class DatabaseDataStore extends DataStore {
 
     // see datastore.cs. this will ALWAYS be a top level claim
     @Override
-    synchronized void writeClaimToStorage(Claim claim)
-    {
+    synchronized void writeClaimToStorage(Claim claim) {
         try {
             this.refreshDataConnection();
 
@@ -387,7 +392,8 @@ public class DatabaseDataStore extends DataStore {
 
             Statement statement = databaseConnection.createStatement();
             statement.execute(
-                    "INSERT INTO griefprevention_claimdata (id, owner, lessercorner, greatercorner, builders, containers, accessors, managers, parentid) VALUES("
+                    "INSERT INTO griefprevention_claimdata (id, owner, lessercorner, greatercorner, builders, containers, accessors, managers,
+                    parentid) VALUES("
                             +
                             claim.id + ", '" +
                             owner + "', '" +
@@ -452,8 +458,9 @@ public class DatabaseDataStore extends DataStore {
     public void overrideSavePlayerData(UUID playerID, PlayerData playerData) {
         // never save data for the "administrative" account. an empty string for
         // player name indicates administrative account
-        if (playerID == null)
+        if (playerID == null) {
             return;
+        }
 
         //this.savePlayerData(playerID.toString(), playerData);
     }
@@ -485,7 +492,7 @@ public class DatabaseDataStore extends DataStore {
     // sets the next claim ID. used by incrementNextClaimID() above, and also
     // while migrating data from a flat file data store
     synchronized void setNextClaimID(long nextID) {
-       // this.nextClaimID = nextID;
+        // this.nextClaimID = nextID;
 
         try {
             this.refreshDataConnection();
@@ -591,7 +598,7 @@ public class DatabaseDataStore extends DataStore {
     }
 
     @Override
-            PlayerData getPlayerDataFromStorage(UUID playerID) {
+    PlayerData getPlayerDataFromStorage(UUID playerID) {
         // TODO Auto-generated method stub
         return null;
     }
@@ -599,7 +606,7 @@ public class DatabaseDataStore extends DataStore {
     @Override
     public PlayerData createPlayerWorldStorageData(WorldProperties worldProperties, UUID playerUniqueId) {
         // TODO Auto-generated method stub
-       return null;
+        return null;
     }
 
     @Override

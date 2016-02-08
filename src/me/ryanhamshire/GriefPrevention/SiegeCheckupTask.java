@@ -79,8 +79,7 @@ class SiegeCheckupTask implements Runnable {
 
         // if they both left, but are still close together, the battle continues (check again later) 50-block radius for chasing
         else if (attacker.getWorld().equals(defender.getWorld())
-                && attacker.getLocation().getPosition().distanceSquared(defender.getLocation().getPosition()) < 2500)
-        {
+                && attacker.getLocation().getPosition().distanceSquared(defender.getLocation().getPosition()) < 2500) {
             this.scheduleAnotherCheck();
         }
 

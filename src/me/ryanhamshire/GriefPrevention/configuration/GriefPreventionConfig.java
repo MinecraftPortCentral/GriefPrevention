@@ -215,6 +215,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     }
 
     public static class ConfigBase {
+
         @Setting
         public ClaimCategory claim = new ClaimCategory();
         @Setting
@@ -228,6 +229,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     }
 
     public static class GlobalConfig extends ConfigBase {
+
         @Setting
         public DatabaseCategory database = new DatabaseCategory();
         @Setting
@@ -237,6 +239,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     }
 
     public static class DimensionConfig extends ConfigBase {
+
         @Setting(
                 value = CONFIG_ENABLED,
                 comment = "Enabling config will override Global.")
@@ -244,6 +247,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     }
 
     public static class WorldConfig extends ConfigBase {
+
         @Setting(
                 value = CONFIG_ENABLED,
                 comment = "Enabling config will override Dimension and Global.")
@@ -252,6 +256,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     public static class ClaimCategory extends Category {
+
         @Setting(value = CLAIM_BANNED_ITEM_IDS, comment = "Contains list of banned item ids on server.")
         public List<String> bannedItemIds = new ArrayList<>();
         @Setting(value = CLAIM_ABANDON_RETURN_RATIO, comment = "The portion of claim blocks returned to a player when a claim is abandoned.")
@@ -280,7 +285,8 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public int maxClaimDepth = 0;
         @Setting(value = CLAIM_INVESTIGATION_TOOL, comment = "The item used to investigate claims with a right-click.")
         public String investigationTool = "minecraft:stick";
-        @Setting(value = CLAIM_MAX_ACCRUED_BLOCKS, comment = "The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.")
+        @Setting(value = CLAIM_MAX_ACCRUED_BLOCKS,
+                comment = "The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.")
         public int maxAccruedBlocks = 80000;
         @Setting(value = CLAIM_MAX_PER_PLAYER, comment = "Maximum number of claims per player.")
         public int maxClaimsPerPlayer = 0;
@@ -290,7 +296,8 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public int claimMinimumWidth = 5;
         @Setting(value = CLAIM_MODIFICATION_TOOL, comment = "The item used to create/resize claims with a right click.")
         public String modificationTool = "minecraft:golden_shovel";
-        @Setting(value = CLAIM_MODE, comment = "The mode used when creating claims. (0 = Disabled, 1 = Survival, 2 = SurvivalRequiringClaims, 3 = Creative)")
+        @Setting(value = CLAIM_MODE,
+                comment = "The mode used when creating claims. (0 = Disabled, 1 = Survival, 2 = SurvivalRequiringClaims, 3 = Creative)")
         public int claimMode = 1;
         @Setting(value = CLAIM_FIRE_SPREADS_OUTSIDE, comment = "Whether fire spreads outside of claims.")
         public boolean fireSpreadOutsideClaim = false;
@@ -302,6 +309,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     public static class DatabaseCategory extends Category {
+
         @Setting(value = DATABASE_PASSWORD, comment = "password")
         public String dbPassword = "";
         @Setting(value = DATABASE_USERNAME, comment = "username")
@@ -312,6 +320,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     public static class EconomyCategory extends Category {
+
         @Setting(value = ECONOMY_CLAIM_BLOCK_COST, comment = "Cost to purchase a claim block. set to zero to disable purchase.")
         public double economyClaimBlockCost = 0;
         @Setting(value = ECONOMY_CLAIM_BLOCK_SELL, comment = "Return on a sold claim block. set to zero to disable sale.")
@@ -320,13 +329,15 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     public static class GeneralCategory extends Category {
+
         @Setting(value = GENERAL_ADMIN_SIGN_NOTIFICATIONS, comment = "Enable sign notifications for admins.")
         public boolean generalAdminSignNotifications = false;
         @Setting(value = GENERAL_ADMIN_WHISPER_NOTIFICATIONS, comment = "Enable whisper notifications for admins.")
         public boolean generalAdminWhisperNotifications = false;
         @Setting(value = GENERAL_INITIAL_CLAIM_BLOCKS, comment = "The number of claim blocks a new player starts with.")
         public int claimInitialBlocks = 100;
-        @Setting(value = GENERAL_LIMIT_PISTONS_TO_CLAIMS, comment = "Whether pistons are limited to only move blocks located within the piston's land claim.")
+        @Setting(value = GENERAL_LIMIT_PISTONS_TO_CLAIMS,
+                comment = "Whether pistons are limited to only move blocks located within the piston's land claim.")
         public boolean limitPistonsToClaims = false;
         @Setting(value = GENERAL_LIMIT_SKY_TREES, comment = "Whether players can build trees on platforms in the sky.")
         public boolean allowSkyTrees = true;
@@ -361,6 +372,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     public static class PvpCategory extends Category {
+
         @Setting(value = PVP_RULES_ENABLED, comment = "Whether or not pvp anti-grief rules apply.")
         public boolean rulesEnabled = true;
         @Setting(value = PVP_PROTECT_ITEM_DROPS_DEATH, comment = "Whether player's dropped on death items are protected in pvp worlds.")
@@ -387,26 +399,29 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     public static class SiegeCategory extends Category {
+
         @Setting(value = SIEGE_ENABLED, comment = "Whether sieges are allowed or not.")
         public boolean siegeEnabled = true;
         @Setting(value = SIEGE_BREAKABLE_BLOCKS, comment = "which blocks will be breakable in siege mode.")
         public List<String> breakableSiegeBlocks = new ArrayList<String>(
                 Arrays.asList(ItemTypes.SAND.getId(), ItemTypes.GRAVEL.getId(), ItemTypes.GRASS.getId(),
-                              ItemTypes.TALLGRASS.getId(), ItemTypes.GLASS.getId(), ItemTypes.DYE.getId(),
-                              ItemTypes.SNOW.getId(), ItemTypes.STAINED_GLASS.getId(), ItemTypes.COBBLESTONE.getId()));
+                        ItemTypes.TALLGRASS.getId(), ItemTypes.GLASS.getId(), ItemTypes.DYE.getId(),
+                        ItemTypes.SNOW.getId(), ItemTypes.STAINED_GLASS.getId(), ItemTypes.COBBLESTONE.getId()));
         @Setting(value = SIEGE_WINNER_ACCESSIBLE_BLOCKS, comment = "which blocks the siege winner can access in the loser's claim.")
         public List<String> winnerAccessibleBlocks = new ArrayList<String>(
                 Arrays.asList(ItemTypes.ACACIA_DOOR.getId(), ItemTypes.ACACIA_FENCE.getId(), ItemTypes.ACACIA_FENCE_GATE.getId(),
-                              ItemTypes.BIRCH_DOOR.getId(), ItemTypes.BIRCH_FENCE.getId(), ItemTypes.BIRCH_FENCE_GATE.getId(),
-                              ItemTypes.DARK_OAK_DOOR.getId(), ItemTypes.DARK_OAK_FENCE.getId(), ItemTypes.DARK_OAK_FENCE_GATE.getId(),
-                              ItemTypes.FENCE.getId(), ItemTypes.FENCE_GATE.getId(), ItemTypes.IRON_DOOR.getId(),
-                              ItemTypes.IRON_TRAPDOOR.getId(), ItemTypes.WOODEN_DOOR.getId(), ItemTypes.STONE_BUTTON.getId(),
-                              ItemTypes.WOODEN_BUTTON.getId(), ItemTypes.HEAVY_WEIGHTED_PRESSURE_PLATE.getId(), ItemTypes.LIGHT_WEIGHTED_PRESSURE_PLATE.getId(),
-                              ItemTypes.LEVER.getId()));
+                        ItemTypes.BIRCH_DOOR.getId(), ItemTypes.BIRCH_FENCE.getId(), ItemTypes.BIRCH_FENCE_GATE.getId(),
+                        ItemTypes.DARK_OAK_DOOR.getId(), ItemTypes.DARK_OAK_FENCE.getId(), ItemTypes.DARK_OAK_FENCE_GATE.getId(),
+                        ItemTypes.FENCE.getId(), ItemTypes.FENCE_GATE.getId(), ItemTypes.IRON_DOOR.getId(),
+                        ItemTypes.IRON_TRAPDOOR.getId(), ItemTypes.WOODEN_DOOR.getId(), ItemTypes.STONE_BUTTON.getId(),
+                        ItemTypes.WOODEN_BUTTON.getId(), ItemTypes.HEAVY_WEIGHTED_PRESSURE_PLATE.getId(),
+                        ItemTypes.LIGHT_WEIGHTED_PRESSURE_PLATE.getId(),
+                        ItemTypes.LEVER.getId()));
     }
 
     @ConfigSerializable
     public static class SpamCategory extends Category {
+
         @Setting(value = SPAM_MONITOR_ENABLED, comment = "Whether or not to monitor for spam.")
         public boolean monitorEnabled = true;
         @Setting(value = SPAM_LOGIN_COOLDOWN, comment = "How long players must wait between logins. combats login spam.")
@@ -427,5 +442,6 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
 
     @ConfigSerializable
     private static class Category {
+
     }
 }

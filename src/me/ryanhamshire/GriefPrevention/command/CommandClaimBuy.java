@@ -80,7 +80,8 @@ public class CommandClaimBuy implements CommandExecutor {
             double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
             // attempt to withdraw cost
             TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).get().withdraw
-                    (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalCost), Cause.of(GriefPrevention.instance));
+                    (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalCost),
+                            Cause.of(GriefPrevention.instance));
 
             if (transactionResult.getResult() != ResultType.SUCCESS) {
                 GriefPrevention.sendMessage(player, TextMode.Err, "Could not withdraw funds. Reason: " + transactionResult.getResult().name() +

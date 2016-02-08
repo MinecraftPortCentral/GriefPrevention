@@ -51,8 +51,9 @@ class VisualizationApplicationTask implements Runnable {
             Transaction<BlockSnapshot> element = visualization.elements.get(i);
 
             // send the player a fake block change event
-            if (!element.getFinal().getLocation().get().getExtent().isLoaded())
+            if (!element.getFinal().getLocation().get().getExtent().isLoaded()) {
                 continue; // cheap distance check
+            }
             BlockUtils.sendBlockChange(player, element.getFinal());
         }
 

@@ -31,9 +31,7 @@ public class CommandClaimDelete implements CommandExecutor {
 
         if (claim == null) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
-        }
-
-        else {
+        } else {
             // deleting an admin claim additionally requires the adminclaims permission
             if (!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims")) {
                 PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
@@ -45,7 +43,8 @@ public class CommandClaimDelete implements CommandExecutor {
                     GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
                     // if in a creative mode world, /restorenature the claim
-                    if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                    if (GriefPrevention.instance
+                            .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
                         GriefPrevention.instance.restoreClaim(claim, 0);
                     }
 

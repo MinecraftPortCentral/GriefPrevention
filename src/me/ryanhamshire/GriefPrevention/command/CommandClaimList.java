@@ -40,7 +40,8 @@ public class CommandClaimList implements CommandExecutor {
         List<Claim> claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
         GriefPrevention.sendMessage(src, TextMode.Instr, Messages.StartBlockMath,
                 String.valueOf(playerData.getAccruedClaimBlocks(player.getWorld())),
-                String.valueOf((playerData.getBonusClaimBlocks(player.getWorld()) + GriefPrevention.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))),
+                String.valueOf((playerData.getBonusClaimBlocks(player.getWorld()) + GriefPrevention.instance.dataStore
+                        .getGroupBonusBlocks(otherPlayer.getUniqueId()))),
                 String.valueOf((playerData.getAccruedClaimBlocks(player.getWorld()) + playerData.getBonusClaimBlocks(player.getWorld())
                         + GriefPrevention.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))));
         if (claimList.size() > 0) {
@@ -50,7 +51,8 @@ public class CommandClaimList implements CommandExecutor {
                         + GriefPrevention.instance.dataStore.getMessage(Messages.ContinueBlockMath, String.valueOf(claim.getArea()))));
             }
 
-            GriefPrevention.sendMessage(src, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks(player.getWorld())));
+            GriefPrevention
+                    .sendMessage(src, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks(player.getWorld())));
         }
 
         // drop the data we just loaded, if the player isn't online

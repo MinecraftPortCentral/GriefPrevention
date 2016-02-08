@@ -114,15 +114,18 @@ public class PlayerStorageData {
 
     @ConfigSerializable
     public static class PlayerDataNode {
+
         @Setting(value = PLAYER_UUID, comment = "The player's uuid.")
         public String playerUniqueId;
         @Setting(value = PLAYER_ACCRUED_CLAIM_BLOCKS, comment = "How many claim blocks the player has earned in world via play time.")
         public int accruedClaimBlocks;
-        @Setting(value = PLAYER_BONUS_CLAIM_BLOCKS, comment = "How many claim blocks the player has been gifted in world by admins, or purchased via economy integration.")
+        @Setting(value = PLAYER_BONUS_CLAIM_BLOCKS,
+                comment = "How many claim blocks the player has been gifted in world by admins, or purchased via economy integration.")
         public int bonusClaimBlocks = 0;
     }
 
     @ConfigSerializable
     private static class Category {
+
     }
 }

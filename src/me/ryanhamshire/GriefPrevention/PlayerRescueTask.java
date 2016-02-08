@@ -47,8 +47,9 @@ public class PlayerRescueTask implements Runnable {
     @Override
     public void run() {
         // if he logged out, don't do anything
-        if (!player.isOnline())
+        if (!player.isOnline()) {
             return;
+        }
 
         // he no longer has a pending /trapped slash command, so he can try to
         // use it again now

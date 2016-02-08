@@ -50,9 +50,7 @@ public class CommandUntrust implements CommandExecutor {
                     return CommandResult.success();
                 }
             }
-        }
-
-        else {
+        } else {
             // validate player argument or group argument
             if (!target.startsWith("[") || !target.endsWith("]")) {
                 otherPlayer = GriefPrevention.instance.resolvePlayerByName(target).orElse(null);
@@ -66,8 +64,9 @@ public class CommandUntrust implements CommandExecutor {
                 }
 
                 // correct to proper casing
-                if (otherPlayer != null)
+                if (otherPlayer != null) {
                     target = otherPlayer.getName();
+                }
             }
         }
 

@@ -32,9 +32,9 @@ import org.spongepowered.api.event.cause.Cause;
 /**
  * This event gets called whenever a claim is going to be deleted. This event is
  * not called when a claim is resized.
- * 
+ *
  * @author Tux2
- * 
+ *
  */
 public class ClaimDeletedEvent implements Event {
 
@@ -48,7 +48,7 @@ public class ClaimDeletedEvent implements Event {
 
     /**
      * Gets the claim to be deleted.
-     * 
+     *
      * @return
      */
     public Claim getClaim() {

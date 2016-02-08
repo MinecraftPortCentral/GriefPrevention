@@ -26,32 +26,35 @@ package me.ryanhamshire.GriefPrevention;
 
 public class GPPermissions {
 
+    // General permissions
+    public static final String IGNORE_CLAIMS = "griefprevention.ignoreclaims";
+
     // Flag override permissions
-    public static final String PERMISSION_BLOCK_PLACE = "griefprevention.claim.flag.block-place";
-    public static final String PERMISSION_BLOCK_BREAK = "griefprevention.claim.flag.block-break";
-    public static final String PERMISSION_INTERACT_PRIMARY = "griefprevention.claim.flag.interact-primary";
-    public static final String PERMISSION_INTERACT_SECONDARY = "griefprevention.claim.flag.interact-secondary";
+    public static final String BLOCK_PLACE = "griefprevention.claim.flag.block-place";
+    public static final String BLOCK_BREAK = "griefprevention.claim.flag.block-break";
+    public static final String INTERACT_PRIMARY = "griefprevention.claim.flag.interact-primary";
+    public static final String INTERACT_SECONDARY = "griefprevention.claim.flag.interact-secondary";
     public static final String EXPLOSIONS = "griefprevention.claim.flag.explosions";
-    public static final String PERMISSION_MOB_BLOCK_DAMAGE = "griefprevention.claim.flag.mob-block-damage";
-    public static final String PERMISSION_MOB_PLAYER_DAMAGE = "griefprevention.claim.flag.mob-player-damage";
-    public static final String PERMISSION_MOB_RIDING = "griefprevention.claim.flag.mob-riding";
-    public static final String PERMISSION_ITEM_DROP = "griefprevention.claim.flag.item-drop";
-    public static final String PERMISSION_ITEM_PICKUP = "griefprevention.claim.flag.item-pickup";
-    public static final String PERMISSION_ITEM_USE = "griefprevention.claim.flag.item-use";
-    public static final String PERMISSION_PORTAL_USE = "griefprevention.claim.flag.portal-use";
-    public static final String PERMISSION_PVP = "griefprevention.claim.flag.pvp";
+    public static final String MOB_BLOCK_DAMAGE = "griefprevention.claim.flag.mob-block-damage";
+    public static final String MOB_PLAYER_DAMAGE = "griefprevention.claim.flag.mob-player-damage";
+    public static final String MOB_RIDING = "griefprevention.claim.flag.mob-riding";
+    public static final String ITEM_DROP = "griefprevention.claim.flag.item-drop";
+    public static final String ITEM_PICKUP = "griefprevention.claim.flag.item-pickup";
+    public static final String ITEM_USE = "griefprevention.claim.flag.item-use";
+    public static final String PORTAL_USE = "griefprevention.claim.flag.portal-use";
+    public static final String PVP = "griefprevention.claim.flag.pvp";
     public static final String SPAWN_MONSTERS = "griefprevention.claim.flag.spawn-monsters";
     public static final String SPAWN_PASSIVES = "griefprevention.claim.flag.spawn-passives";
     public static final String SPAWN_AMBIENTS = "griefprevention.claim.flag.spawn-ambients";
     public static final String SPAWN_AQUATICS = "griefprevention.claim.flag.spawn-aquatics";
     public static final String SPAWN_ANY = "griefprevention.claim.flag.spawn-any";
-    public static final String PERMISSION_SLEEP = "griefprevention.claim.flag.sleep";
-    public static final String PERMISSION_FIRE_SPREAD = "griefprevention.claim.flag.fire-spread";
-    public static final String PERMISSION_BLOCK_COMMANDS = "griefprevention.claim.flag.block-commands";
-    public static final String PERMISSION_PROJECTILES_PLAYER = "griefprevention.claim.flag.projectiles-player";
-    public static final String PERMISSION_PROJECTILES_MONSTER = "griefprevention.claim.flag.projectiles-monster";
-    public static final String PERMISSION_PROJECTILES_ANY = "griefprevention.claim.flag.projectiles-any";
-    public static final String PERMISSION_FORCE_DENY_ALL = "griefprevention.claim.flag.force-deny-all";
+    public static final String SLEEP = "griefprevention.claim.flag.sleep";
+    public static final String FIRE_SPREAD = "griefprevention.claim.flag.fire-spread";
+    public static final String BLOCK_COMMANDS = "griefprevention.claim.flag.block-commands";
+    public static final String PROJECTILES_PLAYER = "griefprevention.claim.flag.projectiles-player";
+    public static final String PROJECTILES_MONSTER = "griefprevention.claim.flag.projectiles-monster";
+    public static final String PROJECTILES_ANY = "griefprevention.claim.flag.projectiles-any";
+    public static final String FORCE_DENY_ALL = "griefprevention.claim.flag.force-deny-all";
 
     public static final String COMMAND_CLAIMFLAG = "griefprevention.command.claimflag";
     public static final String COMMAND_ACCESSTRUST = "griefprevention.command.accesstrust";

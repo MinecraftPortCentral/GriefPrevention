@@ -63,8 +63,9 @@ public class Visualization {
     // reverts a visualization by sending another block change list, this time
     // with the real world block values
     public static void Revert(Player player) {
-        if (!player.isOnline())
+        if (!player.isOnline()) {
             return;
+        }
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
@@ -86,8 +87,9 @@ public class Visualization {
 
                 // check player still in world where visualization exists
                 if (i == 0) {
-                    if (!player.getWorld().equals(element.getOriginal().getLocation().get().getExtent()))
+                    if (!player.getWorld().equals(element.getOriginal().getLocation().get().getExtent())) {
                         return;
+                    }
                 }
 
                 BlockUtils.sendBlockChange(player, element.getOriginal());
@@ -111,8 +113,9 @@ public class Visualization {
         // add subdivisions first
         for (int i = 0; i < claim.children.size(); i++) {
             Claim child = claim.children.get(i);
-            if (!child.inDataStore)
+            if (!child.inDataStore) {
                 continue;
+            }
             visualization.addClaimElements(child, height, VisualizationType.Subdivision, locality);
         }
 
@@ -152,24 +155,16 @@ public class Visualization {
         if (visualizationType == VisualizationType.Claim) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.GOLD_BLOCK;
-        }
-
-        else if (visualizationType == VisualizationType.AdminClaim) {
+        } else if (visualizationType == VisualizationType.AdminClaim) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.PUMPKIN;
-        }
-
-        else if (visualizationType == VisualizationType.Subdivision) {
+        } else if (visualizationType == VisualizationType.Subdivision) {
             cornerMaterial = BlockTypes.IRON_BLOCK;
             accentMaterial = BlockTypes.WOOL;
-        }
-
-        else if (visualizationType == VisualizationType.RestoreNature) {
+        } else if (visualizationType == VisualizationType.RestoreNature) {
             cornerMaterial = BlockTypes.DIAMOND_BLOCK;
             accentMaterial = BlockTypes.DIAMOND_BLOCK;
-        }
-
-        else {
+        } else {
             cornerMaterial = BlockTypes.REDSTONE_ORE;
             accentMaterial = BlockTypes.NETHERRACK;
         }
@@ -188,59 +183,75 @@ public class Visualization {
 
         // top line
         BlockSnapshot.Builder snapshotBuilder = Sponge.getGame().getRegistry().createBuilder(BlockSnapshot.Builder.class);
-        BlockSnapshot topVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build();
+        BlockSnapshot topVisualBlock1 =
+                snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(topVisualBlock1.getLocation().get().createSnapshot(), topVisualBlock1));
-        BlockSnapshot topVisualBlock2 = snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build();
+        BlockSnapshot topVisualBlock2 =
+                snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(topVisualBlock2.getLocation().get().createSnapshot(), topVisualBlock2));
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {
             if (x > minx && x < maxx) {
-                BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, x, 0, bigz)).blockState(accentMaterial.getDefaultState()).build(); 
+                BlockSnapshot visualBlock =
+                        snapshotBuilder.from(new Location<World>(world, x, 0, bigz)).blockState(accentMaterial.getDefaultState()).build();
                 newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
-        BlockSnapshot topVisualBlock3 = snapshotBuilder.from(new Location<World>(world, bigx - 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build(); 
+        BlockSnapshot topVisualBlock3 =
+                snapshotBuilder.from(new Location<World>(world, bigx - 1, 0, bigz)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(topVisualBlock3.getLocation().get().createSnapshot(), topVisualBlock3));
 
         // bottom line
-        BlockSnapshot bottomVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, smallz)).blockState(accentMaterial.getDefaultState()).build(); 
+        BlockSnapshot bottomVisualBlock1 =
+                snapshotBuilder.from(new Location<World>(world, smallx + 1, 0, smallz)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(bottomVisualBlock1.getLocation().get().createSnapshot(), bottomVisualBlock1));
         for (int x = smallx + STEP; x < bigx - STEP / 2; x += STEP) {
             if (x > minx && x < maxx) {
-                BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, x, 0, smallz)).blockState(accentMaterial.getDefaultState()).build();
+                BlockSnapshot visualBlock =
+                        snapshotBuilder.from(new Location<World>(world, x, 0, smallz)).blockState(accentMaterial.getDefaultState()).build();
                 newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
-        BlockSnapshot bottomVisualBlock2 = snapshotBuilder.from(new Location<World>(world, bigx - 1, 0, smallz)).blockState(accentMaterial.getDefaultState()).build();
+        BlockSnapshot bottomVisualBlock2 =
+                snapshotBuilder.from(new Location<World>(world, bigx - 1, 0, smallz)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(bottomVisualBlock2.getLocation().get().createSnapshot(), bottomVisualBlock2));
 
         // left line
-        BlockSnapshot leftVisualBlock1 = snapshotBuilder.from(new Location<World>(world, smallx, 0, smallz)).blockState(cornerMaterial.getDefaultState()).build();
+        BlockSnapshot leftVisualBlock1 =
+                snapshotBuilder.from(new Location<World>(world, smallx, 0, smallz)).blockState(cornerMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(leftVisualBlock1.getLocation().get().createSnapshot(), leftVisualBlock1));
-        BlockSnapshot leftVisualBlock2 = snapshotBuilder.from(new Location<World>(world, smallx, 0, smallz + 1)).blockState(accentMaterial.getDefaultState()).build();
+        BlockSnapshot leftVisualBlock2 =
+                snapshotBuilder.from(new Location<World>(world, smallx, 0, smallz + 1)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(leftVisualBlock2.getLocation().get().createSnapshot(), leftVisualBlock2));
         for (int z = smallz + STEP; z < bigz - STEP / 2; z += STEP) {
             if (z > minz && z < maxz) {
-                BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, smallx, 0, z)).blockState(accentMaterial.getDefaultState()).build();
+                BlockSnapshot visualBlock =
+                        snapshotBuilder.from(new Location<World>(world, smallx, 0, z)).blockState(accentMaterial.getDefaultState()).build();
                 newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
-        BlockSnapshot leftVisualBlock3 = snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz - 1)).blockState(accentMaterial.getDefaultState()).build(); 
+        BlockSnapshot leftVisualBlock3 =
+                snapshotBuilder.from(new Location<World>(world, smallx, 0, bigz - 1)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(leftVisualBlock3.getLocation().get().createSnapshot(), leftVisualBlock3));
 
         // right line
-        BlockSnapshot rightVisualBlock1 = snapshotBuilder.from(new Location<World>(world, bigx, 0, smallz)).blockState(cornerMaterial.getDefaultState()).build();
+        BlockSnapshot rightVisualBlock1 =
+                snapshotBuilder.from(new Location<World>(world, bigx, 0, smallz)).blockState(cornerMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock1.getLocation().get().createSnapshot(), rightVisualBlock1));
-        BlockSnapshot rightVisualBlock2 = snapshotBuilder.from(new Location<World>(world, bigx, 0, smallz + 1)).blockState(accentMaterial.getDefaultState()).build(); 
+        BlockSnapshot rightVisualBlock2 =
+                snapshotBuilder.from(new Location<World>(world, bigx, 0, smallz + 1)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock2.getLocation().get().createSnapshot(), rightVisualBlock2));
         for (int z = smallz + STEP; z < bigz - STEP / 2; z += STEP) {
             if (z > minz && z < maxz) {
-                BlockSnapshot visualBlock = snapshotBuilder.from(new Location<World>(world, bigx, 0, z)).blockState(accentMaterial.getDefaultState()).build();
+                BlockSnapshot visualBlock =
+                        snapshotBuilder.from(new Location<World>(world, bigx, 0, z)).blockState(accentMaterial.getDefaultState()).build();
                 newElements.add(new Transaction<BlockSnapshot>(visualBlock.getLocation().get().createSnapshot(), visualBlock));
             }
         }
-        BlockSnapshot rightVisualBlock3 = snapshotBuilder.from(new Location<World>(world, bigx, 0, bigz - 1)).blockState(accentMaterial.getDefaultState()).build(); 
+        BlockSnapshot rightVisualBlock3 =
+                snapshotBuilder.from(new Location<World>(world, bigx, 0, bigz - 1)).blockState(accentMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock3.getLocation().get().createSnapshot(), rightVisualBlock3));
-        BlockSnapshot rightVisualBlock4 = snapshotBuilder.from(new Location<World>(world, bigx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build(); 
+        BlockSnapshot rightVisualBlock4 =
+                snapshotBuilder.from(new Location<World>(world, bigx, 0, bigz)).blockState(cornerMaterial.getDefaultState()).build();
         newElements.add(new Transaction<BlockSnapshot>(rightVisualBlock4.getLocation().get().createSnapshot(), rightVisualBlock4));
 
         // remove any out of range elements
@@ -259,8 +270,10 @@ public class Visualization {
         ArrayList<Transaction<BlockSnapshot>> actualElements = new ArrayList<Transaction<BlockSnapshot>>();
         for (Transaction<BlockSnapshot> element : newElements) {
             Location<World> tempLocation = element.getFinal().getLocation().get();
-            Location<World> visibleLocation = getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent);
-            element = new Transaction<BlockSnapshot>(element.getOriginal().withLocation(visibleLocation).withState(visibleLocation.getBlock()), element.getFinal().withLocation(visibleLocation));
+            Location<World> visibleLocation =
+                    getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent);
+            element = new Transaction<BlockSnapshot>(element.getOriginal().withLocation(visibleLocation).withState(visibleLocation.getBlock()),
+                    element.getFinal().withLocation(visibleLocation));
             height = element.getFinal().getPosition().getY();
             actualElements.add(element);
         }

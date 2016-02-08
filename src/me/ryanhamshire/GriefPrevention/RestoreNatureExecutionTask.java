@@ -102,7 +102,7 @@ class RestoreNatureExecutionTask implements Runnable {
                         entity.remove();
                     }
                 }
-    
+
                 // for players, always ensure there's air where the player is standing
                 else {
                     entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState());

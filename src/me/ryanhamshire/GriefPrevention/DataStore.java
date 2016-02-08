@@ -109,7 +109,7 @@ public abstract class DataStore {
     final static Path configFilePath = dataLayerFolderPath.resolve("config.conf");
     final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
-    final static Path bannedWordsFilePath = dataLayerFolderPath .resolve("bannedWords.txt");
+    final static Path bannedWordsFilePath = dataLayerFolderPath.resolve("bannedWords.txt");
 
     // the latest version of the data schema implemented here
     protected static final int latestSchemaVersion = 2;
@@ -203,8 +203,9 @@ public abstract class DataStore {
             }
 
             try {
-                if (inStream != null)
+                if (inStream != null) {
                     inStream.close();
+                }
             } catch (IOException exception) {
             }
         }
@@ -275,8 +276,9 @@ public abstract class DataStore {
 
         // close the file
         try {
-            if (outStream != null)
+            if (outStream != null) {
                 outStream.close();
+            }
         } catch (IOException exception) {
         }
     }
@@ -308,8 +310,9 @@ public abstract class DataStore {
     // long as they're still members of the group
     synchronized public int adjustGroupBonusBlocks(String groupName, int amount) {
         Integer currentValue = this.permissionToBonusBlocksMap.get(groupName);
-        if (currentValue == null)
+        if (currentValue == null) {
             currentValue = 0;
+        }
 
         currentValue += amount;
         this.permissionToBonusBlocksMap.put(groupName, currentValue);
@@ -543,14 +546,16 @@ public abstract class DataStore {
     synchronized public Claim getClaimAt(Location<World> location, boolean ignoreHeight, Claim cachedClaim) {
         // check cachedClaim guess first. if it's in the datastore and the
         // location is inside it, we're done
-        if (cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true))
+        if (cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) {
             return cachedClaim;
+        }
 
         // find a top level claim
         String chunkID = this.getChunkString(location);
         ArrayList<Claim> claimsInChunk = this.chunksToClaimsMap.get(chunkID);
-        if (claimsInChunk == null)
+        if (claimsInChunk == null) {
             return null;
+        }
 
         for (Claim claim : claimsInChunk) {
             if (claim.inDataStore && claim.contains(location, ignoreHeight, false)) {
@@ -559,8 +564,9 @@ public abstract class DataStore {
                 // return the SUBDIVISION, not the top level claim
                 for (int j = 0; j < claim.children.size(); j++) {
                     Claim subdivision = claim.children.get(j);
-                    if (subdivision.inDataStore && subdivision.contains(location, ignoreHeight, false))
+                    if (subdivision.inDataStore && subdivision.contains(location, ignoreHeight, false)) {
                         return subdivision;
+                    }
                 }
 
                 return claim;
@@ -604,7 +610,7 @@ public abstract class DataStore {
     // does NOT check minimum claim size constraints
     // does NOT visualize the new claim for any players
     synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent,
-            UUID id, Player creatingPlayer) {
+            UUID id, User creatingUser) {
         CreateClaimResult result = new CreateClaimResult();
 
         int smallx, bigx, smally, bigy, smallz, bigz;
@@ -663,7 +669,7 @@ public abstract class DataStore {
         if (claimsToCheck != null) {
             for (int i = 0; i < claimsToCheck.size(); i++) {
                 Claim otherClaim = claimsToCheck.get(i);
-    
+
                 // if we find an existing claim which will be overlapped
                 if (otherClaim.id != newClaim.id && otherClaim.inDataStore && otherClaim.overlaps(newClaim)) {
                     // result = fail, return conflicting claim
@@ -676,7 +682,7 @@ public abstract class DataStore {
 
         newClaim.context = new Context("claim", newClaim.id.toString());
         // Assign owner full flag permissions in claim context
-        creatingPlayer.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), "griefprevention.command.claim.flag", Tristate.TRUE);
+        creatingUser.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), "griefprevention.command.claim.flag", Tristate.TRUE);
         // otherwise add this new claim to the data store to make it effective
         this.addClaim(newClaim, true);
 
@@ -696,8 +702,9 @@ public abstract class DataStore {
             try {
                 for (UUID uuidKey : playerData.ignoredPlayers.keySet()) {
                     Boolean value = playerData.ignoredPlayers.get(uuidKey);
-                    if (value == null)
+                    if (value == null) {
                         continue;
+                    }
 
                     // admin-enforced ignores begin with an asterisk
                     if (value) {
@@ -769,7 +776,8 @@ public abstract class DataStore {
         // because depending on the status of the siege at the time the task
         // runs, there may or may not be a reason to run the task again
         SiegeCheckupTask siegeTask = new SiegeCheckupTask(siegeData);
-        Task task = Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(siegeTask).submit(GriefPrevention.instance);
+        Task task =
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(siegeTask).submit(GriefPrevention.instance);
         siegeData.checkupTaskID = task.getUniqueId();
     }
 
@@ -873,9 +881,11 @@ public abstract class DataStore {
                 // drop any remainder on the ground at his feet
                 Location<World> winnerLocation = winner.get().getLocation();
                 for (int i = 0; i < loserItems.size(); i++) {
-                    net.minecraft.entity.item.EntityItem entity = new net.minecraft.entity.item.EntityItem((net.minecraft.world.World) winnerLocation.getExtent(), winnerLocation.getX(), winnerLocation.getY(), winnerLocation.getZ(), loserItems.get(i));
+                    net.minecraft.entity.item.EntityItem entity =
+                            new net.minecraft.entity.item.EntityItem((net.minecraft.world.World) winnerLocation.getExtent(), winnerLocation.getX(),
+                                    winnerLocation.getY(), winnerLocation.getZ(), loserItems.get(i));
                     entity.setPickupDelay(10);
-                    ((net.minecraft.world.World)winnerLocation.getExtent()).spawnEntityInWorld(entity);
+                    ((net.minecraft.world.World) winnerLocation.getExtent()).spawnEntityInWorld(entity);
                 }
             }
         }
@@ -931,20 +941,24 @@ public abstract class DataStore {
         PlayerData playerData = this.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // player must be sieged
-        if (playerData.siegeData == null)
+        if (playerData.siegeData == null) {
             return;
+        }
 
         // claim isn't already under the same siege
-        if (playerData.siegeData.claims.contains(claim))
+        if (playerData.siegeData.claims.contains(claim)) {
             return;
+        }
 
         // admin claims can't be sieged
-        if (claim.isAdminClaim())
+        if (claim.isAdminClaim()) {
             return;
+        }
 
         // player must have some level of permission to be sieged in a claim
-        if (claim.allowAccess(player.getWorld(), player) != null)
+        if (claim.allowAccess(player.getWorld(), player) != null) {
             return;
+        }
 
         // otherwise extend the siege
         playerData.siegeData.claims.add(claim);
@@ -959,8 +973,10 @@ public abstract class DataStore {
             List<Claim> claimList = mapEntry.getValue();
             for (Claim claim : claimList) {
                 if ((playerID == claim.ownerID || (playerID != null && playerID.equals(claim.ownerID)))
-                        && (deleteCreativeClaims || !GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)))
+                        && (deleteCreativeClaims || !GriefPrevention.instance
+                        .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative))) {
                     claimsToDelete.add(claim);
+                }
             }
         }
 
@@ -995,14 +1011,17 @@ public abstract class DataStore {
             ArrayList<String> managers = new ArrayList<String>();
             claim.getPermissions(builders, containers, accessors, managers);
 
-            for (int i = 0; i < builders.size(); i++)
+            for (int i = 0; i < builders.size(); i++) {
                 result.claim.setPermission(builders.get(i), ClaimPermission.Build);
+            }
 
-            for (int i = 0; i < containers.size(); i++)
+            for (int i = 0; i < containers.size(); i++) {
                 result.claim.setPermission(containers.get(i), ClaimPermission.Inventory);
+            }
 
-            for (int i = 0; i < accessors.size(); i++)
+            for (int i = 0; i < accessors.size(); i++) {
                 result.claim.setPermission(accessors.get(i), ClaimPermission.Access);
+            }
 
             for (int i = 0; i < managers.size(); i++) {
                 result.claim.managers.add(managers.get(i));
@@ -1035,7 +1054,8 @@ public abstract class DataStore {
         this.addDefault(Messages.RestoreNatureActivate,
                 "Ready to restore some nature!  Right click to restore nature, and use /BasicClaims to stop.");
         this.addDefault(Messages.RestoreNatureAggressiveActivate,
-                "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and use /BasicClaims to stop.",
+                "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and"
+                        + " use /BasicClaims to stop.",
                 null);
         this.addDefault(Messages.FillModeActive, "Fill mode activated with radius {0}.  Right click an area to fill.", "0: fill radius");
         this.addDefault(Messages.TransferClaimPermission, "That command requires the administrative claims permission.");
@@ -1166,13 +1186,15 @@ public abstract class DataStore {
         this.addDefault(Messages.ResizeFailOverlap, "Can't resize here because it would overlap another nearby claim.");
         this.addDefault(Messages.ResizeStart, "Resizing claim.  Use your shovel again at the new location for this corner.");
         this.addDefault(Messages.ResizeFailOverlapSubdivision,
-                "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use your shovel at a corner to resize it.");
+                "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use "
+                        + "your shovel at a corner to resize it.");
         this.addDefault(Messages.SubdivisionStart,
                 "Subdivision corner set!  Use your shovel at the location for the opposite corner of this new subdivision.");
         this.addDefault(Messages.CreateSubdivisionOverlap, "Your selected area overlaps another subdivision.");
         this.addDefault(Messages.SubdivisionSuccess, "Subdivision created!  Use /trust to share it with friends.");
         this.addDefault(Messages.CreateClaimFailOverlap,
-                "You can't create a claim here because it would overlap your other claim.  Use /abandonclaim to delete it, or use your shovel at a corner to resize it.");
+                "You can't create a claim here because it would overlap your other claim.  Use /abandonclaim to delete it, or use your shovel at a "
+                        + "corner to resize it.");
         this.addDefault(Messages.CreateClaimFailOverlapOtherPlayer, "You can't create a claim here because it would overlap {0}'s claim.",
                 "0: other claim owner");
         this.addDefault(Messages.ClaimsDisabledWorld, "Land claims are disabled in this world.");
@@ -1217,7 +1239,8 @@ public abstract class DataStore {
                 "0: permission; 1: adjustment amount; 2: new total bonus");
         this.addDefault(Messages.InvalidPermissionID, "Please specify a player name, or a permission in [brackets].");
         this.addDefault(Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\W(claim|protect|lock)(\\W.*|$)",
-                "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how to claim land.");
+                "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how "
+                        + "to claim land.");
         this.addDefault(Messages.NoBuildOutsideClaims, "You can't build here unless you claim some land first.");
         this.addDefault(Messages.PlayerOfflineTime, "  Last login: {0} days ago.", "0: number of full days since last login");
         this.addDefault(Messages.BuildingOutsideClaims,
@@ -1226,7 +1249,8 @@ public abstract class DataStore {
                 "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.");
         this.addDefault(Messages.CommandBannedInPvP, "You can't use that command while in PvP combat.");
         this.addDefault(Messages.UnclaimCleanupWarning,
-                "The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you want to keep, you should reclaim it.");
+                "The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you "
+                        + "want to keep, you should reclaim it.");
         this.addDefault(Messages.BuySellNotConfigured, "Sorry, buying anhd selling claim blocks is disabled.");
         this.addDefault(Messages.NoTeleportPvPCombat, "You can't teleport while fighting another player.");
         this.addDefault(Messages.NoTNTDamageAboveSeaLevel, "Warning: TNT will not destroy blocks above sea level.");
@@ -1304,21 +1328,19 @@ public abstract class DataStore {
         this.addDefault(Messages.NoDropsAllowed, "You can't drop items in this claim.");
 
         // load the config file
-        try
-        {
+        try {
             HoconConfigurationLoader configurationLoader = HoconConfigurationLoader.builder().setPath(messagesFilePath).build();
             CommentedConfigurationNode mainNode = configurationLoader.load();
 
             // for each message ID
-            for (CustomizableMessage messageData : this.messages.values()) 
-            {
+            for (CustomizableMessage messageData : this.messages.values()) {
                 // if default is missing, log an error and use some fake data for
                 // now so that the plugin can run
-                if(messageData == null)
-                {
+                if (messageData == null) {
                     GriefPrevention.AddLogEntry("Missing message for " + messageData.id + ".  Please contact the developer.");
                     messageData =
-                            new CustomizableMessage(messageData.id, "Missing message!  ID: " + messageData.id + ".  Please contact a server admin.", null);
+                            new CustomizableMessage(messageData.id, "Missing message!  ID: " + messageData.id + ".  Please contact a server admin.",
+                                    null);
                 }
 
                 // read the message from the file, use default if necessary
@@ -1328,8 +1350,7 @@ public abstract class DataStore {
                     messageData.text = mainNode.getNode("Messages", messageData.id.name(), "Text").getString();
                 }
 
-                if(messageData.notes != null)
-                {
+                if (messageData.notes != null) {
                     if (mainNode.getNode("Messages", messageData.id.name(), "Notes").isVirtual()) {
                         mainNode.getNode("Messages", messageData.id.name(), "Notes").setValue(messageData.notes);
                     } else {
@@ -1371,7 +1392,7 @@ public abstract class DataStore {
         return message;
     }
 
-    public Text parseMessage(Messages messageID, TextColor color, String...args) {
+    public Text parseMessage(Messages messageID, TextColor color, String... args) {
         String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
         Text textMessage = Text.of(color, message);
         List<String> urls = extractUrls(message);
@@ -1413,8 +1434,7 @@ public abstract class DataStore {
         Pattern pattern = Pattern.compile(urlRegex, Pattern.CASE_INSENSITIVE);
         Matcher urlMatcher = pattern.matcher(text);
 
-        while (urlMatcher.find())
-        {
+        while (urlMatcher.find()) {
             containedUrls.add(text.substring(urlMatcher.start(0),
                     urlMatcher.end(0)));
         }
@@ -1426,8 +1446,9 @@ public abstract class DataStore {
     // converts player names in a list to uuids
     protected List<String> convertNameListToUUIDList(List<String> names) {
         // doesn't apply after schema has been updated to version 1
-        if (this.getSchemaVersion() >= 1)
+        if (this.getSchemaVersion() >= 1) {
             return names;
+        }
 
         // list to build results
         List<String> resultNames = new ArrayList<String>();

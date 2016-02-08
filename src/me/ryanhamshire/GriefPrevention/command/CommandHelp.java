@@ -34,15 +34,16 @@ public class CommandHelp implements CommandExecutor {
                                         .append(Text.of(TextColors.GOLD, "Command Description: "), commandSpec.getShortDescription(src).get(),
                                                 Text.of("\n"))
                                         .build())
-                        .append(Text.builder().append(Text.of(TextColors.GOLD, "Command Arguments: "), commandSpec.getUsage(src), Text.of("\n"))
-                                .build()).append(
-                                        Text.builder()
-                                                .append(Text.of(TextColors.GOLD, "Permission Node: "),
-                                                        Text.of(commandSpec.toString().substring(
-                                                                commandSpec.toString().lastIndexOf("permission") + 11,
-                                                                commandSpec.toString().indexOf("argumentParser") - 2)),
-                                                        Text.of("\n"))
-                                                .build())
+                                .append(Text.builder()
+                                        .append(Text.of(TextColors.GOLD, "Command Arguments: "), commandSpec.getUsage(src), Text.of("\n"))
+                                        .build()).append(
+                                Text.builder()
+                                        .append(Text.of(TextColors.GOLD, "Permission Node: "),
+                                                Text.of(commandSpec.toString().substring(
+                                                        commandSpec.toString().lastIndexOf("permission") + 11,
+                                                        commandSpec.toString().indexOf("argumentParser") - 2)),
+                                                Text.of("\n"))
+                                        .build())
                                 .build();
                 helpList.add(commandHelp);
             }

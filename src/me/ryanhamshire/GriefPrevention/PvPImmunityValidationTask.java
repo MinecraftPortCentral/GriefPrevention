@@ -41,12 +41,14 @@ class PvPImmunityValidationTask implements Runnable {
 
     @Override
     public void run() {
-        if (!player.isOnline())
+        if (!player.isOnline()) {
             return;
+        }
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        if (!playerData.pvpImmune)
+        if (!playerData.pvpImmune) {
             return;
+        }
 
         // check the player's inventory for anything
         if (!GriefPrevention.isInventoryEmpty(player)) {

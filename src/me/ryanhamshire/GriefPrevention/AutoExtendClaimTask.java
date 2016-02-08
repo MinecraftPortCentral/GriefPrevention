@@ -58,8 +58,9 @@ public class AutoExtendClaimTask implements Runnable {
     private int getLowestBuiltY() {
         int y = this.claim.getLesserBoundaryCorner().getBlockY();
 
-        if (this.yTooSmall(y))
+        if (this.yTooSmall(y)) {
             return y;
+        }
 
         for (Location<Chunk> chunk : this.chunks) {
             BiomeType biome = chunk.getBiome();
@@ -76,14 +77,16 @@ public class AutoExtendClaimTask implements Runnable {
                             blockType = chunk.add(0, --y, 0).getBlockType();
                         }
 
-                        if (this.yTooSmall(y))
+                        if (this.yTooSmall(y)) {
                             return y;
+                        }
                     }
                 }
             }
 
-            if (this.yTooSmall(y))
+            if (this.yTooSmall(y)) {
                 return y;
+            }
         }
 
         return y;

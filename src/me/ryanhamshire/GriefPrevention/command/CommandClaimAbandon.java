@@ -39,10 +39,8 @@ public class CommandClaimAbandon implements CommandExecutor {
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
         if (claim == null) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
-        }
-
-        // verify ownership
-        else if (claim.allowEdit(player) != null) {
+        } else if (claim.allowEdit(player) != null) {
+            // verify ownership
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
         }
 
@@ -51,9 +49,7 @@ public class CommandClaimAbandon implements CommandExecutor {
         else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
             return CommandResult.empty();
-        }
-
-        else {
+        } else {
             // delete it
             claim.removeSurfaceFluids(null);
             // remove all context permissions
@@ -71,7 +67,9 @@ public class CommandClaimAbandon implements CommandExecutor {
             // adjust claim blocks when abandoning a top level claim
             if (claim.parent == null) {
                 playerData.setAccruedClaimBlocks(player.getWorld(),
-                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.abandonReturnRatio))));
+                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math
+                                .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
+                                        .getConfig().claim.abandonReturnRatio))));
             }
 
             // tell the player how many claim blocks he has left

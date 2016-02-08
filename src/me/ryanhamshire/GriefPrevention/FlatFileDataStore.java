@@ -33,7 +33,6 @@ import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
-import org.spongepowered.common.world.storage.SpongePlayerDataHandler;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -46,12 +45,9 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -322,7 +318,8 @@ public class FlatFileDataStore extends DataStore {
         claimData.getConfig().worldUniqueId = claim.world.getUniqueId().toString();
         claimData.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
         claimData.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
-        claim.getPermissions(claimData.getConfig().builders, claimData.getConfig().containers, claimData.getConfig().accessors, claimData.getConfig().managers);
+        claim.getPermissions(claimData.getConfig().builders, claimData.getConfig().containers, claimData.getConfig().accessors,
+                claimData.getConfig().managers);
 
         claimData.save();
     }
@@ -393,7 +390,8 @@ public class FlatFileDataStore extends DataStore {
             playerFilePath = rootPath.resolve(worldProperties.getWorldName()).resolve(playerDataPath).resolve(playerUniqueId.toString());
         }
 
-        PlayerStorageData storageData = new PlayerStorageData(playerFilePath, playerUniqueId, GriefPrevention.getActiveConfig(worldProperties).getConfig().general.claimInitialBlocks);
+        PlayerStorageData storageData = new PlayerStorageData(playerFilePath, playerUniqueId,
+                GriefPrevention.getActiveConfig(worldProperties).getConfig().general.claimInitialBlocks);
         playerData = new PlayerData();
         playerData.playerID = playerUniqueId;
         playerData.worldStorageData.put(worldProperties.getUniqueId(), storageData);
@@ -456,8 +454,9 @@ public class FlatFileDataStore extends DataStore {
             }
 
             try {
-                if (inStream != null)
+                if (inStream != null) {
                     inStream.close();
+                }
             } catch (IOException exception) {
             }
 
@@ -469,7 +468,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
     @Override
-            void updateSchemaVersionInStorage(int versionToSet) {
+    void updateSchemaVersionInStorage(int versionToSet) {
         BufferedWriter outStream = null;
 
         try {
@@ -488,29 +487,30 @@ public class FlatFileDataStore extends DataStore {
 
         // close the file
         try {
-            if (outStream != null)
+            if (outStream != null) {
                 outStream.close();
+            }
         } catch (IOException exception) {
         }
 
     }
 
     @Override
-            void incrementNextClaimID() {
+    void incrementNextClaimID() {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
-            PlayerData getPlayerDataFromStorage(UUID playerID) {
+    PlayerData getPlayerDataFromStorage(UUID playerID) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-            void overrideSavePlayerData(UUID playerID, PlayerData playerData) {
+    void overrideSavePlayerData(UUID playerID, PlayerData playerData) {
         // TODO Auto-generated method stub
-        
+
     }
 
 }

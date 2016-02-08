@@ -48,8 +48,9 @@ public class CheckForPortalTrapTask implements Runnable {
     @Override
     public void run() {
         // if player has logged out, do nothing
-        if (!this.player.isOnline())
+        if (!this.player.isOnline()) {
             return;
+        }
 
         // otherwise if still standing in a portal frame, teleport him back
         // through

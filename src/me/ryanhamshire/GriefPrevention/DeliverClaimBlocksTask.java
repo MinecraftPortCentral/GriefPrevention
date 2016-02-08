@@ -45,8 +45,9 @@ class DeliverClaimBlocksTask implements Runnable {
 
     @Override
     public void run() {
-        if (GriefPrevention.instance.config_claims_blocksAccruedPerHour <= 0)
+        if (GriefPrevention.instance.config_claims_blocksAccruedPerHour <= 0) {
             return;
+        }
 
         // if no player specified, this task will create a player-specific task
         // for each online player, scheduled one tick apart
@@ -94,7 +95,7 @@ class DeliverClaimBlocksTask implements Runnable {
                     GriefPrevention.AddLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
                 }
             } catch (IllegalArgumentException e) // can't measure distance when
-                                                 // to/from are different worlds
+            // to/from are different worlds
             {
 
             } catch (Exception e) {

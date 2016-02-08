@@ -29,8 +29,9 @@ public class CommandRestoreNatureFill implements CommandExecutor {
 
         // set radius based on arguments
         playerData.fillRadius = ctx.<Integer>getOne("radius").get();
-        if (playerData.fillRadius < 0)
+        if (playerData.fillRadius < 0) {
             playerData.fillRadius = 2;
+        }
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.FillModeActive, String.valueOf(playerData.fillRadius));
         return CommandResult.success();

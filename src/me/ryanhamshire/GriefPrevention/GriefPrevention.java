@@ -32,6 +32,7 @@ import static org.spongepowered.api.command.args.GenericArguments.playerOrSource
 import static org.spongepowered.api.command.args.GenericArguments.string;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.command.CommandAccessTrust;
 import me.ryanhamshire.GriefPrevention.command.CommandAddFlagCmdPermission;
@@ -102,6 +103,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
 import org.spongepowered.api.item.ItemType;
@@ -113,6 +115,7 @@ import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColor;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
@@ -130,6 +133,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -153,6 +157,8 @@ public class GriefPrevention {
     public PermissionService permissionService;
 
     public Optional<EconomyService> economyService;
+
+    public boolean permPluginInstalled = false;
 
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
@@ -218,8 +224,9 @@ public class GriefPrevention {
         if (customLogType != null && GriefPrevention.instance.customLogger != null) {
             GriefPrevention.instance.customLogger.AddEntry(entry, customLogType);
         }
-        if (!excludeFromServerLogs)
+        if (!excludeFromServerLogs) {
             log.info("GriefPrevention: " + entry);
+        }
     }
 
     public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType) {
@@ -254,6 +261,9 @@ public class GriefPrevention {
 
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
 
+        this.permPluginInstalled = !Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase
+                ("sponge");
+        
         // when datastore initializes, it loads player and claim data, and posts some stats to the log
         // TODO - add proper DB support
         /*if (this.databaseUrl.length() > 0) {
@@ -273,7 +283,9 @@ public class GriefPrevention {
                 this.dataStore = databaseStore;
             } catch (Exception e) {
                 GriefPrevention.AddLogEntry(
-                        "Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config so that GriefPrevention can use the file system to store data.");
+                        "Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database
+                        config settings resolve the issue, or delete those lines from your config so that GriefPrevention can use the file system
+                        to store data.");
                 e.printStackTrace();
                 return;
             }
@@ -309,16 +321,18 @@ public class GriefPrevention {
         //Sponge.getGame().getScheduler().createTaskBuilder().delay(2, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
 
         //if economy is enabled
-        if(this.economyService.isPresent()) {
+        if (this.economyService.isPresent()) {
             GriefPrevention.AddLogEntry("GriefPrevention economy integration enabled.");
-            GriefPrevention.AddLogEntry("Hooked into economy: " + Sponge.getServiceManager().getRegistration(EconomyService.class).get().getPlugin().getId() + ".");
+            GriefPrevention.AddLogEntry(
+                    "Hooked into economy: " + Sponge.getServiceManager().getRegistration(EconomyService.class).get().getPlugin().getId() + ".");
             GriefPrevention.AddLogEntry("Ready to buy/sell claim blocks!");
         }
 
         // load ignore lists for any already-online players
         Collection<Player> players = Sponge.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
-            new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoredPlayers).start();
+            new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoredPlayers)
+                    .start();
         }
 
         Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
@@ -357,8 +371,10 @@ public class GriefPrevention {
                     }
                 }
 
-                DataStore.dimensionConfigMap.put(world.getProperties().getUniqueId(), new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
-                DataStore.worldConfigMap.put(world.getProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD, rootConfigPath.resolve(dimType.getId()).resolve(world.getProperties().getWorldName()).resolve("world.conf")));
+                DataStore.dimensionConfigMap.put(world.getProperties().getUniqueId(), new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION,
+                        rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
+                DataStore.worldConfigMap.put(world.getProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
+                        rootConfigPath.resolve(dimType.getId()).resolve(world.getProperties().getWorldName()).resolve("world.conf")));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -443,7 +459,7 @@ public class GriefPrevention {
                                 .arguments(GenericArguments.firstParsing(GenericArguments.flags().flag("-r", "r")
                                         .buildWith(GenericArguments.seq(optional(onlyOne(string(Text.of("flag")))),
                                                 optional(onlyOne(GenericArguments.remainingJoinedStrings(Text.of("value"))))))))
-                .executor(new CommandClaimFlag(GPPermissions.COMMAND_CLAIMFLAG)).build());
+                                .executor(new CommandClaimFlag(GPPermissions.COMMAND_CLAIMFLAG)).build());
 
         HashMap<String, String> targetChoices = new HashMap<>();
         targetChoices.put("player", "player");
@@ -457,7 +473,7 @@ public class GriefPrevention {
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
-        .executor(new CommandAddFlagPermission()).build());
+                .executor(new CommandAddFlagPermission()).build());
 
         subcommands.put(Arrays.asList("addflagcmdpermission"), CommandSpec.builder()
                 .description(Text.of("Adds flag command permission to target."))
@@ -504,8 +520,8 @@ public class GriefPrevention {
                 .put(Arrays.asList("givepet"),
                         CommandSpec.builder().description(Text.of("Allows a player to give away a pet they tamed"))
                                 .permission("griefprevention.command.givepet").arguments(GenericArguments
-                                        .firstParsing(GenericArguments.literal(Text.of("player"), "cancel"), player(Text.of("player"))))
-                .executor(new CommandGivePet()).build());
+                                .firstParsing(GenericArguments.literal(Text.of("player"), "cancel"), player(Text.of("player"))))
+                                .executor(new CommandGivePet()).build());
 
         subcommands
                 .put(Arrays.asList("gpblockinfo"),
@@ -574,7 +590,7 @@ public class GriefPrevention {
                 CommandSpec.builder().description(Text.of("Grants a player full access to your claim(s)"))
                         .extendedDescription(Text.of("Grants a player full access to your claim(s).\n"
                                 + "See also /untrust, /containertrust, /accesstrust, and /permissiontrust."))
-                .permission("griefprevention.command.trust").arguments(string(Text.of("subject"))).executor(new CommandTrust()).build());
+                        .permission("griefprevention.command.trust").arguments(string(Text.of("subject"))).executor(new CommandTrust()).build());
 
         subcommands.put(Arrays.asList("trustlist"), CommandSpec.builder().description(Text.of("Lists permissions for the claim you're standing in"))
                 .permission("griefprevention.command.trustlist").executor(new CommandTrustList()).build());
@@ -633,12 +649,14 @@ public class GriefPrevention {
     public Optional<User> resolvePlayerByName(String name) {
         // try online players first
         Optional<Player> targetPlayer = Sponge.getGame().getServer().getPlayer(name);
-        if (targetPlayer.isPresent())
+        if (targetPlayer.isPresent()) {
             return Optional.of((User) targetPlayer.get());
+        }
 
         Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(name);
-        if (user.isPresent())
+        if (user.isPresent()) {
             return user;
+        }
 
         return Optional.empty();
     }
@@ -740,6 +758,12 @@ public class GriefPrevention {
         return Text.of(GriefPrevention.instance.dataStore.getMessage(messageID, args));
     }
 
+    public static void sendMessage(Cause cause, TextColor color, Messages messageID, String... args) {
+        if (cause.root() instanceof CommandSource) {
+            sendMessage((CommandSource) cause.root(), color, messageID, args);
+        }
+    }
+
     // sends a color-coded message to a player
     public static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
         sendMessage(player, color, messageID, 0, args);
@@ -750,14 +774,27 @@ public class GriefPrevention {
         sendMessage(player, GriefPrevention.instance.dataStore.parseMessage(messageID, color, args), delayInTicks);
     }
 
+    public static void sendMessage(Cause cause, TextColor color, String message) {
+        if (cause.root() instanceof CommandSource) {
+            sendMessage((CommandSource) cause.root(), color, message);
+        }
+    }
+
     public static void sendMessage(CommandSource player, TextColor color, String message) {
         sendMessage(player, Text.of(color, message));
     }
 
+    public static void sendMessage(Cause cause, Text message) {
+        if (cause.root() instanceof CommandSource) {
+            sendMessage((CommandSource) cause.root(), message);
+        }
+    }
+
     // sends a color-coded message to a player
     public static void sendMessage(CommandSource player, Text message) {
-        if (message == Text.of() || message == null)
+        if (message == Text.of() || message == null) {
             return;
+        }
 
         if (player == null) {
             GriefPrevention.AddLogEntry(Text.of(message).toPlain());
@@ -800,24 +837,30 @@ public class GriefPrevention {
         return GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.claimMode == mode.ordinal();
     }
 
-    public String allowBuild(Player player, Location<World> location) {
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+    public String allowBuild(User user, Location<World> location) {
+        PlayerData playerData = this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
         // exception: administrators in ignore claims mode and special player accounts created by server mods
-        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().claim.alwaysIgnoreClaimsList.contains(player.getUniqueId().toString()))
+        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().claim
+                .alwaysIgnoreClaimsList.contains(user.getUniqueId().toString())) {
             return null;
+        }
 
         // wilderness rules
         if (claim == null) {
             // no building in the wilderness in creative mode
-            if (claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative) || claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.SurvivalRequiringClaims)) {
+            if (user instanceof Player && claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative) || claimModeIsActive(location
+                    .getExtent().getProperties(), ClaimsMode.SurvivalRequiringClaims)) {
                 // exception: when chest claims are enabled, players who have zero land claims and are placing a chest
-                if (!player.getItemInHand().isPresent() || player.getItemInHand().get().getItem() != ItemTypes.CHEST || playerData.playerWorldClaims.get(location.getExtent().getUniqueId()).size() > 0
+                Player player = (Player) user;
+                if (!player.getItemInHand().isPresent() || player.getItemInHand().get().getItem() != ItemTypes.CHEST
+                        || playerData.playerWorldClaims.get(location.getExtent().getUniqueId()).size() > 0
                         || GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimRadius == -1) {
                     String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
-                    if (player.hasPermission("griefprevention.ignoreclaims"))
+                    if (player.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
                         reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+                    }
                     reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL_RAW);
                     return reason;
                 } else {
@@ -835,32 +878,34 @@ public class GriefPrevention {
         else {
             // cache the claim for later reference
             playerData.lastClaim = claim;
-            return claim.allowBuild(player, location.getBlockType());
+            return claim.allowBuild(user, location);
         }
     }
 
-    public String allowBreak(Player player, BlockSnapshot snapshot) {
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAt(snapshot.getLocation().get(), false, playerData.lastClaim);
+    public String allowBreak(User user, Location<World> location) {
+        PlayerData playerData = this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId());
+        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
         // exception: administrators in ignore claims mode, and special player
         // accounts created by server mods
-        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.alwaysIgnoreClaimsList.contains(player.getUniqueId().toString()))
+        if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().claim.alwaysIgnoreClaimsList
+                .contains(user.getUniqueId().toString())) {
             return null;
+        }
 
         // wilderness rules
         if (claim == null) {
             // no building in the wilderness in creative mode
-            if (claimModeIsActive(snapshot.getLocation().get().getExtent().getProperties(), ClaimsMode.Creative) || claimModeIsActive(snapshot.getLocation().get().getExtent().getProperties(), ClaimsMode.SurvivalRequiringClaims)) {
+            if (claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative) || claimModeIsActive(
+                    location.getExtent().getProperties(), ClaimsMode.SurvivalRequiringClaims)) {
                 String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
-                if (player.hasPermission("griefprevention.ignoreclaims"))
+                if (user.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
                     reason += "  " + this.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+                }
                 reason += "  " + this.dataStore.getMessage(Messages.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL_RAW);
                 return reason;
-            }
-
-            // but it's fine in survival mode
-            else {
+            } else {
+                // but it's fine in survival mode
                 return null;
             }
         } else {
@@ -868,7 +913,7 @@ public class GriefPrevention {
             playerData.lastClaim = claim;
 
             // if not in the wilderness, then apply claim rules (permissions, etc)
-            return claim.allowBreak(player, snapshot.getLocation().get().getBlockType());
+            return claim.allowBreak(user, location);
         }
     }
 
@@ -878,12 +923,14 @@ public class GriefPrevention {
     // will not be changed (only the area bordering the claim)
     public void restoreClaim(Claim claim, long delayInTicks) {
         // admin claims aren't automatically cleaned up when deleted or abandoned
-        if (claim.isAdminClaim())
+        if (claim.isAdminClaim()) {
             return;
+        }
 
         // it's too expensive to do this for huge claims
-        if (claim.getArea() > 10000)
+        if (claim.getArea() > 10000) {
             return;
+        }
 
         ArrayList<Chunk> chunks = claim.getChunks();
         for (Chunk chunk : chunks) {
@@ -897,11 +944,13 @@ public class GriefPrevention {
         int maxHeight = chunk.getWorld().getDimension().getBuildHeight();
         BlockSnapshot[][][] snapshots = new BlockSnapshot[18][maxHeight][18];
         BlockSnapshot startBlock = chunk.createSnapshot(0, 0, 0);
-        Location<World> startLocation = new Location<World>(chunk.getWorld(), startBlock.getPosition().getX() - 1, 0, startBlock.getPosition().getZ() - 1);
+        Location<World> startLocation =
+                new Location<World>(chunk.getWorld(), startBlock.getPosition().getX() - 1, 0, startBlock.getPosition().getZ() - 1);
         for (int x = 0; x < snapshots.length; x++) {
             for (int z = 0; z < snapshots[0][0].length; z++) {
                 for (int y = 0; y < snapshots[0].length; y++) {
-                    snapshots[x][y][z] = chunk.getWorld().createSnapshot(startLocation.getBlockX() + x, startLocation.getBlockY() + y, startLocation.getBlockZ() + z);
+                    snapshots[x][y][z] = chunk.getWorld()
+                            .createSnapshot(startLocation.getBlockX() + x, startLocation.getBlockY() + y, startLocation.getBlockZ() + z);
                 }
             }
         }
@@ -913,7 +962,8 @@ public class GriefPrevention {
         // create task when done processing, this task will create a main thread task to actually update the world with processing results
         RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getDimension().getType(),
                 lesserBoundaryCorner.getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()),
-                aggressiveMode, claimModeIsActive(lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative), playerReceivingVisualization);
+                aggressiveMode, claimModeIsActive(lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative),
+                playerReceivingVisualization);
         Sponge.getGame().getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
     }
 
@@ -930,7 +980,7 @@ public class GriefPrevention {
                 int lastIndex = blockInfo.lastIndexOf(":");
                 try {
                     if (blockInfo.length() >= lastIndex + 1) {
-                        meta = Integer.parseInt(blockInfo.substring(lastIndex+1, blockInfo.length()));
+                        meta = Integer.parseInt(blockInfo.substring(lastIndex + 1, blockInfo.length()));
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

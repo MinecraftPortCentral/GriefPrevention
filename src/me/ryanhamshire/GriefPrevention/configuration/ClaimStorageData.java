@@ -1,6 +1,5 @@
 package me.ryanhamshire.GriefPrevention.configuration;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -21,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -153,6 +151,7 @@ public class ClaimStorageData {
 
     @ConfigSerializable
     public static class ClaimDataNode {
+
         @Setting(value = MAIN_WORLD_UUID, comment = "The world uuid associated with claim.")
         public String worldUniqueId;
         @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
@@ -179,6 +178,7 @@ public class ClaimStorageData {
 
     @ConfigSerializable
     public static class ClaimDataFlagsCategory extends Category {
+
         @Setting(value = FLAGS_BLOCK_PLACE, comment = "Allow/deny placing blocks.")
         public boolean blockPlace = false;
         @Setting(value = FLAGS_BLOCK_BREAK, comment = "Allow/deny breaking blocks.")
@@ -271,7 +271,7 @@ public class ClaimStorageData {
         }
 
         public void setFlagValue(String flag, Object value) {
-            switch(flag) {
+            switch (flag) {
                 case FLAGS_BLOCK_BREAK:
                     this.blockBreak = (boolean) value;
                     return;
@@ -357,12 +357,12 @@ public class ClaimStorageData {
                     this.waterFlow = (boolean) value;
                     return;
                 default:
-                   return;
+                    return;
             }
         }
 
         public Object getFlagValue(String flag) {
-            switch(flag) {
+            switch (flag) {
                 case FLAGS_BLOCK_BREAK:
                     return this.blockBreak;
                 case FLAGS_BLOCK_COMMANDS:
@@ -427,5 +427,6 @@ public class ClaimStorageData {
 
     @ConfigSerializable
     private static class Category {
+
     }
 }

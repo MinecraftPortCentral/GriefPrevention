@@ -60,7 +60,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
             return;
         }
 
-        Iterator<Claim> iterator = ((ArrayList)claimList.clone()).iterator();
+        Iterator<Claim> iterator = ((ArrayList) claimList.clone()).iterator();
         while (iterator.hasNext()) {
             Claim claim = iterator.next();
             // skip administrative claims
@@ -149,7 +149,8 @@ public class CleanupUnusedClaimsTask implements Runnable {
                     // if the owner has been gone at least a week, and if he has
                     // ONLY the new player claim, it will be removed
                     Optional<Instant> lastPlayed = SpongePlayerDataHandler.getLastPlayed(claim.ownerID);
-                    if (lastPlayed.isPresent() && lastPlayed.get().plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration))
+                    if (lastPlayed.isPresent() && lastPlayed.get()
+                            .plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration))
                             .isBefore(Instant.now())) {
                         GriefPrevention.instance.dataStore.deleteClaim(claim, true);
                         GriefPrevention.AddLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "

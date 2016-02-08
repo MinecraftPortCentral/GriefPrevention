@@ -61,22 +61,25 @@ public class CustomLogger {
             Scheduler scheduler = Sponge.getGame().getScheduler();
             scheduler.createTaskBuilder().async().execute(new EntryWriter()).delay(this.secondsBetweenWrites, TimeUnit.SECONDS).interval(this
                     .secondsBetweenWrites, TimeUnit.SECONDS).submit(GriefPrevention.instance);
-            scheduler.createTaskBuilder().async().execute(new ExpiredLogRemover()).delay(1, TimeUnit.DAYS).interval(1, TimeUnit.DAYS).submit(GriefPrevention
-                    .instance);
+            scheduler.createTaskBuilder().async().execute(new ExpiredLogRemover()).delay(1, TimeUnit.DAYS).interval(1, TimeUnit.DAYS)
+                    .submit(GriefPrevention
+                            .instance);
         }
     }
 
-    private static final Pattern inlineFormatterPattern = Pattern.compile("§.");
+    private static final Pattern inlineFormatterPattern = Pattern.compile("ï¿½.");
 
     void AddEntry(String entry, CustomLogEntryTypes entryType) {
         // if disabled, do nothing
         int daysToKeepLogs = GriefPrevention.getGlobalConfig().getConfig().logging.loggingDaysToKeep;
-        if (daysToKeepLogs == 0)
+        if (daysToKeepLogs == 0) {
             return;
+        }
 
         // if entry type is not enabled, do nothing
-        if (!this.isEnabledType(entryType))
+        if (!this.isEnabledType(entryType)) {
             return;
+        }
 
         // otherwise write to the in-memory buffer, after removing formatters
         Matcher matcher = inlineFormatterPattern.matcher(entry);
@@ -86,16 +89,21 @@ public class CustomLogger {
     }
 
     private boolean isEnabledType(CustomLogEntryTypes entryType) {
-        if (entryType == CustomLogEntryTypes.Exception)
+        if (entryType == CustomLogEntryTypes.Exception) {
             return true;
-        if (entryType == CustomLogEntryTypes.SocialActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingSocialActions)
+        }
+        if (entryType == CustomLogEntryTypes.SocialActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingSocialActions) {
             return false;
-        if (entryType == CustomLogEntryTypes.SuspiciousActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingSuspiciousActivity)
+        }
+        if (entryType == CustomLogEntryTypes.SuspiciousActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingSuspiciousActivity) {
             return false;
-        if (entryType == CustomLogEntryTypes.AdminActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingAdminActivity)
+        }
+        if (entryType == CustomLogEntryTypes.AdminActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingAdminActivity) {
             return false;
-        if (entryType == CustomLogEntryTypes.Debug && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug)
+        }
+        if (entryType == CustomLogEntryTypes.Debug && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug) {
             return false;
+        }
 
         return true;
     }
@@ -103,8 +111,9 @@ public class CustomLogger {
     void WriteEntries() {
         try {
             // if nothing to write, stop here
-            if (this.queuedEntries.length() == 0)
+            if (this.queuedEntries.length() == 0) {
                 return;
+            }
 
             // determine filename based on date
             String filename = this.filenameFormat.format(new Date()) + ".log";
@@ -135,14 +144,16 @@ public class CustomLogger {
             expirationBoundary.add(Calendar.DATE, -daysToKeepLogs);
             for (int i = 0; i < files.length; i++) {
                 File file = files[i];
-                if (file.isDirectory())
+                if (file.isDirectory()) {
                     continue; // skip any folders
+                }
 
                 String filename = file.getName().replace(".log", "");
                 String[] dateParts = filename.split("_"); // format is
-                                                          // yyyy_MM_dd
-                if (dateParts.length != 3)
+                // yyyy_MM_dd
+                if (dateParts.length != 3) {
                     continue;
+                }
 
                 try {
                     int year = Integer.parseInt(dateParts[0]);

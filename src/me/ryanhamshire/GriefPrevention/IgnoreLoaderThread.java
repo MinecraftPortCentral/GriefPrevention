@@ -49,8 +49,9 @@ public class IgnoreLoaderThread extends Thread {
         File ignoreFile = new File(DataStore.playerDataFolderPath + File.separator + this.playerToLoad + ".ignore");
 
         // if the file doesn't exist, there's nothing to do here
-        if (!ignoreFile.exists())
+        if (!ignoreFile.exists()) {
             return;
+        }
 
         boolean needRetry = false;
         int retriesRemaining = 5;
@@ -87,8 +88,9 @@ public class IgnoreLoaderThread extends Thread {
             }
 
             try {
-                if (needRetry)
+                if (needRetry) {
                     Thread.sleep(5);
+                }
             } catch (InterruptedException exception) {
             }
 

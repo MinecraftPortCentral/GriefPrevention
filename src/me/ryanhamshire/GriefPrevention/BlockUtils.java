@@ -35,8 +35,9 @@ public class BlockUtils {
 
     public static void sendBlockChange(Player player, BlockSnapshot snapshot) {
         EntityPlayerMP playermp = (EntityPlayerMP) player;
-        if (playermp.playerNetServerHandler == null)
+        if (playermp.playerNetServerHandler == null) {
             return;
+        }
 
         S23PacketBlockChange packet = new S23PacketBlockChange((net.minecraft.world.World) snapshot.getLocation().get().getExtent(),
                 new BlockPos(snapshot.getPosition().getX(), snapshot.getPosition().getY(), snapshot.getPosition().getZ()));

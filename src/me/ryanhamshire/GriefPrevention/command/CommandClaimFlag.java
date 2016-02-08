@@ -70,7 +70,8 @@ public class CommandClaimFlag extends BaseCommand {
                 List<Text> flagList = Lists.newArrayList();
                 for (String flagName : claim.getClaimData().getConfig().flags.getFlagMap().keySet()) {
                     Text flagValue = Text.builder().append(Text.of(TextColors.GRAY, "Flag: ", flagName, "\n")).append(Text.builder()
-                            .append(Text.of(TextColors.GOLD, "Value: "), Text.of(claim.getClaimData().getConfig().flags.getFlagValue(flagName).toString()),
+                            .append(Text.of(TextColors.GOLD, "Value: "),
+                                    Text.of(claim.getClaimData().getConfig().flags.getFlagValue(flagName).toString()),
                                     Text.of("\n"))
                             .build()).build();
                     flagList.add(flagValue);
@@ -107,8 +108,9 @@ public class CommandClaimFlag extends BaseCommand {
                 ArrayList<String> newValue = (ArrayList<String>) claim.getClaimData().getConfig().flags.getFlagValue(flag);
                 newValue.removeAll(value);
                 claim.getClaimData().getConfig().flags.setFlagValue(flag, newValue);
-                src.sendMessage(Text.of(TextColors.GREEN, "Set value of ", flag, " to ",claim.getClaimData().getConfig().flags.getFlagValue(flag).toString
-                        ()));
+                src.sendMessage(
+                        Text.of(TextColors.GREEN, "Set value of ", flag, " to ", claim.getClaimData().getConfig().flags.getFlagValue(flag).toString
+                                ()));
             } else {
                 src.sendMessage(Text.of(TextColors.RED, "Value types not compatible!"));
             }

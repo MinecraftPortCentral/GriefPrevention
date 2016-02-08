@@ -43,8 +43,9 @@ class VisualizationReversionTask implements Runnable {
     public void run() {
         // don't do anything if the player's current visualization is different
         // from the one scheduled to revert
-        if (playerData.currentVisualization != visualization)
+        if (playerData.currentVisualization != visualization) {
             return;
+        }
 
         Visualization.Revert(player);
     }

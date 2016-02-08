@@ -33,9 +33,7 @@ import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
 import me.ryanhamshire.GriefPrevention.TextMode;
 import me.ryanhamshire.GriefPrevention.Visualization;
-import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -81,8 +79,7 @@ public class CommandHelper {
         else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
             return CommandResult.empty();
-        }
-        else {
+        } else {
             // delete it
             claim.removeSurfaceFluids(null);
             GriefPrevention.instance.dataStore.deleteClaim(claim, true);
@@ -98,7 +95,9 @@ public class CommandHelper {
             // adjust claim blocks when abandoning a top level claim
             if (claim.parent == null) {
                 playerData.setAccruedClaimBlocks(player.getWorld(),
-                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.abandonReturnRatio))));
+                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math
+                                .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
+                                        .getConfig().claim.abandonReturnRatio))));
             }
 
             // tell the player how many claim blocks he has left
@@ -118,8 +117,9 @@ public class CommandHelper {
     // helper method to resolve a player name from the player's UUID
     public static String lookupPlayerName(UUID playerID) {
         // parameter validation
-        if (playerID == null)
+        if (playerID == null) {
             return "somebody";
+        }
 
         // check the cache
         Optional<User> player = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(playerID);
@@ -145,11 +145,9 @@ public class CommandHelper {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.InvalidPermissionID);
                 return;
             }
-        }
-        else if (recipientName.contains(".")) {
+        } else if (recipientName.contains(".")) {
             permission = recipientName;
-        }
-        else {
+        } else {
             otherPlayer = GriefPrevention.instance.resolvePlayerByName(recipientName).orElse(null);
             if (otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all")) {
                 throw new CommandException(GriefPrevention.getMessage(Messages.PlayerNotFound2));
@@ -192,10 +190,10 @@ public class CommandHelper {
                         errorMessage = claim.allowAccess(player.getWorld(), player);
                         break;
                     case Inventory:
-                        errorMessage = claim.allowContainers(player);
+                        errorMessage = claim.allowContainers(player, player.getLocation());
                         break;
                     default:
-                        errorMessage = claim.allowBuild(player, BlockTypes.AIR);
+                        errorMessage = claim.allowBuild(player, player.getLocation());
                 }
             }
 
@@ -233,8 +231,9 @@ public class CommandHelper {
         }
 
         // notify player
-        if (recipientName.equals("public"))
+        if (recipientName.equals("public")) {
             recipientName = GriefPrevention.instance.dataStore.getMessage(Messages.CollectivePublic);
+        }
         String permissionDescription;
         if (permissionLevel == null) {
             permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.PermissionsPermission);
