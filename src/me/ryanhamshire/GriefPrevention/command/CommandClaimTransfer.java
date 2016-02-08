@@ -3,6 +3,7 @@ package me.ryanhamshire.GriefPrevention.command;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
 import me.ryanhamshire.GriefPrevention.DataStore.NoTransferException;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.TextMode;
@@ -36,7 +37,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         }
 
         // check additional permission for admin claims
-        if (claim.isAdminClaim() && !player.hasPermission("griefprevention.adminclaims")) {
+        if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.TransferClaimPermission));
             } catch (CommandException e1) {

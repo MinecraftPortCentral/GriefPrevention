@@ -3,6 +3,7 @@ package me.ryanhamshire.GriefPrevention.command;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
 import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
@@ -33,7 +34,7 @@ public class CommandClaimDelete implements CommandExecutor {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
         } else {
             // deleting an admin claim additionally requires the adminclaims permission
-            if (!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims")) {
+            if (!claim.isAdminClaim() || player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
                 PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
                 if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
                     GriefPrevention.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);

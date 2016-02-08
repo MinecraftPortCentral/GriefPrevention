@@ -184,7 +184,7 @@ public class PlayerEventHandler {
             for (MessageReceiver recipient : recipients) {
                 if (recipient instanceof Player && this.dataStore.isSoftMuted(((Player) recipient).getUniqueId())) {
                     recipientsToKeep.add((Player) recipient);
-                } else if (((Player) recipient).hasPermission("griefprevention.eavesdrop")) {
+                } else if (((Player) recipient).hasPermission(GPPermissions.EAVES_DROP)) {
                     recipient.sendMessage(Text.of(TextColors.GRAY, notificationMessage));
                 }
             }
@@ -194,7 +194,7 @@ public class PlayerEventHandler {
         }
 
         // troll and excessive profanity filter
-        else if (!player.hasPermission("griefprevention.spam") && this.bannedWordFinder.hasMatch(message)) {
+        else if (!player.hasPermission(GPPermissions.SPAM) && this.bannedWordFinder.hasMatch(message)) {
             // limit recipients to sender
             event.setChannel(player.getMessageChannel());
 
@@ -285,7 +285,7 @@ public class PlayerEventHandler {
             return false;
 
         // if the player has permission to spam, don't bother even examining the message
-        if (player.hasPermission("griefprevention.spam"))
+        if (player.hasPermission(GPPermissions.SPAM))
             return false;
 
         boolean spam = false;
@@ -519,9 +519,10 @@ public class PlayerEventHandler {
             Player targetPlayer = Sponge.getGame().getServer().getPlayer(args[1]).orElse(null);
 
             // if eavesdrop enabled and sender doesn't have the eavesdrop permission, eavesdrop
-            if (GriefPrevention.getActiveConfig(targetPlayer.getWorld().getProperties()).getConfig().general.broadcastWhisperedMessagesToAdmins && !source.hasPermission("griefprevention.eavesdrop")) {
+            if (GriefPrevention.getActiveConfig(targetPlayer.getWorld().getProperties()).getConfig().general.broadcastWhisperedMessagesToAdmins &&
+                    !source.hasPermission(GPPermissions.EAVES_DROP)) {
                 // except for when the recipient has eavesdrop permission
-                if (targetPlayer == null || !targetPlayer.hasPermission("griefprevention.eavesdrop")) {
+                if (targetPlayer == null || !targetPlayer.hasPermission(GPPermissions.EAVES_DROP)) {
                     StringBuilder logMessageBuilder = new StringBuilder();
                     logMessageBuilder.append("[[").append(source.getName()).append("]] ");
 
@@ -533,7 +534,7 @@ public class PlayerEventHandler {
 
                     Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                     for (Player onlinePlayer : players) {
-                        if (onlinePlayer.hasPermission("griefprevention.eavesdrop") && !onlinePlayer.equals(targetPlayer)) {
+                        if (onlinePlayer.hasPermission(GPPermissions.EAVES_DROP) && !onlinePlayer.equals(targetPlayer)) {
                             onlinePlayer.sendMessage(Text.of(TextColors.GRAY + logMessage));
                         }
                     }
@@ -649,7 +650,7 @@ public class PlayerEventHandler {
             long now = Calendar.getInstance().getTimeInMillis();
 
             // if allowed to join and login cooldown enabled
-            if (GriefPrevention.getGlobalConfig().getConfig().spam.loginCooldown > 0 && !player.hasPermission("griefprevention.spam")) {
+            if (GriefPrevention.getGlobalConfig().getConfig().spam.loginCooldown > 0 && !player.hasPermission(GPPermissions.SPAM)) {
                 // determine how long since last login and cooldown remaining
                 Date lastLoginThisSession = lastLoginThisServerSessionMap.get(player.getUniqueId());
                 if (lastLoginThisSession != null) {
@@ -710,7 +711,7 @@ public class PlayerEventHandler {
             // if in survival claims mode, send a message about the claim basics
             // video (except for admins - assumed experts)
             if (GriefPrevention.instance.claimModeIsActive(player.getWorld().getProperties(), ClaimsMode.Survival)
-                    && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.worldClaims.size() > 10) {
+                    && !player.hasPermission(GPPermissions.ADMIN_CLAIMS) && this.dataStore.worldClaims.size() > 10) {
                 WelcomeTask task = new WelcomeTask(player);
                 // 10 seconds after join
                 Sponge.getGame().getScheduler().createTaskBuilder().delay(10, TimeUnit.SECONDS).execute(task).submit(GriefPrevention.instance);
@@ -1364,11 +1365,11 @@ public class PlayerEventHandler {
 
     // educates a player about /adminclaims and /acb, if he can use them
     private void tryAdvertiseAdminAlternatives(Player player) {
-        if (player.hasPermission("griefprevention.adminclaims") && player.hasPermission("griefprevention.adjustclaimblocks")) {
+        if (player.hasPermission(GPPermissions.ADMIN_CLAIMS) && player.hasPermission(GPPermissions.ADJUSTCLAIMBLOCKS)) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACandACB);
-        } else if (player.hasPermission("griefprevention.adminclaims")) {
+        } else if (player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseAdminClaims);
-        } else if (player.hasPermission("griefprevention.adjustclaimblocks")) {
+        } else if (player.hasPermission(GPPermissions.ADJUSTCLAIMBLOCKS)) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACB);
         }
     }
@@ -1680,7 +1681,7 @@ public class PlayerEventHandler {
                     return;
 
                 // if holding shift (sneaking), show all claims in area
-                if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission("griefprevention.visualizenearbyclaims")) {
+                if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_NEARBY_CLAIMS)) {
                     // find nearby claims
                     Set<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
 
@@ -1739,7 +1740,7 @@ public class PlayerEventHandler {
                     }
 
                     // if deleteclaims permission, tell about the player's offline time
-                    if (!claim.isAdminClaim() && player.hasPermission("griefprevention.deleteclaims")) {
+                    if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
                         if (claim.parent != null) {
                             claim = claim.parent;
                         }
@@ -1964,7 +1965,7 @@ public class PlayerEventHandler {
                 }
 
                 // if the player doesn't have claims permission, don't do anything
-                if (!player.hasPermission("griefprevention.createclaims")) {
+                if (!player.hasPermission(GPPermissions.CREATE_CLAIMS)) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoCreateClaimPermission);
                     return;
                 }
@@ -2011,7 +2012,7 @@ public class PlayerEventHandler {
                         int newHeight = (Math.abs(newz1 - newz2) + 1);
                         boolean smaller = newWidth < playerData.claimResizing.getWidth() || newHeight < playerData.claimResizing.getHeight();
 
-                        if (!player.hasPermission("griefprevention.adminclaims") && !playerData.claimResizing.isAdminClaim() && smaller) {
+                        if (!player.hasPermission(GPPermissions.ADMIN_CLAIMS) && !playerData.claimResizing.isAdminClaim() && smaller) {
                             if (newWidth < activeConfig.getConfig().claim.claimMinimumWidth
                                     || newHeight < activeConfig.getConfig().claim.claimMinimumWidth) {
                                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimTooNarrow,
@@ -2101,7 +2102,7 @@ public class PlayerEventHandler {
 
                         // if increased to a sufficiently large size and no subdivisions yet, send subdivision instructions
                         if (oldClaim.getArea() < 1000 && result.claim.getArea() >= 1000 && result.claim.children.size() == 0
-                                && !player.hasPermission("griefprevention.adminclaims")) {
+                                && !player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
                             GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
                             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L);
                         }
@@ -2259,7 +2260,7 @@ public class PlayerEventHandler {
                     // if he's at the claim count per player limit already and
                     // doesn't have permission to bypass, display an error message
                     if (activeConfig.getConfig().claim.maxClaimsPerPlayer > 0 &&
-                            !player.hasPermission("griefprevention.overrideclaimcountlimit") &&
+                            !player.hasPermission(GPPermissions.OVERRIDE_CLAIM_COUNT_LIMIT) &&
                             playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size() >= activeConfig.getConfig().claim.maxClaimsPerPlayer) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimCreationFailedOverClaimCountLimit);
                         return;
@@ -2372,7 +2373,7 @@ public class PlayerEventHandler {
                         playerData.lastShovelLocation = null;
 
                         // if it's a big claim, tell the player about subdivisions
-                        if (!player.hasPermission("griefprevention.adminclaims") && result.claim.getArea() >= 1000) {
+                        if (!player.hasPermission(GPPermissions.ADMIN_CLAIMS) && result.claim.getArea() >= 1000) {
                             GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
                             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L);
                         }

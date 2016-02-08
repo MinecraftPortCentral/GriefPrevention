@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.TextMode;
@@ -17,7 +18,7 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         try {
-            ctx.checkPermission(src, "griefprevention.deleteclaims");
+            ctx.checkPermission(src, GPPermissions.DELETE_CLAIMS);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();

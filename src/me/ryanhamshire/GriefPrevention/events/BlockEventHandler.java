@@ -27,6 +27,7 @@ package me.ryanhamshire.GriefPrevention.events;
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.DataStore;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
@@ -286,23 +287,6 @@ public class BlockEventHandler {
                 }
             }
 
-            // if placed block is fire and pvp is off, apply rules for proximity to other players
-            if (block.getState().getType() == BlockTypes.FIRE && !GriefPrevention.instance.pvpRulesApply(block.getLocation().get().getExtent())
-                    && !player.hasPermission("griefprevention.lava")) {
-                List<EntityPlayer> players = ((net.minecraft.world.World) block.getLocation().get().getExtent()).playerEntities;
-                for (int i = 0; i < players.size(); i++) {
-                    Player otherPlayer = (Player) players.get(i);
-                    Location<World> location = otherPlayer.getLocation();
-                    if (!otherPlayer.equals(player) && location.getBlockPosition().distanceSquared(block.getPosition()) < 9) {
-                        if (event.getCause().root() instanceof Player) {
-                            GriefPrevention.sendMessage(player, TextMode.Err, Messages.PlayerTooCloseForFire, otherPlayer.getName());
-                        }
-                        event.setCancelled(true);
-                        return;
-                    }
-                }
-            }
-
             // if the block is being placed within or under an existing claim
             if (claim != null) {
                 playerData.lastClaim = claim;
@@ -392,7 +376,7 @@ public class BlockEventHandler {
             // of their claimed areas
             else if (!this.trashBlocks.contains(block.getState().getType()) && GriefPrevention.instance
                     .claimsEnabledForWorld(block.getLocation().get().getExtent().getProperties())) {
-                if (!playerData.warnedAboutBuildingOutsideClaims && !player.hasPermission("griefprevention.adminclaims")
+                if (!playerData.warnedAboutBuildingOutsideClaims && !player.hasPermission(GPPermissions.ADMIN_CLAIMS)
                         && ((playerData.lastClaim == null && playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size() == 0)
                         || (playerData.lastClaim != null && playerData.lastClaim.isNear(player.getLocation(), 15)))) {
                     Long now = null;
@@ -468,7 +452,7 @@ public class BlockEventHandler {
         String signMessage = lines.toString();
 
         // prevent signs with blocked IP addresses
-        if (!player.hasPermission("griefprevention.spam") && GriefPrevention.instance.containsBlockedIP(signMessage)) {
+        if (!player.hasPermission(GPPermissions.SPAM) && GriefPrevention.instance.containsBlockedIP(signMessage)) {
             event.setCancelled(true);
             return;
         }
@@ -481,10 +465,10 @@ public class BlockEventHandler {
             //PlayerEventHandler.makeSocialLogEntry(player.get().getName(), signMessage);
             playerData.lastMessage = signMessage;
 
-            if (!player.hasPermission("griefprevention.eavesdropsigns")) {
+            if (!player.hasPermission(GPPermissions.EAVES_DROP_SIGNS)) {
                 Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                 for (Player otherPlayer : players) {
-                    if (otherPlayer.hasPermission("griefprevention.eavesdropsigns")) {
+                    if (otherPlayer.hasPermission(GPPermissions.EAVES_DROP_SIGNS)) {
                         otherPlayer.sendMessage(Text.of(TextColors.GRAY, player.getName(), signMessage));
                     }
                 }

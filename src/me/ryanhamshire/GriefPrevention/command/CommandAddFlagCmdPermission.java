@@ -1,5 +1,6 @@
 package me.ryanhamshire.GriefPrevention.command;
 
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -20,6 +21,6 @@ public class CommandAddFlagCmdPermission implements CommandExecutor {
             return CommandResult.success();
         }
 
-        return CommandHelper.handleFlagPermission(player, ctx, "griefprevention.claim.flag.command.");
+        return CommandHelper.handleFlagPermission(player, ctx, GPPermissions.COMMAND_CLAIMFLAG + ".");
     }
 }

@@ -1,5 +1,6 @@
 package me.ryanhamshire.GriefPrevention.command;
 
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.GriefPrevention.IgnoreMode;
 import me.ryanhamshire.GriefPrevention.Messages;
@@ -25,7 +26,7 @@ public class CommandIgnorePlayer implements CommandExecutor {
 
         // validate target player
         Player targetPlayer = args.<Player>getOne("player").get();
-        if (targetPlayer.hasPermission("griefprevention.notignorable")) {
+        if (targetPlayer.hasPermission(GPPermissions.NOT_IGNORABLE)) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.PlayerNotIgnorable));
             } catch (CommandException e) {

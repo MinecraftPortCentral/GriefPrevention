@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
@@ -75,7 +76,7 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // victim must not have the permission which makes him immune to siege
-        if (defender.hasPermission("griefprevention.siegeimmune")) {
+        if (defender.hasPermission(GPPermissions.SIEGE_IMMUNE)) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.SiegeImmune));
             } catch (CommandException e) {

@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention.command;
 
 import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.Messages;
 import me.ryanhamshire.GriefPrevention.PlayerData;
@@ -25,7 +26,7 @@ public class CommandClaimList implements CommandExecutor {
         User otherPlayer = ctx.<User>getOne("player").get();
 
         // otherwise if no permission to delve into another player's claims data
-        if (otherPlayer != src && !src.hasPermission("griefprevention.claimslistother")) {
+        if (otherPlayer != src && !src.hasPermission(GPPermissions.CLAIMS_LIST_OTHER)) {
             try {
                 throw new CommandPermissionException();
             } catch (CommandPermissionException e) {
