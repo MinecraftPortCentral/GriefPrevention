@@ -37,7 +37,6 @@ import me.ryanhamshire.GriefPrevention.configuration.ClaimStorageData;
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.passive.EntityTameable;
-import net.minecraft.world.Explosion;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -80,6 +79,7 @@ import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.explosion.Explosion;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -149,11 +149,11 @@ public class EntityEventHandler {
             return;
         }
 
-        net.minecraft.entity.Entity mcEntity = ((Explosion) event.getExplosion()).exploder;
+        Optional<Explosive> explosive = ((Explosion) event.getExplosion()).getSourceExplosive();
         boolean checked = false;
 
-        if (GriefPrevention.instance.permPluginInstalled && mcEntity != null) {
-            Entity entity = (Entity) mcEntity;
+        if (GriefPrevention.instance.permPluginInstalled && explosive.isPresent()) {
+            Entity entity = (Entity) explosive.get();
 
             Optional<UUID> uuid = entity.getCreator();
             if (uuid.isPresent()) {
