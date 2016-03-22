@@ -71,8 +71,8 @@ import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.vehicle.Boat;
-import org.spongepowered.api.entity.vehicle.minecart.MinecartChest;
-import org.spongepowered.api.entity.vehicle.minecart.MinecartFurnace;
+import org.spongepowered.api.entity.vehicle.minecart.ChestMinecart;
+import org.spongepowered.api.entity.vehicle.minecart.FurnaceMinecart;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
@@ -1158,7 +1158,7 @@ public class PlayerEventHandler {
         }
 
         // don't allow container access during pvp combat
-        if ((entity instanceof MinecartChest || entity instanceof MinecartFurnace)) {
+        if ((entity instanceof ChestMinecart || entity instanceof FurnaceMinecart)) {
             if (playerData.siegeData != null) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
                 event.setCancelled(true);

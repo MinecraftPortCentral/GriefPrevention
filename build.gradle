@@ -42,7 +42,7 @@ repositories {
 
 dependencies {
     compile("org.spongepowered:spongeapi:${project.apiVersion}")
-	compile("org.spongepowered:spongeforge:1.8.9-1722-3.1.0-BETA-1105") {
+	compile("org.spongepowered:spongeforge:1.8.9-1763-4.1.0-BETA-1217") {
 		exclude module: 'spongecommon'
 	}
 }

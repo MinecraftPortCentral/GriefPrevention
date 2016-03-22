@@ -68,7 +68,7 @@ public class WelcomeTask implements Runnable {
 
             final DisplayNameData displayNameData = itemStack.getOrCreate(DisplayNameData.class).get();
             displayNameData.set(Keys.DISPLAY_NAME, Text.of(datastore.getMessage(Messages.BookTitle)));
-            displayNameData.set(Keys.SHOWS_DISPLAY_NAME, true);
+            displayNameData.set(Keys.CUSTOM_NAME_VISIBLE, true);
             itemStack.offer(displayNameData);
 
 

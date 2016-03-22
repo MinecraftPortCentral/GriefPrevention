@@ -12,6 +12,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
 
@@ -36,9 +37,7 @@ public class CommandClaimSell implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (!GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).isPresent()) {
-            GriefPrevention.instance.economyService.get().createAccount(player.getUniqueId());
-        }
+        GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId());
 
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
         if (activeConfig.getConfig().economy.economyClaimBlockCost == 0 && activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
@@ -72,9 +71,9 @@ public class CommandClaimSell implements CommandExecutor {
 
             // attempt to compute value and deposit it
             double totalValue = blockCount * activeConfig.getConfig().economy.economyClaimBlockSell;
-            TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).get().deposit
+            TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().deposit
                     (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalValue),
-                            Cause.of(GriefPrevention.instance));
+                            Cause.of(NamedCause.of(GriefPrevention.MOD_ID, GriefPrevention.instance)));
 
 
             if (transactionResult.getResult() != ResultType.SUCCESS) {

@@ -11,7 +11,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.service.pagination.PaginationBuilder;
+import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
@@ -78,8 +78,8 @@ public class CommandClaimFlag extends BaseCommand {
                 }
 
                 PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
-                PaginationBuilder paginationBuilder = paginationService.builder().title(Text.of(TextColors.AQUA, "Showing GriefPrevention Flags"))
-                        .paddingString("-").contents(flagList);
+                PaginationList.Builder paginationBuilder = paginationService.builder().title(Text.of(TextColors.AQUA, "Showing GriefPrevention Flags"))
+                        .padding(Text.of("-")).contents(flagList);
                 paginationBuilder.sendTo(src);
             }
         } else {

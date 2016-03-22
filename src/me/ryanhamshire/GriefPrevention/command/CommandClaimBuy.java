@@ -12,6 +12,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
 
@@ -36,7 +37,7 @@ public class CommandClaimBuy implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (!GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).isPresent()) {
+        if (!GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
             GriefPrevention.sendMessage(player, TextMode.Err, "No economy account found for user " + player.getName() + "!");
             return CommandResult.success();
         }
@@ -55,8 +56,8 @@ public class CommandClaimBuy implements CommandExecutor {
 
         Optional<Integer> blockCountOpt = ctx.getOne("numberOfBlocks");
         double balance = 0;
-        if (GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).isPresent()) {
-            balance = GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).get().getBalance(GriefPrevention.instance
+        if (GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
+            balance = GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().getBalance(GriefPrevention.instance
                     .economyService.get().getDefaultCurrency()).doubleValue();
         }
 
@@ -79,9 +80,9 @@ public class CommandClaimBuy implements CommandExecutor {
 
             double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
             // attempt to withdraw cost
-            TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getAccount(player.getUniqueId()).get().withdraw
+            TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().withdraw
                     (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalCost),
-                            Cause.of(GriefPrevention.instance));
+                            Cause.of(NamedCause.of(GriefPrevention.MOD_ID, GriefPrevention.instance)));
 
             if (transactionResult.getResult() != ResultType.SUCCESS) {
                 GriefPrevention.sendMessage(player, TextMode.Err, "Could not withdraw funds. Reason: " + transactionResult.getResult().name() +

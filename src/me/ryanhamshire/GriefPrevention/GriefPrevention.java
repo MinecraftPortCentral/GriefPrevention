@@ -31,8 +31,6 @@ import static org.spongepowered.api.command.args.GenericArguments.player;
 import static org.spongepowered.api.command.args.GenericArguments.playerOrSource;
 import static org.spongepowered.api.command.args.GenericArguments.string;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import me.ryanhamshire.GriefPrevention.command.CommandAccessTrust;
 import me.ryanhamshire.GriefPrevention.command.CommandAddFlagCmdPermission;
@@ -114,7 +112,6 @@ import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColor;
-import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
@@ -130,16 +127,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "GriefPrevention", name = "GriefPrevention", version = "12.7.1")
+@Plugin(id = "me.ryanhamshire", name = "GriefPrevention", version = "12.7.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
@@ -212,11 +207,6 @@ public class GriefPrevention {
 
     // how long to wait before deciding a player is staying online or staying offline, for notication messages
     public static final int NOTIFICATION_SECONDS = 20;
-
-    private static final Map<String, Boolean> FLAG_BOOLEANS = ImmutableMap.<String, Boolean>builder()
-            .put("allow", true)
-            .put("deny", false)
-            .build();
 
     // adds a server log entry
     public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
@@ -878,8 +868,7 @@ public class GriefPrevention {
         PlayerData playerData = this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
-        // exception: administrators in ignore claims mode, and special player
-        // accounts created by server mods
+        // exception: administrators in ignore claims mode, and special player accounts created by server mods
         if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().claim.alwaysIgnoreClaimsList
                 .contains(user.getUniqueId().toString())) {
             return null;
