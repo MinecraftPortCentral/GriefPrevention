@@ -477,6 +477,10 @@ public class Claim implements ContextSource {
 
     // break permission check
     public String allowBreak(User user, Location<World> location) {
+        if (this.ownerID != null && this.ownerID.equals(user.getUniqueId())) {
+            return null;
+        }
+
         // if under siege, some blocks will be breakable
         if (this.siegeData != null || this.doorsOpen) {
             boolean breakable = false;

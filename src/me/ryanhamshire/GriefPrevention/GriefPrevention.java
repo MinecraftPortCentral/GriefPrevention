@@ -868,6 +868,10 @@ public class GriefPrevention {
         PlayerData playerData = this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
+        if (claim != null && claim.ownerID == user.getUniqueId()) {
+            return null;
+        }
+
         // exception: administrators in ignore claims mode, and special player accounts created by server mods
         if (playerData.ignoreClaims || GriefPrevention.getActiveConfig(location.getExtent().getProperties()).getConfig().claim.alwaysIgnoreClaimsList
                 .contains(user.getUniqueId().toString())) {
