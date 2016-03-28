@@ -214,7 +214,7 @@ public class ClaimStorageData {
         @Setting(value = FLAGS_MOB_BLOCK_DAMAGE, comment = "Allow/deny mob block damage.")
         public boolean mobBlockDamage = false;
         @Setting(value = FLAGS_MOB_PLAYER_DAMAGE, comment = "Allow/deny mob player damage.")
-        public boolean mobPlayerDamage = false;
+        public boolean mobPlayerDamage = true;
         @Setting(value = FLAGS_MOB_RIDING, comment = "Allow/deny mob riding.")
         public boolean mobRiding = false;
         @Setting(value = FLAGS_PORTAL_USE, comment = "Allow/deny portal use.")
