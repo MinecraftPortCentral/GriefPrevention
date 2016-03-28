@@ -408,15 +408,15 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
                         ItemTypes.TALLGRASS.getId(), ItemTypes.GLASS.getId(), ItemTypes.DYE.getId(),
                         ItemTypes.SNOW.getId(), ItemTypes.STAINED_GLASS.getId(), ItemTypes.COBBLESTONE.getId()));
         @Setting(value = SIEGE_WINNER_ACCESSIBLE_BLOCKS, comment = "which blocks the siege winner can access in the loser's claim.")
-        public List<String> winnerAccessibleBlocks = new ArrayList<String>(
-                Arrays.asList(ItemTypes.ACACIA_DOOR.getId(), ItemTypes.ACACIA_FENCE.getId(), ItemTypes.ACACIA_FENCE_GATE.getId(),
+        public List<String> winnerAccessibleBlocks = new ArrayList<String>();
+               /* Arrays.asList(ItemTypes.ACACIA_DOOR.getId(), ItemTypes.ACACIA_FENCE.getId(), ItemTypes.ACACIA_FENCE_GATE.getId(),
                         ItemTypes.BIRCH_DOOR.getId(), ItemTypes.BIRCH_FENCE.getId(), ItemTypes.BIRCH_FENCE_GATE.getId(),
                         ItemTypes.DARK_OAK_DOOR.getId(), ItemTypes.DARK_OAK_FENCE.getId(), ItemTypes.DARK_OAK_FENCE_GATE.getId(),
                         ItemTypes.FENCE.getId(), ItemTypes.FENCE_GATE.getId(), ItemTypes.IRON_DOOR.getId(),
                         ItemTypes.IRON_TRAPDOOR.getId(), ItemTypes.WOODEN_DOOR.getId(), ItemTypes.STONE_BUTTON.getId(),
                         ItemTypes.WOODEN_BUTTON.getId(), ItemTypes.HEAVY_WEIGHTED_PRESSURE_PLATE.getId(),
                         ItemTypes.LIGHT_WEIGHTED_PRESSURE_PLATE.getId(),
-                        ItemTypes.LEVER.getId()));
+                        ItemTypes.LEVER.getId()));*/
     }
 
     @ConfigSerializable

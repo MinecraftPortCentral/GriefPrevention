@@ -185,7 +185,7 @@ public class PlayerEventHandler {
             for (MessageReceiver recipient : recipients) {
                 if (recipient instanceof Player && this.dataStore.isSoftMuted(((Player) recipient).getUniqueId())) {
                     recipientsToKeep.add((Player) recipient);
-                } else if (((Player) recipient).hasPermission(GPPermissions.EAVES_DROP)) {
+                } else if (recipient instanceof Player && ((Player) recipient).hasPermission(GPPermissions.EAVES_DROP)) {
                     recipient.sendMessage(Text.of(TextColors.GRAY, notificationMessage));
                 }
             }
