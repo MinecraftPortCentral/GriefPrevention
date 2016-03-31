@@ -312,6 +312,13 @@ public class EntityEventHandler {
                     attacker = (Player) arrow.getShooter();
                 }
             }
+
+            if (event.getTargetEntity().getCreator().isPresent()) {
+                UUID targetUuid = event.getTargetEntity().getCreator().get();
+                if (((Entity) sourceEntity).getUniqueId().equals(targetUuid)) {
+                    return; // allow owner to attack own pets
+                }
+            } 
         }
 
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(event.getTargetEntity().getWorld().getProperties());

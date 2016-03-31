@@ -509,10 +509,15 @@ public class Claim implements ContextSource {
 
         if (GriefPrevention.instance.permPluginInstalled) {
             Set contextSet = ImmutableSet.of(getContext());
-            if (user.getPermissionValue(contextSet, GPPermissions.BLOCK_BREAK) == Tristate.FALSE) {
+            Tristate perm = user.getPermissionValue(contextSet, GPPermissions.BLOCK_BREAK);
+            if (perm == Tristate.FALSE) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission);
-            } else if (user.getPermissionValue(ImmutableSet.of(getContext()), GPPermissions.BLOCK_BREAK) == Tristate.TRUE) {
+            } else if (perm == Tristate.TRUE) {
                 return null;
+            } else { // undefined
+                if (!this.getClaimData().getConfig().flags.blockBreak) {
+                    return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission);
+                }
             }
         }
 
