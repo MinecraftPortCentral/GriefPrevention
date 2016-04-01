@@ -35,6 +35,7 @@ import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.Globa
 import me.ryanhamshire.GriefPrevention.configuration.GriefPreventionConfig.WorldConfig;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.common.DimensionManager;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -105,11 +106,12 @@ public abstract class DataStore {
 
     // path information, for where stuff stored on disk is well... stored
     protected final static Path dataLayerFolderPath = Paths.get("config").resolve("GriefPrevention");
-    final static Path playerDataFolderPath = dataLayerFolderPath.resolve("PlayerData");
+    final static Path globalDataPath = Paths.get("GriefPreventionData").resolve("GlobalPlayerData");
     final static Path configFilePath = dataLayerFolderPath.resolve("config.conf");
     final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
     final static Path bannedWordsFilePath = dataLayerFolderPath.resolve("bannedWords.txt");
+    public Path globalPlayerDataPath;
 
     // the latest version of the data schema implemented here
     protected static final int latestSchemaVersion = 2;
@@ -150,17 +152,18 @@ public abstract class DataStore {
         for (List<Claim> claimList : this.worldClaims.values()) {
             count += claimList.size();
         }
-        GriefPrevention.AddLogEntry(count + " total claims loaded.");
+        GriefPrevention.addLogEntry(count + " total claims loaded.");
 
-        // ensure data folders exist
-        File playerDataFolder = playerDataFolderPath.toFile();
-        if (!playerDataFolder.exists()) {
-            playerDataFolder.mkdirs();
+        // ensure global player data folder exists
+        this.globalPlayerDataPath = DimensionManager.getCurrentSaveRootDirectory().toPath().resolve(globalDataPath);
+        File globalPlayerDataFolder = this.globalPlayerDataPath.toFile();
+        if (!globalPlayerDataFolder.exists()) {
+            globalPlayerDataFolder.mkdirs();
         }
 
         // load up all the messages from messages.hocon
         this.loadMessages();
-        GriefPrevention.AddLogEntry("Customizable messages loaded.");
+        GriefPrevention.addLogEntry("Customizable messages loaded.");
 
         // load list of soft mutes
         this.loadSoftMutes();
@@ -186,7 +189,7 @@ public abstract class DataStore {
                         playerID = UUID.fromString(nextID);
                     } catch (Exception e) {
                         playerID = null;
-                        GriefPrevention.AddLogEntry("Failed to parse soft mute entry as a UUID: " + nextID);
+                        GriefPrevention.addLogEntry("Failed to parse soft mute entry as a UUID: " + nextID);
                     }
 
                     // push it into the map
@@ -198,7 +201,7 @@ public abstract class DataStore {
                     nextID = inStream.readLine();
                 }
             } catch (Exception e) {
-                GriefPrevention.AddLogEntry("Failed to read from the soft mute data file: " + e.toString());
+                GriefPrevention.addLogEntry("Failed to read from the soft mute data file: " + e.toString());
                 e.printStackTrace();
             }
 
@@ -225,7 +228,7 @@ public abstract class DataStore {
 
             return Files.readLines(bannedWordsFile, Charset.forName("UTF-8"));
         } catch (Exception e) {
-            GriefPrevention.AddLogEntry("Failed to read from the banned words data file: " + e.toString());
+            GriefPrevention.addLogEntry("Failed to read from the banned words data file: " + e.toString());
             e.printStackTrace();
             return new ArrayList<String>();
         }
@@ -270,7 +273,7 @@ public abstract class DataStore {
 
         // if any problem, log it
         catch (Exception e) {
-            GriefPrevention.AddLogEntry("Unexpected exception saving soft mute data: " + e.getMessage());
+            GriefPrevention.addLogEntry("Unexpected exception saving soft mute data: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -692,7 +695,7 @@ public abstract class DataStore {
         return result;
     }
 
-    public void asyncSavePlayerData(UUID playerID, PlayerData playerData) {
+    public void asyncSaveGlobalPlayerData(UUID playerID, PlayerData playerData) {
         // save everything except the ignore list
         this.overrideSavePlayerData(playerID, playerData);
 
@@ -716,13 +719,13 @@ public abstract class DataStore {
                 }
 
                 // write data to file
-                File playerDataFile = playerDataFolderPath.resolve(playerID.toString() + ".ignore").toFile();
+                File playerDataFile = this.globalPlayerDataPath.resolve(playerID.toString() + ".ignore").toFile();
                 Files.write(fileContent.toString().trim().getBytes("UTF-8"), playerDataFile);
             }
 
             // if any problem, log it
             catch (Exception e) {
-                GriefPrevention.AddLogEntry(
+                GriefPrevention.addLogEntry(
                         "GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
                 e.printStackTrace();
             }
@@ -1326,6 +1329,7 @@ public abstract class DataStore {
         this.addDefault(Messages.BookUsefulCommands, "Useful Commands:");
         this.addDefault(Messages.NoProfanity, "Please moderate your language.");
         this.addDefault(Messages.NoDropsAllowed, "You can't drop items in this claim.");
+        this.addDefault(Messages.FireSpreadOutsideClaim, "Fire attempting to spread outside of claim.");
 
         // load the config file
         try {
@@ -1337,7 +1341,7 @@ public abstract class DataStore {
                 // if default is missing, log an error and use some fake data for
                 // now so that the plugin can run
                 if (messageData == null) {
-                    GriefPrevention.AddLogEntry("Missing message for " + messageData.id + ".  Please contact the developer.");
+                    GriefPrevention.addLogEntry("Missing message for " + messageData.id + ".  Please contact the developer.");
                     messageData =
                             new CustomizableMessage(messageData.id, "Missing message!  ID: " + messageData.id + ".  Please contact a server admin.",
                                     null);
@@ -1364,7 +1368,7 @@ public abstract class DataStore {
 
         } catch (Exception e) {
             e.printStackTrace();
-            GriefPrevention.AddLogEntry("Unable to write to the configuration file at \"" + DataStore.messagesFilePath + "\"");
+            GriefPrevention.addLogEntry("Unable to write to the configuration file at \"" + DataStore.messagesFilePath + "\"");
         }
     }
 

@@ -91,6 +91,7 @@ public class GPPermissions {
     public static final String COMMAND_CLAIMLIST = "griefprevention.command.claimlist";
     public static final String COMMAND_CLAIMSELLBLOCKS = "griefprevention.command.claimsellblocks";
     public static final String COMMAND_CONTAINERTRUST = "griefprevention.command.containertrust";
+    public static final String COMMAND_DEBUG = "griefprevention.command.debug";
     public static final String COMMAND_GIVEPET = "griefprevention.command.givepet";
     public static final String COMMAND_HELP = "griefprevention.command.help";
     public static final String COMMAND_IGNORECLAIMS = "griefprevention.command.ignoreclaims";

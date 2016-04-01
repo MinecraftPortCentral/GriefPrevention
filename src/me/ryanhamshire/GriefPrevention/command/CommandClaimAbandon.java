@@ -58,7 +58,7 @@ public class CommandClaimAbandon implements CommandExecutor {
 
             // if in a creative mode world, restore the claim area
             if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                GriefPrevention.AddLogEntry(
+                GriefPrevention.addLogEntry(
                         player.getName() + " abandoned a claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
                 GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);

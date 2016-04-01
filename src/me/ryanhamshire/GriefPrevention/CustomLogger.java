@@ -42,7 +42,7 @@ public class CustomLogger {
     private final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm");
     private final SimpleDateFormat filenameFormat = new SimpleDateFormat("yyyy_MM_dd");
     private final String logFolderPath = DataStore.dataLayerFolderPath + File.separator + "Logs";
-    private final int secondsBetweenWrites = 300;
+    private final int secondsBetweenWrites = 10;
 
     // stringbuilder is not thread safe, stringbuffer is
     private StringBuffer queuedEntries = new StringBuffer();
@@ -53,7 +53,7 @@ public class CustomLogger {
         logFolder.mkdirs();
 
         // delete any outdated log files immediately
-        this.DeleteExpiredLogs();
+        this.deleteExpiredLogs();
 
         // unless disabled, schedule recurring tasks
         int daysToKeepLogs = GriefPrevention.getGlobalConfig().getConfig().logging.loggingDaysToKeep;
@@ -69,7 +69,7 @@ public class CustomLogger {
 
     private static final Pattern inlineFormatterPattern = Pattern.compile("�.");
 
-    void AddEntry(String entry, CustomLogEntryTypes entryType) {
+    void addEntry(String entry, CustomLogEntryTypes entryType) {
         // if disabled, do nothing
         int daysToKeepLogs = GriefPrevention.getGlobalConfig().getConfig().logging.loggingDaysToKeep;
         if (daysToKeepLogs == 0) {
@@ -108,7 +108,7 @@ public class CustomLogger {
         return true;
     }
 
-    void WriteEntries() {
+    void writeEntries() {
         try {
             // if nothing to write, stop here
             if (this.queuedEntries.length() == 0) {
@@ -132,7 +132,7 @@ public class CustomLogger {
         }
     }
 
-    private void DeleteExpiredLogs() {
+    private void deleteExpiredLogs() {
         try {
             // get list of log files
             File logFolder = new File(this.logFolderPath);
@@ -168,7 +168,7 @@ public class CustomLogger {
                 } catch (NumberFormatException e) {
                     // throw this away - effectively ignoring any files without
                     // the correct filename format
-                    GriefPrevention.AddLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(),
+                    GriefPrevention.addLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(),
                             CustomLogEntryTypes.Debug, true);
                 }
             }
@@ -182,7 +182,7 @@ public class CustomLogger {
 
         @Override
         public void run() {
-            WriteEntries();
+            writeEntries();
         }
     }
 
@@ -190,7 +190,7 @@ public class CustomLogger {
 
         @Override
         public void run() {
-            DeleteExpiredLogs();
+            deleteExpiredLogs();
         }
     }
 }

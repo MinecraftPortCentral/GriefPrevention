@@ -57,8 +57,8 @@ public class FlatFileDataStore extends DataStore {
 
     private final static Path schemaVersionFilePath = dataLayerFolderPath.resolve("_schemaVersion");
     private final static Path worldsConfigFolderPath = dataLayerFolderPath.resolve("worlds");
-    protected final static Path claimDataPath = Paths.get("GriefPreventionData", "ClaimData");
-    protected final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
+    public final static Path claimDataPath = Paths.get("GriefPreventionData", "ClaimData");
+    public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
 
     public FlatFileDataStore() {
     }
@@ -118,7 +118,7 @@ public class FlatFileDataStore extends DataStore {
             // check if claims are supported
             GriefPreventionConfig<GriefPreventionConfig.WorldConfig> worldConfig = DataStore.worldConfigMap.get(world.getUniqueId());
             if (worldConfig != null && worldConfig.getConfig().configEnabled && !worldConfig.getConfig().claim.allowClaims) {
-                GriefPrevention.AddLogEntry("Error - World '" + world.getName() + "' does not allow claims. Skipping...");
+                GriefPrevention.addLogEntry("Error - World '" + world.getName() + "' does not allow claims. Skipping...");
                 continue;
             }
             // run cleanup task
@@ -183,7 +183,7 @@ public class FlatFileDataStore extends DataStore {
                     } else {
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        GriefPrevention.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
+                        GriefPrevention.addLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
                     }
                 }
             }
@@ -210,7 +210,7 @@ public class FlatFileDataStore extends DataStore {
                 try {
                     playerUUID = UUID.fromString(files[i].getName());
                 } catch (Exception e) {
-                    GriefPrevention.AddLogEntry("ERROR!! could not read player file " + files[i].getAbsolutePath());
+                    GriefPrevention.addLogEntry("ERROR!! could not read player file " + files[i].getAbsolutePath());
                     continue;
                 }
 
@@ -225,7 +225,7 @@ public class FlatFileDataStore extends DataStore {
                     } else {
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        GriefPrevention.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
+                        GriefPrevention.addLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
                     }
                 }
             }
@@ -269,8 +269,8 @@ public class FlatFileDataStore extends DataStore {
             try {
                 ownerID = UUID.fromString(ownerIdentifier);
             } catch (Exception ex) {
-                GriefPrevention.AddLogEntry("Error - this is not a valid UUID: " + ownerIdentifier + ".");
-                GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                GriefPrevention.addLogEntry("Error - this is not a valid UUID: " + ownerIdentifier + ".");
+                GriefPrevention.addLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
             }
         }
 
@@ -350,7 +350,7 @@ public class FlatFileDataStore extends DataStore {
         catch (Exception e) {
             StringWriter errors = new StringWriter();
             e.printStackTrace(new PrintWriter(errors));
-            GriefPrevention.AddLogEntry(claim.id + " " + errors.toString(), CustomLogEntryTypes.Exception);
+            GriefPrevention.addLogEntry(claim.id + " " + errors.toString(), CustomLogEntryTypes.Exception);
         }
     }
 
@@ -361,7 +361,7 @@ public class FlatFileDataStore extends DataStore {
             Files.delete(claim.claimData.filePath);
         } catch (IOException e) {
             e.printStackTrace();
-            GriefPrevention.AddLogEntry("Error: Unable to delete claim file \"" + claim.claimData.filePath + "\".");
+            GriefPrevention.addLogEntry("Error: Unable to delete claim file \"" + claim.claimData.filePath + "\".");
         }
     }
 
@@ -482,7 +482,7 @@ public class FlatFileDataStore extends DataStore {
 
         // if any problem, log it
         catch (Exception e) {
-            GriefPrevention.AddLogEntry("Unexpected exception saving schema version: " + e.getMessage());
+            GriefPrevention.addLogEntry("Unexpected exception saving schema version: " + e.getMessage());
         }
 
         // close the file

@@ -45,7 +45,7 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.SetClaimBlocksSuccess);
         if (player != null) {
-            GriefPrevention.AddLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".",
+            GriefPrevention.addLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".",
                     CustomLogEntryTypes.AdminActivity);
         }
 

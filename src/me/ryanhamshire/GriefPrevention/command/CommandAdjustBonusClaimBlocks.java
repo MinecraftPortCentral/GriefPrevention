@@ -42,7 +42,7 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
                     String.valueOf(adjustment), String.valueOf(newTotal));
             if (player != null) {
                 GriefPrevention
-                        .AddLogEntry(
+                        .addLogEntry(
                                 player.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
             }
 
@@ -77,7 +77,7 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
                 .sendMessage(player, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment),
                         String.valueOf(playerData.getBonusClaimBlocks(player.getWorld())));
         if (player != null) {
-            GriefPrevention.AddLogEntry(
+            GriefPrevention.addLogEntry(
                     player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".",
                     CustomLogEntryTypes.AdminActivity);
         }

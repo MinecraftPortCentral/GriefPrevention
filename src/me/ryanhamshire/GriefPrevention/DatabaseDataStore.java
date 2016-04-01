@@ -70,14 +70,14 @@ public class DatabaseDataStore extends DataStore {
             // load the java driver for mySQL
             Class.forName("com.mysql.jdbc.Driver");
         } catch (Exception e) {
-            GriefPrevention.AddLogEntry("ERROR: Unable to load Java's mySQL database driver.  Check to make sure you've installed it properly.");
+            GriefPrevention.addLogEntry("ERROR: Unable to load Java's mySQL database driver.  Check to make sure you've installed it properly.");
             throw e;
         }
 
         try {
             this.refreshDataConnection();
         } catch (Exception e2) {
-            GriefPrevention.AddLogEntry("ERROR: Unable to connect to database.  Check your config file settings.");
+            GriefPrevention.addLogEntry("ERROR: Unable to connect to database.  Check your config file settings.");
             throw e2;
         }
 
@@ -107,8 +107,8 @@ public class DatabaseDataStore extends DataStore {
                 this.setSchemaVersion(latestSchemaVersion);
             }
         } catch (Exception e3) {
-            GriefPrevention.AddLogEntry("ERROR: Unable to create the necessary database table.  Details:");
-            GriefPrevention.AddLogEntry(e3.getMessage());
+            GriefPrevention.addLogEntry("ERROR: Unable to create the necessary database table.  Details:");
+            GriefPrevention.addLogEntry(e3.getMessage());
             e3.printStackTrace();
             throw e3;
         }
@@ -202,13 +202,13 @@ public class DatabaseDataStore extends DataStore {
                         statement.execute(
                                 "UPDATE griefprevention_playerdata SET name = '" + changes.get(name).toString() + "' WHERE name = '" + name + "';");
                     } catch (SQLException e) {
-                        GriefPrevention.AddLogEntry("Unable to convert player data for " + name + ".  Skipping.");
-                        GriefPrevention.AddLogEntry(e.getMessage());
+                        GriefPrevention.addLogEntry("Unable to convert player data for " + name + ".  Skipping.");
+                        GriefPrevention.addLogEntry(e.getMessage());
                     }
                 }
             } catch (SQLException e) {
-                GriefPrevention.AddLogEntry("Unable to convert player data.  Details:");
-                GriefPrevention.AddLogEntry(e.getMessage());
+                GriefPrevention.addLogEntry("Unable to convert player data.  Details:");
+                GriefPrevention.addLogEntry(e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -242,7 +242,7 @@ public class DatabaseDataStore extends DataStore {
                 } catch (Exception e) {
                     if (e.getMessage().contains("World not found")) {
                         removeClaim = true;
-                        GriefPrevention.AddLogEntry("Removing a claim in a world which does not exist: " + lesserCornerString);
+                        GriefPrevention.addLogEntry("Removing a claim in a world which does not exist: " + lesserCornerString);
                         continue;
                     } else {
                         throw e;
@@ -257,8 +257,8 @@ public class DatabaseDataStore extends DataStore {
                     try {
                         owner = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(ownerName);
                     } catch (Exception ex) {
-                        GriefPrevention.AddLogEntry("This owner name did not convert to a UUID: " + ownerName + ".");
-                        GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                        GriefPrevention.addLogEntry("This owner name did not convert to a UUID: " + ownerName + ".");
+                        GriefPrevention.addLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                     }
                 }
 
@@ -292,7 +292,7 @@ public class DatabaseDataStore extends DataStore {
                     subdivisionsToLoad.add(claim);
                 }
             } catch (SQLException e) {
-                GriefPrevention.AddLogEntry("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
+                GriefPrevention.addLogEntry("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
                 e.printStackTrace();
             }
         }
@@ -304,7 +304,7 @@ public class DatabaseDataStore extends DataStore {
 
             if (topLevelClaim == null) {
                 claimsToRemove.add(childClaim);
-                GriefPrevention.AddLogEntry("Removing orphaned claim subdivision: " + childClaim.getLesserBoundaryCorner().toString());
+                GriefPrevention.addLogEntry("Removing orphaned claim subdivision: " + childClaim.getLesserBoundaryCorner().toString());
                 continue;
             }
 
@@ -341,7 +341,7 @@ public class DatabaseDataStore extends DataStore {
             this.writeClaimData(claim);
         } catch (SQLException e) {
             //GriefPrevention.AddLogEntry("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
-            GriefPrevention.AddLogEntry(e.getMessage());
+            GriefPrevention.addLogEntry(e.getMessage());
         }
     }
 
@@ -420,8 +420,8 @@ public class DatabaseDataStore extends DataStore {
             Statement statement = this.databaseConnection.createStatement();
             statement.execute("DELETE FROM griefprevention_claimdata WHERE id='" + claim.id + "';");
         } catch (SQLException e) {
-            GriefPrevention.AddLogEntry("Unable to delete data for claim " + claim.id + ".  Details:");
-            GriefPrevention.AddLogEntry(e.getMessage());
+            GriefPrevention.addLogEntry("Unable to delete data for claim " + claim.id + ".  Details:");
+            GriefPrevention.addLogEntry(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -501,8 +501,8 @@ public class DatabaseDataStore extends DataStore {
             statement.execute("DELETE FROM griefprevention_nextclaimid;");
             statement.execute("INSERT INTO griefprevention_nextclaimid VALUES (" + nextID + ");");
         } catch (SQLException e) {
-            GriefPrevention.AddLogEntry("Unable to set next claim ID to " + nextID + ".  Details:");
-            GriefPrevention.AddLogEntry(e.getMessage());
+            GriefPrevention.addLogEntry("Unable to set next claim ID to " + nextID + ".  Details:");
+            GriefPrevention.addLogEntry(e.getMessage());
         }
     }
 
@@ -523,8 +523,8 @@ public class DatabaseDataStore extends DataStore {
             statement.execute("INSERT INTO griefprevention_playerdata (name, lastlogin, accruedblocks, bonusblocks) VALUES ('$" + groupName + "', '"
                     + dateString + "', " + "0" + ", " + String.valueOf(currentValue) + ");");
         } catch (SQLException e) {
-            GriefPrevention.AddLogEntry("Unable to save data for group " + groupName + ".  Details:");
-            GriefPrevention.AddLogEntry(e.getMessage());
+            GriefPrevention.addLogEntry("Unable to save data for group " + groupName + ".  Details:");
+            GriefPrevention.addLogEntry(e.getMessage());
         }
     }
 
@@ -576,8 +576,8 @@ public class DatabaseDataStore extends DataStore {
             }
 
         } catch (SQLException e) {
-            GriefPrevention.AddLogEntry("Unable to retrieve schema version from database.  Details:");
-            GriefPrevention.AddLogEntry(e.getMessage());
+            GriefPrevention.addLogEntry("Unable to retrieve schema version from database.  Details:");
+            GriefPrevention.addLogEntry(e.getMessage());
             e.printStackTrace();
             return 0;
         }
@@ -592,8 +592,8 @@ public class DatabaseDataStore extends DataStore {
             statement.execute("DELETE FROM griefprevention_schemaversion;");
             statement.execute("INSERT INTO griefprevention_schemaversion VALUES (" + versionToSet + ");");
         } catch (SQLException e) {
-            GriefPrevention.AddLogEntry("Unable to set next schema version to " + versionToSet + ".  Details:");
-            GriefPrevention.AddLogEntry(e.getMessage());
+            GriefPrevention.addLogEntry("Unable to set next schema version to " + versionToSet + ".  Details:");
+            GriefPrevention.addLogEntry(e.getMessage());
         }
     }
 

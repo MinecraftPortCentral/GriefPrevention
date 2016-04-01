@@ -511,12 +511,12 @@ public class Claim implements ContextSource {
             Set contextSet = ImmutableSet.of(getContext());
             Tristate perm = user.getPermissionValue(contextSet, GPPermissions.BLOCK_BREAK);
             if (perm == Tristate.FALSE) {
-                return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission);
+                return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
             } else if (perm == Tristate.TRUE) {
                 return null;
             } else { // undefined
                 if (!this.getClaimData().getConfig().flags.blockBreak) {
-                    return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission);
+                    return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
                 }
             }
         }

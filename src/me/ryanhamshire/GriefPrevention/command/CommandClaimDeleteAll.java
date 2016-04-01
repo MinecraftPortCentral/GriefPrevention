@@ -33,7 +33,7 @@ public class CommandClaimDeleteAll implements CommandExecutor {
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
         if (player != null) {
-            GriefPrevention.AddLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
+            GriefPrevention.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
                     CustomLogEntryTypes.AdminActivity);
 
             // revert any current visualization

@@ -81,7 +81,7 @@ class DeliverClaimBlocksTask implements Runnable {
                         accruedBlocks = 1;
                     }
 
-                    GriefPrevention.AddLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
+                    GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
 
                     playerData.worldStorageData.get(player.getWorld().getUniqueId()).getConfig().accruedClaimBlocks += accruedBlocks;
 
@@ -92,14 +92,14 @@ class DeliverClaimBlocksTask implements Runnable {
                     // dataStore.savePlayerData(player.getUniqueIdentifier(),
                     // playerData);
                 } else {
-                    GriefPrevention.AddLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
+                    GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
                 }
             } catch (IllegalArgumentException e) // can't measure distance when
             // to/from are different worlds
             {
 
             } catch (Exception e) {
-                GriefPrevention.AddLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
+                GriefPrevention.addLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
                 e.printStackTrace();
             }
 

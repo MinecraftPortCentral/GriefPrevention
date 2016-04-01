@@ -54,6 +54,7 @@ import me.ryanhamshire.GriefPrevention.command.CommandClaimSell;
 import me.ryanhamshire.GriefPrevention.command.CommandClaimSubdivide;
 import me.ryanhamshire.GriefPrevention.command.CommandClaimTransfer;
 import me.ryanhamshire.GriefPrevention.command.CommandContainerTrust;
+import me.ryanhamshire.GriefPrevention.command.CommandDebug;
 import me.ryanhamshire.GriefPrevention.command.CommandGivePet;
 import me.ryanhamshire.GriefPrevention.command.CommandGpReload;
 import me.ryanhamshire.GriefPrevention.command.CommandGriefPrevention;
@@ -209,21 +210,24 @@ public class GriefPrevention {
     public static final int NOTIFICATION_SECONDS = 20;
 
     // adds a server log entry
-    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
-        if (customLogType != null && GriefPrevention.instance.customLogger != null) {
-            GriefPrevention.instance.customLogger.AddEntry(entry, customLogType);
+    public static void addLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
+        if (customLogType == CustomLogEntryTypes.Debug && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug) {
+            return;
         }
+
+        GriefPrevention.instance.customLogger.addEntry(entry, customLogType);
+
         if (!excludeFromServerLogs) {
             log.info("GriefPrevention: " + entry);
         }
     }
 
-    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType) {
-        AddLogEntry(entry, customLogType, false);
+    public static void addLogEntry(String entry, CustomLogEntryTypes customLogType) {
+        addLogEntry(entry, customLogType, false);
     }
 
-    public static synchronized void AddLogEntry(String entry) {
-        AddLogEntry(entry, CustomLogEntryTypes.Debug);
+    public static void addLogEntry(String entry) {
+        addLogEntry(entry, CustomLogEntryTypes.Debug);
     }
 
     @Listener
@@ -237,19 +241,12 @@ public class GriefPrevention {
     @Listener
     public void onServerStarted(GameStartedServerEvent event) {
         instance = this;
-
-        AddLogEntry("Grief Prevention boot start.");
-
         this.loadConfig();
-
         this.customLogger = new CustomLogger();
-
-        AddLogEntry("Finished loading configuration.");
-
+        addLogEntry("Grief Prevention boot start.");
+        addLogEntry("Finished loading configuration.");
         this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).get();
-
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
-
         this.permPluginInstalled = !Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase
                 ("sponge");
 
@@ -288,14 +285,14 @@ public class GriefPrevention {
                 this.dataStore = new FlatFileDataStore();
                 this.dataStore.initialize();
             } catch (Exception e) {
-                GriefPrevention.AddLogEntry("Unable to initialize the file system data store.  Details:");
-                GriefPrevention.AddLogEntry(e.getMessage());
+                GriefPrevention.addLogEntry("Unable to initialize the file system data store.  Details:");
+                GriefPrevention.addLogEntry(e.getMessage());
                 e.printStackTrace();
             }
         }
 
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
-        AddLogEntry("Finished loading data " + dataMode + ".");
+        addLogEntry("Finished loading data " + dataMode + ".");
 
         // unless claim block accrual is disabled, start the recurring per 10
         // minute event to give claim blocks to online players
@@ -311,10 +308,10 @@ public class GriefPrevention {
 
         //if economy is enabled
         if (this.economyService.isPresent()) {
-            GriefPrevention.AddLogEntry("GriefPrevention economy integration enabled.");
-            GriefPrevention.AddLogEntry(
+            GriefPrevention.addLogEntry("GriefPrevention economy integration enabled.");
+            GriefPrevention.addLogEntry(
                     "Hooked into economy: " + Sponge.getServiceManager().getRegistration(EconomyService.class).get().getPlugin().getId() + ".");
-            GriefPrevention.AddLogEntry("Ready to buy/sell claim blocks!");
+            GriefPrevention.addLogEntry("Ready to buy/sell claim blocks!");
         }
 
         // load ignore lists for any already-online players
@@ -329,7 +326,7 @@ public class GriefPrevention {
         Sponge.getGame().getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
         Sponge.getGame().getEventManager().registerListeners(this, new WorldEventHandler());
         Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand(), "griefprevention", "gp");
-        AddLogEntry("Boot finished.");
+        addLogEntry("Boot finished.");
     }
 
     public void loadConfig() {
@@ -505,6 +502,12 @@ public class GriefPrevention {
                         .permission(GPPermissions.COMMAND_CONTAINERTRUST).arguments(string(Text.of("target")))
                         .executor(new CommandContainerTrust()).build());
 
+        subcommands.put(Arrays.asList("debug"),
+                CommandSpec.builder()
+                        .description(Text.of("Turns on debug logging."))
+                        .permission(GPPermissions.COMMAND_DEBUG)
+                        .executor(new CommandDebug()).build());
+
         subcommands
                 .put(Arrays.asList("givepet"),
                         CommandSpec.builder().description(Text.of("Allows a player to give away a pet they tamed"))
@@ -606,8 +609,7 @@ public class GriefPrevention {
 
         playerData.ignoreListChanged = true;
         if (!ignorer.isOnline()) {
-            // TODO
-            // this.dataStore.savePlayerData(ignorer.getUniqueId(), playerData);
+            this.dataStore.asyncSaveGlobalPlayerData(ignorer.getUniqueId(), playerData);
             this.dataStore.clearCachedPlayerData(ignorer.getUniqueId());
         }
     }
@@ -647,7 +649,7 @@ public class GriefPrevention {
     static String lookupPlayerName(String uuid) {
         Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(UUID.fromString(uuid));
         if (!user.isPresent()) {
-            GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
+            GriefPrevention.addLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
             return "someone";
         }
 
@@ -779,7 +781,7 @@ public class GriefPrevention {
         }
 
         if (player == null) {
-            GriefPrevention.AddLogEntry(Text.of(message).toPlain());
+            GriefPrevention.addLogEntry(Text.of(message).toPlain());
         } else {
             player.sendMessage(message);
         }
@@ -972,7 +974,7 @@ public class GriefPrevention {
                 }
                 blockInfo = blockInfo.substring(0, lastIndex);
             } else if (count > 2) {
-                GriefPrevention.AddLogEntry("ERROR: Invalid block entry " + blockInfo + " found in config. Skipping...");
+                GriefPrevention.addLogEntry("ERROR: Invalid block entry " + blockInfo + " found in config. Skipping...");
                 continue;
             }
 
@@ -981,7 +983,7 @@ public class GriefPrevention {
             // null value returned indicates an error parsing the string from the config file
             if (!blockType.isPresent() || !blockType.get().getItem().isPresent()) {
                 // show error in log
-                GriefPrevention.AddLogEntry("ERROR: Unable to read a block entry from the config file.  Please update your config.");
+                GriefPrevention.addLogEntry("ERROR: Unable to read a block entry from the config file.  Please update your config.");
 
                 // update string, which will go out to config file to help user
                 // find the error entry

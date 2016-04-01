@@ -42,7 +42,7 @@ class SendPlayerMessageTask implements Runnable {
     @Override
     public void run() {
         if (player == null) {
-            GriefPrevention.AddLogEntry(Text.of(message).toPlain());
+            GriefPrevention.addLogEntry(Text.of(message).toPlain());
             return;
         }
 

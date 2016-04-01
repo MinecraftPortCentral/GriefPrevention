@@ -36,7 +36,7 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
         // id indicates an administrative claim
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
-        GriefPrevention.AddLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
+        GriefPrevention.addLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
 
         // revert any current visualization
         Visualization.Revert(player);

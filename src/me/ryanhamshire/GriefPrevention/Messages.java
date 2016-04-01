@@ -237,5 +237,6 @@ public enum Messages {
     ResizeClaimInsufficientArea,
     NoProfanity,
     PlayerNotIgnorable,
-    NoDropsAllowed
+    NoDropsAllowed,
+    FireSpreadOutsideClaim
 }

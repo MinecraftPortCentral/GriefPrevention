@@ -50,7 +50,7 @@ public class CommandClaimDelete implements CommandExecutor {
                     }
 
                     GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteSuccess);
-                    GriefPrevention.AddLogEntry(
+                    GriefPrevention.addLogEntry(
                             player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
                                     + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
                             CustomLogEntryTypes.AdminActivity);

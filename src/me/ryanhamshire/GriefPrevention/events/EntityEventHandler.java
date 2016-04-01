@@ -27,6 +27,7 @@ package me.ryanhamshire.GriefPrevention.events;
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimsMode;
+import me.ryanhamshire.GriefPrevention.CustomLogEntryTypes;
 import me.ryanhamshire.GriefPrevention.DataStore;
 import me.ryanhamshire.GriefPrevention.GPPermissions;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -64,7 +65,6 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.entity.damage.DamageTypes;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
@@ -111,31 +111,42 @@ public class EntityEventHandler {
 
                 if (entityType.equals(EntityTypes.ENDERMAN)) {
                     if (!GriefPrevention.instance.config_endermenMoveBlocks) {
-                        transaction.setValid(false);
+                        GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Enderman not allowed to break blocks.]", CustomLogEntryTypes.Debug);
+                        event.setCancelled(true);
+                        return;
                     } else {
                         // and the block is claimed
                         if (this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null) != null) {
-                            // he doesn't get to steal it
-                            transaction.setValid(false);
+                            GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Enderman not allowed to break blocks.]", CustomLogEntryTypes.Debug);
+                            event.setCancelled(true);
+                            return;
                         }
                     }
                 } else if (!GriefPrevention.instance.config_silverfishBreakBlocks && entityType.equals(EntityTypes.SILVERFISH)) {
-                    transaction.setValid(false);
+                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Silverfish not allowed to break blocks.]", CustomLogEntryTypes.Debug);
+                    event.setCancelled(true);
+                    return;
                 } else if (!GriefPrevention.instance.claimModeIsActive(event.getTargetWorld().getProperties(), ClaimsMode.Disabled) && entityType
                         .equals(EntityTypes.WITHER)) {
-                    transaction.setValid(false);
+                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Wither not allowed to break blocks.]", CustomLogEntryTypes.Debug);
+                    event.setCancelled(true);
+                    return;
                 } else if (!GriefPrevention.instance.config_zombiesBreakDoors && transaction.getOriginal().get(Keys.HINGE_POSITION).isPresent() &&
                         entityType.equals(EntityTypes.ZOMBIE)) {
-                    transaction.setValid(false);
+                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Zombie not allowed to break doors.]", CustomLogEntryTypes.Debug);
+                    event.setCancelled(true);
+                    return;
                 } else if (finalType.equals(BlockTypes.DIRT) && originalType.equals(BlockTypes.FARMLAND)) {
                     if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
-                        transaction.setValid(false);
-                    } else {
+                        GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Not allowed to .]", CustomLogEntryTypes.Debug);
+                        event.setCancelled(true);
+                        return;
+                    }/* else {
                         final Optional<EntitySnapshot> optPassenger = entity.get(Keys.PASSENGER);
                         if (optPassenger.isPresent() && optPassenger.get().getType().equals(EntityTypes.PLAYER)) {
                             transaction.setValid(false);
                         }
-                    }
+                    }*/
                 }
             }
         }
@@ -150,7 +161,6 @@ public class EntityEventHandler {
         }
 
         Optional<Explosive> explosive = ((Explosion) event.getExplosion()).getSourceExplosive();
-        boolean checked = false;
 
         if (GriefPrevention.instance.permPluginInstalled && explosive.isPresent()) {
             Entity entity = (Entity) explosive.get();
@@ -186,31 +196,57 @@ public class EntityEventHandler {
                         Set contextSet = ImmutableSet.of(claim.getContext());
 
                         if (spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_ANY) != Tristate.UNDEFINED) {
-                            return spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_ANY) == Tristate.TRUE;
+                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_ANY);
+                            if (result != Tristate.TRUE) {
+                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn entities within claim.]", CustomLogEntryTypes.Debug);
+                            }
+                            return true;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.AMBIENT, false)
                                 && spongeUser.getPermissionValue(contextSet, GPPermissions
                                 .SPAWN_AMBIENTS) != Tristate.UNDEFINED) {
-                            return spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_AMBIENTS) == Tristate.TRUE;
+                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_AMBIENTS);
+                            if (result != Tristate.TRUE) {
+                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
+                            }
+                            return true;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.WATER_CREATURE, false) && spongeUser.getPermissionValue(contextSet,
                                 GPPermissions.SPAWN_AQUATICS) != Tristate.UNDEFINED) {
-                            return spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_AQUATICS) == Tristate.TRUE;
+                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_AQUATICS);
+                            if (result != Tristate.TRUE) {
+                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
+                            }
+                            return true;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.MONSTER, false)
                                 && spongeUser.getPermissionValue(contextSet, GPPermissions
                                 .SPAWN_MONSTERS) != Tristate.UNDEFINED) {
-                            return spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_MONSTERS) == Tristate.TRUE;
+                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_MONSTERS);
+                            if (result != Tristate.TRUE) {
+                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
+                            }
+                            return true;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.CREATURE, false)
                                 && spongeUser.getPermissionValue(contextSet, GPPermissions
                                 .SPAWN_PASSIVES) != Tristate.UNDEFINED) {
-                            return spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_PASSIVES) == Tristate.TRUE;
+                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_PASSIVES);
+                            if (result != Tristate.TRUE) {
+                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn passives within claim.]", CustomLogEntryTypes.Debug);
+                            }
+                            return true;
                         }
                     }
 
                     ClaimStorageData.ClaimDataNode claimStorageData = claim.getClaimData().getConfig();
                     if (!claimStorageData.flags.spawnAny) {
+                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn entities within claim.]", CustomLogEntryTypes.Debug);
                         return false;
                     } else if (!claimStorageData.flags.spawnAmbient && entity instanceof Ambient) {
+                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
                         return false;
                     } else if (!claimStorageData.flags.spawnAquatic && entity instanceof Aquatic) {
+                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
+                        return false;
+                    } else if (!claimStorageData.flags.spawnMonsters && entity instanceof Monster) {
+                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
                         return false;
                     }
                 }
@@ -228,22 +264,29 @@ public class EntityEventHandler {
             final Cause cause = event.getCause();
             final Player player = cause.first(Player.class).orElse(null);
             final ItemStack stack = cause.first(ItemStack.class).orElse(null);
-            final EntityType entityType = entity.getType();
+            //final EntityType entityType = entity.getType();
             if (player != null) {
                 if (stack != null && !stack.getItem().equals(ItemTypes.SPAWN_EGG)) {
+                    GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Cannot spawn entities in creative worlds.]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 }
-                if (!entityType.equals(EntityTypes.IRON_GOLEM) && !entityType.equals(EntityTypes.SNOWMAN) && !entityType.equals(EntityTypes
+                /*if (!entityType.equals(EntityTypes.IRON_GOLEM) && !entityType.equals(EntityTypes.SNOWMAN) && !entityType.equals(EntityTypes
                         .ARMOR_STAND)) {
                     event.setCancelled(true);
                     return;
-                }
+                }*/
             }
 
             // otherwise, just apply the limit on total entities per claim (and no spawning in the wilderness!)
             Claim claim = this.dataStore.getClaimAt(location, false, null);
-            if (claim == null || claim.allowMoreEntities() != null) {
+            if (claim == null) {
+                continue;
+            }
+
+            String denyReason = claim.allowMoreEntities();
+            if (denyReason != null) {
+                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                 event.setCancelled(true);
             }
         }
@@ -271,6 +314,7 @@ public class EntityEventHandler {
                 EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
                 if (entityDamageSource.getSource() instanceof Monster) {
                     if (!claim.getClaimData().getConfig().flags.mobPlayerDamage) {
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                         return;
                     }
@@ -282,13 +326,9 @@ public class EntityEventHandler {
         if (event.getTargetEntity() instanceof EntityTameable && !GriefPrevention.instance.pvpRulesApply(event.getTargetEntity().getWorld())) {
             EntityTameable tameable = (EntityTameable) event.getTargetEntity();
             if (tameable.isTamed()) {
-                if (damageSource.getType() == DamageTypes.EXPLOSIVE ||
-                        damageSource.getType() == DamageTypes.CONTACT ||
-                        damageSource.getType() == DamageTypes.FIRE ||
-                        damageSource.getType() == DamageTypes.SUFFOCATE) {
-                    event.setCancelled(true);
-                    return;
-                }
+                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Not allowed to attack tamed entities within claim.]", CustomLogEntryTypes.Debug);
+                event.setCancelled(true);
+                return;
             }
         }
 
@@ -334,12 +374,14 @@ public class EntityEventHandler {
                 // otherwise if protecting spawning players
                 if (activeConfig.getConfig().pvp.protectFreshSpawns) {
                     if (defenderData.pvpImmune) {
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Defender PVP Immune.]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.ThatPlayerPvPImmune);
                         return;
                     }
 
                     if (attackerData.pvpImmune) {
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker PVP Immune.]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
                         return;
@@ -361,6 +403,7 @@ public class EntityEventHandler {
                             PreventPvPEvent pvpEvent = new PreventPvPEvent(attackerClaim);
                             Sponge.getGame().getEventManager().post(pvpEvent);
                             if (!pvpEvent.isCancelled()) {
+                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Cannot fight while PVP Immune.]", CustomLogEntryTypes.Debug);
                                 event.setCancelled(true);
                                 GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
                                 return;
@@ -380,6 +423,7 @@ public class EntityEventHandler {
                             PreventPvPEvent pvpEvent = new PreventPvPEvent(defenderClaim);
                             Sponge.getGame().getEventManager().post(pvpEvent);
                             if (!pvpEvent.isCancelled()) {
+                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Player in PVP Safe Zone.]", CustomLogEntryTypes.Debug);
                                 event.setCancelled(true);
                                 GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
                                 return;
@@ -429,15 +473,17 @@ public class EntityEventHandler {
                         return;
                     }
 
+                    GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker null.]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 }
 
                 // otherwise player must have container trust in the claim
-                String failureReason = claim.allowBuild(attacker, event.getTargetEntity().getLocation());
-                if (failureReason != null) {
+                String denyReason = claim.allowBuild(attacker, event.getTargetEntity().getLocation());
+                if (denyReason != null) {
+                    GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
-                    GriefPrevention.sendMessage(attacker, TextMode.Err, failureReason);
+                    GriefPrevention.sendMessage(attacker, TextMode.Err, denyReason);
                     return;
                 }
             }
@@ -478,11 +524,13 @@ public class EntityEventHandler {
                                 message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
                             }
                             GriefPrevention.sendMessage(attacker, TextMode.Err, message);
+                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: PVP disabled in world.]", CustomLogEntryTypes.Debug);
                             event.setCancelled(true);
                             return;
                         }
                         // and disallow if attacker is pvp immune
                         else if (attackerData.pvpImmune) {
+                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker PVP Immune.]", CustomLogEntryTypes.Debug);
                             event.setCancelled(true);
                             GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
                             return;
@@ -521,6 +569,7 @@ public class EntityEventHandler {
 
                     // all other cases
                     else {
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker null2.]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                         if (sourceEntity != null && sourceEntity instanceof Projectile) {
                             sourceEntity.remove();
@@ -531,8 +580,8 @@ public class EntityEventHandler {
                 // otherwise the player damaging the entity must have permission, unless it's a dog in a pvp world
                 else if (!event.getTargetEntity().getWorld().getProperties().isPVPEnabled() && !(event.getTargetEntity().getType()
                         == EntityTypes.WOLF)) {
-                    String noContainersReason = claim.allowContainers(attacker, event.getTargetEntity().getLocation());
-                    if (noContainersReason != null) {
+                    String denyReason = claim.allowContainers(attacker, event.getTargetEntity().getLocation());
+                    if (denyReason != null) {
 
                         // kill the arrow to avoid infinite bounce between crowded together animals
                         if (arrow != null) {
@@ -544,6 +593,7 @@ public class EntityEventHandler {
                             message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
                         }
                         GriefPrevention.sendMessage(attacker, TextMode.Err, message);
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + ".]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                     }
 
@@ -635,6 +685,7 @@ public class EntityEventHandler {
         Living livingEntity = (Living) event.getCause().root();
         // special rule for creative worlds: killed entities don't drop items or experience orbs
         if (GriefPrevention.instance.claimModeIsActive(livingEntity.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
+            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: Drops not allowed in creative worlds.]", CustomLogEntryTypes.Debug);
             event.setCancelled(true);
             return;
         }
@@ -650,6 +701,7 @@ public class EntityEventHandler {
                         event.getCause().first(Player.class).isPresent() ? event.getCause().first(Player.class).get().getName() : null,
                         player.getName(), true);
                 // don't drop items as usual, they will be sent to the siege winner
+                GriefPrevention.addLogEntry("[Event: DropItemEvent.Destruct][RootCause: " + event.getCause().root() + "][CancelReason: Siege in progress.]", CustomLogEntryTypes.Debug);
                 event.setCancelled(true);
             }
         }
@@ -678,23 +730,6 @@ public class EntityEventHandler {
             this.dataStore.endSiege(playerData.siegeData,
                     damageSource.getSource() != null ? ((net.minecraft.entity.Entity) damageSource.getSource()).getName() : null, player.getName(),
                     true);
-        }
-    }
-
-    // when an item spawns...
-    @Listener(order = Order.LAST)
-    public void onItemSpawn(SpawnEntityEvent event) {
-        if (event.getEntities().size() > 0) {
-            if (event.getEntities().get(0) instanceof Item) {
-                // if in a creative world, cancel the event (don't drop items on the ground)
-                if (GriefPrevention.instance
-                        .claimModeIsActive(event.getEntities().get(0).getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
-                    event.setCancelled(true);
-                    return;
-                }
-            } else {
-                return;
-            }
         }
     }
 

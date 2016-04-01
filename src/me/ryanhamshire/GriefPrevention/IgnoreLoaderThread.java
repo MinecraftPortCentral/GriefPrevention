@@ -24,10 +24,10 @@
  */
 package me.ryanhamshire.GriefPrevention;
 
-import com.google.common.io.Files;
 
-import java.io.File;
-import java.nio.charset.Charset;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,11 +46,14 @@ public class IgnoreLoaderThread extends Thread {
 
     @Override
     public void run() {
-        File ignoreFile = new File(DataStore.playerDataFolderPath + File.separator + this.playerToLoad + ".ignore");
-
-        // if the file doesn't exist, there's nothing to do here
-        if (!ignoreFile.exists()) {
-            return;
+        Path ignorePath = GriefPrevention.instance.dataStore.globalPlayerDataPath.resolve(this.playerToLoad + ".ignore");
+        if (!Files.exists(ignorePath)) {
+            try {
+                Files.createFile(ignorePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
         }
 
         boolean needRetry = false;
@@ -61,7 +64,7 @@ public class IgnoreLoaderThread extends Thread {
                 needRetry = false;
 
                 // read the file content and immediately close it
-                List<String> lines = Files.readLines(ignoreFile, Charset.forName("UTF-8"));
+                List<String> lines = Files.readAllLines(ignorePath);
 
                 // each line is one ignore. asterisks indicate administrative
                 // ignores
@@ -98,7 +101,7 @@ public class IgnoreLoaderThread extends Thread {
 
         // if last attempt failed, log information about the problem
         if (needRetry) {
-            GriefPrevention.AddLogEntry("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": "
+            GriefPrevention.addLogEntry("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": "
                     + latestException.toString());
             latestException.printStackTrace();
         }
