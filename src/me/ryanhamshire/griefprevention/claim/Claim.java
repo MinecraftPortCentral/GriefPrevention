@@ -532,7 +532,7 @@ public class Claim implements ContextSource {
     }
 
     // access permission check
-    public String allowAccess(World world, User player) {
+    public String allowAccess(World world, User user) {
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
@@ -540,24 +540,24 @@ public class Claim implements ContextSource {
 
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+            if (user.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
                 return null;
             }
         }
 
         // claim owner and admins in ignoreclaims mode have access
-        if (player.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(world, player.getUniqueId()).ignoreClaims) {
+        if (user.getUniqueId().equals(this.ownerID) || GriefPrevention.instance.dataStore.getPlayerData(world, user.getUniqueId()).ignoreClaims) {
             return null;
         }
 
         // look for explicit individual access, inventory, or build permission
-        if (this.hasExplicitPermission(player, ClaimPermission.Access)) {
+        if (this.hasExplicitPermission(user, ClaimPermission.Access)) {
             return null;
         }
-        if (this.hasExplicitPermission(player, ClaimPermission.Inventory)) {
+        if (this.hasExplicitPermission(user, ClaimPermission.Inventory)) {
             return null;
         }
-        if (this.hasExplicitPermission(player, ClaimPermission.Build)) {
+        if (this.hasExplicitPermission(user, ClaimPermission.Build)) {
             return null;
         }
 
@@ -568,19 +568,19 @@ public class Claim implements ContextSource {
         }
 
         // Check for TNT and explosions flag
-        if (GriefPrevention.instance.permPluginInstalled && player.getItemInHand().isPresent() && player.getItemInHand().get()
-                .getItem().equals(ItemTypes.TNT) && player.hasPermission(ImmutableSet.of(getContext()), GPPermissions.EXPLOSIONS)) {
+        if (GriefPrevention.instance.permPluginInstalled && (user instanceof Player) && ((Player)user).getItemInHand().isPresent() && ((Player)user).getItemInHand().get()
+                .getItem().equals(ItemTypes.TNT) && user.hasPermission(ImmutableSet.of(getContext()), GPPermissions.EXPLOSIONS)) {
             return null;
         }
 
         // permission inheritance for subdivisions
         if (this.parent != null) {
-            return this.parent.allowAccess(world, player);
+            return this.parent.allowAccess(world, user);
         }
 
         // catch-all error message for all other cases
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
-        if (player.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
+        if (user.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
         }
         return reason;
