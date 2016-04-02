@@ -28,6 +28,7 @@ import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.entity.Entity;
@@ -64,7 +65,7 @@ public class DeliverClaimBlocksTask implements Runnable {
 
                     Player player = (Player) entity;
                     DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(player);
-                    Sponge.getGame().getScheduler().createTaskBuilder().async().delayTicks(i++).execute(newTask)
+                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(i++).execute(newTask)
                             .submit(GriefPrevention.instance);
                 }
             }
@@ -88,7 +89,12 @@ public class DeliverClaimBlocksTask implements Runnable {
                     }
 
                     GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
-                    playerData.worldStorageData.get(player.getWorld().getUniqueId()).getConfig().accruedClaimBlocks += accruedBlocks;
+                    PlayerStorageData playerStorage = playerData.worldStorageData.get(player.getWorld().getUniqueId());
+                    if (playerStorage == null) {
+                        GriefPrevention.instance.dataStore.createPlayerWorldStorageData(player.getWorld().getProperties(), player.getUniqueId());
+                        playerStorage = playerData.worldStorageData.get(player.getWorld().getUniqueId());
+                    }
+                    playerStorage.getConfig().accruedClaimBlocks += accruedBlocks;
 
                     // intentionally NOT saving data here to reduce overall
                     // secondary storage access frequency

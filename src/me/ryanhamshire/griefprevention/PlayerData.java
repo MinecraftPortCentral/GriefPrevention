@@ -37,6 +37,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -228,10 +229,11 @@ public class PlayerData {
             return; // no claims
         }
 
-        List<Claim> claimList = dataStore.worldClaims.get(worldProperties.getUniqueId());
-        for (Claim claim : claimList) {
+        Iterator<Claim> iterator = dataStore.worldClaims.get(worldProperties.getUniqueId()).iterator();
+        while (iterator.hasNext()) {
+            Claim claim = iterator.next();
             if (!claim.inDataStore) {
-                dataStore.worldClaims.get(worldProperties.getUniqueId()).remove(claim);
+                this.playerWorldClaims.get(worldProperties.getUniqueId()).remove(claim);
                 continue;
             }
 

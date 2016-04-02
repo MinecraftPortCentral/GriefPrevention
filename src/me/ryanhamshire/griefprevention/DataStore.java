@@ -378,7 +378,7 @@ public abstract class DataStore {
     }
 
     // adds a claim to the datastore, making it an effective claim
-    synchronized void addClaim(Claim newClaim, boolean writeToStorage) {
+    void addClaim(Claim newClaim, boolean writeToStorage) {
         PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
         if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
             ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
@@ -491,11 +491,11 @@ public abstract class DataStore {
     abstract PlayerData getPlayerDataFromStorage(UUID playerID);
 
     // deletes a claim or subdivision
-    synchronized public void deleteClaim(Claim claim) {
+    public void deleteClaim(Claim claim) {
         this.deleteClaim(claim, true);
     }
 
-    public synchronized void deleteClaim(Claim claim, boolean fireEvent) {
+    public void deleteClaim(Claim claim, boolean fireEvent) {
         // delete any children
         for (int j = 0; j < claim.children.size(); j++) {
             this.deleteClaim(claim.children.get(j--), true);
@@ -552,7 +552,7 @@ public abstract class DataStore {
     // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
     // cachedClaim can be NULL, but will help performance if you have a
     // reasonable guess about which claim the location is in
-    synchronized public Claim getClaimAt(Location<World> location, boolean ignoreHeight, Claim cachedClaim) {
+    public Claim getClaimAt(Location<World> location, boolean ignoreHeight, Claim cachedClaim) {
         // check cachedClaim guess first. if it's in the datastore and the
         // location is inside it, we're done
         if (cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) {
@@ -587,7 +587,7 @@ public abstract class DataStore {
     }
 
     // finds a claim by ID
-    public synchronized Claim getClaim(World world, UUID id) {
+    public Claim getClaim(World world, UUID id) {
         List<Claim> claimList = this.worldClaims.get(world.getProperties().getUniqueId());
         for (Claim claim : claimList) {
             if (claim.inDataStore && claim.getID() == id) {
@@ -618,7 +618,7 @@ public abstract class DataStore {
     // does NOT check a player has permission to create a claim, or enough claim blocks.
     // does NOT check minimum claim size constraints
     // does NOT visualize the new claim for any players
-    synchronized public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent,
+    public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent,
             UUID id, User creatingUser) {
         CreateClaimResult result = new CreateClaimResult();
 
@@ -946,7 +946,7 @@ public abstract class DataStore {
     }
 
     // extend a siege, if it's possible to do so
-    public synchronized void tryExtendSiege(Player player, Claim claim) {
+    public void tryExtendSiege(Player player, Claim claim) {
         PlayerData playerData = this.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // player must be sieged
@@ -975,7 +975,7 @@ public abstract class DataStore {
     }
 
     // deletes all claims owned by a player
-    synchronized public void deleteClaimsForPlayer(UUID playerID, boolean deleteCreativeClaims) {
+    public void deleteClaimsForPlayer(UUID playerID, boolean deleteCreativeClaims) {
         // make a list of the player's claims
         ArrayList<Claim> claimsToDelete = new ArrayList<Claim>();
         for (Map.Entry<UUID, List<Claim>> mapEntry : this.worldClaims.entrySet()) {
@@ -1005,7 +1005,7 @@ public abstract class DataStore {
 
     // tries to resize a claim
     // see CreateClaim() for details on return value
-    synchronized public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2,
+    public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2,
             Player resizingPlayer) {
         // try to create this new claim, ignoring the original when checking for overlap
         CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getExtent(), newx1, newx2, newy1, newy2, newz1, newz2,
