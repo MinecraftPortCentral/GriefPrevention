@@ -56,8 +56,10 @@ import org.spongepowered.api.entity.projectile.Projectile;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
+import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
@@ -288,27 +290,39 @@ public class EntityEventHandler {
 
         DamageSource damageSource = damageSourceOpt.get();
         Claim claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, null);
-        if (claim != null) {
-            // check mob-player-damage flag
-            if (damageSource instanceof EntityDamageSource && event.getTargetEntity() instanceof Player) {
-                EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
-                if (entityDamageSource.getSource() instanceof Monster) {
-                    if (!claim.getClaimData().getConfig().flags.mobPlayerDamage) {
-                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
+
+        // Protect owned entities anywhere in world
+        if (damageSource instanceof EntityDamageSource && !((net.minecraft.entity.Entity) event.getTargetEntity()).isCreatureType(EnumCreatureType.MONSTER, false)) {
+            EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
+            Entity sourceEntity = entityDamageSource.getSource();
+            if (entityDamageSource instanceof IndirectEntityDamageSource) {
+                sourceEntity = ((IndirectEntityDamageSource) entityDamageSource).getIndirectSource();
+            }
+
+            if (sourceEntity instanceof User) {
+                User sourceUser = (User) sourceEntity;
+                Optional<UUID> creatorUuid = event.getTargetEntity().getCreator();
+                if (creatorUuid.isPresent()) {
+                    Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(creatorUuid.get());
+                    if (user.isPresent() && !user.get().getUniqueId().equals(sourceUser.getUniqueId())) {
                         event.setCancelled(true);
                         return;
                     }
+                } else if (claim != null && sourceUser.getUniqueId().equals(claim.ownerID)) {
+                    event.setCancelled(true);
+                    return;
                 }
-            }
-        }
-
-        // protect pets from environmental damage types which could be easily caused by griefers
-        if (event.getTargetEntity() instanceof EntityTameable && !GriefPrevention.instance.pvpRulesApply(event.getTargetEntity().getWorld())) {
-            EntityTameable tameable = (EntityTameable) event.getTargetEntity();
-            if (tameable.isTamed()) {
-                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Not allowed to attack tamed entities within claim.]", CustomLogEntryTypes.Debug);
-                event.setCancelled(true);
                 return;
+            } else if (claim != null) {
+                if (event.getTargetEntity() instanceof Player) {
+                    if (entityDamageSource.getSource() instanceof Monster) {
+                        if (!claim.getClaimData().getConfig().flags.mobPlayerDamage) {
+                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
+                            event.setCancelled(true);
+                            return;
+                        }
+                    }
+                }
             }
         }
 
@@ -332,13 +346,6 @@ public class EntityEventHandler {
                     attacker = (Player) arrow.getShooter();
                 }
             }
-
-            if (event.getTargetEntity().getCreator().isPresent()) {
-                UUID targetUuid = event.getTargetEntity().getCreator().get();
-                if (((Entity) sourceEntity).getUniqueId().equals(targetUuid)) {
-                    return; // allow owner to attack own pets
-                }
-            } 
         }
 
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(event.getTargetEntity().getWorld().getProperties());
@@ -422,167 +429,6 @@ public class EntityEventHandler {
         // don't track in worlds where claims are not enabled
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
-        }
-
-        // if the damaged entity is a claimed item frame or armor stand, the
-        // damager needs to be a player with container trust in the claim
-        if (event.getTargetEntity().getType() == EntityTypes.ITEM_FRAME
-                || event.getTargetEntity().getType() == EntityTypes.ARMOR_STAND
-                || event.getTargetEntity().getType() == EntityTypes.VILLAGER) {
-            // TODO - add support with claim flags
-            if (event.getTargetEntity().getType() == EntityTypes.VILLAGER) {
-                return;
-            }
-
-            // decide whether it's claimed
-            Claim cachedClaim = null;
-            PlayerData playerData = null;
-            if (attacker != null) {
-                playerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
-                cachedClaim = playerData.lastClaim;
-            }
-
-            claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, cachedClaim);
-
-            // if it's claimed
-            if (claim != null) {
-                // if attacker isn't a player, cancel
-                if (attacker == null) {
-                    // exception case
-                    if (event.getTargetEntity() instanceof Villager && sourceEntity != null && sourceEntity instanceof Monster) {
-                        return;
-                    }
-
-                    GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker null.]", CustomLogEntryTypes.Debug);
-                    event.setCancelled(true);
-                    return;
-                }
-
-                // otherwise player must have container trust in the claim
-                String denyReason = claim.allowBuild(attacker, event.getTargetEntity().getLocation());
-                if (denyReason != null) {
-                    GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                    event.setCancelled(true);
-                    GriefPrevention.sendMessage(attacker, TextMode.Err, denyReason);
-                    return;
-                }
-            }
-        }
-
-        // if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
-        if (((event.getTargetEntity() instanceof Creature || event.getTargetEntity() instanceof Aquatic))) {
-            // if entity is tameable and has an owner, apply special rules
-            if (event.getTargetEntity() instanceof EntityTameable) {
-                EntityTameable tameable = (EntityTameable) event.getTargetEntity();
-                if (tameable.isTamed() && tameable.getOwner() != null) {
-                    // limit attacks by players to owners and admins in
-                    // ignore claims mode
-                    if (attacker != null) {
-                        UUID ownerID = tameable.getOwner().getUniqueID();
-
-                        // if the player interacting is the owner, always
-                        // allow
-                        if (attacker.getUniqueId().equals(ownerID)) {
-                            return;
-                        }
-
-                        // allow for admin override
-                        PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
-                        if (attackerData.ignoreClaims) {
-                            return;
-                        }
-
-                        // otherwise disallow in non-pvp worlds
-                        if (!GriefPrevention.instance.pvpRulesApply(event.getTargetEntity().getLocation().getExtent())) {
-                            Optional<User> owner = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(ownerID);
-                            String ownerName = "someone";
-                            if (owner.isPresent()) {
-                                ownerName = owner.get().getName();
-                            }
-                            String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
-                            if (attacker.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
-                                message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                            }
-                            GriefPrevention.sendMessage(attacker, TextMode.Err, message);
-                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: PVP disabled in world.]", CustomLogEntryTypes.Debug);
-                            event.setCancelled(true);
-                            return;
-                        }
-                        // and disallow if attacker is pvp immune
-                        else if (attackerData.pvpImmune) {
-                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker PVP Immune.]", CustomLogEntryTypes.Debug);
-                            event.setCancelled(true);
-                            GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
-                            return;
-                        }
-                    }
-                }
-            }
-
-            Claim cachedClaim = null;
-            PlayerData playerData = null;
-
-            // if not a player or an explosive, allow
-            if (attacker == null && sourceEntity != null && !(sourceEntity instanceof Projectile) && sourceEntity.getType() != EntityTypes.CREEPER
-                    && !(sourceEntity instanceof Explosive)) {
-                return;
-            }
-
-            if (attacker != null) {
-                playerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
-                cachedClaim = playerData.lastClaim;
-            }
-
-            claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, cachedClaim);
-
-            // if it's claimed
-            if (claim != null) {
-                // if damaged by anything other than a player (exception
-                // villagers injured by zombies in admin claims), cancel the event
-                // why exception? so admins can set up a village which can't
-                // be CHANGED by players, but must be "protected" by players.
-                if (attacker == null) {
-                    // exception case
-                    if (event.getTargetEntity() instanceof Villager && sourceEntity != null && sourceEntity instanceof Monster) {
-                        return;
-                    }
-
-                    // all other cases
-                    else {
-                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker null2.]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                        if (sourceEntity != null && sourceEntity instanceof Projectile) {
-                            sourceEntity.remove();
-                        }
-                    }
-                }
-
-                // otherwise the player damaging the entity must have permission, unless it's a dog in a pvp world
-                else if (!event.getTargetEntity().getWorld().getProperties().isPVPEnabled() && !(event.getTargetEntity().getType()
-                        == EntityTypes.WOLF)) {
-                    String denyReason = claim.allowContainers(attacker, event.getTargetEntity().getLocation());
-                    if (denyReason != null) {
-
-                        // kill the arrow to avoid infinite bounce between crowded together animals
-                        if (arrow != null) {
-                            arrow.remove();
-                        }
-
-                        String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
-                        if (attacker.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
-                            message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                        }
-                        GriefPrevention.sendMessage(attacker, TextMode.Err, message);
-                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + ".]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                    }
-
-                    // cache claim for later
-                    if (playerData != null) {
-                        playerData.lastClaim = claim;
-                    }
-                }
-            }
         }
     }
 

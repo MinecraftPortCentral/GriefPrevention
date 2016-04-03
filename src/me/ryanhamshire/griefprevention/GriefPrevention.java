@@ -261,7 +261,7 @@ public class GriefPrevention {
         // minute event to give claim blocks to online players
         if (GriefPrevention.getGlobalConfig().getConfig().claim.claimBlocksEarned > 0) {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-            Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.SECONDS).execute(task)
+            Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
                     .submit(GriefPrevention.instance);
         }
 
