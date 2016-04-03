@@ -143,7 +143,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "me.ryanhamshire", name = "GriefPrevention", version = "12.7.1", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "me.ryanhamshire.griefprevention", name = "GriefPrevention", version = "12.7.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
