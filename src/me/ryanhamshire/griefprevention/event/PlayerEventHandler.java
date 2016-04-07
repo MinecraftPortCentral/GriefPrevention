@@ -1408,7 +1408,7 @@ public class PlayerEventHandler {
     public void onPlayerInteractBlockPrimary(InteractBlockEvent.Primary event) {
         Optional<Player> playerOpt = event.getCause().first(Player.class);
 
-        if (!playerOpt.isPresent() || !playerOpt.get().getItemInHand().isPresent()) {
+        if (!playerOpt.isPresent() || !playerOpt.get().getItemInHand().isPresent() || !event.getTargetBlock().getLocation().isPresent()) {
             return;
         }
 
@@ -1464,7 +1464,7 @@ public class PlayerEventHandler {
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event) {
         Optional<Player> playerOpt = event.getCause().first(Player.class);
 
-        if (!playerOpt.isPresent()) {
+        if (!playerOpt.isPresent() || !event.getTargetBlock().getLocation().isPresent()) {
             return;
         }
 

@@ -123,7 +123,7 @@ public class BlockEventHandler {
         Optional<User> user = event.getCause().first(User.class);
         Optional<BlockSnapshot> blockSource = event.getCause().first(BlockSnapshot.class);
 
-        if (!user.isPresent() || !blockSource.isPresent()) {
+        if (!user.isPresent() || !blockSource.isPresent() || !blockSource.get().getLocation().isPresent()) {
             return;
         }
 
@@ -231,7 +231,7 @@ public class BlockEventHandler {
         Optional<User> user = event.getCause().first(User.class);
         Optional<BlockSnapshot> blockSource = event.getCause().first(BlockSnapshot.class);
 
-        if (!user.isPresent() && !blockSource.isPresent()) {
+        if (!user.isPresent() && (!blockSource.isPresent() || !blockSource.get().getLocation().isPresent())) {
             return;
         }
 
@@ -294,6 +294,9 @@ public class BlockEventHandler {
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
 
             BlockSnapshot block = transaction.getFinal();
+            if (!block.getLocation().isPresent()) {
+                continue;
+            }
 
             Claim claim = this.dataStore.getClaimAt(block.getLocation().get(), true, playerData.lastClaim);
             if (claim != null) {
