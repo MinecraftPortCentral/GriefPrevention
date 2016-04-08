@@ -716,7 +716,7 @@ public class PlayerEventHandler {
             // if in survival claims mode, send a message about the claim basics
             // video (except for admins - assumed experts)
             if (GriefPrevention.instance.claimModeIsActive(player.getWorld().getProperties(), ClaimsMode.Survival)
-                    && !player.hasPermission(GPPermissions.ADMIN_CLAIMS) && this.dataStore.worldClaims.size() > 10) {
+                    && !player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS) && this.dataStore.worldClaims.size() > 10) {
                 WelcomeTask task = new WelcomeTask(player);
                 // 10 seconds after join
                 Sponge.getGame().getScheduler().createTaskBuilder().delay(10, TimeUnit.SECONDS).execute(task).submit(GriefPrevention.instance);
@@ -1394,11 +1394,11 @@ public class PlayerEventHandler {
 
     // educates a player about /adminclaims and /acb, if he can use them
     private void tryAdvertiseAdminAlternatives(Player player) {
-        if (player.hasPermission(GPPermissions.ADMIN_CLAIMS) && player.hasPermission(GPPermissions.ADJUSTCLAIMBLOCKS)) {
+        if (player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS) && player.hasPermission(GPPermissions.COMMAND_ADJUSTBONUSCLAIMBLOCKS)) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACandACB);
-        } else if (player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+        } else if (player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseAdminClaims);
-        } else if (player.hasPermission(GPPermissions.ADJUSTCLAIMBLOCKS)) {
+        } else if (player.hasPermission(GPPermissions.COMMAND_ADJUSTBONUSCLAIMBLOCKS)) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.AdvertiseACB);
         }
     }
@@ -2014,7 +2014,7 @@ public class PlayerEventHandler {
                         int newHeight = (Math.abs(newz1 - newz2) + 1);
                         boolean smaller = newWidth < playerData.claimResizing.getWidth() || newHeight < playerData.claimResizing.getHeight();
 
-                        if (!player.hasPermission(GPPermissions.ADMIN_CLAIMS) && !playerData.claimResizing.isAdminClaim() && smaller) {
+                        if (!player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS) && !playerData.claimResizing.isAdminClaim() && smaller) {
                             if (newWidth < activeConfig.getConfig().claim.claimMinimumWidth
                                     || newHeight < activeConfig.getConfig().claim.claimMinimumWidth) {
                                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeClaimTooNarrow,
@@ -2104,7 +2104,7 @@ public class PlayerEventHandler {
 
                         // if increased to a sufficiently large size and no subdivisions yet, send subdivision instructions
                         if (oldClaim.getArea() < 1000 && result.claim.getArea() >= 1000 && result.claim.children.size() == 0
-                                && !player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+                                && !player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)) {
                             GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
                             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L);
                         }
@@ -2375,7 +2375,7 @@ public class PlayerEventHandler {
                         playerData.lastShovelLocation = null;
 
                         // if it's a big claim, tell the player about subdivisions
-                        if (!player.hasPermission(GPPermissions.ADMIN_CLAIMS) && result.claim.getArea() >= 1000) {
+                        if (!player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS) && result.claim.getArea() >= 1000) {
                             GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
                             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L);
                         }

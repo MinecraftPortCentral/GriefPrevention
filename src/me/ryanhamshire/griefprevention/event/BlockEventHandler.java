@@ -405,7 +405,7 @@ public class BlockEventHandler {
             // of their claimed areas
             else if (!this.trashBlocks.contains(block.getState().getType()) && GriefPrevention.instance
                     .claimsEnabledForWorld(block.getLocation().get().getExtent().getProperties())) {
-                if (!playerData.warnedAboutBuildingOutsideClaims && !player.hasPermission(GPPermissions.ADMIN_CLAIMS)
+                if (!playerData.warnedAboutBuildingOutsideClaims && !player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)
                         && ((playerData.lastClaim == null && playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size() == 0)
                         || (playerData.lastClaim != null && playerData.lastClaim.isNear(player.getLocation(), 15)))) {
                     Long now = null;

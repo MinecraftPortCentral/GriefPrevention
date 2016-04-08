@@ -332,7 +332,7 @@ public class Claim implements ContextSource {
 
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+            if (player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)) {
                 return null;
             }
         }
@@ -392,7 +392,7 @@ public class Claim implements ContextSource {
 
         // admin claims can always be modified by admins, no exceptions
         if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+            if (user.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)) {
                 return null;
             }
         }
@@ -540,7 +540,7 @@ public class Claim implements ContextSource {
 
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+            if (user.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)) {
                 return null;
             }
         }
@@ -611,7 +611,7 @@ public class Claim implements ContextSource {
 
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+            if (user.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)) {
                 return null;
             }
         }

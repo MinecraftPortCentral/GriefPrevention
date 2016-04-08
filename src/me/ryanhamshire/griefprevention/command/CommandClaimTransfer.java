@@ -37,7 +37,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         }
 
         // check additional permission for admin claims
-        if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.ADMIN_CLAIMS)) {
+        if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.TransferClaimPermission));
             } catch (CommandException e1) {

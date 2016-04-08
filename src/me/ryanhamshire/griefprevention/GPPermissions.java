@@ -26,11 +26,15 @@ package me.ryanhamshire.griefprevention;
 
 public class GPPermissions {
 
-    // General permissions
-    public static final String ADJUSTCLAIMBLOCKS = "griefprevention.adjustclaimblocks";
-    public static final String ADMIN_CLAIMS = "griefprevention.adminclaims";
+    // GENERAL PERMISSIONS
+
+    // Controls whether a player can use the '/gp claimlist' command on another player
     public static final String CLAIMS_LIST_OTHER = "griefprevention.claimslistother";
+
+    // Controls whether a player can create a claim
     public static final String CREATE_CLAIMS = "griefprevention.createclaims";
+
+    // Controls whether a player can delete a claim 
     public static final String DELETE_CLAIMS = "griefprevention.deleteclaims";
     public static final String EAVES_DROP = "griefprevention.eaves-drop";
     public static final String EAVES_DROP_SIGNS = "griefprevention.eaves-drop-signs";
@@ -42,7 +46,7 @@ public class GPPermissions {
     public static final String SPAM = "griefprevention.spam";
     public static final String VISUALIZE_NEARBY_CLAIMS = "griefprevention.visualize-nearby-claims";
 
-    // Flag override permissions
+    // FLAG PERMISSIONS
     public static final String BLOCK_BREAK = "griefprevention.flag.block-break";
     public static final String BLOCK_COMMANDS = "griefprevention.flag.block-commands";
     public static final String BLOCK_PLACE = "griefprevention.flag.block-place";
@@ -72,7 +76,7 @@ public class GPPermissions {
     public static final String SPAWN_PASSIVES = "griefprevention.flag.spawn-passives";
     public static final String WATER_FLOW = "griefprevention.flag.water-flow";
 
-    // Commands
+    // COMMAND PERMISSIONS
     public static final String COMMAND_ABANDON = "griefprevention.command.abandon";
     public static final String COMMAND_ABANDONALL = "griefprevention.command.abandonall";
     public static final String COMMAND_ABANDONTOPLEVEL = "griefprevention.command.abandontoplevel";
