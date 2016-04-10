@@ -60,6 +60,7 @@ import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
+import org.spongepowered.api.event.entity.AttackEntityEvent;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
@@ -274,25 +275,38 @@ public class EntityEventHandler {
         }
     }
 
-    // when an entity is damaged
+    @IsCancelled(Tristate.UNDEFINED)
+    @Listener
+    public void onEntityAttack(AttackEntityEvent event) {
+        if (protectEntity(event.getTargetEntity(), event.getCause())) {
+            event.setCancelled(true);
+        }
+    }
+
     @IsCancelled(Tristate.UNDEFINED)
     @Listener
     public void onEntityDamage(DamageEntityEvent event) {
+        if (protectEntity(event.getTargetEntity(), event.getCause())) {
+            event.setCancelled(true);
+        }
+    }
+
+    public boolean protectEntity(Entity entity, Cause cause) {
         // monsters are never protected
-        if (event.getTargetEntity() instanceof Monster) {
-            return;
+        if (entity instanceof Monster) {
+            return false;
         }
 
-        Optional<DamageSource> damageSourceOpt = event.getCause().first(DamageSource.class);
+        Optional<DamageSource> damageSourceOpt = cause.first(DamageSource.class);
         if (!damageSourceOpt.isPresent()) {
-            return;
+            return false;
         }
 
         DamageSource damageSource = damageSourceOpt.get();
-        Claim claim = this.dataStore.getClaimAt(event.getTargetEntity().getLocation(), false, null);
+        Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
 
         // Protect owned entities anywhere in world
-        if (damageSource instanceof EntityDamageSource && !((net.minecraft.entity.Entity) event.getTargetEntity()).isCreatureType(EnumCreatureType.MONSTER, false)) {
+        if (damageSource instanceof EntityDamageSource && !((net.minecraft.entity.Entity) entity).isCreatureType(EnumCreatureType.MONSTER, false)) {
             EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
             Entity sourceEntity = entityDamageSource.getSource();
             if (entityDamageSource instanceof IndirectEntityDamageSource) {
@@ -301,25 +315,22 @@ public class EntityEventHandler {
 
             if (sourceEntity instanceof User) {
                 User sourceUser = (User) sourceEntity;
-                Optional<UUID> creatorUuid = event.getTargetEntity().getCreator();
+                Optional<UUID> creatorUuid = entity.getCreator();
                 if (creatorUuid.isPresent()) {
                     Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(creatorUuid.get());
                     if (user.isPresent() && !user.get().getUniqueId().equals(sourceUser.getUniqueId())) {
-                        event.setCancelled(true);
-                        return;
+                        return true;
                     }
                 } else if (claim != null && sourceUser.getUniqueId().equals(claim.ownerID)) {
-                    event.setCancelled(true);
-                    return;
+                    return true;
                 }
-                return;
+                return false;
             } else if (claim != null) {
-                if (event.getTargetEntity() instanceof Player) {
+                if (entity instanceof Player) {
                     if (entityDamageSource.getSource() instanceof Monster) {
                         if (!claim.getClaimData().getConfig().flags.mobPlayerDamage) {
-                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
-                            event.setCancelled(true);
-                            return;
+                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
+                            return true;
                         }
                     }
                 }
@@ -328,7 +339,7 @@ public class EntityEventHandler {
 
         // the rest is only interested in entities damaging entities (ignoring environmental damage)
         if (!(damageSource instanceof EntityDamageSource)) {
-            return;
+            return false;
         }
 
         EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
@@ -348,11 +359,11 @@ public class EntityEventHandler {
             }
         }
 
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(event.getTargetEntity().getWorld().getProperties());
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(entity.getWorld().getProperties());
         // if the attacker is a player and defender is a player (pvp combat)
-        if (attacker != null && event.getTargetEntity() instanceof Player && GriefPrevention.instance.pvpRulesApply(attacker.getWorld())) {
+        if (attacker != null && entity instanceof Player && GriefPrevention.instance.pvpRulesApply(attacker.getWorld())) {
             // FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
-            Player defender = (Player) (event.getTargetEntity());
+            Player defender = (Player) (entity);
 
             if (attacker != defender) {
                 PlayerData defenderData = this.dataStore.getPlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
@@ -361,17 +372,15 @@ public class EntityEventHandler {
                 // otherwise if protecting spawning players
                 if (activeConfig.getConfig().pvp.protectFreshSpawns) {
                     if (defenderData.pvpImmune) {
-                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Defender PVP Immune.]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Defender PVP Immune.]", CustomLogEntryTypes.Debug);
                         GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.ThatPlayerPvPImmune);
-                        return;
+                        return true;
                     }
 
                     if (attackerData.pvpImmune) {
-                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Attacker PVP Immune.]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Attacker PVP Immune.]", CustomLogEntryTypes.Debug);
                         GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
-                        return;
+                        return true;
                     }
                 }
 
@@ -390,10 +399,9 @@ public class EntityEventHandler {
                             PreventPvPEvent pvpEvent = new PreventPvPEvent(attackerClaim);
                             Sponge.getGame().getEventManager().post(pvpEvent);
                             if (!pvpEvent.isCancelled()) {
-                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Cannot fight while PVP Immune.]", CustomLogEntryTypes.Debug);
-                                event.setCancelled(true);
+                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Cannot fight while PVP Immune.]", CustomLogEntryTypes.Debug);
                                 GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
-                                return;
+                                return true;
                             }
                         }
 
@@ -410,10 +418,9 @@ public class EntityEventHandler {
                             PreventPvPEvent pvpEvent = new PreventPvPEvent(defenderClaim);
                             Sponge.getGame().getEventManager().post(pvpEvent);
                             if (!pvpEvent.isCancelled()) {
-                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Player in PVP Safe Zone.]", CustomLogEntryTypes.Debug);
-                                event.setCancelled(true);
+                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Player in PVP Safe Zone.]", CustomLogEntryTypes.Debug);
                                 GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
-                                return;
+                                return true;
                             }
                         }
                     }
@@ -421,15 +428,7 @@ public class EntityEventHandler {
             }
         }
 
-        // FEATURE: protect claimed animals, boats, minecarts, and items inside item frames
-        // NOTE: animals can be lead with wheat, vehicles can be pushed around.
-        // so unless precautions are taken by the owner, a resourceful thief
-        // might find ways to steal anyway if theft protection is enabled
-
-        // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
-            return;
-        }
+        return false;
     }
 
     @Listener(order = Order.POST)
