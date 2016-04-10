@@ -1120,10 +1120,9 @@ public class PlayerEventHandler {
             if (claim != null) {
                 String denyReason = claim.allowAccess(player.getWorld(), player);
                 if (denyReason != null) {
-                    if (!(event.getTargetEntity() instanceof Player) && !event.getTargetEntity().getCreator().isPresent()) {
-                        GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                    }
+                    GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                    event.setCancelled(true);
+                    return;
                 }
             }
         }
