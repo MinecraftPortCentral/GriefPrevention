@@ -45,6 +45,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
+import org.spongepowered.api.event.action.CollideEvent;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.CollideBlockEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
@@ -185,7 +186,7 @@ public class BlockEventHandler {
     }
 
     @Listener(order = Order.EARLY)
-    public void onImpactEvent(CollideBlockEvent.Impact event) {
+    public void onImpactEvent(CollideEvent.Impact event) {
         Optional<User> user = event.getCause().first(User.class);
         if (!user.isPresent()) {
             return;
