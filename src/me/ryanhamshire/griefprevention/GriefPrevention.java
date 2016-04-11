@@ -107,6 +107,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
@@ -296,10 +297,7 @@ public class GriefPrevention {
 
     public void loadConfig() {
         try {
-            Files.createDirectories(DataStore.configFilePath.getParent());
-            if (Files.notExists(DataStore.configFilePath)) {
-                Files.createFile(DataStore.configFilePath);
-            }
+            Files.createDirectories(DataStore.dataLayerFolderPath);
             if (Files.notExists(DataStore.messagesFilePath)) {
                 Files.createFile(DataStore.messagesFilePath);
             }
@@ -1018,5 +1016,13 @@ public class GriefPrevention {
         }
 
         return false;
+    }
+
+    public static boolean isEntityProtected(Entity entity) {
+        if (GriefPrevention.getActiveConfig(entity.getWorld().getProperties()).getConfig().claim.ignoredEntityIds.contains(entity.getType().getId())) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -38,7 +38,6 @@ import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -60,7 +59,6 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -73,23 +71,9 @@ public class BlockEventHandler {
     // convenience reference to singleton datastore
     private DataStore dataStore;
 
-    private ArrayList<BlockType> trashBlocks;
-
     // constructor
     public BlockEventHandler(DataStore dataStore) {
         this.dataStore = dataStore;
-
-        // create the list of blocks which will not trigger a warning when
-        // they're placed outside of land claims
-        this.trashBlocks = new ArrayList<BlockType>();
-        this.trashBlocks.add(BlockTypes.COBBLESTONE);
-        this.trashBlocks.add(BlockTypes.TORCH);
-        this.trashBlocks.add(BlockTypes.DIRT);
-        this.trashBlocks.add(BlockTypes.SAPLING);
-        this.trashBlocks.add(BlockTypes.GRAVEL);
-        this.trashBlocks.add(BlockTypes.SAND);
-        this.trashBlocks.add(BlockTypes.TNT);
-        this.trashBlocks.add(BlockTypes.CRAFTING_TABLE);
     }
 
     // Handle items being dropped into claims
@@ -274,7 +258,6 @@ public class BlockEventHandler {
         }
     }
 
-    @SuppressWarnings({"null"})
     @IsCancelled(Tristate.UNDEFINED)
     @Listener(order = Order.LAST)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
@@ -293,7 +276,6 @@ public class BlockEventHandler {
         }
 
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-
             BlockSnapshot block = transaction.getFinal();
             if (!block.getLocation().isPresent()) {
                 continue;
@@ -309,6 +291,7 @@ public class BlockEventHandler {
                 }
             }
             // FEATURE: limit fire placement, to prevent PvP-by-fire
+            // TODO: allow flint with portal block
             if (block.getState().getType() == BlockTypes.FIRE) {
                 if (!activeConfig.getConfig().claim.fireSpreadOutsideClaim) {
                     GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + Messages.FireSpreadOutsideClaim + "]", CustomLogEntryTypes.Debug);
@@ -385,52 +368,6 @@ public class BlockEventHandler {
                 // check to see if this chest is in a claim, and warn when it isn't
                 if (this.dataStore.getClaimAt(block.getLocation().get(), false, playerData.lastClaim) == null) {
                     GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnprotectedChestWarning);
-                }
-            }
-
-            // FEATURE: limit wilderness tree planting to grass, or dirt with more
-            // blocks beneath it
-            // TODO
-            /*else if (block.getState().getType() == BlockTypes.SAPLING && GriefPrevention.instance.config_blockSkyTrees
-                    && GriefPrevention.instance.claimsEnabledForWorld(player.get().getWorld())) {
-                Block earthBlock = event.getBlockAgainst();
-                if (earthBlock.getType() != Material.GRASS) {
-                    if (earthBlock.getRelative(BlockFace.DOWN).getType() == Material.AIR ||
-                            earthBlock.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN).getType() == Material.AIR) {
-                        placeEvent.setCancelled(true);
-                    }
-                }
-            }*/
-
-            // FEATURE: warn players when they're placing non-trash blocks outside
-            // of their claimed areas
-            else if (!this.trashBlocks.contains(block.getState().getType()) && GriefPrevention.instance
-                    .claimsEnabledForWorld(block.getLocation().get().getExtent().getProperties())) {
-                if (!playerData.warnedAboutBuildingOutsideClaims && !player.hasPermission(GPPermissions.COMMAND_ADMINCLAIMS)
-                        && ((playerData.lastClaim == null && playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size() == 0)
-                        || (playerData.lastClaim != null && playerData.lastClaim.isNear(player.getLocation(), 15)))) {
-                    Long now = null;
-                    if (playerData.buildWarningTimestamp == null
-                            || (now = System.currentTimeMillis()) - playerData.buildWarningTimestamp > 600000) { // 10 minute cooldown
-                        GriefPrevention.sendMessage(player, TextMode.Warn, Messages.BuildingOutsideClaims);
-                        playerData.warnedAboutBuildingOutsideClaims = true;
-
-                        if (now == null) {
-                            now = System.currentTimeMillis();
-                        }
-                        playerData.buildWarningTimestamp = now;
-
-                        if (playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size() < 2) {
-                            GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);
-                        }
-
-                        if (playerData.lastClaim != null) {
-                            Visualization visualization =
-                                    Visualization.FromClaim(playerData.lastClaim, block.getPosition().getY(), VisualizationType.Claim,
-                                            player.getLocation());
-                            Visualization.Apply(player, visualization);
-                        }
-                    }
                 }
             }
 

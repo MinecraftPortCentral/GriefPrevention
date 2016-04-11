@@ -37,7 +37,6 @@ import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.entity.passive.EntityTameable;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.effect.potion.PotionEffectType;
 import org.spongepowered.api.effect.potion.PotionEffectTypes;
@@ -46,9 +45,7 @@ import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.explosive.Explosive;
 import org.spongepowered.api.entity.living.Ambient;
 import org.spongepowered.api.entity.living.Aquatic;
-import org.spongepowered.api.entity.living.Creature;
 import org.spongepowered.api.entity.living.Living;
-import org.spongepowered.api.entity.living.Villager;
 import org.spongepowered.api.entity.living.monster.Monster;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -56,7 +53,6 @@ import org.spongepowered.api.entity.projectile.Projectile;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
@@ -93,47 +89,6 @@ public class EntityEventHandler {
     public EntityEventHandler(DataStore dataStore) {
         this.dataStore = dataStore;
     }
-
-    // TODO: add support for custom entity and block types
-    /*
-    @Listener(order = Order.EARLY)
-    public void onChangeBlockBreak(ChangeBlockEvent.Break event) {
-        final Cause cause = event.getCause();
-        final Entity entity = cause.first(Entity.class).orElse(null);
-        if (entity != null) {
-            final EntityType entityType = entity.getType();
-            for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-                final BlockType originalType = transaction.getOriginal().getState().getType();
-                final BlockType finalType = transaction.getFinal().getState().getType();
-
-                if (entityType.equals(EntityTypes.ENDERMAN)) {
-                    if (!GriefPrevention.instance.config_endermenMoveBlocks) {
-                        GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Enderman not allowed to break blocks.]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                        return;
-                    } else {
-                        // and the block is claimed
-                        if (this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null) != null) {
-                            GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Enderman not allowed to break blocks.]", CustomLogEntryTypes.Debug);
-                            event.setCancelled(true);
-                            return;
-                        }
-                    }
-                } else if (finalType.equals(BlockTypes.DIRT) && originalType.equals(BlockTypes.FARMLAND)) {
-                    if (!GriefPrevention.instance.config_creaturesTrampleCrops) {
-                        GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Break][RootCause: " + event.getCause().root() + "][Transaction: " + transaction + "][CancelReason: Not allowed to .]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                        return;
-                    }/* else {
-                        final Optional<EntitySnapshot> optPassenger = entity.get(Keys.PASSENGER);
-                        if (optPassenger.isPresent() && optPassenger.get().getType().equals(EntityTypes.PLAYER)) {
-                            transaction.setValid(false);
-                        }
-                    }
-                }
-            }
-        }
-    }*/
 
     @Listener
     public void onExplosion(ExplosionEvent.Pre event) {
@@ -247,18 +202,13 @@ public class EntityEventHandler {
             final Cause cause = event.getCause();
             final Player player = cause.first(Player.class).orElse(null);
             final ItemStack stack = cause.first(ItemStack.class).orElse(null);
-            //final EntityType entityType = entity.getType();
+
             if (player != null) {
                 if (stack != null && !stack.getItem().equals(ItemTypes.SPAWN_EGG)) {
                     GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Cannot spawn entities in creative worlds.]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 }
-                /*if (!entityType.equals(EntityTypes.IRON_GOLEM) && !entityType.equals(EntityTypes.SNOWMAN) && !entityType.equals(EntityTypes
-                        .ARMOR_STAND)) {
-                    event.setCancelled(true);
-                    return;
-                }*/
             }
 
             // otherwise, just apply the limit on total entities per claim (and no spawning in the wilderness!)
@@ -293,7 +243,7 @@ public class EntityEventHandler {
 
     public boolean protectEntity(Entity entity, Cause cause) {
         // monsters are never protected
-        if (entity instanceof Monster) {
+        if (entity instanceof Monster || !GriefPrevention.isEntityProtected(entity)) {
             return false;
         }
 
@@ -436,7 +386,7 @@ public class EntityEventHandler {
         //FEATURE: prevent players who very recently participated in pvp combat from hiding inventory to protect it from looting
         //FEATURE: prevent players who are in pvp combat from logging out to avoid being defeated
 
-        if (event.getTargetEntity().getType() != EntityTypes.PLAYER) {
+        if (event.getTargetEntity().getType() != EntityTypes.PLAYER || !GriefPrevention.isEntityProtected(event.getTargetEntity())) {
             return;
         }
 

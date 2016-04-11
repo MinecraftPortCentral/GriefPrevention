@@ -1088,7 +1088,7 @@ public class PlayerEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener(order = Order.PRE)
     public void onPlayerInteractEntity(InteractEntityEvent event) {
-        if (!event.getCause().containsType(Player.class)) {
+        if (!event.getCause().containsType(Player.class) || !GriefPrevention.isEntityProtected(event.getTargetEntity())) {
             return;
         }
 

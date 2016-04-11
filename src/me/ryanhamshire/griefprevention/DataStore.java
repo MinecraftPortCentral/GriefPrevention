@@ -113,7 +113,6 @@ public abstract class DataStore {
     // path information, for where stuff stored on disk is well... stored
     protected final static Path dataLayerFolderPath = Paths.get("config").resolve("GriefPrevention");
     final static Path globalDataPath = Paths.get("GriefPreventionData").resolve("GlobalPlayerData");
-    final static Path configFilePath = dataLayerFolderPath.resolve("config.conf");
     final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
     final static Path bannedWordsFilePath = dataLayerFolderPath.resolve("bannedWords.txt");
