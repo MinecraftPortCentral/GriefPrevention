@@ -352,11 +352,6 @@ public class GriefPrevention {
                         .permission(GPPermissions.COMMAND_ADJUSTBONUSCLAIMBLOCKS).arguments(string(Text.of("player")), integer(Text.of("amount")))
                         .executor(new CommandAdjustBonusClaimBlocks()).build());
 
-        subcommands.put(Arrays.asList("banitem"),
-                CommandSpec.builder().description(Text.of("Bans the specified item id or item in hand if no id is specified."))
-                        .permission(GPPermissions.COMMAND_BANITEM).arguments(optional(string(Text.of("itemid"))))
-                        .executor(new CommandBanItem()).build());
-
         subcommands.put(Arrays.asList("claim"), CommandSpec.builder().description(Text.of("Claims land")).permission(GPPermissions.COMMAND_CLAIM)
                 .executor(new CommandClaim()).build());
 
@@ -377,6 +372,11 @@ public class GriefPrevention {
         subcommands.put(Arrays.asList("adminclaimslist", "claimadminlist"), CommandSpec.builder().description(Text.of("List all administrative "
                 + "claims"))
                 .permission(GPPermissions.COMMAND_ADMINCLAIMSLIST).executor(new CommandClaimAdminList()).build());
+
+        subcommands.put(Arrays.asList("banitem"),
+                CommandSpec.builder().description(Text.of("Bans the specified item id or item in hand if no id is specified."))
+                        .permission(GPPermissions.COMMAND_BANITEM).arguments(optional(string(Text.of("itemid"))))
+                        .executor(new CommandBanItem()).build());
 
         subcommands.put(Arrays.asList("basicclaims", "claimbasic", "claimb"),
                 CommandSpec.builder().description(Text.of("Switches the shovel tool back to basic claims mode"))

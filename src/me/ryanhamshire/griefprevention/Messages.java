@@ -47,6 +47,7 @@ public enum Messages {
     BecomeMayor,
     BesiegedNoTeleport,
     BlockClaimed,
+    BlockedCommand,
     BlockNotClaimed,
     BlockPurchaseCost,
     BlockSaleConfirmation,

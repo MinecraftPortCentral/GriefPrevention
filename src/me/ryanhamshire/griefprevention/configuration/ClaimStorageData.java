@@ -55,7 +55,6 @@ public class ClaimStorageData {
     // FLAGS
     public static final String FLAGS_BLOCK_BREAK = "block-break";
     public static final String FLAGS_BLOCK_COMMANDS = "block-commands";
-    public static final String FLAGS_BLOCK_NOTIFY = "block-notify";
     public static final String FLAGS_BLOCK_PLACE = "block-place";
     public static final String FLAGS_EXPLOSIONS = "explosions";
     public static final String FLAGS_FIRE_SPREAD = "fire-spread";
@@ -187,8 +186,6 @@ public class ClaimStorageData {
         public boolean blockBreak = false;
         @Setting(value = FLAGS_BLOCK_COMMANDS, comment = "Blocked commands.")
         public List<String> blockCommands = new ArrayList<>();
-        @Setting(value = FLAGS_BLOCK_NOTIFY, comment = "Allow/deny notifying blocks.")
-        public boolean blockNotify = false;
         @Setting(value = FLAGS_BLOCK_PLACE, comment = "Allow/deny placing blocks.")
         public boolean blockPlace = false;
         @Setting(value = FLAGS_EXPLOSIONS, comment = "Allow/deny explosions.")
@@ -248,7 +245,6 @@ public class ClaimStorageData {
             Map<String, Object> flagMap = Maps.newHashMap();
             flagMap.put(FLAGS_BLOCK_BREAK, this.blockBreak);
             flagMap.put(FLAGS_BLOCK_COMMANDS, this.blockCommands);
-            flagMap.put(FLAGS_BLOCK_NOTIFY, this.blockNotify);
             flagMap.put(FLAGS_BLOCK_PLACE, this.blockPlace);
             flagMap.put(FLAGS_EXPLOSIONS, this.explosions);
             flagMap.put(FLAGS_FIRE_SPREAD, this.fireSpread);
@@ -287,9 +283,6 @@ public class ClaimStorageData {
                     return;
                 case FLAGS_BLOCK_COMMANDS:
                     this.blockCommands = (List<String>) value;
-                    return;
-                case FLAGS_BLOCK_NOTIFY:
-                    this.blockNotify = (boolean) value;
                     return;
                 case FLAGS_BLOCK_PLACE:
                     this.blockPlace = (boolean) value;
@@ -383,8 +376,6 @@ public class ClaimStorageData {
                     return this.blockBreak;
                 case FLAGS_BLOCK_COMMANDS:
                     return this.blockCommands;
-                case FLAGS_BLOCK_NOTIFY:
-                    return this.blockNotify;
                 case FLAGS_BLOCK_PLACE:
                     return this.blockPlace;
                 case FLAGS_EXPLOSIONS:

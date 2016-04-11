@@ -244,22 +244,8 @@ public class PlayerData {
     }
 
     public void saveAllData() {
-        new SavePlayerDataThread(this);
-    }
-
-    private class SavePlayerDataThread extends Thread {
-
-        private PlayerData playerData;
-
-        SavePlayerDataThread(PlayerData playerData) {
-            this.playerData = playerData;
-        }
-
-        @Override
-        public void run() {
-            for (PlayerStorageData storageData : playerData.worldStorageData.values()) {
-                storageData.save();
-            }
+        for (Map.Entry<UUID, PlayerStorageData> mapEntry : this.worldStorageData.entrySet()) {
+            mapEntry.getValue().save();
         }
     }
 }

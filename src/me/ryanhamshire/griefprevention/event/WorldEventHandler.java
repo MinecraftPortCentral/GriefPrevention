@@ -2,12 +2,15 @@ package me.ryanhamshire.griefprevention.event;
 
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.DimensionConfig;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
+import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.world.ConstructWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
@@ -51,6 +54,16 @@ public class WorldEventHandler {
         if (claimList != null) {
             for (Claim claim : claimList) {
                 claim.claimData.save();
+            }
+        }
+
+        for (Player player : Sponge.getServer().getOnlinePlayers()) {
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(event.getTargetWorld().getProperties(), player.getUniqueId());
+            if (playerData != null) {
+                PlayerStorageData storageData = playerData.worldStorageData.get(event.getTargetWorld().getUniqueId());
+                if (storageData != null) {
+                    storageData.save();
+                }
             }
         }
     }

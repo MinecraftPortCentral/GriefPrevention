@@ -1054,288 +1054,222 @@ public abstract class DataStore {
 
     private void loadMessages() {
         // initialize defaults
-        this.addDefault(Messages.RespectingClaims, "Now respecting claims.");
-        this.addDefault(Messages.IgnoringClaims, "Now ignoring claims.");
-        this.addDefault(Messages.NoCreativeUnClaim,
-                "You can't unclaim this land.  You can only make this claim larger or create additional claims.");
-        this.addDefault(Messages.SuccessfulAbandon, "Claims abandoned.  You now have {0} available claim blocks.", "0: remaining blocks");
-        this.addDefault(Messages.RestoreNatureActivate,
-                "Ready to restore some nature!  Right click to restore nature, and use /BasicClaims to stop.");
-        this.addDefault(Messages.RestoreNatureAggressiveActivate,
-                "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and"
-                        + " use /BasicClaims to stop.",
-                null);
-        this.addDefault(Messages.FillModeActive, "Fill mode activated with radius {0}.  Right click an area to fill.", "0: fill radius");
-        this.addDefault(Messages.TransferClaimPermission, "That command requires the administrative claims permission.");
-        this.addDefault(Messages.TransferClaimMissing, "There's no claim here.  Stand in the administrative claim you want to transfer.",
-                null);
-        this.addDefault(Messages.TransferClaimAdminOnly, "Only administrative claims may be transferred to a player.");
-        this.addDefault(Messages.PlayerNotFound2, "No player by that name has logged in recently.");
-        this.addDefault(Messages.TransferTopLevel,
-                "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.");
-        this.addDefault(Messages.TransferSuccess, "Claim transferred.");
-        this.addDefault(Messages.TrustListNoClaim, "Stand inside the claim you're curious about.");
-        this.addDefault(Messages.ClearPermsOwnerOnly, "Only the claim owner can clear all permissions.");
-        this.addDefault(Messages.UntrustIndividualAllClaims,
-                "Revoked {0}'s access to ALL your claims.  To set permissions for a single claim, stand inside it.", "0: untrusted player");
-        this.addDefault(Messages.UntrustEveryoneAllClaims,
-                "Cleared permissions in ALL your claims.  To set permissions for a single claim, stand inside it.");
-        this.addDefault(Messages.NoPermissionTrust, "You don't have {0}'s permission to manage permissions here.", "0: claim owner's name");
-        this.addDefault(Messages.ClearPermissionsOneClaim,
-                "Cleared permissions in this claim.  To set permission for ALL your claims, stand outside them.");
-        this.addDefault(Messages.UntrustIndividualSingleClaim,
-                "Revoked {0}'s access to this claim.  To set permissions for a ALL your claims, stand outside them.", "0: untrusted player");
-        this.addDefault(Messages.OnlySellBlocks, "Claim blocks may only be sold, not purchased.");
-        this.addDefault(Messages.BlockPurchaseCost, "Each claim block costs {0}.  Your balance is {1}.",
-                "0: cost of one block; 1: player's account balance");
-        this.addDefault(Messages.ClaimBlockLimit, "You've reached your claim block limit.  You can't purchase more.");
-        this.addDefault(Messages.InsufficientFunds, "You don't have enough money.  You need {0}, but you only have {1}.",
-                "0: total cost; 1: player's account balance");
-        this.addDefault(Messages.PurchaseConfirmation, "Withdrew {0} from your account.  You now have {1} available claim blocks.",
-                "0: total cost; 1: remaining blocks");
-        this.addDefault(Messages.OnlyPurchaseBlocks, "Claim blocks may only be purchased, not sold.");
-        this.addDefault(Messages.BlockSaleValue, "Each claim block is worth {0}.  You have {1} available for sale.",
-                "0: block value; 1: available blocks");
-        this.addDefault(Messages.NotEnoughBlocksForSale, "You don't have that many claim blocks available for sale.");
-        this.addDefault(Messages.BlockSaleConfirmation, "Deposited {0} in your account.  You now have {1} available claim blocks.",
-                "0: amount deposited; 1: remaining blocks");
-        this.addDefault(Messages.AdminClaimsMode,
-                "Administrative claims mode active.  Any claims created will be free and editable by other administrators.");
-        this.addDefault(Messages.BasicClaimsMode, "Returned to basic claim creation mode.");
-        this.addDefault(Messages.SubdivisionMode,
-                "Subdivision mode.  Use your shovel to create subdivisions in your existing claims.  Use /basicclaims to exit.");
-        this.addDefault(Messages.SubdivisionVideo2, "Click for Subdivision Help: " + SUBDIVISION_VIDEO_URL_RAW);
-        this.addDefault(Messages.DeleteClaimMissing, "There's no claim here.");
-        this.addDefault(Messages.DeletionSubdivisionWarning,
-                "This claim includes subdivisions.  If you're sure you want to delete it, use /DeleteClaim again.");
-        this.addDefault(Messages.DeleteSuccess, "Claim deleted.");
-        this.addDefault(Messages.CantDeleteAdminClaim, "You don't have permission to delete administrative claims.");
-        this.addDefault(Messages.DeleteAllSuccess, "Deleted all of {0}'s claims.", "0: owner's name");
-        this.addDefault(Messages.NoDeletePermission, "You don't have permission to delete claims.");
-        this.addDefault(Messages.AllAdminDeleted, "Deleted all administrative claims.");
-        this.addDefault(Messages.AdjustBlocksSuccess, "Adjusted {0}'s bonus claim blocks by {1}.  New total bonus blocks: {2}.",
-                "0: player; 1: adjustment; 2: new total");
-        this.addDefault(Messages.NotTrappedHere, "You can build here.  Save yourself.");
-        this.addDefault(Messages.RescuePending, "If you stay put for 10 seconds, you'll be teleported out.  Please wait.");
-        this.addDefault(Messages.NonSiegeWorld, "Siege is disabled here.");
-        this.addDefault(Messages.AlreadySieging, "You're already involved in a siege.");
-        this.addDefault(Messages.AlreadyUnderSiegePlayer, "{0} is already under siege.  Join the party!", "0: defending player");
-        this.addDefault(Messages.NotSiegableThere, "{0} isn't protected there.", "0: defending player");
-        this.addDefault(Messages.SiegeTooFarAway, "You're too far away to siege.");
-        this.addDefault(Messages.NoSiegeDefenseless, "That player is defenseless.  Go pick on somebody else.");
-        this.addDefault(Messages.AlreadyUnderSiegeArea, "That area is already under siege.  Join the party!");
-        this.addDefault(Messages.NoSiegeAdminClaim, "Siege is disabled in this area.");
-        this.addDefault(Messages.SiegeOnCooldown, "You're still on siege cooldown for this defender or claim.  Find another victim.");
-        this.addDefault(Messages.SiegeAlert,
-                "You're under siege!  If you log out now, you will die.  You must defeat {0}, wait for him to give up, or escape.",
-                "0: attacker name");
-        this.addDefault(Messages.SiegeConfirmed,
-                "The siege has begun!  If you log out now, you will die.  You must defeat {0}, chase him away, or admit defeat and walk away.",
-                "0: defender name");
-        this.addDefault(Messages.AbandonClaimMissing, "Stand in the claim you want to delete, or consider /AbandonAllClaims.");
-        this.addDefault(Messages.NotYourClaim, "This isn't your claim.");
-        this.addDefault(Messages.DeleteTopLevelClaim,
-                "To delete a subdivision, stand inside it.  Otherwise, use /AbandonTopLevelClaim to delete this claim and all subdivisions.");
-        this.addDefault(Messages.AbandonSuccess, "Claim abandoned.  You now have {0} available claim blocks.", "0: remaining claim blocks");
-        this.addDefault(Messages.CantGrantThatPermission, "You can't grant a permission you don't have yourself.");
-        this.addDefault(Messages.GrantPermissionNoClaim, "Stand inside the claim where you want to grant permission.");
-        this.addDefault(Messages.GrantPermissionConfirmation, "Granted {0} permission to {1} {2}.",
-                "0: target player; 1: permission description; 2: scope (changed claims)");
-        this.addDefault(Messages.ManageUniversalPermissionsInstruction, "To manage permissions for ALL your claims, stand outside them.");
-        this.addDefault(Messages.ManageOneClaimPermissionsInstruction, "To manage permissions for a specific claim, stand inside it.");
-        this.addDefault(Messages.CollectivePublic, "the public", "as in 'granted the public permission to...'");
-        this.addDefault(Messages.BuildPermission, "build");
-        this.addDefault(Messages.ContainersPermission, "access containers and animals");
-        this.addDefault(Messages.AccessPermission, "use buttons and levers");
-        this.addDefault(Messages.PermissionsPermission, "manage permissions");
-        this.addDefault(Messages.LocationCurrentClaim, "in this claim");
-        this.addDefault(Messages.LocationAllClaims, "in all your claims");
-        this.addDefault(Messages.PvPImmunityStart, "You're protected from attack by other players as long as your inventory is empty.");
-        this.addDefault(Messages.SiegeNoDrop, "You can't give away items while involved in a siege.");
-        this.addDefault(Messages.DonateItemsInstruction, "To give away the item(s) in your hand, left-click the chest again.");
-        this.addDefault(Messages.ChestFull, "This chest is full.");
-        this.addDefault(Messages.DonationSuccess, "Item(s) transferred to chest!");
-        this.addDefault(Messages.PlayerTooCloseForFire, "You can't start a fire this close to {0}.", "0: other player's name");
-        this.addDefault(Messages.TooDeepToClaim, "This chest can't be protected because it's too deep underground.  Consider moving it.");
-        this.addDefault(Messages.ChestClaimConfirmation, "This chest is protected.");
-        this.addDefault(Messages.AutomaticClaimNotification, "This chest and nearby blocks are protected from breakage and theft.");
-        this.addDefault(Messages.UnprotectedChestWarning,
-                "This chest is NOT protected.  Consider using a golden shovel to expand an existing claim or to create a new one.");
-        this.addDefault(Messages.ThatPlayerPvPImmune, "You can't injure defenseless players.");
-        this.addDefault(Messages.CantFightWhileImmune, "You can't fight someone while you're protected from PvP.");
-        this.addDefault(Messages.NoDamageClaimedEntity, "That belongs to {0}.", "0: owner name");
-        this.addDefault(Messages.ShovelBasicClaimMode, "Shovel returned to basic claims mode.");
-        this.addDefault(Messages.RemainingBlocks, "You may claim up to {0} more blocks.", "0: remaining blocks");
-        this.addDefault(Messages.CreativeBasicsVideo2, "Click for Land Claim Help: " + CREATIVE_VIDEO_URL_RAW);
-        this.addDefault(Messages.SurvivalBasicsVideo2, "Click for Land Claim Help: " + SURVIVAL_VIDEO_URL_RAW);
-        this.addDefault(Messages.TrappedChatKeyword, "trapped",
-                "When mentioned in chat, players get information about the /trapped command.");
-        this.addDefault(Messages.TrappedInstructions, "Are you trapped in someone's land claim?  Try the /trapped command.");
-        this.addDefault(Messages.PvPNoDrop, "You can't drop items while in PvP combat.");
-        this.addDefault(Messages.SiegeNoTeleport, "You can't teleport out of a besieged area.");
-        this.addDefault(Messages.BesiegedNoTeleport, "You can't teleport into a besieged area.");
-        this.addDefault(Messages.SiegeNoContainers, "You can't access containers while involved in a siege.");
-        this.addDefault(Messages.PvPNoContainers, "You can't access containers during PvP combat.");
-        this.addDefault(Messages.PvPImmunityEnd, "Now you can fight with other players.");
-        this.addDefault(Messages.NoBedPermission, "{0} hasn't given you permission to sleep here.", "0: claim owner");
-        this.addDefault(Messages.NoWildernessBuckets, "You may only dump buckets inside your claim(s) or underground.");
-        this.addDefault(Messages.NoLavaNearOtherPlayer, "You can't place lava this close to {0}.", "0: nearby player");
-        this.addDefault(Messages.TooFarAway, "That's too far away.");
-        this.addDefault(Messages.BlockNotClaimed, "No one has claimed this block.");
-        this.addDefault(Messages.BlockClaimed, "That block has been claimed by {0}.", "0: claim owner");
-        this.addDefault(Messages.SiegeNoShovel, "You can't use your shovel tool while involved in a siege.");
-        this.addDefault(Messages.RestoreNaturePlayerInChunk, "Unable to restore.  {0} is in that chunk.", "0: nearby player");
-        this.addDefault(Messages.NoCreateClaimPermission, "You don't have permission to claim land.");
-        this.addDefault(Messages.ResizeClaimTooNarrow, "This new size would be too small.  Claims must be at least {0} blocks wide.",
-                "0: minimum claim width");
-        this.addDefault(Messages.ResizeNeedMoreBlocks, "You don't have enough blocks for this size.  You need {0} more.",
-                "0: how many needed");
-        this.addDefault(Messages.ClaimResizeSuccess, "Claim resized.  {0} available claim blocks remaining.", "0: remaining blocks");
-        this.addDefault(Messages.ResizeFailOverlap, "Can't resize here because it would overlap another nearby claim.");
-        this.addDefault(Messages.ResizeStart, "Resizing claim.  Use your shovel again at the new location for this corner.");
-        this.addDefault(Messages.ResizeFailOverlapSubdivision,
-                "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use "
-                        + "your shovel at a corner to resize it.");
-        this.addDefault(Messages.SubdivisionStart,
-                "Subdivision corner set!  Use your shovel at the location for the opposite corner of this new subdivision.");
-        this.addDefault(Messages.CreateSubdivisionOverlap, "Your selected area overlaps another subdivision.");
-        this.addDefault(Messages.SubdivisionSuccess, "Subdivision created!  Use /trust to share it with friends.");
-        this.addDefault(Messages.CreateClaimFailOverlap,
-                "You can't create a claim here because it would overlap your other claim.  Use /abandonclaim to delete it, or use your shovel at a "
-                        + "corner to resize it.");
-        this.addDefault(Messages.CreateClaimFailOverlapOtherPlayer, "You can't create a claim here because it would overlap {0}'s claim.",
-                "0: other claim owner");
-        this.addDefault(Messages.ClaimsDisabledWorld, "Land claims are disabled in this world.");
-        this.addDefault(Messages.ClaimStart,
-                "Claim corner set!  Use the shovel again at the opposite corner to claim a rectangle of land.  To cancel, put your shovel away.");
-        this.addDefault(Messages.NewClaimTooNarrow, "This claim would be too small.  Any claim must be at least {0} blocks wide.",
-                "0: minimum claim width");
-        this.addDefault(Messages.ResizeClaimInsufficientArea,
-                "The selected claim size of {0} blocks({1}x{2}) would be too small. A claim must use at least {3} total claim blocks.");
-        this.addDefault(Messages.CreateClaimInsufficientBlocks,
-                "You don't have enough blocks to claim that entire area.  You need {0} more blocks.", "0: additional blocks needed");
         this.addDefault(Messages.AbandonClaimAdvertisement, "To delete another claim and free up some blocks, use /AbandonClaim.");
-        this.addDefault(Messages.CreateClaimFailOverlapShort, "Your selected area overlaps an existing claim.");
-        this.addDefault(Messages.CreateClaimSuccess, "Claim created!  Use /trust to share it with friends.");
-        this.addDefault(Messages.SiegeWinDoorsOpen, "Congratulations!  Buttons and levers are temporarily unlocked (five minutes).");
-        this.addDefault(Messages.RescueAbortedMoved, "You moved!  Rescue cancelled.");
-        this.addDefault(Messages.SiegeDoorsLockedEjection, "Looting time is up!  Ejected from the claim.");
-        this.addDefault(Messages.NoModifyDuringSiege, "Claims can't be modified while under siege.");
-        this.addDefault(Messages.OnlyOwnersModifyClaims, "Only {0} can modify this claim.", "0: owner name");
-        this.addDefault(Messages.NoBuildUnderSiege, "This claim is under siege by {0}.  No one can build here.", "0: attacker name");
-        this.addDefault(Messages.NoBuildPvP, "You can't build in claims during PvP combat.");
-        this.addDefault(Messages.NoBuildPermission, "You don't have {0}'s permission to build here.", "0: owner name");
-        this.addDefault(Messages.NonSiegeMaterial, "That material is too tough to break.");
-        this.addDefault(Messages.NoOwnerBuildUnderSiege, "You can't make changes while under siege.");
-        this.addDefault(Messages.NoAccessPermission, "You don't have {0}'s permission to use that.",
-                "0: owner name.  access permission controls buttons, levers, and beds");
-        this.addDefault(Messages.NoContainersSiege, "This claim is under siege by {0}.  No one can access containers here right now.",
-                "0: attacker name");
-        this.addDefault(Messages.NoContainersPermission, "You don't have {0}'s permission to use that.",
-                "0: owner's name.  containers also include crafting blocks");
-        this.addDefault(Messages.OwnerNameForAdminClaims, "an administrator",
-                "as in 'You don't have an administrator's permission to build here.'");
-        this.addDefault(Messages.ClaimTooSmallForEntities, "This claim isn't big enough for that.  Try enlarging it.");
-        this.addDefault(Messages.TooManyEntitiesInClaim,
-                "This claim has too many entities already.  Try enlarging the claim or removing some animals, monsters, paintings, or minecarts.");
-        this.addDefault(Messages.YouHaveNoClaims, "You don't have any land claims.");
-        this.addDefault(Messages.ConfirmFluidRemoval,
-                "Abandoning this claim will remove lava inside the claim.  If you're sure, use /AbandonClaim again.");
+        this.addDefault(Messages.AbandonClaimMissing, "Stand in the claim you want to delete, or consider /AbandonAllClaims.");
+        this.addDefault(Messages.AbandonSuccess, "Claim abandoned.  You now have {0} available claim blocks.", "0: remaining claim blocks");
+        this.addDefault(Messages.Access, "Access");
+        this.addDefault(Messages.AccessPermission, "use buttons and levers");
+        this.addDefault(Messages.AdjustBlocksSuccess, "Adjusted {0}'s bonus claim blocks by {1}.  New total bonus blocks: {2}.", "0: player; 1: adjustment; 2: new total");
+        this.addDefault(Messages.AdjustGroupBlocksSuccess, "Adjusted bonus claim blocks for players with the {0} permission by {1}.  New total: {2}.", "0: permission; 1: adjustment amount; 2: new total bonus");
+        this.addDefault(Messages.AdminClaimsMode, "Administrative claims mode active.  Any claims created will be free and editable by other administrators.");
+        this.addDefault(Messages.AdvertiseACB, "You may use /ACB to give yourself more claim blocks.");
+        this.addDefault(Messages.AdvertiseACandACB, "You may use /ACB to give yourself more claim blocks, or /AdminClaims to create a free administrative claim.");
+        this.addDefault(Messages.AdvertiseAdminClaims, "You could create an administrative land claim instead using /AdminClaims, which you'd share with other administrators.");
+        this.addDefault(Messages.AllAdminDeleted, "Deleted all administrative claims.");
+        this.addDefault(Messages.AlreadySieging, "You're already involved in a siege.");
+        this.addDefault(Messages.AlreadyUnderSiegeArea, "That area is already under siege.  Join the party!");
+        this.addDefault(Messages.AlreadyUnderSiegePlayer, "{0} is already under siege.  Join the party!", "0: defending player");
         this.addDefault(Messages.AutoBanNotify, "Auto-banned {0}({1}).  See logs for details.");
-        this.addDefault(Messages.AdjustGroupBlocksSuccess,
-                "Adjusted bonus claim blocks for players with the {0} permission by {1}.  New total: {2}.",
-                "0: permission; 1: adjustment amount; 2: new total bonus");
-        this.addDefault(Messages.InvalidPermissionID, "Please specify a player name, or a permission in [brackets].");
-        this.addDefault(Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\W(claim|protect|lock)(\\W.*|$)",
-                "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how "
-                        + "to claim land.");
-        this.addDefault(Messages.NoBuildOutsideClaims, "You can't build here unless you claim some land first.");
-        this.addDefault(Messages.PlayerOfflineTime, "  Last login: {0} days ago.", "0: number of full days since last login");
-        this.addDefault(Messages.BuildingOutsideClaims,
-                "Other players can build here, too.  Consider creating a land claim to protect your work!");
-        this.addDefault(Messages.TrappedWontWorkHere,
-                "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.");
-        this.addDefault(Messages.CommandBannedInPvP, "You can't use that command while in PvP combat.");
-        this.addDefault(Messages.UnclaimCleanupWarning,
-                "The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you "
-                        + "want to keep, you should reclaim it.");
+        this.addDefault(Messages.AutomaticClaimNotification, "This chest and nearby blocks are protected from breakage and theft.");
+        this.addDefault(Messages.AvoidGriefClaimLand, "Prevent grief!  If you claim your land, you will be grief-proof.");
+        this.addDefault(Messages.BasicClaimsMode, "Returned to basic claim creation mode.");
+        this.addDefault(Messages.BecomeMayor, "Subdivide your land claim and become a mayor!");
+        this.addDefault(Messages.BesiegedNoTeleport, "You can't teleport into a besieged area.");
+        this.addDefault(Messages.BlockClaimed, "That block has been claimed by {0}.", "0: claim owner");
+        this.addDefault(Messages.BlockedCommand, "The command {0} has been blocked by claim owner {1}.");
+        this.addDefault(Messages.BlockNotClaimed, "No one has claimed this block.");
+        this.addDefault(Messages.BlockPurchaseCost, "Each claim block costs {0}.  Your balance is {1}.", "0: cost of one block; 1: player's account balance");
+        this.addDefault(Messages.BlockSaleConfirmation, "Deposited {0} in your account.  You now have {1} available claim blocks.", "0: amount deposited; 1: remaining blocks");
+        this.addDefault(Messages.BlockSaleValue, "Each claim block is worth {0}.  You have {1} available for sale.", "0: block value; 1: available blocks");
+        this.addDefault(Messages.BookAuthor, "BigScary");
+        this.addDefault(Messages.BookDisabledChestClaims, "  On this server, placing a chest will NOT claim land for you.");
+        this.addDefault(Messages.BookIntro, "Claim land to protect your stuff!  Click the link above to learn land claims in 3 minutes or less.  :)");
+        this.addDefault(Messages.BookLink, "Click: " + SURVIVAL_VIDEO_URL_RAW);
+        this.addDefault(Messages.BookTitle, "How to Claim Land");
+        this.addDefault(Messages.BookTools, "Our claim tools are {0} and {1}.", "0: claim modification tool name; 1:claim information tool name");
+        this.addDefault(Messages.BookUsefulCommands, "Useful Commands:");
+        this.addDefault(Messages.Build, "Build");
+        this.addDefault(Messages.BuildPermission, "build");
+        this.addDefault(Messages.BuildingOutsideClaims, "Other players can build here, too.  Consider creating a land claim to protect your work!");
         this.addDefault(Messages.BuySellNotConfigured, "Sorry, buying anhd selling claim blocks is disabled.");
-        this.addDefault(Messages.NoTeleportPvPCombat, "You can't teleport while fighting another player.");
+        this.addDefault(Messages.CantDeleteAdminClaim, "You don't have permission to delete administrative claims.");
+        this.addDefault(Messages.CantFightWhileImmune, "You can't fight someone while you're protected from PvP.");
+        this.addDefault(Messages.CantGrantThatPermission, "You can't grant a permission you don't have yourself.");
+        this.addDefault(Messages.ChestClaimConfirmation, "This chest is protected.");
+        this.addDefault(Messages.ChestFull, "This chest is full.");
+        this.addDefault(Messages.ClaimBlockLimit, "You've reached your claim block limit.  You can't purchase more.");
+        this.addDefault(Messages.ClaimCreationFailedOverClaimCountLimit, "You've reached your limit on land claims.  Use /AbandonClaim to remove one before creating another.");
+        this.addDefault(Messages.ClaimExplosivesAdvertisement, "To allow explosives to destroy blocks in this land claim, use /ClaimExplosions.");
+        this.addDefault(Messages.ClaimResizeSuccess, "Claim resized.  {0} available claim blocks remaining.", "0: remaining blocks");
+        this.addDefault(Messages.ClaimStart, "Claim corner set!  Use the shovel again at the opposite corner to claim a rectangle of land.  To cancel, put your shovel away.");
+        this.addDefault(Messages.ClaimTooSmallForEntities, "This claim isn't big enough for that.  Try enlarging it.");
+        this.addDefault(Messages.ClaimsDisabledWorld, "Land claims are disabled in this world.");
+        this.addDefault(Messages.ClaimsListHeader, "Claims:");
+        this.addDefault(Messages.ClaimsListNoPermission, "You don't have permission to get information about another player's land claims.");
+        this.addDefault(Messages.ClearPermissionsOneClaim, "Cleared permissions in this claim.  To set permission for ALL your claims, stand outside them.");
+        this.addDefault(Messages.ClearPermsOwnerOnly, "Only the claim owner can clear all permissions.");
+        this.addDefault(Messages.CollectivePublic, "the public", "as in 'granted the public permission to...'");
+        this.addDefault(Messages.CommandBannedInPvP, "You can't use that command while in PvP combat.");
+        this.addDefault(Messages.ConfirmFluidRemoval, "Abandoning this claim will remove lava inside the claim.  If you're sure, use /AbandonClaim again.");
+        this.addDefault(Messages.Containers, "Containers");
+        this.addDefault(Messages.ContainersPermission, "access containers and animals");
+        this.addDefault(Messages.ContinueBlockMath, " (-{0} blocks)");
+        this.addDefault(Messages.CreateClaimFailOverlap, "You can't create a claim here because it would overlap your other claim.  Use /abandonclaim to delete it, or use your shovel at a " + "corner to resize it.");
+        this.addDefault(Messages.CreateClaimFailOverlapOtherPlayer, "You can't create a claim here because it would overlap {0}'s claim.", "0: other claim owner");
+        this.addDefault(Messages.CreateClaimFailOverlapRegion, "You can't claim all of this because you're not allowed to build here.");
+        this.addDefault(Messages.CreateClaimFailOverlapShort, "Your selected area overlaps an existing claim.");
+        this.addDefault(Messages.CreateClaimInsufficientBlocks, "You don't have enough blocks to claim that entire area.  You need {0} more blocks.", "0: additional blocks needed");
+        this.addDefault(Messages.CreateClaimSuccess, "Claim created!  Use /trust to share it with friends.");
+        this.addDefault(Messages.CreateSubdivisionOverlap, "Your selected area overlaps another subdivision.");
+        this.addDefault(Messages.CreativeBasicsVideo2, "Click for Land Claim Help: " + CREATIVE_VIDEO_URL_RAW);
+        this.addDefault(Messages.DeleteAllSuccess, "Deleted all of {0}'s claims.", "0: owner's name");
+        this.addDefault(Messages.DeleteClaimMissing, "There's no claim here.");
+        this.addDefault(Messages.DeleteSuccess, "Claim deleted.");
+        this.addDefault(Messages.DeleteTopLevelClaim, "To delete a subdivision, stand inside it.  Otherwise, use /AbandonTopLevelClaim to delete this claim and all subdivisions.");
+        this.addDefault(Messages.DeletionSubdivisionWarning, "This claim includes subdivisions.  If you're sure you want to delete it, use /DeleteClaim again.");
+        this.addDefault(Messages.DonateItemsInstruction, "To give away the item(s) in your hand, left-click the chest again.");
+        this.addDefault(Messages.DonationSuccess, "Item(s) transferred to chest!");
+        this.addDefault(Messages.DropUnlockAdvertisement, "Other players can't pick up your dropped items unless you /UnlockDrops first.");
+        this.addDefault(Messages.DropUnlockConfirmation, "Unlocked your drops.  Other players may now pick them up (until you die again).");
+        this.addDefault(Messages.EndBlockMath, " = {0} blocks left to spend");
+        this.addDefault(Messages.ExplosivesDisabled, "This claim is now protected from explosions.  Use /ClaimExplosions again to disable.");
+        this.addDefault(Messages.ExplosivesEnabled, "This claim is now vulnerable to explosions.  Use /ClaimExplosions again to re-enable protections.");
+        this.addDefault(Messages.FillModeActive, "Fill mode activated with radius {0}.  Right click an area to fill.", "0: fill radius");
+        this.addDefault(Messages.FireSpreadOutsideClaim, "Fire attempting to spread outside of claim.");
+        this.addDefault(Messages.GrantPermissionConfirmation, "Granted {0} permission to {1} {2}.", "0: target player; 1: permission description; 2: scope (changed claims)");
+        this.addDefault(Messages.GrantPermissionNoClaim, "Stand inside the claim where you want to grant permission.");
+        this.addDefault(Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\W(claim|protect|lock)(\\W.*|$)", "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how " + "to claim land.");
+        this.addDefault(Messages.IgnoreClaimsAdvertisement, "To override, use /IgnoreClaims.");
+        this.addDefault(Messages.IgnoreConfirmation, "You're now ignoring chat messages from that player.");
+        this.addDefault(Messages.IgnoringClaims, "Now ignoring claims.");
+        this.addDefault(Messages.InsufficientFunds, "You don't have enough money.  You need {0}, but you only have {1}.", "0: total cost; 1: player's account balance");
+        this.addDefault(Messages.InvalidPermissionID, "Please specify a player name, or a permission in [brackets].");
+        this.addDefault(Messages.ItemBanned, "The item {0} that you are attempting to use has been banned on server.");
+        this.addDefault(Messages.LocationAllClaims, "in all your claims");
+        this.addDefault(Messages.LocationCurrentClaim, "in this claim");
+        this.addDefault(Messages.Manage, "Manage");
+        this.addDefault(Messages.ManageOneClaimPermissionsInstruction, "To manage permissions for a specific claim, stand inside it.");
+        this.addDefault(Messages.ManageUniversalPermissionsInstruction, "To manage permissions for ALL your claims, stand outside them.");
+        this.addDefault(Messages.ManagersDontUntrustManagers, "Only the claim owner can demote a manager.");
+        this.addDefault(Messages.NewClaimTooNarrow, "This claim would be too small.  Any claim must be at least {0} blocks wide.", "0: minimum claim width");
+        this.addDefault(Messages.NoAccessPermission, "You don't have {0}'s permission to use that.", "0: owner name.  access permission controls buttons, levers, and beds");
+        this.addDefault(Messages.NoBedPermission, "{0} hasn't given you permission to sleep here.", "0: claim owner");
+        this.addDefault(Messages.NoBuildOutsideClaims, "You can't build here unless you claim some land first.");
+        this.addDefault(Messages.NoBuildPermission, "You don't have {0}'s permission to build here.", "0: owner name");
+        this.addDefault(Messages.NoBuildPortalPermission, "You can't use this portal because you don't have {0}'s permission to build an exit portal in the destination land claim.","0: Destination land claim owner's name.");
+        this.addDefault(Messages.NoBuildPvP, "You can't build in claims during PvP combat.");
+        this.addDefault(Messages.NoBuildUnderSiege, "This claim is under siege by {0}.  No one can build here.", "0: attacker name");
+        this.addDefault(Messages.NoChatUntilMove, "Sorry, but you have to move a little more before you can chat.  We get lots of spam bots here.  :)");
+        this.addDefault(Messages.NoClaimDuringPvP, "You can't claim lands during PvP combat.");
+        this.addDefault(Messages.NoContainersPermission, "You don't have {0}'s permission to use that.", "0: owner's name.  containers also include crafting blocks");
+        this.addDefault(Messages.NoContainersSiege, "This claim is under siege by {0}.  No one can access containers here right now.", "0: attacker name");
+        this.addDefault(Messages.NoCreateClaimPermission, "You don't have permission to claim land.");
+        this.addDefault(Messages.NoCreativeUnClaim, "You can't unclaim this land.  You can only make this claim larger or create additional claims.");
+        this.addDefault(Messages.NoDamageClaimedEntity, "That belongs to {0}.", "0: owner name");
+        this.addDefault(Messages.NoDeletePermission, "You don't have permission to delete claims.");
+        this.addDefault(Messages.NoDropsAllowed, "You can't drop items in this claim.");
+        this.addDefault(Messages.NoLavaNearOtherPlayer, "You can't place lava this close to {0}.", "0: nearby player");
+        this.addDefault(Messages.NoModifyDuringSiege, "Claims can't be modified while under siege.");
+        this.addDefault(Messages.NoOwnerBuildUnderSiege, "You can't make changes while under siege.");
+        this.addDefault(Messages.NoPermissionForCommand, "You don't have permission to do that.");
+        this.addDefault(Messages.NoPermissionTrust, "You don't have {0}'s permission to manage permissions here.", "0: claim owner's name");
+        this.addDefault(Messages.NoPistonsOutsideClaims, "Warning: Pistons won't move blocks outside land claims.");
+        this.addDefault(Messages.NoProfanity, "Please moderate your language.");
+        this.addDefault(Messages.NoSiegeAdminClaim, "Siege is disabled in this area.");
+        this.addDefault(Messages.NoSiegeDefenseless, "That player is defenseless.  Go pick on somebody else.");
         this.addDefault(Messages.NoTNTDamageAboveSeaLevel, "Warning: TNT will not destroy blocks above sea level.");
         this.addDefault(Messages.NoTNTDamageClaims, "Warning: TNT will not destroy claimed blocks.");
-        this.addDefault(Messages.IgnoreClaimsAdvertisement, "To override, use /IgnoreClaims.");
-        this.addDefault(Messages.NoPermissionForCommand, "You don't have permission to do that.");
-        this.addDefault(Messages.ClaimsListNoPermission, "You don't have permission to get information about another player's land claims.");
-        this.addDefault(Messages.ExplosivesDisabled, "This claim is now protected from explosions.  Use /ClaimExplosions again to disable.");
-        this.addDefault(Messages.ExplosivesEnabled,
-                "This claim is now vulnerable to explosions.  Use /ClaimExplosions again to re-enable protections.");
-        this.addDefault(Messages.ClaimExplosivesAdvertisement,
-                "To allow explosives to destroy blocks in this land claim, use /ClaimExplosions.");
-        this.addDefault(Messages.PlayerInPvPSafeZone, "That player is in a PvP safe zone.");
-        this.addDefault(Messages.NoPistonsOutsideClaims, "Warning: Pistons won't move blocks outside land claims.");
-        this.addDefault(Messages.SoftMuted, "Soft-muted {0}.", "0: The changed player's name.");
-        this.addDefault(Messages.UnSoftMuted, "Un-soft-muted {0}.", "0: The changed player's name.");
-        this.addDefault(Messages.DropUnlockAdvertisement, "Other players can't pick up your dropped items unless you /UnlockDrops first.");
-        this.addDefault(Messages.PickupBlockedExplanation, "You can't pick this up unless {0} uses /UnlockDrops.",
-                "0: The item stack's owner.");
-        this.addDefault(Messages.DropUnlockConfirmation, "Unlocked your drops.  Other players may now pick them up (until you die again).");
-        this.addDefault(Messages.AdvertiseACandACB,
-                "You may use /ACB to give yourself more claim blocks, or /AdminClaims to create a free administrative claim.");
-        this.addDefault(Messages.AdvertiseAdminClaims,
-                "You could create an administrative land claim instead using /AdminClaims, which you'd share with other administrators.");
-        this.addDefault(Messages.AdvertiseACB, "You may use /ACB to give yourself more claim blocks.");
+        this.addDefault(Messages.NoTeleportPvPCombat, "You can't teleport while fighting another player.");
+        this.addDefault(Messages.NoWildernessBuckets, "You may only dump buckets inside your claim(s) or underground.");
+        this.addDefault(Messages.NonSiegeMaterial, "That material is too tough to break.");
+        this.addDefault(Messages.NonSiegeWorld, "Siege is disabled here.");
+        this.addDefault(Messages.NotEnoughBlocksForSale, "You don't have that many claim blocks available for sale.");
+        this.addDefault(Messages.NotIgnoringAnyone, "You're not ignoring anyone.");
+        this.addDefault(Messages.NotIgnoringPlayer, "You're not ignoring that player.");
+        this.addDefault(Messages.NotSiegableThere, "{0} isn't protected there.", "0: defending player");
+        this.addDefault(Messages.NotTrappedHere, "You can build here.  Save yourself.");
+        this.addDefault(Messages.NotYourClaim, "This isn't your claim.");
         this.addDefault(Messages.NotYourPet, "That belongs to {0} until it's given to you with /GivePet.", "0: owner name");
+        this.addDefault(Messages.OnlyOwnersModifyClaims, "Only {0} can modify this claim.", "0: owner name");
+        this.addDefault(Messages.OnlyPurchaseBlocks, "Claim blocks may only be purchased, not sold.");
+        this.addDefault(Messages.OnlySellBlocks, "Claim blocks may only be sold, not purchased.");
+        this.addDefault(Messages.OwnerNameForAdminClaims, "an administrator", "as in 'You don't have an administrator's permission to build here.'");
+        this.addDefault(Messages.PermissionsPermission, "manage permissions");
         this.addDefault(Messages.PetGiveawayConfirmation, "Pet transferred.");
         this.addDefault(Messages.PetTransferCancellation, "Pet giveaway cancelled.");
-        this.addDefault(Messages.ReadyToTransferPet,
-                "Ready to transfer!  Right-click the pet you'd like to give away, or cancel with /GivePet cancel.");
-        this.addDefault(Messages.AvoidGriefClaimLand, "Prevent grief!  If you claim your land, you will be grief-proof.");
-        this.addDefault(Messages.BecomeMayor, "Subdivide your land claim and become a mayor!");
-        this.addDefault(Messages.ClaimCreationFailedOverClaimCountLimit,
-                "You've reached your limit on land claims.  Use /AbandonClaim to remove one before creating another.");
-        this.addDefault(Messages.CreateClaimFailOverlapRegion, "You can't claim all of this because you're not allowed to build here.");
-        this.addDefault(Messages.ResizeFailOverlapRegion, "You don't have permission to build there, so you can't claim that area.");
-        this.addDefault(Messages.NoBuildPortalPermission,
-                "You can't use this portal because you don't have {0}'s permission to build an exit portal in the destination land claim.",
-                "0: Destination land claim owner's name.");
-        this.addDefault(Messages.ShowNearbyClaims, "Found {0} land claims.", "0: Number of claims found.");
-        this.addDefault(Messages.NoChatUntilMove,
-                "Sorry, but you have to move a little more before you can chat.  We get lots of spam bots here.  :)");
-        this.addDefault(Messages.SiegeImmune, "That player is immune to /siege.");
-        this.addDefault(Messages.SetClaimBlocksSuccess, "Updated accrued claim blocks.");
-        this.addDefault(Messages.IgnoreConfirmation, "You're now ignoring chat messages from that player.");
-        this.addDefault(Messages.UnIgnoreConfirmation, "You're no longer ignoring chat messages from that player.");
-        this.addDefault(Messages.NotIgnoringPlayer, "You're not ignoring that player.");
-        this.addDefault(Messages.SeparateConfirmation, "Those players will now ignore each other in chat.");
-        this.addDefault(Messages.UnSeparateConfirmation, "Those players will no longer ignore each other in chat.");
-        this.addDefault(Messages.NotIgnoringAnyone, "You're not ignoring anyone.");
-        this.addDefault(Messages.TrustListHeader, "Explicit permissions here:");
-        this.addDefault(Messages.Manage, "Manage");
-        this.addDefault(Messages.Build, "Build");
-        this.addDefault(Messages.Containers, "Containers");
-        this.addDefault(Messages.Access, "Access");
-        this.addDefault(Messages.StartBlockMath, "{0} blocks from play + {1} bonus = {2} total.");
-        this.addDefault(Messages.ClaimsListHeader, "Claims:");
-        this.addDefault(Messages.ContinueBlockMath, " (-{0} blocks)");
-        this.addDefault(Messages.EndBlockMath, " = {0} blocks left to spend");
-        this.addDefault(Messages.NoClaimDuringPvP, "You can't claim lands during PvP combat.");
-        this.addDefault(Messages.UntrustAllOwnerOnly, "Only the claim owner can clear all its permissions.");
-        this.addDefault(Messages.ManagersDontUntrustManagers, "Only the claim owner can demote a manager.");
+        this.addDefault(Messages.PickupBlockedExplanation, "You can't pick this up unless {0} uses /UnlockDrops.", "0: The item stack's owner.");
+        this.addDefault(Messages.PlayerInPvPSafeZone, "That player is in a PvP safe zone.");
+        this.addDefault(Messages.PlayerNotFound2, "No player by that name has logged in recently.");
         this.addDefault(Messages.PlayerNotIgnorable, "You can't ignore that player.");
-
-        this.addDefault(Messages.BookAuthor, "BigScary");
-        this.addDefault(Messages.BookTitle, "How to Claim Land");
-        this.addDefault(Messages.BookLink, "Click: " + SURVIVAL_VIDEO_URL_RAW);
-        this.addDefault(Messages.BookIntro,
-                "Claim land to protect your stuff!  Click the link above to learn land claims in 3 minutes or less.  :)");
-        this.addDefault(Messages.BookTools, "Our claim tools are {0} and {1}.",
-                "0: claim modification tool name; 1:claim information tool name");
-        this.addDefault(Messages.BookDisabledChestClaims, "  On this server, placing a chest will NOT claim land for you.");
-        this.addDefault(Messages.BookUsefulCommands, "Useful Commands:");
-        this.addDefault(Messages.NoProfanity, "Please moderate your language.");
-        this.addDefault(Messages.NoDropsAllowed, "You can't drop items in this claim.");
-        this.addDefault(Messages.FireSpreadOutsideClaim, "Fire attempting to spread outside of claim.");
-        this.addDefault(Messages.ItemBanned, "The item {0} that you are attempting to use has been banned on server.");
+        this.addDefault(Messages.PlayerOfflineTime, "  Last login: {0} days ago.", "0: number of full days since last login");
+        this.addDefault(Messages.PlayerTooCloseForFire, "You can't start a fire this close to {0}.", "0: other player's name");
+        this.addDefault(Messages.PurchaseConfirmation, "Withdrew {0} from your account.  You now have {1} available claim blocks.", "0: total cost; 1: remaining blocks");
+        this.addDefault(Messages.PvPImmunityEnd, "Now you can fight with other players.");
+        this.addDefault(Messages.PvPImmunityStart, "You're protected from attack by other players as long as your inventory is empty.");
+        this.addDefault(Messages.PvPNoContainers, "You can't access containers during PvP combat.");
+        this.addDefault(Messages.PvPNoDrop, "You can't drop items while in PvP combat.");
+        this.addDefault(Messages.ReadyToTransferPet,"Ready to transfer!  Right-click the pet you'd like to give away, or cancel with /GivePet cancel.");
+        this.addDefault(Messages.RemainingBlocks, "You may claim up to {0} more blocks.", "0: remaining blocks");
+        this.addDefault(Messages.RescueAbortedMoved, "You moved!  Rescue cancelled.");
+        this.addDefault(Messages.RescuePending, "If you stay put for 10 seconds, you'll be teleported out.  Please wait.");
+        this.addDefault(Messages.ResizeClaimInsufficientArea, "The selected claim size of {0} blocks({1}x{2}) would be too small. A claim must use at least {3} total claim blocks.");
+        this.addDefault(Messages.ResizeClaimTooNarrow, "This new size would be too small.  Claims must be at least {0} blocks wide.", "0: minimum claim width");
+        this.addDefault(Messages.ResizeFailOverlap, "Can't resize here because it would overlap another nearby claim.");
+        this.addDefault(Messages.ResizeFailOverlapRegion, "You don't have permission to build there, so you can't claim that area.");
+        this.addDefault(Messages.ResizeFailOverlapSubdivision, "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use " + "your shovel at a corner to resize it.");
+        this.addDefault(Messages.ResizeNeedMoreBlocks, "You don't have enough blocks for this size.  You need {0} more.", "0: how many needed");
+        this.addDefault(Messages.ResizeStart, "Resizing claim.  Use your shovel again at the new location for this corner.");
+        this.addDefault(Messages.RespectingClaims, "Now respecting claims.");
+        this.addDefault(Messages.RestoreNatureActivate, "Ready to restore some nature!  Right click to restore nature, and use /BasicClaims to stop.");
+        this.addDefault(Messages.RestoreNatureAggressiveActivate, "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and" + " use /BasicClaims to stop.", null);
+        this.addDefault(Messages.RestoreNaturePlayerInChunk, "Unable to restore.  {0} is in that chunk.", "0: nearby player");
+        this.addDefault(Messages.SeparateConfirmation, "Those players will now ignore each other in chat.");
+        this.addDefault(Messages.SetClaimBlocksSuccess, "Updated accrued claim blocks.");
+        this.addDefault(Messages.ShovelBasicClaimMode, "Shovel returned to basic claims mode.");
+        this.addDefault(Messages.ShowNearbyClaims, "Found {0} land claims.", "0: Number of claims found.");
+        this.addDefault(Messages.SiegeAlert, "You're under siege!  If you log out now, you will die.  You must defeat {0}, wait for him to give up, or escape.", "0: attacker name");
+        this.addDefault(Messages.SiegeConfirmed, "The siege has begun!  If you log out now, you will die.  You must defeat {0}, chase him away, or admit defeat and walk away.", "0: defender name");
+        this.addDefault(Messages.SiegeDoorsLockedEjection, "Looting time is up!  Ejected from the claim.");
+        this.addDefault(Messages.SiegeImmune, "That player is immune to /siege.");
+        this.addDefault(Messages.SiegeNoContainers, "You can't access containers while involved in a siege.");
+        this.addDefault(Messages.SiegeNoDrop, "You can't give away items while involved in a siege.");
+        this.addDefault(Messages.SiegeNoShovel, "You can't use your shovel tool while involved in a siege.");
+        this.addDefault(Messages.SiegeNoTeleport, "You can't teleport out of a besieged area.");
+        this.addDefault(Messages.SiegeOnCooldown, "You're still on siege cooldown for this defender or claim.  Find another victim.");
+        this.addDefault(Messages.SiegeTooFarAway, "You're too far away to siege.");
+        this.addDefault(Messages.SiegeWinDoorsOpen, "Congratulations!  Buttons and levers are temporarily unlocked (five minutes).");
+        this.addDefault(Messages.SoftMuted, "Soft-muted {0}.", "0: The changed player's name.");
+        this.addDefault(Messages.StartBlockMath, "{0} blocks from play + {1} bonus = {2} total.");
+        this.addDefault(Messages.SubdivisionMode, "Subdivision mode.  Use your shovel to create subdivisions in your existing claims.  Use /basicclaims to exit.");
+        this.addDefault(Messages.SubdivisionStart, "Subdivision corner set!  Use your shovel at the location for the opposite corner of this new subdivision.");
+        this.addDefault(Messages.SubdivisionSuccess, "Subdivision created!  Use /trust to share it with friends.");
+        this.addDefault(Messages.SubdivisionVideo2, "Click for Subdivision Help: " + SUBDIVISION_VIDEO_URL_RAW);
+        this.addDefault(Messages.SuccessfulAbandon, "Claims abandoned.  You now have {0} available claim blocks.", "0: remaining blocks");
+        this.addDefault(Messages.SurvivalBasicsVideo2, "Click for Land Claim Help: " + SURVIVAL_VIDEO_URL_RAW);
+        this.addDefault(Messages.ThatPlayerPvPImmune, "You can't injure defenseless players.");
+        this.addDefault(Messages.TooDeepToClaim, "This chest can't be protected because it's too deep underground.  Consider moving it.");
+        this.addDefault(Messages.TooFarAway, "That's too far away.");
+        this.addDefault(Messages.TooManyEntitiesInClaim, "This claim has too many entities already.  Try enlarging the claim or removing some animals, monsters, paintings, or minecarts.");
+        this.addDefault(Messages.TransferClaimAdminOnly, "Only administrative claims may be transferred to a player.");
+        this.addDefault(Messages.TransferClaimMissing, "There's no claim here.  Stand in the administrative claim you want to transfer.", null);
+        this.addDefault(Messages.TransferClaimPermission, "That command requires the administrative claims permission.");
+        this.addDefault(Messages.TransferSuccess, "Claim transferred.");
+        this.addDefault(Messages.TransferTopLevel, "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.");
+        this.addDefault(Messages.TrappedChatKeyword, "trapped", "When mentioned in chat, players get information about the /trapped command.");
+        this.addDefault(Messages.TrappedInstructions, "Are you trapped in someone's land claim?  Try the /trapped command.");
+        this.addDefault(Messages.TrappedWontWorkHere, "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.");
+        this.addDefault(Messages.TrustListHeader, "Explicit permissions here:");
+        this.addDefault(Messages.TrustListNoClaim, "Stand inside the claim you're curious about.");
+        this.addDefault(Messages.UnIgnoreConfirmation, "You're no longer ignoring chat messages from that player.");
+        this.addDefault(Messages.UnSeparateConfirmation, "Those players will no longer ignore each other in chat.");
+        this.addDefault(Messages.UnSoftMuted, "Un-soft-muted {0}.", "0: The changed player's name.");
+        this.addDefault(Messages.UnclaimCleanupWarning, "The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you " + "want to keep, you should reclaim it.");
+        this.addDefault(Messages.UnprotectedChestWarning, "This chest is NOT protected.  Consider using a golden shovel to expand an existing claim or to create a new one.");
+        this.addDefault(Messages.UntrustAllOwnerOnly, "Only the claim owner can clear all its permissions.");
+        this.addDefault(Messages.UntrustEveryoneAllClaims, "Cleared permissions in ALL your claims.  To set permissions for a single claim, stand inside it.");
+        this.addDefault(Messages.UntrustIndividualAllClaims, "Revoked {0}'s access to ALL your claims.  To set permissions for a single claim, stand inside it.", "0: untrusted player");
+        this.addDefault(Messages.UntrustIndividualSingleClaim, "Revoked {0}'s access to this claim.  To set permissions for a ALL your claims, stand outside them.", "0: untrusted player");
+        this.addDefault(Messages.YouHaveNoClaims, "You don't have any land claims.");
 
         // load the config file
         try {

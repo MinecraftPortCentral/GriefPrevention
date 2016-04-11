@@ -596,6 +596,7 @@ public class PlayerEventHandler {
         }
 
         // if requires access trust, check for permission
+        Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
         isMonitoredCommand = false;
         String lowerCaseMessage = message.toLowerCase();
 
@@ -606,8 +607,18 @@ public class PlayerEventHandler {
             }
         }
 
+        if (claim != null) {
+            for (String blockedCommand : claim.getClaimData().getConfig().flags.blockCommands) {
+                if (lowerCaseMessage.startsWith(blockedCommand)) {
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, Messages.BlockedCommand, lowerCaseMessage, claim.getOwnerName()));
+                    GriefPrevention.addLogEntry("[Event: MessageChannelEvent.Chat][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked command.]", CustomLogEntryTypes.Debug);
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
+
         if (isMonitoredCommand) {
-            Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
             if (claim != null) {
                 playerData.lastClaim = claim;
                 String reason = claim.allowAccess(player.getWorld(), player);
