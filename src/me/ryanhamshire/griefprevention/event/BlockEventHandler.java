@@ -300,6 +300,29 @@ public class BlockEventHandler {
                 }
             }
 
+            // warn players when they place TNT above sea level, since it doesn't
+            // destroy blocks there
+            if (!activeConfig.getConfig().general.surfaceExplosions && block.getState().getType() == BlockTypes.TNT &&
+                    !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
+                    block.getPosition().getY() > GriefPrevention.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&
+                    claim == null &&
+                    playerData.siegeData == null) {
+                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageAboveSeaLevel);
+            }
+
+            // warn players about disabled pistons outside of land claims
+            if (activeConfig.getConfig().general.limitPistonsToClaims &&
+                    (block.getState().getType() == BlockTypes.PISTON || block.getState().getType() == BlockTypes.STICKY_PISTON) &&
+                    claim == null) {
+                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoPistonsOutsideClaims);
+            }
+
+            // Don't run logic below if a player didn't directly cause this event. Prevents issues such as claims getting autocreated while
+            // a player is indirectly placing blocks.
+            if (!(event.getCause().root() instanceof Player)) {
+                continue;
+            }
+
             // if the block is being placed within or under an existing claim
             if (claim != null) {
                 playerData.lastClaim = claim;
@@ -369,23 +392,6 @@ public class BlockEventHandler {
                 if (this.dataStore.getClaimAt(block.getLocation().get(), false, playerData.lastClaim) == null) {
                     GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnprotectedChestWarning);
                 }
-            }
-
-            // warn players when they place TNT above sea level, since it doesn't
-            // destroy blocks there
-            if (!activeConfig.getConfig().general.surfaceExplosions && block.getState().getType() == BlockTypes.TNT &&
-                    !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
-                    block.getPosition().getY() > GriefPrevention.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&
-                    claim == null &&
-                    playerData.siegeData == null) {
-                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageAboveSeaLevel);
-            }
-
-            // warn players about disabled pistons outside of land claims
-            if (activeConfig.getConfig().general.limitPistonsToClaims &&
-                    (block.getState().getType() == BlockTypes.PISTON || block.getState().getType() == BlockTypes.STICKY_PISTON) &&
-                    claim == null) {
-                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoPistonsOutsideClaims);
             }
         }
     }
