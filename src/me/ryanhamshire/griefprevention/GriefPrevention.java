@@ -39,6 +39,7 @@ import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
 import me.ryanhamshire.griefprevention.command.CommandAddFlagCmdPermission;
 import me.ryanhamshire.griefprevention.command.CommandAddFlagPermission;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
+import me.ryanhamshire.griefprevention.command.CommandBanItem;
 import me.ryanhamshire.griefprevention.command.CommandClaim;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandon;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandonAll;
@@ -75,6 +76,7 @@ import me.ryanhamshire.griefprevention.command.CommandSoftMute;
 import me.ryanhamshire.griefprevention.command.CommandTrapped;
 import me.ryanhamshire.griefprevention.command.CommandTrust;
 import me.ryanhamshire.griefprevention.command.CommandTrustList;
+import me.ryanhamshire.griefprevention.command.CommandUnbanItem;
 import me.ryanhamshire.griefprevention.command.CommandUnignorePlayer;
 import me.ryanhamshire.griefprevention.command.CommandUnlockDrops;
 import me.ryanhamshire.griefprevention.command.CommandUnseparate;
@@ -352,6 +354,11 @@ public class GriefPrevention {
                         .permission(GPPermissions.COMMAND_ADJUSTBONUSCLAIMBLOCKS).arguments(string(Text.of("player")), integer(Text.of("amount")))
                         .executor(new CommandAdjustBonusClaimBlocks()).build());
 
+        subcommands.put(Arrays.asList("banitem"),
+                CommandSpec.builder().description(Text.of("Bans the specified item id or item in hand if no id is specified."))
+                        .permission(GPPermissions.COMMAND_BANITEM).arguments(optional(string(Text.of("itemid"))))
+                        .executor(new CommandBanItem()).build());
+
         subcommands.put(Arrays.asList("claim"), CommandSpec.builder().description(Text.of("Claims land")).permission(GPPermissions.COMMAND_CLAIM)
                 .executor(new CommandClaim()).build());
 
@@ -542,6 +549,11 @@ public class GriefPrevention {
 
         subcommands.put(Arrays.asList("trustlist"), CommandSpec.builder().description(Text.of("Lists permissions for the claim you're standing in"))
                 .permission(GPPermissions.COMMAND_TRUSTLIST).executor(new CommandTrustList()).build());
+
+        subcommands.put(Arrays.asList("unbanitem"),
+                CommandSpec.builder().description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
+                        .permission(GPPermissions.COMMAND_UNBANITEM).arguments(optional(string(Text.of("itemid"))))
+                        .executor(new CommandUnbanItem()).build());
 
         subcommands.put(Arrays.asList("unignoreplayer", "unignore"),
                 CommandSpec.builder().description(Text.of("Unignores another player's chat messages")).permission(GPPermissions.COMMAND_UNIGNORE)
@@ -992,15 +1004,19 @@ public class GriefPrevention {
         return world.getProperties().isPVPEnabled();
     }
 
-    public static boolean isItemBanned(WorldProperties worldProperties, ItemType type, int meta) {
-        String nonMetaItemString = type.getId();
-        String metaItemString = type.getId() + ":" + meta;
-        if (GriefPrevention.getActiveConfig(worldProperties).getConfig().general.bannedItemList.contains(nonMetaItemString)) {
-            return true;
-        } else if (GriefPrevention.getActiveConfig(worldProperties).getConfig().general.bannedItemList.contains(metaItemString)) {
-            return true;
-        } else {
+    public static boolean isItemBanned(Player player, ItemType type, int meta) {
+        if (player.hasPermission(GPPermissions.IGNORE_BANS)) {
             return false;
         }
+
+        String nonMetaItemString = type.getId();
+        String metaItemString = type.getId() + ":" + meta;
+        if (GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().general.bannedItemList.contains(nonMetaItemString)) {
+            return true;
+        } else if (GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().general.bannedItemList.contains(metaItemString)) {
+            return true;
+        }
+
+        return false;
     }
 }

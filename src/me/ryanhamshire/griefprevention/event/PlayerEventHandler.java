@@ -159,9 +159,6 @@ public class PlayerEventHandler {
     // when a player chats, monitor for spam
     @Listener(order = Order.PRE)
     public void onPlayerChat(MessageChannelEvent.Chat event) {
-        if (true) {
-            return;
-        }
         Player player = event.getCause().first(Player.class).get();
         if (!player.isOnline()) {
             event.setCancelled(true);
@@ -1103,6 +1100,17 @@ public class PlayerEventHandler {
             return;
         }
 
+        Optional<ItemStack> itemInHand = player.getItemInHand();
+        if (itemInHand.isPresent()) {
+            net.minecraft.item.ItemStack itemstack = (net.minecraft.item.ItemStack)(Object) itemInHand.get();
+            if (GriefPrevention.isItemBanned(player, itemInHand.get().getItem(), itemstack.getMetadata())) {
+                GriefPrevention.sendMessage(player, TextColors.RED, Messages.ItemBanned, itemInHand.get().getItem().getId());
+                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: Item " + itemInHand.get().getItem().getId() + " is banned.]", CustomLogEntryTypes.Debug);
+                event.setCancelled(true);
+                return;
+            }
+        }
+
         Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
         // allow entity protection to be overridden to allow management from other plugins
         if (activeConfig.getConfig().claim.ignoredEntityIds.contains(entity.getType().getId())) {
@@ -1462,21 +1470,20 @@ public class PlayerEventHandler {
     @Listener
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event) {
         Optional<Player> playerOpt = event.getCause().first(Player.class);
-
         if (!playerOpt.isPresent() || !event.getTargetBlock().getLocation().isPresent()) {
             return;
         }
 
         Player player = playerOpt.get();
         BlockSnapshot clickedBlock = event.getTargetBlock();
-        Optional<ItemType> itemType = clickedBlock.getState().getType().getItem();
+        Optional<ItemStack> itemInHand = player.getItemInHand();
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         Claim playerClaim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, null);
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
-
-        if (itemType.isPresent() && GriefPrevention.isItemBanned(player.getWorld().getProperties(), itemType.get(), (
-                (IMixinBlockState) clickedBlock.getState()).getStateMeta())) {
-            GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][Item: " + itemType.get() + "][CancelReason: Item is banned.]", CustomLogEntryTypes.Debug);
+        if (itemInHand.isPresent() && GriefPrevention.isItemBanned(player, itemInHand.get().getItem(), (
+                ((net.minecraft.item.ItemStack)(Object) itemInHand.get()).getMetadata()))) {
+            GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][Item: " + itemInHand.get() + "][CancelReason: Item " + itemInHand.get().getItem().getId() + " is banned.]", CustomLogEntryTypes.Debug);
+            GriefPrevention.sendMessage(player, TextColors.RED, Messages.ItemBanned, itemInHand.get().getItem().getId());
             event.setCancelled(true);
             return;
         } else {
@@ -1606,12 +1613,11 @@ public class PlayerEventHandler {
         // otherwise handle right click (shovel, string, bonemeal)
         else {
 
-            if (!player.getItemInHand().isPresent()) {
+            if (!itemInHand.isPresent()) {
                 return;
             }
             // what's the player holding?
-            ItemStack itemInHand = player.getItemInHand().get();
-            ItemType materialInHand = itemInHand.getItem();
+            ItemType materialInHand = itemInHand.get().getItem();
 
             // if it's bonemeal or armor stand or spawn egg, check for build
             // permission (ink sac == bone meal, must be a Bukkit bug?)

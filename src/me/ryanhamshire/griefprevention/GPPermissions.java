@@ -38,6 +38,7 @@ public class GPPermissions {
     public static final String DELETE_CLAIMS = "griefprevention.deleteclaims";
     public static final String EAVES_DROP = "griefprevention.eaves-drop";
     public static final String EAVES_DROP_SIGNS = "griefprevention.eaves-drop-signs";
+    public static final String IGNORE_BANS = "griefprevention.ignorebans";
     public static final String IGNORE_CLAIMS = "griefprevention.ignoreclaims";
     public static final String NO_PVP_IMMUNITY = "griefprevention.no-pvp-immunity";
     public static final String NOT_IGNORABLE = "griefprevention.not-ignorable";
@@ -84,6 +85,8 @@ public class GPPermissions {
     public static final String COMMAND_ADJUSTBONUSCLAIMBLOCKS = "griefprevention.command.adjustclaimblocks";
     public static final String COMMAND_ADMINCLAIMS = "griefprevention.command.adminclaims";
     public static final String COMMAND_ADMINCLAIMSLIST = "griefprevention.command.adminclaimslist";
+    public static final String COMMAND_BANITEM = "griefprevention.command.banitem";
+    public static final String COMMAND_BANLIST = "griefprevention.command.banlist";
     public static final String COMMAND_BASICCLAIMS = "griefprevention.command.basicclaims";
     public static final String COMMAND_CLAIM = "griefprevention.command.claim";
     public static final String COMMAND_CLAIMBOOK = "griefprevention.command.claimbook";
@@ -115,6 +118,7 @@ public class GPPermissions {
     public static final String COMMAND_TRAPPED = "griefprevention.command.trapped";
     public static final String COMMAND_TRUST = "griefprevention.command.trust";
     public static final String COMMAND_TRUSTLIST = "griefprevention.command.trustlist";
+    public static final String COMMAND_UNBANITEM = "griefprevention.command.unbanitem";
     public static final String COMMAND_UNIGNORE = "griefprevention.command.unignore";
     public static final String COMMAND_UNLOCKDROPS = "griefprevention.command.unlockdrops";
     public static final String COMMAND_UNSEPARATE = "griefprevention.command.unseparate";

@@ -1336,6 +1336,7 @@ public abstract class DataStore {
         this.addDefault(Messages.NoProfanity, "Please moderate your language.");
         this.addDefault(Messages.NoDropsAllowed, "You can't drop items in this claim.");
         this.addDefault(Messages.FireSpreadOutsideClaim, "Fire attempting to spread outside of claim.");
+        this.addDefault(Messages.ItemBanned, "The item {0} that you are attempting to use has been banned on server.");
 
         // load the config file
         try {
@@ -1433,7 +1434,12 @@ public abstract class DataStore {
         List<String> containedUrls = new ArrayList<String>();
         String urlRegex = "((https?|ftp|gopher|telnet|file):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
         Pattern pattern = Pattern.compile(urlRegex, Pattern.CASE_INSENSITIVE);
-        Matcher urlMatcher = pattern.matcher(text);
+        Matcher urlMatcher = null;
+        try {
+            urlMatcher = pattern.matcher(text);
+        } catch (Throwable t) {
+            return containedUrls;
+        }
 
         while (urlMatcher.find()) {
             containedUrls.add(text.substring(urlMatcher.start(0),

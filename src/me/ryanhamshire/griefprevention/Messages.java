@@ -238,5 +238,6 @@ public enum Messages {
     NoProfanity,
     PlayerNotIgnorable,
     NoDropsAllowed,
-    FireSpreadOutsideClaim
+    FireSpreadOutsideClaim,
+    ItemBanned,
 }
