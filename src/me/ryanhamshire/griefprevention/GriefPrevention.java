@@ -31,6 +31,7 @@ import static org.spongepowered.api.command.args.GenericArguments.player;
 import static org.spongepowered.api.command.args.GenericArguments.playerOrSource;
 import static org.spongepowered.api.command.args.GenericArguments.string;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
@@ -124,6 +125,7 @@ import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColor;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
@@ -412,7 +414,14 @@ public class GriefPrevention {
                                 .permission(GPPermissions.COMMAND_CLAIMFLAG)
                                 .arguments(GenericArguments.firstParsing(GenericArguments.flags().flag("-r", "r")
                                         .buildWith(GenericArguments.seq(optional(onlyOne(string(Text.of("flag")))),
-                                                optional(onlyOne(GenericArguments.remainingJoinedStrings(Text.of("value"))))))))
+                                                optional(GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("undefined", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build())), onlyOne(GenericArguments.remainingJoinedStrings(Text.of("val")))))))))
                                 .executor(new CommandClaimFlag(GPPermissions.COMMAND_CLAIMFLAG)).build());
 
         HashMap<String, String> targetChoices = new HashMap<>();
