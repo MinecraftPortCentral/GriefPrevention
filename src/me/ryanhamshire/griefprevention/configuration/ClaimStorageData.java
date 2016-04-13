@@ -2,6 +2,7 @@ package me.ryanhamshire.griefprevention.configuration;
 
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -13,6 +14,7 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.spongepowered.api.util.Functional;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.util.IpSet;
 
@@ -22,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 
@@ -43,6 +46,8 @@ public class ClaimStorageData {
     // MAIN
     public static final String MAIN_WORLD_UUID = "world-uuid";
     public static final String MAIN_OWNER_UUID = "owner-uuid";
+    public static final String MAIN_CLAIM_NAME = "claim-name";
+    public static final String MAIN_SUBDIVISION_UUID = "uuid";
     public static final String MAIN_PARENT_CLAIM_UUID = "parent-claim-uuid";
     public static final String MAIN_LESSER_BOUNDARY_CORNER = "lesser-boundary-corner";
     public static final String MAIN_GREATER_BOUNDARY_CORNER = "greater-boundary-corner";
@@ -51,38 +56,7 @@ public class ClaimStorageData {
     public static final String MAIN_ACCESSORS = "accessors";
     public static final String MAIN_MANAGERS = "managers";
     public static final String MAIN_PROTECTION_BLACKLIST = "bypass-protection-items";
-
-    // FLAGS
-    public static final String FLAGS_BLOCK_BREAK = "block-break";
-    public static final String FLAGS_BLOCK_COMMANDS = "block-commands";
-    public static final String FLAGS_BLOCK_PLACE = "block-place";
-    public static final String FLAGS_EXPLOSIONS = "explosions";
-    public static final String FLAGS_FIRE_SPREAD = "fire-spread";
-    public static final String FLAGS_FORCE_DENY_ALL = "force-deny-all";
-    public static final String FLAGS_IGNITE = "ignite";
-    public static final String FLAGS_INTERACT_PRIMARY = "interact-primary";
-    public static final String FLAGS_INTERACT_SECONDARY = "interact-secondary";
-    public static final String FLAGS_INVENTORY = "inventory";
-    public static final String FLAGS_ITEM_DROP = "item-drop";
-    public static final String FLAGS_ITEM_PICKUP = "item-pickup";
-    public static final String FLAGS_ITEM_USE = "item-use";
-    public static final String FLAGS_LAVA_FLOW = "lava-flow";
-    public static final String FLAGS_MOB_BLOCK_DAMAGE = "mob-block-damage";
-    public static final String FLAGS_MOB_PLAYER_DAMAGE = "mob-player-damage";
-    public static final String FLAGS_MOB_RIDING = "mob-riding";
-    public static final String FLAGS_PORTAL_USE = "portal-use";
-    public static final String FLAGS_PROJECTILES_ANY = "projectiles-any";
-    public static final String FLAGS_PROJECTILES_MONSTER = "projectiles-monster";
-    public static final String FLAGS_PROJECTILES_PLAYER = "projectiles-player";
-    public static final String FLAGS_PVP = "pvp";
-    public static final String FLAGS_SLEEP = "sleep";
-    public static final String FLAGS_SPAWN_AMBIENTS = "spawn-ambient";
-    public static final String FLAGS_SPAWN_ANY = "spawn-any";
-    public static final String FLAGS_SPAWN_AQUATICS = "spawn-aquatic";
-    public static final String FLAGS_SPAWN_PASSIVES = "spawn-passives";
-    public static final String FLAGS_SPAWN_MONSTERS = "spawn-monsters";
-    public static final String FLAGS_WATER_FLOW = "water-flow";
-    public static final String FLAGS_VILLAGER_TRADING = "villager-trading";
+    public static final String MAIN_SUBDIVISIONS = "sub-divisions";
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public ClaimStorageData(Path path) {
@@ -159,6 +133,8 @@ public class ClaimStorageData {
         public String worldUniqueId;
         @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
         public String ownerUniqueId;
+        @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with claim.")
+        public String claimName;
         @Setting(value = MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of claim.")
         public String lesserBoundaryCornerPos;
         @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of claim.")
@@ -171,9 +147,31 @@ public class ClaimStorageData {
         public ArrayList<String> accessors = new ArrayList<>();
         @Setting(value = MAIN_MANAGERS, comment = "The managers associated with claim.")
         public ArrayList<String> managers = new ArrayList<>();
-        @Setting(value = MAIN_PARENT_CLAIM_UUID, comment = "The parent claim uuid of claim.")
-        public String parentUniqueId;
         @Setting(value = MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within claim.")
+        public ArrayList<String> protectionBlacklist = new ArrayList<>();
+        @Setting
+        public ClaimDataFlagsCategory flags = new ClaimDataFlagsCategory();
+        @Setting
+        public Map<UUID, SubDivisionDataNode> subDivisions = Maps.newHashMap();
+    }
+
+    @ConfigSerializable
+    public static class SubDivisionDataNode {
+        @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with subdivision.")
+        public String claimName;
+        @Setting(value = MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of subdivision.")
+        public String lesserBoundaryCornerPos;
+        @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of subdivision.")
+        public String greaterBoundaryCornerPos;
+        @Setting(value = MAIN_BUILDERS, comment = "The builders associated with subdivision.")
+        public ArrayList<String> builders = new ArrayList<>();
+        @Setting(value = MAIN_CONTAINERS, comment = "The containers associated with subdivision.")
+        public ArrayList<String> containers = new ArrayList<>();
+        @Setting(value = MAIN_ACCESSORS, comment = "The accessors associated with subdivision.")
+        public ArrayList<String> accessors = new ArrayList<>();
+        @Setting(value = MAIN_MANAGERS, comment = "The managers associated with subdivision.")
+        public ArrayList<String> managers = new ArrayList<>();
+        @Setting(value = MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within subdivision.")
         public ArrayList<String> protectionBlacklist = new ArrayList<>();
         @Setting
         public ClaimDataFlagsCategory flags = new ClaimDataFlagsCategory();
@@ -182,188 +180,188 @@ public class ClaimStorageData {
     @ConfigSerializable
     public static class ClaimDataFlagsCategory extends Category {
 
-        @Setting(value = FLAGS_BLOCK_BREAK, comment = "Allow/deny breaking blocks.")
-        public boolean blockBreak = false;
-        @Setting(value = FLAGS_BLOCK_COMMANDS, comment = "Blocked commands.")
+        @Setting(value = GPFlags.BLOCK_BREAK, comment = GPFlags.COMMENT_BLOCK_BREAK)
+        public Tristate blockBreak = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.BLOCK_COMMANDS, comment = GPFlags.COMMENT_BLOCK_COMMANDS)
         public List<String> blockCommands = new ArrayList<>();
-        @Setting(value = FLAGS_BLOCK_PLACE, comment = "Allow/deny placing blocks.")
-        public boolean blockPlace = false;
-        @Setting(value = FLAGS_EXPLOSIONS, comment = "Allow/deny explosions.")
-        public boolean explosions = false;
-        @Setting(value = FLAGS_FIRE_SPREAD, comment = "Allow/deny fire spread.")
-        public boolean fireSpread = false;
-        @Setting(value = FLAGS_FORCE_DENY_ALL, comment = "Only intended if you want to explicitly ignore all checking for player permissions.")
-        public boolean forceDenyAll = false;
-        @Setting(value = FLAGS_INTERACT_PRIMARY, comment = "Allow/deny left-clicking.")
-        public boolean interactPrimary = false;
-        @Setting(value = FLAGS_INTERACT_SECONDARY, comment = "Allow/deny right-clicking.")
-        public boolean interactSecondary = false;
-        @Setting(value = FLAGS_INVENTORY, comment = "Allow/deny blocks with inventories.")
-        public boolean inventory = false;
-        @Setting(value = FLAGS_ITEM_DROP, comment = "Allow/deny item drops.")
-        public boolean itemDrop = false;
-        @Setting(value = FLAGS_ITEM_PICKUP, comment = "Allow/deny picking up items.")
-        public boolean itemPickup = false;
-        @Setting(value = FLAGS_ITEM_USE, comment = "Allow/deny item use.")
-        public boolean itemUse = false;
-        @Setting(value = FLAGS_LAVA_FLOW, comment = "Allow/deny lava flow.")
-        public boolean lavaFlow = true;
-        @Setting(value = FLAGS_MOB_BLOCK_DAMAGE, comment = "Allow/deny mob block damage.")
-        public boolean mobBlockDamage = false;
-        @Setting(value = FLAGS_MOB_PLAYER_DAMAGE, comment = "Allow/deny mob player damage.")
-        public boolean mobPlayerDamage = true;
-        @Setting(value = FLAGS_MOB_RIDING, comment = "Allow/deny mob riding.")
-        public boolean mobRiding = false;
-        @Setting(value = FLAGS_PORTAL_USE, comment = "Allow/deny portal use.")
-        public boolean portalUse = true;
-        @Setting(value = FLAGS_PROJECTILES_ANY, comment = "Allow/deny any projectiles.")
-        public boolean projectilesAny = true;
-        @Setting(value = FLAGS_PROJECTILES_MONSTER, comment = "Allow/deny monster projectiles.")
-        public boolean projectilesMonster = true;
-        @Setting(value = FLAGS_PROJECTILES_PLAYER, comment = "Allow/deny player projectiles.")
-        public boolean projectilesPlayer = false;
-        @Setting(value = FLAGS_PVP, comment = "Allow/deny pvp.")
-        public boolean pvp = false;
-        @Setting(value = FLAGS_SLEEP, comment = "Allow/deny sleep.")
-        public boolean sleep = true;
-        @Setting(value = FLAGS_SPAWN_AMBIENTS, comment = "Allow/deny the spawning of ambient mobs.")
-        public boolean spawnAmbient = true;
-        @Setting(value = FLAGS_SPAWN_ANY, comment = "Allow/deny the spawning of any mobs.")
-        public boolean spawnAny = true;
-        @Setting(value = FLAGS_SPAWN_AQUATICS, comment = "Allow/deny the spawning of aquatic mobs.")
-        public boolean spawnAquatic = true;
-        @Setting(value = FLAGS_SPAWN_MONSTERS, comment = "Allow/deny the spawning of monsters.")
-        public boolean spawnMonsters = true;
-        @Setting(value = FLAGS_SPAWN_PASSIVES, comment = "Allow/deny the spawning of passive mobs.")
-        public boolean spawnPassives = true;
-        @Setting(value = FLAGS_WATER_FLOW, comment = "Allow/deny water flow.")
-        public boolean waterFlow = true;
-        @Setting(value = FLAGS_VILLAGER_TRADING, comment = "Allow/deny villager trading.")
-        public boolean villagerTrading = false;
+        @Setting(value = GPFlags.BLOCK_PLACE, comment = GPFlags.COMMENT_BLOCK_PLACE)
+        public Tristate blockPlace = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.EXPLOSIONS, comment = GPFlags.COMMENT_EXPLOSIONS)
+        public Tristate explosions = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.FIRE_SPREAD, comment = GPFlags.COMMENT_FIRE_SPREAD)
+        public Tristate fireSpread = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.FORCE_DENY_ALL, comment = GPFlags.COMMENT_FORCE_DENY_ALL)
+        public Tristate forceDenyAll = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.INTERACT_PRIMARY, comment = GPFlags.COMMENT_INTERACT_PRIMARY)
+        public Tristate interactPrimary = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.INTERACT_SECONDARY, comment = GPFlags.COMMENT_INTERACT_SECONDARY)
+        public Tristate interactSecondary = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.INVENTORY, comment = GPFlags.COMMENT_INVENTORY)
+        public Tristate inventory = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.ITEM_DROP, comment = GPFlags.COMMENT_ITEM_DROP)
+        public Tristate itemDrop = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.ITEM_PICKUP, comment = GPFlags.COMMENT_ITEM_PICKUP)
+        public Tristate itemPickup = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.ITEM_USE, comment = GPFlags.COMMENT_ITEM_USE)
+        public Tristate itemUse = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.LAVA_FLOW, comment = GPFlags.COMMENT_LAVA_FLOW)
+        public Tristate lavaFlow = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.MOB_BLOCK_DAMAGE, comment = GPFlags.COMMENT_MOB_BLOCK_DAMAGE)
+        public Tristate mobBlockDamage = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.MOB_PLAYER_DAMAGE, comment = GPFlags.COMMENT_MOB_PLAYER_DAMAGE)
+        public Tristate mobPlayerDamage = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.MOB_RIDING, comment = GPFlags.COMMENT_MOB_RIDING)
+        public Tristate mobRiding = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.PORTAL_USE, comment = GPFlags.COMMENT_PORTAL_USE)
+        public Tristate portalUse = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.PROJECTILES_ANY, comment = GPFlags.COMMENT_PROJECTILES_ANY)
+        public Tristate projectilesAny = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.PROJECTILES_MONSTER, comment = GPFlags.COMMENT_PROJECTILES_MONSTER)
+        public Tristate projectilesMonster = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.PROJECTILES_PLAYER, comment = GPFlags.COMMENT_PROJECTILES_PLAYER)
+        public Tristate projectilesPlayer = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.PVP, comment = GPFlags.COMMENT_PVP)
+        public Tristate pvp = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.SLEEP, comment = GPFlags.COMMENT_SLEEP)
+        public Tristate sleep = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.SPAWN_AMBIENTS, comment = GPFlags.COMMENT_SPAWN_AMBIENTS)
+        public Tristate spawnAmbient = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.SPAWN_ANY, comment = GPFlags.COMMENT_SPAWN_ANY)
+        public Tristate spawnAny = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.SPAWN_AQUATICS, comment = GPFlags.COMMENT_SPAWN_AQUATICS)
+        public Tristate spawnAquatic = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.SPAWN_MONSTERS, comment = GPFlags.COMMENT_SPAWN_MONSTERS)
+        public Tristate spawnMonsters = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.SPAWN_PASSIVES, comment = GPFlags.COMMENT_SPAWN_PASSIVES)
+        public Tristate spawnPassives = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.VILLAGER_TRADING, comment = GPFlags.COMMENT_VILLAGER_TRADING)
+        public Tristate villagerTrading = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.WATER_FLOW, comment = GPFlags.COMMENT_WATER_FLOW)
+        public Tristate waterFlow = Tristate.UNDEFINED;
 
         public Map<String, Object> getFlagMap() {
             Map<String, Object> flagMap = Maps.newHashMap();
-            flagMap.put(FLAGS_BLOCK_BREAK, this.blockBreak);
-            flagMap.put(FLAGS_BLOCK_COMMANDS, this.blockCommands);
-            flagMap.put(FLAGS_BLOCK_PLACE, this.blockPlace);
-            flagMap.put(FLAGS_EXPLOSIONS, this.explosions);
-            flagMap.put(FLAGS_FIRE_SPREAD, this.fireSpread);
-            flagMap.put(FLAGS_FORCE_DENY_ALL, this.forceDenyAll);
-            flagMap.put(FLAGS_INTERACT_PRIMARY, this.interactPrimary);
-            flagMap.put(FLAGS_INTERACT_SECONDARY, this.interactSecondary);
-            flagMap.put(FLAGS_INVENTORY, this.inventory);
-            flagMap.put(FLAGS_ITEM_DROP, this.itemDrop);
-            flagMap.put(FLAGS_ITEM_PICKUP, this.itemPickup);
-            flagMap.put(FLAGS_ITEM_USE, this.itemUse);
-            flagMap.put(FLAGS_LAVA_FLOW, this.lavaFlow);
-            flagMap.put(FLAGS_MOB_BLOCK_DAMAGE, this.mobBlockDamage);
-            flagMap.put(FLAGS_MOB_PLAYER_DAMAGE, this.mobPlayerDamage);
-            flagMap.put(FLAGS_MOB_RIDING, this.mobRiding);
-            flagMap.put(FLAGS_PORTAL_USE, this.portalUse);
-            flagMap.put(FLAGS_PROJECTILES_PLAYER, this.projectilesPlayer);
-            flagMap.put(FLAGS_PROJECTILES_MONSTER, this.projectilesMonster);
-            flagMap.put(FLAGS_PROJECTILES_ANY, this.projectilesAny);
-            flagMap.put(FLAGS_PVP, this.pvp);
-            flagMap.put(FLAGS_SPAWN_MONSTERS, this.spawnMonsters);
-            flagMap.put(FLAGS_SPAWN_PASSIVES, this.spawnPassives);
-            flagMap.put(FLAGS_SPAWN_AMBIENTS, this.spawnAmbient);
-            flagMap.put(FLAGS_SPAWN_AQUATICS, this.spawnAquatic);
-            flagMap.put(FLAGS_SPAWN_ANY, this.spawnAny);
-            flagMap.put(FLAGS_SLEEP, this.sleep);
-            flagMap.put(FLAGS_WATER_FLOW, this.waterFlow);
-            flagMap.put(FLAGS_VILLAGER_TRADING, this.villagerTrading);
+            flagMap.put(GPFlags.BLOCK_BREAK, this.blockBreak);
+            flagMap.put(GPFlags.BLOCK_COMMANDS, this.blockCommands);
+            flagMap.put(GPFlags.BLOCK_PLACE, this.blockPlace);
+            flagMap.put(GPFlags.EXPLOSIONS, this.explosions);
+            flagMap.put(GPFlags.FIRE_SPREAD, this.fireSpread);
+            flagMap.put(GPFlags.FORCE_DENY_ALL, this.forceDenyAll);
+            flagMap.put(GPFlags.INTERACT_PRIMARY, this.interactPrimary);
+            flagMap.put(GPFlags.INTERACT_SECONDARY, this.interactSecondary);
+            flagMap.put(GPFlags.INVENTORY, this.inventory);
+            flagMap.put(GPFlags.ITEM_DROP, this.itemDrop);
+            flagMap.put(GPFlags.ITEM_PICKUP, this.itemPickup);
+            flagMap.put(GPFlags.ITEM_USE, this.itemUse);
+            flagMap.put(GPFlags.LAVA_FLOW, this.lavaFlow);
+            flagMap.put(GPFlags.MOB_BLOCK_DAMAGE, this.mobBlockDamage);
+            flagMap.put(GPFlags.MOB_PLAYER_DAMAGE, this.mobPlayerDamage);
+            flagMap.put(GPFlags.MOB_RIDING, this.mobRiding);
+            flagMap.put(GPFlags.PORTAL_USE, this.portalUse);
+            flagMap.put(GPFlags.PROJECTILES_PLAYER, this.projectilesPlayer);
+            flagMap.put(GPFlags.PROJECTILES_MONSTER, this.projectilesMonster);
+            flagMap.put(GPFlags.PROJECTILES_ANY, this.projectilesAny);
+            flagMap.put(GPFlags.PVP, this.pvp);
+            flagMap.put(GPFlags.SPAWN_MONSTERS, this.spawnMonsters);
+            flagMap.put(GPFlags.SPAWN_PASSIVES, this.spawnPassives);
+            flagMap.put(GPFlags.SPAWN_AMBIENTS, this.spawnAmbient);
+            flagMap.put(GPFlags.SPAWN_AQUATICS, this.spawnAquatic);
+            flagMap.put(GPFlags.SPAWN_ANY, this.spawnAny);
+            flagMap.put(GPFlags.SLEEP, this.sleep);
+            flagMap.put(GPFlags.WATER_FLOW, this.waterFlow);
+            flagMap.put(GPFlags.VILLAGER_TRADING, this.villagerTrading);
             return flagMap;
         }
 
         @SuppressWarnings("unchecked")
         public void setFlagValue(String flag, Object value) {
             switch (flag) {
-                case FLAGS_BLOCK_BREAK:
-                    this.blockBreak = (boolean) value;
+                case GPFlags.BLOCK_BREAK:
+                    this.blockBreak = (Tristate) value;
                     return;
-                case FLAGS_BLOCK_COMMANDS:
+                case GPFlags.BLOCK_COMMANDS:
                     this.blockCommands = (List<String>) value;
                     return;
-                case FLAGS_BLOCK_PLACE:
-                    this.blockPlace = (boolean) value;
+                case GPFlags.BLOCK_PLACE:
+                    this.blockPlace = (Tristate) value;
                     return;
-                case FLAGS_EXPLOSIONS:
-                    this.explosions = (boolean) value;
+                case GPFlags.EXPLOSIONS:
+                    this.explosions = (Tristate) value;
                     return;
-                case FLAGS_FIRE_SPREAD:
-                    this.fireSpread = (boolean) value;
+                case GPFlags.FIRE_SPREAD:
+                    this.fireSpread = (Tristate) value;
                     return;
-                case FLAGS_FORCE_DENY_ALL:
-                    this.forceDenyAll = (boolean) value;
+                case GPFlags.FORCE_DENY_ALL:
+                    this.forceDenyAll = (Tristate) value;
                     return;
-                case FLAGS_INTERACT_PRIMARY:
-                    this.interactPrimary = (boolean) value;
+                case GPFlags.INTERACT_PRIMARY:
+                    this.interactPrimary = (Tristate) value;
                     return;
-                case FLAGS_INTERACT_SECONDARY:
-                    this.interactSecondary = (boolean) value;
+                case GPFlags.INTERACT_SECONDARY:
+                    this.interactSecondary = (Tristate) value;
                     return;
-                case FLAGS_INVENTORY:
-                    this.inventory = (boolean) value;
+                case GPFlags.INVENTORY:
+                    this.inventory = (Tristate) value;
                     return;
-                case FLAGS_ITEM_DROP:
-                    this.itemDrop = (boolean) value;
+                case GPFlags.ITEM_DROP:
+                    this.itemDrop = (Tristate) value;
                     return;
-                case FLAGS_ITEM_PICKUP:
-                    this.itemPickup = (boolean) value;
+                case GPFlags.ITEM_PICKUP:
+                    this.itemPickup = (Tristate) value;
                     return;
-                case FLAGS_ITEM_USE:
-                    this.itemUse = (boolean) value;
+                case GPFlags.ITEM_USE:
+                    this.itemUse = (Tristate) value;
                     return;
-                case FLAGS_LAVA_FLOW:
-                    this.lavaFlow = (boolean) value;
+                case GPFlags.LAVA_FLOW:
+                    this.lavaFlow = (Tristate) value;
                     return;
-                case FLAGS_MOB_BLOCK_DAMAGE:
-                    this.mobBlockDamage = (boolean) value;
+                case GPFlags.MOB_BLOCK_DAMAGE:
+                    this.mobBlockDamage = (Tristate) value;
                     return;
-                case FLAGS_MOB_PLAYER_DAMAGE:
-                    this.mobPlayerDamage = (boolean) value;
+                case GPFlags.MOB_PLAYER_DAMAGE:
+                    this.mobPlayerDamage = (Tristate) value;
                     return;
-                case FLAGS_MOB_RIDING:
-                    this.mobRiding = (boolean) value;
+                case GPFlags.MOB_RIDING:
+                    this.mobRiding = (Tristate) value;
                     return;
-                case FLAGS_PORTAL_USE:
-                    this.portalUse = (boolean) value;
+                case GPFlags.PORTAL_USE:
+                    this.portalUse = (Tristate) value;
                     return;
-                case FLAGS_PROJECTILES_ANY:
-                    this.projectilesAny = (boolean) value;
+                case GPFlags.PROJECTILES_ANY:
+                    this.projectilesAny = (Tristate) value;
                     return;
-                case FLAGS_PROJECTILES_MONSTER:
-                    this.projectilesMonster = (boolean) value;
+                case GPFlags.PROJECTILES_MONSTER:
+                    this.projectilesMonster = (Tristate) value;
                     return;
-                case FLAGS_PROJECTILES_PLAYER:
-                    this.projectilesPlayer = (boolean) value;
+                case GPFlags.PROJECTILES_PLAYER:
+                    this.projectilesPlayer = (Tristate) value;
                     return;
-                case FLAGS_PVP:
-                    this.pvp = (boolean) value;
+                case GPFlags.PVP:
+                    this.pvp = (Tristate) value;
                     return;
-                case FLAGS_SLEEP:
-                    this.sleep = (boolean) value;
+                case GPFlags.SLEEP:
+                    this.sleep = (Tristate) value;
                     return;
-                case FLAGS_SPAWN_AMBIENTS:
-                    this.spawnAmbient = (boolean) value;
+                case GPFlags.SPAWN_AMBIENTS:
+                    this.spawnAmbient = (Tristate) value;
                     return;
-                case FLAGS_SPAWN_ANY:
-                    this.spawnAny = (boolean) value;
+                case GPFlags.SPAWN_ANY:
+                    this.spawnAny = (Tristate) value;
                     return;
-                case FLAGS_SPAWN_AQUATICS:
-                    this.spawnAquatic = (boolean) value;
+                case GPFlags.SPAWN_AQUATICS:
+                    this.spawnAquatic = (Tristate) value;
                     return;
-                case FLAGS_SPAWN_MONSTERS:
-                    this.spawnMonsters = (boolean) value;
+                case GPFlags.SPAWN_MONSTERS:
+                    this.spawnMonsters = (Tristate) value;
                     return;
-                case FLAGS_SPAWN_PASSIVES:
-                    this.spawnPassives = (boolean) value;
+                case GPFlags.SPAWN_PASSIVES:
+                    this.spawnPassives = (Tristate) value;
                     return;
-                case FLAGS_WATER_FLOW:
-                    this.waterFlow = (boolean) value;
+                case GPFlags.WATER_FLOW:
+                    this.waterFlow = (Tristate) value;
                     return;
-                case FLAGS_VILLAGER_TRADING:
-                    this.villagerTrading = (boolean) value;
+                case GPFlags.VILLAGER_TRADING:
+                    this.villagerTrading = (Tristate) value;
                     return;
                 default:
                     return;
@@ -372,63 +370,63 @@ public class ClaimStorageData {
 
         public Object getFlagValue(String flag) {
             switch (flag) {
-                case FLAGS_BLOCK_BREAK:
+                case GPFlags.BLOCK_BREAK:
                     return this.blockBreak;
-                case FLAGS_BLOCK_COMMANDS:
+                case GPFlags.BLOCK_COMMANDS:
                     return this.blockCommands;
-                case FLAGS_BLOCK_PLACE:
+                case GPFlags.BLOCK_PLACE:
                     return this.blockPlace;
-                case FLAGS_EXPLOSIONS:
+                case GPFlags.EXPLOSIONS:
                     return this.explosions;
-                case FLAGS_FIRE_SPREAD:
+                case GPFlags.FIRE_SPREAD:
                     return this.fireSpread;
-                case FLAGS_FORCE_DENY_ALL:
+                case GPFlags.FORCE_DENY_ALL:
                     return this.forceDenyAll;
-                case FLAGS_INTERACT_PRIMARY:
+                case GPFlags.INTERACT_PRIMARY:
                     return this.interactPrimary;
-                case FLAGS_INTERACT_SECONDARY:
+                case GPFlags.INTERACT_SECONDARY:
                     return this.interactSecondary;
-                case FLAGS_INVENTORY:
+                case GPFlags.INVENTORY:
                     return this.inventory;
-                case FLAGS_ITEM_DROP:
+                case GPFlags.ITEM_DROP:
                     return this.itemDrop;
-                case FLAGS_ITEM_PICKUP:
+                case GPFlags.ITEM_PICKUP:
                     return this.itemPickup;
-                case FLAGS_ITEM_USE:
+                case GPFlags.ITEM_USE:
                     return this.itemUse;
-                case FLAGS_LAVA_FLOW:
+                case GPFlags.LAVA_FLOW:
                     return this.lavaFlow;
-                case FLAGS_MOB_BLOCK_DAMAGE:
+                case GPFlags.MOB_BLOCK_DAMAGE:
                     return this.mobBlockDamage;
-                case FLAGS_MOB_PLAYER_DAMAGE:
+                case GPFlags.MOB_PLAYER_DAMAGE:
                     return this.mobPlayerDamage;
-                case FLAGS_MOB_RIDING:
+                case GPFlags.MOB_RIDING:
                     return this.mobRiding;
-                case FLAGS_PORTAL_USE:
+                case GPFlags.PORTAL_USE:
                     return this.portalUse;
-                case FLAGS_PROJECTILES_ANY:
+                case GPFlags.PROJECTILES_ANY:
                     return this.projectilesAny;
-                case FLAGS_PROJECTILES_MONSTER:
+                case GPFlags.PROJECTILES_MONSTER:
                     return this.projectilesMonster;
-                case FLAGS_PROJECTILES_PLAYER:
+                case GPFlags.PROJECTILES_PLAYER:
                     return this.projectilesPlayer;
-                case FLAGS_PVP:
+                case GPFlags.PVP:
                     return this.pvp;
-                case FLAGS_SLEEP:
+                case GPFlags.SLEEP:
                     return this.sleep;
-                case FLAGS_SPAWN_AMBIENTS:
+                case GPFlags.SPAWN_AMBIENTS:
                     return this.spawnAmbient;
-                case FLAGS_SPAWN_ANY:
+                case GPFlags.SPAWN_ANY:
                     return this.spawnAny;
-                case FLAGS_SPAWN_AQUATICS:
+                case GPFlags.SPAWN_AQUATICS:
                     return this.spawnAquatic;
-                case FLAGS_SPAWN_MONSTERS:
+                case GPFlags.SPAWN_MONSTERS:
                     return this.spawnMonsters;
-                case FLAGS_SPAWN_PASSIVES:
+                case GPFlags.SPAWN_PASSIVES:
                     return this.spawnPassives;
-                case FLAGS_WATER_FLOW:
+                case GPFlags.WATER_FLOW:
                     return this.waterFlow;
-                case FLAGS_VILLAGER_TRADING:
+                case GPFlags.VILLAGER_TRADING:
                     return this.villagerTrading;
                 default:
                     return null;

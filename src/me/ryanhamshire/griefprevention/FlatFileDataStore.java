@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention;
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
+import me.ryanhamshire.griefprevention.configuration.ClaimStorageData.SubDivisionDataNode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
@@ -47,11 +48,10 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 //manages data stored in the file system
@@ -153,7 +153,6 @@ public class FlatFileDataStore extends DataStore {
     }
 
     void loadClaimData(File[] files) throws Exception {
-        ConcurrentHashMap<Claim, UUID> orphans = new ConcurrentHashMap<>();
         for (int i = 0; i < files.length; i++) {
             if (files[i].isFile()) // avoids folders
             {
@@ -168,13 +167,7 @@ public class FlatFileDataStore extends DataStore {
                 }
 
                 try {
-                    ArrayList<UUID> out_parentID = new ArrayList<UUID>(); // hacky output parameter
-                    Claim claim = this.loadClaim(files[i], out_parentID, claimID);
-                    if (out_parentID.size() == 0) {
-                        this.addClaim(claim, false);
-                    } else {
-                        orphans.put(claim, out_parentID.get(0));
-                    }
+                   this.loadClaim(files[i], claimID);
                 }
 
                 // if there's any problem with the file's content, log an error message and skip it
@@ -187,15 +180,6 @@ public class FlatFileDataStore extends DataStore {
                         GriefPrevention.addLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
                     }
                 }
-            }
-        }
-
-        // link children to parents
-        for (Claim child : orphans.keySet()) {
-            Claim parent = this.getClaim(child.world, orphans.get(child));
-            if (parent != null) {
-                child.parent = parent;
-                this.addClaim(child, false);
             }
         }
     }
@@ -232,11 +216,11 @@ public class FlatFileDataStore extends DataStore {
         }
     }
 
-    Claim loadClaim(File file, ArrayList<UUID> out_parentID, UUID claimID) throws IOException, Exception {
-        return this.loadClaim(file, out_parentID, file.lastModified(), claimID);
+    Claim loadClaim(File file, UUID claimID) throws IOException, Exception {
+        return this.loadClaim(file, file.lastModified(), claimID);
     }
 
-    Claim loadClaim(File claimFile, ArrayList<UUID> out_parentID, long lastModifiedDate, UUID claimID)
+    Claim loadClaim(File claimFile, long lastModifiedDate, UUID claimID)
             throws Exception {
         Claim claim;
 
@@ -265,7 +249,7 @@ public class FlatFileDataStore extends DataStore {
         // owner
         String ownerIdentifier = claimData.getConfig().ownerUniqueId;
         UUID ownerID = null;
-        if (!ownerIdentifier.isEmpty()) {
+        if (ownerIdentifier != null && !ownerIdentifier.isEmpty()) {
             try {
                 ownerID = UUID.fromString(ownerIdentifier);
             } catch (Exception ex) {
@@ -278,9 +262,6 @@ public class FlatFileDataStore extends DataStore {
         List<String> containers = claimData.getConfig().containers;
         List<String> accessors = claimData.getConfig().accessors;
         List<String> managers = claimData.getConfig().managers;
-        if (claimData.getConfig().parentUniqueId != null && !claimData.getConfig().parentUniqueId.equals("")) {
-            out_parentID.add(UUID.fromString(claimData.getConfig().parentUniqueId));
-        }
 
         // instantiate
         claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builders, containers, accessors, managers, claimID);
@@ -290,10 +271,32 @@ public class FlatFileDataStore extends DataStore {
         claim.claimData = claimData;
         claim.context = new Context("claim", claim.id.toString());
 
-        if (this.worldClaims.get(world.getProperties().getUniqueId()) == null) {
-            this.worldClaims.put(world.getProperties().getUniqueId(), new ArrayList<Claim>());
-        } else {
-            this.worldClaims.get(world.getProperties().getUniqueId()).add(claim);
+        // add parent claim first
+        this.addClaim(claim, false);
+        // check for subdivisions
+        for(Map.Entry<UUID, SubDivisionDataNode> mapEntry : claimData.getConfig().subDivisions.entrySet()) {
+            SubDivisionDataNode subDivisionData = mapEntry.getValue();
+            Vector3i subLesserBoundaryCornerPos = positionFromString(subDivisionData.lesserBoundaryCornerPos);
+            Vector3i subGreaterBoundaryCornerPos = positionFromString(subDivisionData.greaterBoundaryCornerPos);
+            Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);
+            Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
+
+            List<String> subBuilders = subDivisionData.builders;
+            List<String> subContainers = subDivisionData.containers;
+            List<String> subAccessors = subDivisionData.accessors;
+            List<String> subManagers = subDivisionData.managers;
+
+            Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, null, subBuilders, subContainers, subAccessors, subManagers, mapEntry.getKey());
+            subDivision.modifiedDate = new Date(lastModifiedDate);
+            subDivision.id = mapEntry.getKey();
+            subDivision.world = subLesserBoundaryCorner.getExtent();
+            subDivision.claimData = claimData;
+            subDivision.context = new Context("claim", subDivision.id.toString());
+            subDivision.parent = claim;
+            subDivision.isSubDivision = true;
+            subDivision.subDivisionData = subDivisionData;
+            // add subdivision
+            this.addClaim(subDivision, false);
         }
         return claim;
     }
@@ -311,15 +314,23 @@ public class FlatFileDataStore extends DataStore {
         if (claim.ownerID != null) {
             claimData.getConfig().ownerUniqueId = claim.ownerID.toString();
         }
-        if (claim.parent != null) {
-            claimData.getConfig().parentUniqueId = claim.parent.id.toString();
-        }
+        if (claim.isSubDivision) {
+            if (claim.subDivisionData == null) {
+                claim.subDivisionData = new SubDivisionDataNode();
+            }
 
-        claimData.getConfig().worldUniqueId = claim.world.getUniqueId().toString();
-        claimData.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
-        claimData.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
-        claim.getPermissions(claimData.getConfig().builders, claimData.getConfig().containers, claimData.getConfig().accessors,
-                claimData.getConfig().managers);
+            claim.subDivisionData.lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
+            claim.subDivisionData.greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
+            claim.getPermissions(claim.subDivisionData.builders, claim.subDivisionData.containers, claim.subDivisionData.accessors,
+                    claim.subDivisionData.managers);
+            claimData.getConfig().subDivisions.put(claim.id, claim.subDivisionData);
+        } else {
+            claimData.getConfig().worldUniqueId = claim.world.getUniqueId().toString();
+            claimData.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
+            claimData.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
+            claim.getPermissions(claimData.getConfig().builders, claimData.getConfig().containers, claimData.getConfig().accessors,
+                    claimData.getConfig().managers);
+        }
 
         claimData.save();
     }
@@ -338,7 +349,8 @@ public class FlatFileDataStore extends DataStore {
                 claimDataFolderPath = rootPath.resolve(claim.world.getName()).resolve(claimDataPath);
             }
 
-            File claimFile = new File(claimDataFolderPath + File.separator + claim.id);
+            UUID claimID = claim.parent != null ? claim.parent.id : claim.id;
+            File claimFile = new File(claimDataFolderPath + File.separator + claimID);
             if (!claimFile.exists()) {
                 claimFile.createNewFile();
             }

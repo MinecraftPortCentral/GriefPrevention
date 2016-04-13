@@ -378,11 +378,14 @@ public abstract class DataStore {
 
     // adds a claim to the datastore, making it an effective claim
     void addClaim(Claim newClaim, boolean writeToStorage) {
-        PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
-        if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
-            ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
+        // check if subdivision claim
+        if (newClaim.ownerID != null) {
+            PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
+            if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
+                ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
+            }
+            ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
         }
-        ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
 
         // subdivisions are added under their parent, not directly to the hash map for direct search
         if (newClaim.parent != null) {
@@ -504,18 +507,22 @@ public abstract class DataStore {
         if (claim.parent != null) {
             Claim parentClaim = claim.parent;
             parentClaim.children.remove(claim);
+            parentClaim.claimData.getConfig().subDivisions.remove(claim.id);
+            parentClaim.claimData.save();
         }
 
         // mark as deleted so any references elsewhere can be ignored
         claim.inDataStore = false;
 
         // remove from memory
-        Iterator<Claim> iterator = this.worldClaims.get(claim.world.getProperties().getUniqueId()).iterator();
-        while (iterator.hasNext()) {
-            Claim worldClaim = iterator.next();
-            if (worldClaim.id == claim.id) {
-                iterator.remove();
-                break;
+        if (claim.parent == null) {
+            Iterator<Claim> iterator = this.worldClaims.get(claim.world.getProperties().getUniqueId()).iterator();
+            while (iterator.hasNext()) {
+                Claim worldClaim = iterator.next();
+                if (worldClaim.id == claim.id) {
+                    iterator.remove();
+                    break;
+                }
             }
         }
 
@@ -531,7 +538,9 @@ public abstract class DataStore {
         }
 
         // remove from secondary storage
-        this.deleteClaimFromSecondaryStorage(claim);
+        if (!claim.isSubDivision) {
+            this.deleteClaimFromSecondaryStorage(claim);
+        }
 
         // update player data
         if (claim.ownerID != null) {
@@ -670,6 +679,10 @@ public abstract class DataStore {
         ArrayList<Claim> claimsToCheck;
         if (newClaim.parent != null) {
             claimsToCheck = newClaim.parent.children;
+            newClaim.isSubDivision = true;
+            if (newClaim.claimData == null) {
+                newClaim.claimData = newClaim.parent.claimData;
+            }
         } else {
             claimsToCheck = (ArrayList<Claim>) this.worldClaims.get(world.getProperties().getUniqueId());
         }
@@ -1041,12 +1054,11 @@ public abstract class DataStore {
                 result.claim.children.add(subdivision);
             }
 
-            // save those changes
-            this.saveClaim(result.claim);
-
             // make original claim ineffective (it's still in the hash map, so let's make it ignored)
             claim.inDataStore = false;
             this.deleteClaim(claim);
+            // save those changes
+            this.saveClaim(result.claim);
         }
 
         return result;

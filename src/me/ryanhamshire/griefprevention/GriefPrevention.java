@@ -419,7 +419,7 @@ public class GriefPrevention {
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
-                                                        .put("undefined", Tristate.UNDEFINED)
+                                                        .put("default", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
                                                         .build())), onlyOne(GenericArguments.remainingJoinedStrings(Text.of("val")))))))))
                                 .executor(new CommandClaimFlag(GPPermissions.COMMAND_CLAIMFLAG)).build());

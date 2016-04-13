@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.task.VisualizationApplicationTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import net.minecraft.block.Block;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -155,6 +156,7 @@ public class Visualization {
 
         ArrayList<Transaction<BlockSnapshot>> newElements = new ArrayList<Transaction<BlockSnapshot>>();
 
+        // TODO: move this to config so users can customize types
         if (visualizationType == VisualizationType.Claim) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.GOLD_BLOCK;
@@ -313,12 +315,8 @@ public class Visualization {
     // helper method for above. allows visualization blocks to sit underneath
     // partly transparent blocks like grass and fence
     private static boolean isTransparent(BlockType block, boolean waterIsTransparent) {
-        return (block != BlockTypes.SNOW && (block == BlockTypes.AIR ||
-                block == BlockTypes.FENCE ||
-                block == BlockTypes.STANDING_SIGN ||
-                block == BlockTypes.WALL_SIGN ||
-                (waterIsTransparent && block == BlockTypes.WATER) ||
-                !((net.minecraft.block.Block) block).getMaterial().blocksLight()));
+        Block mcBlock = (net.minecraft.block.Block) block;
+        return !mcBlock.isOpaqueCube();
     }
 
     public static Visualization fromClaims(Iterable<Claim> claims, int height, VisualizationType type, Location<World> locality) {

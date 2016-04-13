@@ -76,6 +76,7 @@ public class GPPermissions {
     public static final String SPAWN_MONSTERS = "griefprevention.flag.spawn-monsters";
     public static final String SPAWN_PASSIVES = "griefprevention.flag.spawn-passives";
     public static final String WATER_FLOW = "griefprevention.flag.water-flow";
+    public static final String VILLAGER_TRADING = "griefprevention.flag.villager-trading";
 
     // COMMAND PERMISSIONS
     public static final String COMMAND_ABANDON = "griefprevention.command.abandon";
@@ -90,12 +91,13 @@ public class GPPermissions {
     public static final String COMMAND_BASICCLAIMS = "griefprevention.command.basicclaims";
     public static final String COMMAND_CLAIM = "griefprevention.command.claim";
     public static final String COMMAND_CLAIMBOOK = "griefprevention.command.claimbook";
-    public static final String COMMAND_CLAIMBUY = "griefprevention.command.claimbuy";
+    public static final String COMMAND_CLAIMBUY = "griefprevention.command.buysellclaimblocks";
     public static final String COMMAND_CLAIMFLAG = "griefprevention.command.claimflag";
-    public static final String COMMAND_CLAIMDELETE = "griefprevention.command.claimdelete";
-    public static final String COMMAND_CLAIMDELETEALL = "griefprevention.command.claimdeleteall";
+    public static final String COMMAND_CLAIMDELETE = "griefprevention.command.deleteclaims";
+    public static final String COMMAND_CLAIMDELETEALL = "griefprevention.command.deleteallclaims";
     public static final String COMMAND_CLAIMDELETEALLADMIN = "griefprevention.command.claimdeletealladmin";
     public static final String COMMAND_CLAIMLIST = "griefprevention.command.claimlist";
+    public static final String COMMAND_CLAIMNAME = "griefprevention.command.claimname";
     public static final String COMMAND_CLAIMSELLBLOCKS = "griefprevention.command.claimsellblocks";
     public static final String COMMAND_CONTAINERTRUST = "griefprevention.command.containertrust";
     public static final String COMMAND_DEBUG = "griefprevention.command.debug";

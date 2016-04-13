@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.event;
 import com.google.common.collect.Sets;
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.DataStore;
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.IpBanInfo;
@@ -1246,7 +1247,7 @@ public class PlayerEventHandler {
 
         // if the entity is an animal, apply container rules
         if (claim != null && entity instanceof Animal
-                || (entity.getType() == EntityTypes.VILLAGER && !claim.getClaimData().getConfig().flags.villagerTrading)) {
+                || (entity.getType() == EntityTypes.VILLAGER && GPFlags.getClaimFlagPermission(claim, GPFlags.VILLAGER_TRADING) == Tristate.FALSE)) {
                 String denyReason = claim.allowContainers(player, entity.getLocation());
             if (denyReason != null) {
                 String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
@@ -1481,15 +1482,15 @@ public class PlayerEventHandler {
     @Listener
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event) {
         Optional<Player> playerOpt = event.getCause().first(Player.class);
-        if (!playerOpt.isPresent() || !event.getTargetBlock().getLocation().isPresent()) {
+        if (!playerOpt.isPresent()) {
             return;
         }
 
         Player player = playerOpt.get();
         BlockSnapshot clickedBlock = event.getTargetBlock();
         Optional<ItemStack> itemInHand = player.getItemInHand();
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        Claim playerClaim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, null);
+
+        // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
         if (itemInHand.isPresent() && GriefPrevention.isItemBanned(player, itemInHand.get().getItem(), (
                 ((net.minecraft.item.ItemStack)(Object) itemInHand.get()).getMetadata()))) {
@@ -1497,21 +1498,27 @@ public class PlayerEventHandler {
             GriefPrevention.sendMessage(player, TextColors.RED, Messages.ItemBanned, itemInHand.get().getItem().getId());
             event.setCancelled(true);
             return;
-        } else {
-            if (playerData != null && !playerData.ignoreClaims && playerClaim != null) {
-                // following a siege where the defender lost, the claim will allow everyone access for a time
-                if (playerClaim.doorsOpen && activeConfig.getConfig().siege.winnerAccessibleBlocks.contains(event.getTargetBlock().getState().getType().getId())) {
-                    if (event.getTargetBlock().getState().getType() == BlockTypes.IRON_DOOR) {
-                        ((BlockDoor) event.getTargetBlock().getState().getType()).toggleDoor((net.minecraft.world.World) player.getWorld(), VecHelper.toBlockPos(event.getTargetBlock().getPosition()), true);
-                    }
+        }
 
-                    return; // allow
-                } else {
-                    String denyReason = playerClaim.allowAccess(player.getWorld(), player);
-                    if(denyReason != null) {
-                        GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                    }
+        if (!clickedBlock.getLocation().isPresent()) {
+            return;
+        }
+
+        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        Claim playerClaim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, null);
+        if (playerData != null && !playerData.ignoreClaims && playerClaim != null) {
+            // following a siege where the defender lost, the claim will allow everyone access for a time
+            if (playerClaim.doorsOpen && activeConfig.getConfig().siege.winnerAccessibleBlocks.contains(clickedBlock.getState().getType().getId())) {
+                if (clickedBlock.getState().getType() == BlockTypes.IRON_DOOR) {
+                    ((BlockDoor) clickedBlock.getState().getType()).toggleDoor((net.minecraft.world.World) player.getWorld(), VecHelper.toBlockPos(event.getTargetBlock().getPosition()), true);
+                }
+
+                return; // allow
+            } else {
+                String denyReason = playerClaim.allowAccess(player.getWorld(), player);
+                if(denyReason != null) {
+                    GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                    event.setCancelled(true);
                 }
             }
         }

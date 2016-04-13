@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.event;
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.DataStore;
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
@@ -34,7 +35,6 @@ import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
-import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import net.minecraft.entity.EnumCreatureType;
 import org.spongepowered.api.Sponge;
@@ -43,8 +43,6 @@ import org.spongepowered.api.effect.potion.PotionEffectTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.explosive.Explosive;
-import org.spongepowered.api.entity.living.Ambient;
-import org.spongepowered.api.entity.living.Aquatic;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.monster.Monster;
 import org.spongepowered.api.entity.living.player.Player;
@@ -65,7 +63,6 @@ import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
@@ -76,7 +73,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -116,7 +112,9 @@ public class EntityEventHandler {
             }
         }
 
-        event.setCancelled(!claim.getClaimData().getConfig().flags.explosions);
+        if (GPFlags.getClaimFlagPermission(claim, GPFlags.EXPLOSIONS) != Tristate.TRUE) {
+            event.setCancelled(true);
+        }
     }
 
     // when a creature spawns...
@@ -128,64 +126,31 @@ public class EntityEventHandler {
             public boolean test(Entity entity) {
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
                 if (claim != null) {
-                    if (user.isPresent() && GriefPrevention.instance.permPluginInstalled) {
+                    if (user.isPresent()) {
                         net.minecraft.entity.Entity nmsEntity = (net.minecraft.entity.Entity) entity;
                         User spongeUser = user.get();
-                        Set<Context> contextSet = ImmutableSet.of(claim.getContext());
 
-                        if (spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_ANY) != Tristate.UNDEFINED) {
-                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_ANY);
-                            if (result != Tristate.TRUE) {
-                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn entities within claim.]", CustomLogEntryTypes.Debug);
-                            }
+                        if (GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_ANY) == Tristate.TRUE) {
+                            return false;
+                        } else if (GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_ANY) == Tristate.FALSE) {
+                            GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn entities within claim.]", CustomLogEntryTypes.Debug);
                             return true;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.AMBIENT, false)
-                                && spongeUser.getPermissionValue(contextSet, GPPermissions
-                                .SPAWN_AMBIENTS) != Tristate.UNDEFINED) {
-                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_AMBIENTS);
-                            if (result != Tristate.TRUE) {
-                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
-                            }
+                                && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_AMBIENTS) == Tristate.FALSE) {
+                            GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
                             return true;
-                        } else if (nmsEntity.isCreatureType(EnumCreatureType.WATER_CREATURE, false) && spongeUser.getPermissionValue(contextSet,
-                                GPPermissions.SPAWN_AQUATICS) != Tristate.UNDEFINED) {
-                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_AQUATICS);
-                            if (result != Tristate.TRUE) {
-                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
-                            }
+                        } else if (nmsEntity.isCreatureType(EnumCreatureType.WATER_CREATURE, false) && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_AQUATICS) != Tristate.TRUE) {
+                            GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
                             return true;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.MONSTER, false)
-                                && spongeUser.getPermissionValue(contextSet, GPPermissions
-                                .SPAWN_MONSTERS) != Tristate.UNDEFINED) {
-                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_MONSTERS);
-                            if (result != Tristate.TRUE) {
-                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
-                            }
+                                && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_MONSTERS) == Tristate.FALSE) {
+                            GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
                             return true;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.CREATURE, false)
-                                && spongeUser.getPermissionValue(contextSet, GPPermissions
-                                .SPAWN_PASSIVES) != Tristate.UNDEFINED) {
-                            Tristate result = spongeUser.getPermissionValue(contextSet, GPPermissions.SPAWN_PASSIVES);
-                            if (result != Tristate.TRUE) {
-                                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn passives within claim.]", CustomLogEntryTypes.Debug);
-                            }
+                                && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_PASSIVES) == Tristate.FALSE) {
+                            GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn passives within claim.]", CustomLogEntryTypes.Debug);
                             return true;
                         }
-                    }
-
-                    ClaimStorageData.ClaimDataNode claimStorageData = claim.getClaimData().getConfig();
-                    if (!claimStorageData.flags.spawnAny) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn entities within claim.]", CustomLogEntryTypes.Debug);
-                        return false;
-                    } else if (!claimStorageData.flags.spawnAmbient && entity instanceof Ambient) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
-                        return false;
-                    } else if (!claimStorageData.flags.spawnAquatic && entity instanceof Aquatic) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
-                        return false;
-                    } else if (!claimStorageData.flags.spawnMonsters && entity instanceof Monster) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
-                        return false;
                     }
                 }
                 return true;
@@ -278,7 +243,7 @@ public class EntityEventHandler {
             } else if (claim != null) {
                 if (entity instanceof Player) {
                     if (entityDamageSource.getSource() instanceof Monster) {
-                        if (!claim.getClaimData().getConfig().flags.mobPlayerDamage) {
+                        if (GPFlags.getClaimFlagPermission(claim, GPFlags.MOB_PLAYER_DAMAGE) != Tristate.TRUE) {
                             GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
                             return true;
                         }
@@ -343,7 +308,7 @@ public class EntityEventHandler {
                                 (attackerClaim.isAdminClaim() && attackerClaim.parent == null
                                         && activeConfig.getConfig().pvp.protectPlayersInAdminClaims ||
                                         attackerClaim.isAdminClaim() && attackerClaim.parent != null
-                                                && activeConfig.getConfig().pvp.protectPlayersInAdminSubClaims
+                                                && activeConfig.getConfig().pvp.protectPlayersInAdminSubDivisions
                                         || !attackerClaim.isAdminClaim() && activeConfig.getConfig().pvp.protectPlayersInClaims)) {
                             attackerData.lastClaim = attackerClaim;
                             PreventPvPEvent pvpEvent = new PreventPvPEvent(attackerClaim);
@@ -361,7 +326,7 @@ public class EntityEventHandler {
                                 (defenderClaim.isAdminClaim() && defenderClaim.parent == null
                                         && activeConfig.getConfig().pvp.protectPlayersInAdminClaims ||
                                         defenderClaim.isAdminClaim() && defenderClaim.parent != null
-                                                && activeConfig.getConfig().pvp.protectPlayersInAdminSubClaims
+                                                && activeConfig.getConfig().pvp.protectPlayersInAdminSubDivisions
                                         ||
                                         !defenderClaim.isAdminClaim() && activeConfig.getConfig().pvp.protectPlayersInClaims)) {
                             defenderData.lastClaim = defenderClaim;

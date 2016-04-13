@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.claim;
 
 import com.google.common.collect.ImmutableSet;
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
@@ -32,6 +33,7 @@ import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.SiegeData;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
+import me.ryanhamshire.griefprevention.configuration.ClaimStorageData.SubDivisionDataNode;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -90,6 +92,7 @@ public class Claim implements ContextSource {
     public UUID ownerID;
 
     public ClaimStorageData claimData;
+    public SubDivisionDataNode subDivisionData;
 
     // list of players who (beyond the claim owner) have permission to grant permissions in this claim
     public ArrayList<String> managers = new ArrayList<String>();
@@ -119,6 +122,8 @@ public class Claim implements ContextSource {
 
     // items not allowed to be used in claim
     public Map<ItemType, List<Integer>> bannedItemIds;
+
+    public boolean isSubDivision = false;
 
     // whether or not this is an administrative claim
     // administrative claims are created and maintained by players with the
@@ -364,6 +369,7 @@ public class Claim implements ContextSource {
         return GriefPrevention.instance.dataStore.getMessage(Messages.OnlyOwnersModifyClaims, this.getOwnerName());
     }
 
+    // TODO: move this to config so it can be customized
     private List<BlockType> placeableFarmingBlocksList = Arrays.asList(
             BlockTypes.PUMPKIN_STEM,
             BlockTypes.WHEAT,
@@ -513,18 +519,8 @@ public class Claim implements ContextSource {
             }
         }
 
-        if (GriefPrevention.instance.permPluginInstalled) {
-            Set<Context> contextSet = ImmutableSet.of(getContext());
-            Tristate perm = user.getPermissionValue(contextSet, GPPermissions.BLOCK_BREAK);
-            if (perm == Tristate.FALSE) {
-                return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
-            } else if (perm == Tristate.TRUE) {
-                return null;
-            } else { // undefined
-                if (!this.getClaimData().getConfig().flags.blockBreak) {
-                    return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
-                }
-            }
+        if (GPFlags.getClaimFlagPermission(user, this, GPFlags.BLOCK_BREAK) == Tristate.FALSE) {
+            return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
         }
 
         // If we reached this point, allow the break

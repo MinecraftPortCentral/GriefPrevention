@@ -5,6 +5,7 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.configuration.ClaimStorageData.ClaimDataFlagsCategory;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -48,8 +49,8 @@ public class CommandClaimFlag extends BaseCommand {
         if (claim != null) {
             if (flag.isPresent()) {
                 if (player.hasPermission(this.basePerm + "." + flag.get().toLowerCase())) {
-                    if (value.isPresent() && (value.get() == Tristate.TRUE || value.get() == Tristate.FALSE)) {
-                        setFlagValue(src, claim, flag.get(), value.get().asBoolean());
+                    if (value.isPresent()) {
+                        setFlagValue(src, claim, flag.get(), value.get());
                     } else if (val.isPresent()) {
                         if (val.get().contains(",") && !ctx.hasAny("r")) {
                             ArrayList<String> input = Lists.newArrayList();
@@ -64,22 +65,29 @@ public class CommandClaimFlag extends BaseCommand {
                             input.add(val.get());
                             removeFromFlagValue(src, claim, flag.get(), input);
                         }
-                    } else {
-                        setFlagValue(src, claim, flag.get(), value.get());
                     }
                 } else {
                     GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
                 }
             } else {
                 List<Text> flagList = Lists.newArrayList();
-                for (String flagName : claim.getClaimData().getConfig().flags.getFlagMap().keySet()) {
-                    Text flagValue = Text.builder().append(Text.of(TextColors.GRAY, "Flag: ", flagName, "\n"))
+                ClaimDataFlagsCategory flagsCat = claim.getClaimData().getConfig().flags;
+                if (claim.isSubDivision) {
+                    flagsCat = claim.subDivisionData.flags;
+                }
+
+                for (String flagName : flagsCat.getFlagMap().keySet()) {
+                    String flagValue = flagsCat.getFlagValue(flagName).toString().toLowerCase();
+                    if (flagValue.equalsIgnoreCase("undefined")) {
+                        flagValue = "default";
+                    }
+                    Text flagText = Text.builder().append(Text.of(TextColors.GRAY, "Flag: ",TextColors.GREEN, flagName, "\n"))
                             .append(Text.builder()
                                     .append(Text.of(TextColors.GOLD, "Value: "),
-                                            Text.of(claim.getClaimData().getConfig().flags.getFlagValue(flagName).toString()), Text.of("\n"))
+                                            Text.of(flagValue.toString()), Text.of("\n"))
                                     .build())
                             .build();
-                    flagList.add(flagValue);
+                    flagList.add(flagText);
                 }
 
                 PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
@@ -95,10 +103,14 @@ public class CommandClaimFlag extends BaseCommand {
 
     public static void setFlagValue(CommandSource src, Claim claim, String flag, Object value) {
         if (claim.getClaimData().getConfig().flags.getFlagValue(flag) != null) {
-            if (claim.getClaimData().getConfig().flags.getFlagValue(flag).getClass().equals(value.getClass())) {
-                claim.getClaimData().getConfig().flags.setFlagValue(flag, value);
+            try {
+                if (claim.isSubDivision) {
+                    claim.subDivisionData.flags.setFlagValue(flag, value);
+                } else {
+                    claim.getClaimData().getConfig().flags.setFlagValue(flag, value);
+                }
                 src.sendMessage(Text.of(TextColors.GREEN, "Set value of ", flag, " to ", value.toString()));
-            } else {
+            } catch (Throwable t) {
                 src.sendMessage(Text.of(TextColors.RED, "Value types not compatible!"));
             }
         } else {
@@ -108,13 +120,19 @@ public class CommandClaimFlag extends BaseCommand {
 
     @SuppressWarnings("unchecked")
     public static void removeFromFlagValue(CommandSource src, Claim claim, String flag, ArrayList<String> value) {
-        if (claim.getClaimData().getConfig().flags.getFlagValue(flag) != null) {
-            if (claim.getClaimData().getConfig().flags.getFlagValue(flag).getClass().equals(value.getClass())) {
-                ArrayList<String> newValue = (ArrayList<String>) claim.getClaimData().getConfig().flags.getFlagValue(flag);
+        ClaimDataFlagsCategory flagsCat = claim.getClaimData().getConfig().flags;
+        if (claim.isSubDivision) {
+            flagsCat = claim.subDivisionData.flags;
+        }
+
+        if (flagsCat.getFlagValue(flag) != null) {
+            if (flagsCat.getFlagValue(flag).getClass().equals(value.getClass())) {
+                ArrayList<String> newValue = null;
+                newValue = (ArrayList<String>) flagsCat.getFlagValue(flag);
                 newValue.removeAll(value);
-                claim.getClaimData().getConfig().flags.setFlagValue(flag, newValue);
+                flagsCat.setFlagValue(flag, newValue);
                 src.sendMessage(Text.of(TextColors.GREEN, "Set value of ", flag, " to ",
-                        claim.getClaimData().getConfig().flags.getFlagValue(flag).toString()));
+                        flagsCat.getFlagValue(flag).toString()));
             } else {
                 src.sendMessage(Text.of(TextColors.RED, "Value types not compatible!"));
             }
