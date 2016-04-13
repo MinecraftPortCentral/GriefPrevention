@@ -1,13 +1,11 @@
 package me.ryanhamshire.griefprevention;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.util.Tristate;
 
-import java.util.Map;
 import java.util.Set;
 
 public class GPFlags {

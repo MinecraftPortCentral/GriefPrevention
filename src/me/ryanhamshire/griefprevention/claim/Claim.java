@@ -154,7 +154,7 @@ public class Claim implements ContextSource {
             return false;
         }
 
-        if (this.allowAccess(defender.getWorld(), defender) != null) {
+        if (this.allowAccess(defender) != null) {
             return false;
         }
 
@@ -528,7 +528,7 @@ public class Claim implements ContextSource {
     }
 
     // access permission check
-    public String allowAccess(World world, User user) {
+    public String allowAccess(User user) {
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
@@ -571,7 +571,7 @@ public class Claim implements ContextSource {
 
         // permission inheritance for subdivisions
         if (this.parent != null) {
-            return this.parent.allowAccess(world, user);
+            return this.parent.allowAccess(user);
         }
 
         // catch-all error message for all other cases

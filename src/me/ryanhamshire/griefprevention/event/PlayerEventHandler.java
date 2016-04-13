@@ -622,7 +622,7 @@ public class PlayerEventHandler {
         if (isMonitoredCommand) {
             if (claim != null) {
                 playerData.lastClaim = claim;
-                String reason = claim.allowAccess(player.getWorld(), player);
+                String reason = claim.allowAccess(player);
                 if (reason != null) {
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, reason));
                     GriefPrevention.addLogEntry("[Event: MessageChannelEvent.Chat][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Monitored command.]", CustomLogEntryTypes.Debug);
@@ -1018,7 +1018,7 @@ public class PlayerEventHandler {
             Claim toClaim = this.dataStore.getClaimAt(event.getToTransform().getLocation(), false, playerData.lastClaim);
             if (toClaim != null) {
                 playerData.lastClaim = toClaim;
-                String denyReason = toClaim.allowAccess(player.getWorld(), player);
+                String denyReason = toClaim.allowAccess(player);
                 if (denyReason != null) {
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
                     GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport.TargetPlayer][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
@@ -1138,7 +1138,7 @@ public class PlayerEventHandler {
 
         if (event instanceof InteractEntityEvent.Primary) {
             if (claim != null) {
-                String denyReason = claim.allowAccess(player.getWorld(), player);
+                String denyReason = claim.allowAccess(player);
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -1234,7 +1234,7 @@ public class PlayerEventHandler {
 
                 // for boats, apply access rules
                 else if (entity instanceof Boat) {
-                    String denyReason = claim.allowAccess(player.getWorld(), player);
+                    String denyReason = claim.allowAccess(player);
                     if (denyReason != null) {
                         player.sendMessage(Text.of(denyReason));
                         GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
@@ -1515,7 +1515,7 @@ public class PlayerEventHandler {
 
                 return; // allow
             } else {
-                String denyReason = playerClaim.allowAccess(player.getWorld(), player);
+                String denyReason = playerClaim.allowAccess(player);
                 if(denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -1577,7 +1577,7 @@ public class PlayerEventHandler {
             if (claim != null) {
                 playerData.lastClaim = claim;
 
-                String denyReason = claim.allowAccess(player.getWorld(), player);
+                String denyReason = claim.allowAccess(player);
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -1595,7 +1595,7 @@ public class PlayerEventHandler {
             if (claim != null) {
                 playerData.lastClaim = claim;
 
-                String denyReason = claim.allowAccess(player.getWorld(), player);
+                String denyReason = claim.allowAccess(player);
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -1655,7 +1655,7 @@ public class PlayerEventHandler {
                     playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
                 Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
                 if (claim != null) {
-                    String denyReason = claim.allowAccess(player.getWorld(), player);
+                    String denyReason = claim.allowAccess(player);
                     if (denyReason != null) {
                         GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                         GriefPrevention.sendMessage(player, TextMode.Err, denyReason);

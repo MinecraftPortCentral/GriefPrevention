@@ -977,7 +977,7 @@ public abstract class DataStore {
         }
 
         // player must have some level of permission to be sieged in a claim
-        if (claim.allowAccess(player.getWorld(), player) != null) {
+        if (claim.allowAccess(player) != null) {
             return;
         }
 

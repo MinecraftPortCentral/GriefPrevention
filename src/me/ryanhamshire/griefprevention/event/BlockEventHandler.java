@@ -90,13 +90,13 @@ public class BlockEventHandler {
         Location<World> location = player.getLocation();
         Claim claim = this.dataStore.getClaimAt(location, false, null);
         if (claim != null) {
-            String reason = claim.allowAccess(player.getWorld(), player);
+            String reason = claim.allowAccess(player);
             if (reason != null) {
                 if (event.getCause().root() instanceof Player) {
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, Messages.NoDropsAllowed));
                 }
 
-                GriefPrevention.addLogEntry("[Event: DropItemEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + reason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addLogEntry("1[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + reason + "]", CustomLogEntryTypes.Debug);
                 event.setCancelled(true);
             }
         }
@@ -159,10 +159,10 @@ public class BlockEventHandler {
                     return; // allow siege mode
                 }
             }
-            String denyReason = claim.allowAccess(claim.world, user.get());
+            String denyReason = claim.allowAccess(user.get());
             if (denyReason != null) {
                 if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
-                    GriefPrevention.addLogEntry("[Event: CollideBlockEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addLogEntry("[Event: CollideBlockEvent][RootCause: " + event.getCause().root() + "][TargetBlock: " + event.getTargetBlock() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                  }
                 event.setCancelled(true);
             }
@@ -181,9 +181,9 @@ public class BlockEventHandler {
             return;
         }
 
-        String denyReason = targetClaim.allowAccess(targetClaim.world, user.get());
+        String denyReason = targetClaim.allowAccess(user.get());
         if (denyReason != null) {
-            GriefPrevention.addLogEntry("[Event: CollideBlockEvent.Impact][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addLogEntry("[Event: CollideBlockEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + event.getImpactPoint() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
             event.setCancelled(true);
         }
     }
@@ -202,7 +202,7 @@ public class BlockEventHandler {
                         GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
                     }
 
-                    GriefPrevention.addLogEntry("[Event: BlockBreakEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addLogEntry("[Event: BlockBreakEvent][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 }
@@ -230,14 +230,14 @@ public class BlockEventHandler {
             if (blockSource.isPresent()) {
                 Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
                 if (sourceClaim == null && targetClaim != null) {
-                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][CancelReason: Source came from outside a claimed area.]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][Pos: " + pos + "][CancelReason: Source came from outside a claimed area.]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 } else if (sourceClaim != null && targetClaim != null) {
                     Claim sourceTopLevelClaim = sourceClaim.parent != null ? sourceClaim.parent : sourceClaim;
                     Claim targetTopLevelClaim = targetClaim.parent != null ? targetClaim.parent : targetClaim;
                     if (sourceTopLevelClaim != targetTopLevelClaim) {
-                        GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][CancelReason: Two different parent claims.]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: Two different parent claims.]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                         return;
                     }
@@ -248,9 +248,9 @@ public class BlockEventHandler {
                     return;
                 }
 
-                String denyReason = claim.allowAccess(claim.world, user.get());
+                String denyReason = claim.allowAccess(user.get());
                 if (denyReason != null) {
-                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 }

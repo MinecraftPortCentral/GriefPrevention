@@ -54,7 +54,7 @@ public class SecureClaimTask implements Runnable {
             // eject bad guys
             Collection<Player> onlinePlayers = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
             for (Player player : onlinePlayers) {
-                if (claim.contains(player.getLocation(), false, false) && claim.allowAccess(player.getWorld(), player) != null) {
+                if (claim.contains(player.getLocation(), false, false) && claim.allowAccess(player) != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeDoorsLockedEjection);
                     GriefPrevention.instance.ejectPlayer(player);
                 }

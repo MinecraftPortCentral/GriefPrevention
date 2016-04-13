@@ -187,7 +187,7 @@ public class CommandHelper {
             else {
                 switch (permissionLevel) {
                     case Access:
-                        errorMessage = claim.allowAccess(player.getWorld(), player);
+                        errorMessage = claim.allowAccess(player);
                         break;
                     case Inventory:
                         errorMessage = claim.allowContainers(player, player.getLocation());

@@ -127,29 +127,32 @@ public class EntityEventHandler {
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
                 if (claim != null) {
                     if (user.isPresent()) {
-                        net.minecraft.entity.Entity nmsEntity = (net.minecraft.entity.Entity) entity;
                         User spongeUser = user.get();
+                        if (claim.allowAccess(spongeUser) == null) {
+                            return true;
+                        }
 
+                        net.minecraft.entity.Entity nmsEntity = (net.minecraft.entity.Entity) entity;
                         if (GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_ANY) == Tristate.TRUE) {
-                            return false;
+                            return true;
                         } else if (GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_ANY) == Tristate.FALSE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn entities within claim.]", CustomLogEntryTypes.Debug);
-                            return true;
+                            return false;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.AMBIENT, false)
                                 && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_AMBIENTS) == Tristate.FALSE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
-                            return true;
+                            return false;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.WATER_CREATURE, false) && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_AQUATICS) != Tristate.TRUE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
-                            return true;
+                            return false;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.MONSTER, false)
                                 && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_MONSTERS) == Tristate.FALSE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
-                            return true;
+                            return false;
                         } else if (nmsEntity.isCreatureType(EnumCreatureType.CREATURE, false)
                                 && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_PASSIVES) == Tristate.FALSE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn passives within claim.]", CustomLogEntryTypes.Debug);
-                            return true;
+                            return false;
                         }
                     }
                 }

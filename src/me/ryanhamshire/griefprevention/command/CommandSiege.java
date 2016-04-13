@@ -109,7 +109,7 @@ public class CommandSiege implements CommandExecutor {
         Claim defenderClaim = GriefPrevention.instance.dataStore.getClaimAt(defender.getLocation(), false, null);
 
         // defender must have some level of permission there to be protected
-        if (defenderClaim == null || defenderClaim.allowAccess(defender.getWorld(), defender) != null) {
+        if (defenderClaim == null || defenderClaim.allowAccess(defender) != null) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.NotSiegableThere, defender.getName()));
             } catch (CommandException e) {
