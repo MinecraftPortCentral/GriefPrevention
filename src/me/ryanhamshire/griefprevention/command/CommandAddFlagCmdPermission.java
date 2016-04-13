@@ -21,6 +21,6 @@ public class CommandAddFlagCmdPermission implements CommandExecutor {
             return CommandResult.success();
         }
 
-        return CommandHelper.handleFlagPermission(player, ctx, GPPermissions.COMMAND_CLAIMFLAG + ".");
+        return CommandHelper.handleFlagPermission(player, ctx, GPPermissions.CLAIM_MANAGE_FLAGS + ".");
     }
 }
