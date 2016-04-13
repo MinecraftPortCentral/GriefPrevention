@@ -703,7 +703,7 @@ public abstract class DataStore {
 
         newClaim.context = new Context("claim", newClaim.id.toString());
         // Assign owner full flag permissions in claim context
-        creatingUser.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), GPPermissions.COMMAND_CLAIMFLAG, Tristate.TRUE);
+        creatingUser.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), GPPermissions.CLAIM_MANAGE_FLAGS, Tristate.TRUE);
         // otherwise add this new claim to the data store to make it effective
         this.addClaim(newClaim, true);
 
