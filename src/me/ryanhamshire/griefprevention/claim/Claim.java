@@ -519,7 +519,7 @@ public class Claim implements ContextSource {
             }
         }
 
-        if (GPFlags.getClaimFlagPermission(user, this, GPFlags.BLOCK_BREAK) == Tristate.FALSE) {
+        if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.BLOCK_BREAK) == Tristate.FALSE) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
         }
 

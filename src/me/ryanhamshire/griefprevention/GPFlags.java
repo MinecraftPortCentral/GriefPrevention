@@ -12,8 +12,6 @@ import java.util.Set;
 
 public class GPFlags {
 
-    public static Map<String, String> flagPermissions = Maps.newHashMap();
-
     // Names
     public static final String BLOCK_BREAK = "block-break";
     public static final String BLOCK_COMMANDS = "block-commands";
@@ -81,7 +79,7 @@ public class GPFlags {
     public static Tristate getClaimFlagPermission(User user, Claim claim, String flag) {
         if (GriefPrevention.instance.permPluginInstalled) {
             Set<Context> contextSet = ImmutableSet.of(claim.getContext());
-            Tristate value = user.getPermissionValue(contextSet, flagPermissions.get(flag));
+            Tristate value = user.getPermissionValue(contextSet, flag);
             if (value != Tristate.UNDEFINED) {
                 return value;
             }
@@ -111,36 +109,5 @@ public class GPFlags {
         }
 
         return Tristate.TRUE;
-    }
-
-    static {
-        flagPermissions.put(BLOCK_BREAK, GPPermissions.BLOCK_BREAK);
-        flagPermissions.put(BLOCK_COMMANDS, GPPermissions.BLOCK_COMMANDS);
-        flagPermissions.put(BLOCK_PLACE, GPPermissions.BLOCK_PLACE);
-        flagPermissions.put(EXPLOSIONS, GPPermissions.EXPLOSIONS);
-        flagPermissions.put(FIRE_SPREAD, GPPermissions.FIRE_SPREAD);
-        flagPermissions.put(FORCE_DENY_ALL, GPPermissions.FORCE_DENY_ALL);
-        flagPermissions.put(INTERACT_PRIMARY, GPPermissions.INTERACT_PRIMARY);
-        flagPermissions.put(INTERACT_SECONDARY, GPPermissions.INTERACT_SECONDARY);
-        flagPermissions.put(ITEM_DROP, GPPermissions.ITEM_DROP);
-        flagPermissions.put(ITEM_PICKUP, GPPermissions.ITEM_PICKUP);
-        flagPermissions.put(ITEM_USE, GPPermissions.ITEM_USE);
-        flagPermissions.put(LAVA_FLOW, GPPermissions.LAVA_FLOW);
-        flagPermissions.put(MOB_BLOCK_DAMAGE, GPPermissions.MOB_BLOCK_DAMAGE);
-        flagPermissions.put(MOB_PLAYER_DAMAGE, GPPermissions.MOB_PLAYER_DAMAGE);
-        flagPermissions.put(MOB_RIDING, GPPermissions.MOB_RIDING);
-        flagPermissions.put(PORTAL_USE, GPPermissions.PORTAL_USE);
-        flagPermissions.put(PROJECTILES_ANY, GPPermissions.PROJECTILES_ANY);
-        flagPermissions.put(PROJECTILES_MONSTER, GPPermissions.PROJECTILES_MONSTER);
-        flagPermissions.put(PROJECTILES_PLAYER, GPPermissions.PROJECTILES_PLAYER);
-        flagPermissions.put(PVP, GPPermissions.PVP);
-        flagPermissions.put(SLEEP, GPPermissions.SLEEP);
-        flagPermissions.put(SPAWN_AMBIENTS, GPPermissions.SPAWN_AMBIENTS);
-        flagPermissions.put(SPAWN_ANY, GPPermissions.SPAWN_ANY);
-        flagPermissions.put(SPAWN_AQUATICS, GPPermissions.SPAWN_AQUATICS);
-        flagPermissions.put(SPAWN_MONSTERS, GPPermissions.SPAWN_MONSTERS);
-        flagPermissions.put(SPAWN_PASSIVES, GPPermissions.SPAWN_PASSIVES);
-        flagPermissions.put(WATER_FLOW, GPPermissions.WATER_FLOW);
-        flagPermissions.put(VILLAGER_TRADING, GPPermissions.VILLAGER_TRADING);
     }
 }

@@ -1247,7 +1247,7 @@ public class PlayerEventHandler {
 
         // if the entity is an animal, apply container rules
         if (claim != null && entity instanceof Animal
-                || (entity.getType() == EntityTypes.VILLAGER && GPFlags.getClaimFlagPermission(claim, GPFlags.VILLAGER_TRADING) == Tristate.FALSE)) {
+                || (entity.getType() == EntityTypes.VILLAGER && GPFlags.getClaimFlagPermission(claim, GPPermissions.VILLAGER_TRADING) == Tristate.FALSE)) {
                 String denyReason = claim.allowContainers(player, entity.getLocation());
             if (denyReason != null) {
                 String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());

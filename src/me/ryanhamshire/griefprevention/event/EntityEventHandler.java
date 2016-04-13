@@ -112,7 +112,7 @@ public class EntityEventHandler {
             }
         }
 
-        if (GPFlags.getClaimFlagPermission(claim, GPFlags.EXPLOSIONS) != Tristate.TRUE) {
+        if (GPFlags.getClaimFlagPermission(claim, GPPermissions.EXPLOSIONS) != Tristate.TRUE) {
             event.setCancelled(true);
         }
     }
@@ -243,7 +243,7 @@ public class EntityEventHandler {
             } else if (claim != null) {
                 if (entity instanceof Player) {
                     if (entityDamageSource.getSource() instanceof Monster) {
-                        if (GPFlags.getClaimFlagPermission(claim, GPFlags.MOB_PLAYER_DAMAGE) != Tristate.TRUE) {
+                        if (GPFlags.getClaimFlagPermission(claim, GPPermissions.MOB_PLAYER_DAMAGE) != Tristate.TRUE) {
                             GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
                             return true;
                         }
