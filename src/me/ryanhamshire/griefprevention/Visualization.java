@@ -46,6 +46,7 @@ import java.util.ArrayList;
 public class Visualization {
 
     public ArrayList<Transaction<BlockSnapshot>> elements = new ArrayList<Transaction<BlockSnapshot>>();
+    private VisualizationType type;
 
     // sends a visualization to a player
     public static void Apply(Player player, Visualization visualization) {
@@ -135,12 +136,17 @@ public class Visualization {
         return visualization;
     }
 
+    public VisualizationType getType() {
+        return this.type;
+    }
+
     // adds a claim's visualization to the current visualization
     // handy for combining several visualizations together, as when
     // visualization a top level claim with several subdivisions inside
     // locality is a performance consideration. only create visualization blocks
     // for around 100 blocks of the locality
     private void addClaimElements(Claim claim, int height, VisualizationType visualizationType, Location<World> locality) {
+        this.type = visualizationType;
         Location<World> smallXsmallZ = claim.getLesserBoundaryCorner();
         Location<World> bigXbigZ = claim.getGreaterBoundaryCorner();
         World world = smallXsmallZ.getExtent();
@@ -158,6 +164,9 @@ public class Visualization {
 
         // TODO: move this to config so users can customize types
         if (visualizationType == VisualizationType.Claim) {
+            cornerMaterial = BlockTypes.GLOWSTONE;
+            accentMaterial = BlockTypes.GOLD_BLOCK;
+        } else if (visualizationType == VisualizationType.ClaimInvestigation) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.GOLD_BLOCK;
         } else if (visualizationType == VisualizationType.AdminClaim) {
