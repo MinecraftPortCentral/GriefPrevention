@@ -196,7 +196,7 @@ public class ClaimStorageData {
         public Tristate interactPrimary = Tristate.UNDEFINED;
         @Setting(value = GPFlags.INTERACT_SECONDARY, comment = GPFlags.COMMENT_INTERACT_SECONDARY)
         public Tristate interactSecondary = Tristate.UNDEFINED;
-        @Setting(value = GPFlags.INVENTORY, comment = GPFlags.COMMENT_INVENTORY)
+        @Setting(value = GPFlags.INVENTORY_ACCESS, comment = GPFlags.COMMENT_INVENTORY_ACCESS)
         public Tristate inventory = Tristate.UNDEFINED;
         @Setting(value = GPFlags.ITEM_DROP, comment = GPFlags.COMMENT_ITEM_DROP)
         public Tristate itemDrop = Tristate.UNDEFINED;
@@ -249,7 +249,7 @@ public class ClaimStorageData {
             flagMap.put(GPFlags.FORCE_DENY_ALL, this.forceDenyAll);
             flagMap.put(GPFlags.INTERACT_PRIMARY, this.interactPrimary);
             flagMap.put(GPFlags.INTERACT_SECONDARY, this.interactSecondary);
-            flagMap.put(GPFlags.INVENTORY, this.inventory);
+            flagMap.put(GPFlags.INVENTORY_ACCESS, this.inventory);
             flagMap.put(GPFlags.ITEM_DROP, this.itemDrop);
             flagMap.put(GPFlags.ITEM_PICKUP, this.itemPickup);
             flagMap.put(GPFlags.ITEM_USE, this.itemUse);
@@ -300,7 +300,7 @@ public class ClaimStorageData {
                 case GPFlags.INTERACT_SECONDARY:
                     this.interactSecondary = (Tristate) value;
                     return;
-                case GPFlags.INVENTORY:
+                case GPFlags.INVENTORY_ACCESS:
                     this.inventory = (Tristate) value;
                     return;
                 case GPFlags.ITEM_DROP:
@@ -386,7 +386,7 @@ public class ClaimStorageData {
                     return this.interactPrimary;
                 case GPFlags.INTERACT_SECONDARY:
                     return this.interactSecondary;
-                case GPFlags.INVENTORY:
+                case GPFlags.INVENTORY_ACCESS:
                     return this.inventory;
                 case GPFlags.ITEM_DROP:
                     return this.itemDrop;

@@ -52,7 +52,7 @@ public class GPPermissions {
     public static final String BUY_CLAIM_BLOCKS = "griefprevention.claims.buy-blocks";
     public static final String SELL_CLAIM_BLOCKS = "griefprevention.claims.sell-blocks";
     public static final String ADJUST_CLAIM_BLOCKS = "griefprevention.claims.adjust-blocks";
-    public static final String SET_ACCURED_CLAIM_BLOCKS = "griefprevention.claims.set-accured-blocks";
+    public static final String SET_ACCRUED_CLAIM_BLOCKS = "griefprevention.claims.set-accrued-blocks";
     public static final String OVERRIDE_CLAIM_COUNT_LIMIT = "griefprevention.claims.limit-override";
 
 
@@ -115,6 +115,7 @@ public class GPPermissions {
     public static final String MOB_RIDING = "griefprevention.flag.mob-riding";
     public static final String INTERACT_PRIMARY = "griefprevention.flag.interact-primary";
     public static final String INTERACT_SECONDARY = "griefprevention.flag.interact-secondary";
+    public static final String INVENTORY_ACCESS = "griefprevention.flag.inventory-access";
     public static final String ITEM_DROP = "griefprevention.flag.item-drop";
     public static final String ITEM_PICKUP = "griefprevention.flag.item-pickup";
     public static final String ITEM_USE = "griefprevention.flag.item-use";

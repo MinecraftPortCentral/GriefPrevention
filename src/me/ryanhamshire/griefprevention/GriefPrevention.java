@@ -470,7 +470,7 @@ public class GriefPrevention {
 
         subcommands.put(Arrays.asList("setaccruedclaimblocks", "scb"),
                 CommandSpec.builder().description(Text.of("Updates a player's accrued claim block total"))
-                        .permission(GPPermissions.SET_ACCURED_CLAIM_BLOCKS).arguments(string(Text.of("player")), integer(Text.of("amount")))
+                        .permission(GPPermissions.SET_ACCRUED_CLAIM_BLOCKS).arguments(string(Text.of("player")), integer(Text.of("amount")))
                         .executor(new CommandSetAccruedClaimBlocks()).build());
 
         subcommands.put(Arrays.asList("siege"),
