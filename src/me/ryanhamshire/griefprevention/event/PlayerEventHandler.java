@@ -1385,8 +1385,8 @@ public class PlayerEventHandler {
                     Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(15).execute(task).submit(GriefPrevention.instance);
                 }
             } else {
-                // if we have an active visualization, revert and update client
-                if (playerData != null && playerData.currentVisualization != null) {
+                // if we have an active visualization that is not claim investigation, revert and update client
+                if (playerData != null && playerData.currentVisualization != null && playerData.currentVisualization.getType() != VisualizationType.ClaimInvestigation) {
                     Visualization.Revert(player.get());
                 }
             }
@@ -1760,7 +1760,7 @@ public class PlayerEventHandler {
 
                     // visualize boundary
                     Visualization visualization =
-                            Visualization.FromClaim(claim, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
+                            Visualization.FromClaim(claim, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.ClaimInvestigation, player.getLocation());
                     Visualization.Apply(player, visualization);
 
                     // if can resize this claim, tell about the boundaries
