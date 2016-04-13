@@ -1371,6 +1371,8 @@ public class PlayerEventHandler {
             return;
         }
 
+        PlayerData playerData = this.dataStore.getPlayerData(player.get().getWorld(), player.get().getUniqueId());
+
         // if he's switching to the golden shovel
         for (SlotTransaction transaction : event.getTransactions()) {
             ItemStackSnapshot newItemStack = transaction.getFinal();
@@ -1381,6 +1383,11 @@ public class PlayerEventHandler {
                 if (GriefPrevention.instance.claimsEnabledForWorld(player.get().getWorld().getProperties())) {
                     EquipShovelProcessingTask task = new EquipShovelProcessingTask(player.get());
                     Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(15).execute(task).submit(GriefPrevention.instance);
+                }
+            } else {
+                // if we have an active visualization, revert and update client
+                if (playerData != null && playerData.currentVisualization != null) {
+                    Visualization.Revert(player.get());
                 }
             }
         }
@@ -2299,7 +2306,7 @@ public class PlayerEventHandler {
                     Visualization visualization = Visualization.FromClaim(
                             new Claim(clickedBlock.getLocation().get(), clickedBlock.getLocation().get(), null, new ArrayList<String>(), new ArrayList<String>(),
                                     new ArrayList<String>(), new ArrayList<String>(), null),
-                            clickedBlock.getPosition().getY(), VisualizationType.RestoreNature, player.getLocation());
+                            clickedBlock.getPosition().getY(), VisualizationType.Claim, player.getLocation());
                     Visualization.Apply(player, visualization);
                 }
 
