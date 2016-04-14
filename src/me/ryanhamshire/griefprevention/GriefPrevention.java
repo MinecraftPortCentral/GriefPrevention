@@ -283,11 +283,6 @@ public class GriefPrevention {
     public LinkedHashMap<List<String>, CommandSpec> registerSubCommands() {
         LinkedHashMap<List<String>, CommandSpec> subcommands = new LinkedHashMap<List<String>, CommandSpec>();
 
-        subcommands.put(Arrays.asList("accesstrust", "at"),
-                CommandSpec.builder().description(Text.of("Grants a player entry to your claim(s) and use of your bed"))
-                        .permission(GPPermissions.GIVE_ACCESS_TRUST).arguments(string(Text.of("target"))).executor(new CommandAccessTrust())
-                        .build());
-
         subcommands.put(Arrays.asList("adjustbonusclaimblocks", "acb"),
                 CommandSpec.builder().description(Text.of("Adds or subtracts bonus claim blocks for a player"))
                         .permission(GPPermissions.ADJUST_CLAIM_BLOCKS).arguments(string(Text.of("player")), integer(Text.of("amount")))
@@ -377,16 +372,6 @@ public class GriefPrevention {
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
                 .executor(new CommandAddFlagPermission()).build());
 
-        subcommands.put(Arrays.asList("addflagcmdpermission"), CommandSpec.builder()
-                .description(Text.of("Adds flag command permission to target."))
-                .permission(GPPermissions.CLAIM_MANAGE_FLAGS)
-                .arguments(GenericArguments.seq(
-                        GenericArguments.choices(Text.of("target"), targetChoices, true),
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
-                .executor(new CommandAddFlagCmdPermission()).build());
-
         subcommands.put(Arrays.asList("claimignore", "ignoreclaims"), CommandSpec.builder().description(Text.of("Toggles ignore claims mode"))
                 .permission(GPPermissions.TOGGLE_IGNORE_CLAIMS).executor(new CommandClaimIgnore()).build());
 
@@ -412,12 +397,6 @@ public class GriefPrevention {
                         .arguments(optional(player(Text.of("target")))).permission(GPPermissions.TRANSFER_CLAIM)
                         .executor(new CommandClaimTransfer()).build());
 
-        subcommands.put(Arrays.asList("containertrust", "ct"),
-                CommandSpec.builder()
-                        .description(Text.of("Grants a player access to your claim's containers, crops, animals, bed, buttons, and levers"))
-                        .permission(GPPermissions.GIVE_CONTAINER_TRUST).arguments(string(Text.of("target")))
-                        .executor(new CommandContainerTrust()).build());
-
         subcommands.put(Arrays.asList("debug"),
                 CommandSpec.builder()
                         .description(Text.of("Turns on debug logging."))
@@ -441,11 +420,6 @@ public class GriefPrevention {
         subcommands.put(Arrays.asList("ignoreplayer", "ignore"),
                 CommandSpec.builder().description(Text.of("Ignores another player's chat messages")).permission(GPPermissions.IGNORE_PLAYER)
                         .arguments(onlyOne(player(Text.of("player")))).executor(new CommandIgnorePlayer()).build());
-
-        subcommands.put(Arrays.asList("permissiontrust", "pt"),
-                CommandSpec.builder().description(Text.of("Grants a player permission to grant their level of permission to others"))
-                        .permission(GPPermissions.GIVE_PERMISSION_TRUST).arguments(string(Text.of("target")))
-                        .executor(new CommandPermissionTrust()).build());
 
         subcommands.put(Arrays.asList("reload"), CommandSpec.builder().description(Text.of("Reloads Grief Prevention's configuration settings"))
                 .permission(GPPermissions.RELOAD).executor(new CommandGpReload()).build());
@@ -490,7 +464,7 @@ public class GriefPrevention {
         subcommands.put(Arrays.asList("trust", "tr"),
                 CommandSpec.builder().description(Text.of("Grants a player full access to your claim(s)"))
                         .extendedDescription(Text.of("Grants a player full access to your claim(s).\n"
-                                + "See also /untrust, /containertrust, /accesstrust, and /permissiontrust."))
+                                + "See also /untrust, and /permissiontrust."))
                         .permission(GPPermissions.GIVE_FULL_TRUST).arguments(string(Text.of("subject"))).executor(new CommandTrust()).build());
 
         subcommands.put(Arrays.asList("trustlist"), CommandSpec.builder().description(Text.of("Lists permissions for the claim you're standing in"))

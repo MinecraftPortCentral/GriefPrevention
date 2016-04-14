@@ -48,14 +48,15 @@ import me.ryanhamshire.griefprevention.task.PlayerKickBanTask;
 import me.ryanhamshire.griefprevention.task.WelcomeTask;
 import me.ryanhamshire.griefprevention.util.NbtDataHelper;
 import me.ryanhamshire.griefprevention.util.WordFinder;
-import net.minecraft.block.BlockContainer;
 import net.minecraft.block.BlockDoor;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.IInventory;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
@@ -66,13 +67,9 @@ import org.spongepowered.api.data.property.entity.EyeLocationProperty;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.Item;
-import org.spongepowered.api.entity.hanging.Hanging;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.entity.vehicle.Boat;
-import org.spongepowered.api.entity.vehicle.minecart.ChestMinecart;
-import org.spongepowered.api.entity.vehicle.minecart.FurnaceMinecart;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
@@ -1189,33 +1186,6 @@ public class PlayerEventHandler {
             }
         }
 
-        // don't allow interaction with item frames or armor stands in claimed areas without build permission
-        if (entity.getType() == EntityTypes.ARMOR_STAND || entity instanceof Hanging) {
-            /*String noBuildReason = GriefPrevention.instance.allowBuild(player, entity.getLocation(), ItemTypes.ITEM_FRAME);
-            if (noBuildReason != null) {
-                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, noBuildReason));
-                event.setCancelled(true);
-                return;
-            }*/
-        }
-
-        // don't allow container access during pvp combat
-        if ((entity instanceof ChestMinecart || entity instanceof FurnaceMinecart)) {
-            if (playerData.siegeData != null) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
-                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + this.dataStore.getMessage(Messages.SiegeNoContainers) + "]", CustomLogEntryTypes.Debug);
-                event.setCancelled(true);
-                return;
-            }
-
-            if (playerData.inPvpCombat(player.getWorld())) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.PvPNoContainers);
-                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + this.dataStore.getMessage(Messages.PvPNoContainers) + "]", CustomLogEntryTypes.Debug);
-                event.setCancelled(true);
-                return;
-            }
-        }
-
         // if the entity is a vehicle
         if (entity.supports(VehicleData.class)) {
             // if the entity is in a claim
@@ -1223,20 +1193,9 @@ public class PlayerEventHandler {
             if (claim != null) {
                 // for storage entities, apply container rules (this is a potential theft)
                 if (entity instanceof Carrier) {
-                    String denyReason = claim.allowContainers(player, entity.getLocation());
-                    if (denyReason != null) {
-                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
-                        GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                        return;
-                    }
-                }
-
-                // for boats, apply access rules
-                else if (entity instanceof Boat) {
                     String denyReason = claim.allowAccess(player);
                     if (denyReason != null) {
-                        player.sendMessage(Text.of(denyReason));
+                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
                         GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                         return;
@@ -1248,7 +1207,7 @@ public class PlayerEventHandler {
         // if the entity is an animal, apply container rules
         if (claim != null && entity instanceof Animal
                 || (entity.getType() == EntityTypes.VILLAGER && GPFlags.getClaimFlagPermission(claim, GPPermissions.VILLAGER_TRADING) == Tristate.FALSE)) {
-                String denyReason = claim.allowContainers(player, entity.getLocation());
+                String denyReason = claim.allowAccess(player, Optional.of(entity.getLocation()));
             if (denyReason != null) {
                 String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
                 if (player.hasPermission(GPPermissions.IGNORE_CLAIMS))
@@ -1265,7 +1224,7 @@ public class PlayerEventHandler {
                 .getItemInHand().get().getItem().equals(ItemTypes.LEAD)) {
             claim = this.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
             if (claim != null) {
-                String denyReason = claim.allowContainers(player, entity.getLocation());
+                String denyReason = claim.allowAccess(player, Optional.of(entity.getLocation()));
                 if (denyReason != null) {
                     event.setCancelled(true);
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
@@ -1531,8 +1490,8 @@ public class PlayerEventHandler {
         }
 
         // apply rules for containers
-        if (clickedBlock.getState().getType() instanceof BlockContainer) {
-
+        Optional<TileEntity> tileEntity = clickedBlock.getLocation().get().getTileEntity();
+        if (tileEntity.isPresent() && tileEntity.get() instanceof IInventory) {
             if (playerData == null) {
                 playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             }
@@ -1558,7 +1517,7 @@ public class PlayerEventHandler {
             if (claim != null) {
                 playerData.lastClaim = claim;
 
-                String denyReason = claim.allowContainers(player, clickedBlock.getLocation().get());
+                String denyReason = claim.allowBlockAccess(player, clickedBlock);
                 if (denyReason != null) {
                     event.setCancelled(true);
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
@@ -2082,8 +2041,7 @@ public class PlayerEventHandler {
                         // temporary claim instance, just for checking contains()
                         Claim newClaim = new Claim(
                                 new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), newx1, newy1, newz1),
-                                new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), newx2, newy2, newz2),
-                                null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null);
+                                new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), newx2, newy2, newz2));
 
                         // if the new claim is smaller
                         if (!newClaim.contains(oldClaim.getLesserBoundaryCorner(), true, false)
@@ -2304,8 +2262,7 @@ public class PlayerEventHandler {
 
                     // show him where he's working
                     Visualization visualization = Visualization.FromClaim(
-                            new Claim(clickedBlock.getLocation().get(), clickedBlock.getLocation().get(), null, new ArrayList<String>(), new ArrayList<String>(),
-                                    new ArrayList<String>(), new ArrayList<String>(), null),
+                            new Claim(clickedBlock.getLocation().get(), clickedBlock.getLocation().get()),
                             clickedBlock.getPosition().getY(), VisualizationType.Claim, player.getLocation());
                     Visualization.Apply(player, visualization);
                 }

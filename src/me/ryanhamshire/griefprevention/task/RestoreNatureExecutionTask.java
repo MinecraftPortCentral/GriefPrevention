@@ -40,7 +40,6 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.util.ArrayList;
 import java.util.Optional;
 
 //this main thread task takes the output from the RestoreNatureProcessingTask\
@@ -117,8 +116,7 @@ class RestoreNatureExecutionTask implements Runnable {
 
         // show visualization to player who started the restoration
         if (player != null) {
-            Claim claim = new Claim(lesserCorner, greaterCorner, null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(),
-                    new ArrayList<String>(), null);
+            Claim claim = new Claim(lesserCorner, greaterCorner);
             Visualization visualization =
                     Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation());
             Visualization.Apply(player, visualization);

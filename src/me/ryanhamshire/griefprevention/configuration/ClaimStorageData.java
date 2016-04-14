@@ -51,9 +51,6 @@ public class ClaimStorageData {
     public static final String MAIN_PARENT_CLAIM_UUID = "parent-claim-uuid";
     public static final String MAIN_LESSER_BOUNDARY_CORNER = "lesser-boundary-corner";
     public static final String MAIN_GREATER_BOUNDARY_CORNER = "greater-boundary-corner";
-    public static final String MAIN_BUILDERS = "builders";
-    public static final String MAIN_CONTAINERS = "containers";
-    public static final String MAIN_ACCESSORS = "accessors";
     public static final String MAIN_MANAGERS = "managers";
     public static final String MAIN_PROTECTION_BLACKLIST = "bypass-protection-items";
     public static final String MAIN_SUBDIVISIONS = "sub-divisions";
@@ -130,23 +127,17 @@ public class ClaimStorageData {
     public static class ClaimDataNode {
 
         @Setting(value = MAIN_WORLD_UUID, comment = "The world uuid associated with claim.")
-        public String worldUniqueId;
+        public UUID worldUniqueId;
         @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
-        public String ownerUniqueId;
+        public UUID ownerUniqueId;
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with claim.")
         public String claimName;
         @Setting(value = MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of claim.")
         public String lesserBoundaryCornerPos;
         @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of claim.")
         public String greaterBoundaryCornerPos;
-        @Setting(value = MAIN_BUILDERS, comment = "The builders associated with claim.")
-        public ArrayList<String> builders = new ArrayList<>();
-        @Setting(value = MAIN_CONTAINERS, comment = "The containers associated with claim.")
-        public ArrayList<String> containers = new ArrayList<>();
-        @Setting(value = MAIN_ACCESSORS, comment = "The accessors associated with claim.")
-        public ArrayList<String> accessors = new ArrayList<>();
         @Setting(value = MAIN_MANAGERS, comment = "The managers associated with claim.")
-        public ArrayList<String> managers = new ArrayList<>();
+        public ArrayList<UUID> managers = new ArrayList<>();
         @Setting(value = MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within claim.")
         public ArrayList<String> protectionBlacklist = new ArrayList<>();
         @Setting
@@ -163,14 +154,8 @@ public class ClaimStorageData {
         public String lesserBoundaryCornerPos;
         @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of subdivision.")
         public String greaterBoundaryCornerPos;
-        @Setting(value = MAIN_BUILDERS, comment = "The builders associated with subdivision.")
-        public ArrayList<String> builders = new ArrayList<>();
-        @Setting(value = MAIN_CONTAINERS, comment = "The containers associated with subdivision.")
-        public ArrayList<String> containers = new ArrayList<>();
-        @Setting(value = MAIN_ACCESSORS, comment = "The accessors associated with subdivision.")
-        public ArrayList<String> accessors = new ArrayList<>();
         @Setting(value = MAIN_MANAGERS, comment = "The managers associated with subdivision.")
-        public ArrayList<String> managers = new ArrayList<>();
+        public ArrayList<UUID> managers = new ArrayList<>();
         @Setting(value = MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within subdivision.")
         public ArrayList<String> protectionBlacklist = new ArrayList<>();
         @Setting
@@ -196,8 +181,8 @@ public class ClaimStorageData {
         public Tristate interactPrimary = Tristate.UNDEFINED;
         @Setting(value = GPFlags.INTERACT_SECONDARY, comment = GPFlags.COMMENT_INTERACT_SECONDARY)
         public Tristate interactSecondary = Tristate.UNDEFINED;
-        @Setting(value = GPFlags.INVENTORY_ACCESS, comment = GPFlags.COMMENT_INVENTORY_ACCESS)
-        public Tristate inventory = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.INTERACT_INVENTORY, comment = GPFlags.COMMENT_INTERACT_INVENTORY)
+        public Tristate interactInventory = Tristate.UNDEFINED;
         @Setting(value = GPFlags.ITEM_DROP, comment = GPFlags.COMMENT_ITEM_DROP)
         public Tristate itemDrop = Tristate.UNDEFINED;
         @Setting(value = GPFlags.ITEM_PICKUP, comment = GPFlags.COMMENT_ITEM_PICKUP)
@@ -249,7 +234,7 @@ public class ClaimStorageData {
             flagMap.put(GPFlags.FORCE_DENY_ALL, this.forceDenyAll);
             flagMap.put(GPFlags.INTERACT_PRIMARY, this.interactPrimary);
             flagMap.put(GPFlags.INTERACT_SECONDARY, this.interactSecondary);
-            flagMap.put(GPFlags.INVENTORY_ACCESS, this.inventory);
+            flagMap.put(GPFlags.INTERACT_INVENTORY, this.interactInventory);
             flagMap.put(GPFlags.ITEM_DROP, this.itemDrop);
             flagMap.put(GPFlags.ITEM_PICKUP, this.itemPickup);
             flagMap.put(GPFlags.ITEM_USE, this.itemUse);
@@ -300,8 +285,8 @@ public class ClaimStorageData {
                 case GPFlags.INTERACT_SECONDARY:
                     this.interactSecondary = (Tristate) value;
                     return;
-                case GPFlags.INVENTORY_ACCESS:
-                    this.inventory = (Tristate) value;
+                case GPFlags.INTERACT_INVENTORY:
+                    this.interactInventory = (Tristate) value;
                     return;
                 case GPFlags.ITEM_DROP:
                     this.itemDrop = (Tristate) value;
@@ -386,8 +371,8 @@ public class ClaimStorageData {
                     return this.interactPrimary;
                 case GPFlags.INTERACT_SECONDARY:
                     return this.interactSecondary;
-                case GPFlags.INVENTORY_ACCESS:
-                    return this.inventory;
+                case GPFlags.INTERACT_INVENTORY:
+                    return this.interactInventory;
                 case GPFlags.ITEM_DROP:
                     return this.itemDrop;
                 case GPFlags.ITEM_PICKUP:

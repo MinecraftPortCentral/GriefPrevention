@@ -49,7 +49,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -227,10 +226,10 @@ public class FlatFileDataStore extends DataStore {
         ClaimStorageData claimData = new ClaimStorageData(claimFile.toPath());
 
         // identify world the claim is in
-        String worldUniqueId = claimData.getConfig().worldUniqueId;
+        UUID worldUniqueId = claimData.getConfig().worldUniqueId;
         World world = null;
         for (World w : Sponge.getGame().getServer().getWorlds()) {
-            if (w.getUniqueId().equals(UUID.fromString(worldUniqueId))) {
+            if (w.getUniqueId().equals(worldUniqueId)) {
                 world = w;
                 break;
             }
@@ -247,24 +246,14 @@ public class FlatFileDataStore extends DataStore {
         Location<World> greaterBoundaryCorner = new Location<World>(world, greaterBoundaryCornerPos);
 
         // owner
-        String ownerIdentifier = claimData.getConfig().ownerUniqueId;
-        UUID ownerID = null;
-        if (ownerIdentifier != null && !ownerIdentifier.isEmpty()) {
-            try {
-                ownerID = UUID.fromString(ownerIdentifier);
-            } catch (Exception ex) {
-                GriefPrevention.addLogEntry("Error - this is not a valid UUID: " + ownerIdentifier + ".");
-                GriefPrevention.addLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
-            }
+        UUID ownerID = claimData.getConfig().ownerUniqueId;
+        if (ownerID == null) {
+            GriefPrevention.addLogEntry("Error - this is not a valid UUID: " + ownerID + ".");
+            GriefPrevention.addLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
         }
 
-        List<String> builders = claimData.getConfig().builders;
-        List<String> containers = claimData.getConfig().containers;
-        List<String> accessors = claimData.getConfig().accessors;
-        List<String> managers = claimData.getConfig().managers;
-
         // instantiate
-        claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builders, containers, accessors, managers, claimID);
+        claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, claimID);
         claim.modifiedDate = new Date(lastModifiedDate);
         claim.id = claimID;
         claim.world = lesserBoundaryCorner.getExtent();
@@ -281,12 +270,7 @@ public class FlatFileDataStore extends DataStore {
             Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);
             Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
 
-            List<String> subBuilders = subDivisionData.builders;
-            List<String> subContainers = subDivisionData.containers;
-            List<String> subAccessors = subDivisionData.accessors;
-            List<String> subManagers = subDivisionData.managers;
-
-            Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, null, subBuilders, subContainers, subAccessors, subManagers, mapEntry.getKey());
+            Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, null, mapEntry.getKey());
             subDivision.modifiedDate = new Date(lastModifiedDate);
             subDivision.id = mapEntry.getKey();
             subDivision.world = subLesserBoundaryCorner.getExtent();
@@ -312,7 +296,7 @@ public class FlatFileDataStore extends DataStore {
 
         // owner
         if (claim.ownerID != null) {
-            claimData.getConfig().ownerUniqueId = claim.ownerID.toString();
+            claimData.getConfig().ownerUniqueId = claim.ownerID;
         }
         if (claim.isSubDivision) {
             if (claim.subDivisionData == null) {
@@ -321,15 +305,11 @@ public class FlatFileDataStore extends DataStore {
 
             claim.subDivisionData.lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
             claim.subDivisionData.greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
-            claim.getPermissions(claim.subDivisionData.builders, claim.subDivisionData.containers, claim.subDivisionData.accessors,
-                    claim.subDivisionData.managers);
             claimData.getConfig().subDivisions.put(claim.id, claim.subDivisionData);
         } else {
-            claimData.getConfig().worldUniqueId = claim.world.getUniqueId().toString();
+            claimData.getConfig().worldUniqueId = claim.world.getUniqueId();
             claimData.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
             claimData.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
-            claim.getPermissions(claimData.getConfig().builders, claimData.getConfig().containers, claimData.getConfig().accessors,
-                    claimData.getConfig().managers);
         }
 
         claimData.save();

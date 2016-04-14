@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.CreateClaimResult;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
@@ -667,10 +666,6 @@ public abstract class DataStore {
                 new Location<World>(world, smallx, smally, smallz),
                 new Location<World>(world, bigx, bigy, bigz),
                 ownerID,
-                new ArrayList<String>(),
-                new ArrayList<String>(),
-                new ArrayList<String>(),
-                new ArrayList<String>(),
                 id == null ? UUID.randomUUID() : id);
 
         newClaim.parent = parent;
@@ -1025,29 +1020,6 @@ public abstract class DataStore {
 
         // if succeeded
         if (result.succeeded) {
-            // copy permissions from old claim
-            ArrayList<String> builders = new ArrayList<String>();
-            ArrayList<String> containers = new ArrayList<String>();
-            ArrayList<String> accessors = new ArrayList<String>();
-            ArrayList<String> managers = new ArrayList<String>();
-            claim.getPermissions(builders, containers, accessors, managers);
-
-            for (int i = 0; i < builders.size(); i++) {
-                result.claim.setPermission(builders.get(i), ClaimPermission.Build);
-            }
-
-            for (int i = 0; i < containers.size(); i++) {
-                result.claim.setPermission(containers.get(i), ClaimPermission.Inventory);
-            }
-
-            for (int i = 0; i < accessors.size(); i++) {
-                result.claim.setPermission(accessors.get(i), ClaimPermission.Access);
-            }
-
-            for (int i = 0; i < managers.size(); i++) {
-                result.claim.managers.add(managers.get(i));
-            }
-
             // restore subdivisions
             for (Claim subdivision : claim.children) {
                 subdivision.parent = result.claim;

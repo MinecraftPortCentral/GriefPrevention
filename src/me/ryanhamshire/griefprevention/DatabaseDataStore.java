@@ -281,8 +281,7 @@ public class DatabaseDataStore extends DataStore {
                 managerNames = this.convertNameListToUUIDList(managerNames);
 
                 Claim claim =
-                        new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), builderNames, containerNames, accessorNames,
-                                managerNames, UUID.randomUUID());
+                        new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), UUID.randomUUID());
 
                 if (removeClaim) {
                     claimsToRemove.add(claim);

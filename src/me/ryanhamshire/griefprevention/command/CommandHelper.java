@@ -31,7 +31,6 @@ import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -47,7 +46,6 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -130,169 +128,49 @@ public class CommandHelper {
         }
     }
 
-    // helper method keeps the trust commands consistent and eliminates duplicate code
-    public static void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) throws CommandException {
-        // determine which claim the player is standing in
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /* ignore height */, null);
-
-        // validate player or group argument
-        String permission = null;
-        User otherPlayer = null;
-        UUID recipientID = null;
-        if (recipientName.startsWith("[") && recipientName.endsWith("]")) {
-            permission = recipientName.substring(1, recipientName.length() - 1);
-            if (permission == null || permission.isEmpty()) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.InvalidPermissionID);
-                return;
-            }
-        } else if (recipientName.contains(".")) {
-            permission = recipientName;
-        } else {
-            otherPlayer = GriefPrevention.instance.resolvePlayerByName(recipientName).orElse(null);
-            if (otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all")) {
-                throw new CommandException(GriefPrevention.getMessage(Messages.PlayerNotFound2));
-            }
-
-            if (otherPlayer != null) {
-                recipientName = otherPlayer.getName();
-                recipientID = otherPlayer.getUniqueId();
-            } else {
-                recipientName = "public";
-            }
-        }
-
-        // determine which claims should be modified
-        ArrayList<Claim> targetClaims = new ArrayList<Claim>();
-        if (claim == null) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-            targetClaims.addAll(playerData.playerWorldClaims.get(player.getWorld().getUniqueId()));
-        } else {
-            // check permission here
-            if (claim.allowGrantPermission(player) != null) {
-                throw new CommandException(GriefPrevention.getMessage(Messages.NoPermissionTrust, claim.getOwnerName()));
-            }
-
-            // see if the player has the level of permission he's trying to grant
-            String errorMessage = null;
-
-            // permission level null indicates granting permission trust
-            if (permissionLevel == null) {
-                errorMessage = claim.allowEdit(player);
-                if (errorMessage != null) {
-                    errorMessage = "Only " + claim.getOwnerName() + " can grant /PermissionTrust here.";
-                }
-            }
-
-            // otherwise just use the ClaimPermission enum values
-            else {
-                switch (permissionLevel) {
-                    case Access:
-                        errorMessage = claim.allowAccess(player);
-                        break;
-                    case Inventory:
-                        errorMessage = claim.allowContainers(player, player.getLocation());
-                        break;
-                    default:
-                        errorMessage = claim.allowBuild(player, player.getLocation());
-                }
-            }
-
-            // error message for trying to grant a permission the player doesn't have
-            if (errorMessage != null) {
-                throw new CommandException(GriefPrevention.getMessage(Messages.CantGrantThatPermission));
-            }
-
-            targetClaims.add(claim);
-        }
-
-        // if we didn't determine which claims to modify, tell the player to be specific
-        if (targetClaims.size() == 0) {
-            throw new CommandException(GriefPrevention.getMessage(Messages.GrantPermissionNoClaim));
-        }
-
-        // apply changes
-        for (int i = 0; i < targetClaims.size(); i++) {
-            Claim currentClaim = targetClaims.get(i);
-            String identifierToAdd = recipientName;
-            if (permission != null) {
-                identifierToAdd = "[" + permission + "]";
-            } else if (recipientID != null) {
-                identifierToAdd = recipientID.toString();
-            }
-
-            if (permissionLevel == null) {
-                if (!currentClaim.managers.contains(identifierToAdd)) {
-                    currentClaim.managers.add(identifierToAdd);
-                }
-            } else {
-                currentClaim.setPermission(identifierToAdd, permissionLevel);
-            }
-            GriefPrevention.instance.dataStore.saveClaim(currentClaim);
-        }
-
-        // notify player
-        if (recipientName.equals("public")) {
-            recipientName = GriefPrevention.instance.dataStore.getMessage(Messages.CollectivePublic);
-        }
-        String permissionDescription;
-        if (permissionLevel == null) {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.PermissionsPermission);
-        } else if (permissionLevel == ClaimPermission.Build) {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.BuildPermission);
-        } else if (permissionLevel == ClaimPermission.Access) {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.AccessPermission);
-        } else // ClaimPermission.Inventory
-        {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.ContainersPermission);
-        }
-
-        String location;
-        if (claim == null) {
-            location = GriefPrevention.instance.dataStore.getMessage(Messages.LocationAllClaims);
-        } else {
-            location = GriefPrevention.instance.dataStore.getMessage(Messages.LocationCurrentClaim);
-        }
-
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
-    }
-
     public static CommandResult handleFlagPermission(Player player, CommandContext ctx, String permission) {
         String target = ctx.<String>getOne("target").get();
         String name = ctx.<String>getOne("name").get();
         String flag = ctx.<String>getOne("flag").get();
         String value = ctx.<String>getOne("value").get();
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
+        Optional<User> targetPlayer = GriefPrevention.instance.resolvePlayerByName(name);
+        if (!targetPlayer.isPresent() && target.equalsIgnoreCase("player")) {
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+            return CommandResult.success();
+        }
 
-        if (claim != null) {
-            if (claim.getClaimData().getConfig().flags.getFlagValue(flag) != null) {
-                if (target.equalsIgnoreCase("player")) {
-                    Optional<Player> targetPlayer = Sponge.getServer().getPlayer(name);
-                    if (targetPlayer.isPresent()) {
-                        Subject subj = targetPlayer.get().getContainingCollection().get(targetPlayer.get().getIdentifier());
-                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
-                                Tristate.fromBoolean(Boolean.valueOf(value)));
-                        player.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", target, " ", name, "."));
-                    } else {
-                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
-                    }
-                } else if (target.equalsIgnoreCase("group")) {
-                    PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
-                    Subject subj = service.getGroupSubjects().get(name);
-                    if (subj != null) {
-                        subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
-                                Tristate.fromBoolean(Boolean.valueOf(value)));
-                        player.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", target, " ", name, "."));
-                    } else {
-                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid group."));
-                    }
+        return addPermission(claim, player, targetPlayer, name, flag, permission, value);
+    }
+
+    public static CommandResult addPermission(Claim claim, Player sourcePlayer, Optional<User> targetPlayer, String group, String flag, String permission, String value) {
+        if (claim == null) {
+            GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "No claim found."));
+            return CommandResult.success();
+        }
+
+        if (claim.getClaimData().getConfig().flags.getFlagValue(flag) != null) {
+            if (targetPlayer.isPresent()) {
+                Subject subj = targetPlayer.get().getContainingCollection().get(targetPlayer.get().getIdentifier());
+                subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
+                        Tristate.fromBoolean(Boolean.valueOf(value)));
+                sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", targetPlayer.get().getName(), "."));
+            } else if (group == null) {
+                GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid player."));
+            } else { // group
+                PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
+                Subject subj = service.getGroupSubjects().get(group);
+                if (subj != null) {
+                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
+                            Tristate.fromBoolean(Boolean.valueOf(value)));
+                    sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for group ", group, "."));
+                } else {
+                    GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid group."));
                 }
-            } else {
-                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid flag."));
             }
         } else {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found."));
+            GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid flag."));
         }
 
         return CommandResult.success();

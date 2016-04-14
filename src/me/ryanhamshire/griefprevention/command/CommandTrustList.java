@@ -1,10 +1,7 @@
 package me.ryanhamshire.griefprevention.command;
 
-import static org.spongepowered.api.command.CommandMessageFormatting.SPACE_TEXT;
-
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -12,11 +9,6 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.text.LiteralText.Builder;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
-
-import java.util.ArrayList;
 
 public class CommandTrustList implements CommandExecutor {
 
@@ -41,8 +33,9 @@ public class CommandTrustList implements CommandExecutor {
             }
         }
 
+        // TODO
         // if no permission to manage permissions, error message
-        String errorMessage = claim.allowGrantPermission(player);
+        /*String errorMessage = claim.allowGrantPermission(player);
         if (errorMessage != null) {
             try {
                 throw new CommandException(Text.of(errorMessage));
@@ -51,13 +44,6 @@ public class CommandTrustList implements CommandExecutor {
                 return CommandResult.success();
             }
         }
-
-        // otherwise build a list of explicit permissions by permission level and send that to the player
-        ArrayList<String> builders = new ArrayList<>();
-        ArrayList<String> containers = new ArrayList<>();
-        ArrayList<String> accessors = new ArrayList<>();
-        ArrayList<String> managers = new ArrayList<>();
-        claim.getPermissions(builders, containers, accessors, managers);
 
         GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrustListHeader);
 
@@ -103,7 +89,7 @@ public class CommandTrustList implements CommandExecutor {
                 Text.of(TextColors.YELLOW, GriefPrevention.instance.dataStore.getMessage(Messages.Build)), SPACE_TEXT,
                 Text.of(TextColors.GREEN, GriefPrevention.instance.dataStore.getMessage(Messages.Containers)), SPACE_TEXT,
                 Text.of(TextColors.BLUE, GriefPrevention.instance.dataStore.getMessage(Messages.Access))));
-
+        */
         return CommandResult.success();
 
     }

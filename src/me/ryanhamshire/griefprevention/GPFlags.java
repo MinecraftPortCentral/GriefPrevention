@@ -20,7 +20,7 @@ public class GPFlags {
     public static final String IGNITE = "ignite";
     public static final String INTERACT_PRIMARY = "interact-primary";
     public static final String INTERACT_SECONDARY = "interact-secondary";
-    public static final String INVENTORY_ACCESS = "inventory-access";
+    public static final String INTERACT_INVENTORY = "interact-inventory";
     public static final String ITEM_DROP = "item-drop";
     public static final String ITEM_PICKUP = "item-pickup";
     public static final String ITEM_USE = "item-use";
@@ -52,7 +52,7 @@ public class GPFlags {
     public static final String COMMENT_IGNITE = "Allow/deny ignites.";
     public static final String COMMENT_INTERACT_PRIMARY = "Allow/deny left-clicking.";
     public static final String COMMENT_INTERACT_SECONDARY = "Allow/deny right-clicking.";
-    public static final String COMMENT_INVENTORY_ACCESS = "Allow/deny blocks with inventories.";
+    public static final String COMMENT_INTERACT_INVENTORY = "Allow/deny blocks with inventories.";
     public static final String COMMENT_ITEM_DROP = "Allow/deny item drops.";
     public static final String COMMENT_ITEM_PICKUP = "Allow/deny picking up items.";
     public static final String COMMENT_ITEM_USE = "Allow/deny item use.";

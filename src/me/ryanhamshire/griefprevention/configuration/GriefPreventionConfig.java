@@ -349,7 +349,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public boolean interactPrimary = false;
         @Setting(value = GPFlags.INTERACT_SECONDARY, comment = GPFlags.COMMENT_INTERACT_SECONDARY)
         public boolean interactSecondary = false;
-        @Setting(value = GPFlags.INVENTORY_ACCESS, comment = GPFlags.COMMENT_INVENTORY_ACCESS)
+        @Setting(value = GPFlags.INTERACT_INVENTORY, comment = GPFlags.COMMENT_INTERACT_INVENTORY)
         public boolean inventory = false;
         @Setting(value = GPFlags.ITEM_DROP, comment = GPFlags.COMMENT_ITEM_DROP)
         public boolean itemDrop = false;
@@ -410,7 +410,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
                     return this.interactPrimary;
                 case GPFlags.INTERACT_SECONDARY:
                     return this.interactSecondary;
-                case GPFlags.INVENTORY_ACCESS:
+                case GPFlags.INTERACT_INVENTORY:
                     return this.inventory;
                 case GPFlags.ITEM_DROP:
                     return this.itemDrop;
