@@ -24,24 +24,487 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
+import com.google.common.collect.ImmutableList;
+import me.ryanhamshire.griefprevention.GPPermissions;
+import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.util.annotation.NonnullByDefault;
 
-@NonnullByDefault
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.spongepowered.api.command.args.GenericArguments.*;
+
 public class CommandGriefPrevention {
+
+    private static CommandContainer commandInstance;
+
+    /**
+     * Returns a static instance of the main command.
+     * <p>
+     *     When called for the first time, this method will construct a new CommandContainer.
+     * </p>
+     *
+     * @return A CommandSpec representing the main /gp command
+     */
+    public static CommandContainer getCommand() {
+        if (commandInstance == null) {
+            commandInstance = createMainCommand();
+        }
+        return commandInstance;
+    }
 
     /**
      * Create a new instance of the GriefPrevention command structure.
      *
      * @return The newly created command
      */
-    public static CommandSpec getCommand() {
-        return CommandSpec.builder()
-                .description(Text.of("Text description"))
+    private static CommandContainer createMainCommand() {
+
+        return ParentCommandContainer.builder()
+            .aliases("griefprevention", "gp")
+            .description(Text.of("GriefPrevention main command"))
+
+            .child(CommandSpec.builder()
+                .description(Text.of("What you are looking at right now"))
+                .permission(GPPermissions.HELP)
                 .executor(new CommandHelp())
-                .children(GriefPrevention.instance.registerSubCommands())
-                .build();
+                .build(), "help")
+
+            .child(ParentCommandContainer.builder()
+                .aliases("claims", "claim", "c")
+                .description(Text.of("Claims management"))
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Gets information about a claim"))
+                    .permission(GPPermissions.CLAIM_INFO)
+                    .executor(new CommandClaim())
+                    .build(), "info")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Deletes a claim"))
+                    .permission(GPPermissions.ABANDON_CLAIM)
+                    .executor(new CommandClaimAbandon(false))
+                    .build(), "abandon", "remove")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Deletes ALL your claims"))
+                    .permission(GPPermissions.ABANDON_ALL_CLAIMS)
+                    .executor(new CommandClaimAbandonAll())
+                    .build(), "abandonall", "removeall")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Deletes a claim and all its subdivisions"))
+                    .permission(GPPermissions.ABANDON_TOP_LEVEL_CLAIM)
+                    .executor(new CommandClaimAbandon(true))
+                    .build(), "abandontoplevel", "removetoplevel")
+
+                .child(ParentCommandContainer.builder()
+                    .aliases("toggle", "tool", "t", "mode", "m", "wand", "w")
+                    .description(Text.of("Toggles and modes"))
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Switches the shovel tool back to basic claims mode"))
+                        .permission(GPPermissions.CLAIM_MODE_BASIC)
+                        .executor(new CommandClaimBasic())
+                        .build(), "basic")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
+                        .permission(GPPermissions.SUBDIVIDE_CLAIMS)
+                        .executor(new CommandClaimSubdivide())
+                        .build(), "subdivide")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Toggles ignore claims mode"))
+                        .permission(GPPermissions.TOGGLE_IGNORE_CLAIMS)
+                        .executor(new CommandClaimIgnore())
+                        .build(), "ignore")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Switches the shovel tool to administrative claims mode"))
+                        .permission(GPPermissions.CLAIMS_ADMIN)
+                        .executor(new CommandClaimAdmin())
+                        .build(), "admin")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Switches the shovel tool to restoration mode"))
+                        .permission(GPPermissions.RESTORE_NATURE)
+                        .executor(new CommandRestoreNature())
+                        .build(), "restorenature", "rn")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Switches the shovel tool to aggressive restoration mode"))
+                        .permission(GPPermissions.RESTORE_NATURE_AGGRESSIVE)
+                        .executor(new CommandRestoreNatureAggressive())
+                        .build(), "restorenatureaggressive", "rna")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Switches the shovel tool to fill mode"))
+                        .permission(GPPermissions.RESTORE_NATURE_FILL)
+                        .arguments(optional(integer(Text.of("radius")), 2))
+                        .executor(new CommandRestoreNatureFill())
+                        .build(), "restorenaturefill", "rnf")
+
+                    .build())
+
+                .child(ParentCommandContainer.builder()
+                    .aliases("admin", "a")
+                    .description(Text.of("Administrator claim tools"))
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("List all administrative claims"))
+                        .permission(GPPermissions.CLAIMS_LIST_ADMIN)
+                        .executor(new CommandClaimAdminList())
+                        .build(), "list")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
+                        .permission(GPPermissions.DELETE_CLAIM)
+                        .executor(new CommandClaimDelete())
+                        .build(), "delete")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Delete all of another player's claims"))
+                        .permission(GPPermissions.DELETE_ALL_CLAIMS)
+                        .arguments(player(Text.of("player")))
+                        .executor(new CommandClaimDeleteAll())
+                        .build(), "deleteall")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Deletes all administrative claims"))
+                        .permission(GPPermissions.DELETE_ADMIN_CLAIM)
+                        .executor(new CommandClaimDeleteAllAdmin())
+                        .build(), "deletealladmin")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Converts an administrative claim to a private claim"))
+                        .arguments(optional(player(Text.of("target"))))
+                        .permission(GPPermissions.TRANSFER_CLAIM)
+                        .executor(new CommandClaimTransfer())
+                        .build(), "convert")
+
+                    .child(CommandSpec.builder()
+                        .description(Text.of("Adds or subtracts bonus claim blocks for a player"))
+                        .permission(GPPermissions.ADJUST_CLAIM_BLOCKS)
+                        .arguments(string(Text.of("player")), integer(Text.of("amount")))
+                        .executor(new CommandAdjustBonusClaimBlocks())
+                        .build(), "adjustclaimblocks", "acb")
+
+                    .child(CommandSpec.builder().description(Text.of("Updates a player's accrued claim block total"))
+                        .permission(GPPermissions.SET_ACCRUED_CLAIM_BLOCKS).arguments(string(Text.of("player")), integer(Text.of("amount")))
+                        .executor(new CommandSetAccruedClaimBlocks()).build(), "setaccruedclaimblocks", "scb")
+
+                    .build())
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Gives a player a manual about claiming land"))
+                    .permission(GPPermissions.GIVE_CLAIM_BOOK)
+                    .arguments(playerOrSource(Text.of("player")))
+                    .executor(new CommandClaimBook())
+                    .build(), "book", "guide")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Purchases additional claim blocks with server money. Requires an economy plugin"))
+                    .permission(GPPermissions.BUY_CLAIM_BLOCKS)
+                    .arguments(optional(integer(Text.of("numberOfBlocks"))))
+                    .executor(new CommandClaimBuy())
+                    .build(), "buyblocks")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Sell your claim blocks for server money. Requires an economy plugin"))
+                    .permission(GPPermissions.SELL_CLAIM_BLOCKS)
+                    .arguments(optional(integer(Text.of("numberOfBlocks"))))
+                    .executor(new CommandClaimSell())
+                    .build(), "sellblocks")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("List information about a player's claim blocks and claims"))
+                    .permission(GPPermissions.LIST_CLAIMS)
+                    .arguments(onlyOne(playerOrSource(Text.of("player"))))
+                    .executor(new CommandClaimList())
+                    .build(), "list")
+
+                .build())
+
+            .child(CommandSpec.builder()
+                .description(Text.of("Allows a player to give away a pet they tamed"))
+                .permission(GPPermissions.GIVE_PET).arguments(GenericArguments
+                    .firstParsing(GenericArguments.literal(Text.of("player"), "cancel"), player(Text.of("player"))))
+                .executor(new CommandGivePet())
+                .build(), "givepet")
+
+            .child(CommandSpec.builder()
+                .description(Text.of("Initiates a siege versus another player"))
+                .arguments(optional(onlyOne(player(Text.of("playerName")))))
+                .permission(GPPermissions.SIEGE)
+                .executor(new CommandSiege())
+                .build(), "siege")
+
+            .child(ParentCommandContainer.builder()
+                .aliases("items", "item", "i")
+                .description(Text.of("Item bans management"))
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
+                    .permission(GPPermissions.BAN_ITEM)
+                    .arguments(optional(string(Text.of("itemid"))))
+                    .executor(new CommandBanItem())
+                    .build(), "ban")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
+                    .permission(GPPermissions.UNBAN_ITEM)
+                    .arguments(optional(string(Text.of("itemid"))))
+                    .executor(new CommandUnbanItem())
+                    .build(), "unban")
+
+                .build())
+
+            .child(ParentCommandContainer.builder()
+                .aliases("players", "player", "p")
+                .description(Text.of("Player management"))
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Ignores another player's chat messages"))
+                    .permission(GPPermissions.IGNORE_PLAYER)
+                    .arguments(onlyOne(player(Text.of("player"))))
+                    .executor(new CommandIgnorePlayer())
+                    .build(), "ignore")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Unignores another player's chat messages"))
+                    .permission(GPPermissions.UNIGNORE_PLAYER)
+                    .arguments(onlyOne(player(Text.of("player"))))
+                    .executor(new CommandUnignorePlayer())
+                    .build(), "unignore")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Lists the players you're ignoring in chat"))
+                    .permission(GPPermissions.LIST_IGNORED_PLAYERS)
+                    .executor(new CommandIgnoredPlayerList())
+                    .build(), "list")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Forces two players to ignore each other in chat"))
+                    .permission(GPPermissions.SEPARATE_PLAYERS)
+                    .arguments(onlyOne(player(Text.of("player1"))), onlyOne(player(Text.of("player2"))))
+                    .executor(new CommandSeparate())
+                    .build(), "separate")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Reverses /separate"))
+                    .permission(GPPermissions.UNSEPARATE_PLAYERS)
+                    .arguments(onlyOne(player(Text.of("player1"))), onlyOne(player(Text.of("player2"))))
+                    .executor(new CommandUnseparate())
+                    .build(), "unseparate")
+
+                .child(CommandSpec.builder()
+                    .description(Text.of("Toggles whether a player's messages will only reach other soft-muted players"))
+                    .permission(GPPermissions.SOFT_MUTE_PLAYER)
+                    .arguments(onlyOne(player(Text.of("player"))))
+                    .executor(new CommandSoftMute())
+                    .build(), "softmute")
+
+                .build())
+
+            .child(CommandSpec.builder()
+                .description(Text.of("Ejects you to nearby unclaimed land. Has a substantial cooldown period"))
+                .permission(GPPermissions.TRAPPED)
+                .executor(new CommandTrapped())
+                .build(), "trapped")
+
+            .child(CommandSpec.builder()
+                .description(Text.of("Allows other players to pick up the items you dropped when you died"))
+                .permission(GPPermissions.UNLOCK_DROPS)
+                .executor(new CommandUnlockDrops())
+                .build(), "unlockdrops")
+
+            .child(CommandSpec.builder()
+                .description(Text.of("Turns on debug logging."))
+                .permission(GPPermissions.DEBUG)
+                .executor(new CommandDebug())
+                .build(), "debug")
+
+            .child(CommandSpec.builder()
+                .description(Text.of("Reloads Grief Prevention's configuration settings"))
+                .permission(GPPermissions.RELOAD)
+                .executor(new CommandGpReload())
+                .build(), "reload")
+
+            .build();
+
+        /* All of these commands are related to the trust system or the flags system
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Grants a player entry to your claim(s) and use of your bed"))
+            .permission(GPPermissions.GIVE_ACCESS_TRUST)
+            .arguments(string(Text.of("target")))
+            .executor(new CommandAccessTrust())
+            .build(), "accesstrust", "at")
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Grants a player access to your claim's containers, crops, animals, bed, buttons, and levers"))
+            .permission(GPPermissions.GIVE_CONTAINER_TRUST)
+            .arguments(string(Text.of("target")))
+            .executor(new CommandContainerTrust())
+            .build(), "containertrust", "ct")
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Grants a player permission to grant their level of permission to others"))
+            .permission(GPPermissions.GIVE_PERMISSION_TRUST)
+            .arguments(string(Text.of("target")))
+            .executor(new CommandPermissionTrust())
+            .build(), "permissiontrust", "pt")
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Lists permissions for the claim you're standing in"))
+            .permission(GPPermissions.LIST_TRUST)
+            .executor(new CommandTrustList())
+            .build(), "trustlist")
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Grants a player full access to your claim(s)"))
+            .extendedDescription(Text.of("Grants a player full access to your claim(s).\n"
+                + "See also /untrust, /containertrust, /accesstrust, and /permissiontrust."))
+            .permission(GPPermissions.GIVE_FULL_TRUST)
+            .arguments(string(Text.of("subject")))
+            .executor(new CommandTrust())
+            .build(), "trust")
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Revokes a player's access to your claim(s)"))
+            .permission(GPPermissions.REMOVE_TRUST)
+            .arguments(string(Text.of("subject")))
+            .executor(new CommandUntrust())
+            .build(), "untrust")
+
+        HashMap<String, String> targetChoices = new HashMap<>();
+        targetChoices.put("player", "player");
+        targetChoices.put("group", "group");
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Adds flag permission to target."))
+            .permission(GPPermissions.CLAIM_MANAGE_FLAGS)
+            .arguments(GenericArguments.seq(
+                GenericArguments.choices(Text.of("target"), targetChoices, true),
+                GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
+                GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
+                GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
+            .executor(new CommandAddFlagPermission())
+            .build(), "addflagpermission")
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Adds flag command permission to target."))
+            .permission(GPPermissions.CLAIM_MANAGE_FLAGS)
+            .arguments(GenericArguments.seq(
+                GenericArguments.choices(Text.of("target"), targetChoices, true),
+                GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
+                GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
+                GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
+            .executor(new CommandAddFlagCmdPermission())
+            .build(), "addflagcmdpermission")
+
+        .child(CommandSpec.builder()
+            .description(Text.of("Gets/Sets various claim flags in the claim you are standing in"))
+            .permission(GPPermissions.CLAIM_MANAGE_FLAGS)
+            .arguments(GenericArguments.firstParsing(GenericArguments.flags().flag("-r", "r")
+                .buildWith(GenericArguments.seq(optional(onlyOne(string(Text.of("flag")))),
+                    optional(GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                        .put("-1", Tristate.FALSE)
+                        .put("0", Tristate.UNDEFINED)
+                        .put("1", Tristate.TRUE)
+                        .put("false", Tristate.FALSE)
+                        .put("default", Tristate.UNDEFINED)
+                        .put("true", Tristate.TRUE)
+                        .build())), onlyOne(GenericArguments.remainingJoinedStrings(Text.of("val")))))))))
+            .executor(new CommandClaimFlag(GPPermissions.CLAIM_MANAGE_FLAGS))
+            .build(), "claimflag")
+
+         */
+    }
+
+    // Create our own command system, because ChildCommandElementExecutor does not expose the child commands
+    // It has to be done this way to keep compatibility with /gp help and at the same time not require a shitton of reflection/implementation dependencies
+
+    public static class CommandContainer {
+
+        private final List<String> aliases;
+        private final CommandSpec commandSpec;
+
+        private CommandContainer(List<String> aliases, CommandSpec commandSpec) {
+            this.aliases = ImmutableList.copyOf(aliases);
+            this.commandSpec = Objects.requireNonNull(commandSpec);
+        }
+
+        public List<String> getAliases() {
+            return aliases;
+        }
+
+        public CommandSpec getCommandSpec() {
+            return commandSpec;
+        }
+
+        public static CommandContainer of(CommandSpec commandSpec, String... aliases) {
+            return new CommandContainer(Arrays.asList(aliases), commandSpec);
+        }
+    }
+
+    public static class ParentCommandContainer extends CommandContainer {
+
+        private final List<CommandContainer> children;
+
+        private ParentCommandContainer(List<String> aliases, Text description, List<CommandContainer> children) {
+            super(aliases, CommandSpec.builder()
+                .description(Objects.requireNonNull(description))
+                .children(convertChildrenList(children))
+                .build());
+            this.children = ImmutableList.copyOf(children);
+        }
+
+        public List<CommandContainer> getChildren() {
+            return children;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        private static Map<List<String>, CommandSpec> convertChildrenList(List<CommandContainer> children) {
+            return children.stream()
+                .collect(Collectors.toMap(CommandContainer::getAliases, CommandContainer::getCommandSpec));
+        }
+
+        public static class Builder {
+
+            private List<String> aliases;
+            private List<CommandContainer> children = new LinkedList<>();
+            private Text description;
+
+            private Builder() {}
+
+            public Builder aliases(String... aliases) {
+                this.aliases = Arrays.asList(aliases);
+                return this;
+            }
+
+            public ParentCommandContainer build() {
+                return new ParentCommandContainer(aliases, description, children);
+            }
+
+            public Builder child(CommandContainer child) {
+                children.add(child);
+                return this;
+            }
+
+            public Builder child(CommandSpec commandSpec, String... aliases) {
+                return child(CommandContainer.of(commandSpec, aliases));
+            }
+
+            public Builder description(Text description) {
+                this.description = Objects.requireNonNull(description);
+                return this;
+            }
+        }
     }
 }
