@@ -232,7 +232,7 @@ public class GriefPrevention {
         Sponge.getGame().getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
         Sponge.getGame().getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
         Sponge.getGame().getEventManager().registerListeners(this, new WorldEventHandler());
-        Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand(), "griefprevention", "gp");
+        Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand().getCommandSpec(), CommandGriefPrevention.getCommand().getAliases());
         addLogEntry("Boot finished.");
     }
 
