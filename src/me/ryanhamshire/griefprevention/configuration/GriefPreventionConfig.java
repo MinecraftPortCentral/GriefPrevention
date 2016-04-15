@@ -304,7 +304,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
                 comment = "The mode used when creating claims. (0 = Disabled, 1 = Survival, 2 = SurvivalRequiringClaims, 3 = Creative)")
         public int claimMode = 1;
         @Setting(value = CLAIM_FIRE_SPREADS_OUTSIDE, comment = "Whether fire spreads outside of claims.")
-        public boolean fireSpreadOutsideClaim = true;
+        public boolean fireSpreadOutsideClaim = false;
         @Setting(value = CLAIM_ALWAYS_IGNORE_CLAIMS, comment = "List of player uuid's which ALWAYS ignore claims.")
         public List<String> alwaysIgnoreClaimsList = new ArrayList<>();
         @Setting(value = CLAIM_IGNORED_ENTITY_IDS, comment = "List of entity id's that ignore protection. Format should be modid:name. For example, if you want creepers to ignore protection you would add minecraft:creeper.")

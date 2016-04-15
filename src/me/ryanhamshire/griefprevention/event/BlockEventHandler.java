@@ -118,10 +118,17 @@ public class BlockEventHandler {
             Direction direction = iterator.next();
             Location<World> location = blockSource.get().getLocation().get().getRelative(direction);
             Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
-            if (sourceClaim == null && targetClaim != null) {
+            if (targetClaim == null) {
+                if (blockSource.get().getState().getType() == BlockTypes.FIRE) {
+                    if (!GriefPrevention.getActiveConfig(blockSource.get().getLocation().get().getExtent().getProperties()).getConfig().claim.fireSpreadOutsideClaim) {
+                        GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + blockSource.get() + "][CancelReason: " + Messages.FireSpreadOutsideClaim + "]", CustomLogEntryTypes.Debug);
+                        iterator.remove();
+                    }
+                }
+            } else if (sourceClaim == null) {
                 GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][Removed: " + direction + "][Location: " + location + "]", CustomLogEntryTypes.Debug);
                 iterator.remove();
-            } else if (sourceClaim != null && targetClaim != null) {
+            } else if (sourceClaim != null) {
                 if (user.isPresent() && user.get() instanceof Player) {
                     Player player = (Player) user.get();
                     if (targetClaim.doorsOpen && GriefPrevention.getActiveConfig(player.getWorld().getProperties())
@@ -290,18 +297,16 @@ public class BlockEventHandler {
                     return;
                 }
             }
-            // FEATURE: limit fire placement, to prevent PvP-by-fire
-            // TODO: allow flint with portal block
-            if (block.getState().getType() == BlockTypes.FIRE) {
-                if (!activeConfig.getConfig().claim.fireSpreadOutsideClaim) {
+
+            if (claim == null && !(event.getCause().root() instanceof Player) && block.getState().getType() == BlockTypes.FIRE) {
+                if (!GriefPrevention.getActiveConfig(block.getLocation().get().getExtent().getProperties()).getConfig().claim.fireSpreadOutsideClaim) {
                     GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + Messages.FireSpreadOutsideClaim + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 }
             }
 
-            // warn players when they place TNT above sea level, since it doesn't
-            // destroy blocks there
+            // warn players when they place TNT above sea level, since it doesn't destroy blocks there
             if (!activeConfig.getConfig().general.surfaceExplosions && block.getState().getType() == BlockTypes.TNT &&
                     !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
                     block.getPosition().getY() > GriefPrevention.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&

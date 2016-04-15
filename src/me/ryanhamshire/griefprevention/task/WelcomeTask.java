@@ -94,16 +94,14 @@ public class WelcomeTask implements Runnable {
             }
 
             StringBuilder page2 = new StringBuilder(datastore.getMessage(Messages.BookUsefulCommands)).append("\n\n");
-            page2.append("/Trust /UnTrust /TrustList\n");
-            page2.append("/ClaimsList\n");
-            page2.append("/AbandonClaim\n\n");
+            page2.append("/gp claims trust /gp claims untrust /gp claims trustlist\n");
+            page2.append("/gp claims list\n");
+            page2.append("/gp claims abandon\n\n");
 
-            page2.append("/IgnorePlayer\n\n");
+            page2.append("/gp players ignore\n\n");
 
-            page2.append("/SubdivideClaims\n");
-            page2.append("/AccessTrust\n");
-            page2.append("/ContainerTrust\n");
-            page2.append("/PermissionTrust");
+            page2.append("/gp claims subdivide\n");
+            //page2.append("/PermissionTrust");
             try {
                 final Text page2Text = SpongeTexts.fromLegacy(page2.toString());
                 final Text page1Text = SpongeTexts.fromLegacy(page1.toString());

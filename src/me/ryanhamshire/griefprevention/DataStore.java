@@ -1038,17 +1038,17 @@ public abstract class DataStore {
 
     private void loadMessages() {
         // initialize defaults
-        this.addDefault(Messages.AbandonClaimAdvertisement, "To delete another claim and free up some blocks, use /AbandonClaim.");
-        this.addDefault(Messages.AbandonClaimMissing, "Stand in the claim you want to delete, or consider /AbandonAllClaims.");
+        this.addDefault(Messages.AbandonClaimAdvertisement, "To delete another claim and free up some blocks, use '/gp claims abandon'.");
+        this.addDefault(Messages.AbandonClaimMissing, "Stand in the claim you want to delete, or consider '/gp claims abandonall'.");
         this.addDefault(Messages.AbandonSuccess, "Claim abandoned.  You now have {0} available claim blocks.", "0: remaining claim blocks");
         this.addDefault(Messages.Access, "Access");
         this.addDefault(Messages.AccessPermission, "use buttons and levers");
         this.addDefault(Messages.AdjustBlocksSuccess, "Adjusted {0}'s bonus claim blocks by {1}.  New total bonus blocks: {2}.", "0: player; 1: adjustment; 2: new total");
         this.addDefault(Messages.AdjustGroupBlocksSuccess, "Adjusted bonus claim blocks for players with the {0} permission by {1}.  New total: {2}.", "0: permission; 1: adjustment amount; 2: new total bonus");
         this.addDefault(Messages.AdminClaimsMode, "Administrative claims mode active.  Any claims created will be free and editable by other administrators.");
-        this.addDefault(Messages.AdvertiseACB, "You may use /ACB to give yourself more claim blocks.");
-        this.addDefault(Messages.AdvertiseACandACB, "You may use /ACB to give yourself more claim blocks, or /AdminClaims to create a free administrative claim.");
-        this.addDefault(Messages.AdvertiseAdminClaims, "You could create an administrative land claim instead using /AdminClaims, which you'd share with other administrators.");
+        this.addDefault(Messages.AdvertiseACB, "You may use '/gp claims acb' to give yourself more claim blocks.");
+        this.addDefault(Messages.AdvertiseACandACB, "You may use '/gp claims acb' to give yourself more claim blocks, or '/gp claims admin' to create a free administrative claim.");
+        this.addDefault(Messages.AdvertiseAdminClaims, "You could create an administrative land claim instead using '/gp claims admin', which you'd share with other administrators.");
         this.addDefault(Messages.AllAdminDeleted, "Deleted all administrative claims.");
         this.addDefault(Messages.AlreadySieging, "You're already involved in a siege.");
         this.addDefault(Messages.AlreadyUnderSiegeArea, "That area is already under siege.  Join the party!");
@@ -1103,27 +1103,25 @@ public abstract class DataStore {
         this.addDefault(Messages.CreateClaimFailOverlapRegion, "You can't claim all of this because you're not allowed to build here.");
         this.addDefault(Messages.CreateClaimFailOverlapShort, "Your selected area overlaps an existing claim.");
         this.addDefault(Messages.CreateClaimInsufficientBlocks, "You don't have enough blocks to claim that entire area.  You need {0} more blocks.", "0: additional blocks needed");
-        this.addDefault(Messages.CreateClaimSuccess, "Claim created!  Use /trust to share it with friends.");
+        this.addDefault(Messages.CreateClaimSuccess, "Claim created!  Use '/gp claims trust' to share it with friends.");
         this.addDefault(Messages.CreateSubdivisionOverlap, "Your selected area overlaps another subdivision.");
         this.addDefault(Messages.CreativeBasicsVideo2, "Click for Land Claim Help: " + CREATIVE_VIDEO_URL_RAW);
         this.addDefault(Messages.DeleteAllSuccess, "Deleted all of {0}'s claims.", "0: owner's name");
         this.addDefault(Messages.DeleteClaimMissing, "There's no claim here.");
         this.addDefault(Messages.DeleteSuccess, "Claim deleted.");
-        this.addDefault(Messages.DeleteTopLevelClaim, "To delete a subdivision, stand inside it.  Otherwise, use /AbandonTopLevelClaim to delete this claim and all subdivisions.");
-        this.addDefault(Messages.DeletionSubdivisionWarning, "This claim includes subdivisions.  If you're sure you want to delete it, use /DeleteClaim again.");
+        this.addDefault(Messages.DeleteTopLevelClaim, "To delete a subdivision, stand inside it.  Otherwise, use '/gp claims abandontoplevel' to delete this claim and all subdivisions.");
+        this.addDefault(Messages.DeletionSubdivisionWarning, "This claim includes subdivisions.  If you're sure you want to delete it, use '/gp claims delete' again.");
         this.addDefault(Messages.DonateItemsInstruction, "To give away the item(s) in your hand, left-click the chest again.");
         this.addDefault(Messages.DonationSuccess, "Item(s) transferred to chest!");
-        this.addDefault(Messages.DropUnlockAdvertisement, "Other players can't pick up your dropped items unless you /UnlockDrops first.");
+        this.addDefault(Messages.DropUnlockAdvertisement, "Other players can't pick up your dropped items unless you '/gp unlockdrops' first.");
         this.addDefault(Messages.DropUnlockConfirmation, "Unlocked your drops.  Other players may now pick them up (until you die again).");
         this.addDefault(Messages.EndBlockMath, " = {0} blocks left to spend");
-        this.addDefault(Messages.ExplosivesDisabled, "This claim is now protected from explosions.  Use /ClaimExplosions again to disable.");
-        this.addDefault(Messages.ExplosivesEnabled, "This claim is now vulnerable to explosions.  Use /ClaimExplosions again to re-enable protections.");
         this.addDefault(Messages.FillModeActive, "Fill mode activated with radius {0}.  Right click an area to fill.", "0: fill radius");
         this.addDefault(Messages.FireSpreadOutsideClaim, "Fire attempting to spread outside of claim.");
         this.addDefault(Messages.GrantPermissionConfirmation, "Granted {0} permission to {1} {2}.", "0: target player; 1: permission description; 2: scope (changed claims)");
         this.addDefault(Messages.GrantPermissionNoClaim, "Stand inside the claim where you want to grant permission.");
         this.addDefault(Messages.HowToClaimRegex, "(^|.*\\W)how\\W.*\\W(claim|protect|lock)(\\W.*|$)", "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how " + "to claim land.");
-        this.addDefault(Messages.IgnoreClaimsAdvertisement, "To override, use /IgnoreClaims.");
+        this.addDefault(Messages.IgnoreClaimsAdvertisement, "To override, use '/gp claims ignore'.");
         this.addDefault(Messages.IgnoreConfirmation, "You're now ignoring chat messages from that player.");
         this.addDefault(Messages.IgnoringClaims, "Now ignoring claims.");
         this.addDefault(Messages.InsufficientFunds, "You don't have enough money.  You need {0}, but you only have {1}.", "0: total cost; 1: player's account balance");
@@ -1173,7 +1171,7 @@ public abstract class DataStore {
         this.addDefault(Messages.NotSiegableThere, "{0} isn't protected there.", "0: defending player");
         this.addDefault(Messages.NotTrappedHere, "You can build here.  Save yourself.");
         this.addDefault(Messages.NotYourClaim, "This isn't your claim.");
-        this.addDefault(Messages.NotYourPet, "That belongs to {0} until it's given to you with /GivePet.", "0: owner name");
+        this.addDefault(Messages.NotYourPet, "That belongs to {0} until it's given to you with '/gp givepet'.", "0: owner name");
         this.addDefault(Messages.OnlyOwnersModifyClaims, "Only {0} can modify this claim.", "0: owner name");
         this.addDefault(Messages.OnlyPurchaseBlocks, "Claim blocks may only be purchased, not sold.");
         this.addDefault(Messages.OnlySellBlocks, "Claim blocks may only be sold, not purchased.");
@@ -1181,7 +1179,7 @@ public abstract class DataStore {
         this.addDefault(Messages.PermissionsPermission, "manage permissions");
         this.addDefault(Messages.PetGiveawayConfirmation, "Pet transferred.");
         this.addDefault(Messages.PetTransferCancellation, "Pet giveaway cancelled.");
-        this.addDefault(Messages.PickupBlockedExplanation, "You can't pick this up unless {0} uses /UnlockDrops.", "0: The item stack's owner.");
+        this.addDefault(Messages.PickupBlockedExplanation, "You can't pick this up unless {0} uses '/gp unlockdrops'.", "0: The item stack's owner.");
         this.addDefault(Messages.PlayerInPvPSafeZone, "That player is in a PvP safe zone.");
         this.addDefault(Messages.PlayerNotFound2, "No player by that name has logged in recently.");
         this.addDefault(Messages.PlayerNotIgnorable, "You can't ignore that player.");
@@ -1192,7 +1190,7 @@ public abstract class DataStore {
         this.addDefault(Messages.PvPImmunityStart, "You're protected from attack by other players as long as your inventory is empty.");
         this.addDefault(Messages.PvPNoContainers, "You can't access containers during PvP combat.");
         this.addDefault(Messages.PvPNoDrop, "You can't drop items while in PvP combat.");
-        this.addDefault(Messages.ReadyToTransferPet,"Ready to transfer!  Right-click the pet you'd like to give away, or cancel with /GivePet cancel.");
+        this.addDefault(Messages.ReadyToTransferPet,"Ready to transfer!  Right-click the pet you'd like to give away, or cancel with '/gp givepet cancel'.");
         this.addDefault(Messages.RemainingBlocks, "You may claim up to {0} more blocks.", "0: remaining blocks");
         this.addDefault(Messages.RescueAbortedMoved, "You moved!  Rescue cancelled.");
         this.addDefault(Messages.RescuePending, "If you stay put for 10 seconds, you'll be teleported out.  Please wait.");
@@ -1200,12 +1198,12 @@ public abstract class DataStore {
         this.addDefault(Messages.ResizeClaimTooNarrow, "This new size would be too small.  Claims must be at least {0} blocks wide.", "0: minimum claim width");
         this.addDefault(Messages.ResizeFailOverlap, "Can't resize here because it would overlap another nearby claim.");
         this.addDefault(Messages.ResizeFailOverlapRegion, "You don't have permission to build there, so you can't claim that area.");
-        this.addDefault(Messages.ResizeFailOverlapSubdivision, "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use " + "your shovel at a corner to resize it.");
+        this.addDefault(Messages.ResizeFailOverlapSubdivision, "You can't create a subdivision here because it would overlap another subdivision.  Consider '/gp claims abandon' to delete it, or use " + "your shovel at a corner to resize it.");
         this.addDefault(Messages.ResizeNeedMoreBlocks, "You don't have enough blocks for this size.  You need {0} more.", "0: how many needed");
         this.addDefault(Messages.ResizeStart, "Resizing claim.  Use your shovel again at the new location for this corner.");
         this.addDefault(Messages.RespectingClaims, "Now respecting claims.");
-        this.addDefault(Messages.RestoreNatureActivate, "Ready to restore some nature!  Right click to restore nature, and use /BasicClaims to stop.");
-        this.addDefault(Messages.RestoreNatureAggressiveActivate, "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and" + " use /BasicClaims to stop.", null);
+        this.addDefault(Messages.RestoreNatureActivate, "Ready to restore some nature!  Right click to restore nature, and use '/gp claims basic' to stop.");
+        this.addDefault(Messages.RestoreNatureAggressiveActivate, "Aggressive mode activated.  Do NOT use this underneath anything you want to keep!  Right click to aggressively restore nature, and" + " use '/gp claims basic' to stop.", null);
         this.addDefault(Messages.RestoreNaturePlayerInChunk, "Unable to restore.  {0} is in that chunk.", "0: nearby player");
         this.addDefault(Messages.SeparateConfirmation, "Those players will now ignore each other in chat.");
         this.addDefault(Messages.SetClaimBlocksSuccess, "Updated accrued claim blocks.");
@@ -1214,7 +1212,7 @@ public abstract class DataStore {
         this.addDefault(Messages.SiegeAlert, "You're under siege!  If you log out now, you will die.  You must defeat {0}, wait for him to give up, or escape.", "0: attacker name");
         this.addDefault(Messages.SiegeConfirmed, "The siege has begun!  If you log out now, you will die.  You must defeat {0}, chase him away, or admit defeat and walk away.", "0: defender name");
         this.addDefault(Messages.SiegeDoorsLockedEjection, "Looting time is up!  Ejected from the claim.");
-        this.addDefault(Messages.SiegeImmune, "That player is immune to /siege.");
+        this.addDefault(Messages.SiegeImmune, "That player is immune to '/gp siege'.");
         this.addDefault(Messages.SiegeNoContainers, "You can't access containers while involved in a siege.");
         this.addDefault(Messages.SiegeNoDrop, "You can't give away items while involved in a siege.");
         this.addDefault(Messages.SiegeNoShovel, "You can't use your shovel tool while involved in a siege.");
@@ -1226,7 +1224,7 @@ public abstract class DataStore {
         this.addDefault(Messages.StartBlockMath, "{0} blocks from play + {1} bonus = {2} total.");
         this.addDefault(Messages.SubdivisionMode, "Subdivision mode.  Use your shovel to create subdivisions in your existing claims.  Use /basicclaims to exit.");
         this.addDefault(Messages.SubdivisionStart, "Subdivision corner set!  Use your shovel at the location for the opposite corner of this new subdivision.");
-        this.addDefault(Messages.SubdivisionSuccess, "Subdivision created!  Use /trust to share it with friends.");
+        this.addDefault(Messages.SubdivisionSuccess, "Subdivision created!  Use '/gp claims trust' to share it with friends.");
         this.addDefault(Messages.SubdivisionVideo2, "Click for Subdivision Help: " + SUBDIVISION_VIDEO_URL_RAW);
         this.addDefault(Messages.SuccessfulAbandon, "Claims abandoned.  You now have {0} available claim blocks.", "0: remaining blocks");
         this.addDefault(Messages.SurvivalBasicsVideo2, "Click for Land Claim Help: " + SURVIVAL_VIDEO_URL_RAW);
@@ -1239,8 +1237,8 @@ public abstract class DataStore {
         this.addDefault(Messages.TransferClaimPermission, "That command requires the administrative claims permission.");
         this.addDefault(Messages.TransferSuccess, "Claim transferred.");
         this.addDefault(Messages.TransferTopLevel, "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.");
-        this.addDefault(Messages.TrappedChatKeyword, "trapped", "When mentioned in chat, players get information about the /trapped command.");
-        this.addDefault(Messages.TrappedInstructions, "Are you trapped in someone's land claim?  Try the /trapped command.");
+        this.addDefault(Messages.TrappedChatKeyword, "trapped", "When mentioned in chat, players get information about the '/gp trapped' command.");
+        this.addDefault(Messages.TrappedInstructions, "Are you trapped in someone's land claim?  Try the '/gp trapped' command.");
         this.addDefault(Messages.TrappedWontWorkHere, "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.");
         this.addDefault(Messages.TrustListHeader, "Explicit permissions here:");
         this.addDefault(Messages.TrustListNoClaim, "Stand inside the claim you're curious about.");
