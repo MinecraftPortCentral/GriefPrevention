@@ -113,7 +113,7 @@ public class CommandGriefPrevention {
 
                 .child(CommandSpec.builder()
                     .description(Text.of("Toggles ignore claims mode"))
-                    .permission(GPPermissions.TOGGLE_IGNORE_CLAIMS)
+                    .permission(GPPermissions.IGNORE_CLAIMS)
                     .executor(new CommandClaimIgnore())
                     .build(), "ignore")
 

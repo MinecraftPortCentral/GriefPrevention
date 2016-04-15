@@ -373,7 +373,7 @@ public class GriefPrevention {
                 .executor(new CommandAddFlagPermission()).build());
 
         subcommands.put(Arrays.asList("claimignore", "ignoreclaims"), CommandSpec.builder().description(Text.of("Toggles ignore claims mode"))
-                .permission(GPPermissions.TOGGLE_IGNORE_CLAIMS).executor(new CommandClaimIgnore()).build());
+                .permission(GPPermissions.IGNORE_CLAIMS).executor(new CommandClaimIgnore()).build());
 
         subcommands.put(Arrays.asList("claimslist", "claimlist"),
                 CommandSpec.builder().description(Text.of("List information about a player's claim blocks and claims"))

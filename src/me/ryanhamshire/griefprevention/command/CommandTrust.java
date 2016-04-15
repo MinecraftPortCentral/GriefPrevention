@@ -40,8 +40,8 @@ public class CommandTrust implements CommandExecutor {
         // determine which claim the player is standing in
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
         ArrayList<Claim> targetClaims = new ArrayList<>();
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         if (claim == null) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             if (playerData == null || playerData.playerWorldClaims.get(player.getWorld().getUniqueId()) == null) {
                 GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claims found."));
                 return CommandResult.success();
@@ -51,7 +51,22 @@ public class CommandTrust implements CommandExecutor {
                 targetClaims.add(currentClaim);
             }
         } else {
-            targetClaims.add(claim);
+            // verify claim belongs to player
+            UUID ownerID = claim.ownerID;
+            if (ownerID == null && claim.parent != null) {
+                ownerID = claim.parent.ownerID;
+            }
+            if (targetPlayer.get().getUniqueId().equals(claim.ownerID)) {
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, targetPlayer.get().getName() + " is already the owner of claim."));
+                return CommandResult.success();
+            }
+
+            if (player.getUniqueId().equals(ownerID) || (playerData != null && playerData.ignoreClaims)) {
+                targetClaims.add(claim);
+            } else {
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You do not own this claim."));
+                return CommandResult.success();
+            }
         }
 
         String location;

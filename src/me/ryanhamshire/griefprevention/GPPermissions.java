@@ -46,7 +46,6 @@ public class GPPermissions {
     public static final String SUBDIVIDE_CLAIMS = "griefprevention.claims.subdivide";
     public static final String TRANSFER_CLAIM = "griefprevention.claims.transfer";
     public static final String IGNORE_CLAIMS = "griefprevention.claims.ignore";
-    public static final String TOGGLE_IGNORE_CLAIMS = "griefprevention.claims.toggle-ignore";
     public static final String VISUALIZE_NEARBY_CLAIMS = "griefprevention.claims.visualize";
     public static final String CLAIMS_ADMIN = "griefprevention.claims.admin";
     public static final String BUY_CLAIM_BLOCKS = "griefprevention.claims.buy-blocks";

@@ -292,7 +292,12 @@ public class Claim implements ContextSource {
         return claim.contains(location, false, true);
     }
 
-    public boolean isManager(User user) {
+    public boolean hasFullAccess(User user) {
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
+        if (playerData != null && playerData.ignoreClaims) {
+            return true;
+        }
+
         if (this.isSubDivision) {
             if (this.subDivisionData.managers.contains(user.getUniqueId())) {
                 return true;
@@ -391,8 +396,7 @@ public class Claim implements ContextSource {
         }
 
         // owners can make changes, or admins with ignore claims mode enabled
-        if (isManager(user) || GriefPrevention.instance.dataStore.getPlayerData(location.getExtent(), user.getUniqueId())
-                .ignoreClaims) {
+        if (hasFullAccess(user)) {
             return null;
         }
 
@@ -432,10 +436,6 @@ public class Claim implements ContextSource {
 
     // break permission check
     public String allowBreak(User user, Location<World> location) {
-        if (this.ownerID != null && isManager(user)) {
-            return null;
-        }
-
         // if under siege, some blocks will be breakable
         if (this.siegeData != null || this.doorsOpen) {
             boolean breakable = false;
@@ -455,11 +455,15 @@ public class Claim implements ContextSource {
             // custom error messages for siege mode
             if (!breakable) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NonSiegeMaterial);
-            } else if (isManager(user)) {
+            } else if (hasFullAccess(user)) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NoOwnerBuildUnderSiege);
             } else {
                 return null;
             }
+        }
+
+        if (hasFullAccess(user)) {
+            return null;
         }
 
         if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.BLOCK_BREAK) == Tristate.FALSE) {
@@ -499,18 +503,9 @@ public class Claim implements ContextSource {
 
     // access permission check
     public String allowAccess(User user, Optional<Location<World>> location) {
-        if (isManager(user)) {
-            return null;
-        }
-
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
-        }
-
-        // check for explicit deny interact
-        if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.INTERACT_SECONDARY) == Tristate.FALSE) {
-            return GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
         }
 
         // admin claims need adminclaims permission only.
@@ -521,8 +516,13 @@ public class Claim implements ContextSource {
         }
 
         // claim owner and admins in ignoreclaims mode have access
-        if (isManager(user) || GriefPrevention.instance.dataStore.getPlayerData(world, user.getUniqueId()).ignoreClaims) {
+        if (hasFullAccess(user)) {
             return null;
+        }
+
+        // check for explicit deny interact
+        if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.INTERACT_SECONDARY) == Tristate.FALSE) {
+            return GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
         }
 
         // look for explicit individual inventory permission
