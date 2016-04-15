@@ -475,9 +475,8 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        String result = allowAccess(user, blockSnapshot.getLocation());
-        if (result != null) {
-            return result;
+        if (allowAccess(user, blockSnapshot.getLocation()) == null) {
+            return null;
         }
 
         // Check for TNT and explosions flag
