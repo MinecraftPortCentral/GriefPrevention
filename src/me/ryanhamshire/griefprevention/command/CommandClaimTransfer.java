@@ -49,7 +49,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         UUID newOwnerID = null; // no argument = make an admin claim
         String ownerName = "admin";
 
-        Optional<User> targetOpt = args.<User>getOne("target");
+        Optional<User> targetOpt = args.<User>getOne("player");
         if (targetOpt.isPresent()) {
             User targetPlayer = targetOpt.get();
             newOwnerID = targetPlayer.getUniqueId();

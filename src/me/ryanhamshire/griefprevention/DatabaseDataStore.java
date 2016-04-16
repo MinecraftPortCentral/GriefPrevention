@@ -252,7 +252,7 @@ public class DatabaseDataStore extends DataStore {
                 }
 
                 String ownerName = results.getString("owner");
-                Optional<User> owner = null;
+                Optional<User> owner = Optional.empty();
                 if (ownerName.isEmpty() || ownerName.startsWith("--")) {
                     owner = Optional.empty(); // administrative land claim or subdivision
                 } else if (this.getSchemaVersion() < 1) {
@@ -264,24 +264,12 @@ public class DatabaseDataStore extends DataStore {
                     }
                 }
 
-                String buildersString = results.getString("builders");
-                List<String> builderNames = Arrays.asList(buildersString.split(";"));
-                builderNames = this.convertNameListToUUIDList(builderNames);
-
-                String containersString = results.getString("containers");
-                List<String> containerNames = Arrays.asList(containersString.split(";"));
-                containerNames = this.convertNameListToUUIDList(containerNames);
-
-                String accessorsString = results.getString("accessors");
-                List<String> accessorNames = Arrays.asList(accessorsString.split(";"));
-                accessorNames = this.convertNameListToUUIDList(accessorNames);
-
                 String managersString = results.getString("managers");
                 List<String> managerNames = Arrays.asList(managersString.split(";"));
                 managerNames = this.convertNameListToUUIDList(managerNames);
 
-                Claim claim =
-                        new Claim(lesserBoundaryCorner, greaterBoundaryCorner, owner.get().getUniqueId(), UUID.randomUUID());
+                Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner);
+                claim.ownerID = owner.get().getUniqueId();
 
                 if (removeClaim) {
                     claimsToRemove.add(claim);

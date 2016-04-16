@@ -288,7 +288,7 @@ public class BlockEventHandler {
                 continue;
             }
 
-            Claim claim = this.dataStore.getClaimAt(block.getLocation().get(), true, playerData.lastClaim);
+            Claim claim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
             if (claim != null) {
                 String denyReason = claim.allowBuild(player, block.getLocation().get());
                 if (denyReason != null) {
@@ -358,24 +358,21 @@ public class BlockEventHandler {
                     // radius == 0 means protect ONLY the chest
                     if (activeConfig.getConfig().claim.claimRadius == 0) {
                         this.dataStore.createClaim(block.getLocation().get().getExtent(), block.getPosition().getX(), block.getPosition().getX(),
-                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(),
-                                player.getUniqueId(), null, UUID.randomUUID(), player);
+                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(), UUID.randomUUID(), null, player);
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Success, Messages.ChestClaimConfirmation));
                     }
 
                     // otherwise, create a claim in the area around the chest
                     else {
                         // as long as the automatic claim overlaps another existing
-                        // claim, shrink it
-                        // note that since the player had permission to place the
-                        // chest, at the very least, the automatic claim will
-                        // include the chest
+                        // claim, shrink it note that since the player had permission to place the
+                        // chest, at the very least, the automatic claim will include the chest
                         while (radius >= 0 && !this.dataStore.createClaim(block.getLocation().get().getExtent(),
                                 block.getPosition().getX() - radius, block.getPosition().getX() + radius,
                                 block.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance, block.getPosition().getY(),
                                 block.getPosition().getZ() - radius, block.getPosition().getZ() + radius,
-                                player.getUniqueId(),
-                                null, null,
+                                UUID.randomUUID(),
+                                null,
                                 player).succeeded) {
                             radius--;
                         }

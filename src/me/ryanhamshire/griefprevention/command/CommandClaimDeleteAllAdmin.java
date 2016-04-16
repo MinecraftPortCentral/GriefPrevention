@@ -18,7 +18,7 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         try {
-            ctx.checkPermission(src, GPPermissions.DELETE_ADMIN_CLAIM);
+            ctx.checkPermission(src, GPPermissions.DELETE_ADMIN_CLAIMS);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();

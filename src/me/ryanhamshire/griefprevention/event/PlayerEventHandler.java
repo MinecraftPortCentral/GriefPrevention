@@ -1729,7 +1729,7 @@ public class PlayerEventHandler {
                     }
 
                     // if deleteclaims permission, tell about the player's offline time
-                    if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_ADMIN_CLAIM)) {
+                    if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
                         if (claim.parent != null) {
                             claim = claim.parent;
                         }
@@ -2186,9 +2186,7 @@ public class PlayerEventHandler {
                                         playerData.lastShovelLocation.getBlockY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                                         clickedBlock.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                                         playerData.lastShovelLocation.getBlockZ(), clickedBlock.getPosition().getZ(),
-                                        null, // owner is not used for subdivisions
-                                        playerData.claimSubdividing,
-                                        UUID.randomUUID(), player);
+                                        UUID.randomUUID(), playerData.claimSubdividing, player);
 
                                 // if it didn't succeed, tell the player why
                                 if (!result.succeeded) {
@@ -2334,9 +2332,7 @@ public class PlayerEventHandler {
                             lastShovelLocation.getBlockY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                             clickedBlock.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                             lastShovelLocation.getBlockZ(), clickedBlock.getPosition().getZ(),
-                            playerID,
-                            null, null,
-                            player);
+                            UUID.randomUUID(), null, player);
 
                     // if it didn't succeed, tell the player why
                     if (!result.succeeded) {

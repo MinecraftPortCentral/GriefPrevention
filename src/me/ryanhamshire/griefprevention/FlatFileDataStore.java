@@ -156,17 +156,17 @@ public class FlatFileDataStore extends DataStore {
             if (files[i].isFile()) // avoids folders
             {
                 // the filename is the claim ID. try to parse it
-                UUID claimID;
+                UUID claimId;
 
                 try {
-                    claimID = UUID.fromString(files[i].getName());
+                    claimId = UUID.fromString(files[i].getName());
                 } catch (Exception e) {
                     GriefPrevention.addLogEntry("ERROR!! could not read claim file " + files[i].getAbsolutePath());
                     continue;
                 }
 
                 try {
-                   this.loadClaim(files[i], claimID);
+                   this.loadClaim(files[i], claimId);
                 }
 
                 // if there's any problem with the file's content, log an error message and skip it
@@ -215,11 +215,11 @@ public class FlatFileDataStore extends DataStore {
         }
     }
 
-    Claim loadClaim(File file, UUID claimID) throws IOException, Exception {
-        return this.loadClaim(file, file.lastModified(), claimID);
+    Claim loadClaim(File file, UUID claimId) throws IOException, Exception {
+        return this.loadClaim(file, file.lastModified(), claimId);
     }
 
-    Claim loadClaim(File claimFile, long lastModifiedDate, UUID claimID)
+    Claim loadClaim(File claimFile, long lastModifiedDate, UUID claimId)
             throws Exception {
         Claim claim;
 
@@ -253,9 +253,9 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // instantiate
-        claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, claimID);
+        claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, claimId);
         claim.modifiedDate = new Date(lastModifiedDate);
-        claim.id = claimID;
+        claim.ownerID = ownerID;
         claim.world = lesserBoundaryCorner.getExtent();
         claim.claimData = claimData;
         claim.context = new Context("claim", claim.id.toString());
@@ -270,7 +270,7 @@ public class FlatFileDataStore extends DataStore {
             Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);
             Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
 
-            Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, null, mapEntry.getKey());
+            Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey());
             subDivision.modifiedDate = new Date(lastModifiedDate);
             subDivision.id = mapEntry.getKey();
             subDivision.world = subLesserBoundaryCorner.getExtent();
@@ -329,8 +329,8 @@ public class FlatFileDataStore extends DataStore {
                 claimDataFolderPath = rootPath.resolve(claim.world.getName()).resolve(claimDataPath);
             }
 
-            UUID claimID = claim.parent != null ? claim.parent.id : claim.id;
-            File claimFile = new File(claimDataFolderPath + File.separator + claimID);
+            UUID claimId = claim.parent != null ? claim.parent.id : claim.id;
+            File claimFile = new File(claimDataFolderPath + File.separator + claimId);
             if (!claimFile.exists()) {
                 claimFile.createNewFile();
             }

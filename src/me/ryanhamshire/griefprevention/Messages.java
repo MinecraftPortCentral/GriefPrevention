@@ -28,6 +28,7 @@ public enum Messages {
     AbandonClaimAdvertisement,
     AbandonClaimMissing,
     AbandonSuccess,
+    AbandonOtherSuccess,
     Access,
     AccessPermission,
     AdjustBlocksSuccess,

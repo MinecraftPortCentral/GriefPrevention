@@ -118,6 +118,35 @@ public class Claim implements ContextSource {
 
     public boolean isSubDivision = false;
 
+    // used for visualizations
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner) {
+        this(lesserBoundaryCorner, greaterBoundaryCorner, null);
+    }
+
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId) {
+        this(lesserBoundaryCorner, greaterBoundaryCorner, claimId, null);
+    }
+
+    // main constructor. note that only creating a claim instance does nothing -
+    // a claim must be added to the data store to be effective
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, Player player) {
+        // modification date
+        this.modifiedDate = Calendar.getInstance().getTime();
+
+        // id
+        this.id = claimId;
+
+        // store corners
+        this.lesserBoundaryCorner = lesserBoundaryCorner;
+        this.greaterBoundaryCorner = greaterBoundaryCorner;
+        this.world = lesserBoundaryCorner.getExtent();
+
+        // owner
+        if (player != null) {
+            this.ownerID = player.getUniqueId();
+        }
+    }
+
     // whether or not this is an administrative claim
     // administrative claims are created and maintained by players with the
     // griefprevention.adminclaims permission.
@@ -132,12 +161,6 @@ public class Claim implements ContextSource {
     // accessor for ID
     public UUID getID() {
         return this.id;
-    }
-
-    // basic constructor, just notes the creation time
-    // see above declarations for other defaults
-    Claim() {
-        this.modifiedDate = Calendar.getInstance().getTime();
     }
 
     // players may only siege someone when he's not in an admin claim
@@ -242,29 +265,6 @@ public class Claim implements ContextSource {
         return false;
     }
 
-    // used for visualizations
-    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner) {
-        this(lesserBoundaryCorner, greaterBoundaryCorner, null, null);
-    }
-
-    // main constructor. note that only creating a claim instance does nothing -
-    // a claim must be added to the data store to be effective
-    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID ownerID, UUID id) {
-        // modification date
-        this.modifiedDate = Calendar.getInstance().getTime();
-
-        // id
-        this.id = id;
-
-        // store corners
-        this.lesserBoundaryCorner = lesserBoundaryCorner;
-        this.greaterBoundaryCorner = greaterBoundaryCorner;
-        this.world = lesserBoundaryCorner.getExtent();
-
-        // owner
-        this.ownerID = ownerID;
-    }
-
     // measurements. all measurements are in blocks
     public int getArea() {
         int claimWidth = this.greaterBoundaryCorner.getBlockX() - this.lesserBoundaryCorner.getBlockX() + 1;
@@ -331,7 +331,7 @@ public class Claim implements ContextSource {
 
         // anyone with deleteclaims permission can modify non-admin claims at any time
         else {
-            if (player.hasPermission(GPPermissions.DELETE_ADMIN_CLAIM)) {
+            if (player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
                 return null;
             }
         }

@@ -616,17 +616,13 @@ public abstract class DataStore {
     // if the new claim would overlap a WorldGuard region where the player
     // doesn't have permission to build, returns a failure with NULL for claim
     // otherwise, returns a success along with a reference to the new claim
-    // use ownerName == "" for administrative claims
-    // for top level claims, pass parent == NULL
-    // DOES adjust claim blocks available on success (players can go into
-    // negative quantity available)
-    // DOES check for world guard regions where the player doesn't have
-    // permission
+    // use ownerName == "" for administrative claims for top level claims, pass parent == NULL
+    // DOES adjust claim blocks available on success (players can go into negative quantity available)
+    // DOES check for world guard regions where the player doesn't have permission
     // does NOT check a player has permission to create a claim, or enough claim blocks.
     // does NOT check minimum claim size constraints
     // does NOT visualize the new claim for any players
-    public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID ownerID, Claim parent,
-            UUID id, User creatingUser) {
+    public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID claimId, Claim parent, Player player) {
         CreateClaimResult result = new CreateClaimResult();
 
         int smallx, bigx, smally, bigy, smallz, bigz;
@@ -665,8 +661,7 @@ public abstract class DataStore {
         Claim newClaim = new Claim(
                 new Location<World>(world, smallx, smally, smallz),
                 new Location<World>(world, bigx, bigy, bigz),
-                ownerID,
-                id == null ? UUID.randomUUID() : id);
+                claimId, player);
 
         newClaim.parent = parent;
 
@@ -698,7 +693,7 @@ public abstract class DataStore {
 
         newClaim.context = new Context("claim", newClaim.id.toString());
         // Assign owner full flag permissions in claim context
-        creatingUser.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), GPPermissions.CLAIM_MANAGE_FLAGS, Tristate.TRUE);
+        player.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), GPPermissions.CLAIM_MANAGE_FLAGS, Tristate.TRUE);
         // otherwise add this new claim to the data store to make it effective
         this.addClaim(newClaim, true);
 
@@ -1013,10 +1008,10 @@ public abstract class DataStore {
     // tries to resize a claim
     // see CreateClaim() for details on return value
     public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2,
-            Player resizingPlayer) {
+            Player player) {
         // try to create this new claim, ignoring the original when checking for overlap
         CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getExtent(), newx1, newx2, newy1, newy2, newz1, newz2,
-                claim.ownerID, claim.parent, claim.id, resizingPlayer);
+                claim.id, claim.parent, player);
 
         // if succeeded
         if (result.succeeded) {
@@ -1041,6 +1036,7 @@ public abstract class DataStore {
         this.addDefault(Messages.AbandonClaimAdvertisement, "To delete another claim and free up some blocks, use '/gp claims abandon'.");
         this.addDefault(Messages.AbandonClaimMissing, "Stand in the claim you want to delete, or consider '/gp claims abandonall'.");
         this.addDefault(Messages.AbandonSuccess, "Claim abandoned.  You now have {0} available claim blocks.", "0: remaining claim blocks");
+        this.addDefault(Messages.AbandonOtherSuccess, "{0}'s claim has been abandoned. {0} now has {1} available claim blocks.", "0: player; 1: remaining claim blocks");
         this.addDefault(Messages.Access, "Access");
         this.addDefault(Messages.AccessPermission, "use buttons and levers");
         this.addDefault(Messages.AdjustBlocksSuccess, "Adjusted {0}'s bonus claim blocks by {1}.  New total bonus blocks: {2}.", "0: player; 1: adjustment; 2: new total");

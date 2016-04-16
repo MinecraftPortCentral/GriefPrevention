@@ -34,7 +34,7 @@ public class CommandClaimDelete implements CommandExecutor {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
         } else {
             // deleting an admin claim additionally requires the adminclaims permission
-            if (!claim.isAdminClaim() || player.hasPermission(GPPermissions.CLAIMS_ADMIN)) {
+            if (!claim.isAdminClaim() || (player.hasPermission(GPPermissions.CLAIMS_ADMIN) || player.hasPermission(GPPermissions.DELETE_ADMIN_CLAIMS))) {
                 PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
                 if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
                     GriefPrevention.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);

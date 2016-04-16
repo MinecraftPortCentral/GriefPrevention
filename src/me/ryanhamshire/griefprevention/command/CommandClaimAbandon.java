@@ -14,6 +14,9 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
+
+import java.util.UUID;
 
 public class CommandClaimAbandon implements CommandExecutor {
 
@@ -43,8 +46,7 @@ public class CommandClaimAbandon implements CommandExecutor {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
         }
 
-        // warn if has children and we're not explicitly deleting a top level
-        // claim
+        // warn if has children and we're not explicitly deleting a top level claim
         else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
             return CommandResult.empty();
@@ -63,17 +65,31 @@ public class CommandClaimAbandon implements CommandExecutor {
                 GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
             }
 
-            // adjust claim blocks when abandoning a top level claim
-            if (claim.parent == null) {
-                playerData.setAccruedClaimBlocks(player.getWorld(),
-                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math
-                                .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
-                                        .getConfig().claim.abandonReturnRatio))));
-            }
+            // only owners can abandon non-admin claims
+            // this prevents blocks being gained without spending
+            if (!claim.isAdminClaim() && player.getUniqueId().equals(claim.ownerID)) {
+                // adjust claim blocks when abandoning a top level claim
+                if (claim.parent == null) {
+                    int newAccruedClaimCount = playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math
+                            .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
+                                    .getConfig().claim.abandonReturnRatio)));
+                    playerData.setAccruedClaimBlocks(player.getWorld(), newAccruedClaimCount);
+                }
+    
+                // tell the player how many claim blocks he has left
+                int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
+                GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
+            } else if (!player.getUniqueId().equals(claim.ownerID)) {
+                UUID ownerId = claim.ownerID;
+                if (claim.isSubDivision) {
+                    ownerId = claim.parent.ownerID;
+                }
 
-            // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
+                User user = GriefPrevention.getOrCreateUser(ownerId);
+                playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), user.getUniqueId());
+                int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
+                GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonOtherSuccess, user.getName(), String.valueOf(remainingBlocks));
+            }
 
             // revert any current visualization
             Visualization.Revert(player);

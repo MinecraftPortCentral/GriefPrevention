@@ -32,11 +32,8 @@ public class GPPermissions {
     public static final String ABANDON_ALL_CLAIMS = "griefprevention.claims.abandon-all";
     public static final String ABANDON_TOP_LEVEL_CLAIM = "griefprevention.claims.abandon-top-level";
     public static final String LIST_CLAIMS = "griefprevention.claims.list";
-    public static final String CLAIMS_LIST_ADMIN = "griefprevention.claims.list-admin";
     public static final String CLAIMS_LIST_OTHER = "griefprevention.claims.list-other";
     public static final String DELETE_CLAIM = "griefprevention.claims.delete";
-    public static final String DELETE_ALL_CLAIMS = "griefprevention.claims.delete-all";
-    public static final String DELETE_ADMIN_CLAIM = "griefprevention.claims.delete-admin";
     public static final String CLAIM_MODE_BASIC = "griefprevention.claims.basic-mode";
     public static final String GIVE_CLAIM_BOOK = "griefprevention.claims.book";
     public static final String CLAIM_MANAGE_FLAGS = "griefprevention.claims.flag";
@@ -45,28 +42,31 @@ public class GPPermissions {
     public static final String RENAME_CLAIM = "griefprevention.claims.rename";
     public static final String SUBDIVIDE_CLAIMS = "griefprevention.claims.subdivide";
     public static final String TRANSFER_CLAIM = "griefprevention.claims.transfer";
-    public static final String IGNORE_CLAIMS = "griefprevention.claims.ignore";
     public static final String VISUALIZE_NEARBY_CLAIMS = "griefprevention.claims.visualize";
-    public static final String CLAIMS_ADMIN = "griefprevention.claims.admin";
     public static final String BUY_CLAIM_BLOCKS = "griefprevention.claims.buy-blocks";
     public static final String SELL_CLAIM_BLOCKS = "griefprevention.claims.sell-blocks";
-    public static final String ADJUST_CLAIM_BLOCKS = "griefprevention.claims.adjust-blocks";
-    public static final String SET_ACCRUED_CLAIM_BLOCKS = "griefprevention.claims.set-accrued-blocks";
     public static final String OVERRIDE_CLAIM_COUNT_LIMIT = "griefprevention.claims.limit-override";
+    public static final String GIVE_FULL_TRUST = "griefprevention.claims.trust-full";
+    public static final String LIST_TRUST = "griefprevention.claims.trust-list";
+    public static final String REMOVE_TRUST = "griefprevention.claims.trust-remove";
+
+    // Admin
+    public static final String ADJUST_CLAIM_BLOCKS = "griefprevention.admin.adjust-claim-blocks";
+    public static final String CLAIMS_ADMIN = "griefprevention.admin.admin-claims";
+    public static final String CLAIMS_LIST_ADMIN = "griefprevention.admin.list-admin-claims";
+    public static final String DELETE_CLAIMS = "griefprevention.admin.delete-claims";
+    public static final String DELETE_ADMIN_CLAIMS = "griefprevention.admin.delete-admin-claims";
+    public static final String IGNORE_CLAIMS = "griefprevention.admin.ignore-claims";
+    public static final String SET_ACCRUED_CLAIM_BLOCKS = "griefprevention.admin.set-accrued-claim-blocks";
+    public static final String RESTORE_NATURE = "griefprevention.admin.restore-nature";
+    public static final String RESTORE_NATURE_AGGRESSIVE = "griefprevention.admin.restore-nature-aggressive";
+    public static final String RESTORE_NATURE_FILL = "griefprevention.admin.restore-nature-fill";
 
     // Item bans
     public static final String BAN_ITEM = "griefprevention.items.ban";
     public static final String UNBAN_ITEM = "griefprevention.items.unban";
     public static final String LIST_ITEM_BANS = "griefprevention.items.list";
     public static final String IGNORE_ITEM_BANS = "griefprevention.items.ignore";
-
-    // Trust
-    public static final String GIVE_ACCESS_TRUST = "griefprevention.trust.access";
-    public static final String GIVE_CONTAINER_TRUST = "griefprevention.trust.container";
-    public static final String GIVE_PERMISSION_TRUST = "griefprevention.trust.permission";
-    public static final String GIVE_FULL_TRUST = "griefprevention.trust.full";
-    public static final String LIST_TRUST = "griefprevention.trust.list";
-    public static final String REMOVE_TRUST = "griefprevention.trust.remove";
 
     // Players
     public static final String IGNORE_PLAYER = "griefprevention.players.ignore";
@@ -75,11 +75,6 @@ public class GPPermissions {
     public static final String SEPARATE_PLAYERS = "griefprevention.players.separate";
     public static final String UNSEPARATE_PLAYERS = "griefprevention.players.unseparate";
     public static final String SOFT_MUTE_PLAYER = "griefprevention.players.softmute";
-
-    // Restoration
-    public static final String RESTORE_NATURE = "griefprevention.restore.nature";
-    public static final String RESTORE_NATURE_AGGRESSIVE = "griefprevention.restore.nature-aggressive";
-    public static final String RESTORE_NATURE_FILL = "griefprevention.restore.nature-fill";
 
     // Siege
     public static final String SIEGE = "griefprevention.siege";
