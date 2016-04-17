@@ -1146,6 +1146,7 @@ public abstract class DataStore {
         this.addDefault(Messages.NoDamageClaimedEntity, "That belongs to {0}.", "0: owner name");
         this.addDefault(Messages.NoDeletePermission, "You don't have permission to delete claims.");
         this.addDefault(Messages.NoDropsAllowed, "You can't drop items in this claim.");
+        this.addDefault(Messages.NoEditPermission, "You don't have permission to edit this claim.");
         this.addDefault(Messages.NoLavaNearOtherPlayer, "You can't place lava this close to {0}.", "0: nearby player");
         this.addDefault(Messages.NoModifyDuringSiege, "Claims can't be modified while under siege.");
         this.addDefault(Messages.NoOwnerBuildUnderSiege, "You can't make changes while under siege.");

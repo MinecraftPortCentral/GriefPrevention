@@ -39,7 +39,9 @@ public class GPPermissions {
     public static final String CLAIM_MANAGE_FLAGS = "griefprevention.claims.flag";
     public static final String GIVE_PET = "griefprevention.claims.givepet";
     public static final String CLAIM_INFO = "griefprevention.claims.info";
-    public static final String RENAME_CLAIM = "griefprevention.claims.rename";
+    public static final String SET_CLAIM_NAME = "griefprevention.claims.set-name";
+    public static final String SET_CLAIM_FAREWELL = "griefprevention.claims.set-farewell";
+    public static final String SET_CLAIM_GREETING = "griefprevention.claims.set-greeting";
     public static final String SUBDIVIDE_CLAIMS = "griefprevention.claims.subdivide";
     public static final String TRANSFER_CLAIM = "griefprevention.claims.transfer";
     public static final String VISUALIZE_NEARBY_CLAIMS = "griefprevention.claims.visualize";
@@ -99,9 +101,11 @@ public class GPPermissions {
     public static final String BLOCK_COMMANDS = "griefprevention.flag.block-commands";
     public static final String BLOCK_PLACE = "griefprevention.flag.block-place";
     public static final String EXPLOSIONS = "griefprevention.flag.explosions";
+    public static final String FAREWELL_MESSAGE = "griefprevention.flag.farewell-message";
     public static final String FIRE_SPREAD = "griefprevention.flag.fire-spread";
     public static final String FLAG_BASE = "griefprevention.flag";
     public static final String FORCE_DENY_ALL = "griefprevention.flag.force-deny-all";
+    public static final String GREETING_MESSAGE = "griefprevention.flag.greeting-message";
     public static final String LAVA_FLOW = "griefprevention.flag.lava-flow";
     public static final String MOB_BLOCK_DAMAGE = "griefprevention.flag.mob-block-damage";
     public static final String MOB_PLAYER_DAMAGE = "griefprevention.flag.mob-player-damage";

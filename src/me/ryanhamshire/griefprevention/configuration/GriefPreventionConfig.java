@@ -341,10 +341,14 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public boolean blockPlace = false;
         @Setting(value = GPFlags.EXPLOSIONS, comment = GPFlags.COMMENT_EXPLOSIONS)
         public boolean explosions = false;
+        @Setting(value = GPFlags.FAREWELL_MESSAGE, comment = GPFlags.COMMENT_FAREWELL_MESSAGE)
+        public boolean farewellMessage = true;
         @Setting(value = GPFlags.FIRE_SPREAD, comment = GPFlags.COMMENT_FIRE_SPREAD)
         public boolean fireSpread = false;
         @Setting(value = GPFlags.FORCE_DENY_ALL, comment = GPFlags.COMMENT_FORCE_DENY_ALL)
         public boolean forceDenyAll = false;
+        @Setting(value = GPFlags.GREETING_MESSAGE, comment = GPFlags.COMMENT_GREETING_MESSAGE)
+        public boolean greetingMessage = true;
         @Setting(value = GPFlags.INTERACT_PRIMARY, comment = GPFlags.COMMENT_INTERACT_PRIMARY)
         public boolean interactPrimary = false;
         @Setting(value = GPFlags.INTERACT_SECONDARY, comment = GPFlags.COMMENT_INTERACT_SECONDARY)
@@ -402,10 +406,14 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
                     return this.blockPlace;
                 case GPFlags.EXPLOSIONS:
                     return this.explosions;
+                case GPFlags.FAREWELL_MESSAGE:
+                    return this.farewellMessage;
                 case GPFlags.FIRE_SPREAD:
                     return this.fireSpread;
                 case GPFlags.FORCE_DENY_ALL:
                     return this.forceDenyAll;
+                case GPFlags.GREETING_MESSAGE:
+                    return this.greetingMessage;
                 case GPFlags.INTERACT_PRIMARY:
                     return this.interactPrimary;
                 case GPFlags.INTERACT_SECONDARY:

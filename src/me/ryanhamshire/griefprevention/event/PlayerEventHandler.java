@@ -997,6 +997,37 @@ public class PlayerEventHandler {
         }
     }
 
+    @Listener
+    public void onPlayerMove(DisplaceEntityEvent.Move event){
+        if (!(event.getCause().root() instanceof Player)) {
+            return;
+        }
+
+        Player player = (Player) event.getCause().root();
+        Claim fromClaim = this.dataStore.getClaimAt(event.getFromTransform().getLocation(), false, null);
+        Claim toClaim = this.dataStore.getClaimAt(event.getToTransform().getLocation(), false, null);
+        // enter
+        if (fromClaim != toClaim && toClaim != null) {
+            if (GPFlags.getClaimFlagPermission(toClaim, GPFlags.GREETING_MESSAGE) != Tristate.FALSE) {
+                Text welcomeMessage = toClaim.getClaimData().getConfig().claimGreetingMessage;
+                if (!welcomeMessage.equals(Text.of())) {
+                    player.sendMessage(welcomeMessage);
+                    return;
+                }
+            }
+        }
+
+        // exit
+        if (fromClaim != null && fromClaim != toClaim) {
+            if (GPFlags.getClaimFlagPermission(fromClaim, GPFlags.FAREWELL_MESSAGE) != Tristate.FALSE) {
+                Text farewellMessage = fromClaim.getClaimData().getConfig().claimFarewellMessage;
+                if (!farewellMessage.equals(Text.of())) {
+                    player.sendMessage(farewellMessage);
+                }
+            }
+        }
+    }
+
     // when a player teleports
     @Listener(order = Order.PRE)
     public void onPlayerTeleport(DisplaceEntityEvent.Teleport.TargetPlayer event) {

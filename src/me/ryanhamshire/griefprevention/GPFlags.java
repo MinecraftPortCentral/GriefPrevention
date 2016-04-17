@@ -15,8 +15,10 @@ public class GPFlags {
     public static final String BLOCK_COMMANDS = "block-commands";
     public static final String BLOCK_PLACE = "block-place";
     public static final String EXPLOSIONS = "explosions";
+    public static final String FAREWELL_MESSAGE = "farewell-message";
     public static final String FIRE_SPREAD = "fire-spread";
     public static final String FORCE_DENY_ALL = "force-deny-all";
+    public static final String GREETING_MESSAGE = "greeting-message";
     public static final String IGNITE = "ignite";
     public static final String INTERACT_PRIMARY = "interact-primary";
     public static final String INTERACT_SECONDARY = "interact-secondary";
@@ -47,8 +49,10 @@ public class GPFlags {
     public static final String COMMENT_BLOCK_COMMANDS = "Blocked commands.";
     public static final String COMMENT_BLOCK_PLACE = "Allow/deny placing blocks.";
     public static final String COMMENT_EXPLOSIONS = "Allow/deny explosions.";
+    public static final String COMMENT_FAREWELL_MESSAGE = "Allow/deny farewell message.";
     public static final String COMMENT_FIRE_SPREAD = "Allow/deny fire spread.";
     public static final String COMMENT_FORCE_DENY_ALL = "Only intended if you want to explicitly ignore all checking for player permissions.";
+    public static final String COMMENT_GREETING_MESSAGE = "Allow/deny greeting message.";
     public static final String COMMENT_IGNITE = "Allow/deny ignites.";
     public static final String COMMENT_INTERACT_PRIMARY = "Allow/deny left-clicking.";
     public static final String COMMENT_INTERACT_SECONDARY = "Allow/deny right-clicking.";

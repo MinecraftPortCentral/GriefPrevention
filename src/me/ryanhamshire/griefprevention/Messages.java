@@ -140,6 +140,7 @@ public enum Messages {
     NoDamageClaimedEntity,
     NoDeletePermission,
     NoDropsAllowed,
+    NoEditPermission,
     NoLavaNearOtherPlayer,
     NoModifyDuringSiege,
     NoOwnerBuildUnderSiege,

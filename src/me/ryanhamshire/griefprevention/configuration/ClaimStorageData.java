@@ -13,6 +13,7 @@ import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Functional;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.common.SpongeImpl;
@@ -47,6 +48,8 @@ public class ClaimStorageData {
     public static final String MAIN_WORLD_UUID = "world-uuid";
     public static final String MAIN_OWNER_UUID = "owner-uuid";
     public static final String MAIN_CLAIM_NAME = "claim-name";
+    public static final String MAIN_CLAIM_GREETING = "claim-greeting";
+    public static final String MAIN_CLAIM_FAREWELL = "claim-farewell";
     public static final String MAIN_SUBDIVISION_UUID = "uuid";
     public static final String MAIN_PARENT_CLAIM_UUID = "parent-claim-uuid";
     public static final String MAIN_LESSER_BOUNDARY_CORNER = "lesser-boundary-corner";
@@ -131,7 +134,11 @@ public class ClaimStorageData {
         @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
         public UUID ownerUniqueId;
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with claim.")
-        public String claimName;
+        public Text claimName = Text.of();
+        @Setting(value = MAIN_CLAIM_GREETING, comment = "The greeting message players will receive when entering claim area.")
+        public Text claimGreetingMessage = Text.of();
+        @Setting(value = MAIN_CLAIM_FAREWELL, comment = "The farewell message players will receive when leaving claim area.")
+        public Text claimFarewellMessage = Text.of();
         @Setting(value = MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of claim.")
         public String lesserBoundaryCornerPos;
         @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of claim.")
@@ -149,7 +156,11 @@ public class ClaimStorageData {
     @ConfigSerializable
     public static class SubDivisionDataNode {
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with subdivision.")
-        public String claimName;
+        public Text claimName = Text.of();
+        @Setting(value = MAIN_CLAIM_GREETING, comment = "The greeting message players will receive when entering subdivision.")
+        public Text claimGreetingMessage = Text.of();
+        @Setting(value = MAIN_CLAIM_FAREWELL, comment = "The farewell message players will receive when leaving subdivision.")
+        public Text claimFarewellMessage = Text.of();
         @Setting(value = MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of subdivision.")
         public String lesserBoundaryCornerPos;
         @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of subdivision.")
@@ -173,10 +184,14 @@ public class ClaimStorageData {
         public Tristate blockPlace = Tristate.UNDEFINED;
         @Setting(value = GPFlags.EXPLOSIONS, comment = GPFlags.COMMENT_EXPLOSIONS)
         public Tristate explosions = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.FAREWELL_MESSAGE, comment = GPFlags.COMMENT_FAREWELL_MESSAGE)
+        public Tristate farewellMessage = Tristate.UNDEFINED;
         @Setting(value = GPFlags.FIRE_SPREAD, comment = GPFlags.COMMENT_FIRE_SPREAD)
         public Tristate fireSpread = Tristate.UNDEFINED;
         @Setting(value = GPFlags.FORCE_DENY_ALL, comment = GPFlags.COMMENT_FORCE_DENY_ALL)
         public Tristate forceDenyAll = Tristate.UNDEFINED;
+        @Setting(value = GPFlags.GREETING_MESSAGE, comment = GPFlags.COMMENT_GREETING_MESSAGE)
+        public Tristate greetingMessage = Tristate.UNDEFINED;
         @Setting(value = GPFlags.INTERACT_PRIMARY, comment = GPFlags.COMMENT_INTERACT_PRIMARY)
         public Tristate interactPrimary = Tristate.UNDEFINED;
         @Setting(value = GPFlags.INTERACT_SECONDARY, comment = GPFlags.COMMENT_INTERACT_SECONDARY)
@@ -273,11 +288,17 @@ public class ClaimStorageData {
                 case GPFlags.EXPLOSIONS:
                     this.explosions = (Tristate) value;
                     return;
+                case GPFlags.FAREWELL_MESSAGE:
+                    this.farewellMessage = (Tristate) value;
+                    return;
                 case GPFlags.FIRE_SPREAD:
                     this.fireSpread = (Tristate) value;
                     return;
                 case GPFlags.FORCE_DENY_ALL:
                     this.forceDenyAll = (Tristate) value;
+                    return;
+                case GPFlags.GREETING_MESSAGE:
+                    this.greetingMessage = (Tristate) value;
                     return;
                 case GPFlags.INTERACT_PRIMARY:
                     this.interactPrimary = (Tristate) value;
@@ -363,10 +384,14 @@ public class ClaimStorageData {
                     return this.blockPlace;
                 case GPFlags.EXPLOSIONS:
                     return this.explosions;
+                case GPFlags.FAREWELL_MESSAGE:
+                    return this.farewellMessage;
                 case GPFlags.FIRE_SPREAD:
                     return this.fireSpread;
                 case GPFlags.FORCE_DENY_ALL:
                     return this.forceDenyAll;
+                case GPFlags.GREETING_MESSAGE:
+                    return this.greetingMessage;
                 case GPFlags.INTERACT_PRIMARY:
                     return this.interactPrimary;
                 case GPFlags.INTERACT_SECONDARY:

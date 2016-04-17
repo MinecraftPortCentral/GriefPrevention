@@ -106,11 +106,32 @@ public class CommandGriefPrevention {
                                 .build(), "delete")
 
                         .child(CommandSpec.builder()
+                                .description(Text.of("Sets the farewell message of your claim"))
+                                .permission(GPPermissions.SET_CLAIM_FAREWELL)
+                                .arguments(string(Text.of("message")))
+                                .executor(new CommandClaimFarewell())
+                                .build(), "farewell")
+
+                        .child(CommandSpec.builder()
+                                .description(Text.of("Sets the greeting message of your claim"))
+                                .permission(GPPermissions.SET_CLAIM_GREETING)
+                                .arguments(string(Text.of("message")))
+                                .executor(new CommandClaimGreeting())
+                                .build(), "greeting")
+
+                        .child(CommandSpec.builder()
                                 .description(Text.of("List information about a player's claim blocks and claims"))
                                 .permission(GPPermissions.LIST_CLAIMS)
                                 .arguments(onlyOne(playerOrSource(Text.of("player"))))
                                 .executor(new CommandClaimList())
                                 .build(), "list")
+
+                        .child(CommandSpec.builder()
+                                .description(Text.of("Sets the name of your claim"))
+                                .permission(GPPermissions.SET_CLAIM_NAME)
+                                .arguments(string(Text.of("name")))
+                                .executor(new CommandClaimName())
+                                .build(), "name")
 
                         .child(CommandSpec.builder()
                                 .description(Text.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))

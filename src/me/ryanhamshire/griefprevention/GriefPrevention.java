@@ -90,8 +90,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.spongepowered.api.command.args.GenericArguments.*;
-
 @Plugin(id = "me.ryanhamshire.griefprevention", name = "GriefPrevention", version = "12.7.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
