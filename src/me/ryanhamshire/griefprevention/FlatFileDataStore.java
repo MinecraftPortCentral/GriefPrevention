@@ -257,6 +257,7 @@ public class FlatFileDataStore extends DataStore {
         claim.modifiedDate = new Date(lastModifiedDate);
         claim.ownerID = ownerID;
         claim.world = lesserBoundaryCorner.getExtent();
+        claim.type = claimData.getConfig().claimType;
         claim.claimData = claimData;
         claim.context = new Context("claim", claim.id.toString());
 
@@ -278,6 +279,7 @@ public class FlatFileDataStore extends DataStore {
             subDivision.context = new Context("claim", subDivision.id.toString());
             subDivision.parent = claim;
             subDivision.isSubDivision = true;
+            subDivision.type = Claim.Type.SUBDIVISION;
             subDivision.subDivisionData = subDivisionData;
             // add subdivision
             this.addClaim(subDivision, false);
@@ -305,11 +307,13 @@ public class FlatFileDataStore extends DataStore {
 
             claim.subDivisionData.lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
             claim.subDivisionData.greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
+            claim.subDivisionData.claimType = Claim.Type.SUBDIVISION;
             claimData.getConfig().subDivisions.put(claim.id, claim.subDivisionData);
         } else {
             claimData.getConfig().worldUniqueId = claim.world.getUniqueId();
             claimData.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
             claimData.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
+            claimData.getConfig().claimType = claim.type;
         }
 
         claimData.save();

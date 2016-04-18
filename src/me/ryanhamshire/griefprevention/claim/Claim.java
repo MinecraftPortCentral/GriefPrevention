@@ -30,6 +30,7 @@ import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.SiegeData;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
@@ -69,12 +70,19 @@ import java.util.UUID;
 //only claims which have been added to the datastore have any effect
 public class Claim implements ContextSource {
 
+    public enum Type {
+        BASIC,
+        SUBDIVISION,
+        ADMIN
+    }
+
     // two locations, which together define the boundaries of the claim
     // note that the upper Y value is always ignored, because claims ALWAYS
     // extend up to the sky
     public Location<World> lesserBoundaryCorner;
     public Location<World> greaterBoundaryCorner;
     public World world;
+    public Type type = Type.BASIC;
 
     // Permission Context
     public Context context;
@@ -144,6 +152,16 @@ public class Claim implements ContextSource {
         // owner
         if (player != null) {
             this.ownerID = player.getUniqueId();
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
+            if (playerData != null) {
+                if (playerData.shovelMode == ShovelMode.Admin) {
+                    this.type = Type.ADMIN;
+                } else if (playerData.shovelMode == ShovelMode.Basic) {
+                    this.type = Type.BASIC;
+                } else if (playerData.shovelMode == ShovelMode.Subdivide) {
+                    this.type = Type.SUBDIVISION;
+                }
+            }
         }
     }
 
@@ -155,7 +173,7 @@ public class Claim implements ContextSource {
             return this.parent.isAdminClaim();
         }
 
-        return (this.ownerID == null);
+        return this.type == Type.ADMIN;
     }
 
     // accessor for ID

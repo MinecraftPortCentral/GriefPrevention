@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.claim.Claim;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -50,6 +51,7 @@ public class ClaimStorageData {
     public static final String MAIN_CLAIM_NAME = "claim-name";
     public static final String MAIN_CLAIM_GREETING = "claim-greeting";
     public static final String MAIN_CLAIM_FAREWELL = "claim-farewell";
+    public static final String MAIN_CLAIM_TYPE = "claim-type";
     public static final String MAIN_SUBDIVISION_UUID = "uuid";
     public static final String MAIN_PARENT_CLAIM_UUID = "parent-claim-uuid";
     public static final String MAIN_LESSER_BOUNDARY_CORNER = "lesser-boundary-corner";
@@ -133,6 +135,8 @@ public class ClaimStorageData {
         public UUID worldUniqueId;
         @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
         public UUID ownerUniqueId;
+        @Setting(value = MAIN_CLAIM_TYPE, comment = "The type of claim.")
+        public Claim.Type claimType = Claim.Type.BASIC;
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with claim.")
         public Text claimName = Text.of();
         @Setting(value = MAIN_CLAIM_GREETING, comment = "The greeting message players will receive when entering claim area.")
@@ -157,6 +161,8 @@ public class ClaimStorageData {
     public static class SubDivisionDataNode {
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with subdivision.")
         public Text claimName = Text.of();
+        @Setting(value = MAIN_CLAIM_TYPE, comment = "The type of claim.")
+        public Claim.Type claimType = Claim.Type.SUBDIVISION;
         @Setting(value = MAIN_CLAIM_GREETING, comment = "The greeting message players will receive when entering subdivision.")
         public Text claimGreetingMessage = Text.of();
         @Setting(value = MAIN_CLAIM_FAREWELL, comment = "The farewell message players will receive when leaving subdivision.")
