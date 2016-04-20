@@ -5,6 +5,7 @@ import com.google.common.reflect.TypeToken;
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.Claim.Type;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -23,6 +24,7 @@ import org.spongepowered.common.util.IpSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,11 +54,15 @@ public class ClaimStorageData {
     public static final String MAIN_CLAIM_GREETING = "claim-greeting";
     public static final String MAIN_CLAIM_FAREWELL = "claim-farewell";
     public static final String MAIN_CLAIM_TYPE = "claim-type";
+    public static final String MAIN_CLAIM_LAST_ACTIVE = "date-last-active";
     public static final String MAIN_SUBDIVISION_UUID = "uuid";
     public static final String MAIN_PARENT_CLAIM_UUID = "parent-claim-uuid";
     public static final String MAIN_LESSER_BOUNDARY_CORNER = "lesser-boundary-corner";
     public static final String MAIN_GREATER_BOUNDARY_CORNER = "greater-boundary-corner";
-    public static final String MAIN_MANAGERS = "managers";
+    public static final String MAIN_ACCESSORS = "accessors";
+    public static final String MAIN_BUILDERS = "builders";
+    public static final String MAIN_CONTAINERS = "managers";
+    public static final String MAIN_COOWNERS = "coowners";
     public static final String MAIN_PROTECTION_BLACKLIST = "bypass-protection-items";
     public static final String MAIN_SUBDIVISIONS = "sub-divisions";
 
@@ -128,55 +134,298 @@ public class ClaimStorageData {
         }
     }
 
-    @ConfigSerializable
-    public static class ClaimDataNode {
+    public interface ClaimData {
+        public UUID getWorldUniqueId();
 
+        public UUID getOwnerUniqueId();
+
+        public Claim.Type getClaimType();
+
+        public String getLastActiveDate();
+
+        public Text getClaimName();
+
+        public Text getGreetingMessage();
+
+        public Text getFarewellMessage();
+
+        public String getLesserBoundaryCorner();
+
+        public String getGreaterBoundaryCorner();
+
+        public List<UUID> getAccessors();
+
+        public List<UUID> getBuilders();
+
+        public List<UUID> getContainers();
+
+        public List<UUID> getCoowners();
+
+        public List<String> getItemBlackList();
+
+        public ClaimDataFlagsCategory getFlags();
+
+        public void setClaimType(Claim.Type type);
+
+        public void setLastActiveDate(String date);
+
+        public void setClaimName(Text name);
+
+        public void setGreetingMessage(Text message);
+
+        public void setFarewellMessage(Text message);
+
+        public void setLesserBoundaryCorner(String location);
+
+        public void setGreaterBoundaryCorner(String location);
+    }
+
+    @ConfigSerializable
+    public static class ClaimDataNode implements ClaimData {
         @Setting(value = MAIN_WORLD_UUID, comment = "The world uuid associated with claim.")
         public UUID worldUniqueId;
         @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
         public UUID ownerUniqueId;
         @Setting(value = MAIN_CLAIM_TYPE, comment = "The type of claim.")
         public Claim.Type claimType = Claim.Type.BASIC;
+        @Setting(value = MAIN_CLAIM_LAST_ACTIVE, comment = "The last time this claim was active.")
+        public String lastActiveDate = Instant.now().toString();
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with claim.")
-        public Text claimName = Text.of();
+        public Text claimName = Text.of("");
         @Setting(value = MAIN_CLAIM_GREETING, comment = "The greeting message players will receive when entering claim area.")
-        public Text claimGreetingMessage = Text.of();
+        public Text claimGreetingMessage = Text.of("");
         @Setting(value = MAIN_CLAIM_FAREWELL, comment = "The farewell message players will receive when leaving claim area.")
-        public Text claimFarewellMessage = Text.of();
+        public Text claimFarewellMessage = Text.of("");
         @Setting(value = MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of claim.")
         public String lesserBoundaryCornerPos;
         @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of claim.")
         public String greaterBoundaryCornerPos;
-        @Setting(value = MAIN_MANAGERS, comment = "The managers associated with claim.")
-        public ArrayList<UUID> managers = new ArrayList<>();
+        @Setting(value = MAIN_ACCESSORS, comment = "The accessors associated with claim. Note: Accessors can interact with all blocks except inventory containers like chests.")
+        public List<UUID> accessors = new ArrayList<>();
+        @Setting(value = MAIN_BUILDERS, comment = "The builders associated with claim. Note: Builders can do everything accessors and containers do with the addition of placing and breaking blocks.")
+        public List<UUID> builders = new ArrayList<>();
+        @Setting(value = MAIN_CONTAINERS, comment = "The containers associated with claim. Note: Containers can do everything accessors with the addition of inventory access.")
+        public List<UUID> containers = new ArrayList<>();
+        @Setting(value = MAIN_COOWNERS, comment = "The coowners associated with claim. Note: Use this type with caution as it provides full access in claim.")
+        public List<UUID> coowners = new ArrayList<>();
         @Setting(value = MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within claim.")
-        public ArrayList<String> protectionBlacklist = new ArrayList<>();
+        public List<String> protectionBlacklist = new ArrayList<>();
         @Setting
         public ClaimDataFlagsCategory flags = new ClaimDataFlagsCategory();
         @Setting
-        public Map<UUID, SubDivisionDataNode> subDivisions = Maps.newHashMap();
+        public Map<UUID, SubDivisionDataNode> subdivisions = Maps.newHashMap();
+
+        @Override
+        public UUID getWorldUniqueId() {
+            return this.worldUniqueId;
+        }
+        @Override
+        public UUID getOwnerUniqueId() {
+            return this.ownerUniqueId;
+        }
+        @Override
+        public Type getClaimType() {
+            return this.claimType;
+        }
+        @Override
+        public String getLastActiveDate() {
+            return this.lastActiveDate;
+        }
+        @Override
+        public Text getClaimName() {
+            return this.claimName;
+        }
+        @Override
+        public Text getGreetingMessage() {
+            return this.claimGreetingMessage;
+        }
+        @Override
+        public Text getFarewellMessage() {
+            return this.claimFarewellMessage;
+        }
+        @Override
+        public String getLesserBoundaryCorner() {
+            return this.lesserBoundaryCornerPos;
+        }
+        @Override
+        public String getGreaterBoundaryCorner() {
+            return this.greaterBoundaryCornerPos;
+        }
+        @Override
+        public List<UUID> getAccessors() {
+            return this.accessors;
+        }
+        @Override
+        public List<UUID> getBuilders() {
+            return this.builders;
+        }
+        @Override
+        public List<UUID> getContainers() {
+            return this.containers;
+        }
+        @Override
+        public List<UUID> getCoowners() {
+            return this.coowners;
+        }
+        @Override
+        public List<String> getItemBlackList() {
+            return this.protectionBlacklist;
+        }
+        @Override
+        public ClaimDataFlagsCategory getFlags() {
+            return this.flags;
+        }
+        @Override
+        public void setClaimType(Type type) {
+            this.claimType = type;
+        }
+        @Override
+        public void setLastActiveDate(String date) {
+            this.lastActiveDate = date;
+        }
+        @Override
+        public void setClaimName(Text name) {
+            this.claimName = name;
+        }
+        @Override
+        public void setGreetingMessage(Text message) {
+            this.claimGreetingMessage = message;
+        }
+        @Override
+        public void setFarewellMessage(Text message) {
+            this.claimFarewellMessage = message;
+        }
+        @Override
+        public void setLesserBoundaryCorner(String location) {
+            this.lesserBoundaryCornerPos = location;
+        }
+        @Override
+        public void setGreaterBoundaryCorner(String location) {
+            this.greaterBoundaryCornerPos = location;
+        }
     }
 
     @ConfigSerializable
-    public static class SubDivisionDataNode {
+    public static class SubDivisionDataNode implements ClaimData {
+        @Setting(value = MAIN_WORLD_UUID, comment = "The world uuid associated with claim.")
+        public UUID worldUniqueId;
+        @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
+        public UUID ownerUniqueId;
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with subdivision.")
-        public Text claimName = Text.of();
+        public Text claimName = Text.of("");
         @Setting(value = MAIN_CLAIM_TYPE, comment = "The type of claim.")
         public Claim.Type claimType = Claim.Type.SUBDIVISION;
+        @Setting(value = MAIN_CLAIM_LAST_ACTIVE, comment = "The last time this subdivision was used.")
+        public String lastUsedDate = Instant.now().toString();
         @Setting(value = MAIN_CLAIM_GREETING, comment = "The greeting message players will receive when entering subdivision.")
-        public Text claimGreetingMessage = Text.of();
+        public Text claimGreetingMessage = Text.of("");
         @Setting(value = MAIN_CLAIM_FAREWELL, comment = "The farewell message players will receive when leaving subdivision.")
-        public Text claimFarewellMessage = Text.of();
+        public Text claimFarewellMessage = Text.of("");
         @Setting(value = MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of subdivision.")
         public String lesserBoundaryCornerPos;
         @Setting(value = MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of subdivision.")
         public String greaterBoundaryCornerPos;
-        @Setting(value = MAIN_MANAGERS, comment = "The managers associated with subdivision.")
-        public ArrayList<UUID> managers = new ArrayList<>();
+        @Setting(value = MAIN_ACCESSORS, comment = "The accessors associated with subdivision.")
+        public ArrayList<UUID> accessors = new ArrayList<>();
+        @Setting(value = MAIN_BUILDERS, comment = "The builders associated with subdivision.")
+        public ArrayList<UUID> builders = new ArrayList<>();
+        @Setting(value = MAIN_CONTAINERS, comment = "The containers associated with subdivision.")
+        public ArrayList<UUID> containers = new ArrayList<>();
+        @Setting(value = MAIN_COOWNERS, comment = "The coowners associated with subdivision.")
+        public ArrayList<UUID> coowners = new ArrayList<>();
         @Setting(value = MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within subdivision.")
         public ArrayList<String> protectionBlacklist = new ArrayList<>();
         @Setting
         public ClaimDataFlagsCategory flags = new ClaimDataFlagsCategory();
+
+        @Override
+        public UUID getWorldUniqueId() {
+            return null;
+        }
+        @Override
+        public UUID getOwnerUniqueId() {
+            return this.ownerUniqueId;
+        }
+        @Override
+        public Type getClaimType() {
+            return this.claimType;
+        }
+        @Override
+        public String getLastActiveDate() {
+            return this.lastUsedDate;
+        }
+        @Override
+        public Text getClaimName() {
+            return this.claimName;
+        }
+        @Override
+        public Text getGreetingMessage() {
+            return this.claimGreetingMessage;
+        }
+        @Override
+        public Text getFarewellMessage() {
+            return this.claimFarewellMessage;
+        }
+        @Override
+        public String getLesserBoundaryCorner() {
+            return this.lesserBoundaryCornerPos;
+        }
+        @Override
+        public String getGreaterBoundaryCorner() {
+            return this.greaterBoundaryCornerPos;
+        }
+        @Override
+        public List<UUID> getAccessors() {
+            return this.accessors;
+        }
+        @Override
+        public List<UUID> getBuilders() {
+            return this.builders;
+        }
+        @Override
+        public List<UUID> getContainers() {
+            return this.containers;
+        }
+        @Override
+        public List<UUID> getCoowners() {
+            return this.coowners;
+        }
+        @Override
+        public List<String> getItemBlackList() {
+            return this.protectionBlacklist;
+        }
+        @Override
+        public ClaimDataFlagsCategory getFlags() {
+            return this.flags;
+        }
+        @Override
+        public void setClaimType(Type type) {
+            this.claimType = type;
+        }
+        @Override
+        public void setLastActiveDate(String date) {
+            this.lastUsedDate = date;
+        }
+        @Override
+        public void setClaimName(Text name) {
+            this.claimName = name;
+        }
+        @Override
+        public void setGreetingMessage(Text message) {
+            this.claimGreetingMessage = message;
+        }
+        @Override
+        public void setFarewellMessage(Text message) {
+            this.claimFarewellMessage = message;
+        }
+        @Override
+        public void setLesserBoundaryCorner(String location) {
+            this.lesserBoundaryCornerPos = location;
+        }
+        @Override
+        public void setGreaterBoundaryCorner(String location) {
+            this.greaterBoundaryCornerPos = location;
+        }
     }
 
     @ConfigSerializable

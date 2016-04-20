@@ -93,22 +93,12 @@ public class DeliverClaimBlocksTask implements Runnable {
                     if (playerStorage == null) {
                         GriefPrevention.instance.dataStore.createPlayerWorldStorageData(player.getWorld().getProperties(), player.getUniqueId());
                         playerStorage = playerData.worldStorageData.get(player.getWorld().getUniqueId());
+                        playerStorage.getConfig().accruedClaimBlocks += accruedBlocks;
                     }
-                    playerStorage.getConfig().accruedClaimBlocks += accruedBlocks;
-
-                    // intentionally NOT saving data here to reduce overall
-                    // secondary storage access frequency
-                    // many other operations will cause this players data to
-                    // save, including his eventual logout
-                    // dataStore.savePlayerData(player.getUniqueIdentifier(),
-                    // playerData);
                 } else {
                     GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
                 }
-            } catch (IllegalArgumentException e) // can't measure distance when
-            // to/from are different worlds
-            {
-
+            } catch (IllegalArgumentException e) {
             } catch (Exception e) {
                 GriefPrevention.addLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
                 e.printStackTrace();

@@ -197,6 +197,10 @@ public class FlatFileDataStore extends DataStore {
                     continue;
                 }
 
+                if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
+                    return;
+                }
+
                 try {
                     this.createPlayerWorldStorageData(worldProperties, playerUUID);
                 }
@@ -223,10 +227,10 @@ public class FlatFileDataStore extends DataStore {
             throws Exception {
         Claim claim;
 
-        ClaimStorageData claimData = new ClaimStorageData(claimFile.toPath());
+        ClaimStorageData claimStorage = new ClaimStorageData(claimFile.toPath());
 
         // identify world the claim is in
-        UUID worldUniqueId = claimData.getConfig().worldUniqueId;
+        UUID worldUniqueId = claimStorage.getConfig().worldUniqueId;
         World world = null;
         for (World w : Sponge.getGame().getServer().getWorlds()) {
             if (w.getUniqueId().equals(worldUniqueId)) {
@@ -240,13 +244,13 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // boundaries
-        Vector3i lesserBoundaryCornerPos = positionFromString(claimData.getConfig().lesserBoundaryCornerPos);
-        Vector3i greaterBoundaryCornerPos = positionFromString(claimData.getConfig().greaterBoundaryCornerPos);
+        Vector3i lesserBoundaryCornerPos = positionFromString(claimStorage.getConfig().lesserBoundaryCornerPos);
+        Vector3i greaterBoundaryCornerPos = positionFromString(claimStorage.getConfig().greaterBoundaryCornerPos);
         Location<World> lesserBoundaryCorner = new Location<World>(world, lesserBoundaryCornerPos);
         Location<World> greaterBoundaryCorner = new Location<World>(world, greaterBoundaryCornerPos);
 
         // owner
-        UUID ownerID = claimData.getConfig().ownerUniqueId;
+        UUID ownerID = claimStorage.getConfig().ownerUniqueId;
         if (ownerID == null) {
             GriefPrevention.addLogEntry("Error - this is not a valid UUID: " + ownerID + ".");
             GriefPrevention.addLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
@@ -257,14 +261,15 @@ public class FlatFileDataStore extends DataStore {
         claim.modifiedDate = new Date(lastModifiedDate);
         claim.ownerID = ownerID;
         claim.world = lesserBoundaryCorner.getExtent();
-        claim.type = claimData.getConfig().claimType;
-        claim.claimData = claimData;
+        claim.type = claimStorage.getConfig().claimType;
+        claim.setClaimStorage(claimStorage);
+        claim.setClaimData(claimStorage.getConfig());
         claim.context = new Context("claim", claim.id.toString());
 
         // add parent claim first
         this.addClaim(claim, false);
         // check for subdivisions
-        for(Map.Entry<UUID, SubDivisionDataNode> mapEntry : claimData.getConfig().subDivisions.entrySet()) {
+        for(Map.Entry<UUID, SubDivisionDataNode> mapEntry : claimStorage.getConfig().subdivisions.entrySet()) {
             SubDivisionDataNode subDivisionData = mapEntry.getValue();
             Vector3i subLesserBoundaryCornerPos = positionFromString(subDivisionData.lesserBoundaryCornerPos);
             Vector3i subGreaterBoundaryCornerPos = positionFromString(subDivisionData.greaterBoundaryCornerPos);
@@ -275,12 +280,11 @@ public class FlatFileDataStore extends DataStore {
             subDivision.modifiedDate = new Date(lastModifiedDate);
             subDivision.id = mapEntry.getKey();
             subDivision.world = subLesserBoundaryCorner.getExtent();
-            subDivision.claimData = claimData;
+            subDivision.setClaimStorage(claimStorage);
             subDivision.context = new Context("claim", subDivision.id.toString());
             subDivision.parent = claim;
-            subDivision.isSubDivision = true;
             subDivision.type = Claim.Type.SUBDIVISION;
-            subDivision.subDivisionData = subDivisionData;
+            subDivision.setClaimData(subDivisionData);
             // add subdivision
             this.addClaim(subDivision, false);
         }
@@ -289,34 +293,34 @@ public class FlatFileDataStore extends DataStore {
 
     public void updateClaimData(Claim claim, File claimFile) {
 
-        ClaimStorageData claimData = claim.claimData;
+        ClaimStorageData claimStorage = claim.getClaimStorage();
 
-        if (claimData == null) {
-            claimData = new ClaimStorageData(claimFile.toPath());
-            claim.claimData = claimData;
+        if (!claim.isSubdivision() && claimStorage == null) {
+            claimStorage = new ClaimStorageData(claimFile.toPath());
+            claim.setClaimStorage(claimStorage);
+            claim.setClaimData(claimStorage.getConfig());
         }
 
         // owner
         if (claim.ownerID != null) {
-            claimData.getConfig().ownerUniqueId = claim.ownerID;
+            claimStorage.getConfig().ownerUniqueId = claim.ownerID;
         }
-        if (claim.isSubDivision) {
-            if (claim.subDivisionData == null) {
-                claim.subDivisionData = new SubDivisionDataNode();
+        if (claim.isSubdivision()) {
+            if (claim.getClaimData() == null) {
+                claim.setClaimData(new SubDivisionDataNode());
             }
 
-            claim.subDivisionData.lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
-            claim.subDivisionData.greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
-            claim.subDivisionData.claimType = Claim.Type.SUBDIVISION;
-            claimData.getConfig().subDivisions.put(claim.id, claim.subDivisionData);
+            claim.getClaimData().setLesserBoundaryCorner(positionToString(claim.lesserBoundaryCorner));
+            claim.getClaimData().setGreaterBoundaryCorner(positionToString(claim.greaterBoundaryCorner));
+            claimStorage.getConfig().subdivisions.put(claim.id, (SubDivisionDataNode) claim.getClaimData());
         } else {
-            claimData.getConfig().worldUniqueId = claim.world.getUniqueId();
-            claimData.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
-            claimData.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
-            claimData.getConfig().claimType = claim.type;
+            claimStorage.getConfig().worldUniqueId = claim.world.getUniqueId();
+            claimStorage.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
+            claimStorage.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
+            claimStorage.getConfig().claimType = claim.type;
         }
 
-        claimData.save();
+        claimStorage.save();
     }
 
     @Override
@@ -354,10 +358,10 @@ public class FlatFileDataStore extends DataStore {
     @Override
     synchronized void deleteClaimFromSecondaryStorage(Claim claim) {
         try {
-            Files.delete(claim.claimData.filePath);
+            Files.delete(claim.getClaimStorage().filePath);
         } catch (IOException e) {
             e.printStackTrace();
-            GriefPrevention.addLogEntry("Error: Unable to delete claim file \"" + claim.claimData.filePath + "\".");
+            GriefPrevention.addLogEntry("Error: Unable to delete claim file \"" + claim.getClaimStorage().filePath + "\".");
         }
     }
 

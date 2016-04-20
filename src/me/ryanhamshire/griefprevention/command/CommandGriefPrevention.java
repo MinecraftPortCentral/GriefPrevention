@@ -24,16 +24,25 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import static org.spongepowered.api.command.args.GenericArguments.integer;
+import static org.spongepowered.api.command.args.GenericArguments.onlyOne;
+import static org.spongepowered.api.command.args.GenericArguments.optional;
+import static org.spongepowered.api.command.args.GenericArguments.player;
+import static org.spongepowered.api.command.args.GenericArguments.playerOrSource;
+import static org.spongepowered.api.command.args.GenericArguments.string;
+
 import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.text.Text;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static org.spongepowered.api.command.args.GenericArguments.*;
 
 public class CommandGriefPrevention {
 
@@ -151,7 +160,7 @@ public class CommandGriefPrevention {
                         .child(CommandSpec.builder()
                                 .description(Text.of("Revokes a player's access to your claim(s)"))
                                 .permission(GPPermissions.REMOVE_TRUST)
-                                .arguments(string(Text.of("subject")))
+                                .arguments(string(Text.of("type")), string(Text.of("subject")))
                                 .executor(new CommandUntrust())
                                 .build(), "untrust")
 
@@ -357,12 +366,6 @@ public class CommandGriefPrevention {
                             .executor(new CommandAddFlagPermission())
                             .build(), "permission", "perm")
                    .build())*/
-
-                .child(CommandSpec.builder()
-                        .description(Text.of("Ejects you to nearby unclaimed land. Has a substantial cooldown period"))
-                        .permission(GPPermissions.TRAPPED)
-                        .executor(new CommandTrapped())
-                        .build(), "trapped")
 
                 .child(CommandSpec.builder()
                         .description(Text.of("Allows other players to pick up the items you dropped when you died"))

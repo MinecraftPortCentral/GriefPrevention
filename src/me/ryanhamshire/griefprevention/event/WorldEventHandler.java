@@ -53,7 +53,7 @@ public class WorldEventHandler {
         List<Claim> claimList = GriefPrevention.instance.dataStore.worldClaims.get(event.getTargetWorld().getUniqueId());
         if (claimList != null) {
             for (Claim claim : claimList) {
-                claim.claimData.save();
+                claim.getClaimStorage().save();
             }
         }
 

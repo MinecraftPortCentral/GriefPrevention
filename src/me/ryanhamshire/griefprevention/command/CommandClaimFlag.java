@@ -71,10 +71,7 @@ public class CommandClaimFlag extends BaseCommand {
                 }
             } else {
                 List<Text> flagList = Lists.newArrayList();
-                ClaimDataFlagsCategory flagsCat = claim.getClaimData().getConfig().flags;
-                if (claim.isSubDivision) {
-                    flagsCat = claim.subDivisionData.flags;
-                }
+                ClaimDataFlagsCategory flagsCat = claim.getClaimData().getFlags();
 
                 for (String flagName : flagsCat.getFlagMap().keySet()) {
                     String flagValue = flagsCat.getFlagValue(flagName).toString().toLowerCase();
@@ -102,13 +99,9 @@ public class CommandClaimFlag extends BaseCommand {
     }
 
     public static void setFlagValue(CommandSource src, Claim claim, String flag, Object value) {
-        if (claim.getClaimData().getConfig().flags.getFlagValue(flag) != null) {
+        if (claim.getClaimData().getFlags().getFlagValue(flag) != null) {
             try {
-                if (claim.isSubDivision) {
-                    claim.subDivisionData.flags.setFlagValue(flag, value);
-                } else {
-                    claim.getClaimData().getConfig().flags.setFlagValue(flag, value);
-                }
+                claim.getClaimData().getFlags().setFlagValue(flag, value);
                 src.sendMessage(Text.of(TextColors.GREEN, "Set value of ", flag, " to ", value.toString()));
             } catch (Throwable t) {
                 src.sendMessage(Text.of(TextColors.RED, "Value types not compatible!"));
@@ -120,10 +113,7 @@ public class CommandClaimFlag extends BaseCommand {
 
     @SuppressWarnings("unchecked")
     public static void removeFromFlagValue(CommandSource src, Claim claim, String flag, ArrayList<String> value) {
-        ClaimDataFlagsCategory flagsCat = claim.getClaimData().getConfig().flags;
-        if (claim.isSubDivision) {
-            flagsCat = claim.subDivisionData.flags;
-        }
+        ClaimDataFlagsCategory flagsCat = claim.getClaimData().getFlags();
 
         if (flagsCat.getFlagValue(flag) != null) {
             if (flagsCat.getFlagValue(flag).getClass().equals(value.getClass())) {

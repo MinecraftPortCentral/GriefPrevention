@@ -52,6 +52,7 @@ import net.minecraft.block.BlockDoor;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemBlock;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -115,7 +116,6 @@ import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.interfaces.block.IMixinBlockState;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 import org.spongepowered.common.util.VecHelper;
-import org.spongepowered.common.world.storage.SpongePlayerDataHandler;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -268,13 +268,6 @@ public class PlayerEventHandler {
             } else {
                 GriefPrevention.sendMessage(player, TextMode.Info, Messages.SurvivalBasicsVideo2, 10L);
             }
-        }
-
-        // FEATURE: automatically educate players about the /trapped command
-        // check for "trapped" or "stuck" to educate players about the /trapped command
-        if (!message.contains("/trapped") && (message.contains("trapped") || message.contains("stuck")
-                || message.contains(this.dataStore.getMessage(Messages.TrappedChatKeyword)))) {
-            GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrappedInstructions, 10L);
         }
 
         // FEATURE: monitor for chat and command spam
@@ -606,7 +599,7 @@ public class PlayerEventHandler {
         }
 
         if (claim != null) {
-            for (String blockedCommand : claim.getClaimData().getConfig().flags.blockCommands) {
+            for (String blockedCommand : claim.getClaimData().getFlags().blockCommands) {
                 if (lowerCaseMessage.startsWith(blockedCommand)) {
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, Messages.BlockedCommand, lowerCaseMessage, claim.getOwnerName()));
                     GriefPrevention.addLogEntry("[Event: MessageChannelEvent.Chat][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked command.]", CustomLogEntryTypes.Debug);
@@ -1009,7 +1002,7 @@ public class PlayerEventHandler {
         // enter
         if (fromClaim != toClaim && toClaim != null) {
             if (GPFlags.getClaimFlagPermission(toClaim, GPFlags.GREETING_MESSAGE) != Tristate.FALSE) {
-                Text welcomeMessage = toClaim.getClaimData().getConfig().claimGreetingMessage;
+                Text welcomeMessage = toClaim.getClaimData().getGreetingMessage();
                 if (!welcomeMessage.equals(Text.of())) {
                     player.sendMessage(welcomeMessage);
                     return;
@@ -1020,7 +1013,7 @@ public class PlayerEventHandler {
         // exit
         if (fromClaim != null && fromClaim != toClaim) {
             if (GPFlags.getClaimFlagPermission(fromClaim, GPFlags.FAREWELL_MESSAGE) != Tristate.FALSE) {
-                Text farewellMessage = fromClaim.getClaimData().getConfig().claimFarewellMessage;
+                Text farewellMessage = fromClaim.getClaimData().getFarewellMessage();
                 if (!farewellMessage.equals(Text.of())) {
                     player.sendMessage(farewellMessage);
                 }
@@ -1440,8 +1433,12 @@ public class PlayerEventHandler {
             return;
         }
 
-        String denyReason = GriefPrevention.instance.allowBreak(player, player.getLocation());
+        String denyReason = GriefPrevention.instance.allowBreak(player, event.getTargetBlock());
         if (denyReason != null) {
+            if (event.getCause().root() instanceof Player) {
+                GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
+            }
+
             GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Primary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
             event.setCancelled(true);
             return;
@@ -1475,7 +1472,6 @@ public class PlayerEventHandler {
         }
     }
 
-    @SuppressWarnings("unused")
     @Listener
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event) {
         Optional<Player> playerOpt = event.getCause().first(Player.class);
@@ -1512,10 +1508,27 @@ public class PlayerEventHandler {
 
                 return; // allow
             } else {
-                String denyReason = playerClaim.allowAccess(player);
+                String denyReason = playerClaim.allowAccess(player, clickedBlock.getLocation());
                 if(denyReason != null) {
+                    boolean result = false;
+                    if (itemInHand.isPresent() && itemInHand.get().getItem() instanceof ItemBlock) {
+                        if (GPFlags.getClaimFlagPermission(player, playerClaim, GPFlags.BLOCK_PLACE) == Tristate.TRUE) {
+                            result = true;
+                            event.setUseItemResult(Tristate.TRUE);
+                        }
+                    }
+                    if (GPFlags.getClaimFlagPermission(player, playerClaim, GPFlags.INTERACT_SECONDARY) == Tristate.TRUE) {
+                        result = true;
+                        event.setUseBlockResult(Tristate.TRUE);
+                    }
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                    event.setCancelled(true);
+                    if (!result) {
+                        if (event.getCause().root() instanceof Player) {
+                            GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
+                        }
+                        event.setCancelled(true);
+                        return;
+                    }
                 }
             }
         }
@@ -1546,9 +1559,7 @@ public class PlayerEventHandler {
             // otherwise check permissions for the claim the player is in
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
             if (claim != null) {
-                playerData.lastClaim = claim;
-
-                String denyReason = claim.allowBlockAccess(player, clickedBlock);
+                String denyReason = claim.allowAccess(player, clickedBlock.getLocation());
                 if (denyReason != null) {
                     event.setCancelled(true);
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
@@ -1615,7 +1626,7 @@ public class PlayerEventHandler {
                 playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
             if (claim != null) {
-                String denyReason = claim.allowBuild(player, clickedBlock.getLocation().get());
+                String denyReason = claim.allowBuild(player, clickedBlock);
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -1637,7 +1648,7 @@ public class PlayerEventHandler {
             // if it's bonemeal or armor stand or spawn egg, check for build
             // permission (ink sac == bone meal, must be a Bukkit bug?)
             if ((materialInHand == ItemTypes.DYE || materialInHand == ItemTypes.ARMOR_STAND || materialInHand == ItemTypes.MONSTER_EGG)) {
-                String denyReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation().get());
+                String denyReason = GriefPrevention.instance.allowBuild(player, clickedBlock);
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
@@ -1668,7 +1679,7 @@ public class PlayerEventHandler {
                             || materialInHand == ItemTypes.CHEST_MINECART || materialInHand == ItemTypes.BOAT)
                     && GriefPrevention.instance.claimModeIsActive(clickedBlock.getLocation().get().getExtent().getProperties(), ClaimsMode.Creative)) {
                 // player needs build permission at this location
-                String denyReason = GriefPrevention.instance.allowBuild(player, clickedBlock.getLocation().get());
+                String denyReason = GriefPrevention.instance.allowBuild(player, clickedBlock);
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
@@ -1759,20 +1770,12 @@ public class PlayerEventHandler {
                         //GriefPrevention.sendMessage(player, TextMode.Info, "", "  " + claim.getWidth() + "x" + claim.getHeight() + "=" + claim.getArea());
                     }
 
-                    // if deleteclaims permission, tell about the player's offline time
+                    // if deleteclaims permission, show last active claim date
                     if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
-                        if (claim.parent != null) {
-                            claim = claim.parent;
-                        }
-                        PlayerData otherPlayerData = this.dataStore.getPlayerData(claim.world, claim.ownerID);
-                        Optional<Instant> lastPlayed = SpongePlayerDataHandler.getLastPlayed(claim.ownerID);
-                        long daysElapsed = 0;
-                        if (lastPlayed.isPresent()) {
-                            long difference = Date.from(Instant.now()).getTime() - Date.from(lastPlayed.get()).getTime();
-                            daysElapsed = difference / (1000 * 60 * 60 * 24);
-                        }
-
-                        GriefPrevention.sendMessage(player, TextMode.Info, Messages.PlayerOfflineTime, String.valueOf(daysElapsed));
+                        Instant lastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
+                        long difference = Date.from(Instant.now()).getTime() - Date.from(lastActive).getTime();
+                        long daysElapsed = difference / (1000 * 60 * 60 * 24);
+                        GriefPrevention.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, Long.toString(daysElapsed));
 
                         // drop the data we just loaded, if the player isn't online
                         if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {
@@ -1798,7 +1801,7 @@ public class PlayerEventHandler {
 
                 Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
                 if (claim != null) {
-                    String denyReason = GriefPrevention.instance.allowBreak(player, clickedBlock.getLocation().get());
+                    String denyReason = GriefPrevention.instance.allowBreak(player, clickedBlock);
                     if (denyReason != null) {
                         GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                         GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
@@ -2290,9 +2293,13 @@ public class PlayerEventHandler {
                     GriefPrevention.sendMessage(player, TextMode.Instr, Messages.ClaimStart);
 
                     // show him where he's working
+                    VisualizationType visualType = VisualizationType.Claim;
+                    if (playerData.shovelMode == ShovelMode.Admin) {
+                        visualType = VisualizationType.AdminClaim;
+                    }
                     Visualization visualization = Visualization.FromClaim(
                             new Claim(clickedBlock.getLocation().get(), clickedBlock.getLocation().get()),
-                            clickedBlock.getPosition().getY(), VisualizationType.Claim, player.getLocation());
+                            clickedBlock.getPosition().getY(), visualType, player.getLocation());
                     Visualization.Apply(player, visualization);
                 }
 

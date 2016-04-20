@@ -48,9 +48,6 @@ public class GPPermissions {
     public static final String BUY_CLAIM_BLOCKS = "griefprevention.claims.buy-blocks";
     public static final String SELL_CLAIM_BLOCKS = "griefprevention.claims.sell-blocks";
     public static final String OVERRIDE_CLAIM_COUNT_LIMIT = "griefprevention.claims.limit-override";
-    public static final String GIVE_FULL_TRUST = "griefprevention.claims.trust-full";
-    public static final String LIST_TRUST = "griefprevention.claims.trust-list";
-    public static final String REMOVE_TRUST = "griefprevention.claims.trust-remove";
 
     // Admin
     public static final String ADJUST_CLAIM_BLOCKS = "griefprevention.admin.adjust-claim-blocks";
@@ -93,8 +90,15 @@ public class GPPermissions {
     public static final String HELP = "griefprevention.help";
     public static final String RELOAD = "griefprevention.reload";
     public static final String SPAM = "griefprevention.spam";
-    public static final String TRAPPED = "griefprevention.trapped";
     public static final String UNLOCK_DROPS = "griefprevention.unlock-drops";
+
+    // Trust
+    public static final String GIVE_ACCESS_TRUST = "griefprevention.trust.access";
+    public static final String GIVE_CONTAINER_TRUST = "griefprevention.trust.container";
+    public static final String GIVE_BUILDER_TRUST = "griefprevention.trust.build";
+    public static final String GIVE_FULL_TRUST = "griefprevention.trust.full";
+    public static final String LIST_TRUST = "griefprevention.trust.list";
+    public static final String REMOVE_TRUST = "griefprevention.trust.remove";
 
     // Flags
     public static final String BLOCK_BREAK = "griefprevention.flag.block-break";

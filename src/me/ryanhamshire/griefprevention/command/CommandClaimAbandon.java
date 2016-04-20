@@ -44,6 +44,7 @@ public class CommandClaimAbandon implements CommandExecutor {
         } else if (claim.allowEdit(player) != null) {
             // verify ownership
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
+            return CommandResult.success();
         }
 
         // warn if has children and we're not explicitly deleting a top level claim
@@ -81,7 +82,7 @@ public class CommandClaimAbandon implements CommandExecutor {
                 GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
             } else if (!player.getUniqueId().equals(claim.ownerID)) {
                 UUID ownerId = claim.ownerID;
-                if (claim.isSubDivision) {
+                if (claim.isSubdivision()) {
                     ownerId = claim.parent.ownerID;
                 }
 

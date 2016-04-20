@@ -24,30 +24,20 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import org.spongepowered.api.world.Chunk;
-import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
-import org.spongepowered.common.world.storage.SpongePlayerDataHandler;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Optional;
-import java.util.Vector;
 
-//FEATURE: automatically remove claims owned by inactive players which:
-//...aren't protecting much OR
-//...are a free new player claim (and the player has no other claims) OR
-//...because the player has been gone a REALLY long time, and that expiration has been configured in config.hocon
-
+//FEATURE: automatically remove inactive claims
 //runs every 1 minute in the main thread
 public class CleanupUnusedClaimsTask implements Runnable {
 
@@ -74,12 +64,6 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 continue;
             }
 
-            // track whether we do any important work which would require cleanup afterward
-            boolean cleanupChunks = false;
-
-            // get data for the player, especially last login timestamp
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.worldProperties, claim.ownerID);
-
             // determine area of the default chest claim
             int areaOfDefaultClaim = 0;
             GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(this.worldProperties);
@@ -87,20 +71,19 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 areaOfDefaultClaim = (int) Math.pow(activeConfig.getConfig().claim.claimRadius * 2 + 1, 2);
             }
 
+            Instant claimLastActive = null;
+            try {
+                claimLastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
+            } catch (DateTimeParseException e) {
+                return;
+            }
+
             // if this claim is a chest claim and those are set to expire
             if (claim.getArea() <= areaOfDefaultClaim && activeConfig.getConfig().claim.daysInactiveChestClaimExpiration > 0) {
-                // if the owner has been gone at least a week, and if he has ONLY
-                // the new player claim, it will be removed
-                boolean newPlayerClaimsExpired = false;
-                Optional<Instant> lastPlayed = SpongePlayerDataHandler.getLastPlayed(claim.ownerID);
-                if (lastPlayed.isPresent() && lastPlayed.get().plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveChestClaimExpiration))
+                if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveChestClaimExpiration))
                         .isBefore(Instant.now())) {
-                    newPlayerClaimsExpired = true;
-                }
-                if (newPlayerClaimsExpired && claimList.size() == 1) {
                     claim.removeSurfaceFluids(null);
                     GriefPrevention.instance.dataStore.deleteClaim(claim, true);
-                    cleanupChunks = true;
 
                     // if configured to do so, restore the land to natural
                     if (GriefPrevention.instance.claimModeIsActive(this.worldProperties, ClaimsMode.Creative) || activeConfig
@@ -114,26 +97,15 @@ public class CleanupUnusedClaimsTask implements Runnable {
 
             // if configured to always remove claims after some inactivity period without exceptions...
             else if (activeConfig.getConfig().claim.daysInactiveClaimExpiration > 0) {
-                Optional<Instant> lastPlayed = SpongePlayerDataHandler.getLastPlayed(claim.ownerID);
-                if (lastPlayed.isPresent() && lastPlayed.get().plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveChestClaimExpiration))
+                if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveChestClaimExpiration))
                         .isBefore(Instant.now())) {
-                    // make a copy of this player's claim list
-                    Vector<Claim> claims = new Vector<Claim>();
-                    for (int i = 0; i < claimList.size(); i++) {
-                        claims.add(claimList.get(i));
-                    }
-
-                    // delete them
-                    GriefPrevention.instance.dataStore.deleteClaimsForPlayer(claim.ownerID, true);
+                    GriefPrevention.instance.dataStore.deleteClaim(claim);
                     GriefPrevention.addLogEntry(" All of " + claim.getOwnerName() + "'s claims have expired.", CustomLogEntryTypes.AdminActivity);
 
-                    for (int i = 0; i < claims.size(); i++) {
-                        // if configured to do so, restore the land to natural
-                        if (GriefPrevention.instance.claimModeIsActive(this.worldProperties, ClaimsMode.Creative)
-                                || activeConfig.getConfig().claim.claimAutoNatureRestore) {
-                            GriefPrevention.instance.restoreClaim(claims.get(i), 0);
-                            cleanupChunks = true;
-                        }
+                    // if configured to do so, restore the land to natural
+                    if (GriefPrevention.instance.claimModeIsActive(this.worldProperties, ClaimsMode.Creative)
+                            || activeConfig.getConfig().claim.claimAutoNatureRestore) {
+                        GriefPrevention.instance.restoreClaim(claim, 0);
                     }
                 }
             } else if (activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration > 0
@@ -147,16 +119,8 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 int minInvestment = 400;
 
                 long investmentScore = claim.getPlayerInvestmentScore();
-                cleanupChunks = true;
-
                 if (investmentScore < minInvestment) {
-                    playerData = GriefPrevention.instance.dataStore.getPlayerData(this.worldProperties, claim.ownerID);
-
-                    // if the owner has been gone at least a week, and if he has
-                    // ONLY the new player claim, it will be removed
-                    Optional<Instant> lastPlayed = SpongePlayerDataHandler.getLastPlayed(claim.ownerID);
-                    if (lastPlayed.isPresent() && lastPlayed.get()
-                            .plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration))
+                    if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration))
                             .isBefore(Instant.now())) {
                         GriefPrevention.instance.dataStore.deleteClaim(claim, true);
                         GriefPrevention.addLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "
@@ -164,33 +128,6 @@ public class CleanupUnusedClaimsTask implements Runnable {
 
                         // restore the claim area to natural state
                         GriefPrevention.instance.restoreClaim(claim, 0);
-                    }
-                }
-            }
-
-            if (playerData != null) {
-                GriefPrevention.instance.dataStore.clearCachedPlayerData(claim.ownerID);
-            }
-
-            // since we're potentially loading a lot of chunks to scan parts of the
-            // world where there are no players currently playing, be mindful of
-            // memory usage
-            if (cleanupChunks) {
-                World world = claim.getLesserBoundaryCorner().getExtent();
-                final Optional<Chunk> optLesserChunk = world.getChunk(claim.getLesserBoundaryCorner().getBlockPosition());
-                final Optional<Chunk> optGreaterChunk = world.getChunk(claim.getGreaterBoundaryCorner().getBlockPosition());
-
-                if (optLesserChunk.isPresent() && optGreaterChunk.isPresent()) {
-                    final Vector3i lesserChunkPos = optLesserChunk.get().getPosition();
-                    final Vector3i greaterChunkPos = optGreaterChunk.get().getPosition();
-
-                    for (int x = lesserChunkPos.getX(); x <= greaterChunkPos.getX(); x++) {
-                        for (int z = lesserChunkPos.getZ(); z <= greaterChunkPos.getZ(); z++) {
-                            Optional<Chunk> chunk = world.getChunk(x, 0, z);
-                            if (chunk.isPresent() && chunk.get().isLoaded()) {
-                                chunk.get().unloadChunk();
-                            }
-                        }
                     }
                 }
             }

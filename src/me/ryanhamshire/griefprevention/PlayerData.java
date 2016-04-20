@@ -34,6 +34,7 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.net.InetAddress;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -239,6 +240,11 @@ public class PlayerData {
 
             if (playerID.equals(claim.ownerID)) {
                 this.playerWorldClaims.get(worldProperties.getUniqueId()).add(claim);
+                // update lastActive timestamp for claim
+                 claim.getClaimData().setLastActiveDate(Instant.now().toString());
+            } else if (claim.parent != null && playerID.equals(claim.parent.ownerID)) {
+                // update lastActive timestamp for subdivisions if parent owner logs on
+                claim.getClaimData().setLastActiveDate(Instant.now().toString());
             }
         }
     }

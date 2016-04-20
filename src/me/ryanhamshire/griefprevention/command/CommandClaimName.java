@@ -34,13 +34,9 @@ public class CommandClaimName implements CommandExecutor {
             }
 
             Text name = TextSerializers.FORMATTING_CODE.deserialize(ctx.<String>getOne("name").get());
-            if (claim.isSubDivision) {
-                claim.subDivisionData.claimName = name;
-            } else {
-                claim.getClaimData().getConfig().claimName = name;
-            }
+            claim.getClaimData().setClaimName(name);
 
-            claim.getClaimData().save();
+            claim.getClaimStorage().save();
             GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Set claim name to ", TextColors.AQUA, name));
         } else {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));

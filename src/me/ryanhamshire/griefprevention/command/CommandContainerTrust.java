@@ -8,12 +8,12 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 
-public class CommandTrust implements CommandExecutor {
+public class CommandContainerTrust implements CommandExecutor {
 
     @Override
-    public CommandResult execute(CommandSource src, CommandContext args) {
+    public CommandResult execute(CommandSource src, CommandContext ctx) {
         try {
-            CommandHelper.handleTrustCommand(GriefPrevention.checkPlayer(src), ClaimPermission.BUILD, args.<String>getOne("subject").get());
+            CommandHelper.handleTrustCommand(GriefPrevention.checkPlayer(src), ClaimPermission.INVENTORY, ctx.<String>getOne("target").get());
         } catch (CommandException e) {
             src.sendMessage(e.getText());
         }

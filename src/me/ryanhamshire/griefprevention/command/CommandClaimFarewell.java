@@ -34,14 +34,14 @@ public class CommandClaimFarewell implements CommandExecutor {
             }
 
             Text message = TextSerializers.FORMATTING_CODE.deserialize(ctx.<String>getOne("message").get());
-            if (claim.isSubDivision) {
+            if (claim.isSubdivision()) {
                 GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Subdivisions do not support farewell messages."));
                 return CommandResult.success();
             } else {
-                claim.getClaimData().getConfig().claimFarewellMessage = message;
+                claim.getClaimData().setFarewellMessage(message);
             }
 
-            claim.getClaimData().save();
+            claim.getClaimStorage().save();
             GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Set claim farewell to ", TextColors.AQUA, message));
         } else {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));

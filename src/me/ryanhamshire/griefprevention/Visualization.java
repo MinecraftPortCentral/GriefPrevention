@@ -163,16 +163,13 @@ public class Visualization {
         ArrayList<Transaction<BlockSnapshot>> newElements = new ArrayList<Transaction<BlockSnapshot>>();
 
         // TODO: move this to config so users can customize types
-        if (visualizationType == VisualizationType.Claim) {
+        if (claim.type == Claim.Type.BASIC) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.GOLD_BLOCK;
-        } else if (visualizationType == VisualizationType.ClaimInvestigation) {
-            cornerMaterial = BlockTypes.GLOWSTONE;
-            accentMaterial = BlockTypes.GOLD_BLOCK;
-        } else if (visualizationType == VisualizationType.AdminClaim) {
+        } else if (claim.isAdminClaim()) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.PUMPKIN;
-        } else if (visualizationType == VisualizationType.Subdivision) {
+        } else if (claim.isSubdivision()) {
             cornerMaterial = BlockTypes.IRON_BLOCK;
             accentMaterial = BlockTypes.WOOL;
         } else if (visualizationType == VisualizationType.RestoreNature) {

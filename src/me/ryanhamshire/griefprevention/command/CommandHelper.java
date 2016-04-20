@@ -31,6 +31,7 @@ import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -46,6 +47,7 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -150,7 +152,7 @@ public class CommandHelper {
             return CommandResult.success();
         }
 
-        if (claim.getClaimData().getConfig().flags.getFlagValue(flag) != null) {
+        if (claim.getClaimData().getFlags().getFlagValue(flag) != null) {
             if (targetPlayer.isPresent()) {
                 Subject subj = targetPlayer.get().getContainingCollection().get(targetPlayer.get().getIdentifier());
                 subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
@@ -174,5 +176,64 @@ public class CommandHelper {
         }
 
         return CommandResult.success();
+    }
+
+    public static void handleTrustCommand(Player player, ClaimPermission claimPermission, String target) {
+        Optional<User> targetPlayer = GriefPrevention.instance.resolvePlayerByName(target);
+        if (!targetPlayer.isPresent()) {
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+            return;
+        }
+
+        // determine which claim the player is standing in
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
+        ArrayList<Claim> targetClaims = new ArrayList<>();
+        if (claim == null) {
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to trust all claims, use /trustall instead."));
+            return;
+        } else {
+            // verify claim belongs to player
+            UUID ownerID = claim.ownerID;
+            if (ownerID == null && claim.parent != null) {
+                ownerID = claim.parent.ownerID;
+            }
+            if (targetPlayer.get().getUniqueId().equals(claim.ownerID)) {
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, targetPlayer.get().getName() + " is already the owner of claim."));
+                return;
+            }
+
+            if (claim.hasFullAccess(player)) {
+                targetClaims.add(claim);
+            } else {
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You do not own this claim."));
+                return;
+            }
+        }
+
+        String location = GriefPrevention.instance.dataStore.getMessage(Messages.LocationCurrentClaim);
+
+        for (Claim currentClaim : targetClaims) {
+            ArrayList<UUID> memberList = null;
+            if (claimPermission == ClaimPermission.ACCESS) {
+                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getAccessors();
+            } else if (claimPermission == ClaimPermission.BUILD) {
+                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getBuilders();
+            } else if (claimPermission == ClaimPermission.INVENTORY) {
+                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getContainers();
+            } else if (claimPermission == ClaimPermission.FULL) {
+                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getCoowners();
+            }
+
+            if (memberList.contains(targetPlayer.get().getUniqueId())) {
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Info, "Player " + target + " already has " + claimPermission + " permission."));
+                return;
+            } else {
+                memberList.add(targetPlayer.get().getUniqueId());
+            }
+
+            currentClaim.getClaimStorage().save();
+        }
+
+        GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, claimPermission.name(), targetPlayer.get().getName(), location);
     }
 }

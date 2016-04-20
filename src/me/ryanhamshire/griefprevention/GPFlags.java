@@ -93,12 +93,7 @@ public class GPFlags {
     // No user
     public static Tristate getClaimFlagPermission(Claim claim, String flag) {
         flag = flag.replace("griefprevention.flag.", "");
-        Tristate value = null;
-        if (claim.isSubDivision) {
-            value = (Tristate) claim.subDivisionData.flags.getFlagValue(flag);
-        } else {
-            value = (Tristate) claim.getClaimData().getConfig().flags.getFlagValue(flag);
-        }
+        Tristate value = (Tristate) claim.getClaimData().getFlags().getFlagValue(flag);
 
         if (value == Tristate.UNDEFINED) {
             Object obj = GriefPrevention.getActiveConfig(claim.world.getProperties()).getConfig().flags.getFlagValue(flag);
