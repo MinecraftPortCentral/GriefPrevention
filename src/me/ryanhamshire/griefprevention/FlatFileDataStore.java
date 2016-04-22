@@ -294,18 +294,20 @@ public class FlatFileDataStore extends DataStore {
     public void updateClaimData(Claim claim, File claimFile) {
 
         ClaimStorageData claimStorage = claim.getClaimStorage();
-
-        if (!claim.isSubdivision() && claimStorage == null) {
+        if (claimStorage == null) {
             claimStorage = new ClaimStorageData(claimFile.toPath());
             claim.setClaimStorage(claimStorage);
             claim.setClaimData(claimStorage.getConfig());
         }
 
         // owner
-        if (claim.ownerID != null) {
+        if (!claim.isSubdivision()) {
             claimStorage.getConfig().ownerUniqueId = claim.ownerID;
-        }
-        if (claim.isSubdivision()) {
+            claimStorage.getConfig().worldUniqueId = claim.world.getUniqueId();
+            claimStorage.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
+            claimStorage.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
+            claimStorage.getConfig().claimType = claim.type;
+        } else {
             if (claim.getClaimData() == null) {
                 claim.setClaimData(new SubDivisionDataNode());
             }
@@ -313,11 +315,6 @@ public class FlatFileDataStore extends DataStore {
             claim.getClaimData().setLesserBoundaryCorner(positionToString(claim.lesserBoundaryCorner));
             claim.getClaimData().setGreaterBoundaryCorner(positionToString(claim.greaterBoundaryCorner));
             claimStorage.getConfig().subdivisions.put(claim.id, (SubDivisionDataNode) claim.getClaimData());
-        } else {
-            claimStorage.getConfig().worldUniqueId = claim.world.getUniqueId();
-            claimStorage.getConfig().lesserBoundaryCornerPos = positionToString(claim.lesserBoundaryCorner);
-            claimStorage.getConfig().greaterBoundaryCornerPos = positionToString(claim.greaterBoundaryCorner);
-            claimStorage.getConfig().claimType = claim.type;
         }
 
         claimStorage.save();

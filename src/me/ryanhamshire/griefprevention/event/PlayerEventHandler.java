@@ -990,8 +990,7 @@ public class PlayerEventHandler {
         }
     }
 
-    @Listener
-    public void onPlayerMove(DisplaceEntityEvent.Move event){
+    private void handleEnterExitMessages(DisplaceEntityEvent event) {
         if (!(event.getCause().root() instanceof Player)) {
             return;
         }
@@ -1021,10 +1020,20 @@ public class PlayerEventHandler {
         }
     }
 
+    @Listener
+    public void onPlayerMove(DisplaceEntityEvent.Move event){
+        if (!(event.getCause().root() instanceof Player)) {
+            return;
+        }
+
+        handleEnterExitMessages(event);
+    }
+
     // when a player teleports
     @Listener(order = Order.PRE)
     public void onPlayerTeleport(DisplaceEntityEvent.Teleport.TargetPlayer event) {
         Player player = event.getTargetEntity();
+        handleEnterExitMessages(event);
         // these rules only apply to siege worlds only
         if (!GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.siegeEnabled) {
             return;
@@ -1301,7 +1310,7 @@ public class PlayerEventHandler {
                     }
 
                     // if locked, don't allow pickup
-                    if (!playerData.dropsAreUnlocked) {
+                    if (!playerData.dropsAreUnlocked && GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().general.lockItemDrops) {
                         GriefPrevention.addLogEntry("[Event: CollideEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][CancelReason: Drops are locked.]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
 
@@ -1493,7 +1502,83 @@ public class PlayerEventHandler {
             return;
         }
 
-        if (!clickedBlock.getLocation().isPresent()) {
+        if (!clickedBlock.getLocation().isPresent() || (itemInHand.isPresent() && itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool))) {
+            // if he's investigating a claim
+            // if claims are disabled in this world, do nothing
+            if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties()))
+                return;
+
+            // if holding shift (sneaking), show all claims in area
+            if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_NEARBY_CLAIMS)) {
+                // find nearby claims
+                Set<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
+                // visualize boundaries
+                Visualization visualization =
+                        Visualization.fromClaims(claims, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
+                Visualization.Apply(player, visualization);
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
+                return;
+            }
+
+            // FEATURE: shovel and stick can be used from a distance away
+            if (clickedBlock.getState().getType() == BlockTypes.AIR) {
+                // try to find a far away non-air block along line of sight
+                clickedBlock = getTargetBlock(player, 100);
+            }
+
+            // if no block, stop here
+            if (clickedBlock == null) {
+                return;
+            }
+
+            // air indicates too far away
+            if (clickedBlock.getState().getType() == BlockTypes.AIR) {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
+                Visualization.Revert(player);
+                return;
+            }
+
+            PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            if (playerData == null) {
+                playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            }
+            // ignore height
+            Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
+
+            // no claim case
+            if (claim == null) {
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
+                Visualization.Revert(player);
+                return;
+            } else {
+            // claim case
+                playerData.lastClaim = claim;
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
+
+                // visualize boundary
+                Visualization visualization =
+                        Visualization.FromClaim(claim, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.ClaimInvestigation, player.getLocation());
+                Visualization.Apply(player, visualization);
+
+                // if can resize this claim, tell about the boundaries
+                if (claim.allowEdit(player) == null) {
+                    // TODO
+                    //GriefPrevention.sendMessage(player, TextMode.Info, "", "  " + claim.getWidth() + "x" + claim.getHeight() + "=" + claim.getArea());
+                }
+
+                // if deleteclaims permission, show last active claim date
+                if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
+                    Instant lastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
+                    long difference = Date.from(Instant.now()).getTime() - Date.from(lastActive).getTime();
+                    long daysElapsed = difference / (1000 * 60 * 60 * 24);
+                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, Long.toString(daysElapsed));
+
+                    // drop the data we just loaded, if the player isn't online
+                    if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {
+                        this.dataStore.clearCachedPlayerData(claim.ownerID);
+                    }
+                }
+            }
             return;
         }
 
@@ -1702,87 +1787,6 @@ public class PlayerEventHandler {
                     return;
                 }
 
-                return;
-            }
-
-            // if he's investigating a claim
-            else if (player.getItemInHand().get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
-                // if claims are disabled in this world, do nothing
-                if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties()))
-                    return;
-
-                // if holding shift (sneaking), show all claims in area
-                if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_NEARBY_CLAIMS)) {
-                    // find nearby claims
-                    Set<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
-
-                    // visualize boundaries
-                    Visualization visualization =
-                            Visualization.fromClaims(claims, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
-                    Visualization.Apply(player, visualization);
-
-                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
-
-                    return;
-                }
-
-                // FEATURE: shovel and stick can be used from a distance away
-                if (clickedBlock.getState().getType() == BlockTypes.AIR) {
-                    // try to find a far away non-air block along line of sight
-                    clickedBlock = getTargetBlock(player, 100);
-                }
-
-                // if no block, stop here
-                if (clickedBlock == null) {
-                    return;
-                }
-
-                // air indicates too far away
-                if (clickedBlock.getState().getType() == BlockTypes.AIR) {
-                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
-                    Visualization.Revert(player);
-                    return;
-                }
-
-                if (playerData == null)
-                    playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-                // ignore height
-                Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
-
-                // no claim case
-                if (claim == null) {
-                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
-                    Visualization.Revert(player);
-                    return;
-                } else {
-                // claim case
-                    playerData.lastClaim = claim;
-                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
-
-                    // visualize boundary
-                    Visualization visualization =
-                            Visualization.FromClaim(claim, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.ClaimInvestigation, player.getLocation());
-                    Visualization.Apply(player, visualization);
-
-                    // if can resize this claim, tell about the boundaries
-                    if (claim.allowEdit(player) == null) {
-                        // TODO
-                        //GriefPrevention.sendMessage(player, TextMode.Info, "", "  " + claim.getWidth() + "x" + claim.getHeight() + "=" + claim.getArea());
-                    }
-
-                    // if deleteclaims permission, show last active claim date
-                    if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
-                        Instant lastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
-                        long difference = Date.from(Instant.now()).getTime() - Date.from(lastActive).getTime();
-                        long daysElapsed = difference / (1000 * 60 * 60 * 24);
-                        GriefPrevention.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, Long.toString(daysElapsed));
-
-                        // drop the data we just loaded, if the player isn't online
-                        if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {
-                            this.dataStore.clearCachedPlayerData(claim.ownerID);
-                        }
-                    }
-                }
                 return;
             }
 

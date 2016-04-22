@@ -360,7 +360,7 @@ public abstract class DataStore {
         // determine new owner
         PlayerData newOwnerData = null;
 
-        if (newOwnerID != null) {
+        if (!claim.isSubdivision()) {
             newOwnerData = this.getPlayerData(claim.world.getProperties(), newOwnerID);
         }
 
@@ -380,7 +380,7 @@ public abstract class DataStore {
 
     // adds a claim to the datastore, making it an effective claim
     void addClaim(Claim newClaim, boolean writeToStorage) {
-        if (newClaim.ownerID != null) {
+        if (!newClaim.isSubdivision()) {
             PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
             if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
                 ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
@@ -541,10 +541,7 @@ public abstract class DataStore {
         // remove from secondary storage
         if (!claim.isSubdivision()) {
             this.deleteClaimFromSecondaryStorage(claim);
-        }
-
-        // update player data
-        if (claim.ownerID != null) {
+            // update player data
             PlayerData ownerData = this.getPlayerData(claim.world, claim.ownerID);
             ownerData.playerWorldClaims.get(claim.world.getUniqueId()).remove(claim);
         }
@@ -671,9 +668,12 @@ public abstract class DataStore {
             claimsToCheck = newClaim.parent.children;
             newClaim.type = Claim.Type.SUBDIVISION;
             newClaim.setClaimStorage(newClaim.parent.getClaimStorage());
-            newClaim.setClaimData(new SubDivisionDataNode());
+            SubDivisionDataNode subData = new SubDivisionDataNode();
+            newClaim.setClaimData(subData);
+            newClaim.getClaimStorage().getConfig().subdivisions.put(claimId, subData);
         } else {
             claimsToCheck = (ArrayList<Claim>) this.worldClaims.get(world.getProperties().getUniqueId());
+            newClaim.ownerID = player.getUniqueId();
         }
 
         if (claimsToCheck != null) {

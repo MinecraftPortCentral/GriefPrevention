@@ -149,7 +149,7 @@ public class Claim implements ContextSource {
         this.world = lesserBoundaryCorner.getExtent();
 
         // owner
-        if (player != null) {
+        if (player != null && player.getItemInHand().isPresent() && player.getItemInHand().get().getItem().getId().equalsIgnoreCase(GriefPrevention.getActiveConfig(this.world.getProperties()).getConfig().claim.modificationTool)) {
             this.ownerID = player.getUniqueId();
             PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             if (playerData != null) {
@@ -437,7 +437,7 @@ public class Claim implements ContextSource {
         }
 
         // Builders can place blocks in claims
-        if (this.getClaimData().getBuilders().contains(user.getUniqueId())) {
+        if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) || this.getClaimData().getBuilders().contains(user.getUniqueId())) {
             return null;
         }
 
@@ -504,7 +504,7 @@ public class Claim implements ContextSource {
         }
 
         // Builders can break blocks
-        if (this.getClaimData().getBuilders().contains(user.getUniqueId())) {
+        if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) || this.getClaimData().getBuilders().contains(user.getUniqueId())) {
             return null;
         }
         return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
@@ -563,11 +563,15 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        if (this.getClaimData().getBuilders().contains(user.getUniqueId()) || this.getClaimData().getContainers().contains(user.getUniqueId())) {
+        if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) 
+                || this.getClaimData().getContainers().contains(GriefPrevention.PUBLIC_UUID) 
+                || this.getClaimData().getBuilders().contains(user.getUniqueId()) 
+                || this.getClaimData().getContainers().contains(user.getUniqueId())) {
             return null;
         }
         if (!tileEntity.isPresent()) {
-            if (this.getClaimData().getAccessors().contains(user.getUniqueId())) {
+            if (this.getClaimData().getAccessors().contains(GriefPrevention.PUBLIC_UUID) 
+                    || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
                 return null;
             }
         }

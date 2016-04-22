@@ -35,7 +35,11 @@ public class CommandClaimInfo implements CommandExecutor {
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
 
         if (claim != null) {
-            User owner = GriefPrevention.getOrCreateUser(claim.getClaimData().getOwnerUniqueId());
+            UUID ownerUniqueId = claim.getClaimData().getOwnerUniqueId();
+            if (ownerUniqueId == null && claim.parent != null) {
+                ownerUniqueId = claim.parent.ownerID;
+            }
+            User owner = GriefPrevention.getOrCreateUser(ownerUniqueId);
             Text claimName = Text.of();
             String accessors = "";
             String builders = "";

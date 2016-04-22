@@ -156,6 +156,11 @@ public class GriefPrevention {
     // for logging to the console and log file
     private static Logger log = Logger.getLogger("Minecraft");
 
+    // GP Public user info
+    public static final UUID PUBLIC_UUID = UUID.fromString("41C82C87-7AfB-4024-BA57-13D2C99CAE77");
+    public static User PUBLIC_USER;
+    public static final String PUBLIC_NAME = "[GPPublic]";
+
     // this handles data storage, like player and region data
     public DataStore dataStore;
 
@@ -206,6 +211,7 @@ public class GriefPrevention {
     @Listener
     public void onServerStarted(GameStartedServerEvent event) {
         instance = this;
+        PUBLIC_USER = Sponge.getServiceManager().provide(UserStorageService.class).get().getOrCreate(GameProfile.of(GriefPrevention.PUBLIC_UUID, GriefPrevention.PUBLIC_NAME));
         this.loadConfig();
         this.customLogger = new CustomLogger();
         addLogEntry("Grief Prevention boot start.");

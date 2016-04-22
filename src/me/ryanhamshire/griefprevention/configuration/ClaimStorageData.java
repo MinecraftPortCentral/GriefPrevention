@@ -307,10 +307,6 @@ public class ClaimStorageData {
 
     @ConfigSerializable
     public static class SubDivisionDataNode implements ClaimData {
-        @Setting(value = MAIN_WORLD_UUID, comment = "The world uuid associated with claim.")
-        public UUID worldUniqueId;
-        @Setting(value = MAIN_OWNER_UUID, comment = "The owner uuid assocated with claim.")
-        public UUID ownerUniqueId;
         @Setting(value = MAIN_CLAIM_NAME, comment = "The name associated with subdivision.")
         public Text claimName = Text.of("");
         @Setting(value = MAIN_CLAIM_TYPE, comment = "The type of claim.")
@@ -340,11 +336,11 @@ public class ClaimStorageData {
 
         @Override
         public UUID getWorldUniqueId() {
-            return null;
+            return GriefPrevention.PUBLIC_UUID; // return dummy uuid
         }
         @Override
         public UUID getOwnerUniqueId() {
-            return this.ownerUniqueId;
+            return GriefPrevention.PUBLIC_UUID; // return dummy uuid
         }
         @Override
         public Type getClaimType() {

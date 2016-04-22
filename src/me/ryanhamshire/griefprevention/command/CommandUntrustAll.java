@@ -30,12 +30,18 @@ public class CommandUntrustAll implements CommandExecutor {
         }
 
         String subject = ctx.<String>getOne("subject").get();
-        Optional<User> targetPlayer = GriefPrevention.instance.resolvePlayerByName(subject);
+        Optional<User> targetPlayer = Optional.empty();
+        if (subject.equalsIgnoreCase("public") || subject.equalsIgnoreCase("all")) {
+            targetPlayer = Optional.of(GriefPrevention.PUBLIC_USER);
+        } else {
+            targetPlayer = GriefPrevention.instance.resolvePlayerByName(subject);
+        }
+
         // validate player argument
         if (!targetPlayer.isPresent()) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
             return CommandResult.success();
-        } else if (targetPlayer.get().getUniqueId().equals(player.getUniqueId())) {
+        } else if (targetPlayer.isPresent() && targetPlayer.get().getUniqueId().equals(player.getUniqueId())) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You cannot not untrust yourself."));
             return CommandResult.success();
         }

@@ -106,6 +106,7 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     public static final String GENERAL_ADMIN_WHISPERS = "admin-whispers";
     public static final String GENERAL_ADMIN_WHISPER_COMMANDS = "admin-whisper-commands";
     public static final String GENERAL_BANNED_ITEMS = "banned-items";
+    public static final String GENERAL_LOCK_ITEM_DROPS = "lock-item-drops";
 
     // LOGGING
     public static final String LOGGING_DAYS_TO_KEEP = "days-stored";
@@ -494,6 +495,8 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public ArrayList<String> bannedItemList = new ArrayList<>();
         @Setting(value = GENERAL_SURFACE_EXPLOSIONS, comment = "Whether players can detonate explosives above sea level.")
         public boolean surfaceExplosions = false;
+        @Setting(value = GENERAL_LOCK_ITEM_DROPS, comment = "Whether player item drops are locked.")
+        public boolean lockItemDrops = true;
     }
 
     @ConfigSerializable

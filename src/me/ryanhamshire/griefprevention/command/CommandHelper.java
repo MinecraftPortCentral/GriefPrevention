@@ -179,7 +179,14 @@ public class CommandHelper {
     }
 
     public static void handleTrustCommand(Player player, ClaimPermission claimPermission, String target) {
-        Optional<User> targetPlayer = GriefPrevention.instance.resolvePlayerByName(target);
+
+        Optional<User> targetPlayer = Optional.empty();
+        if (!target.equalsIgnoreCase("all") && !target.equalsIgnoreCase("public")) {
+            targetPlayer = GriefPrevention.instance.resolvePlayerByName(target);
+        } else {
+            targetPlayer = Optional.of(GriefPrevention.PUBLIC_USER);
+        }
+
         if (!targetPlayer.isPresent()) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
             return;
@@ -225,7 +232,11 @@ public class CommandHelper {
             }
 
             if (memberList.contains(targetPlayer.get().getUniqueId())) {
-                GriefPrevention.sendMessage(player, Text.of(TextMode.Info, "Player " + target + " already has " + claimPermission + " permission."));
+                String message = "Player " + target + " already has " + claimPermission + " permission.";
+                if (targetPlayer.get() == GriefPrevention.PUBLIC_USER) {
+                    message = "Public already has " + claimPermission + " permission.";
+                }
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Info, message));
                 return;
             } else {
                 memberList.add(targetPlayer.get().getUniqueId());

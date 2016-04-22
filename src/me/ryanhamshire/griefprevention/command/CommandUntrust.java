@@ -30,18 +30,22 @@ public class CommandUntrust implements CommandExecutor {
         }
 
         String subject = ctx.<String>getOne("subject").get();
-        Optional<User> targetPlayer = GriefPrevention.instance.resolvePlayerByName(subject);
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
+        Optional<User> targetPlayer = Optional.empty();
+        if (subject.equalsIgnoreCase("public") || subject.equalsIgnoreCase("all")) {
+            targetPlayer = Optional.of(GriefPrevention.PUBLIC_USER);
+        } else {
+            targetPlayer = GriefPrevention.instance.resolvePlayerByName(subject);
+        }
 
+        if (!targetPlayer.isPresent()) {
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+            return CommandResult.success();
+        }
+
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
         if (claim == null) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to untrust all claims, use /untrustall instead."));
             return CommandResult.success();
-        } else {
-            // validate player argument
-            if (!targetPlayer.isPresent()) {
-                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
-                return CommandResult.success();
-            }
         }
 
         // determine which claim the player is standing in
