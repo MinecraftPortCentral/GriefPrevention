@@ -847,6 +847,9 @@ public class GriefPrevention {
     public static GriefPreventionConfig<?> getActiveConfig(WorldProperties worldProperties) {
         GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldProperties.getUniqueId());
         GriefPreventionConfig<DimensionConfig> dimConfig = DataStore.dimensionConfigMap.get(worldProperties.getUniqueId());
+        if (worldConfig == null || worldConfig.getConfig() == null) {
+            return DataStore.globalConfig;
+        }
         if (worldConfig.getConfig().configEnabled) {
             return worldConfig;
         } else if (dimConfig.getConfig().configEnabled) {

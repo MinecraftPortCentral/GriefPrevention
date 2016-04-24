@@ -1502,12 +1502,16 @@ public class PlayerEventHandler {
             return;
         }
 
-        if (!clickedBlock.getLocation().isPresent() || (itemInHand.isPresent() && itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool))) {
-            // if he's investigating a claim
+        if (!clickedBlock.getLocation().isPresent()) {
             // if claims are disabled in this world, do nothing
-            if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties()))
+            if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
                 return;
+            }
 
+            // if he's investigating a claim
+            if (!itemInHand.isPresent() || !itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
+                return;
+            }
             // if holding shift (sneaking), show all claims in area
             if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_NEARBY_CLAIMS)) {
                 // find nearby claims
