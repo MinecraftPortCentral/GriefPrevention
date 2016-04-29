@@ -93,8 +93,8 @@ public class DeliverClaimBlocksTask implements Runnable {
                     if (playerStorage == null) {
                         GriefPrevention.instance.dataStore.createPlayerWorldStorageData(player.getWorld().getProperties(), player.getUniqueId());
                         playerStorage = playerData.worldStorageData.get(player.getWorld().getUniqueId());
-                        playerStorage.getConfig().accruedClaimBlocks += accruedBlocks;
                     }
+                    playerStorage.getConfig().accruedClaimBlocks += accruedBlocks;
                 } else {
                     GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
                 }
