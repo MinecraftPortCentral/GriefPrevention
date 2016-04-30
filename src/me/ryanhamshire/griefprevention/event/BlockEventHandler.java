@@ -127,7 +127,7 @@ public class BlockEventHandler {
                     }
                 }
             } else if (sourceClaim == null) {
-                GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][Removed: " + direction + "][Location: " + location + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][Removed: " + direction + "][Location: " + location + "][CancelReason: " + Messages.BlockChangeFromWilderness + "]", CustomLogEntryTypes.Debug);
                 iterator.remove();
             } else if (sourceClaim != null) {
                 if (user.isPresent() && user.get() instanceof Player) {
@@ -240,7 +240,7 @@ public class BlockEventHandler {
             if (blockSource.isPresent()) {
                 Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
                 if (sourceClaim == null && targetClaim != null) {
-                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][Pos: " + pos + "][CancelReason: Source came from outside a claimed area.]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][Pos: " + pos + "][CancelReason: " + Messages.BlockChangeFromWilderness + ".]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
                 } else if (sourceClaim != null && targetClaim != null) {
@@ -280,6 +280,12 @@ public class BlockEventHandler {
             return;
         }
 
+        Claim sourceClaim = null;
+        Optional<BlockSnapshot> sourceBlock = event.getCause().first(BlockSnapshot.class);
+        if (sourceBlock.isPresent() && sourceBlock.get().getLocation().isPresent()) {
+            sourceClaim = this.dataStore.getClaimAt(sourceBlock.get().getLocation().get(), true, null);
+        }
+
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
             BlockSnapshot block = transaction.getFinal();
             if (!block.getLocation().isPresent()) {
@@ -293,9 +299,15 @@ public class BlockEventHandler {
                 return;
             }
 
-            Claim claim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
-            if (claim == null && !(event.getCause().root() instanceof Player) && block.getState().getType() == BlockTypes.FIRE) {
-                if (GPFlags.getClaimFlagPermission(claim, GPFlags.FIRE_SPREAD) != Tristate.TRUE) {
+            Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
+            if (sourceBlock.isPresent() && sourceClaim == null && targetClaim != null) {
+                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + Messages.BlockChangeFromWilderness + "]", CustomLogEntryTypes.Debug);
+                event.setCancelled(true);
+                return;
+            }
+
+            if (targetClaim == null && !(event.getCause().root() instanceof Player) && block.getState().getType() == BlockTypes.FIRE) {
+                if (GPFlags.getClaimFlagPermission(targetClaim, GPFlags.FIRE_SPREAD) != Tristate.TRUE) {
                     GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + Messages.FireSpreadOutsideClaim + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
                     return;
@@ -306,7 +318,7 @@ public class BlockEventHandler {
             if (!activeConfig.getConfig().general.surfaceExplosions && block.getState().getType() == BlockTypes.TNT &&
                     !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
                     block.getPosition().getY() > GriefPrevention.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&
-                    claim == null &&
+                    targetClaim == null &&
                     playerData.siegeData == null) {
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoTNTDamageAboveSeaLevel);
             }
@@ -314,7 +326,7 @@ public class BlockEventHandler {
             // warn players about disabled pistons outside of land claims
             if (activeConfig.getConfig().general.limitPistonsToClaims &&
                     (block.getState().getType() == BlockTypes.PISTON || block.getState().getType() == BlockTypes.STICKY_PISTON) &&
-                    claim == null) {
+                    targetClaim == null) {
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoPistonsOutsideClaims);
             }
 
@@ -325,13 +337,13 @@ public class BlockEventHandler {
             }
 
             // if the block is being placed within or under an existing claim
-            if (claim != null) {
-                playerData.lastClaim = claim;
+            if (targetClaim != null) {
+                playerData.lastClaim = targetClaim;
 
                 // if the player has permission for the claim and he's placing UNDER the claim
-                if (block.getPosition().getY() <= claim.lesserBoundaryCorner.getBlockY() && claim.allowBuild(player, block) == null) {
+                if (block.getPosition().getY() <= targetClaim.lesserBoundaryCorner.getBlockY() && targetClaim.allowBuild(player, block) == null) {
                     // extend the claim downward
-                    this.dataStore.extendClaim(claim, block.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance);
+                    this.dataStore.extendClaim(targetClaim, block.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance);
                 }
 
                 // allow for a build warning in the future

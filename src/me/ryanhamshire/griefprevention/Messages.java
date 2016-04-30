@@ -47,6 +47,7 @@ public enum Messages {
     BasicClaimsMode,
     BecomeMayor,
     BesiegedNoTeleport,
+    BlockChangeFromWilderness,
     BlockClaimed,
     BlockedCommand,
     BlockNotClaimed,

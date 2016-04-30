@@ -957,6 +957,7 @@ public abstract class DataStore {
         this.addDefault(Messages.BasicClaimsMode, "Returned to basic claim creation mode.");
         this.addDefault(Messages.BecomeMayor, "Subdivide your land claim and become a mayor!");
         this.addDefault(Messages.BesiegedNoTeleport, "You can't teleport into a besieged area.");
+        this.addDefault(Messages.BlockChangeFromWilderness, "Claim blocks are not allowed to be changed from wilderness.");
         this.addDefault(Messages.BlockClaimed, "That block has been claimed by {0}.", "0: claim owner");
         this.addDefault(Messages.BlockedCommand, "The command {0} has been blocked by claim owner {1}.");
         this.addDefault(Messages.BlockNotClaimed, "No one has claimed this block.");
