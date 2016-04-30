@@ -588,20 +588,25 @@ public class DatabaseDataStore extends DataStore {
 
     @Override
     PlayerData getPlayerDataFromStorage(UUID playerID) {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public PlayerData createPlayerWorldStorageData(WorldProperties worldProperties, UUID playerUniqueId) {
-        // TODO Auto-generated method stub
+    public PlayerData createPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         return null;
     }
 
     @Override
     public PlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
-        // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public void loadWorldData(WorldProperties worldProperties) {
+    }
+
+    @Override
+    public void unloadWorldData(WorldProperties worldProperties) {
     }
 
 }

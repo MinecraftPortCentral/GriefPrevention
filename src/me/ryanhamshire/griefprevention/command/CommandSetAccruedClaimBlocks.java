@@ -40,8 +40,8 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
 
         // set player's blocks
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), targetPlayer.getUniqueId());
-        playerData.setAccruedClaimBlocks(player.getWorld(), newAmount);
-        playerData.worldStorageData.get(player.getWorld().getUniqueId()).save();
+        playerData.setAccruedClaimBlocks(newAmount);
+        playerData.getStorageData().save();
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.SetClaimBlocksSuccess);
         if (player != null) {

@@ -90,12 +90,12 @@ public class CommandClaimBuy implements CommandExecutor {
                 return CommandResult.success();
             }
             // add blocks
-            playerData.setBonusClaimBlocks(player.getWorld(), playerData.getBonusClaimBlocks(player.getWorld()) + blockCount);
-            playerData.worldStorageData.get(player.getWorld().getUniqueId()).save();
+            playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);
+            playerData.getStorageData().save();
 
             // inform player
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.PurchaseConfirmation, String.valueOf(totalCost),
-                    String.valueOf(playerData.getRemainingClaimBlocks(player.getWorld())));
+                    String.valueOf(playerData.getRemainingClaimBlocks()));
         }
         return CommandResult.success();
     }

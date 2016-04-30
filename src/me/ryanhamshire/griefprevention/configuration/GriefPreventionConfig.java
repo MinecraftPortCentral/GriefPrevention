@@ -115,6 +115,9 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     public static final String LOGGING_SOCIAL_ACTIVITY = "social-acitivity";
     public static final String LOGGING_SUSPICIOUS_ACTIVITY = "suspicious-activity";
 
+    // Player Data
+    public static final String PLAYER_DATA_GLOBAL_STORAGE = "use-global-storage";
+
     // PVP
     public static final String PVP_PROTECT_ITEM_DROPS_DEATH = "protect-item-drops-death";
     public static final String PVP_PROTECT_ITEM_DROPS_DEATH_NONPVP = "protect-item-drops-death-non-pvp";
@@ -239,6 +242,8 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public DatabaseCategory database = new DatabaseCategory();
         @Setting
         public LoggingCategory logging = new LoggingCategory();
+        @Setting
+        public PlayerDataCategory playerdata = new PlayerDataCategory();
         @Setting
         public SpamCategory spam = new SpamCategory();
     }
@@ -512,6 +517,12 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public boolean loggingSuspiciousActivity = false;
         @Setting(value = LOGGING_DEBUG, comment = "Enable debug logging.")
         public boolean loggingDebug = false;
+    }
+
+    @ConfigSerializable
+    public static class PlayerDataCategory extends Category {
+        @Setting(value = PLAYER_DATA_GLOBAL_STORAGE, comment = "Whether player data should be stored per world. True will store all data in the default world.")
+        public boolean useGlobalPlayerDataStorage = false;
     }
 
     @ConfigSerializable

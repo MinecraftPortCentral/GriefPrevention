@@ -94,14 +94,14 @@ public class CommandHelper {
 
             // adjust claim blocks when abandoning a top level claim
             if (claim.parent == null) {
-                playerData.setAccruedClaimBlocks(player.getWorld(),
-                        playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math
+                playerData.setAccruedClaimBlocks(
+                        playerData.getAccruedClaimBlocks() - (int) Math
                                 .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
                                         .getConfig().claim.abandonReturnRatio))));
             }
 
             // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
+            int remainingBlocks = playerData.getRemainingClaimBlocks();
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
 
             // revert any current visualization

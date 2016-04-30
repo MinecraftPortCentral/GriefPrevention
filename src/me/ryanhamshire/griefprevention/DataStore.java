@@ -41,7 +41,6 @@ import me.ryanhamshire.griefprevention.event.ClaimDeletedEvent;
 import me.ryanhamshire.griefprevention.task.SecureClaimTask;
 import me.ryanhamshire.griefprevention.task.SiegeCheckupTask;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.common.DimensionManager;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -88,17 +87,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 //singleton class which manages all GriefPrevention data (except for config options)
 public abstract class DataStore {
 
-    // in-memory cache for player data
-    protected ConcurrentHashMap<UUID, PlayerData> playerUniqueIdToPlayerDataMap = new ConcurrentHashMap<>();
+    // World UUID -> PlayerDataWorldManager
+    protected final Map<UUID, PlayerDataWorldManager> playerDataManagers = Maps.newHashMap();
+    // Global PlayerData manager
+    protected PlayerDataWorldManager globalPlayerWorldManager;
 
     // in-memory cache for group (permission-based) data
     protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<>();
 
     // in-memory cache for claim data
-    public Map<UUID, List<Claim>> worldClaims = Maps.newHashMap();
     ConcurrentHashMap<String, ArrayList<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
     public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
     public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
@@ -155,14 +157,12 @@ public abstract class DataStore {
 
     // initialization!
     void initialize() throws Exception {
-        int count = 0;
-        for (List<Claim> claimList : this.worldClaims.values()) {
-            count += claimList.size();
-        }
-        GriefPrevention.addLogEntry(count + " total claims loaded.");
-
         // ensure global player data folder exists
-        this.globalPlayerDataPath = DimensionManager.getCurrentSaveRootDirectory().toPath().resolve(globalDataPath);
+        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+            this.globalPlayerWorldManager = new PlayerDataWorldManager();
+        }
+
+        this.globalPlayerDataPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getServer().getDefaultWorldName()).resolve(globalDataPath);
         File globalPlayerDataFolder = this.globalPlayerDataPath.toFile();
         if (!globalPlayerDataFolder.exists()) {
             globalPlayerDataFolder.mkdirs();
@@ -294,8 +294,8 @@ public abstract class DataStore {
     }
 
     // removes cached player data from memory
-    public synchronized void clearCachedPlayerData(UUID playerID) {
-        this.playerUniqueIdToPlayerDataMap.remove(playerID);
+    public synchronized void clearCachedPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+        this.getPlayerDataWorldManager(worldProperties).removePlayer(playerUniqueId);
     }
 
     // gets the number of bonus blocks a player has from his permissions
@@ -335,80 +335,10 @@ public abstract class DataStore {
 
     abstract void saveGroupBonusBlocks(String groupName, int amount);
 
-    @SuppressWarnings("serial")
-    public class NoTransferException extends Exception {
-
-        NoTransferException(String message) {
-            super(message);
-        }
-    }
-
-    synchronized public void changeClaimOwner(Claim claim, UUID newOwnerID) throws NoTransferException {
-        // if it's a subdivision, throw an exception
-        if (claim.parent != null) {
-            throw new NoTransferException("Subdivisions can't be transferred.  Only top-level claims may change owners.");
-        }
-
-        // otherwise update information
-
-        // determine current claim owner
-        PlayerData ownerData = null;
-        if (!claim.isAdminClaim()) {
-            ownerData = this.getPlayerData(claim.world.getProperties(), claim.ownerID);
-        }
-
-        // determine new owner
-        PlayerData newOwnerData = null;
-
-        if (!claim.isSubdivision()) {
-            newOwnerData = this.getPlayerData(claim.world.getProperties(), newOwnerID);
-        }
-
-        // transfer
-        claim.ownerID = newOwnerID;
-        this.saveClaim(claim);
-
-        // adjust blocks and other records
-        if (ownerData != null) {
-            ownerData.playerWorldClaims.get(claim.world.getUniqueId()).remove(claim);
-        }
-
-        if (newOwnerData != null) {
-            newOwnerData.playerWorldClaims.get(claim.world).add(claim);
-        }
-    }
-
     // adds a claim to the datastore, making it an effective claim
     void addClaim(Claim newClaim, boolean writeToStorage) {
-        if (!newClaim.isSubdivision()) {
-            PlayerData ownerData = this.getPlayerData(newClaim.world, newClaim.ownerID);
-            if (ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()) == null) {
-                ownerData.playerWorldClaims.put(newClaim.world.getUniqueId(), new ArrayList<Claim>());
-            }
-            ownerData.playerWorldClaims.get(newClaim.world.getUniqueId()).add(newClaim);
-        }
-
-        // subdivisions are added under their parent, not directly to the hash map for direct search
-        if (newClaim.parent != null) {
-            if (!newClaim.parent.children.contains(newClaim)) {
-                newClaim.parent.children.add(newClaim);
-            }
-            newClaim.inDataStore = true;
-            if (writeToStorage) {
-                this.saveClaim(newClaim);
-            }
-
-            return;
-        }
-
-        // add it and mark it as added
-        if (this.worldClaims.get(newClaim.world.getProperties().getUniqueId()) == null) {
-            List<Claim> newClaims = new ArrayList<>();
-            newClaims.add(newClaim);
-            this.worldClaims.put(newClaim.world.getProperties().getUniqueId(), newClaims);
-        } else {
-            this.worldClaims.get(newClaim.world.getProperties().getUniqueId()).add(newClaim);
-        }
+        PlayerDataWorldManager playerWorldManager = this.getPlayerDataWorldManager(newClaim.world.getProperties());
+        playerWorldManager.addPlayerClaim(newClaim);
 
         ArrayList<String> chunkStrings = newClaim.getChunkStrings();
         for (String chunkString : chunkStrings) {
@@ -482,17 +412,6 @@ public abstract class DataStore {
     // saved
     abstract void incrementNextClaimID();
 
-    // retrieves player data from memory or secondary storage, as necessary
-    // if the player has never been on the server before, this will return a
-    // fresh player data with default values
-    public PlayerData getPlayerData(World world, UUID playerID) {
-        return getPlayerData(world.getProperties(), playerID);
-    }
-
-    public abstract PlayerData getPlayerData(WorldProperties worldProperties, UUID playerID);
-
-    abstract PlayerData getPlayerDataFromStorage(UUID playerID);
-
     // deletes a claim or subdivision
     public void deleteClaim(Claim claim) {
         this.deleteClaim(claim, true);
@@ -510,21 +429,10 @@ public abstract class DataStore {
             parentClaim.children.remove(claim);
             parentClaim.getClaimStorage().getConfig().subdivisions.remove(claim.id);
             parentClaim.getClaimStorage().save();
-        }
-
-        // mark as deleted so any references elsewhere can be ignored
-        claim.inDataStore = false;
-
-        // remove from memory
-        if (claim.parent == null) {
-            Iterator<Claim> iterator = this.worldClaims.get(claim.world.getProperties().getUniqueId()).iterator();
-            while (iterator.hasNext()) {
-                Claim worldClaim = iterator.next();
-                if (worldClaim.id == claim.id) {
-                    iterator.remove();
-                    break;
-                }
-            }
+        } else {
+            PlayerDataWorldManager playerWorldManager = this.getPlayerDataWorldManager(claim.world.getProperties());
+            playerWorldManager.removePlayerClaim(claim);
+            this.deleteClaimFromSecondaryStorage(claim);
         }
 
         ArrayList<String> chunkStrings = claim.getChunkStrings();
@@ -538,13 +446,8 @@ public abstract class DataStore {
             }
         }
 
-        // remove from secondary storage
-        if (!claim.isSubdivision()) {
-            this.deleteClaimFromSecondaryStorage(claim);
-            // update player data
-            PlayerData ownerData = this.getPlayerData(claim.world, claim.ownerID);
-            ownerData.playerWorldClaims.get(claim.world.getUniqueId()).remove(claim);
-        }
+        // mark as deleted so any references elsewhere can be ignored
+        claim.inDataStore = false;
 
         if (fireEvent) {
             ClaimDeletedEvent ev = new ClaimDeletedEvent(claim);
@@ -592,14 +495,7 @@ public abstract class DataStore {
 
     // finds a claim by ID
     public Claim getClaim(World world, UUID id) {
-        List<Claim> claimList = this.worldClaims.get(world.getProperties().getUniqueId());
-        for (Claim claim : claimList) {
-            if (claim.inDataStore && claim.getID() == id) {
-                return claim;
-            }
-        }
-
-        return null;
+        return this.getPlayerDataWorldManager(world.getProperties()).getClaimByUUID(id);
     }
 
     // gets an almost-unique, persistent identifier string for a chunk
@@ -672,7 +568,7 @@ public abstract class DataStore {
             newClaim.setClaimData(subData);
             newClaim.getClaimStorage().getConfig().subdivisions.put(claimId, subData);
         } else {
-            claimsToCheck = (ArrayList<Claim>) this.worldClaims.get(world.getProperties().getUniqueId());
+            claimsToCheck = (ArrayList<Claim>) this.getPlayerDataWorldManager(world.getProperties()).getWorldClaims();
             newClaim.ownerID = player.getUniqueId();
         }
 
@@ -978,28 +874,35 @@ public abstract class DataStore {
     // deletes all claims owned by a player
     public void deleteClaimsForPlayer(UUID playerID, boolean deleteCreativeClaims) {
         // make a list of the player's claims
-        ArrayList<Claim> claimsToDelete = new ArrayList<Claim>();
-        for (Map.Entry<UUID, List<Claim>> mapEntry : this.worldClaims.entrySet()) {
-            List<Claim> claimList = mapEntry.getValue();
-            for (Claim claim : claimList) {
-                if ((playerID == claim.ownerID || (playerID != null && playerID.equals(claim.ownerID)))
-                        && (deleteCreativeClaims || !GriefPrevention.instance
-                        .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative))) {
+        List<PlayerDataWorldManager> playerWorldManagers = new ArrayList<>();
+        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+            playerWorldManagers.add(this.globalPlayerWorldManager);
+        } else {
+            playerWorldManagers.addAll(this.playerDataManagers.values());
+        }
+
+        for (PlayerDataWorldManager playerWorldManager : playerWorldManagers) {
+            List<Claim> claims = playerWorldManager.getPlayerClaims(playerID);
+            if (claims == null) {
+                continue;
+            }
+
+            List<Claim> claimsToDelete = new ArrayList<Claim>();
+            for (Claim claim : claims) {
+                if (deleteCreativeClaims || !GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
                     claimsToDelete.add(claim);
                 }
             }
-        }
+ 
+            for (Claim claim : claimsToDelete) {
+                claim.removeSurfaceFluids(null);
 
-        // delete them one by one
-        for (int i = 0; i < claimsToDelete.size(); i++) {
-            Claim claim = claimsToDelete.get(i);
-            claim.removeSurfaceFluids(null);
+                this.deleteClaim(claim, true);
 
-            this.deleteClaim(claim, true);
-
-            // if in a creative mode world, delete the claim
-            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                GriefPrevention.instance.restoreClaim(claim, 0);
+                // if in a creative mode world, delete the claim
+                if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                    GriefPrevention.instance.restoreClaim(claim, 0);
+                }
             }
         }
     }
@@ -1423,5 +1326,47 @@ public abstract class DataStore {
         return claims;
     }
 
-    public abstract PlayerData createPlayerWorldStorageData(WorldProperties worldProperties, UUID playerUUID);
+    // retrieves player data from memory or secondary storage, as necessary
+    // if the player has never been on the server before, this will return a
+    // fresh player data with default values
+    public PlayerData getPlayerData(World world, UUID playerID) {
+        return getPlayerData(world.getProperties(), playerID);
+    }
+
+    public PlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+        PlayerDataWorldManager playerWorldManager = this.getPlayerDataWorldManager(worldProperties);
+        return playerWorldManager.getPlayerData(playerUniqueId);
+    }
+
+    public PlayerData createPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+        PlayerDataWorldManager playerWorldManager = this.getPlayerDataWorldManager(worldProperties);
+        return playerWorldManager.createPlayerData(playerUniqueId);
+    }
+
+    public void removePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+        PlayerDataWorldManager playerWorldManager = this.getPlayerDataWorldManager(worldProperties);
+        playerWorldManager.removePlayer(playerUniqueId);
+    }
+
+    @Nullable
+    public PlayerDataWorldManager getPlayerDataWorldManager(WorldProperties worldProperties) {
+        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+            return this.globalPlayerWorldManager;
+        }
+        return this.playerDataManagers.get(worldProperties.getUniqueId());
+    }
+
+    public void removePlayerDataWorldManager(WorldProperties worldProperties) {
+        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+            return;
+        }
+        this.playerDataManagers.remove(worldProperties.getUniqueId());
+    }
+
+    abstract PlayerData getPlayerDataFromStorage(UUID playerID);
+
+    public abstract void loadWorldData(WorldProperties worldProperties);
+
+    public abstract void unloadWorldData(WorldProperties worldProperties);
+
 }

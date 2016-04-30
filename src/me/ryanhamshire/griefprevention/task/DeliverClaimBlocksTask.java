@@ -89,10 +89,10 @@ public class DeliverClaimBlocksTask implements Runnable {
                     }
 
                     GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
-                    PlayerStorageData playerStorage = playerData.worldStorageData.get(player.getWorld().getUniqueId());
+                    PlayerStorageData playerStorage = playerData.getStorageData();
                     if (playerStorage == null) {
-                        GriefPrevention.instance.dataStore.createPlayerWorldStorageData(player.getWorld().getProperties(), player.getUniqueId());
-                        playerStorage = playerData.worldStorageData.get(player.getWorld().getUniqueId());
+                        GriefPrevention.instance.dataStore.createPlayerData(player.getWorld().getProperties(), player.getUniqueId());
+                        playerStorage = playerData.getStorageData();
                     }
                     playerStorage.getConfig().accruedClaimBlocks += accruedBlocks;
                 } else {

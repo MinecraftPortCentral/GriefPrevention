@@ -41,12 +41,12 @@ public class CommandClaimList implements CommandExecutor {
         User targetUser = otherPlayer.isPresent() ? otherPlayer.get() : (User) src;
         // load the target player's data
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), targetUser.getUniqueId());
-        List<Claim> claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
+        List<Claim> claimList = playerData.getClaims();
         GriefPrevention.sendMessage(src, TextMode.Instr, Messages.StartBlockMath,
-                String.valueOf(playerData.getAccruedClaimBlocks(player.getWorld())),
-                String.valueOf((playerData.getBonusClaimBlocks(player.getWorld()) + GriefPrevention.instance.dataStore
+                String.valueOf(playerData.getAccruedClaimBlocks()),
+                String.valueOf((playerData.getBonusClaimBlocks() + GriefPrevention.instance.dataStore
                         .getGroupBonusBlocks(targetUser.getUniqueId()))),
-                String.valueOf((playerData.getAccruedClaimBlocks(player.getWorld()) + playerData.getBonusClaimBlocks(player.getWorld())
+                String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks()
                         + GriefPrevention.instance.dataStore.getGroupBonusBlocks(targetUser.getUniqueId()))));
         if (claimList.size() > 0) {
             GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);
@@ -56,12 +56,12 @@ public class CommandClaimList implements CommandExecutor {
             }
 
             GriefPrevention
-                    .sendMessage(src, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks(player.getWorld())));
+                    .sendMessage(src, TextMode.Instr, Messages.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks()));
         }
 
         // drop the data we just loaded, if the player isn't online
         if (!targetUser.isOnline()) {
-            GriefPrevention.instance.dataStore.clearCachedPlayerData(targetUser.getUniqueId());
+            GriefPrevention.instance.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), targetUser.getUniqueId());
         }
 
         return CommandResult.success();

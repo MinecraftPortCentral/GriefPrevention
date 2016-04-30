@@ -65,14 +65,14 @@ public class CommandClaimAbandon implements CommandExecutor {
 
             // this prevents blocks being gained without spending adjust claim blocks when abandoning a top level claim
             if (!claim.isSubdivision() && !claim.isAdminClaim()) {
-                int newAccruedClaimCount = playerData.getAccruedClaimBlocks(player.getWorld()) - (int) Math
+                int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - (int) Math
                         .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
                                 .getConfig().claim.abandonReturnRatio)));
-                playerData.setAccruedClaimBlocks(player.getWorld(), newAccruedClaimCount);
+                playerData.setAccruedClaimBlocks( newAccruedClaimCount);
             }
 
             // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
+            int remainingBlocks = playerData.getRemainingClaimBlocks();
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
 
             // revert any current visualization

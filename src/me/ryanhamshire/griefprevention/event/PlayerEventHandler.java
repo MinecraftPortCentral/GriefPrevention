@@ -33,6 +33,7 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.IpBanInfo;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.PlayerDataWorldManager;
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.Visualization;
@@ -679,7 +680,7 @@ public class PlayerEventHandler {
         }
 
         // remember the player's ip address
-        this.dataStore.createPlayerWorldStorageData(event.getToTransform().getExtent().getProperties(), player.getUniqueId());
+        this.dataStore.createPlayerData(event.getToTransform().getExtent().getProperties(), player.getUniqueId());
         this.dataStore.getPlayerData(event.getToTransform().getExtent(), player.getUniqueId());
         PlayerData playerData = this.dataStore.getPlayerData(event.getToTransform().getExtent(), player.getUniqueId());
         playerData.ipAddress = event.getConnection().getAddress().getAddress();
@@ -715,7 +716,7 @@ public class PlayerEventHandler {
             // if in survival claims mode, send a message about the claim basics
             // video (except for admins - assumed experts)
             if (GriefPrevention.instance.claimModeIsActive(player.getWorld().getProperties(), ClaimsMode.Survival)
-                    && !player.hasPermission(GPPermissions.CLAIMS_ADMIN) && this.dataStore.worldClaims.size() > 10) {
+                    && !player.hasPermission(GPPermissions.CLAIMS_ADMIN) && this.dataStore.getPlayerDataWorldManager(player.getWorld().getProperties()).getWorldClaims().size() > 10) {
                 WelcomeTask task = new WelcomeTask(player);
                 // 10 seconds after join
                 Sponge.getGame().getScheduler().createTaskBuilder().delay(10, TimeUnit.SECONDS).execute(task).submit(GriefPrevention.instance);
@@ -914,7 +915,7 @@ public class PlayerEventHandler {
         }
 
         // drop data about this player
-        this.dataStore.clearCachedPlayerData(playerID);
+        this.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), playerID);
 
         // reduce count of players with that player's IP address
         // TODO: re-enable when achievement data is implemented
@@ -1081,6 +1082,14 @@ public class PlayerEventHandler {
         // don't track in worlds where claims are not enabled
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getToTransform().getExtent().getProperties()))
             return;
+
+        if (!source.getExtent().getUniqueId().equals(destination.getExtent().getUniqueId())) {
+            // new world, check if player has world storage for it
+            PlayerDataWorldManager playerWorldManager = GriefPrevention.instance.dataStore.getPlayerDataWorldManager(destination.getExtent().getProperties());
+            if (playerWorldManager.getPlayerData(player.getUniqueId()) == null) {
+                playerWorldManager.createPlayerData(player.getUniqueId());
+            }
+        }
 
         if (event.getCause().containsType(TeleportCause.class)) {
             // FEATURE: when players get trapped in a nether portal, send them back through to the other side
@@ -1385,31 +1394,6 @@ public class PlayerEventHandler {
         }
     }
 
-    private boolean onLeftClickWatchList(BlockType blockType) {
-        if (blockType == BlockTypes.WOODEN_BUTTON || blockType == BlockTypes.STONE_BUTTON || blockType == BlockTypes.LEVER
-         || blockType == BlockTypes.POWERED_REPEATER || blockType == BlockTypes.UNPOWERED_REPEATER
-         || blockType == BlockTypes.CAKE || blockType == BlockTypes.DRAGON_EGG) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    static BlockSnapshot getTargetBlock(Player player, int maxDistance) throws IllegalStateException {
-        BlockRay<World> blockRay = BlockRay.from(player).blockLimit(maxDistance).build();
-
-        while (blockRay.hasNext()) {
-            BlockRayHit<World> blockRayHit = blockRay.next();
-            if (blockRayHit.getLocation().getBlockType() != BlockTypes.AIR &&
-                blockRayHit.getLocation().getBlockType() != BlockTypes.WATER &&
-                blockRayHit.getLocation().getBlockType() != BlockTypes.TALLGRASS) {
-                    return blockRayHit.getLocation().createSnapshot();
-            }
-        }
-
-        return null;
-    }
-
     // educates a player about /adminclaims and /acb, if he can use them
     private void tryAdvertiseAdminAlternatives(Player player) {
         if (player.hasPermission(GPPermissions.CLAIMS_ADMIN) && player.hasPermission(GPPermissions.ADJUST_CLAIM_BLOCKS)) {
@@ -1492,6 +1476,11 @@ public class PlayerEventHandler {
         BlockSnapshot clickedBlock = event.getTargetBlock();
         Optional<ItemStack> itemInHand = player.getItemInHand();
 
+        // if claims are disabled in this world, do nothing
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
         if (itemInHand.isPresent() && GriefPrevention.isItemBanned(player, itemInHand.get().getItem(), (
@@ -1502,87 +1491,9 @@ public class PlayerEventHandler {
             return;
         }
 
+        investigateClaim(player, clickedBlock, itemInHand);
+
         if (!clickedBlock.getLocation().isPresent()) {
-            // if claims are disabled in this world, do nothing
-            if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-                return;
-            }
-
-            // if he's investigating a claim
-            if (!itemInHand.isPresent() || !itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
-                return;
-            }
-            // if holding shift (sneaking), show all claims in area
-            if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_NEARBY_CLAIMS)) {
-                // find nearby claims
-                Set<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
-                // visualize boundaries
-                Visualization visualization =
-                        Visualization.fromClaims(claims, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
-                Visualization.Apply(player, visualization);
-                GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
-                return;
-            }
-
-            // FEATURE: shovel and stick can be used from a distance away
-            if (clickedBlock.getState().getType() == BlockTypes.AIR) {
-                // try to find a far away non-air block along line of sight
-                clickedBlock = getTargetBlock(player, 100);
-            }
-
-            // if no block, stop here
-            if (clickedBlock == null) {
-                return;
-            }
-
-            // air indicates too far away
-            if (clickedBlock.getState().getType() == BlockTypes.AIR) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
-                Visualization.Revert(player);
-                return;
-            }
-
-            PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-            if (playerData == null) {
-                playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-            }
-            // ignore height
-            Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
-
-            // no claim case
-            if (claim == null) {
-                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
-                Visualization.Revert(player);
-                return;
-            } else {
-            // claim case
-                playerData.lastClaim = claim;
-                GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
-
-                // visualize boundary
-                Visualization visualization =
-                        Visualization.FromClaim(claim, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.ClaimInvestigation, player.getLocation());
-                Visualization.Apply(player, visualization);
-
-                // if can resize this claim, tell about the boundaries
-                if (claim.allowEdit(player) == null) {
-                    // TODO
-                    //GriefPrevention.sendMessage(player, TextMode.Info, "", "  " + claim.getWidth() + "x" + claim.getHeight() + "=" + claim.getArea());
-                }
-
-                // if deleteclaims permission, show last active claim date
-                if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
-                    Instant lastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
-                    long difference = Date.from(Instant.now()).getTime() - Date.from(lastActive).getTime();
-                    long daysElapsed = difference / (1000 * 60 * 60 * 24);
-                    GriefPrevention.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, Long.toString(daysElapsed));
-
-                    // drop the data we just loaded, if the player isn't online
-                    if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {
-                        this.dataStore.clearCachedPlayerData(claim.ownerID);
-                    }
-                }
-            }
             return;
         }
 
@@ -2064,7 +1975,7 @@ public class PlayerEventHandler {
                         // make sure player has enough blocks to make up the difference
                         if (!playerData.claimResizing.isAdminClaim() && player.getName().equals(playerData.claimResizing.getOwnerName())) {
                             int newArea = newWidth * newHeight;
-                            int blocksRemainingAfter = playerData.getRemainingClaimBlocks(player.getWorld()) + (playerData.claimResizing.getArea() - newArea);
+                            int blocksRemainingAfter = playerData.getRemainingClaimBlocks() + (playerData.claimResizing.getArea() - newArea);
 
                             if (blocksRemainingAfter < 0) {
                                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeNeedMoreBlocks,
@@ -2109,13 +2020,13 @@ public class PlayerEventHandler {
                             }
 
                             if (ownerID.equals(player.getUniqueId())) {
-                                claimBlocksRemaining = playerData.getRemainingClaimBlocks(player.getWorld());
+                                claimBlocksRemaining = playerData.getRemainingClaimBlocks();
                             } else {
                                 PlayerData ownerData = this.dataStore.getPlayerData(player.getWorld(), ownerID);
-                                claimBlocksRemaining = ownerData.getRemainingClaimBlocks(player.getWorld());
+                                claimBlocksRemaining = ownerData.getRemainingClaimBlocks();
                                 Optional<User> owner = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(ownerID);
                                 if (owner.isPresent() && !owner.get().isOnline()) {
-                                    this.dataStore.clearCachedPlayerData(ownerID);
+                                    this.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), ownerID);
                                 }
                             }
                         }
@@ -2291,7 +2202,7 @@ public class PlayerEventHandler {
                     // doesn't have permission to bypass, display an error message
                     if (activeConfig.getConfig().claim.maxClaimsPerPlayer > 0 &&
                             !player.hasPermission(GPPermissions.OVERRIDE_CLAIM_COUNT_LIMIT) &&
-                            playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size() >= activeConfig.getConfig().claim.maxClaimsPerPlayer) {
+                            playerData.getClaims().size() >= activeConfig.getConfig().claim.maxClaimsPerPlayer) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimCreationFailedOverClaimCountLimit);
                         return;
                     }
@@ -2360,7 +2271,7 @@ public class PlayerEventHandler {
                     // claim blocks for this new claim
                     if (playerData.shovelMode != ShovelMode.Admin) {
                         int newClaimArea = newClaimWidth * newClaimHeight;
-                        int remainingBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
+                        int remainingBlocks = playerData.getRemainingClaimBlocks();
                         if (newClaimArea > remainingBlocks) {
                             GriefPrevention.sendMessage(player, TextMode.Err, Messages.CreateClaimInsufficientBlocks,
                                     String.valueOf(newClaimArea - remainingBlocks));
@@ -2430,5 +2341,111 @@ public class PlayerEventHandler {
 
         return;
         }
+    }
+
+    // helper methods for player events
+    private void investigateClaim(Player player, BlockSnapshot clickedBlock, Optional<ItemStack> itemInHand) {
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
+
+        // if he's investigating a claim
+        if (!itemInHand.isPresent() || !itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
+            return;
+        }
+        // if holding shift (sneaking), show all claims in area
+        if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_NEARBY_CLAIMS)) {
+            // find nearby claims
+            Set<Claim> claims = this.dataStore.getNearbyClaims(player.getLocation());
+            // visualize boundaries
+            Visualization visualization =
+                    Visualization.fromClaims(claims, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
+            Visualization.Apply(player, visualization);
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
+            return;
+        }
+
+        // FEATURE: shovel and stick can be used from a distance away
+        if (clickedBlock.getState().getType() == BlockTypes.AIR) {
+            // try to find a far away non-air block along line of sight
+            clickedBlock = getTargetBlock(player, 100);
+        }
+
+        // if no block, stop here
+        if (clickedBlock == null) {
+            return;
+        }
+
+        // air indicates too far away
+        if (clickedBlock.getState().getType() == BlockTypes.AIR) {
+            GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
+            Visualization.Revert(player);
+            return;
+        }
+
+        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        if (playerData == null) {
+            playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        }
+        // ignore height
+        Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
+
+        // no claim case
+        if (claim == null) {
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
+            Visualization.Revert(player);
+            return;
+        } else {
+        // claim case
+            playerData.lastClaim = claim;
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
+
+            // visualize boundary
+            Visualization visualization =
+                    Visualization.FromClaim(claim, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.ClaimInvestigation, player.getLocation());
+            Visualization.Apply(player, visualization);
+
+            // if can resize this claim, tell about the boundaries
+            if (claim.allowEdit(player) == null) {
+                // TODO
+                //GriefPrevention.sendMessage(player, TextMode.Info, "", "  " + claim.getWidth() + "x" + claim.getHeight() + "=" + claim.getArea());
+            }
+
+            // if deleteclaims permission, show last active claim date
+            if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
+                Instant lastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
+                long difference = Date.from(Instant.now()).getTime() - Date.from(lastActive).getTime();
+                long daysElapsed = difference / (1000 * 60 * 60 * 24);
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, Long.toString(daysElapsed));
+
+                // drop the data we just loaded, if the player isn't online
+                if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {
+                    this.dataStore.clearCachedPlayerData(claim.world.getProperties(), claim.ownerID);
+                }
+            }
+        }
+    }
+
+    private boolean onLeftClickWatchList(BlockType blockType) {
+        if (blockType == BlockTypes.WOODEN_BUTTON || blockType == BlockTypes.STONE_BUTTON || blockType == BlockTypes.LEVER
+         || blockType == BlockTypes.POWERED_REPEATER || blockType == BlockTypes.UNPOWERED_REPEATER
+         || blockType == BlockTypes.CAKE || blockType == BlockTypes.DRAGON_EGG) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static BlockSnapshot getTargetBlock(Player player, int maxDistance) throws IllegalStateException {
+        BlockRay<World> blockRay = BlockRay.from(player).blockLimit(maxDistance).build();
+
+        while (blockRay.hasNext()) {
+            BlockRayHit<World> blockRayHit = blockRay.next();
+            if (blockRayHit.getLocation().getBlockType() != BlockTypes.AIR &&
+                blockRayHit.getLocation().getBlockType() != BlockTypes.WATER &&
+                blockRayHit.getLocation().getBlockType() != BlockTypes.TALLGRASS) {
+                    return blockRayHit.getLocation().createSnapshot();
+            }
+        }
+
+        return null;
     }
 }

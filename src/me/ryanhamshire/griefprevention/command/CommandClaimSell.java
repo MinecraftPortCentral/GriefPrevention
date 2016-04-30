@@ -52,7 +52,7 @@ public class CommandClaimSell implements CommandExecutor {
         }
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        int availableBlocks = playerData.getRemainingClaimBlocks(player.getWorld());
+        int availableBlocks = playerData.getRemainingClaimBlocks();
         Optional<Integer> blockCountOpt = ctx.getOne("numberOfBlocks");
         if (!blockCountOpt.isPresent()) {
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue,
@@ -81,12 +81,12 @@ public class CommandClaimSell implements CommandExecutor {
                 return CommandResult.success();
             }
             // subtract blocks
-            playerData.setBonusClaimBlocks(player.getWorld(), playerData.getBonusClaimBlocks(player.getWorld()) - blockCount);
-            playerData.worldStorageData.get(player.getWorld().getUniqueId()).save();
+            playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() - blockCount);
+            playerData.getStorageData().save();
 
             // inform player
             GriefPrevention.sendMessage(player, TextMode.Success, Messages.BlockSaleConfirmation, String.valueOf(totalValue),
-                    String.valueOf(playerData.getRemainingClaimBlocks(player.getWorld())));
+                    String.valueOf(playerData.getRemainingClaimBlocks()));
         }
         return CommandResult.success();
     }

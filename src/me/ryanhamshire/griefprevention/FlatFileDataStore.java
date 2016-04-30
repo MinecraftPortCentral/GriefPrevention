@@ -29,10 +29,12 @@ import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData.SubDivisionDataNode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
+import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.DimensionConfig;
+import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -60,6 +62,8 @@ public class FlatFileDataStore extends DataStore {
     private final static Path worldsConfigFolderPath = dataLayerFolderPath.resolve("worlds");
     public final static Path claimDataPath = Paths.get("GriefPreventionData", "ClaimData");
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
+    private final Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
+    private Path rootWorldSavePath;
 
     public FlatFileDataStore() {
     }
@@ -73,82 +77,76 @@ public class FlatFileDataStore extends DataStore {
             worldsDataFolder.mkdirs();
         }
 
-        // TODO - use permission groups instead
-        // load group data into memory
-        /*File[] files = loginDataFolder.listFiles();
-        for (int i = 0; i < files.length; i++) {
-            File file = files[i];
-            if (!file.isFile()) {
-                continue; // avoids folders
-            }
+        this.rootWorldSavePath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getServer().getDefaultWorldName());
 
-            // all group data files start with a dollar sign. ignoring the rest,
-            // which are player data files.
-            if (!file.getName().startsWith("$")) {
-                continue;
-            }
-
-            String groupName = file.getName().substring(1);
-            if (groupName == null || groupName.isEmpty())
-                continue; // defensive coding, avoid unlikely cases
-
-            BufferedReader inStream = null;
-            try {
-                inStream = new BufferedReader(new FileReader(file.getAbsolutePath()));
-                String line = inStream.readLine();
-
-                int groupBonusBlocks = Integer.parseInt(line);
-
-                this.permissionToBonusBlocksMap.put(groupName, groupBonusBlocks);
-            } catch (Exception e) {
-                StringWriter errors = new StringWriter();
-                e.printStackTrace(new PrintWriter(errors));
-                GriefPrevention.AddLogEntry(errors.toString(), CustomLogEntryTypes.Exception);
-            }
-
-            try {
-                if (inStream != null)
-                    inStream.close();
-            } catch (IOException exception) {
-            }
-        }*/
-
-        Path rootPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getGame().getServer().getDefaultWorld().get().getWorldName());
-
-        for (World world : Sponge.getGame().getServer().getWorlds()) {
-            // check if claims are supported
-            GriefPreventionConfig<GriefPreventionConfig.WorldConfig> worldConfig = DataStore.worldConfigMap.get(world.getUniqueId());
-            if (worldConfig != null && worldConfig.getConfig().configEnabled && !worldConfig.getConfig().claim.allowClaims) {
-                GriefPrevention.addLogEntry("Error - World '" + world.getName() + "' does not allow claims. Skipping...");
-                continue;
-            }
-            // run cleanup task
-            CleanupUnusedClaimsTask task = new CleanupUnusedClaimsTask(world.getProperties());
-            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
-            // check if world has existing data
-            Path worldClaimDataPath = Paths.get(world.getName()).resolve(claimDataPath);
-            Path worldPlayerDataPath = Paths.get(world.getName()).resolve(playerDataPath);
-            if (world.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-                worldClaimDataPath = claimDataPath;
-                worldPlayerDataPath = playerDataPath;
-            }
-            if (Files.exists(rootPath.resolve(worldClaimDataPath))) {
-                File[] files = rootPath.resolve(worldClaimDataPath).toFile().listFiles();
-                this.loadClaimData(files);
-            } else {
-                Files.createDirectories(rootPath.resolve(worldClaimDataPath));
-            }
-
-            if (Files.exists(rootPath.resolve(worldPlayerDataPath))) {
-                File[] files = rootPath.resolve(worldPlayerDataPath).toFile().listFiles();
-                this.loadPlayerData(world.getProperties(), files);
-            }
-            if (!Files.exists(rootPath.resolve(worldPlayerDataPath))) {
-                Files.createDirectories(rootPath.resolve(worldPlayerDataPath));
-            }
-
-        }
         super.initialize();
+    }
+
+    @Override
+    public void loadWorldData(WorldProperties worldProperties) {
+        DimensionType dimType = worldProperties.getDimensionType();
+        if (!Files.exists(rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()))) {
+            try {
+                Files.createDirectories(rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        // create/load configs
+        // create dimension config
+        DataStore.dimensionConfigMap.put(worldProperties.getUniqueId(),
+                new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
+        // create world config
+        DataStore.worldConfigMap.put(worldProperties.getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
+                rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()).resolve("world.conf")));
+
+        // check if claims are supported
+        GriefPreventionConfig<GriefPreventionConfig.WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldProperties.getUniqueId());
+        if (worldConfig != null && worldConfig.getConfig().configEnabled && !worldConfig.getConfig().claim.allowClaims) {
+            GriefPrevention.addLogEntry("Error - World '" + worldProperties.getWorldName() + "' does not allow claims. Skipping...");
+            return;
+        }
+
+        if (!GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+            this.playerDataManagers.put(worldProperties.getUniqueId(), new PlayerDataWorldManager(worldProperties));
+            // run cleanup task
+            CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(worldProperties);
+            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance);
+        }
+
+        // check if world has existing data
+        Path worldClaimDataPath = Paths.get(worldProperties.getWorldName()).resolve(claimDataPath);
+        Path worldPlayerDataPath = Paths.get(worldProperties.getWorldName()).resolve(playerDataPath);
+        if (worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
+            worldClaimDataPath = claimDataPath;
+            worldPlayerDataPath = playerDataPath;
+        }
+
+        try {
+            if (Files.exists(rootWorldSavePath.resolve(worldClaimDataPath))) {
+                File[] files = rootWorldSavePath.resolve(worldClaimDataPath).toFile().listFiles();
+                this.loadClaimData(files);
+                GriefPrevention.addLogEntry("[" + worldProperties.getWorldName() + "]" + files.length + " total claims loaded.");
+            } else {
+                Files.createDirectories(rootWorldSavePath.resolve(worldClaimDataPath));
+            }
+    
+            if (Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
+                File[] files = rootWorldSavePath.resolve(worldPlayerDataPath).toFile().listFiles();
+                this.loadPlayerData(worldProperties, files);
+            }
+            if (!Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
+                Files.createDirectories(rootWorldSavePath.resolve(worldPlayerDataPath));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void unloadWorldData(WorldProperties worldProperties) {
+        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+            this.playerDataManagers.remove(worldProperties);
+        }
     }
 
     void loadClaimData(File[] files) throws Exception {
@@ -166,7 +164,7 @@ public class FlatFileDataStore extends DataStore {
                 }
 
                 try {
-                   this.loadClaim(files[i], claimId);
+                   this.loadClaim(files[i], files[i].lastModified(), claimId);
                 }
 
                 // if there's any problem with the file's content, log an error message and skip it
@@ -202,7 +200,7 @@ public class FlatFileDataStore extends DataStore {
                 }
 
                 try {
-                    this.createPlayerWorldStorageData(worldProperties, playerUUID);
+                    this.createPlayerData(worldProperties, playerUUID);
                 }
 
                 // if there's any problem with the file's content, log an error message and skip it
@@ -217,10 +215,6 @@ public class FlatFileDataStore extends DataStore {
                 }
             }
         }
-    }
-
-    Claim loadClaim(File file, UUID claimId) throws IOException, Exception {
-        return this.loadClaim(file, file.lastModified(), claimId);
     }
 
     Claim loadClaim(File claimFile, long lastModifiedDate, UUID claimId)
@@ -360,43 +354,6 @@ public class FlatFileDataStore extends DataStore {
             e.printStackTrace();
             GriefPrevention.addLogEntry("Error: Unable to delete claim file \"" + claim.getClaimStorage().filePath + "\".");
         }
-    }
-
-    @Override
-    public PlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
-        PlayerData playerData = this.playerUniqueIdToPlayerDataMap.get(playerUniqueId);
-        if (playerData != null) {
-            return playerData;
-        }
-
-
-        return createPlayerWorldStorageData(worldProperties, playerUniqueId);
-    }
-
-    @Override
-    public PlayerData createPlayerWorldStorageData(WorldProperties worldProperties, UUID playerUniqueId) {
-        PlayerData playerData = this.playerUniqueIdToPlayerDataMap.get(playerUniqueId);
-        if (playerData != null) {
-            return playerData;
-        }
-        Path rootPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getGame().getServer().getDefaultWorld().get().getWorldName());
-        Path playerFilePath = null;
-        if (worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-            playerFilePath = rootPath.resolve(playerDataPath).resolve(playerUniqueId.toString());
-        } else {
-            playerFilePath = rootPath.resolve(worldProperties.getWorldName()).resolve(playerDataPath).resolve(playerUniqueId.toString());
-        }
-
-        PlayerStorageData storageData = new PlayerStorageData(playerFilePath, playerUniqueId,
-                GriefPrevention.getActiveConfig(worldProperties).getConfig().general.claimInitialBlocks);
-        playerData = new PlayerData();
-        playerData.playerID = playerUniqueId;
-        playerData.worldStorageData.put(worldProperties.getUniqueId(), storageData);
-
-        // shove that new player data into the hash map cache
-        this.playerUniqueIdToPlayerDataMap.put(playerUniqueId, playerData);
-        playerData.initializePlayerWorldClaims(worldProperties);
-        return playerData;
     }
 
     // grants a group (players with a specific permission) bonus claim blocks as

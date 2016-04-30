@@ -349,7 +349,7 @@ public class BlockEventHandler {
                 int radius = activeConfig.getConfig().claim.claimRadius;
 
                 // if the player doesn't have any claims yet, automatically create a claim centered at the chest
-                if (playerData.playerWorldClaims.get(player.getWorld().getUniqueId()).size() == 0) {
+                if (playerData.getClaims().size() == 0) {
                     // radius == 0 means protect ONLY the chest
                     if (activeConfig.getConfig().claim.claimRadius == 0) {
                         this.dataStore.createClaim(block.getLocation().get().getExtent(), block.getPosition().getX(), block.getPosition().getX(),

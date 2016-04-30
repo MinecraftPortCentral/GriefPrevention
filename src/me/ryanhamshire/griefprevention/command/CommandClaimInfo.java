@@ -1,7 +1,6 @@
 package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
@@ -16,12 +15,11 @@ import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class CommandClaimInfo implements CommandExecutor {
 
+    @SuppressWarnings("unused")
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;

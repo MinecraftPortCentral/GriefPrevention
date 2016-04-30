@@ -88,6 +88,7 @@ import me.ryanhamshire.griefprevention.event.BlockEventHandler;
 import me.ryanhamshire.griefprevention.event.EntityEventHandler;
 import me.ryanhamshire.griefprevention.event.PlayerEventHandler;
 import me.ryanhamshire.griefprevention.event.WorldEventHandler;
+import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.task.DeliverClaimBlocksTask;
 import me.ryanhamshire.griefprevention.task.IgnoreLoaderThread;
 import me.ryanhamshire.griefprevention.task.PvPImmunityValidationTask;
@@ -111,6 +112,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
 import org.spongepowered.api.item.ItemType;
@@ -207,50 +209,14 @@ public class GriefPrevention {
         }
     }
 
-    // initializes well... everything
     @Listener
-    public void onServerStarted(GameStartedServerEvent event) {
+    public void onAboutToStart(GameAboutToStartServerEvent event) {
         instance = this;
-        PUBLIC_USER = Sponge.getServiceManager().provide(UserStorageService.class).get().getOrCreate(GameProfile.of(GriefPrevention.PUBLIC_UUID, GriefPrevention.PUBLIC_NAME));
         this.loadConfig();
         this.customLogger = new CustomLogger();
         addLogEntry("Grief Prevention boot start.");
         addLogEntry("Finished loading configuration.");
-        this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).get();
-        this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
-        this.permPluginInstalled = !Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase
-                ("sponge");
 
-        // when datastore initializes, it loads player and claim data, and posts some stats to the log
-        // TODO - add proper DB support
-        /*if (this.databaseUrl.length() > 0) {
-            try {
-                DatabaseDataStore databaseStore = new DatabaseDataStore(this.databaseUrl, this.databaseUserName, this.databasePassword);
-
-                if (FlatFileDataStore.hasData()) {
-                    GriefPrevention.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
-                    FlatFileDataStore flatFileStore = new FlatFileDataStore();
-                    this.dataStore = flatFileStore;
-                    flatFileStore.migrateData(databaseStore);
-                    GriefPrevention.AddLogEntry("Data migration process complete.  Reloading data from the database...");
-                    databaseStore.close();
-                    databaseStore = new DatabaseDataStore(this.databaseUrl, this.databaseUserName, this.databasePassword);
-                }
-
-                this.dataStore = databaseStore;
-            } catch (Exception e) {
-                GriefPrevention.AddLogEntry(
-                        "Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database
-                        config settings resolve the issue, or delete those lines from your config so that GriefPrevention can use the file system
-                        to store data.");
-                e.printStackTrace();
-                return;
-            }
-        }*/
-
-        // if not using the database because it's not configured or because
-        // there was a problem, use the file system to store data
-        // this is the preferred method, as it's simpler than the database scenario
         if (this.dataStore == null) {
             try {
                 this.dataStore = new FlatFileDataStore();
@@ -263,14 +229,32 @@ public class GriefPrevention {
         }
 
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
+        Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
+        Sponge.getGame().getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
+        Sponge.getGame().getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
+        Sponge.getGame().getEventManager().registerListeners(this, new WorldEventHandler());
         addLogEntry("Finished loading data " + dataMode + ".");
+    }
 
+    @Listener
+    public void onServerStarted(GameStartedServerEvent event) {
+        PUBLIC_USER = Sponge.getServiceManager().provide(UserStorageService.class).get().getOrCreate(GameProfile.of(GriefPrevention.PUBLIC_UUID, GriefPrevention.PUBLIC_NAME));
+        this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).get();
+        this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
+        this.permPluginInstalled = !Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase
+                ("sponge");
         // unless claim block accrual is disabled, start the recurring per 10
         // minute event to give claim blocks to online players
         if (GriefPrevention.getGlobalConfig().getConfig().claim.claimBlocksEarned > 0) {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
             Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
                     .submit(GriefPrevention.instance);
+        }
+
+        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage && Sponge.getServer().getDefaultWorld().isPresent()) {
+            // run cleanup task
+            CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(Sponge.getServer().getDefaultWorld().get());
+            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance);
         }
 
         //if economy is enabled
@@ -288,10 +272,6 @@ public class GriefPrevention {
                     .start();
         }
 
-        Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
-        Sponge.getGame().getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
-        Sponge.getGame().getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
-        Sponge.getGame().getEventManager().registerListeners(this, new WorldEventHandler());
         Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand().getCommandSpec(), CommandGriefPrevention.getCommand().getAliases());
         registerBaseCommands();
         addLogEntry("Boot finished.");
@@ -658,7 +638,7 @@ public class GriefPrevention {
         playerData.ignoreListChanged = true;
         if (!ignorer.isOnline()) {
             this.dataStore.asyncSaveGlobalPlayerData(ignorer.getUniqueId(), playerData);
-            this.dataStore.clearCachedPlayerData(ignorer.getUniqueId());
+            this.dataStore.clearCachedPlayerData(world.getProperties(), ignorer.getUniqueId());
         }
     }
 
@@ -895,7 +875,7 @@ public class GriefPrevention {
                 // exception: when chest claims are enabled, players who have zero land claims and are placing a chest
                 Player player = (Player) user;
                 if (!player.getItemInHand().isPresent() || player.getItemInHand().get().getItem() != ItemTypes.CHEST
-                        || playerData.playerWorldClaims.get(location.getExtent().getUniqueId()).size() > 0
+                        || playerData.getClaims().size() > 0
                         || GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimRadius == -1) {
                     String reason = this.dataStore.getMessage(Messages.NoBuildOutsideClaims);
                     if (player.hasPermission(GPPermissions.IGNORE_CLAIMS)) {

@@ -24,8 +24,8 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
@@ -34,13 +34,9 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.net.InetAddress;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -49,12 +45,13 @@ public class PlayerData {
 
     // the player's ID
     public UUID playerID;
+    public WorldProperties worldProperties;
+    private GriefPreventionConfig<?> activeConfig;
 
     // the player's claims
-    public Map<UUID, List<Claim>> playerWorldClaims = Maps.newHashMap();
+    private List<Claim> claimList;
 
-    // world uuid -> storage
-    public Map<UUID, PlayerStorageData> worldStorageData = Maps.newHashMap();
+    private PlayerStorageData playerStorage;
 
     // where this player was the last time we checked on him for earning claim blocks
     public Location<World> lastAfkCheckLocation = null;
@@ -158,6 +155,14 @@ public class PlayerData {
     // profanity warning, once per play session
     public boolean profanityWarned = false;
 
+    public PlayerData(WorldProperties worldProperties, UUID playerUniqueId, PlayerStorageData playerStorage, GriefPreventionConfig<?> activeConfig, List<Claim> claims) {
+        this.worldProperties = worldProperties;
+        this.playerID = playerUniqueId;
+        this.playerStorage = playerStorage;
+        this.claimList = claims;
+        this.activeConfig = activeConfig;
+    }
+
     // whether or not this player is "in" pvp combat
     public boolean inPvpCombat(World world) {
         if (this.lastPvpTimestamp == 0) {
@@ -178,10 +183,9 @@ public class PlayerData {
     }
 
     // the number of claim blocks a player has available for claiming land
-    public int getRemainingClaimBlocks(World world) {
-        int remainingBlocks = this.getAccruedClaimBlocks(world) + this.getBonusClaimBlocks(world);
-        List<Claim> claimList = this.playerWorldClaims.get(world.getUniqueId());
-        for (Claim claim : claimList) {
+    public int getRemainingClaimBlocks() {
+        int remainingBlocks = this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
+        for (Claim claim : this.claimList) {
             remainingBlocks -= claim.getArea();
         }
 
@@ -192,66 +196,39 @@ public class PlayerData {
     }
 
     // don't load data from secondary storage until it's needed
-    public int getAccruedClaimBlocks(World world) {
+    public int getAccruedClaimBlocks() {
         // if player is over accrued limit, accrued limit was probably reduced
         // in config file AFTER he accrued
         // in that case, leave his blocks where they are
-        int currentTotal = this.worldStorageData.get(world.getUniqueId()).getConfig().accruedClaimBlocks;
-        if (currentTotal >= GriefPrevention.getActiveConfig(world.getProperties()).getConfig().claim.maxAccruedBlocks) {
+        int currentTotal = this.playerStorage.getConfig().accruedClaimBlocks;
+        if (currentTotal >= this.activeConfig.getConfig().claim.maxAccruedBlocks) {
             return currentTotal;
         }
 
-        return this.worldStorageData.get(world.getUniqueId()).getConfig().accruedClaimBlocks;
+        return this.playerStorage.getConfig().accruedClaimBlocks;
     }
 
-    public void setAccruedClaimBlocks(World world, int accruedClaimBlocks) {
-        this.worldStorageData.get(world.getUniqueId()).getConfig().accruedClaimBlocks = accruedClaimBlocks;
+    public void setAccruedClaimBlocks(int accruedClaimBlocks) {
+        this.playerStorage.getConfig().accruedClaimBlocks = accruedClaimBlocks;
     }
 
-    public int getBonusClaimBlocks(World world) {
-        return this.worldStorageData.get(world.getUniqueId()).getConfig().bonusClaimBlocks;
+    public int getBonusClaimBlocks() {
+        return this.playerStorage.getConfig().bonusClaimBlocks;
     }
 
-    public void setBonusClaimBlocks(World world, int bonusClaimBlocks) {
-        this.worldStorageData.get(world.getUniqueId()).getConfig().bonusClaimBlocks = bonusClaimBlocks;
-    }
-
-    public void initializePlayerWorldClaims(WorldProperties worldProperties) {
-        if (this.playerWorldClaims.get(worldProperties.getUniqueId()) != null) {
-            return;
-        }
-
-        this.playerWorldClaims.put(worldProperties.getUniqueId(), new ArrayList<Claim>());
-
-        // find all the claims for world belonging to this player
-        DataStore dataStore = GriefPrevention.instance.dataStore;
-
-        if (dataStore.worldClaims.get(worldProperties.getUniqueId()) == null) {
-            return; // no claims
-        }
-
-        Iterator<Claim> iterator = dataStore.worldClaims.get(worldProperties.getUniqueId()).iterator();
-        while (iterator.hasNext()) {
-            Claim claim = iterator.next();
-            if (!claim.inDataStore) {
-                this.playerWorldClaims.get(worldProperties.getUniqueId()).remove(claim);
-                continue;
-            }
-
-            if (playerID.equals(claim.ownerID)) {
-                this.playerWorldClaims.get(worldProperties.getUniqueId()).add(claim);
-                // update lastActive timestamp for claim
-                 claim.getClaimData().setLastActiveDate(Instant.now().toString());
-            } else if (claim.parent != null && playerID.equals(claim.parent.ownerID)) {
-                // update lastActive timestamp for subdivisions if parent owner logs on
-                claim.getClaimData().setLastActiveDate(Instant.now().toString());
-            }
-        }
+    public void setBonusClaimBlocks(int bonusClaimBlocks) {
+        this.playerStorage.getConfig().bonusClaimBlocks = bonusClaimBlocks;
     }
 
     public void saveAllData() {
-        for (Map.Entry<UUID, PlayerStorageData> mapEntry : this.worldStorageData.entrySet()) {
-            mapEntry.getValue().save();
-        }
+        this.playerStorage.save();
+    }
+
+    public PlayerStorageData getStorageData() {
+        return this.playerStorage;
+    }
+
+    public List<Claim> getClaims() {
+        return this.claimList;
     }
 }

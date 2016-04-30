@@ -49,7 +49,7 @@ public class CommandUntrustAll implements CommandExecutor {
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         List<Claim> claimList = null;
         if (playerData != null) {
-            claimList = playerData.playerWorldClaims.get(player.getWorld().getUniqueId());
+            claimList = playerData.getClaims();
         }
 
         if (playerData == null || claimList == null || claimList.size() == 0) {
