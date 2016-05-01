@@ -37,6 +37,7 @@ import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.VisualizationType;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import net.minecraft.block.BlockLiquid;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
@@ -292,18 +293,28 @@ public class BlockEventHandler {
                 continue;
             }
 
-            String denyReason = GriefPrevention.instance.allowBuild(player, block);
-            if (denyReason != null) {
-                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                event.setCancelled(true);
-                return;
-            }
-
             Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
             if (sourceBlock.isPresent() && sourceClaim == null && targetClaim != null) {
                 GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + Messages.BlockChangeFromWilderness + "]", CustomLogEntryTypes.Debug);
-                event.setCancelled(true);
-                return;
+                if (sourceBlock.isPresent() && sourceBlock.get().getState().getType() instanceof BlockLiquid) {
+                    transaction.setValid(false);
+                    continue;
+                } else {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+
+            String denyReason = GriefPrevention.instance.allowBuild(player, block);
+            if (denyReason != null) {
+                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                if (sourceBlock.isPresent() && sourceBlock.get().getState().getType() instanceof BlockLiquid) {
+                    transaction.setValid(false);
+                    continue;
+                } else {
+                    event.setCancelled(true);
+                    return;
+                }
             }
 
             if (targetClaim == null && !(event.getCause().root() instanceof Player) && block.getState().getType() == BlockTypes.FIRE) {
