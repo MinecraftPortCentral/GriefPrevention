@@ -536,6 +536,7 @@ public class Claim implements ContextSource {
         // look for explicit individual inventory permission
         Optional<TileEntity> tileEntity = Optional.empty();
         if (location.isPresent() && location.get().getTileEntity().isPresent()) {
+            tileEntity = location.get().getTileEntity();
             if (tileEntity.get() instanceof IInventory) {
                 // trying to access inventory in a claim may extend an existing siege to include this claim
                 if (user instanceof Player) {
