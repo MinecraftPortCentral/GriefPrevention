@@ -1491,9 +1491,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        if (investigateClaim(player, clickedBlock, itemInHand)) {
-            return;
-        }
+        investigateClaim(player, clickedBlock, itemInHand);
 
         if (!clickedBlock.getLocation().isPresent()) {
             return;
@@ -2346,12 +2344,12 @@ public class PlayerEventHandler {
     }
 
     // helper methods for player events
-    private boolean investigateClaim(Player player, BlockSnapshot clickedBlock, Optional<ItemStack> itemInHand) {
+    private void investigateClaim(Player player, BlockSnapshot clickedBlock, Optional<ItemStack> itemInHand) {
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
 
         // if he's investigating a claim
         if (!itemInHand.isPresent() || !itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
-            return false;
+            return;
         }
         // if holding shift (sneaking), show all claims in area
         if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_NEARBY_CLAIMS)) {
@@ -2362,7 +2360,7 @@ public class PlayerEventHandler {
                     Visualization.fromClaims(claims, player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), VisualizationType.Claim, player.getLocation());
             Visualization.Apply(player, visualization);
             GriefPrevention.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
-            return true;
+            return;
         }
 
         // FEATURE: shovel and stick can be used from a distance away
@@ -2373,14 +2371,14 @@ public class PlayerEventHandler {
 
         // if no block, stop here
         if (clickedBlock == null) {
-            return true;
+            return;
         }
 
         // air indicates too far away
         if (clickedBlock.getState().getType() == BlockTypes.AIR) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.TooFarAway);
             Visualization.Revert(player);
-            return true;
+            return;
         }
 
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
@@ -2423,8 +2421,6 @@ public class PlayerEventHandler {
                 }
             }
         }
-
-        return true;
     }
 
     private boolean onLeftClickWatchList(BlockType blockType) {
