@@ -516,10 +516,6 @@ public class Claim implements ContextSource {
 
     // access permission check
     public String allowAccess(User user, Optional<Location<World>> location) {
-        if (!location.isPresent()) {
-            return null;
-        }
-
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
@@ -532,35 +528,37 @@ public class Claim implements ContextSource {
             }
         }
 
-        // look for explicit individual inventory permission
-        Optional<TileEntity> tileEntity = location.get().getTileEntity();
-        if (tileEntity.isPresent() && tileEntity.get() instanceof IInventory) {
-            // trying to access inventory in a claim may extend an existing siege to include this claim
-            if (user instanceof Player) {
-                GriefPrevention.instance.dataStore.tryExtendSiege((Player) user, this);
-            }
-
-            // if under siege, nobody accesses containers
-            if (this.siegeData != null) {
-                return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersSiege, siegeData.attacker.getName());
-            }
-
-            if (user instanceof Player) {
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
-                if (playerData != null && playerData.inPvpCombat(this.world)) {
-                    return GriefPrevention.instance.dataStore.getMessage(Messages.PvPNoContainers);
-                }
-            }
-
-            // check for explicit inventory allow
-            if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.INTERACT_INVENTORY) == Tristate.TRUE) {
-                return null;
-            }
-        }
-
         // claim owner and admins in ignoreclaims mode have access
         if (hasFullAccess(user)) {
             return null;
+        }
+
+        // look for explicit individual inventory permission
+        Optional<TileEntity> tileEntity = Optional.empty();
+        if (location.isPresent() && location.get().getTileEntity().isPresent()) {
+            if (tileEntity.get() instanceof IInventory) {
+                // trying to access inventory in a claim may extend an existing siege to include this claim
+                if (user instanceof Player) {
+                    GriefPrevention.instance.dataStore.tryExtendSiege((Player) user, this);
+                }
+    
+                // if under siege, nobody accesses containers
+                if (this.siegeData != null) {
+                    return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersSiege, siegeData.attacker.getName());
+                }
+    
+                if (user instanceof Player) {
+                    PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
+                    if (playerData != null && playerData.inPvpCombat(this.world)) {
+                        return GriefPrevention.instance.dataStore.getMessage(Messages.PvPNoContainers);
+                    }
+                }
+    
+                // check for explicit inventory allow
+                if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.INTERACT_INVENTORY) == Tristate.TRUE) {
+                    return null;
+                }
+            }
         }
 
         if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) 
@@ -574,6 +572,16 @@ public class Claim implements ContextSource {
                     || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
                 return null;
             }
+        }
+
+        if (!location.isPresent()) {
+            // handle special cases like Item Frames which will always pass AIR location
+            if (user instanceof Player) {
+                // If we have no access location, use user's location instead to check permissions
+                Location<World> userLocation = ((Player) user).getLocation();
+                return this.allowAccess(user, Optional.of(userLocation));
+            }
+            return null;
         }
 
         // Check for TNT and explosions flag

@@ -1175,16 +1175,15 @@ public class PlayerEventHandler {
             return;
         }
 
-        if (event instanceof InteractEntityEvent.Primary) {
-            if (claim != null) {
-                String denyReason = claim.allowAccess(player);
-                if (denyReason != null) {
-                    GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                    event.setCancelled(true);
-                    return;
-                }
+        if (claim != null) {
+            String denyReason = claim.allowAccess(player, Optional.of(event.getTargetEntity().getLocation()));
+            if (denyReason != null) {
+                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                event.setCancelled(true);
+                return;
             }
         }
+
         // if entity is tameable and has an owner, apply special rules
         if (entity.supports(TameableData.class)) {
             TameableData data = entity.getOrCreate(TameableData.class).get();
