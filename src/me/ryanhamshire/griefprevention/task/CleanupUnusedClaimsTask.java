@@ -100,7 +100,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
 
             // if configured to always remove claims after some inactivity period without exceptions...
             else if (activeConfig.getConfig().claim.daysInactiveClaimExpiration > 0) {
-                if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveChestClaimExpiration))
+                if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveClaimExpiration))
                         .isBefore(Instant.now())) {
                     GriefPrevention.instance.dataStore.deleteClaim(claim);
                     GriefPrevention.addLogEntry(" All of " + claim.getOwnerName() + "'s claims have expired.", CustomLogEntryTypes.AdminActivity);
