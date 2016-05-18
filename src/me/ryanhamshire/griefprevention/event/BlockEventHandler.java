@@ -89,6 +89,10 @@ public class BlockEventHandler {
         }
 
         Player player = optPlayer.get();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         Location<World> location = player.getLocation();
         Claim claim = this.dataStore.getClaimAt(location, false, null);
         if (claim != null) {
@@ -114,15 +118,20 @@ public class BlockEventHandler {
             return;
         }
 
-        Claim sourceClaim = this.dataStore.getClaimAt(blockSource.get().getLocation().get(), false, null);
+        Location<World> sourceLocation = blockSource.get().getLocation().get();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
+            return;
+        }
+
+        Claim sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
         Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
         while (iterator.hasNext()) {
             Direction direction = iterator.next();
-            Location<World> location = blockSource.get().getLocation().get().getRelative(direction);
+            Location<World> location = sourceLocation.getRelative(direction);
             Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
             if (targetClaim == null) {
                 if (blockSource.get().getState().getType() == BlockTypes.FIRE) {
-                    if (!GriefPrevention.getActiveConfig(blockSource.get().getLocation().get().getExtent().getProperties()).getConfig().claim.fireSpreadOutsideClaim) {
+                    if (!GriefPrevention.getActiveConfig(sourceLocation.getExtent().getProperties()).getConfig().claim.fireSpreadOutsideClaim) {
                         GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + blockSource.get() + "][CancelReason: " + Messages.FireSpreadOutsideClaim + "]", CustomLogEntryTypes.Debug);
                         iterator.remove();
                     }
@@ -158,6 +167,10 @@ public class BlockEventHandler {
             return;
         }
 
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
+            return;
+        }
+
         Claim claim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
         if (claim != null) {
             if (user.isPresent() && user.get() instanceof Player) {
@@ -187,6 +200,10 @@ public class BlockEventHandler {
             return;
         }
 
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
+            return;
+        }
+
         Claim targetClaim = this.dataStore.getClaimAt(event.getImpactPoint(), false, null);
         if (targetClaim == null) {
             return;
@@ -202,6 +219,10 @@ public class BlockEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener(order = Order.DEFAULT)
     public void onBlockBreak(ChangeBlockEvent.Break event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         Optional<User> user = event.getCause().first(User.class);
         if (user.isPresent()) {
             List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
@@ -224,6 +245,10 @@ public class BlockEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener
     public void onBlockChangePost(ChangeBlockEvent.Post event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         Optional<User> user = event.getCause().first(User.class);
         Optional<BlockSnapshot> blockSource = event.getCause().first(BlockSnapshot.class);
 
@@ -267,6 +292,10 @@ public class BlockEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener(order = Order.LAST)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         Optional<Player> playerOpt = event.getCause().first(Player.class);
 
         if (!playerOpt.isPresent()) {
@@ -276,10 +305,6 @@ public class BlockEventHandler {
         Player player = playerOpt.get();
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
-        // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
-            return;
-        }
 
         Claim sourceClaim = null;
         Optional<BlockSnapshot> sourceBlock = event.getCause().first(BlockSnapshot.class);
@@ -420,6 +445,10 @@ public class BlockEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener
     public void onSignChanged(ChangeSignEvent event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetTile().getLocation().getExtent().getProperties())) {
+            return;
+        }
+
         // send sign content to online administrators
         if (!GriefPrevention.getActiveConfig(event.getTargetTile().getLocation().getExtent().getProperties())
                 .getConfig().general.generalAdminSignNotifications) {

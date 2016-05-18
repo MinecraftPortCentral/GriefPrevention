@@ -159,6 +159,10 @@ public class PlayerEventHandler {
     @Listener(order = Order.PRE)
     public void onPlayerChat(MessageChannelEvent.Chat event) {
         Player player = event.getCause().first(Player.class).get();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         if (!player.isOnline()) {
             event.setCancelled(true);
             return;
@@ -503,6 +507,9 @@ public class PlayerEventHandler {
         }
 
         Player player = (Player) source;
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
         PlayerData playerData = null;
 
         // if a whisper
@@ -647,6 +654,9 @@ public class PlayerEventHandler {
     @Listener(order = Order.LAST)
     public void onPlayerLogin(ClientConnectionEvent.Login event) {
         User player = event.getTargetUser();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getToTransform().getExtent().getProperties())) {
+            return;
+        }
 
         // all this is anti-spam code
         if (GriefPrevention.getGlobalConfig().getConfig().spam.monitorEnabled) {
@@ -690,6 +700,10 @@ public class PlayerEventHandler {
     @Listener(order = Order.LAST)
     public void onPlayerJoin(ClientConnectionEvent.Join event) {
         Player player = event.getTargetEntity();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         UUID playerID = player.getUniqueId();
 
         // note login time
@@ -827,6 +841,10 @@ public class PlayerEventHandler {
     @Listener(order = Order.POST)
     public void onPlayerRespawn(RespawnPlayerEvent event) {
         Player player = event.getTargetEntity();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
         playerData.lastPvpTimestamp = 0; // no longer in pvp combat
@@ -848,6 +866,11 @@ public class PlayerEventHandler {
         if (!(event.getTargetEntity() instanceof Player)) {
             return;
         }
+
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
+            return;
+        }
+
         // FEATURE: prevent death message spam by implementing a "cooldown
         // period" for death messages
         PlayerData playerData = this.dataStore.getPlayerData(event.getTargetEntity().getWorld(), event.getTargetEntity().getUniqueId());
@@ -876,6 +899,10 @@ public class PlayerEventHandler {
     @Listener(order= Order.LAST)
     public void onPlayerQuit(ClientConnectionEvent.Disconnect event) {
         Player player = event.getTargetEntity();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         UUID playerID = player.getUniqueId();
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), playerID);
         boolean isBanned = false;
@@ -962,6 +989,9 @@ public class PlayerEventHandler {
         }
 
         Player player = event.getCause().first(Player.class).get();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
 
         // in creative worlds, dropping items is blocked
         if (GriefPrevention.instance.claimModeIsActive(player.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
@@ -997,6 +1027,9 @@ public class PlayerEventHandler {
         }
 
         Player player = (Player) event.getCause().root();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
         Claim fromClaim = this.dataStore.getClaimAt(event.getFromTransform().getLocation(), false, null);
         Claim toClaim = this.dataStore.getClaimAt(event.getToTransform().getLocation(), false, null);
         // enter
@@ -1034,6 +1067,10 @@ public class PlayerEventHandler {
     @Listener(order = Order.PRE)
     public void onPlayerTeleport(DisplaceEntityEvent.Teleport.TargetPlayer event) {
         Player player = event.getTargetEntity();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         handleEnterExitMessages(event);
         // these rules only apply to siege worlds only
         if (!GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.siegeEnabled) {
@@ -1080,8 +1117,9 @@ public class PlayerEventHandler {
         }
 
         // don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getToTransform().getExtent().getProperties()))
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getToTransform().getExtent().getProperties())) {
             return;
+        }
 
         if (!source.getExtent().getUniqueId().equals(destination.getExtent().getUniqueId())) {
             // new world, check if player has world storage for it
@@ -1144,13 +1182,12 @@ public class PlayerEventHandler {
         }
 
         Player player = event.getCause().first(Player.class).get();
-        Entity entity = event.getTargetEntity();
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(entity.getWorld().getProperties());
-
-        if (!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld().getProperties())) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        Entity entity = event.getTargetEntity();
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(entity.getWorld().getProperties());
         Optional<ItemStack> itemInHand = player.getItemInHand();
         if (itemInHand.isPresent()) {
             net.minecraft.item.ItemStack itemstack = (net.minecraft.item.ItemStack)(Object) itemInHand.get();
@@ -1287,6 +1324,10 @@ public class PlayerEventHandler {
         }
 
         Player player = optPlayer.get();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         // FEATURE: lock dropped items to player who dropped them
 
         // who owns this stack?
@@ -1371,6 +1412,9 @@ public class PlayerEventHandler {
             return;
         }
 
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.get().getWorld().getProperties())) {
+            return;
+        }
         PlayerData playerData = this.dataStore.getPlayerData(player.get().getWorld(), player.get().getUniqueId());
 
         // if he's switching to the golden shovel
@@ -1380,10 +1424,8 @@ public class PlayerEventHandler {
                 // give the player his available claim blocks count and claiming
                 // instructions, but only if he keeps the shovel equipped for a
                 // minimum time, to avoid mouse wheel spam
-                if (GriefPrevention.instance.claimsEnabledForWorld(player.get().getWorld().getProperties())) {
-                    EquipShovelProcessingTask task = new EquipShovelProcessingTask(player.get());
-                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(15).execute(task).submit(GriefPrevention.instance);
-                }
+                EquipShovelProcessingTask task = new EquipShovelProcessingTask(player.get());
+                Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(15).execute(task).submit(GriefPrevention.instance);
             } else {
                 // if we have an active visualization that is not claim investigation, revert and update client
                 if (playerData != null && playerData.currentVisualization != null && playerData.currentVisualization.getType() != VisualizationType.ClaimInvestigation) {
@@ -1414,6 +1456,10 @@ public class PlayerEventHandler {
         }
 
         Player player = playerOpt.get();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         BlockSnapshot clickedBlock = event.getTargetBlock();
         if (clickedBlock.getState().getType() == BlockTypes.AIR) {
             return;
@@ -1472,13 +1518,12 @@ public class PlayerEventHandler {
         }
 
         Player player = playerOpt.get();
-        BlockSnapshot clickedBlock = event.getTargetBlock();
-        Optional<ItemStack> itemInHand = player.getItemInHand();
-
-        // if claims are disabled in this world, do nothing
         if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
+
+        BlockSnapshot clickedBlock = event.getTargetBlock();
+        Optional<ItemStack> itemInHand = player.getItemInHand();
 
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
@@ -2190,13 +2235,6 @@ public class PlayerEventHandler {
                 // if he hasn't already start a claim with a previous shovel action
                 Location<World> lastShovelLocation = playerData.lastShovelLocation;
                 if (lastShovelLocation == null) {
-                    // if claims are not enabled in this world and it's not an
-                    // administrative claim, display an error message and stop
-                    if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimsDisabledWorld);
-                        return;
-                    }
-
                     // if he's at the claim count per player limit already and
                     // doesn't have permission to bypass, display an error message
                     if (activeConfig.getConfig().claim.maxClaimsPerPlayer > 0 &&

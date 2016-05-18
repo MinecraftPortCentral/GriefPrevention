@@ -88,6 +88,10 @@ public class EntityEventHandler {
 
     @Listener
     public void onExplosion(ExplosionEvent.Pre event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(event.getTargetWorld().getLocation(event.getExplosion().getOrigin()), false, null);
 
         if (claim == null) {
@@ -120,6 +124,10 @@ public class EntityEventHandler {
     // when a creature spawns...
     @Listener(order = Order.EARLY)
     public void onSpawnEntity(SpawnEntityEvent event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         Optional<User> user = event.getCause().first(User.class);
         event.filterEntities(new Predicate<Entity>() {
             @Override
@@ -196,6 +204,10 @@ public class EntityEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener
     public void onEntityAttack(AttackEntityEvent event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
+            return;
+        }
+
         if (protectEntity(event.getTargetEntity(), event.getCause())) {
             event.setCancelled(true);
         }
@@ -204,6 +216,10 @@ public class EntityEventHandler {
     @IsCancelled(Tristate.UNDEFINED)
     @Listener
     public void onEntityDamage(DamageEntityEvent event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
+            return;
+        }
+
         if (protectEntity(event.getTargetEntity(), event.getCause())) {
             event.setCancelled(true);
         }
@@ -351,6 +367,10 @@ public class EntityEventHandler {
 
     @Listener(order = Order.POST)
     public void onEntityDamageMonitor(DamageEntityEvent event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
+            return;
+        }
+
         //FEATURE: prevent players who very recently participated in pvp combat from hiding inventory to protect it from looting
         //FEATURE: prevent players who are in pvp combat from logging out to avoid being defeated
 
@@ -421,6 +441,10 @@ public class EntityEventHandler {
     // when an entity drops items on death
     @Listener(order = Order.LAST)
     public void onEntityDropItemDeath(DropItemEvent.Destruct event) {
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         if (!(event.getCause().root() instanceof Living)) {
             return;
         }
@@ -454,6 +478,9 @@ public class EntityEventHandler {
     @Listener(order = Order.LAST)
     public void onEntityDeath(DestructEntityEvent.Death event) {
         Living entity = event.getTargetEntity();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
+            return;
+        }
 
         if (!(entity instanceof Player) || !event.getCause().first(EntityDamageSource.class).isPresent()) {
             return;
