@@ -59,7 +59,6 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
     public static final String GLOBAL_MONITOR_SPAM = "monitor-spam";
 
     // CLAIM
-    public static final String CLAIM_MODULE_ENABLED = "enable-claims";
     public static final String CLAIM_ACCESSTRUST_COMMANDS = "accesstrust-commands";
     public static final String CLAIM_BANNED_ITEM_IDS = "banned-item-ids";
     public static final String CLAIM_ABANDON_RETURN_RATIO = "abandon-return-ratio";
@@ -273,8 +272,6 @@ public class GriefPreventionConfig<T extends GriefPreventionConfig.ConfigBase> {
         public double abandonReturnRatio = 1.0;
         @Setting(value = CLAIM_ACCESSTRUST_COMMANDS, comment = "The list of slashcommands requiring access trust when in a claim.")
         public List<String> accessTrustCommands = new ArrayList<>();
-        @Setting(value = CLAIM_MODULE_ENABLED, comment = "Allows claims to be used.")
-        public boolean allowClaims = true;
         @Setting(value = CLAIM_AUTO_RADIUS, comment = "Radius used for auto-created claims")
         public int claimRadius = 4;
         @Setting(value = CLAIM_BLOCKS_ACCRUED_PER_HOUR, comment = "Blocks earned per hour.")

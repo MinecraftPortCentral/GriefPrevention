@@ -845,7 +845,7 @@ public class GriefPrevention {
 
     // checks whether players can create claims in a world
     public boolean claimsEnabledForWorld(WorldProperties worldProperties) {
-        return GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.allowClaims;
+        return GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.claimMode != 0;
     }
 
     public boolean claimModeIsActive(WorldProperties worldProperties, ClaimsMode mode) {
