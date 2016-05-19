@@ -50,7 +50,6 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -164,7 +163,7 @@ public class FlatFileDataStore extends DataStore {
                 }
 
                 try {
-                   this.loadClaim(files[i], files[i].lastModified(), claimId);
+                   this.loadClaim(files[i], claimId);
                 }
 
                 // if there's any problem with the file's content, log an error message and skip it
@@ -217,7 +216,7 @@ public class FlatFileDataStore extends DataStore {
         }
     }
 
-    Claim loadClaim(File claimFile, long lastModifiedDate, UUID claimId)
+    Claim loadClaim(File claimFile, UUID claimId)
             throws Exception {
         Claim claim;
 
@@ -252,7 +251,6 @@ public class FlatFileDataStore extends DataStore {
 
         // instantiate
         claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, claimId);
-        claim.modifiedDate = new Date(lastModifiedDate);
         claim.ownerID = ownerID;
         claim.world = lesserBoundaryCorner.getExtent();
         claim.type = claimStorage.getConfig().claimType;
@@ -271,7 +269,6 @@ public class FlatFileDataStore extends DataStore {
             Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
 
             Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey());
-            subDivision.modifiedDate = new Date(lastModifiedDate);
             subDivision.id = mapEntry.getKey();
             subDivision.world = subLesserBoundaryCorner.getExtent();
             subDivision.setClaimStorage(claimStorage);

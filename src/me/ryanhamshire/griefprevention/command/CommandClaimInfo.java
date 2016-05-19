@@ -15,6 +15,9 @@ import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.UUID;
 
 public class CommandClaimInfo implements CommandExecutor {
@@ -43,6 +46,22 @@ public class CommandClaimInfo implements CommandExecutor {
             String builders = "";
             String containers = "";
             String coowners = "";
+            Date created = null;
+            Date lastActive = null;
+            try {
+                Instant instant = Instant.parse(claim.getClaimData().getDateCreated());
+                created = Date.from(instant);
+            } catch(DateTimeParseException ex) {
+                // ignore
+            }
+
+            try {
+                Instant instant = Instant.parse(claim.getClaimData().getDateLastActive());
+                lastActive = Date.from(instant);
+            } catch(DateTimeParseException ex) {
+                // ignore
+            }
+
             claimName = Text.of(TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, claim.getClaimData().getClaimName());
             for (UUID uuid : claim.getClaimData().getAccessors()) {
                 User user = GriefPrevention.getOrCreateUser(uuid);
@@ -79,7 +98,8 @@ public class CommandClaimInfo implements CommandExecutor {
             Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.GRAY, builders);
             Text claimContainers = Text.of(TextColors.YELLOW, "Containers", TextColors.WHITE, " : ", TextColors.GRAY, containers);
             Text claimCoowners = Text.of(TextColors.YELLOW, "Coowners", TextColors.WHITE, " : ", TextColors.GRAY, coowners);
-            Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, claim.modifiedDate);
+            Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, created != null ? created : "Unknown");
+            Text dateLastActive = Text.of(TextColors.YELLOW, "LastActive", TextColors.WHITE, " : ", TextColors.GRAY, lastActive != null ? lastActive : "Unknown");
             Text footer = Text.of(TextColors.WHITE, TextStyles.STRIKETHROUGH, "------------------------------------------");
             GriefPrevention.sendMessage(src,
                     Text.of("\n",
@@ -94,6 +114,7 @@ public class CommandClaimInfo implements CommandExecutor {
                             claimGreeting, "\n",
                             claimFarewell, "\n",
                             dateCreated, "\n",
+                            dateLastActive, "\n",
                             claimId, "\n",
                             footer));
         } else {

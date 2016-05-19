@@ -58,8 +58,6 @@ import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -86,10 +84,6 @@ public class Claim implements ContextSource {
 
     // Permission Context
     public Context context;
-
-    // modification date. this comes from the file timestamp during load, and is
-    // updated with runtime changes
-    public Date modifiedDate;
 
     // id number. unique to this claim, never changes.
     public UUID id = null;
@@ -137,9 +131,6 @@ public class Claim implements ContextSource {
     // main constructor. note that only creating a claim instance does nothing -
     // a claim must be added to the data store to be effective
     public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, Player player) {
-        // modification date
-        this.modifiedDate = Calendar.getInstance().getTime();
-
         // id
         this.id = claimId;
 

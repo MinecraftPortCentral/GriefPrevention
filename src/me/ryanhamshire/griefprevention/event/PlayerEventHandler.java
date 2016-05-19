@@ -113,12 +113,14 @@ import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.interfaces.block.IMixinBlockState;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 import org.spongepowered.common.util.VecHelper;
 
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -690,10 +692,19 @@ public class PlayerEventHandler {
         }
 
         // remember the player's ip address
-        this.dataStore.createPlayerData(event.getToTransform().getExtent().getProperties(), player.getUniqueId());
-        this.dataStore.getPlayerData(event.getToTransform().getExtent(), player.getUniqueId());
-        PlayerData playerData = this.dataStore.getPlayerData(event.getToTransform().getExtent(), player.getUniqueId());
+        WorldProperties worldProperties = event.getToTransform().getExtent().getProperties();
+        UUID playerUniqueId = player.getUniqueId();
+        PlayerData playerData = this.dataStore.createPlayerData(worldProperties, playerUniqueId);
         playerData.ipAddress = event.getConnection().getAddress().getAddress();
+        for (Claim claim : this.dataStore.getPlayerDataWorldManager(worldProperties).getWorldClaims()) {
+            if (claim.ownerID.equals(playerUniqueId)) {
+                // update lastActive timestamp for claim
+                claim.getClaimData().setDateLastActive(Instant.now().toString());
+            } else if (claim.parent != null && claim.parent.ownerID.equals(playerUniqueId)) {
+                // update lastActive timestamp for subdivisions if parent owner logs on
+                claim.getClaimData().setDateLastActive(Instant.now().toString());
+            }
+        }
     }
 
     // when a player successfully joins the server...
@@ -2447,10 +2458,15 @@ public class PlayerEventHandler {
 
             // if deleteclaims permission, show last active claim date
             if (!claim.isAdminClaim() && player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
-                Instant lastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
-                long difference = Date.from(Instant.now()).getTime() - Date.from(lastActive).getTime();
-                long daysElapsed = difference / (1000 * 60 * 60 * 24);
-                GriefPrevention.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, Long.toString(daysElapsed));
+                Date lastActive = null;
+                try {
+                    Instant instant = Instant.parse(claim.getClaimData().getDateLastActive());
+                    lastActive = Date.from(instant);
+                } catch(DateTimeParseException ex) {
+                    // ignore
+                }
+
+                GriefPrevention.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, lastActive != null ? lastActive.toString() : "Unknown");
 
                 // drop the data we just loaded, if the player isn't online
                 if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {

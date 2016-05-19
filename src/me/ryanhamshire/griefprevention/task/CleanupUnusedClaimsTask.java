@@ -76,7 +76,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
 
             Instant claimLastActive = null;
             try {
-                claimLastActive = Instant.parse(claim.getClaimData().getLastActiveDate());
+                claimLastActive = Instant.parse(claim.getClaimData().getDateLastActive());
             } catch (DateTimeParseException e) {
                 return;
             }
