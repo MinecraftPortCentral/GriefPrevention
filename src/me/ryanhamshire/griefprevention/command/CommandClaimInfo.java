@@ -37,7 +37,7 @@ public class CommandClaimInfo implements CommandExecutor {
 
         if (claim != null) {
             UUID ownerUniqueId = claim.getClaimData().getOwnerUniqueId();
-            if (ownerUniqueId == null && claim.parent != null) {
+            if (claim.parent != null) {
                 ownerUniqueId = claim.parent.ownerID;
             }
             User owner = GriefPrevention.getOrCreateUser(ownerUniqueId);

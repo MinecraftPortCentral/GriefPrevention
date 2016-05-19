@@ -168,6 +168,7 @@ public class PlayerDataWorldManager {
         }
         // transfer
         claim.ownerID = newOwnerID;
+        claim.getClaimData().setClaimOwnerUniqueId(newOwnerID);
 
         // adjust blocks and other records
         if (ownerData != null) {

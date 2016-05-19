@@ -16,7 +16,6 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class CommandClaimTransfer implements CommandExecutor {
@@ -50,12 +49,9 @@ public class CommandClaimTransfer implements CommandExecutor {
         UUID newOwnerID = null; // no argument = make an admin claim
         String ownerName = "admin";
 
-        Optional<User> targetOpt = args.<User>getOne("player");
-        if (targetOpt.isPresent()) {
-            User targetPlayer = targetOpt.get();
-            newOwnerID = targetPlayer.getUniqueId();
-            ownerName = targetPlayer.getName();
-        }
+        User targetPlayer = args.<User>getOne("player").get();
+        newOwnerID = targetPlayer.getUniqueId();
+        ownerName = targetPlayer.getName();
 
         // change ownerhsip
         try {

@@ -168,6 +168,8 @@ public class ClaimStorageData {
 
         public ClaimDataFlagsCategory getFlags();
 
+        public void setClaimOwnerUniqueId(UUID newClaimOwner);
+
         public void setClaimType(Claim.Type type);
 
         public void setDateLastActive(String date);
@@ -227,6 +229,10 @@ public class ClaimStorageData {
         @Override
         public UUID getOwnerUniqueId() {
             return this.ownerUniqueId;
+        }
+        @Override
+        public void setClaimOwnerUniqueId(UUID newClaimOwner) {
+            this.ownerUniqueId = newClaimOwner;
         }
         @Override
         public Type getClaimType() {
@@ -352,6 +358,9 @@ public class ClaimStorageData {
         @Override
         public UUID getOwnerUniqueId() {
             return GriefPrevention.PUBLIC_UUID; // return dummy uuid
+        }
+        @Override
+        public void setClaimOwnerUniqueId(UUID newClaimOwner) {
         }
         @Override
         public Type getClaimType() {

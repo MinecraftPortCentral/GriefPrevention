@@ -28,7 +28,7 @@ public class CommandClaimDelete implements CommandExecutor {
             return CommandResult.success();
         }
         // determine which claim the player is standing in
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /* ignore height */, null);
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
 
         if (claim == null) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);

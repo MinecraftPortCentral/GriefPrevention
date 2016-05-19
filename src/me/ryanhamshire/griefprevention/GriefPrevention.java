@@ -437,7 +437,7 @@ public class GriefPrevention {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Converts an administrative claim to a private claim"))
-                .arguments(optional(player(Text.of("target"))))
+                .arguments(player(Text.of("player")))
                 .permission(GPPermissions.TRANSFER_CLAIM)
                 .executor(new CommandClaimTransfer())
                 .build(), "claimtransfer", "transferclaim");
