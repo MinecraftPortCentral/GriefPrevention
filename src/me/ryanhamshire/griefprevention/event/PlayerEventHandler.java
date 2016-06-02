@@ -1186,9 +1186,10 @@ public class PlayerEventHandler {
 
     // when a player interacts with an entity...
     @IsCancelled(Tristate.UNDEFINED)
-    @Listener(order = Order.PRE)
+    @Listener(order = Order.FIRST)
     public void onPlayerInteractEntity(InteractEntityEvent event) {
-        if (!event.getCause().containsType(Player.class) || !GriefPrevention.isEntityProtected(event.getTargetEntity())) {
+        Entity entity = event.getTargetEntity();
+        if (!event.getCause().containsType(Player.class) || !GriefPrevention.isEntityProtected(entity)) {
             return;
         }
 
@@ -1197,7 +1198,6 @@ public class PlayerEventHandler {
             return;
         }
 
-        Entity entity = event.getTargetEntity();
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(entity.getWorld().getProperties());
         Optional<ItemStack> itemInHand = player.getItemInHand();
         if (itemInHand.isPresent()) {
@@ -1224,7 +1224,7 @@ public class PlayerEventHandler {
         }
 
         if (claim != null) {
-            String denyReason = claim.allowAccess(player, Optional.of(event.getTargetEntity().getLocation()));
+            String denyReason = claim.allowAccess(player, Optional.of(entity.getLocation()));
             if (denyReason != null) {
                 GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                 event.setCancelled(true);
@@ -1232,46 +1232,36 @@ public class PlayerEventHandler {
             }
         }
 
-        // if entity is tameable and has an owner, apply special rules
-        if (entity.supports(TameableData.class)) {
-            TameableData data = entity.getOrCreate(TameableData.class).get();
-            if (data.owner().exists()) {
-                UUID ownerID = data.owner().get().get();
+        // if entity has an owner, apply special rules
+        IMixinEntity spongeEntity = (IMixinEntity) entity;
+        Optional<User> owner = spongeEntity.getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
+        if (owner.isPresent()) {
+            UUID ownerID = owner.get().getUniqueId();
 
-                // if the player interacting is the owner or an admin in ignore claims mode, always allow
-                if (player.getUniqueId().equals(ownerID) || playerData.ignoreClaims) {
-                    // if giving away pet, do that instead
-                    if (playerData.petGiveawayRecipient != null) {
-                        entity.offer(Keys.TAMED_OWNER, Optional.of(playerData.petGiveawayRecipient.getUniqueId()));
-                        playerData.petGiveawayRecipient = null;
-                        GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetGiveawayConfirmation);
-                        GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Pet giveaway.]", CustomLogEntryTypes.Debug);
-                        event.setCancelled(true);
-                    }
-
-                    return;
-                }
-                if (!GriefPrevention.instance.pvpRulesApply(entity.getLocation().getExtent())) {
-                    // otherwise disallow
-                    if (event.getCause().root() instanceof Player) {
-                        User owner = Sponge.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(ownerID).get();
-                        String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, owner.getName());
-                        if (player.hasPermission(GPPermissions.IGNORE_CLAIMS))
-                            message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
-                    }
-                    GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Entity is tamed.]", CustomLogEntryTypes.Debug);
+            // if the player interacting is the owner or an admin in ignore claims mode, always allow
+            if (player.getUniqueId().equals(ownerID) || playerData.ignoreClaims) {
+                // if giving away pet, do that instead
+                if (playerData.petGiveawayRecipient != null) {
+                    spongeEntity.setCreator(playerData.petGiveawayRecipient.getUniqueId());
+                    playerData.petGiveawayRecipient = null;
+                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetGiveawayConfirmation);
+                    GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Pet giveaway.]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
-                    return;
                 }
+
+                return;
             }
-        } else { // search for owner manually
-            IMixinEntity spongeEntity = (IMixinEntity) entity;
-            Optional<User> owner = spongeEntity.getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
-            if (owner.isPresent()) {
-                if (player.getUniqueId().equals(owner.get().getUniqueId())) {
-                    return;
+            if (!GriefPrevention.instance.pvpRulesApply(entity.getLocation().getExtent())) {
+                // otherwise disallow
+                if (event.getCause().root() instanceof Player) {
+                    String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, owner.get().getName());
+                    if (player.hasPermission(GPPermissions.IGNORE_CLAIMS))
+                        message += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
                 }
+                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Entity is tamed.]", CustomLogEntryTypes.Debug);
+                event.setCancelled(true);
+                return;
             }
         }
 
