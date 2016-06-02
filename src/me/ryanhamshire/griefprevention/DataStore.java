@@ -1354,7 +1354,13 @@ public abstract class DataStore {
         if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
             return this.globalPlayerWorldManager;
         }
-        return this.playerDataManagers.get(worldProperties.getUniqueId());
+
+        PlayerDataWorldManager playerWorldManager = this.playerDataManagers.get(worldProperties.getUniqueId());
+        if (playerWorldManager == null) {
+            playerWorldManager = new PlayerDataWorldManager(worldProperties);
+            this.playerDataManagers.put(worldProperties.getUniqueId(), playerWorldManager);
+        }
+        return playerWorldManager;
     }
 
     public void removePlayerDataWorldManager(WorldProperties worldProperties) {
