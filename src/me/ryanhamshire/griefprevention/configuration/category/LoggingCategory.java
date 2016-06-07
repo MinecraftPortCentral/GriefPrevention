@@ -22,34 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.event;
+package me.ryanhamshire.griefprevention.configuration.category;
 
-import me.ryanhamshire.griefprevention.ClaimWorldManager;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.world.LoadWorldEvent;
-import org.spongepowered.api.event.world.SaveWorldEvent;
-import org.spongepowered.api.event.world.UnloadWorldEvent;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
-public class WorldEventHandler {
+@ConfigSerializable
+public class LoggingCategory extends ConfigCategory {
 
-    @Listener
-    public void onWorldLoad(LoadWorldEvent event) {
-        GriefPrevention.instance.dataStore.loadWorldData(event.getTargetWorld().getProperties());
-    }
-
-    @Listener
-    public void onWorldUnload(UnloadWorldEvent event) {
-        GriefPrevention.instance.dataStore.unloadWorldData(event.getTargetWorld().getProperties());
-    }
-
-    @Listener
-    public void onWorldSave(SaveWorldEvent event) {
-        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
-        if (claimWorldManager == null) {
-            return;
-        }
-
-        claimWorldManager.save();
-    }
+    @Setting(value = "days-stored", comment = "How many days to keep logs in storage.")
+    public int loggingDaysToKeep = 7;
+    @Setting(value = "admin-activity", comment = "Log admin activity.")
+    public boolean loggingAdminActivity = false;
+    @Setting(value = "social-acitivity", comment = "Log social activity.")
+    public boolean loggingSocialActions = false;
+    @Setting(value = "suspicious-activity", comment = "Log suspicious activity.")
+    public boolean loggingSuspiciousActivity = false;
+    @Setting(value = "debug", comment = "Enable debug logging.")
+    public boolean loggingDebug = false;
 }

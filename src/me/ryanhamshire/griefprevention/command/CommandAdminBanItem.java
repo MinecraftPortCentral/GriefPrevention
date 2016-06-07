@@ -13,7 +13,7 @@ import org.spongepowered.api.item.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.Optional;
 
-public class CommandBanItem implements CommandExecutor {
+public class CommandAdminBanItem implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {

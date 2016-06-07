@@ -1,11 +1,11 @@
 package me.ryanhamshire.griefprevention.command;
 
+import me.ryanhamshire.griefprevention.ClaimWorldManager;
+import me.ryanhamshire.griefprevention.ClaimWorldManager.NoTransferException;
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerDataWorldManager;
-import me.ryanhamshire.griefprevention.PlayerDataWorldManager.NoTransferException;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
@@ -55,8 +55,8 @@ public class CommandClaimTransfer implements CommandExecutor {
 
         // change ownerhsip
         try {
-            PlayerDataWorldManager playerWorldManager = GriefPrevention.instance.dataStore.getPlayerDataWorldManager(claim.world.getProperties());
-            playerWorldManager.changeClaimOwner(claim, newOwnerID);
+            ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
+            claimWorldManager.changeClaimOwner(claim, newOwnerID);
         } catch (NoTransferException e) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
             return CommandResult.empty();

@@ -1,8 +1,8 @@
 package me.ryanhamshire.griefprevention.command;
 
+import me.ryanhamshire.griefprevention.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerDataWorldManager;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
@@ -26,8 +26,8 @@ public class CommandClaimAdminList implements CommandExecutor {
         }
 
         // find admin claims
-        PlayerDataWorldManager playerWorldManager = GriefPrevention.instance.dataStore.getPlayerDataWorldManager(player.getWorld().getProperties());
-        for (Claim claim : playerWorldManager.getWorldClaims()) {
+        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
+        for (Claim claim : claimWorldManager.getWorldClaims()) {
             if (claim.isAdminClaim()) {
                 GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);;
                 GriefPrevention.sendMessage(src, Text.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())));

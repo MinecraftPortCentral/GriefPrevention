@@ -39,7 +39,7 @@ import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
 import me.ryanhamshire.griefprevention.command.CommandAddFlagPermission;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
-import me.ryanhamshire.griefprevention.command.CommandBanItem;
+import me.ryanhamshire.griefprevention.command.CommandAdminBanItem;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandon;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandonAll;
 import me.ryanhamshire.griefprevention.command.CommandClaimAdmin;
@@ -54,8 +54,10 @@ import me.ryanhamshire.griefprevention.command.CommandClaimFlag;
 import me.ryanhamshire.griefprevention.command.CommandClaimIgnore;
 import me.ryanhamshire.griefprevention.command.CommandClaimInfo;
 import me.ryanhamshire.griefprevention.command.CommandClaimList;
+import me.ryanhamshire.griefprevention.command.CommandClaimName;
 import me.ryanhamshire.griefprevention.command.CommandClaimSell;
 import me.ryanhamshire.griefprevention.command.CommandClaimSubdivide;
+import me.ryanhamshire.griefprevention.command.CommandClaimTemplate;
 import me.ryanhamshire.griefprevention.command.CommandClaimTransfer;
 import me.ryanhamshire.griefprevention.command.CommandContainerTrust;
 import me.ryanhamshire.griefprevention.command.CommandGivePet;
@@ -80,10 +82,10 @@ import me.ryanhamshire.griefprevention.command.CommandUnseparate;
 import me.ryanhamshire.griefprevention.command.CommandUntrust;
 import me.ryanhamshire.griefprevention.command.CommandUntrustAll;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.DimensionConfig;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.GlobalConfig;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.WorldConfig;
+import me.ryanhamshire.griefprevention.configuration.types.DimensionConfig;
+import me.ryanhamshire.griefprevention.configuration.types.GlobalConfig;
+import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
 import me.ryanhamshire.griefprevention.event.BlockEventHandler;
 import me.ryanhamshire.griefprevention.event.EntityEventHandler;
 import me.ryanhamshire.griefprevention.event.PlayerEventHandler;
@@ -147,7 +149,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "me.ryanhamshire.griefprevention", name = "GriefPrevention", version = "12.7.1", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "0.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
@@ -252,9 +254,10 @@ public class GriefPrevention {
         }
 
         if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage && Sponge.getServer().getDefaultWorld().isPresent()) {
+            // TODO
             // run cleanup task
-            CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(Sponge.getServer().getDefaultWorld().get());
-            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance);
+            //CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(Sponge.getServer().getDefaultWorld().get());
+            //Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance);
         }
 
         //if economy is enabled
@@ -274,6 +277,7 @@ public class GriefPrevention {
 
         Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand().getCommandSpec(), CommandGriefPrevention.getCommand().getAliases());
         registerBaseCommands();
+        this.dataStore.loadClaimTemplates();
         addLogEntry("Boot finished.");
     }
 
@@ -328,7 +332,7 @@ public class GriefPrevention {
                 .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
                 .permission(GPPermissions.BAN_ITEM)
                 .arguments(optional(string(Text.of("itemid"))))
-                .executor(new CommandBanItem())
+                .executor(new CommandAdminBanItem())
                 .build(), Arrays.asList("banitem"));
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
@@ -477,6 +481,13 @@ public class GriefPrevention {
                 .build(), Arrays.asList("ignoreplayer", "ignore"));
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Sets the name of your claim"))
+                .permission(GPPermissions.SET_CLAIM_NAME)
+                .arguments(string(Text.of("name")))
+                .executor(new CommandClaimName())
+                .build(), Arrays.asList("claimname"));
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Reloads Grief Prevention's configuration settings"))
                 .permission(GPPermissions.RELOAD)
                 .executor(new CommandGpReload())
@@ -543,6 +554,13 @@ public class GriefPrevention {
                 .permission(GPPermissions.LIST_TRUST)
                 .executor(new CommandTrustList())
                 .build(), Arrays.asList("trustlist"));
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Exports/Imports claim data."))
+                .permission(GPPermissions.CLAIM_TEMPLATES_ADMIN)
+                .arguments(string(Text.of("action")), optional(string(Text.of("name"))), optional(string(Text.of("description"))))
+                .executor(new CommandClaimTemplate())
+                .build(), Arrays.asList("claimtemplate"));
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
@@ -852,12 +870,7 @@ public class GriefPrevention {
         return GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.claimMode == mode.ordinal();
     }
 
-    public String allowBuild(User user, BlockSnapshot blockSnapshot) {
-        if (!blockSnapshot.getLocation().isPresent()) {
-            return null;
-        }
-
-        Location<World> location = blockSnapshot.getLocation().get();
+    public String allowBuild(User user, Location<World> location) {
         PlayerData playerData = this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
@@ -898,7 +911,7 @@ public class GriefPrevention {
         else {
             // cache the claim for later reference
             playerData.lastClaim = claim;
-            return claim.allowBuild(user, blockSnapshot);
+            return claim.allowBuild(user, location);
         }
     }
 

@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -51,8 +52,9 @@ import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.CollideBlockEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
+import org.spongepowered.api.event.cause.entity.teleport.PortalTeleportCause;
 import org.spongepowered.api.event.filter.IsCancelled;
-import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Direction;
@@ -78,38 +80,8 @@ public class BlockEventHandler {
         this.dataStore = dataStore;
     }
 
-    // Handle items being dropped into claims
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener
-    public void onDropItem(DropItemEvent.Dispense event) {
-        Optional<Player> optPlayer = event.getCause().first(Player.class);
-
-        if (!optPlayer.isPresent()) {
-            return;
-        }
-
-        Player player = optPlayer.get();
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
-            return;
-        }
-
-        Location<World> location = player.getLocation();
-        Claim claim = this.dataStore.getClaimAt(location, false, null);
-        if (claim != null) {
-            String reason = claim.allowAccess(player);
-            if (reason != null) {
-                if (event.getCause().root() instanceof Player) {
-                    GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, Messages.NoDropsAllowed));
-                }
-
-                GriefPrevention.addLogEntry("1[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + reason + "]", CustomLogEntryTypes.Debug);
-                event.setCancelled(true);
-            }
-        }
-    }
-
     // Handle fluids flowing into claims
-    @Listener
+    @Listener(order = Order.FIRST)
     public void onBlockNotify(NotifyNeighborBlockEvent event) {
         Optional<User> user = event.getCause().first(User.class);
         Optional<BlockSnapshot> blockSource = event.getCause().first(BlockSnapshot.class);
@@ -158,23 +130,16 @@ public class BlockEventHandler {
         }
     }
 
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener
-    public void onBlockCollide(CollideBlockEvent event) {
-        Optional<User> user = event.getCause().first(User.class);
-
-        if (!user.isPresent()) {
-            return;
-        }
-
+    @Listener(order = Order.FIRST)
+    public void onBlockCollide(CollideBlockEvent event, @First User user) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
             return;
         }
 
         Claim claim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
         if (claim != null) {
-            if (user.isPresent() && user.get() instanceof Player) {
-                Player player = (Player) user.get();
+            if (user instanceof Player) {
+                Player player = (Player) user;
                 if (claim.doorsOpen && GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.winnerAccessibleBlocks
                         .contains(event
                                 .getTargetBlock().getType().getId())) {
@@ -182,7 +147,7 @@ public class BlockEventHandler {
                 }
             }
             DataStore.generateMessages = false;
-            String denyReason = claim.allowAccess(user.get());
+            String denyReason = claim.allowAccess(user);
             DataStore.generateMessages = true;
             if (denyReason != null) {
                 if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
@@ -193,13 +158,8 @@ public class BlockEventHandler {
         }
     }
 
-    @Listener(order = Order.EARLY)
-    public void onImpactEvent(CollideEvent.Impact event) {
-        Optional<User> user = event.getCause().first(User.class);
-        if (!user.isPresent()) {
-            return;
-        }
-
+    @Listener(order = Order.FIRST)
+    public void onImpactEvent(CollideEvent.Impact event, @First User user) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
             return;
         }
@@ -209,41 +169,36 @@ public class BlockEventHandler {
             return;
         }
 
-        String denyReason = targetClaim.allowAccess(user.get());
+        String denyReason = targetClaim.allowAccess(user);
         if (denyReason != null) {
             GriefPrevention.addLogEntry("[Event: CollideBlockEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + event.getImpactPoint() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
             event.setCancelled(true);
         }
     }
 
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener(order = Order.DEFAULT)
-    public void onBlockBreak(ChangeBlockEvent.Break event) {
+    @Listener(order = Order.FIRST)
+    public void onBlockBreak(ChangeBlockEvent.Break event, @First User user) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
 
-        Optional<User> user = event.getCause().first(User.class);
-        if (user.isPresent()) {
-            List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
-            for (Transaction<BlockSnapshot> transaction : transactions) {
-                // make sure the player is allowed to break at the location
-                String denyReason = GriefPrevention.instance.allowBreak(user.get(), transaction.getOriginal());
-                if (denyReason != null) {
-                    if (event.getCause().root() instanceof Player) {
-                        GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
-                    }
-
-                    GriefPrevention.addLogEntry("[Event: BlockBreakEvent][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                    event.setCancelled(true);
-                    return;
+        List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
+        for (Transaction<BlockSnapshot> transaction : transactions) {
+            // make sure the player is allowed to break at the location
+            String denyReason = GriefPrevention.instance.allowBreak(user, transaction.getOriginal());
+            if (denyReason != null) {
+                if (event.getCause().root() instanceof Player) {
+                    GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
                 }
+
+                GriefPrevention.addLogEntry("[Event: BlockBreakEvent][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                event.setCancelled(true);
+                return;
             }
         }
     }
 
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener
+    @Listener(order = Order.FIRST)
     public void onBlockChangePost(ChangeBlockEvent.Post event) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
@@ -279,7 +234,7 @@ public class BlockEventHandler {
                     }
                 }
             } else if (user.isPresent()) {
-                String denyReason = GriefPrevention.instance.allowBuild(user.get(), transaction.getFinal());
+                String denyReason = GriefPrevention.instance.allowBuild(user.get(), transaction.getFinal().getLocation().get());
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -289,22 +244,17 @@ public class BlockEventHandler {
         }
     }
 
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener(order = Order.LAST)
-    public void onBlockPlace(ChangeBlockEvent.Place event) {
+    @Listener(order = Order.FIRST)
+    public void onBlockPlace(ChangeBlockEvent.Place event, @First User user) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
 
-        Optional<Player> playerOpt = event.getCause().first(Player.class);
-
-        if (!playerOpt.isPresent()) {
-            return;
-        }
-
-        Player player = playerOpt.get();
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
+        World world = event.getTargetWorld();
+        Player player = user instanceof Player ? (Player) user : null;
+        PlayerData playerData = this.dataStore.getPlayerData(world, user.getUniqueId());
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
+        Object rootCause = event.getCause().root();
 
         Claim sourceClaim = null;
         Optional<BlockSnapshot> sourceBlock = event.getCause().first(BlockSnapshot.class);
@@ -319,6 +269,15 @@ public class BlockEventHandler {
             }
 
             Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
+            if (rootCause instanceof PortalTeleportCause && targetClaim == null) {
+                // if survival requires claims and user has admin perm to create portal, allow
+                if (GriefPrevention.getActiveConfig(block.getLocation().get().getExtent().getProperties()).getConfig().claim.claimMode == 2) {
+                    if (user.hasPermission(GPPermissions.PORTAL_CREATE_SURVIVAL)) {
+                        return;
+                    }
+                }
+            }
+
             if (sourceBlock.isPresent() && sourceClaim == null && targetClaim != null) {
                 GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + Messages.BlockChangeFromWilderness + "]", CustomLogEntryTypes.Debug);
                 if (sourceBlock.isPresent() && sourceBlock.get().getState().getType() instanceof BlockLiquid) {
@@ -330,9 +289,18 @@ public class BlockEventHandler {
                 }
             }
 
-            String denyReason = GriefPrevention.instance.allowBuild(player, block);
+            String denyReason = GriefPrevention.instance.allowBuild(user, block.getLocation().get());
             if (denyReason != null) {
                 GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                if (rootCause instanceof PortalTeleportCause) {
+                    if (targetClaim != null && player != null) {
+                        // cancel and inform about the reason
+                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                        event.setCancelled(true);
+                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, targetClaim.getOwnerName());
+                        return;
+                    }
+                }
                 if (sourceBlock.isPresent() && sourceBlock.get().getState().getType() instanceof BlockLiquid) {
                     transaction.setValid(false);
                     continue;
@@ -342,7 +310,7 @@ public class BlockEventHandler {
                 }
             }
 
-            if (targetClaim == null && !(event.getCause().root() instanceof Player) && block.getState().getType() == BlockTypes.FIRE) {
+            if (targetClaim == null && !(event.getCause().root() instanceof User) && block.getState().getType() == BlockTypes.FIRE) {
                 if (GPFlags.getClaimFlagPermission(targetClaim, GPFlags.FIRE_SPREAD) != Tristate.TRUE) {
                     GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + Messages.FireSpreadOutsideClaim + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -351,7 +319,7 @@ public class BlockEventHandler {
             }
 
             // warn players when they place TNT above sea level, since it doesn't destroy blocks there
-            if (!activeConfig.getConfig().general.surfaceExplosions && block.getState().getType() == BlockTypes.TNT &&
+            if (player != null && !activeConfig.getConfig().general.surfaceExplosions && block.getState().getType() == BlockTypes.TNT &&
                     !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
                     block.getPosition().getY() > GriefPrevention.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&
                     targetClaim == null &&
@@ -360,7 +328,7 @@ public class BlockEventHandler {
             }
 
             // warn players about disabled pistons outside of land claims
-            if (activeConfig.getConfig().general.limitPistonsToClaims &&
+            if (player != null && activeConfig.getConfig().general.limitPistonsToClaims &&
                     (block.getState().getType() == BlockTypes.PISTON || block.getState().getType() == BlockTypes.STICKY_PISTON) &&
                     targetClaim == null) {
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoPistonsOutsideClaims);
@@ -377,7 +345,7 @@ public class BlockEventHandler {
                 playerData.lastClaim = targetClaim;
 
                 // if the player has permission for the claim and he's placing UNDER the claim
-                if (block.getPosition().getY() <= targetClaim.lesserBoundaryCorner.getBlockY() && targetClaim.allowBuild(player, block) == null) {
+                if (block.getPosition().getY() <= targetClaim.lesserBoundaryCorner.getBlockY() && targetClaim.allowBuild(player, block.getLocation().get()) == null) {
                     // extend the claim downward
                     this.dataStore.extendClaim(targetClaim, block.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance);
                 }
@@ -442,9 +410,8 @@ public class BlockEventHandler {
     }
 
     // when a player places a sign...
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener
-    public void onSignChanged(ChangeSignEvent event) {
+    @Listener(order = Order.FIRST)
+    public void onSignChanged(ChangeSignEvent event, @First User user) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetTile().getLocation().getExtent().getProperties())) {
             return;
         }
@@ -455,12 +422,7 @@ public class BlockEventHandler {
             return;
         }
 
-        Optional<Player> optPlayer = event.getCause().first(Player.class);
-        if (!optPlayer.isPresent()) {
-            return;
-        }
-
-        Player player = optPlayer.get();
+        World world = event.getTargetTile().getLocation().getExtent();
         StringBuilder lines = new StringBuilder(" placed a sign @ " + GriefPrevention.getfriendlyLocationString(event.getTargetTile().getLocation()));
         boolean notEmpty = false;
         for (int i = 0; i < event.getText().lines().size(); i++) {
@@ -474,25 +436,24 @@ public class BlockEventHandler {
         String signMessage = lines.toString();
 
         // prevent signs with blocked IP addresses
-        if (!player.hasPermission(GPPermissions.SPAM) && GriefPrevention.instance.containsBlockedIP(signMessage)) {
+        if (!user.hasPermission(GPPermissions.SPAM) && GriefPrevention.instance.containsBlockedIP(signMessage)) {
             GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Sign: " + event.getTargetTile() + "][CancelReason: contains blocked IP address " + signMessage + "]", CustomLogEntryTypes.Debug);
             event.setCancelled(true);
             return;
         }
 
-        // if not empty and wasn't the same as the last sign, log it and
-        // remember it for later
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        // if not empty and wasn't the same as the last sign, log it and remember it for later
+        PlayerData playerData = this.dataStore.getPlayerData(world, user.getUniqueId());
         if (notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage)) {
-            GriefPrevention.addLogEntry(player.getName() + lines.toString().replace("\n  ", ";"), null);
+            GriefPrevention.addLogEntry(user.getName() + lines.toString().replace("\n  ", ";"), null);
             //PlayerEventHandler.makeSocialLogEntry(player.get().getName(), signMessage);
             playerData.lastMessage = signMessage;
 
-            if (!player.hasPermission(GPPermissions.EAVES_DROP_SIGNS)) {
+            if (!user.hasPermission(GPPermissions.EAVES_DROP_SIGNS)) {
                 Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
                 for (Player otherPlayer : players) {
                     if (otherPlayer.hasPermission(GPPermissions.EAVES_DROP_SIGNS)) {
-                        otherPlayer.sendMessage(Text.of(TextColors.GRAY, player.getName(), signMessage));
+                        otherPlayer.sendMessage(Text.of(TextColors.GRAY, user.getName(), signMessage));
                     }
                 }
             }

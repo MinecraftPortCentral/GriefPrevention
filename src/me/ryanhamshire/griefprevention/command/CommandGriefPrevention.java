@@ -291,8 +291,8 @@ public class CommandGriefPrevention {
                                 .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
                                 .permission(GPPermissions.BAN_ITEM)
                                 .arguments(optional(string(Text.of("itemid"))))
-                                .executor(new CommandBanItem())
-                                .build(), "ban")
+                                .executor(new CommandAdminBanItem())
+                                .build(), "adminban")
 
                         .child(CommandSpec.builder()
                                 .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))

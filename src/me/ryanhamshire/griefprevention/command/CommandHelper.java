@@ -123,10 +123,14 @@ public class CommandHelper {
 
         // check the cache
         Optional<User> player = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(playerID);
-        if (player.isPresent() || player.get().isOnline()) {
+        if (player.isPresent()) {
             return player.get().getName();
         } else {
-            return "someone";
+            try {
+                return Sponge.getServer().getGameProfileManager().get(playerID).get().getName().get();
+            } catch (Exception e) {
+                return "someone";
+            }
         }
     }
 

@@ -22,34 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.event;
+package me.ryanhamshire.griefprevention.configuration.types;
 
-import me.ryanhamshire.griefprevention.ClaimWorldManager;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.world.LoadWorldEvent;
-import org.spongepowered.api.event.world.SaveWorldEvent;
-import org.spongepowered.api.event.world.UnloadWorldEvent;
+import me.ryanhamshire.griefprevention.configuration.category.DatabaseCategory;
+import me.ryanhamshire.griefprevention.configuration.category.LoggingCategory;
+import me.ryanhamshire.griefprevention.configuration.category.PlayerDataCategory;
+import me.ryanhamshire.griefprevention.configuration.category.SpamCategory;
+import ninja.leaping.configurate.objectmapping.Setting;
 
-public class WorldEventHandler {
+public class GlobalConfig extends ConfigBase {
 
-    @Listener
-    public void onWorldLoad(LoadWorldEvent event) {
-        GriefPrevention.instance.dataStore.loadWorldData(event.getTargetWorld().getProperties());
-    }
-
-    @Listener
-    public void onWorldUnload(UnloadWorldEvent event) {
-        GriefPrevention.instance.dataStore.unloadWorldData(event.getTargetWorld().getProperties());
-    }
-
-    @Listener
-    public void onWorldSave(SaveWorldEvent event) {
-        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
-        if (claimWorldManager == null) {
-            return;
-        }
-
-        claimWorldManager.save();
-    }
+    @Setting
+    public DatabaseCategory database = new DatabaseCategory();
+    @Setting
+    public LoggingCategory logging = new LoggingCategory();
+    @Setting
+    public PlayerDataCategory playerdata = new PlayerDataCategory();
+    @Setting
+    public SpamCategory spam = new SpamCategory();
 }

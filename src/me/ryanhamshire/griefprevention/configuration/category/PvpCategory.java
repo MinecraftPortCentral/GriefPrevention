@@ -1,0 +1,58 @@
+/*
+ * This file is part of GriefPrevention, licensed under the MIT License (MIT).
+ *
+ * Copyright (c) bloodmc
+ * Copyright (c) contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package me.ryanhamshire.griefprevention.configuration.category;
+
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@ConfigSerializable
+public class PvpCategory extends ConfigCategory {
+
+    @Setting(value = "rules-enabled", comment = "Whether or not pvp anti-grief rules apply.")
+    public boolean rulesEnabled = true;
+    @Setting(value = "protect-item-drops-death", comment = "Whether player's dropped on death items are protected in pvp worlds.")
+    public boolean protectItemsOnDeathPvp = false;
+    @Setting(value = "protect-item-drops-death-non-pvp", comment = "Whether players' dropped on death items are protected in non-pvp worlds.")
+    public boolean protectItemsOnDeathNonPvp = true;
+    @Setting(value = "allow-combat-item-drops", comment = "Whether a player can drop items during combat to hide them.")
+    public boolean allowCombatItemDrops = false;
+    @Setting(value = "combat-timeout", comment = "How long combat is considered to continue after the most recent damage.")
+    public int combatTimeout = 15;
+    @Setting(value = "protect-fresh-spawns", comment = "Whether to make newly spawned players immune until they pick up an item.")
+    public boolean protectFreshSpawns = true;
+    @Setting(value = "protect-players-in-claims", comment = "Whether players may fight in player-owned land claims.")
+    public boolean protectPlayersInClaims = false;
+    @Setting(value = "protect-players-in-adminclaims", comment = "Whether players may fight in admin-owned land claims.")
+    public boolean protectPlayersInAdminClaims = false;
+    @Setting(value = "protect-players-in-subdivisions", comment = "Whether players may fight in subdivisions of admin-owned land claims.")
+    public boolean protectPlayersInAdminSubDivisions = false;
+    @Setting(value = "punish-logout", comment = "Whether to kill players who log out during PvP combat.")
+    public boolean punishPvpLogout = true;
+    @Setting(value = "blocked-commands", comment = "Commands blocks from being used during PvP combat.")
+    public List<String> blockedCommandList = new ArrayList<>();
+}

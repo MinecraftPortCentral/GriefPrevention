@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,8 +34,8 @@ import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.SiegeData;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
+import me.ryanhamshire.griefprevention.configuration.IClaimData;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
-import me.ryanhamshire.griefprevention.configuration.ClaimStorageData.ClaimData;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import net.minecraft.inventory.IInventory;
 import org.spongepowered.api.Sponge;
@@ -93,7 +94,7 @@ public class Claim implements ContextSource {
     public UUID ownerID;
 
     private ClaimStorageData claimStorage;
-    private ClaimData claimData;
+    private IClaimData claimData;
 
     // whether or not this claim is in the data store
     // if a claim instance isn't in the data store, it isn't "active" - players can't interract with it
@@ -379,12 +380,7 @@ public class Claim implements ContextSource {
     }
 
     // build permission check
-    public String allowBuild(User user, BlockSnapshot blockSnapshot) {
-        if (!blockSnapshot.getLocation().isPresent()) {
-            return null;
-        }
-
-        Location<World> location = blockSnapshot.getLocation().get();
+    public String allowBuild(User user, Location<World> location) {
         // when a player tries to build in a claim, if he's under siege, the
         // siege may extend to include the new claim
         if (user instanceof Player) {
@@ -420,7 +416,7 @@ public class Claim implements ContextSource {
         }
 
         // allow for farming with /containertrust permission
-        if (this.allowAccess(user, Optional.of(location)) == null) {
+        if (this.allowAccess(user, Optional.of(location), location.getBlockType().getId()) == null) {
             // do allow for farming, if player has /containertrust permission
             if (this.placeableForFarming(location.getBlock().getType())) {
                 return null;
@@ -438,7 +434,7 @@ public class Claim implements ContextSource {
 
         // subdivision permission inheritance
         if (this.parent != null) {
-            return this.parent.allowBuild(user, blockSnapshot);
+            return this.parent.allowBuild(user, location);
         }
 
         // failure message for all other cases
@@ -502,11 +498,11 @@ public class Claim implements ContextSource {
     }
 
     public String allowAccess(User user) {
-        return allowAccess(user, Optional.empty());
+        return allowAccess(user, Optional.empty(), "");
     }
 
     // access permission check
-    public String allowAccess(User user, Optional<Location<World>> location) {
+    public String allowAccess(User user, Optional<Location<World>> location, String type) {
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
@@ -560,20 +556,12 @@ public class Claim implements ContextSource {
             return null;
         }
         if (!tileEntity.isPresent()) {
-            if (this.getClaimData().getAccessors().contains(GriefPrevention.PUBLIC_UUID) 
-                    || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
-                return null;
+            if (!this.getClaimData().getBannedItemList().contains(type)) {
+                if (this.getClaimData().getAccessors().contains(GriefPrevention.PUBLIC_UUID) 
+                        || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
+                    return null;
+                }
             }
-        }
-
-        if (!location.isPresent()) {
-            // handle special cases like Item Frames which will always pass AIR location
-            if (user instanceof Player) {
-                // If we have no access location, use user's location instead to check permissions
-                Location<World> userLocation = ((Player) user).getLocation();
-                return this.allowAccess(user, Optional.of(userLocation));
-            }
-            return null;
         }
 
         // Check for TNT and explosions flag
@@ -584,7 +572,7 @@ public class Claim implements ContextSource {
 
         // permission inheritance for subdivisions
         if (this.parent != null) {
-            return this.parent.allowAccess(user, location);
+            return this.parent.allowAccess(user, location, type);
         }
 
         return GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
@@ -895,7 +883,7 @@ public class Claim implements ContextSource {
         return chunkStrings;
     }
 
-    public ClaimData getClaimData() {
+    public IClaimData getClaimData() {
         return this.claimData;
     }
 
@@ -903,7 +891,7 @@ public class Claim implements ContextSource {
         return this.claimStorage;
     }
 
-    public void setClaimData(ClaimData data) {
+    public void setClaimData(IClaimData data) {
         this.claimData = data;
     }
 
@@ -915,9 +903,9 @@ public class Claim implements ContextSource {
         String nonMetaItemString = type.getId();
         String metaItemString = type.getId() + ":" + meta;
         // TODO: fix possible NPE here
-        if (this.claimStorage.getConfig().protectionBlacklist.contains(nonMetaItemString)) {
+        if (this.claimStorage.getConfig().getProtectionBlackList().contains(nonMetaItemString)) {
             return true;
-        } else if (this.claimStorage.getConfig().protectionBlacklist.contains(metaItemString)) {
+        } else if (this.claimStorage.getConfig().getProtectionBlackList().contains(metaItemString)) {
             return true;
         } else {
             return false;

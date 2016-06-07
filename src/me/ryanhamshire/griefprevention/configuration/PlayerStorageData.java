@@ -1,3 +1,27 @@
+/*
+ * This file is part of GriefPrevention, licensed under the MIT License (MIT).
+ *
+ * Copyright (c) bloodmc
+ * Copyright (c) contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package me.ryanhamshire.griefprevention.configuration;
 
 import com.google.common.reflect.TypeToken;
@@ -8,8 +32,6 @@ import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.spongepowered.api.util.Functional;
 import org.spongepowered.common.SpongeImpl;
@@ -33,14 +55,8 @@ public class PlayerStorageData {
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
             .setHeader(HEADER));
-    private ObjectMapper<PlayerDataNode>.BoundInstance configMapper;
-    private PlayerDataNode configBase;
-
-    // MAIN
-    public static final String PLAYER_UUID = "uuid";
-    //public static final String PLAYER_CLAIMS = "claims";
-    public static final String PLAYER_ACCRUED_CLAIM_BLOCKS = "accrued-claim-blocks";
-    public static final String PLAYER_BONUS_CLAIM_BLOCKS = "bonus-claim-blocks";
+    private ObjectMapper<PlayerDataConfig>.BoundInstance configMapper;
+    private PlayerDataConfig configBase;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public PlayerStorageData(Path path, UUID playerUniqueId, int initialClaimBlocks) {
@@ -52,9 +68,9 @@ public class PlayerStorageData {
             }
 
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
-            this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(PlayerDataNode.class).bindToNew();
-            this.configMapper.getInstance().accruedClaimBlocks = initialClaimBlocks;
-            this.configMapper.getInstance().playerUniqueId = playerUniqueId.toString();
+            this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(PlayerDataConfig.class).bindToNew();
+            this.configMapper.getInstance().setAccruedClaimBlocks(initialClaimBlocks);
+            this.configMapper.getInstance().setPlayerUniqueId(playerUniqueId);
 
             reload();
             save();
@@ -63,14 +79,17 @@ public class PlayerStorageData {
         }
     }
 
-    public PlayerDataNode getConfig() {
+    public PlayerDataConfig getConfig() {
         return this.configBase;
     }
 
     public void save() {
         try {
-            this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
-            this.loader.save(this.root);
+            if (this.configBase.requiresSave()) {
+                this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
+                this.loader.save(this.root);
+                this.configBase.setRequiresSave(false);
+            }
         } catch (IOException | ObjectMappingException e) {
             SpongeImpl.getLogger().error("Failed to save configuration", e);
         }
@@ -110,22 +129,5 @@ public class PlayerStorageData {
             String prop = key.substring(key.indexOf('.') + 1);
             return getRootNode().getNode(category).getNode(prop);
         }
-    }
-
-    @ConfigSerializable
-    public static class PlayerDataNode {
-
-        @Setting(value = PLAYER_UUID, comment = "The player's uuid.")
-        public String playerUniqueId;
-        @Setting(value = PLAYER_ACCRUED_CLAIM_BLOCKS, comment = "How many claim blocks the player has earned in world via play time.")
-        public int accruedClaimBlocks;
-        @Setting(value = PLAYER_BONUS_CLAIM_BLOCKS,
-                comment = "How many claim blocks the player has been gifted in world by admins, or purchased via economy integration.")
-        public int bonusClaimBlocks = 0;
-    }
-
-    @ConfigSerializable
-    private static class Category {
-
     }
 }

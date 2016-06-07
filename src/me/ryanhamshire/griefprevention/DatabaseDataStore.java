@@ -26,6 +26,7 @@ package me.ryanhamshire.griefprevention;
 
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorageService;
@@ -236,7 +237,7 @@ public class DatabaseDataStore extends DataStore {
                 String lesserCornerString = "(location not available)";
                 try {
                     lesserCornerString = results.getString("lessercorner");
-                    Vector3i lesserPos = positionFromString(lesserCornerString);
+                    Vector3i lesserPos = BlockUtils.positionFromString(lesserCornerString);
                     // lesserBoundaryCorner = positionFromString(lesserCornerString);
 
                     String greaterCornerString = results.getString("greatercorner");
@@ -319,7 +320,7 @@ public class DatabaseDataStore extends DataStore {
 
     // see datastore.cs. this will ALWAYS be a top level claim
     @Override
-    synchronized void writeClaimToStorage(Claim claim) {
+    void writeClaimToStorage(Claim claim) {
         try {
             this.refreshDataConnection();
 
@@ -335,7 +336,7 @@ public class DatabaseDataStore extends DataStore {
     }
 
     // actually writes claim data to the database
-    synchronized private void writeClaimData(Claim claim) throws SQLException {
+    private void writeClaimData(Claim claim) throws SQLException {
         /*String lesserCornerString = this.locationToString(claim.getLesserBoundaryCorner());
         String greaterCornerString = this.locationToString(claim.getGreaterBoundaryCorner());
         String owner = "";
@@ -402,7 +403,7 @@ public class DatabaseDataStore extends DataStore {
 
     // deletes a claim from the database
     @Override
-    synchronized void deleteClaimFromSecondaryStorage(Claim claim) {
+    void deleteClaimFromSecondaryStorage(Claim claim) {
         try {
             this.refreshDataConnection();
 
@@ -416,7 +417,7 @@ public class DatabaseDataStore extends DataStore {
     }
 
     /*@Override
-    synchronized PlayerData getPlayerDataFromStorage(UUID playerID) {
+    PlayerData getPlayerDataFromStorage(UUID playerID) {
         PlayerData playerData = new PlayerData();
         playerData.playerID = playerID;
 
@@ -474,13 +475,13 @@ public class DatabaseDataStore extends DataStore {
     }*/
 
     @Override
-    synchronized void incrementNextClaimID() {
+    void incrementNextClaimID() {
         //this.setNextClaimID(this.nextClaimID + 1);
     }
 
     // sets the next claim ID. used by incrementNextClaimID() above, and also
     // while migrating data from a flat file data store
-    synchronized void setNextClaimID(long nextID) {
+    void setNextClaimID(long nextID) {
         // this.nextClaimID = nextID;
 
         try {
@@ -497,7 +498,7 @@ public class DatabaseDataStore extends DataStore {
 
     // updates the database with a group's bonus blocks
     @Override
-    synchronized void saveGroupBonusBlocks(String groupName, int currentValue) {
+    void saveGroupBonusBlocks(String groupName, int currentValue) {
         // group bonus blocks are stored in the player data table, with player
         // name = $groupName
         try {
@@ -517,7 +518,7 @@ public class DatabaseDataStore extends DataStore {
         }
     }
 
-    synchronized void close() {
+    void close() {
         if (this.databaseConnection != null) {
             try {
                 if (!this.databaseConnection.isClosed()) {
@@ -531,7 +532,7 @@ public class DatabaseDataStore extends DataStore {
         this.databaseConnection = null;
     }
 
-    private synchronized void refreshDataConnection() throws SQLException {
+    private void refreshDataConnection() throws SQLException {
         if (this.databaseConnection == null || !this.databaseConnection.isValid(3)) {
             // set username/pass properties
             Properties connectionProps = new Properties();
@@ -607,6 +608,10 @@ public class DatabaseDataStore extends DataStore {
 
     @Override
     public void unloadWorldData(WorldProperties worldProperties) {
+    }
+
+    @Override
+    void loadClaimTemplates() {
     }
 
 }

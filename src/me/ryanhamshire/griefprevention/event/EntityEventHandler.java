@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -58,7 +59,8 @@ import org.spongepowered.api.event.entity.AttackEntityEvent;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
-import org.spongepowered.api.event.filter.IsCancelled;
+import org.spongepowered.api.event.filter.cause.First;
+import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.item.ItemTypes;
@@ -86,7 +88,7 @@ public class EntityEventHandler {
         this.dataStore = dataStore;
     }
 
-    @Listener
+    @Listener(order = Order.FIRST)
     public void onExplosion(ExplosionEvent.Pre event) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
@@ -122,7 +124,7 @@ public class EntityEventHandler {
     }
 
     // when a creature spawns...
-    @Listener(order = Order.EARLY)
+    @Listener(order = Order.FIRST)
     public void onSpawnEntity(SpawnEntityEvent event) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
@@ -201,8 +203,7 @@ public class EntityEventHandler {
         }
     }
 
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener
+    @Listener(order = Order.FIRST)
     public void onEntityAttack(AttackEntityEvent event) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
@@ -213,8 +214,7 @@ public class EntityEventHandler {
         }
     }
 
-    @IsCancelled(Tristate.UNDEFINED)
-    @Listener
+    @Listener(order = Order.FIRST)
     public void onEntityDamage(DamageEntityEvent event) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
@@ -439,17 +439,12 @@ public class EntityEventHandler {
     }
 
     // when an entity drops items on death
-    @Listener(order = Order.LAST)
-    public void onEntityDropItemDeath(DropItemEvent.Destruct event) {
+    @Listener(order = Order.FIRST)
+    public void onEntityDropItemDeath(DropItemEvent.Destruct event, @Root Living livingEntity) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
 
-        if (!(event.getCause().root() instanceof Living)) {
-            return;
-        }
-
-        Living livingEntity = (Living) event.getCause().root();
         // special rule for creative worlds: killed entities don't drop items or experience orbs
         if (GriefPrevention.instance.claimModeIsActive(livingEntity.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
             GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: Drops not allowed in creative worlds.]", CustomLogEntryTypes.Debug);

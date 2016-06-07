@@ -26,7 +26,7 @@ package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerDataWorldManager;
+import me.ryanhamshire.griefprevention.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
@@ -43,18 +43,18 @@ import java.util.Iterator;
 public class CleanupUnusedClaimsTask implements Runnable {
 
     private WorldProperties worldProperties;
-    private PlayerDataWorldManager playerWorldManager;
+    private ClaimWorldManager claimWorldManager;
 
     public CleanupUnusedClaimsTask(WorldProperties worldProperties) {
         this.worldProperties = worldProperties;
-        this.playerWorldManager = GriefPrevention.instance.dataStore.getPlayerDataWorldManager(this.worldProperties);
+        this.claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(this.worldProperties);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void run() {
         // don't do anything when there are no claims
-        ArrayList<Claim> claimList = (ArrayList<Claim>) this.playerWorldManager.getWorldClaims();
+        ArrayList<Claim> claimList = (ArrayList<Claim>) this.claimWorldManager.getWorldClaims();
         if (claimList.size() == 0) {
             return;
         }

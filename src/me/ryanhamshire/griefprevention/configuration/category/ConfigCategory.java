@@ -22,34 +22,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.event;
+package me.ryanhamshire.griefprevention.configuration.category;
 
-import me.ryanhamshire.griefprevention.ClaimWorldManager;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.world.LoadWorldEvent;
-import org.spongepowered.api.event.world.SaveWorldEvent;
-import org.spongepowered.api.event.world.UnloadWorldEvent;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
-public class WorldEventHandler {
+@ConfigSerializable
+public abstract class ConfigCategory {
 
-    @Listener
-    public void onWorldLoad(LoadWorldEvent event) {
-        GriefPrevention.instance.dataStore.loadWorldData(event.getTargetWorld().getProperties());
-    }
-
-    @Listener
-    public void onWorldUnload(UnloadWorldEvent event) {
-        GriefPrevention.instance.dataStore.unloadWorldData(event.getTargetWorld().getProperties());
-    }
-
-    @Listener
-    public void onWorldSave(SaveWorldEvent event) {
-        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
-        if (claimWorldManager == null) {
-            return;
-        }
-
-        claimWorldManager.save();
-    }
 }

@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -200,24 +201,24 @@ public class PlayerData {
         // if player is over accrued limit, accrued limit was probably reduced
         // in config file AFTER he accrued
         // in that case, leave his blocks where they are
-        int currentTotal = this.playerStorage.getConfig().accruedClaimBlocks;
+        int currentTotal = this.playerStorage.getConfig().getAccruedClaimBlocks();
         if (currentTotal >= this.activeConfig.getConfig().claim.maxAccruedBlocks) {
             return currentTotal;
         }
 
-        return this.playerStorage.getConfig().accruedClaimBlocks;
+        return this.playerStorage.getConfig().getAccruedClaimBlocks();
     }
 
     public void setAccruedClaimBlocks(int accruedClaimBlocks) {
-        this.playerStorage.getConfig().accruedClaimBlocks = accruedClaimBlocks;
+        this.playerStorage.getConfig().setAccruedClaimBlocks(accruedClaimBlocks);
     }
 
     public int getBonusClaimBlocks() {
-        return this.playerStorage.getConfig().bonusClaimBlocks;
+        return this.playerStorage.getConfig().getBonusClaimBlocks();
     }
 
     public void setBonusClaimBlocks(int bonusClaimBlocks) {
-        this.playerStorage.getConfig().bonusClaimBlocks = bonusClaimBlocks;
+        this.playerStorage.getConfig().setBonusClaimBlocks(bonusClaimBlocks);
     }
 
     public void saveAllData() {

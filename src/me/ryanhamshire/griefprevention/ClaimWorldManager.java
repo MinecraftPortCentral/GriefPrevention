@@ -37,10 +37,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
-public class PlayerDataWorldManager {
+public class ClaimWorldManager {
 
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
     private WorldProperties worldProperties;
@@ -57,14 +58,16 @@ public class PlayerDataWorldManager {
     private List<Claim> worldClaims = new ArrayList<>();
     // Claim UUID -> Claim
     private Map<UUID, Claim> claimUniqueIdMap = Maps.newHashMap();
+    // String -> Claim
+    private ConcurrentHashMap<String, List<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
 
-    public PlayerDataWorldManager() {
+    public ClaimWorldManager() {
         this.worldProperties = null;
         this.activeConfig = GriefPrevention.getGlobalConfig();
         this.useGlobalStorage = true;
     }
 
-    public PlayerDataWorldManager(WorldProperties worldProperties) {
+    public ClaimWorldManager(WorldProperties worldProperties) {
         this.worldProperties = worldProperties;
         this.activeConfig = GriefPrevention.getActiveConfig(worldProperties);
     }
@@ -94,6 +97,18 @@ public class PlayerDataWorldManager {
 
         PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath, playerUniqueId, this.activeConfig.getConfig().general.claimInitialBlocks);
         List<Claim> claimList = new ArrayList<>();
+        for (Claim claim : this.worldClaims) {
+            if (claim.parent != null) {
+               if (claim.parent.ownerID.equals(playerUniqueId)) {
+                   claimList.add(claim);
+               }
+            } else {
+                if (claim.ownerID.equals(playerUniqueId)) {
+                    claimList.add(claim);
+                }
+            }
+        }
+
         playerData = new PlayerData(this.worldProperties, playerUniqueId, playerStorage, this.activeConfig, claimList);
         this.playerStorageList.put(playerUniqueId, playerStorage);
         this.playerDataList.put(playerUniqueId, playerData);
@@ -107,24 +122,34 @@ public class PlayerDataWorldManager {
         this.playerDataList.remove(playerUniqueId);
     }
 
-    public void addPlayerClaim(Claim claim) {
-        // validate player data
-        if (claim.ownerID != null && this.playerDataList.get(claim.ownerID) == null) {
-            // create PlayerData for claim
-            createPlayerData(claim.ownerID);
-        }
-
-        if (claim.parent == null) {
-            List<Claim> claims = this.playerClaimList.get(claim.ownerID);
-            claims.add(claim);
+    public void addWorldClaim(Claim claim) {
+        UUID ownerId = claim.ownerID;
+        if (!this.worldClaims.contains(claim)) {
             this.worldClaims.add(claim);
+        }
+        if (!this.claimUniqueIdMap.containsKey(claim.id)) {
             this.claimUniqueIdMap.put(claim.id, claim);
-            return;
         }
 
-        // subdivisions are added under their parent, not directly to the hash map for direct search
-        if (!claim.parent.children.contains(claim)) {
-            claim.parent.children.add(claim);
+        PlayerData playerData = this.playerDataList.get(ownerId);
+        if (claim.parent == null && playerData != null) {
+            List<Claim> playerClaims = playerData.getClaims();
+            if (!playerClaims.contains(claim)) {
+                playerClaims.add(claim);
+            }
+        } else {
+            createPlayerData(ownerId);
+        }
+
+        ArrayList<String> chunkStrings = claim.getChunkStrings();
+        for (String chunkString : chunkStrings) {
+            List<Claim> claimsInChunk = this.getChunksToClaimsMap().get(chunkString);
+            if (claimsInChunk == null) {
+                claimsInChunk = new ArrayList<Claim>();
+                this.getChunksToClaimsMap().put(chunkString, claimsInChunk);
+            }
+
+            claimsInChunk.add(claim);
         }
     }
 
@@ -141,11 +166,18 @@ public class PlayerDataWorldManager {
 
     @Nullable
     public List<Claim> getPlayerClaims(UUID playerUniqueId) {
+        if (this.playerClaimList.get(playerUniqueId) == null) {
+            this.createPlayerData(playerUniqueId);
+        }
         return this.playerClaimList.get(playerUniqueId);
     }
 
     public List<Claim> getWorldClaims() {
         return this.worldClaims;
+    }
+
+    public ConcurrentHashMap<String, List<Claim>> getChunksToClaimsMap() {
+        return this.chunksToClaimsMap;
     }
 
     public void changeClaimOwner(Claim claim, UUID newOwnerID) throws NoTransferException {

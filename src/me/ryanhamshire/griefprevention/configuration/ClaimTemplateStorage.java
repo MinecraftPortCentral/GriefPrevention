@@ -25,8 +25,8 @@
 package me.ryanhamshire.griefprevention.configuration;
 
 import com.google.common.reflect.TypeToken;
+import me.ryanhamshire.griefprevention.FlatFileDataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.claim.Claim;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -34,17 +34,17 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
-import org.spongepowered.api.util.Functional;
 import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.util.IpSet;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.UUID;
 
-public class ClaimStorageData {
+public class ClaimTemplateStorage {
 
     public static final String HEADER = "12.1.7\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
@@ -55,33 +55,12 @@ public class ClaimStorageData {
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
             .setHeader(HEADER));
-    private ObjectMapper<ClaimDataConfig>.BoundInstance configMapper;
-    private ClaimDataConfig configBase;
+    private ObjectMapper<ClaimTemplateConfig>.BoundInstance configMapper;
+    private ClaimTemplateConfig configBase;
     public Path filePath;
 
-    // MAIN
-    public static final String MAIN_WORLD_UUID = "world-uuid";
-    public static final String MAIN_OWNER_UUID = "owner-uuid";
-    public static final String MAIN_CLAIM_NAME = "claim-name";
-    public static final String MAIN_CLAIM_GREETING = "claim-greeting";
-    public static final String MAIN_CLAIM_FAREWELL = "claim-farewell";
-    public static final String MAIN_CLAIM_TYPE = "claim-type";
-    public static final String MAIN_CLAIM_DATE_CREATED = "date-created";
-    public static final String MAIN_CLAIM_DATE_LAST_ACTIVE = "date-last-active";
-    public static final String MAIN_SUBDIVISION_UUID = "uuid";
-    public static final String MAIN_PARENT_CLAIM_UUID = "parent-claim-uuid";
-    public static final String MAIN_LESSER_BOUNDARY_CORNER = "lesser-boundary-corner";
-    public static final String MAIN_GREATER_BOUNDARY_CORNER = "greater-boundary-corner";
-    public static final String MAIN_ACCESSORS = "accessors";
-    public static final String MAIN_BUILDERS = "builders";
-    public static final String MAIN_CONTAINERS = "managers";
-    public static final String MAIN_COOWNERS = "coowners";
-    public static final String MAIN_PROTECTION_BLACKLIST = "bypass-protection-items";
-    public static final String MAIN_BANNED_ITEM_LIST = "banned-item-ids";
-    public static final String MAIN_SUBDIVISIONS = "sub-divisions";
-
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public ClaimStorageData(Claim claim, Path path) {
+    public ClaimTemplateStorage(Path path) {
         this.filePath = path;
         try {
             Files.createDirectories(path.getParent());
@@ -90,46 +69,52 @@ public class ClaimStorageData {
             }
 
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
-            this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bindToNew();
-            this.configMapper.getInstance().setWorldUniqueId(claim.id);
-            this.configMapper.getInstance().setClaimOwnerUniqueId(claim.ownerID);
+            this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimTemplateConfig.class).bindToNew();
+
             reload();
             save();
         } catch (Exception e) {
-            SpongeImpl.getLogger().error("Failed to initialize configuration", e);
+            SpongeImpl.getLogger().error("Failed to initialize claim template data", e);
         }
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public ClaimStorageData(Path path) {
-        this.filePath = path;
+    public ClaimTemplateStorage(String templateName, Optional<String> description, IClaimData claimData, UUID creator) {
+        this.filePath = FlatFileDataStore.rootWorldSavePath.resolve(FlatFileDataStore.claimTemplatePath.resolve(UUID.randomUUID().toString()));
         try {
-            Files.createDirectories(path.getParent());
-            if (Files.notExists(path)) {
-                Files.createFile(path);
+            Files.createDirectories(this.filePath.getParent());
+            if (Files.notExists(this.filePath)) {
+                Files.createFile(this.filePath);
             }
 
-            this.loader = HoconConfigurationLoader.builder().setPath(path).build();
-            this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bindToNew();
+            this.loader = HoconConfigurationLoader.builder().setPath(this.filePath).build();
+            this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimTemplateConfig.class).bindToNew();
 
             reload();
+            this.configBase.templateName = templateName;
+            if (description.isPresent()) {
+                this.configBase.templateDescription = description.get();
+            }
+            this.configBase.ownerUniqueId = creator;
+            this.configBase.accessors = new ArrayList<UUID>(claimData.getAccessors());
+            this.configBase.builders = new ArrayList<UUID>(claimData.getBuilders());
+            this.configBase.containers = new ArrayList<UUID>(claimData.getContainers());
+            this.configBase.coowners = new ArrayList<UUID>(claimData.getCoowners());
+            this.configBase.flags = claimData.getFlags().copyFlags();
             save();
         } catch (Exception e) {
-            SpongeImpl.getLogger().error("Failed to initialize configuration", e);
+            SpongeImpl.getLogger().error("Failed to initialize claim template data", e);
         }
     }
 
-    public ClaimDataConfig getConfig() {
+    public ClaimTemplateConfig getConfig() {
         return this.configBase;
     }
 
     public void save() {
         try {
-            if (this.configBase.requiresSave()) {
-                this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
-                this.loader.save(this.root);
-                this.configBase.setRequiresSave(false);
-            }
+            this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
+            this.loader.save(this.root);
         } catch (IOException | ObjectMappingException e) {
             SpongeImpl.getLogger().error("Failed to save configuration", e);
         }
@@ -147,27 +132,7 @@ public class ClaimStorageData {
         }
     }
 
-    public CompletableFuture<CommentedConfigurationNode> updateSetting(String key, Object value) {
-        return Functional.asyncFailableFuture(() -> {
-            CommentedConfigurationNode upd = getSetting(key);
-            upd.setValue(value);
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
-            this.loader.save(this.root);
-            return upd;
-        }, ForkJoinPool.commonPool());
-    }
-
     public CommentedConfigurationNode getRootNode() {
         return this.root.getNode(GriefPrevention.MOD_ID);
-    }
-
-    public CommentedConfigurationNode getSetting(String key) {
-        if (!key.contains(".") || key.indexOf('.') == key.length() - 1) {
-            return null;
-        } else {
-            String category = key.substring(0, key.indexOf('.'));
-            String prop = key.substring(key.indexOf('.') + 1);
-            return getRootNode().getNode(category).getNode(prop);
-        }
     }
 }

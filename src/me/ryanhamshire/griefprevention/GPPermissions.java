@@ -1,7 +1,7 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -53,6 +53,7 @@ public class GPPermissions {
     public static final String ADJUST_CLAIM_BLOCKS = "griefprevention.admin.adjust-claim-blocks";
     public static final String CLAIMS_ADMIN = "griefprevention.admin.admin-claims";
     public static final String CLAIMS_LIST_ADMIN = "griefprevention.admin.list-admin-claims";
+    public static final String CLAIM_TEMPLATES_ADMIN = "griefprevention.admin.claim-templates";
     public static final String DELETE_CLAIMS = "griefprevention.admin.delete-claims";
     public static final String DELETE_ADMIN_CLAIMS = "griefprevention.admin.delete-admin-claims";
     public static final String IGNORE_CLAIMS = "griefprevention.admin.ignore-claims";
@@ -60,12 +61,11 @@ public class GPPermissions {
     public static final String RESTORE_NATURE = "griefprevention.admin.restore-nature";
     public static final String RESTORE_NATURE_AGGRESSIVE = "griefprevention.admin.restore-nature-aggressive";
     public static final String RESTORE_NATURE_FILL = "griefprevention.admin.restore-nature-fill";
-
-    // Item bans
-    public static final String BAN_ITEM = "griefprevention.items.ban";
-    public static final String UNBAN_ITEM = "griefprevention.items.unban";
-    public static final String LIST_ITEM_BANS = "griefprevention.items.list";
-    public static final String IGNORE_ITEM_BANS = "griefprevention.items.ignore";
+    public static final String PORTAL_CREATE_SURVIVAL = "griefprevention.admin.portal-create-survival";
+    public static final String BAN_ITEM = "griefprevention.admin.ban-item";
+    public static final String UNBAN_ITEM = "griefprevention.admin.unban-item";
+    public static final String LIST_ITEM_BANS = "griefprevention.admin.list-banned-items";
+    public static final String IGNORE_ITEM_BANS = "griefprevention.admin.ignore-banned-items";
 
     // Players
     public static final String IGNORE_PLAYER = "griefprevention.players.ignore";
