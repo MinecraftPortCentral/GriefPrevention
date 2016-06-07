@@ -71,6 +71,8 @@ public interface IClaimData {
 
     void setClaimOwnerUniqueId(UUID newClaimOwner);
 
+    void setWorldUniqueId(UUID uuid);
+
     void setClaimType(Claim.Type type);
 
     void setDateLastActive(String date);

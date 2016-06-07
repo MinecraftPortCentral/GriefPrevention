@@ -515,8 +515,8 @@ public abstract class DataStore {
             newClaim.setClaimData(subData);
             newClaim.getClaimStorage().getConfig().getSubdivisions().put(claimId, subData);
             newClaim.parent.children.add(newClaim);
-            newClaim.getClaimData().setRequiresSave(true);
-            newClaim.getClaimStorage().save();
+            newClaim.parent.getClaimStorage().getConfig().setRequiresSave(true);
+            newClaim.parent.getClaimStorage().save();
             newClaim.inDataStore = true;
         } else {
             claimsToCheck = (ArrayList<Claim>) this.getClaimWorldManager(world.getProperties()).getWorldClaims();

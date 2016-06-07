@@ -75,6 +75,8 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     @Setting
     public ClaimDataFlagsCategory flags = new ClaimDataFlagsCategory();
 
+    public SubDivisionDataConfig() {}
+
     public SubDivisionDataConfig(Claim claim) {
         this.lesserBoundaryCornerPos = BlockUtils.positionToString(claim.lesserBoundaryCorner);
         this.greaterBoundaryCornerPos = BlockUtils.positionToString(claim.greaterBoundaryCorner);
@@ -150,6 +152,10 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
 
     public List<String> getBannedItemList() {
         return this.bannedItemList;
+    }
+
+    @Override
+    public void setWorldUniqueId(UUID uuid) {
     }
 
     @Override

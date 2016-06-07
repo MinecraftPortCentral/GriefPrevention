@@ -301,6 +301,8 @@ public class FlatFileDataStore extends DataStore {
             subDivision.parent = claim;
             subDivision.type = Claim.Type.SUBDIVISION;
             subDivision.setClaimData(subDivisionData);
+            // this needs to be set or visuals will not work
+            subDivision.inDataStore = true;
             // add subdivision to parent
             claim.children.add(subDivision);
         }
