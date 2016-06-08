@@ -159,7 +159,7 @@ public class CommandHelper {
         if (claim.getClaimData().getFlags().getFlagValue(flag) != null) {
             if (targetPlayer.isPresent()) {
                 Subject subj = targetPlayer.get().getContainingCollection().get(targetPlayer.get().getIdentifier());
-                subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
+                subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
                         Tristate.fromBoolean(Boolean.valueOf(value)));
                 sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", targetPlayer.get().getName(), "."));
             } else if (group == null) {
@@ -168,7 +168,7 @@ public class CommandHelper {
                 PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
                 Subject subj = service.getGroupSubjects().get(group);
                 if (subj != null) {
-                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission + flag,
+                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
                             Tristate.fromBoolean(Boolean.valueOf(value)));
                     sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for group ", group, "."));
                 } else {

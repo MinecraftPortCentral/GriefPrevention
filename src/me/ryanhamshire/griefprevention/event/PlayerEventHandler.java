@@ -1033,6 +1033,14 @@ public class PlayerEventHandler {
             Location<World> location = entityItem.getLocation();
             Claim claim = this.dataStore.getClaimAt(location, false, null);
             if (claim != null) {
+                Tristate perm = GPFlags.getClaimFlagPermission(user, claim, GPPermissions.ITEM_DROP);
+                if (perm == Tristate.TRUE) {
+                    return;
+                } else if (perm == Tristate.FALSE) {
+                    event.setCancelled(true);
+                    return;
+                }
+
                 String reason = claim.allowAccess(player);
                 if (reason != null) {
                     if (event.getCause().root() instanceof Player) {
