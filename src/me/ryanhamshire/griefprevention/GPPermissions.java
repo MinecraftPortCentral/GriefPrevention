@@ -37,6 +37,8 @@ public class GPPermissions {
     public static final String CLAIM_MODE_BASIC = "griefprevention.claims.basic-mode";
     public static final String GIVE_CLAIM_BOOK = "griefprevention.claims.book";
     public static final String CLAIM_MANAGE_FLAGS = "griefprevention.claims.flag";
+    public static final String CLAIM_MANAGE_GROUP_FLAGS = "griefprevention.claims.flag-group";
+    public static final String CLAIM_MANAGE_PLAYER_FLAGS = "griefprevention.claims.flag-player";
     public static final String GIVE_PET = "griefprevention.claims.givepet";
     public static final String CLAIM_INFO = "griefprevention.claims.info";
     public static final String SET_CLAIM_NAME = "griefprevention.claims.set-name";

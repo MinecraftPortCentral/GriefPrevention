@@ -37,7 +37,7 @@ import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
-import me.ryanhamshire.griefprevention.command.CommandAddFlagPermission;
+import me.ryanhamshire.griefprevention.command.CommandClaimFlagPlayer;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
 import me.ryanhamshire.griefprevention.command.CommandAdminBanItem;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandon;
@@ -51,6 +51,7 @@ import me.ryanhamshire.griefprevention.command.CommandClaimDelete;
 import me.ryanhamshire.griefprevention.command.CommandClaimDeleteAll;
 import me.ryanhamshire.griefprevention.command.CommandClaimDeleteAllAdmin;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag;
+import me.ryanhamshire.griefprevention.command.CommandClaimFlagGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimIgnore;
 import me.ryanhamshire.griefprevention.command.CommandClaimInfo;
 import me.ryanhamshire.griefprevention.command.CommandClaimList;
@@ -140,7 +141,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -326,27 +326,27 @@ public class GriefPrevention {
                 .description(Text.of("List all administrative claims"))
                 .permission(GPPermissions.CLAIMS_LIST_ADMIN)
                 .executor(new CommandClaimAdminList())
-                .build(), Arrays.asList("adminclaimslist", "claimadminlist"));
+                .build(), "adminclaimslist", "claimadminlist");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
                 .permission(GPPermissions.BAN_ITEM)
                 .arguments(optional(string(Text.of("itemid"))))
                 .executor(new CommandAdminBanItem())
-                .build(), Arrays.asList("banitem"));
+                .build(), "banitem");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool back to basic claims mode"))
                 .permission(GPPermissions.CLAIM_MODE_BASIC)
                 .executor(new CommandClaimBasic())
-                .build(), Arrays.asList("basicclaims"));
+                .build(), "basicclaims");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gives a player a manual about claiming land"))
                 .permission(GPPermissions.GIVE_CLAIM_BOOK)
                 .arguments(playerOrSource(Text.of("player")))
                 .executor(new CommandClaimBook())
-                .build(), Arrays.asList("claimbook"));
+                .build(), "claimbook");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
@@ -354,29 +354,29 @@ public class GriefPrevention {
                 .permission(GPPermissions.BUY_CLAIM_BLOCKS)
                 .arguments(optional(integer(Text.of("numberOfBlocks"))))
                 .executor(new CommandClaimBuy())
-                .build(), Arrays.asList("buyclaimblocks", "buyclaim"));
+                .build(), "buyclaimblocks", "buyclaim");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission(GPPermissions.DELETE_CLAIM)
                 .executor(new CommandClaimDelete())
-                .build(), Arrays.asList("deleteclaim", "dc"));
+                .build(), "deleteclaim", "dc");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Delete all of another player's claims"))
                 .permission(GPPermissions.DELETE_CLAIMS)
                 .arguments(player(Text.of("player")))
                 .executor(new CommandClaimDeleteAll())
-                .build(), Arrays.asList("deleteallclaims", "dac"));
+                .build(), "deleteallclaims", "dac");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Deletes all administrative claims"))
                 .permission(GPPermissions.DELETE_ADMIN_CLAIMS)
                 .executor(new CommandClaimDeleteAllAdmin())
-                .build(), Arrays.asList("deletealladminclaims"));
+                .build(), "deletealladminclaims");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Gets/Sets various claim flags in the claim you are standing in"))
+                .description(Text.of("Gets/Sets claim flags in the claim you are standing in"))
                 .permission(GPPermissions.CLAIM_MANAGE_FLAGS)
                 .arguments(GenericArguments.seq(optional(onlyOne(string(Text.of("flag")))),
                                 optional(GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
@@ -388,23 +388,27 @@ public class GriefPrevention {
                                 .put("true", Tristate.TRUE)
                                 .build())), onlyOne(GenericArguments.remainingJoinedStrings(Text.of("val")))))))
                                 .executor(new CommandClaimFlag(GPPermissions.CLAIM_MANAGE_FLAGS))
-                                .build(), Arrays.asList("claimflag"));
-
-        HashMap<String, String> targetChoices = new HashMap<>();
-        targetChoices.put("player", "player");
-        targetChoices.put("group", "group");
-        targetChoices.put("public", "public");
+                                .build(), "claimflag", "cf");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Adds flag permission to target."))
-                .permission(GPPermissions.FLAG_BASE)
+                .description(Text.of("Adds flag permission to group."))
+                .permission(GPPermissions.CLAIM_MANAGE_GROUP_FLAGS)
                 .arguments(GenericArguments.seq(
-                        GenericArguments.choices(Text.of("target"), targetChoices, true),
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("name"))),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("group"))),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
-                .executor(new CommandAddFlagPermission())
-                .build(), "gpflag");
+                .executor(new CommandClaimFlagGroup())
+                .build(), "claimflaggroup", "cfg");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Adds flag permission to player."))
+                .permission(GPPermissions.CLAIM_MANAGE_PLAYER_FLAGS)
+                .arguments(GenericArguments.seq(
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("player"))),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
+                        GenericArguments.onlyOne(GenericArguments.string(Text.of("value")))))
+                .executor(new CommandClaimFlagPlayer())
+                .build(), "claimflagplayer", "cfp");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Toggles ignore claims mode"))
@@ -459,86 +463,86 @@ public class GriefPrevention {
                 .arguments(GenericArguments
                         .firstParsing(GenericArguments.literal(Text.of("player"), "cancel"), player(Text.of("player"))))
                 .executor(new CommandGivePet())
-                .build(), Arrays.asList("givepet"));
+                .build(), "givepet");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Grief Prevention Help Command"))
                 .permission(GPPermissions.HELP)
                 .executor(new CommandHelp())
-                .build(), Arrays.asList("gphelp"));
+                .build(), "gphelp");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Lists the players you're ignoring in chat"))
                 .permission(GPPermissions.LIST_IGNORED_PLAYERS)
                 .executor(new CommandIgnoredPlayerList())
-                .build(), Arrays.asList("ignoredplayerlist", "ignoredlist"));
+                .build(), "ignoredplayerlist", "ignoredlist");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Ignores another player's chat messages"))
                 .permission(GPPermissions.IGNORE_PLAYER)
                 .arguments(onlyOne(player(Text.of("player"))))
                 .executor(new CommandIgnorePlayer())
-                .build(), Arrays.asList("ignoreplayer", "ignore"));
+                .build(), "ignoreplayer", "ignore");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Sets the name of your claim"))
                 .permission(GPPermissions.SET_CLAIM_NAME)
                 .arguments(string(Text.of("name")))
                 .executor(new CommandClaimName())
-                .build(), Arrays.asList("claimname"));
+                .build(), "claimname");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Reloads Grief Prevention's configuration settings"))
                 .permission(GPPermissions.RELOAD)
                 .executor(new CommandGpReload())
-                .build(), Arrays.asList("gpreload"));
+                .build(), "gpreload");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to restoration mode"))
                 .permission(GPPermissions.RESTORE_NATURE)
                 .executor(new CommandRestoreNature())
-                .build(), Arrays.asList("restorenature", "rn"));
+                .build(), "restorenature", "rn");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to aggressive restoration mode"))
                 .permission(GPPermissions.RESTORE_NATURE_AGGRESSIVE)
                 .executor(new CommandRestoreNatureAggressive())
-                .build(), Arrays.asList("restorenatureaggressive", "rna"));
+                .build(), "restorenatureaggressive", "rna");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to fill mode"))
                 .permission(GPPermissions.RESTORE_NATURE_FILL)
                 .arguments(optional(integer(Text.of("radius")), 2))
                 .executor(new CommandRestoreNatureFill())
-                .build(), Arrays.asList("restorenaturefill", "rnf"));
+                .build(), "restorenaturefill", "rnf");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Forces two players to ignore each other in chat"))
                 .permission(GPPermissions.SEPARATE_PLAYERS)
                 .arguments(onlyOne(player(Text.of("player1"))), onlyOne(player(Text.of("player2"))))
                 .executor(new CommandSeparate())
-                .build(), Arrays.asList("separate"));
+                .build(), "separate");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Updates a player's accrued claim block total"))
                 .permission(GPPermissions.SET_ACCRUED_CLAIM_BLOCKS)
                 .arguments(string(Text.of("player")), integer(Text.of("amount")))
                 .executor(new CommandSetAccruedClaimBlocks())
-                .build(), Arrays.asList("setaccruedclaimblocks", "scb"));
+                .build(), "setaccruedclaimblocks", "scb");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Initiates a siege versus another player"))
                 .arguments(optional(onlyOne(player(Text.of("playerName")))))
                 .permission(GPPermissions.SIEGE)
                 .executor(new CommandSiege())
-                .build(), Arrays.asList("siege"));
+                .build(), "siege");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Toggles whether a player's messages will only reach other soft-muted players"))
                 .permission(GPPermissions.SOFT_MUTE_PLAYER)
                 .arguments(onlyOne(player(Text.of("player"))))
                 .executor(new CommandSoftMute())
-                .build(), Arrays.asList("softmute"));
+                .build(), "softmute");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Grants a player full access to your claim(s)"))
@@ -547,47 +551,47 @@ public class GriefPrevention {
                 .permission(GPPermissions.GIVE_FULL_TRUST)
                 .arguments(string(Text.of("subject")))
                 .executor(new CommandTrust())
-                .build(), Arrays.asList("trust", "t"));
+                .build(), "trust", "t");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Lists permissions for the claim you're standing in"))
                 .permission(GPPermissions.LIST_TRUST)
                 .executor(new CommandTrustList())
-                .build(), Arrays.asList("trustlist"));
+                .build(), "trustlist");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Exports/Imports claim data."))
                 .permission(GPPermissions.CLAIM_TEMPLATES_ADMIN)
                 .arguments(string(Text.of("action")), optional(string(Text.of("name"))), optional(string(Text.of("description"))))
                 .executor(new CommandClaimTemplate())
-                .build(), Arrays.asList("claimtemplate"));
+                .build(), "claimtemplate");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
                 .permission(GPPermissions.UNBAN_ITEM)
                 .arguments(optional(string(Text.of("itemid"))))
                 .executor(new CommandUnbanItem())
-                .build(), Arrays.asList("unbanitem"));
+                .build(), "unbanitem");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Unignores another player's chat messages"))
                 .permission(GPPermissions.UNIGNORE_PLAYER)
                 .arguments(onlyOne(player(Text.of("player"))))
                 .executor(new CommandUnignorePlayer())
-                .build(), Arrays.asList("unignoreplayer", "unignore"));
+                .build(), "unignoreplayer", "unignore");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Allows other players to pick up the items you dropped when you died"))
                 .permission(GPPermissions.UNLOCK_DROPS)
                 .executor(new CommandUnlockDrops())
-                .build(), Arrays.asList("unlockdrops"));
+                .build(), "unlockdrops");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Reverses /separate"))
                 .permission(GPPermissions.UNSEPARATE_PLAYERS)
                 .arguments(onlyOne(player(Text.of("player1"))), onlyOne(player(Text.of("player2"))))
                 .executor(new CommandUnseparate())
-                .build(), Arrays.asList("unseparate"));
+                .build(), "unseparate");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Revokes a player's access to your claim"))

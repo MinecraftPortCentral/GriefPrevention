@@ -15,7 +15,7 @@ import org.spongepowered.api.text.Text;
 
 import java.util.Optional;
 
-public class CommandAddFlagPermission implements CommandExecutor {
+public class CommandClaimFlagPlayer implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -27,18 +27,18 @@ public class CommandAddFlagPermission implements CommandExecutor {
             return CommandResult.success();
         }
 
-        String target = ctx.<String>getOne("target").get();
-        String name = ctx.<String>getOne("name").get();
+        String name = ctx.<String>getOne("player").get();
         String flag = ctx.<String>getOne("flag").get();
         String value = ctx.<String>getOne("value").get();
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
         Optional<User> targetPlayer = GriefPrevention.instance.resolvePlayerByName(name);
-        if (!targetPlayer.isPresent() && target.equalsIgnoreCase("player")) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+        if (!targetPlayer.isPresent()) {
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "The playername " + name + " was not found."));
             return CommandResult.success();
         }
+        
 
-        return CommandHelper.addPermission(claim, player, targetPlayer, name, flag, GPPermissions.FLAG_BASE + "." + flag, value);
+        return CommandHelper.addPlayerPermission(claim, player, targetPlayer.get(), flag, GPPermissions.FLAG_BASE + "." + flag, value);
     }
 }

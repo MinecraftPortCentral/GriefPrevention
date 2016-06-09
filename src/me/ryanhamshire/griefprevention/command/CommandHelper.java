@@ -134,46 +134,39 @@ public class CommandHelper {
         }
     }
 
-    public static CommandResult handleFlagPermission(Player player, CommandContext ctx, String permission) {
-        String target = ctx.<String>getOne("target").get();
-        String name = ctx.<String>getOne("name").get();
-        String flag = ctx.<String>getOne("flag").get();
-        String value = ctx.<String>getOne("value").get();
-
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
-        Optional<User> targetPlayer = GriefPrevention.instance.resolvePlayerByName(name);
-        if (!targetPlayer.isPresent() && target.equalsIgnoreCase("player")) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
-            return CommandResult.success();
-        }
-
-        return addPermission(claim, player, targetPlayer, name, flag, permission, value);
-    }
-
-    public static CommandResult addPermission(Claim claim, Player sourcePlayer, Optional<User> targetPlayer, String group, String flag, String permission, String value) {
+    public static CommandResult addPlayerPermission(Claim claim, Player sourcePlayer, User targetPlayer, String flag, String permission, String value) {
         if (claim == null) {
             GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "No claim found."));
             return CommandResult.success();
         }
 
         if (claim.getClaimData().getFlags().getFlagValue(flag) != null) {
-            if (targetPlayer.isPresent()) {
-                Subject subj = targetPlayer.get().getContainingCollection().get(targetPlayer.get().getIdentifier());
+                Subject subj = targetPlayer.getContainingCollection().get(targetPlayer.getIdentifier());
                 subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
                         Tristate.fromBoolean(Boolean.valueOf(value)));
-                sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", targetPlayer.get().getName(), "."));
-            } else if (group == null) {
-                GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid player."));
-            } else { // group
-                PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
-                Subject subj = service.getGroupSubjects().get(group);
-                if (subj != null) {
-                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
-                            Tristate.fromBoolean(Boolean.valueOf(value)));
-                    sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for group ", group, "."));
-                } else {
-                    GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid group."));
-                }
+                sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", targetPlayer.getName(), "."));
+        } else {
+            GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid flag."));
+        }
+
+        return CommandResult.success();
+    }
+
+    public static CommandResult addGroupPermission(Claim claim, Player sourcePlayer, String group, String flag, String permission, String value) {
+        if (claim == null) {
+            GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "No claim found."));
+            return CommandResult.success();
+        }
+
+        if (claim.getClaimData().getFlags().getFlagValue(flag) != null) {
+            PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
+            Subject subj = service.getGroupSubjects().get(group);
+            if (subj != null) {
+                subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
+                        Tristate.fromBoolean(Boolean.valueOf(value)));
+                sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for group ", group, "."));
+            } else {
+                GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid group."));
             }
         } else {
             GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid flag."));

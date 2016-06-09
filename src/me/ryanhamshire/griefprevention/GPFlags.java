@@ -103,6 +103,10 @@ public class GPFlags {
     public static final String COMMENT_VILLAGER_TRADING = "Allow/deny villager trading.";
 
     public static Tristate getClaimFlagPermission(User user, Claim claim, String flag) {
+        if (claim.hasFullAccess(user)) {
+            return Tristate.TRUE;
+        }
+
         if (GriefPrevention.instance.permPluginInstalled) {
             Set<Context> contextSet = ImmutableSet.of(claim.getContext());
             Tristate value = user.getPermissionValue(contextSet, flag);
