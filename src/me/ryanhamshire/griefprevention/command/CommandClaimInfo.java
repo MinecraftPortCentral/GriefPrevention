@@ -12,6 +12,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
+import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 
@@ -80,11 +81,18 @@ public class CommandClaimInfo implements CommandExecutor {
                 coowners += user.getName() + " ";
             }
 
+            TextColor claimTypeColor = TextColors.GREEN;
+            if (claim.isAdminClaim()) {
+                claimTypeColor = TextColors.RED;
+            } else if (claim.isSubdivision()) {
+                claimTypeColor = TextColors.AQUA;
+            }
             Text claimId = Text.join(Text.of(TextColors.YELLOW, "UUID", TextColors.WHITE, " : ",
                     Text.builder()
                             .append(Text.of(TextColors.GRAY, claim.id.toString()))
                             .onShiftClick(TextActions.insertText(claim.id.toString())).build()));
             Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner.getName());
+            Text claimType = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", claimTypeColor, claim.type.name());
             Text claimFarewell = Text.of(TextColors.YELLOW, "Farewell", TextColors.WHITE, " : ", TextColors.RESET,
                     claim.getClaimData().getFarewellMessage());
             Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
@@ -106,6 +114,7 @@ public class CommandClaimInfo implements CommandExecutor {
                             footer, "\n",
                             claimName, "\n",
                             ownerLine, "\n",
+                            claimType, "\n",
                             claimArea, "\n",
                             claimAccessors, "\n",
                             claimBuilders, "\n",
