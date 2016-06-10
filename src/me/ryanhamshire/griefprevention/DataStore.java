@@ -540,9 +540,7 @@ public abstract class DataStore {
         }
 
         newClaim.context = new Context("claim", newClaim.id.toString());
-        // Assign owner full flag permissions in claim context
-        player.getSubjectData().setPermission(ImmutableSet.of(newClaim.getContext()), GPPermissions.CLAIM_MANAGE_FLAGS, Tristate.TRUE);
-        // then return success along with reference to new claim
+        // return success along with reference to new claim
         result.succeeded = true;
         result.claim = newClaim;
         return result;
