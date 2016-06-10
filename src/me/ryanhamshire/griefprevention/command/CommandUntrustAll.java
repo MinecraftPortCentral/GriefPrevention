@@ -62,6 +62,7 @@ public class CommandUntrustAll implements CommandExecutor {
             claim.getClaimData().getBuilders().remove(targetPlayer.get().getUniqueId());
             claim.getClaimData().getContainers().remove(targetPlayer.get().getUniqueId());
             claim.getClaimData().getCoowners().remove(targetPlayer.get().getUniqueId());
+            claim.getClaimData().setRequiresSave(true);
             claim.getClaimStorage().save();
         }
 

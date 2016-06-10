@@ -251,6 +251,7 @@ public class CommandHelper {
                 memberList.add(targetPlayer.get().getUniqueId());
             }
 
+            currentClaim.getClaimData().setRequiresSave(true);
             currentClaim.getClaimStorage().save();
         }
 
