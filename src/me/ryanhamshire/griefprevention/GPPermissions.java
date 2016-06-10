@@ -106,6 +106,7 @@ public class GPPermissions {
     public static final String BLOCK_BREAK = "griefprevention.flag.block-break";
     public static final String BLOCK_COMMANDS = "griefprevention.flag.block-commands";
     public static final String BLOCK_PLACE = "griefprevention.flag.block-place";
+    public static final String DAMAGE_PASSIVES = "griefprevention.flag.damage-passives";
     public static final String EXPLOSIONS = "griefprevention.flag.explosions";
     public static final String FAREWELL_MESSAGE = "griefprevention.flag.farewell-message";
     public static final String FIRE_SPREAD = "griefprevention.flag.fire-spread";
@@ -129,10 +130,10 @@ public class GPPermissions {
     public static final String PVP = "griefprevention.flag.pvp";
     public static final String SLEEP = "griefprevention.flag.sleep";
     public static final String SPAWN_AMBIENTS = "griefprevention.flag.spawn-ambients";
+    public static final String SPAWN_ANIMALS = "griefprevention.flag.spawn-animals";
     public static final String SPAWN_ANY = "griefprevention.flag.spawn-any";
     public static final String SPAWN_AQUATICS = "griefprevention.flag.spawn-aquatics";
     public static final String SPAWN_MONSTERS = "griefprevention.flag.spawn-monsters";
-    public static final String SPAWN_PASSIVES = "griefprevention.flag.spawn-passives";
     public static final String WATER_FLOW = "griefprevention.flag.water-flow";
     public static final String VILLAGER_TRADING = "griefprevention.flag.villager-trading";
 }

@@ -37,7 +37,9 @@ import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.entity.item.EntityItem;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.effect.potion.PotionEffectType;
 import org.spongepowered.api.effect.potion.PotionEffectTypes;
@@ -55,6 +57,7 @@ import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
+import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
 import org.spongepowered.api.event.entity.AttackEntityEvent;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
@@ -70,6 +73,7 @@ import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.explosion.Explosion;
+import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -125,7 +129,7 @@ public class EntityEventHandler {
 
     // when a creature spawns...
     @Listener(order = Order.FIRST)
-    public void onSpawnEntity(SpawnEntityEvent event) {
+    public void onSpawnEntity(SpawnEntityEvent event, @First SpawnCause spawnCause) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
@@ -134,6 +138,11 @@ public class EntityEventHandler {
         event.filterEntities(new Predicate<Entity>() {
             @Override
             public boolean test(Entity entity) {
+                // ignore items
+                if (entity instanceof EntityItem) {
+                    return true;
+                }
+
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
                 if (claim != null) {
                     if (user.isPresent()) {
@@ -148,20 +157,20 @@ public class EntityEventHandler {
                         } else if (GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_ANY) == Tristate.FALSE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn entities within claim.]", CustomLogEntryTypes.Debug);
                             return false;
-                        } else if (nmsEntity.isCreatureType(EnumCreatureType.AMBIENT, false)
+                        } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.AMBIENT)
                                 && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_AMBIENTS) == Tristate.FALSE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
                             return false;
-                        } else if (nmsEntity.isCreatureType(EnumCreatureType.WATER_CREATURE, false) && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_AQUATICS) != Tristate.TRUE) {
+                        } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.WATER_CREATURE) && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_AQUATICS) != Tristate.TRUE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
                             return false;
-                        } else if (nmsEntity.isCreatureType(EnumCreatureType.MONSTER, false)
+                        } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.MONSTER)
                                 && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_MONSTERS) == Tristate.FALSE) {
                             GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
                             return false;
-                        } else if (nmsEntity.isCreatureType(EnumCreatureType.CREATURE, false)
-                                && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_PASSIVES) == Tristate.FALSE) {
-                            GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn passives within claim.]", CustomLogEntryTypes.Debug);
+                        } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.CREATURE)
+                                && GPFlags.getClaimFlagPermission(spongeUser, claim, GPPermissions.SPAWN_ANIMALS) == Tristate.FALSE) {
+                            GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn animals within claim.]", CustomLogEntryTypes.Debug);
                             return false;
                         }
                     }
@@ -204,51 +213,52 @@ public class EntityEventHandler {
     }
 
     @Listener(order = Order.FIRST)
-    public void onEntityAttack(AttackEntityEvent event) {
+    public void onEntityAttack(AttackEntityEvent event, @First DamageSource damageSource) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
         }
 
-        if (protectEntity(event.getTargetEntity(), event.getCause())) {
+        if (protectEntity(event.getTargetEntity(), event.getCause(), damageSource)) {
             event.setCancelled(true);
         }
     }
 
     @Listener(order = Order.FIRST)
-    public void onEntityDamage(DamageEntityEvent event) {
+    public void onEntityDamage(DamageEntityEvent event, @First DamageSource damageSource) {
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
         }
 
-        if (protectEntity(event.getTargetEntity(), event.getCause())) {
+        if (protectEntity(event.getTargetEntity(), event.getCause(), damageSource)) {
             event.setCancelled(true);
         }
     }
 
-    public boolean protectEntity(Entity entity, Cause cause) {
+    public boolean protectEntity(Entity entity, Cause cause, DamageSource damageSource) {
         // monsters are never protected
         if (entity instanceof Monster || !GriefPrevention.isEntityProtected(entity)) {
             return false;
         }
 
-        Optional<DamageSource> damageSourceOpt = cause.first(DamageSource.class);
-        if (!damageSourceOpt.isPresent()) {
-            return false;
-        }
-
-        DamageSource damageSource = damageSourceOpt.get();
         Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
 
         // Protect owned entities anywhere in world
-        if (damageSource instanceof EntityDamageSource && !((net.minecraft.entity.Entity) entity).isCreatureType(EnumCreatureType.MONSTER, false)) {
+        if (damageSource instanceof EntityDamageSource && !(SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entity, EnumCreatureType.MONSTER))) {
             EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
             Entity sourceEntity = entityDamageSource.getSource();
             if (entityDamageSource instanceof IndirectEntityDamageSource) {
                 sourceEntity = ((IndirectEntityDamageSource) entityDamageSource).getIndirectSource();
             }
 
+            Tristate perm = Tristate.UNDEFINED;
             if (sourceEntity instanceof User) {
                 User sourceUser = (User) sourceEntity;
+                if (claim != null) {
+                    perm = GPFlags.getClaimFlagPermission(sourceUser, claim, GPPermissions.DAMAGE_PASSIVES);
+                    if (entity instanceof EntityLivingBase && perm == Tristate.TRUE) {
+                        return false;
+                    }
+                }
                 Optional<UUID> creatorUuid = entity.getCreator();
                 if (creatorUuid.isPresent()) {
                     Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(creatorUuid.get());
@@ -261,11 +271,17 @@ public class EntityEventHandler {
                 return false;
             } else if (claim != null) {
                 if (entity instanceof Player) {
-                    if (entityDamageSource.getSource() instanceof Monster) {
+                    if (SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entityDamageSource.getSource(), EnumCreatureType.MONSTER)) {
                         if (GPFlags.getClaimFlagPermission(claim, GPPermissions.MOB_PLAYER_DAMAGE) != Tristate.TRUE) {
                             GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
                             return true;
                         }
+                    }
+                } else if (entity instanceof EntityLivingBase && !SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entity, EnumCreatureType.MONSTER)) {
+                    User user = cause.first(User.class).orElse(null);
+                    if (user != null && !user.getUniqueId().equals(claim.ownerID) && perm != Tristate.TRUE) {
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + entity + "][CancelReason: Untrusted player attempting to attack passive entity in claim.]", CustomLogEntryTypes.Debug);
+                        return true;
                     }
                 }
             }

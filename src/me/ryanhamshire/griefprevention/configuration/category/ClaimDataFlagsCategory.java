@@ -43,6 +43,8 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
     public List<String> blockCommands = new ArrayList<>();
     @Setting(value = GPFlags.BLOCK_PLACE, comment = GPFlags.COMMENT_BLOCK_PLACE)
     public Tristate blockPlace = Tristate.UNDEFINED;
+    @Setting(value = GPFlags.DAMAGE_PASSIVES, comment = GPFlags.COMMENT_DAMAGE_PASSIVES)
+    public Tristate damagePassives = Tristate.UNDEFINED;
     @Setting(value = GPFlags.EXPLOSIONS, comment = GPFlags.COMMENT_EXPLOSIONS)
     public Tristate explosions = Tristate.UNDEFINED;
     @Setting(value = GPFlags.FAREWELL_MESSAGE, comment = GPFlags.COMMENT_FAREWELL_MESSAGE)
@@ -87,14 +89,14 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
     public Tristate sleep = Tristate.UNDEFINED;
     @Setting(value = GPFlags.SPAWN_AMBIENTS, comment = GPFlags.COMMENT_SPAWN_AMBIENTS)
     public Tristate spawnAmbient = Tristate.UNDEFINED;
+    @Setting(value = GPFlags.SPAWN_ANIMALS, comment = GPFlags.COMMENT_SPAWN_ANIMALS)
+    public Tristate spawnAnimals = Tristate.UNDEFINED;
     @Setting(value = GPFlags.SPAWN_ANY, comment = GPFlags.COMMENT_SPAWN_ANY)
     public Tristate spawnAny = Tristate.UNDEFINED;
     @Setting(value = GPFlags.SPAWN_AQUATICS, comment = GPFlags.COMMENT_SPAWN_AQUATICS)
     public Tristate spawnAquatic = Tristate.UNDEFINED;
     @Setting(value = GPFlags.SPAWN_MONSTERS, comment = GPFlags.COMMENT_SPAWN_MONSTERS)
     public Tristate spawnMonsters = Tristate.UNDEFINED;
-    @Setting(value = GPFlags.SPAWN_PASSIVES, comment = GPFlags.COMMENT_SPAWN_PASSIVES)
-    public Tristate spawnPassives = Tristate.UNDEFINED;
     @Setting(value = GPFlags.VILLAGER_TRADING, comment = GPFlags.COMMENT_VILLAGER_TRADING)
     public Tristate villagerTrading = Tristate.UNDEFINED;
     @Setting(value = GPFlags.WATER_FLOW, comment = GPFlags.COMMENT_WATER_FLOW)
@@ -105,6 +107,7 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
         flagMap.put(GPFlags.BLOCK_BREAK, this.blockBreak);
         flagMap.put(GPFlags.BLOCK_COMMANDS, this.blockCommands);
         flagMap.put(GPFlags.BLOCK_PLACE, this.blockPlace);
+        flagMap.put(GPFlags.DAMAGE_PASSIVES, this.damagePassives);
         flagMap.put(GPFlags.EXPLOSIONS, this.explosions);
         flagMap.put(GPFlags.FIRE_SPREAD, this.fireSpread);
         flagMap.put(GPFlags.FORCE_DENY_ALL, this.forceDenyAll);
@@ -124,7 +127,7 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
         flagMap.put(GPFlags.PROJECTILES_ANY, this.projectilesAny);
         flagMap.put(GPFlags.PVP, this.pvp);
         flagMap.put(GPFlags.SPAWN_MONSTERS, this.spawnMonsters);
-        flagMap.put(GPFlags.SPAWN_PASSIVES, this.spawnPassives);
+        flagMap.put(GPFlags.SPAWN_ANIMALS, this.spawnAnimals);
         flagMap.put(GPFlags.SPAWN_AMBIENTS, this.spawnAmbient);
         flagMap.put(GPFlags.SPAWN_AQUATICS, this.spawnAquatic);
         flagMap.put(GPFlags.SPAWN_ANY, this.spawnAny);
@@ -145,6 +148,9 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
                 return;
             case GPFlags.BLOCK_PLACE:
                 this.blockPlace = (Tristate) value;
+                return;
+            case GPFlags.DAMAGE_PASSIVES:
+                this.damagePassives = (Tristate) value;
                 return;
             case GPFlags.EXPLOSIONS:
                 this.explosions = (Tristate) value;
@@ -221,8 +227,8 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
             case GPFlags.SPAWN_MONSTERS:
                 this.spawnMonsters = (Tristate) value;
                 return;
-            case GPFlags.SPAWN_PASSIVES:
-                this.spawnPassives = (Tristate) value;
+            case GPFlags.SPAWN_ANIMALS:
+                this.spawnAnimals = (Tristate) value;
                 return;
             case GPFlags.WATER_FLOW:
                 this.waterFlow = (Tristate) value;
@@ -243,6 +249,8 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
                 return this.blockCommands;
             case GPFlags.BLOCK_PLACE:
                 return this.blockPlace;
+            case GPFlags.DAMAGE_PASSIVES:
+                return this.damagePassives;
             case GPFlags.EXPLOSIONS:
                 return this.explosions;
             case GPFlags.FAREWELL_MESSAGE:
@@ -293,8 +301,8 @@ public class ClaimDataFlagsCategory extends ConfigCategory {
                 return this.spawnAquatic;
             case GPFlags.SPAWN_MONSTERS:
                 return this.spawnMonsters;
-            case GPFlags.SPAWN_PASSIVES:
-                return this.spawnPassives;
+            case GPFlags.SPAWN_ANIMALS:
+                return this.spawnAnimals;
             case GPFlags.WATER_FLOW:
                 return this.waterFlow;
             case GPFlags.VILLAGER_TRADING:

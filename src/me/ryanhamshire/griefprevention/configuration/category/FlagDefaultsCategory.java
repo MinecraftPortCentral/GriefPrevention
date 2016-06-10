@@ -40,6 +40,8 @@ public class FlagDefaultsCategory extends ConfigCategory {
     public List<String> blockCommands = new ArrayList<>();
     @Setting(value = GPFlags.BLOCK_PLACE, comment = GPFlags.COMMENT_BLOCK_PLACE)
     public boolean blockPlace = false;
+    @Setting(value = GPFlags.DAMAGE_PASSIVES, comment = GPFlags.COMMENT_DAMAGE_PASSIVES)
+    public boolean damagePassives = false;
     @Setting(value = GPFlags.EXPLOSIONS, comment = GPFlags.COMMENT_EXPLOSIONS)
     public boolean explosions = false;
     @Setting(value = GPFlags.FAREWELL_MESSAGE, comment = GPFlags.COMMENT_FAREWELL_MESSAGE)
@@ -57,7 +59,7 @@ public class FlagDefaultsCategory extends ConfigCategory {
     @Setting(value = GPFlags.INTERACT_INVENTORY, comment = GPFlags.COMMENT_INTERACT_INVENTORY)
     public boolean inventory = false;
     @Setting(value = GPFlags.ITEM_DROP, comment = GPFlags.COMMENT_ITEM_DROP)
-    public boolean itemDrop = false;
+    public boolean itemDrop = true;
     @Setting(value = GPFlags.ITEM_PICKUP, comment = GPFlags.COMMENT_ITEM_PICKUP)
     public boolean itemPickup = false;
     @Setting(value = GPFlags.ITEM_USE, comment = GPFlags.COMMENT_ITEM_USE)
@@ -84,14 +86,14 @@ public class FlagDefaultsCategory extends ConfigCategory {
     public boolean sleep = true;
     @Setting(value = GPFlags.SPAWN_AMBIENTS, comment = GPFlags.COMMENT_SPAWN_AMBIENTS)
     public boolean spawnAmbient = true;
+    @Setting(value = GPFlags.SPAWN_ANIMALS, comment = GPFlags.COMMENT_SPAWN_ANIMALS)
+    public boolean spawnAnimals = true;
     @Setting(value = GPFlags.SPAWN_ANY, comment = GPFlags.COMMENT_SPAWN_ANY)
     public boolean spawnAny = true;
     @Setting(value = GPFlags.SPAWN_AQUATICS, comment = GPFlags.COMMENT_SPAWN_AQUATICS)
     public boolean spawnAquatic = true;
     @Setting(value = GPFlags.SPAWN_MONSTERS, comment = GPFlags.COMMENT_SPAWN_MONSTERS)
     public boolean spawnMonsters = true;
-    @Setting(value = GPFlags.SPAWN_PASSIVES, comment = GPFlags.COMMENT_SPAWN_PASSIVES)
-    public boolean spawnPassives = true;
     @Setting(value = GPFlags.VILLAGER_TRADING, comment = GPFlags.COMMENT_VILLAGER_TRADING)
     public boolean villagerTrading = false;
     @Setting(value = GPFlags.WATER_FLOW, comment = GPFlags.COMMENT_WATER_FLOW)
@@ -155,8 +157,8 @@ public class FlagDefaultsCategory extends ConfigCategory {
                 return this.spawnAquatic;
             case GPFlags.SPAWN_MONSTERS:
                 return this.spawnMonsters;
-            case GPFlags.SPAWN_PASSIVES:
-                return this.spawnPassives;
+            case GPFlags.SPAWN_ANIMALS:
+                return this.spawnAnimals;
             case GPFlags.VILLAGER_TRADING:
                 return this.villagerTrading;
             case GPFlags.WATER_FLOW:

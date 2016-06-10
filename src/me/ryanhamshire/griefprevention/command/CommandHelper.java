@@ -142,8 +142,14 @@ public class CommandHelper {
 
         if (claim.getClaimData().getFlags().getFlagValue(flag) != null) {
                 Subject subj = targetPlayer.getContainingCollection().get(targetPlayer.getIdentifier());
-                subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
-                        Tristate.fromBoolean(Boolean.valueOf(value)));
+                if (value.equalsIgnoreCase("undefined") || value.equals("0")) {
+                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
+                            Tristate.UNDEFINED);
+                    value = "undefined";
+                } else {
+                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
+                            Tristate.fromBoolean(Boolean.valueOf(value)));
+                }
                 sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for ", targetPlayer.getName(), "."));
         } else {
             GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid flag."));
@@ -162,8 +168,14 @@ public class CommandHelper {
             PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
             Subject subj = service.getGroupSubjects().get(group);
             if (subj != null) {
-                subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
-                        Tristate.fromBoolean(Boolean.valueOf(value)));
+                if (value.equalsIgnoreCase("undefined") || value.equals("0")) {
+                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
+                            Tristate.UNDEFINED);
+                    value = "undefined";
+                } else {
+                    subj.getSubjectData().setPermission(ImmutableSet.of(claim.getContext()), permission,
+                            Tristate.fromBoolean(Boolean.valueOf(value)));
+                }
                 sourcePlayer.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", flag, " to ", value, " for group ", group, "."));
             } else {
                 GriefPrevention.sendMessage(sourcePlayer, Text.of(TextMode.Err, "Not a valid group."));

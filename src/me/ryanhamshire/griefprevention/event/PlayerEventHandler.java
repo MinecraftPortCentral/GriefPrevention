@@ -49,6 +49,7 @@ import me.ryanhamshire.griefprevention.task.WelcomeTask;
 import me.ryanhamshire.griefprevention.util.NbtDataHelper;
 import me.ryanhamshire.griefprevention.util.WordFinder;
 import net.minecraft.block.BlockDoor;
+import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
@@ -74,6 +75,7 @@ import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.InteractBlockEvent;
+import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
 import org.spongepowered.api.event.cause.entity.teleport.EntityTeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
@@ -117,6 +119,7 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.entity.SpongeEntitySnapshot;
+import org.spongepowered.common.entity.SpongeEntityType;
 import org.spongepowered.common.interfaces.block.IMixinBlockState;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 import org.spongepowered.common.interfaces.world.IMixinWorld;
@@ -870,8 +873,8 @@ public class PlayerEventHandler {
 
     // when a player dies...
     @Listener(order = Order.FIRST)
-    public void onPlayerDeath(DestructEntityEvent.Death event, @Root Player player) {
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
+    public void onPlayerDeath(DestructEntityEvent.Death event, @Root DamageSource damageSource) {
+        if (!(event.getTargetEntity() instanceof Player) || !GriefPrevention.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
         }
 
@@ -988,6 +991,10 @@ public class PlayerEventHandler {
     // when a player drops an item
     @Listener(order = Order.FIRST)
     public void onPlayerDropItem(DropItemEvent.Dispense event, @Root EntitySpawnCause spawncause) {
+        if (event.getCause().containsNamed("InventoryClose")) {
+            return;
+        }
+
         Entity entity = ((SpongeEntitySnapshot) spawncause.getEntity()).getEntityReference().get();
         if (!(entity instanceof User)) {
             return;
@@ -1038,18 +1045,10 @@ public class PlayerEventHandler {
                     return;
                 } else if (perm == Tristate.FALSE) {
                     event.setCancelled(true);
-                    return;
-                }
-
-                String reason = claim.allowAccess(player);
-                if (reason != null) {
-                    if (event.getCause().root() instanceof Player) {
+                    if (entity instanceof Player) {
                         Text message = GriefPrevention.getMessage(Messages.NoDropsAllowed);
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Warn, message));
                     }
-    
-                    GriefPrevention.addLogEntry("1[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + reason + "]", CustomLogEntryTypes.Debug);
-                    event.setCancelled(true);
                     return;
                 }
             }
@@ -1246,7 +1245,16 @@ public class PlayerEventHandler {
             if (player.getUniqueId().equals(ownerID) || playerData.ignoreClaims) {
                 // if giving away pet, do that instead
                 if (playerData.petGiveawayRecipient != null) {
+                    if (!((SpongeEntityType) spongeEntity).getModId().equalsIgnoreCase("minecraft")) {
+                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.PetGiveawayInvalid, spongeEntity.getType().getId());
+                        playerData.petGiveawayRecipient = null;
+                        return;
+                    }
                     spongeEntity.setCreator(playerData.petGiveawayRecipient.getUniqueId());
+                    if (entity instanceof EntityTameable) {
+                        EntityTameable tameable = (EntityTameable) entity;
+                        tameable.setOwnerId(playerData.petGiveawayRecipient.getUniqueId().toString());
+                    }
                     playerData.petGiveawayRecipient = null;
                     GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetGiveawayConfirmation);
                     GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Pet giveaway.]", CustomLogEntryTypes.Debug);

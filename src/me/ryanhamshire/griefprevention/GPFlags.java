@@ -38,6 +38,7 @@ public class GPFlags {
     public static final String BLOCK_BREAK = "block-break";
     public static final String BLOCK_COMMANDS = "block-commands";
     public static final String BLOCK_PLACE = "block-place";
+    public static final String DAMAGE_PASSIVES = "damage-passives";
     public static final String EXPLOSIONS = "explosions";
     public static final String FAREWELL_MESSAGE = "farewell-message";
     public static final String FIRE_SPREAD = "fire-spread";
@@ -64,7 +65,7 @@ public class GPFlags {
     public static final String SPAWN_ANY = "spawn-any";
     public static final String SPAWN_AQUATICS = "spawn-aquatic";
     public static final String SPAWN_MONSTERS = "spawn-monsters";
-    public static final String SPAWN_PASSIVES = "spawn-passives";
+    public static final String SPAWN_ANIMALS = "spawn-animals";
     public static final String WATER_FLOW = "water-flow";
     public static final String VILLAGER_TRADING = "villager-trading";
 
@@ -72,6 +73,7 @@ public class GPFlags {
     public static final String COMMENT_BLOCK_BREAK = "Allow/deny breaking blocks.";
     public static final String COMMENT_BLOCK_COMMANDS = "Blocked commands.";
     public static final String COMMENT_BLOCK_PLACE = "Allow/deny placing blocks.";
+    public static final String COMMENT_DAMAGE_PASSIVES = "Allow/deny players damaging passive entities.";
     public static final String COMMENT_EXPLOSIONS = "Allow/deny explosions.";
     public static final String COMMENT_FAREWELL_MESSAGE = "Allow/deny farewell message.";
     public static final String COMMENT_FIRE_SPREAD = "Allow/deny fire spread.";
@@ -94,11 +96,11 @@ public class GPFlags {
     public static final String COMMENT_PROJECTILES_PLAYER = "Allow/deny player projectiles.";
     public static final String COMMENT_PVP = "Allow/deny pvp.";
     public static final String COMMENT_SLEEP = "Allow/deny sleep.";
-    public static final String COMMENT_SPAWN_AMBIENTS = "Allow/deny the spawning of ambient mobs.";
-    public static final String COMMENT_SPAWN_ANY = "Allow/deny the spawning of any mobs.";
-    public static final String COMMENT_SPAWN_AQUATICS = "Allow/deny the spawning of aquatic mobs.";
+    public static final String COMMENT_SPAWN_AMBIENTS = "Allow/deny the spawning of ambients.";
+    public static final String COMMENT_SPAWN_ANIMALS = "Allow/deny the spawning of animals.";
+    public static final String COMMENT_SPAWN_ANY = "Allow/deny the spawning of any entities.";
+    public static final String COMMENT_SPAWN_AQUATICS = "Allow/deny the spawning of aquatics.";
     public static final String COMMENT_SPAWN_MONSTERS = "Allow/deny the spawning of monsters.";
-    public static final String COMMENT_SPAWN_PASSIVES = "Allow/deny the spawning of passive mobs.";
     public static final String COMMENT_WATER_FLOW = "Allow/deny water flow.";
     public static final String COMMENT_VILLAGER_TRADING = "Allow/deny villager trading.";
 

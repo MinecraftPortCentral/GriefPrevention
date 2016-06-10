@@ -97,6 +97,7 @@ import me.ryanhamshire.griefprevention.task.IgnoreLoaderThread;
 import me.ryanhamshire.griefprevention.task.PvPImmunityValidationTask;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import me.ryanhamshire.griefprevention.task.SendPlayerMessageTask;
+import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
@@ -134,6 +135,7 @@ import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.SpongeImplHooks;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -1101,7 +1103,8 @@ public class GriefPrevention {
     }
 
     public static boolean isEntityProtected(Entity entity) {
-        if (GriefPrevention.getActiveConfig(entity.getWorld().getProperties()).getConfig().claim.ignoredEntityIds.contains(entity.getType().getId())) {
+        // ignore monsters and banned list
+        if (SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entity, EnumCreatureType.MONSTER) || GriefPrevention.getActiveConfig(entity.getWorld().getProperties()).getConfig().claim.ignoredEntityIds.contains(entity.getType().getId())) {
             return false;
         }
 

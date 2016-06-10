@@ -172,6 +172,7 @@ public enum Messages {
     OwnerNameForAdminClaims,
     PermissionsPermission,
     PetGiveawayConfirmation,
+    PetGiveawayInvalid,
     PetTransferCancellation,
     PickupBlockedExplanation,
     PlayerInPvPSafeZone,
