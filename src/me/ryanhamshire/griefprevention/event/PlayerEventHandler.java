@@ -172,7 +172,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        String message = Text.of(event.getMessage()).toPlain();
+        String message = event.getRawMessage().toPlain();
 
         boolean muted = this.handlePlayerChat(player, message, event);
         Iterable<MessageReceiver> recipients = event.getChannel().get().getMembers();

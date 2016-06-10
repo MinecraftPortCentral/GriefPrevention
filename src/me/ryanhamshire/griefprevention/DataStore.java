@@ -231,7 +231,7 @@ public abstract class DataStore {
                         "nigger\nniggers\nniger\nnigga\nnigers\nniggas\n" +
                                 "fag\nfags\nfaggot\nfaggots\nfeggit\nfeggits\nfaggit\nfaggits\n" +
                                 "cunt\ncunts\nwhore\nwhores\nslut\nsluts\n";
-                Files.append(defaultWords, bannedWordsFile, Charset.forName("UTF-8"));
+                Files.write(defaultWords, bannedWordsFile, Charset.forName("UTF-8"));
             }
 
             return Files.readLines(bannedWordsFile, Charset.forName("UTF-8"));

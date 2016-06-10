@@ -612,9 +612,6 @@ public class GriefPrevention {
             if (Files.notExists(DataStore.messagesFilePath)) {
                 Files.createFile(DataStore.messagesFilePath);
             }
-            if (Files.notExists(DataStore.bannedWordsFilePath)) {
-                Files.createFile(DataStore.bannedWordsFilePath);
-            }
             if (Files.notExists(DataStore.softMuteFilePath)) {
                 Files.createFile(DataStore.softMuteFilePath);
             }
