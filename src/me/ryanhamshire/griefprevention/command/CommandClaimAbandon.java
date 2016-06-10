@@ -69,11 +69,10 @@ public class CommandClaimAbandon implements CommandExecutor {
                         .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
                                 .getConfig().claim.abandonReturnRatio)));
                 playerData.setAccruedClaimBlocks( newAccruedClaimCount);
+                // tell the player how many claim blocks he has left
+                int remainingBlocks = playerData.getRemainingClaimBlocks();
+                GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
             }
-
-            // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks();
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
 
             // revert any current visualization
             Visualization.Revert(player);

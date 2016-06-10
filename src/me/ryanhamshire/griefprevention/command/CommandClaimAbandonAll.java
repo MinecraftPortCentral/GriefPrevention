@@ -43,6 +43,9 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         for (Claim claim : playerData.getClaims()) {
             // remove all context permissions
             player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+            if (claim.isSubdivision() || claim.isAdminClaim()) {
+                continue;
+            }
             playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.abandonReturnRatio))));
         }
 

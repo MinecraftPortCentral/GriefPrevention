@@ -187,7 +187,9 @@ public class PlayerData {
     public int getRemainingClaimBlocks() {
         int remainingBlocks = this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
         for (Claim claim : this.claimList) {
-            remainingBlocks -= claim.getArea();
+            if (!claim.isAdminClaim() && !claim.isSubdivision()) {
+                remainingBlocks -= claim.getArea();
+            }
         }
 
         // add any blocks this player might have based on group membership (permissions)
