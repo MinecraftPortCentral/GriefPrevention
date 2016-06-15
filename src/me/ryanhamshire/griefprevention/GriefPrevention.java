@@ -151,7 +151,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "0.1", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin

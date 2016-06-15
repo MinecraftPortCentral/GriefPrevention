@@ -12,7 +12,15 @@ buildscript {
     }
 }
 
+plugins {
+    id 'org.spongepowered.plugin' version '0.6'
+    id 'maven'
+}
+
 apply plugin: 'net.minecraftforge.gradle.forge'
+
+// Environment variables for the build set by the build server
+ext.buildNumber = System.env.BUILD_NUMBER ?: '0'
 
 defaultTasks 'clean', 'build'
 
@@ -20,11 +28,6 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 archivesBaseName = project.name.toLowerCase()
-version = project.version
-
-ext {
-    DIR_MCP_MAPPINGS = net.minecraftforge.gradle.common.Constants.DIR_MCP_MAPPINGS
-}
 
 minecraft {
     forgeVersion = project.forgeVersion
@@ -32,19 +35,10 @@ minecraft {
     runDir = "run"
 }
 
-repositories {
-    mavenCentral()
-    maven {
-        name 'Sponge maven repo'
-        url 'http://repo.spongepowered.org/maven'
-    }
-}
+version = "$minecraft.version-$project.version-$buildNumber"
 
 dependencies {
-    compile("org.spongepowered:spongeapi:${project.apiVersion}")
-	compile("org.spongepowered:spongeforge:1.8.9-1890-4.2.0-BETA-1414") {
-		exclude module: 'spongecommon'
-	}
+	compile("org.spongepowered:spongeforge:1.8.9-1890-4.2.0-BETA-1445:dev")
 }
 
 sourceSets {
@@ -55,8 +49,84 @@ sourceSets {
     }
 }
 
-if (JavaVersion.current().isJava8Compatible() || JavaVersion.current().isJava9Compatible()) {
+if (JavaVersion.current().isJava8Compatible()) {
     tasks.withType(Javadoc) {
         options.addStringOption('Xdoclint:none', '-quiet')
     }
+}
+
+// Support uploading with FTP
+configurations {
+    deployerJars // Deployment dependency
+}
+
+dependencies {
+    deployerJars 'org.apache.maven.wagon:wagon-ftp:2.10'
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            configuration = configurations.deployerJars
+
+            // This is set by the build server when deploying to the repo
+            if (project.hasProperty('spongeRepo')) {
+                repository(url: project.spongeRepo) {
+                    if (project.hasProperty('spongeUsername') && project.hasProperty('spongePassword')) {
+                        authentication(userName: project.spongeUsername, password: project.spongePassword)
+                    }
+                }
+            }
+
+            pom {
+                artifactId = project.archivesBaseName
+
+                project {
+                    name = project.archivesBaseName
+                    description = project.description
+                    packaging = 'jar'
+                    url = project.url
+
+                    scm {
+                        url = "https://github.com/$project.organization/$project.name"
+                        connection = "scm:git:https://github.com/$project.organization/${project.name}.git"
+                        developerConnection = "scm:git:git@github.com:$project.organization/${project.name}.git"
+                    }
+
+                    issueManagement {
+                        system = 'github'
+                        url = 'https://github.com/MinecraftPortCentral/GriefPrevention/issues'
+                    }
+
+                    licenses {
+                        license {
+                            name = 'MIT License'
+                            url = 'http://opensource.org/licenses/MIT'
+                            distribution = 'repo'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Configure changelog task only if we're on Forge's Jenkins server
+if (project.hasProperty('forgeJenkinsPass')) {
+    task changelog(type: JenkinsChangelog) {
+        outputs.upToDateWhen { false } // Refresh changelog for every build
+
+        serverRoot = 'http://ci.jenkins.minecraftforge.net/'
+        jobName = 'griefprevention'
+        targetBuild = project.buildNumber
+        authName = 'console_script'
+        authPassword = project.forgeJenkinsPass
+        output = "build/distributions/${project.name}-${project.version}-changelog.txt"
+    }
+
+    artifacts {
+        archives changelog.output
+    }
+
+    uploadArchives.dependsOn 'changelog'
 }
