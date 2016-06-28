@@ -24,6 +24,8 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPFlags;
@@ -46,11 +48,14 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 
 public class CommandClaimFlag implements CommandExecutor {
@@ -75,7 +80,7 @@ public class CommandClaimFlag implements CommandExecutor {
 
         if (claim != null) {
             if (!flag.isPresent() && !value.isPresent() && src.hasPermission(GPPermissions.COMMAND_LIST_CLAIM_FLAGS)) {
-                List<Text> flagList = Lists.newArrayList();
+                List<Object[]> flagList = Lists.newArrayList();
                 Set<Context> contexts = new HashSet<>();
                 Set<Context> overrideContexts = new HashSet<>();
                 if (claim.isBasicClaim() || claim.isSubdivision()) {
@@ -96,18 +101,16 @@ public class CommandClaimFlag implements CommandExecutor {
                 Map<String, Boolean> claimPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(ImmutableSet.of(claim.context));
                 for (Map.Entry<String, Boolean> overridePermissionEntry : overridePermissions.entrySet()) {
                     Boolean flagValue = overridePermissionEntry.getValue();
-                    Text flagText = Text.builder().append(Text.of(TextColors.GREEN, overridePermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                    TextColors.RED, flagValue.toString()))
-                            .build();
+                    Object[] flagText = new Object[] { TextColors.GREEN, overridePermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
+                                    TextColors.RED, flagValue.toString() };
                     flagList.add(flagText);
                 }
 
                 for (Map.Entry<String, Boolean> defaultPermissionEntry : defaultPermissions.entrySet()) {
                     if (!claimPermissions.containsKey(defaultPermissionEntry.getKey()) && !overridePermissions.containsKey(defaultPermissionEntry.getKey())) {
                         Boolean flagValue = defaultPermissionEntry.getValue();
-                        Text flagText = Text.builder().append(Text.of(TextColors.GREEN, defaultPermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                        TextColors.LIGHT_PURPLE, flagValue.toString()))
-                                .build();
+                        Object[] flagText = new Object[] { TextColors.GREEN, defaultPermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
+                                        TextColors.LIGHT_PURPLE, flagValue.toString() };
                         flagList.add(flagText);
                     }
                 }
@@ -115,17 +118,18 @@ public class CommandClaimFlag implements CommandExecutor {
                 for (Map.Entry<String, Boolean> permissionEntry : claimPermissions.entrySet()) {
                     if (!overridePermissions.containsKey(permissionEntry.getKey())) {
                         Boolean flagValue = permissionEntry.getValue();
-                        Text flagText = Text.builder().append(Text.of(TextColors.GREEN, permissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                        TextColors.GOLD, flagValue.toString()))
-                                .build();
+                        Object[] flagText = new Object[] { TextColors.GREEN, permissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
+                                        TextColors.GOLD, flagValue.toString() };
                         flagList.add(flagText);
                     }
                 }
 
-                Collections.sort(flagList);
+                Collections.sort(flagList, (t1, t2) -> Text.of(t1).compareTo(Text.of(t2)));
+                List<Text> finalTexts = this.stripeText(flagList);
+
                 PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
                 PaginationList.Builder paginationBuilder = paginationService.builder()
-                        .title(Text.of(TextColors.AQUA, "Claim Flag Permissions")).padding(Text.of("-")).contents(flagList);
+                        .title(Text.of(TextColors.AQUA, "Claim Flag Permissions")).padding(Text.of("-")).contents(finalTexts);
                 paginationBuilder.sendTo(src);
                 return CommandResult.success();
             } else if (flag.isPresent() && value.isPresent()) {
@@ -142,5 +146,43 @@ public class CommandClaimFlag implements CommandExecutor {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim found."));
         }
         return CommandResult.success();
+    }
+
+    private List<Text> stripeText(List<Object[]> texts) {
+        ImmutableList.Builder<Text> finalTexts = ImmutableList.builder();
+        for (int i = 0; i < texts.size(); i++) {
+            Object[] text = texts.get(i);
+            text[0] = i % 2 == 0 ? TextColors.GREEN : TextColors.AQUA; // Set starting color
+            finalTexts.add(Text.of(text));
+        }
+        return finalTexts.build();
+
+        // TODO - figure out alignment taking into account variable character width
+
+        /*List<List<Object[]>> pages = Lists.partition(texts, 20); // Page size of 20
+        int[] maximums = new int[pages.size()];
+
+        for (int i = 0; i < pages.size(); i++) {
+            List<Object[]> page = pages.get(i);
+
+            int max = 0;
+            for (Object[] text: page) {
+                int len = ((String) text[1]).length();
+                if (len > max) {
+                    max = len;
+                }
+            }
+            maximums[i] = max;
+        }*/
+
+        /*ImmutableList.Builder<Text> finalTexts = ImmutableList.builder();
+        for (int i = 0; i < pages.size(); i++) {
+            for (Object[] text: pages.get(i)) {
+                text[0] = i % 2 == 0 ? TextColors.GREEN : TextColors.AQUA; // Set starting color
+                text[2] = Strings.repeat(" ", Math.max(2, (maximums[i] - ((String) text[1]).length()))); // Set number of spaces to page maximum minus flag (text[1]) length
+
+                finalTexts.add(Text.of(text));
+            }
+        }*/
     }
 }

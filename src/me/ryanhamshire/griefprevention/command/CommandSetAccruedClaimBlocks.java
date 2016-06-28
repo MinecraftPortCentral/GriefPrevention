@@ -54,14 +54,7 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
         int newAmount = args.<Integer>getOne("amount").get();
 
         // find the specified player
-        User targetPlayer;
-        try {
-            targetPlayer = args.<String>getOne("player").flatMap(GriefPrevention.instance::resolvePlayerByName)
-                    .orElseThrow(() -> new CommandException(GriefPrevention.getMessage(Messages.PlayerNotFound2)));
-        } catch (CommandException e) {
-            src.sendMessage(e.getText());
-            return CommandResult.success();
-        }
+        User targetPlayer = args.<User>getOne("user").get();
 
         // set player's blocks
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), targetPlayer.getUniqueId());

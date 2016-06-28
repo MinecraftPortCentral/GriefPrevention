@@ -73,6 +73,7 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         Optional<User> targetUser = GriefPrevention.instance.resolvePlayerByName(name);
         if (!targetUser.isPresent()) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "The playername " + name + " was not found."));
+            return CommandResult.empty();
         } else if (!flag.isPresent() && !value.isPresent()) {
             Set<Context> contextSet = new HashSet<>();
             contextSet.add(claim.getContext());

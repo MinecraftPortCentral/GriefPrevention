@@ -25,12 +25,15 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import static org.spongepowered.api.command.args.GenericArguments.catalogedElement;
+import static org.spongepowered.api.command.args.GenericArguments.choices;
 import static org.spongepowered.api.command.args.GenericArguments.integer;
 import static org.spongepowered.api.command.args.GenericArguments.onlyOne;
 import static org.spongepowered.api.command.args.GenericArguments.optional;
 import static org.spongepowered.api.command.args.GenericArguments.player;
 import static org.spongepowered.api.command.args.GenericArguments.playerOrSource;
 import static org.spongepowered.api.command.args.GenericArguments.string;
+import static org.spongepowered.api.command.args.GenericArguments.user;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -113,6 +116,7 @@ import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.command.args.CommandFlags;
 import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.data.key.Keys;
@@ -245,7 +249,7 @@ public class GriefPrevention {
                         return false;
                     }
                 } catch (NumberFormatException e) {
-                    
+
                 }
             }
         }
@@ -362,6 +366,13 @@ public class GriefPrevention {
     // handles sub commands
     public void registerBaseCommands() {
 
+        ImmutableMap.Builder<String, String> flagChoicesBuilder = ImmutableMap.builder();
+        for (String flag: GPFlags.DEFAULT_FLAGS.keySet()) {
+            flagChoicesBuilder.put(flag, flag);
+        }
+
+        ImmutableMap<String, String> flagChoices = flagChoicesBuilder.build();
+
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Grants a player entry to your claim(s) and use of your bed"))
                 .permission(GPPermissions.COMMAND_GIVE_ACCESS_TRUST)
@@ -409,7 +420,7 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
                 .permission(GPPermissions.COMMAND_CLAIM_BAN_ITEM)
-                .arguments(optional(string(Text.of("itemid"))))
+                .arguments(optional(catalogedElement(Text.of("item"), ItemType.class)))
                 .executor(new CommandClaimBanItem())
                 .build(), "banitem");
 
@@ -455,7 +466,7 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Delete all of another player's claims"))
                 .permission(GPPermissions.COMMAND_DELETE_CLAIMS)
-                .arguments(player(Text.of("player")))
+                .arguments(user(Text.of("player")))
                 .executor(new CommandClaimDeleteAll())
                 .build(), "deleteallclaims", "dac");
 
@@ -474,8 +485,8 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gets/Sets claim flags in the claim you are standing in"))
                 .permission(GPPermissions.COMMAND_FLAGS_CLAIM)
-                .arguments(optional(GenericArguments.seq(onlyOne(string(Text.of("flag"))),
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("target"))),
+                .arguments(optional(GenericArguments.seq(choices(Text.of("flag"), flagChoices),
+                        GenericArguments.onlyOne(string(Text.of("target"))),
                         GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                 .put("-1", Tristate.FALSE)
                                 .put("0", Tristate.UNDEFINED)
@@ -493,7 +504,7 @@ public class GriefPrevention {
                 .permission(GPPermissions.COMMAND_FLAGS_GROUP)
                 .arguments(GenericArguments.seq(
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("group"))),
-                        optional(GenericArguments.seq(GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
+                        optional(GenericArguments.seq(choices(Text.of("flag"), flagChoices),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("target"))),
                         GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                 .put("-1", Tristate.FALSE)
@@ -512,7 +523,7 @@ public class GriefPrevention {
                 .permission(GPPermissions.COMMAND_FLAGS_PLAYER)
                 .arguments(GenericArguments.seq(
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("player"))),
-                        optional(GenericArguments.seq(GenericArguments.onlyOne(GenericArguments.string(Text.of("flag"))),
+                        optional(GenericArguments.seq(choices(Text.of("flag"), flagChoices),
                         GenericArguments.onlyOne(GenericArguments.string(Text.of("target"))),
                         GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                 .put("-1", Tristate.FALSE)
@@ -654,7 +665,7 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Updates a player's accrued claim block total"))
                 .permission(GPPermissions.COMMAND_SET_ACCRUED_CLAIM_BLOCKS)
-                .arguments(string(Text.of("player")), integer(Text.of("amount")))
+                .arguments(user(Text.of("user")), integer(Text.of("amount")))
                 .executor(new CommandSetAccruedClaimBlocks())
                 .build(), "setaccruedclaimblocks", "scb");
 
@@ -668,7 +679,7 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Toggles whether a player's messages will only reach other soft-muted players"))
                 .permission(GPPermissions.COMMAND_SOFT_MUTE_PLAYER)
-                .arguments(onlyOne(player(Text.of("player"))))
+                .arguments(onlyOne(user(Text.of("player"))))
                 .executor(new CommandSoftMute())
                 .build(), "softmute");
 
@@ -697,14 +708,14 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
                 .permission(GPPermissions.COMMAND_CLAIM_UNBAN_ITEM)
-                .arguments(optional(string(Text.of("itemid"))))
+                .arguments(optional(catalogedElement(Text.of("item"), ItemType.class)))
                 .executor(new CommandClaimUnbanItem())
                 .build(), "unbanitem");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Unignores another player's chat messages"))
                 .permission(GPPermissions.COMMAND_UNIGNORE_PLAYER)
-                .arguments(onlyOne(player(Text.of("player"))))
+                .arguments(onlyOne(user(Text.of("player"))))
                 .executor(new CommandUnignorePlayer())
                 .build(), "unignoreplayer", "unignore");
 

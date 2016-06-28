@@ -36,6 +36,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.util.Tristate;
 
@@ -54,23 +55,23 @@ public class CommandClaimBanItem implements CommandExecutor {
         }
 
         String itemToBan = "";
-        Optional<String> itemid = ctx.<String>getOne("itemid");
+        Optional<ItemType> item = ctx.<ItemType>getOne("item");
         Optional<ItemStack> itemInHand = player.getItemInHand();
-        if (!itemid.isPresent() && !itemInHand.isPresent()) {
+        if (!item.isPresent() && !itemInHand.isPresent()) {
             GriefPrevention.sendMessage(player, TextMode.Err, "No item id was specified and player is not holding an item.");
             return CommandResult.success();
-        } else if (!itemid.isPresent()) {
+        } else if (!item.isPresent()) {
             ItemStack itemstack = itemInHand.get();
             if (itemstack.getItem() instanceof ItemBlock) {
                 ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
                 net.minecraft.item.ItemStack nmsStack = (net.minecraft.item.ItemStack)(Object) itemstack;
-                BlockState blockState = ((BlockState) itemBlock.block.getStateFromMeta(nmsStack.getItemDamage()));
+                BlockState blockState = ((BlockState) itemBlock.getBlock().getStateFromMeta(nmsStack.getItemDamage()));
                 itemToBan = blockState.getId();
             } else {
                 itemToBan = itemstack.getItem().getId();
             }
         } else {
-            itemToBan = itemid.get();
+            itemToBan = item.get().getId();
         }
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);

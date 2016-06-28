@@ -91,7 +91,7 @@ public class GPPermissionHandler {
                 if (itemstack.getItem() instanceof ItemBlock) {
                     ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
                     net.minecraft.item.ItemStack nmsStack = (net.minecraft.item.ItemStack)(Object) itemstack;
-                    BlockState blockState = ((BlockState) itemBlock.block.getStateFromMeta(nmsStack.getItemDamage()));
+                    BlockState blockState = ((BlockState) itemBlock.getBlock().getStateFromMeta(nmsStack.getItemDamage()));
                     targetId = blockState.getId().replace("[", ".[");
                 } else {
                     targetId = itemstack.getItem().getId();
