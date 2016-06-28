@@ -54,10 +54,8 @@ public class GeneralCategory extends ConfigCategory {
     public boolean broadcastWhisperedMessagesToAdmins = false;
     @Setting(value = "admin-whisper-commands", comment = "List of whisper commands to eavesdrop on.")
     public List<String> whisperCommandList = new ArrayList<>();
-    @Setting(value = "banned-items", comment = "List of item id's banned on server.")
-    public ArrayList<String> bannedItemList = new ArrayList<>();
-    @Setting(value = "surface-explosions", comment = "Whether players can detonate explosives above sea level.")
-    public boolean surfaceExplosions = false;
-    @Setting(value = "lock-item-drops", comment = "Whether player item drops are locked.")
-    public boolean lockItemDrops = true;
+    @Setting(value = "protect-item-drops-death-non-pvp", comment = "Whether players' dropped on death items are protected in non-pvp worlds.")
+    public boolean protectItemsOnDeathNonPvp = true;
+    @Setting(value = "chat-protection-enabled", comment = "Enable ")
+    public boolean chatProtectionEnabled = false;
 }

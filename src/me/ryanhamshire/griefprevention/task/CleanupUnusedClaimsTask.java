@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,8 +27,8 @@ package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -39,7 +40,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 //FEATURE: automatically remove inactive claims
-//runs every 1 minute in the main thread
+//runs every 5 minutes on the main thread
 public class CleanupUnusedClaimsTask implements Runnable {
 
     private WorldProperties worldProperties;

@@ -24,8 +24,9 @@
  */
 package me.ryanhamshire.griefprevention.event;
 
-import me.ryanhamshire.griefprevention.ClaimWorldManager;
+import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
@@ -35,21 +36,28 @@ public class WorldEventHandler {
 
     @Listener
     public void onWorldLoad(LoadWorldEvent event) {
-        GriefPrevention.instance.dataStore.loadWorldData(event.getTargetWorld().getProperties());
+        GPTimings.WORLD_LOAD_EVENT.startTimingIfSync();
+        GriefPrevention.instance.dataStore.loadWorldData(event.getTargetWorld());
+        GPTimings.WORLD_LOAD_EVENT.stopTimingIfSync();
     }
 
     @Listener
     public void onWorldUnload(UnloadWorldEvent event) {
+        GPTimings.WORLD_UNLOAD_EVENT.startTimingIfSync();
         GriefPrevention.instance.dataStore.unloadWorldData(event.getTargetWorld().getProperties());
+        GPTimings.WORLD_UNLOAD_EVENT.stopTimingIfSync();
     }
 
     @Listener
     public void onWorldSave(SaveWorldEvent event) {
+        GPTimings.WORLD_SAVE_EVENT.startTimingIfSync();
         ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
         if (claimWorldManager == null) {
+            GPTimings.WORLD_SAVE_EVENT.stopTimingIfSync();
             return;
         }
 
         claimWorldManager.save();
+        GPTimings.WORLD_SAVE_EVENT.stopTimingIfSync();
     }
 }

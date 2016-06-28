@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +27,7 @@ package me.ryanhamshire.griefprevention;
 
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.ClaimTemplateStorage;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
@@ -37,6 +39,7 @@ import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -53,7 +56,9 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -64,6 +69,7 @@ public class FlatFileDataStore extends DataStore {
     private final static Path worldsConfigFolderPath = dataLayerFolderPath.resolve("worlds");
     public final static Path claimDataPath = Paths.get("GriefPreventionData", "ClaimData");
     public final static Path claimTemplatePath = claimDataPath.resolve("Templates");
+    public final static Path worldClaimDataPath = Paths.get("GriefPreventionData", "WorldClaim");
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
     private final Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
     public static Path rootWorldSavePath;
@@ -107,7 +113,8 @@ public class FlatFileDataStore extends DataStore {
     }
 
     @Override
-    public void loadWorldData(WorldProperties worldProperties) {
+    public void loadWorldData(World world) {
+        WorldProperties worldProperties = world.getProperties();
         DimensionType dimType = worldProperties.getDimensionType();
         if (!Files.exists(rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()))) {
             try {
@@ -133,27 +140,29 @@ public class FlatFileDataStore extends DataStore {
 
         if (!GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
             this.claimWorldManagers.put(worldProperties.getUniqueId(), new ClaimWorldManager(worldProperties));
-            // TODO - disable for now
             // run cleanup task
-            //CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(worldProperties);
-            //Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance);
+            int cleanupTaskInterval = GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.cleanupTaskInterval;
+            if (cleanupTaskInterval > 0) {
+                CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(worldProperties);
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance);
+            }
         }
 
         // check if world has existing data
-        Path worldClaimDataPath = Paths.get(worldProperties.getWorldName()).resolve(claimDataPath);
+        Path claimData = Paths.get(worldProperties.getWorldName()).resolve(claimDataPath);
         Path worldPlayerDataPath = Paths.get(worldProperties.getWorldName()).resolve(playerDataPath);
         if (worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-            worldClaimDataPath = claimDataPath;
+            claimData = claimDataPath;
             worldPlayerDataPath = playerDataPath;
         }
 
         try {
-            if (Files.exists(rootWorldSavePath.resolve(worldClaimDataPath))) {
-                File[] files = rootWorldSavePath.resolve(worldClaimDataPath).toFile().listFiles();
+            if (Files.exists(rootWorldSavePath.resolve(claimData))) {
+                File[] files = rootWorldSavePath.resolve(claimData).toFile().listFiles();
                 this.loadClaimData(files, worldProperties);
                 GriefPrevention.addLogEntry("[" + worldProperties.getWorldName() + "]" + files.length + " total claims loaded.");
             } else {
-                Files.createDirectories(rootWorldSavePath.resolve(worldClaimDataPath));
+                Files.createDirectories(rootWorldSavePath.resolve(claimData));
             }
     
             if (Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
@@ -163,8 +172,63 @@ public class FlatFileDataStore extends DataStore {
             if (!Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
                 Files.createDirectories(rootWorldSavePath.resolve(worldPlayerDataPath));
             }
+            ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+            if (claimWorldManager != null && claimWorldManager.getWildernessClaim() == null) {
+                claimWorldManager.createWildernessClaim(worldProperties);
+            }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        // handle default flag permissions
+        Set<Context> contexts = new HashSet<>();
+        contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(world.getContext());
+        validateFlagDefaults(contexts, GPFlags.DEFAULT_FLAGS);
+        contexts = new HashSet<>();
+        contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(world.getContext());
+        validateFlagDefaults(contexts, GPFlags.DEFAULT_FLAGS);
+        contexts = new HashSet<>();
+        contexts.add(GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(world.getContext());
+        validateFlagDefaults(contexts, GPFlags.DEFAULT_WILDERNESS_FLAGS);
+    }
+
+    public void validateFlagDefaults(Set<Context> contexts, Map<String, Tristate> defaultFlags) {
+        Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
+        if (defaultPermissions.isEmpty()) {
+            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
+                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), mapEntry.getValue());
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                }
+            }
+        } else {
+            // remove invalid flag entries
+            for (String flagPermission : defaultPermissions.keySet()) {
+                String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+                if (!defaultFlags.containsKey(flag)) {
+                    GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+
+            // make sure all defaults are available
+            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
+                String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
+                if (!defaultPermissions.keySet().contains(flagPermission)) {
+                    GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, mapEntry.getValue());
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
         }
     }
 
@@ -247,12 +311,12 @@ public class FlatFileDataStore extends DataStore {
         Claim claim;
 
         ClaimStorageData claimStorage = new ClaimStorageData(claimFile.toPath());
-
         // identify world the claim is in
         UUID worldUniqueId = claimStorage.getConfig().getWorldUniqueId();
         if (!worldProperties.getUniqueId().equals(worldUniqueId)) {
             GriefPrevention.addLogEntry("Found mismatch world UUID in claim file " + claimFile + ". Expected " + worldProperties.getUniqueId() + ", found " + worldUniqueId + ". Updating file with correct UUID...", CustomLogEntryTypes.Exception);
             claimStorage.getConfig().setWorldUniqueId(worldProperties.getUniqueId());
+            claimStorage.getConfig().setRequiresSave(true);
         }
 
         World world = Sponge.getServer().loadWorld(worldProperties).orElse(null);
@@ -262,6 +326,11 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // boundaries
+        String lesserCorner = claimStorage.getConfig().getLesserBoundaryCorner();
+        String greaterCorner = claimStorage.getConfig().getGreaterBoundaryCorner();
+        if (lesserCorner == null || greaterCorner == null) {
+            throw new Exception("Claim file '" + claimFile.getName() + "' has corrupted data and cannot be loaded. Skipping...");
+        }
         Vector3i lesserBoundaryCornerPos = BlockUtils.positionFromString(claimStorage.getConfig().getLesserBoundaryCorner());
         Vector3i greaterBoundaryCornerPos = BlockUtils.positionFromString(claimStorage.getConfig().getGreaterBoundaryCorner());
         Location<World> lesserBoundaryCorner = new Location<World>(world, lesserBoundaryCornerPos);
@@ -281,66 +350,38 @@ public class FlatFileDataStore extends DataStore {
         claim.type = claimStorage.getConfig().getClaimType();
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
-        claim.context = new Context("claim", claim.id.toString());
+        claim.context = new Context("gp_claim", claim.id.toString());
 
         // add parent claim first
         this.addClaim(claim, false);
-        // check for subdivisions
-        for(Map.Entry<UUID, SubDivisionDataConfig> mapEntry : claimStorage.getConfig().getSubdivisions().entrySet()) {
-            SubDivisionDataConfig subDivisionData = mapEntry.getValue();
-            Vector3i subLesserBoundaryCornerPos = BlockUtils.positionFromString(subDivisionData.getLesserBoundaryCorner());
-            Vector3i subGreaterBoundaryCornerPos = BlockUtils.positionFromString(subDivisionData.getGreaterBoundaryCorner());
-            Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);
-            Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
-
-            Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey());
-            subDivision.id = mapEntry.getKey();
-            subDivision.world = subLesserBoundaryCorner.getExtent();
-            subDivision.setClaimStorage(claimStorage);
-            subDivision.context = new Context("claim", subDivision.id.toString());
-            subDivision.parent = claim;
-            subDivision.type = Claim.Type.SUBDIVISION;
-            subDivision.setClaimData(subDivisionData);
-            // this needs to be set or visuals will not work
-            subDivision.inDataStore = true;
-            // add subdivision to parent
-            claim.children.add(subDivision);
+        if (!claim.isWildernessClaim()) {
+            // check for subdivisions
+            for(Map.Entry<UUID, SubDivisionDataConfig> mapEntry : claimStorage.getConfig().getSubdivisions().entrySet()) {
+                SubDivisionDataConfig subDivisionData = mapEntry.getValue();
+                Vector3i subLesserBoundaryCornerPos = BlockUtils.positionFromString(subDivisionData.getLesserBoundaryCorner());
+                Vector3i subGreaterBoundaryCornerPos = BlockUtils.positionFromString(subDivisionData.getGreaterBoundaryCorner());
+                Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);
+                Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
+    
+                Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey());
+                subDivision.id = mapEntry.getKey();
+                subDivision.world = subLesserBoundaryCorner.getExtent();
+                subDivision.setClaimStorage(claimStorage);
+                subDivision.context = new Context("claim", subDivision.id.toString());
+                subDivision.parent = claim;
+                subDivision.type = Claim.Type.SUBDIVISION;
+                subDivision.setClaimData(subDivisionData);
+                // this needs to be set or visuals will not work
+                subDivision.inDataStore = true;
+                // add subdivision to parent
+                claim.children.add(subDivision);
+            }
         }
         return claim;
     }
 
-    public void updateClaimData(Claim claim, File claimFile) {
-        if (claim.id == null) {
-            claim.id = UUID.randomUUID();
-        }
-
-        ClaimStorageData claimStorage = claim.getClaimStorage();
-        if (claimStorage == null) {
-            claimStorage = new ClaimStorageData(claim, claimFile.toPath());
-            claim.setClaimStorage(claimStorage);
-            claim.setClaimData(claimStorage.getConfig());
-        }
-
-        // owner
-        if (!claim.isSubdivision()) {
-            claimStorage.getConfig().setClaimOwnerUniqueId(claim.ownerID);
-            claimStorage.getConfig().setWorldUniqueId(claim.world.getUniqueId());
-            claimStorage.getConfig().setClaimType(claim.type);
-            claim.getClaimData().setLesserBoundaryCorner(BlockUtils.positionToString(claim.lesserBoundaryCorner));
-            claim.getClaimData().setGreaterBoundaryCorner(BlockUtils.positionToString(claim.greaterBoundaryCorner));
-        } else {
-            if (claim.getClaimData() == null) {
-                claim.setClaimData(new SubDivisionDataConfig(claim));
-            }
-            claimStorage.getConfig().getSubdivisions().put(claim.id, (SubDivisionDataConfig) claim.getClaimData());
-        }
-
-        // Will save next world save
-        claim.getClaimData().setRequiresSave(true);
-    }
-
     @Override
-    void writeClaimToStorage(Claim claim) {
+    public void writeClaimToStorage(Claim claim) {
         try {
             // open the claim's file
             Path claimDataFolderPath = null;
@@ -357,7 +398,19 @@ public class FlatFileDataStore extends DataStore {
                 claimFile.createNewFile();
             }
 
-            updateClaimData(claim, claimFile);
+            if (claim.id == null) {
+                claim.id = UUID.randomUUID();
+            }
+
+            ClaimStorageData claimStorage = claim.getClaimStorage();
+            if (claimStorage == null) {
+                claimStorage = new ClaimStorageData(claim, claimFile.toPath());
+                claim.setClaimStorage(claimStorage);
+                claim.setClaimData(claimStorage.getConfig());
+            }
+
+            claim.updateClaimStorageData();
+            claimStorage.save();
         }
 
         // if any problem, log it
@@ -473,21 +526,12 @@ public class FlatFileDataStore extends DataStore {
     }
 
     @Override
-    void incrementNextClaimID() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     PlayerData getPlayerDataFromStorage(UUID playerID) {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     void overrideSavePlayerData(UUID playerID, PlayerData playerData) {
-        // TODO Auto-generated method stub
-
     }
 
 }

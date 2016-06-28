@@ -75,8 +75,7 @@ public class ClaimStorageData {
     public static final String MAIN_ACCESSORS = "accessors";
     public static final String MAIN_BUILDERS = "builders";
     public static final String MAIN_CONTAINERS = "managers";
-    public static final String MAIN_COOWNERS = "coowners";
-    public static final String MAIN_PROTECTION_BLACKLIST = "bypass-protection-items";
+    public static final String MAIN_MANAGERS = "coowners";
     public static final String MAIN_BANNED_ITEM_LIST = "banned-item-ids";
     public static final String MAIN_SUBDIVISIONS = "sub-divisions";
 
@@ -113,7 +112,6 @@ public class ClaimStorageData {
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bindToNew();
 
             reload();
-            save();
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
         }

@@ -26,7 +26,6 @@ package me.ryanhamshire.griefprevention.configuration.types;
 
 import me.ryanhamshire.griefprevention.configuration.category.ClaimCategory;
 import me.ryanhamshire.griefprevention.configuration.category.EconomyCategory;
-import me.ryanhamshire.griefprevention.configuration.category.FlagDefaultsCategory;
 import me.ryanhamshire.griefprevention.configuration.category.GeneralCategory;
 import me.ryanhamshire.griefprevention.configuration.category.PvpCategory;
 import me.ryanhamshire.griefprevention.configuration.category.SiegeCategory;
@@ -38,8 +37,6 @@ public abstract class ConfigBase {
     public ClaimCategory claim = new ClaimCategory();
     @Setting
     public EconomyCategory economy = new EconomyCategory();
-    @Setting
-    public FlagDefaultsCategory flags = new FlagDefaultsCategory();
     @Setting
     public GeneralCategory general = new GeneralCategory();
     @Setting

@@ -1,13 +1,13 @@
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.ClaimWorldManager;
-import me.ryanhamshire.griefprevention.ClaimWorldManager.NoTransferException;
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager.NoTransferException;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -30,14 +30,14 @@ public class CommandClaimTransfer implements CommandExecutor {
             return CommandResult.success();
         }
         // which claim is the user in?
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
-        if (claim == null) {
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, true);
+        if (claim == null || claim.isWildernessClaim()) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferClaimMissing);
             return CommandResult.empty();
         }
 
         // check additional permission for admin claims
-        if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.CLAIMS_ADMIN)) {
+        if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.TransferClaimPermission));
             } catch (CommandException e1) {
@@ -56,7 +56,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         // change ownerhsip
         try {
             ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-            claimWorldManager.changeClaimOwner(claim, newOwnerID);
+            claimWorldManager.transferClaimOwner(claim, newOwnerID);
         } catch (NoTransferException e) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
             return CommandResult.empty();

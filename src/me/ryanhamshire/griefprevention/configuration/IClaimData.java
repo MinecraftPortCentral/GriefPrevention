@@ -25,7 +25,6 @@
 package me.ryanhamshire.griefprevention.configuration;
 
 import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.configuration.category.ClaimDataFlagsCategory;
 import org.spongepowered.api.text.Text;
 
 import java.util.List;
@@ -61,13 +60,7 @@ public interface IClaimData {
 
     List<UUID> getContainers();
 
-    List<UUID> getCoowners();
-
-    List<String> getProtectionBlackList();
-
-    List<String> getBannedItemList();
-
-    ClaimDataFlagsCategory getFlags();
+    List<UUID> getManagers();
 
     void setClaimOwnerUniqueId(UUID newClaimOwner);
 
@@ -93,9 +86,7 @@ public interface IClaimData {
 
     void setContainers(List<UUID> containers);
 
-    void setCoowners(List<UUID> coowners);
+    void setManagers(List<UUID> coowners);
 
     void setRequiresSave(boolean flag);
-
-    void setFlags(ClaimDataFlagsCategory copyFlags);
 }

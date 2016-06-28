@@ -1,7 +1,6 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
  * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
@@ -25,19 +24,24 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.claim.Claim;
+import net.minecraft.item.ItemBlock;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.util.Tristate;
 
-public class CommandClaimSubdivide implements CommandExecutor {
+import java.util.Optional;
+
+public class CommandClaimUnbanItem implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -49,11 +53,28 @@ public class CommandClaimSubdivide implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        playerData.shovelMode = ShovelMode.Subdivide;
-        playerData.claimSubdividing = null;
-        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
-        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2);
+        String itemToBan = "";
+        Optional<String> itemid = ctx.<String>getOne("itemid");
+        Optional<ItemStack> itemInHand = player.getItemInHand();
+        if (!itemid.isPresent() && !itemInHand.isPresent()) {
+            GriefPrevention.sendMessage(player, TextMode.Err, "No item id was specified and player is not holding an item.");
+            return CommandResult.success();
+        } else if (!itemid.isPresent()) {
+            ItemStack itemstack = itemInHand.get();
+            if (itemstack.getItem() instanceof ItemBlock) {
+                ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
+                net.minecraft.item.ItemStack nmsStack = (net.minecraft.item.ItemStack)(Object) itemstack;
+                BlockState blockState = ((BlockState) itemBlock.block.getStateFromMeta(nmsStack.getItemDamage()));
+                itemToBan = blockState.getId();
+            } else {
+                itemToBan = itemstack.getItem().getId();
+            }
+        } else {
+            itemToBan = itemid.get();
+        }
+
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        CommandHelper.addPermission(player, GriefPrevention.GLOBAL_SUBJECT, claim, GPFlags.ITEM_USE, itemToBan, Tristate.UNDEFINED, null, 0);
 
         return CommandResult.success();
     }

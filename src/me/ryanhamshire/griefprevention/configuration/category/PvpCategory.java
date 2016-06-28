@@ -27,9 +27,6 @@ package me.ryanhamshire.griefprevention.configuration.category;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @ConfigSerializable
 public class PvpCategory extends ConfigCategory {
 
@@ -37,8 +34,6 @@ public class PvpCategory extends ConfigCategory {
     public boolean rulesEnabled = true;
     @Setting(value = "protect-item-drops-death", comment = "Whether player's dropped on death items are protected in pvp worlds.")
     public boolean protectItemsOnDeathPvp = false;
-    @Setting(value = "protect-item-drops-death-non-pvp", comment = "Whether players' dropped on death items are protected in non-pvp worlds.")
-    public boolean protectItemsOnDeathNonPvp = true;
     @Setting(value = "allow-combat-item-drops", comment = "Whether a player can drop items during combat to hide them.")
     public boolean allowCombatItemDrops = false;
     @Setting(value = "combat-timeout", comment = "How long combat is considered to continue after the most recent damage.")
@@ -51,8 +46,8 @@ public class PvpCategory extends ConfigCategory {
     public boolean protectPlayersInAdminClaims = false;
     @Setting(value = "protect-players-in-subdivisions", comment = "Whether players may fight in subdivisions of admin-owned land claims.")
     public boolean protectPlayersInAdminSubDivisions = false;
+    @Setting(value = "protect-players-in-wilderness", comment = "Whether players may fight in wilderness.")
+    public boolean protectPlayersInWilderness = false;
     @Setting(value = "punish-logout", comment = "Whether to kill players who log out during PvP combat.")
     public boolean punishPvpLogout = true;
-    @Setting(value = "blocked-commands", comment = "Commands blocks from being used during PvP combat.")
-    public List<String> blockedCommandList = new ArrayList<>();
 }

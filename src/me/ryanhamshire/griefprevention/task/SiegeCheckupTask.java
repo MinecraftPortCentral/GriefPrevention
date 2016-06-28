@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -51,7 +52,7 @@ public class SiegeCheckupTask implements Runnable {
         Player attacker = this.siegeData.attacker;
 
         // where is the defender?
-        Claim defenderClaim = dataStore.getClaimAt(defender.getLocation(), false, null);
+        Claim defenderClaim = dataStore.getClaimAtPlayer(defender, false);
 
         // if this is a new claim and he has some permission there, extend the siege to include it
         if (defenderClaim != null) {

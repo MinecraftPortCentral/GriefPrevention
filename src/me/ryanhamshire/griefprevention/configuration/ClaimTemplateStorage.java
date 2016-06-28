@@ -99,8 +99,8 @@ public class ClaimTemplateStorage {
             this.configBase.accessors = new ArrayList<UUID>(claimData.getAccessors());
             this.configBase.builders = new ArrayList<UUID>(claimData.getBuilders());
             this.configBase.containers = new ArrayList<UUID>(claimData.getContainers());
-            this.configBase.coowners = new ArrayList<UUID>(claimData.getCoowners());
-            this.configBase.flags = claimData.getFlags().copyFlags();
+            this.configBase.coowners = new ArrayList<UUID>(claimData.getManagers());
+            //this.configBase.flags = new HashMap<String, Tristate>(claimData.getFlags());
             save();
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize claim template data", e);

@@ -1,7 +1,6 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
  * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
@@ -28,16 +27,18 @@ package me.ryanhamshire.griefprevention.command;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
-public class CommandClaimSubdivide implements CommandExecutor {
+public class CommandClaimFlagDebug implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -49,11 +50,20 @@ public class CommandClaimSubdivide implements CommandExecutor {
             return CommandResult.success();
         }
 
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        if (claim.allowEdit(player) != null) {
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
+            return CommandResult.success();
+        }
+
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        playerData.shovelMode = ShovelMode.Subdivide;
-        playerData.claimSubdividing = null;
-        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
-        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2);
+        playerData.debugClaimPermissions = !playerData.debugClaimPermissions;
+
+        if (!playerData.debugClaimPermissions) {
+            GriefPrevention.sendMessage(player, Text.of(TextColors.WHITE, "Claim flags debug ", TextColors.RED, "OFF"));
+        } else {
+            GriefPrevention.sendMessage(player, Text.of(TextColors.WHITE, "Claim flags debug ", TextColors.GREEN, "ON"));
+        }
 
         return CommandResult.success();
     }

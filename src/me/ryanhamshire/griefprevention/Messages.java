@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -88,7 +89,6 @@ public enum Messages {
     Containers,
     ContainersPermission,
     ContinueBlockMath,
-    Coowner,
     CreateClaimFailOverlap,
     CreateClaimFailOverlapOtherPlayer,
     CreateClaimFailOverlapRegion,
@@ -119,7 +119,7 @@ public enum Messages {
     IgnoringClaims,
     InsufficientFunds,
     InvalidPermissionID,
-    ItemBanned,
+    ItemNotAuthorized,
     LocationAllClaims,
     LocationCurrentClaim,
     Manage,
@@ -144,17 +144,24 @@ public enum Messages {
     NoDeletePermission,
     NoDropsAllowed,
     NoEditPermission,
+    NoEnterClaim,
+    NoExitClaim,
+    NoInteractBlockPermission,
     NoLavaNearOtherPlayer,
     NoModifyDuringSiege,
     NoOwnerBuildUnderSiege,
     NoPermissionForCommand,
     NoPermissionTrust,
     NoPistonsOutsideClaims,
+    NoPortalFromProtectedClaim,
+    NoPortalToProtectedClaim,
     NoProfanity,
     NoSiegeAdminClaim,
     NoSiegeDefenseless,
     NoTNTDamageAboveSeaLevel,
     NoTNTDamageClaims,
+    NoTeleportFromProtectedClaim,
+    NoTeleportToProtectedClaim,
     NoTeleportPvPCombat,
     NoWildernessBuckets,
     NonSiegeMaterial,

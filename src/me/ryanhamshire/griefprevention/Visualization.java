@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,12 +34,14 @@ import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
+import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 //represents a visualization sent to a player
 //FEATURE: to show players visually where claim boundaries are, we send them fake block change packets
@@ -50,6 +53,10 @@ public class Visualization {
 
     // sends a visualization to a player
     public static void Apply(Player player, Visualization visualization) {
+        if (visualization == null) {
+            return;
+        }
+
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // if he has any current visualization, clear it first
@@ -108,6 +115,10 @@ public class Visualization {
     // visualizationType determines the style (gold blocks, silver, red,
     // diamond, etc)
     public static Visualization FromClaim(Claim claim, int height, VisualizationType visualizationType, Location<World> locality) {
+        if (claim.isWildernessClaim()) {
+            return null;
+        }
+
         // visualize only top level claims
         if (claim.parent != null) {
             return FromClaim(claim.parent, height, visualizationType, locality);
@@ -150,7 +161,7 @@ public class Visualization {
         Location<World> smallXsmallZ = claim.getLesserBoundaryCorner();
         Location<World> bigXbigZ = claim.getGreaterBoundaryCorner();
         World world = smallXsmallZ.getExtent();
-        boolean waterIsTransparent = locality.getBlock().getType() == BlockTypes.WATER;
+        boolean liquidTransparent = locality.getBlock().getType().getProperty(MatterProperty.class).isPresent() ? false : true;
 
         int smallx = smallXsmallZ.getBlockX();
         int smallz = smallXsmallZ.getBlockZ();
@@ -161,15 +172,14 @@ public class Visualization {
         BlockType accentMaterial;
 
         ArrayList<Transaction<BlockSnapshot>> newElements = new ArrayList<Transaction<BlockSnapshot>>();
-
         // TODO: move this to config so users can customize types
-        if (claim.type == Claim.Type.BASIC) {
+        if (visualizationType == VisualizationType.Claim) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.GOLD_BLOCK;
-        } else if (claim.isAdminClaim()) {
+        } else if (visualizationType == VisualizationType.AdminClaim) {
             cornerMaterial = BlockTypes.GLOWSTONE;
             accentMaterial = BlockTypes.PUMPKIN;
-        } else if (claim.isSubdivision()) {
+        } else if (visualizationType == VisualizationType.Subdivision) {
             cornerMaterial = BlockTypes.IRON_BLOCK;
             accentMaterial = BlockTypes.WOOL;
         } else if (visualizationType == VisualizationType.RestoreNature) {
@@ -276,13 +286,12 @@ public class Visualization {
             }
         }
 
-        // set Y values and real block information for any remaining
-        // visualization blocks
+        // set Y values and real block information for any remaining visualization blocks
         ArrayList<Transaction<BlockSnapshot>> actualElements = new ArrayList<Transaction<BlockSnapshot>>();
         for (Transaction<BlockSnapshot> element : newElements) {
             Location<World> tempLocation = element.getFinal().getLocation().get();
             Location<World> visibleLocation =
-                    getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), waterIsTransparent);
+                    getVisibleLocation(tempLocation.getExtent(), tempLocation.getBlockX(), height, tempLocation.getBlockZ(), liquidTransparent);
             element = new Transaction<BlockSnapshot>(element.getOriginal().withLocation(visibleLocation).withState(visibleLocation.getBlock()),
                     element.getFinal().withLocation(visibleLocation));
             height = element.getFinal().getPosition().getY();
@@ -322,6 +331,10 @@ public class Visualization {
     // partly transparent blocks like grass and fence
     private static boolean isTransparent(BlockType block, boolean waterIsTransparent) {
         Block mcBlock = (net.minecraft.block.Block) block;
+        Optional<MatterProperty> matterProperty = block.getProperty(MatterProperty.class);
+        if (!waterIsTransparent && matterProperty.isPresent() && matterProperty.get().getValue() == MatterProperty.Matter.LIQUID) {
+            return false;
+        }
         return !mcBlock.isOpaqueCube();
     }
 

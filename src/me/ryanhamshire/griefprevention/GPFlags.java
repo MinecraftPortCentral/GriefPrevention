@@ -24,121 +24,104 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import com.google.common.collect.ImmutableSet;
-import me.ryanhamshire.griefprevention.claim.Claim;
-import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.context.Context;
+import com.google.common.collect.Maps;
 import org.spongepowered.api.util.Tristate;
 
-import java.util.Set;
+import java.util.Map;
 
 public class GPFlags {
 
+    public static final Map<String, Tristate> DEFAULT_FLAGS = Maps.newHashMap();
+    public static final Map<String, Tristate> DEFAULT_WILDERNESS_FLAGS = Maps.newHashMap();
+
     // Names
     public static final String BLOCK_BREAK = "block-break";
-    public static final String BLOCK_COMMANDS = "block-commands";
     public static final String BLOCK_PLACE = "block-place";
-    public static final String DAMAGE_PASSIVES = "damage-passives";
-    public static final String EXPLOSIONS = "explosions";
-    public static final String FAREWELL_MESSAGE = "farewell-message";
+    public static final String COMMAND_EXECUTE = "command-execute";
+    public static final String COMMAND_EXECUTE_PVP = "command-execute-pvp";
+    public static final String ENTER_CLAIM = "enter-claim";
+    public static final String ENTITY_COLLIDE_BLOCK = "collide-block";
+    public static final String ENTITY_COLLIDE_ENTITY = "collide-entity";
+    public static final String ENTITY_DAMAGE = "entity-damage";
+    public static final String ENTITY_RIDING = "entity-riding";
+    public static final String ENTITY_SPAWN = "entity-spawn";
+    public static final String ENTITY_TELEPORT_FROM = "entity-teleport-from";
+    public static final String ENTITY_TELEPORT_TO = "entity-teleport-to";
+    public static final String EXIT_CLAIM = "exit-claim";
+    public static final String EXPLOSION = "explosion";
+    public static final String EXPLOSION_SURFACE = "explosion-surface";
     public static final String FIRE_SPREAD = "fire-spread";
-    public static final String FORCE_DENY_ALL = "force-deny-all";
-    public static final String GREETING_MESSAGE = "greeting-message";
-    public static final String IGNITE = "ignite";
-    public static final String INTERACT_PRIMARY = "interact-primary";
-    public static final String INTERACT_SECONDARY = "interact-secondary";
+    public static final String INTERACT_BLOCK_PRIMARY = "interact-block-primary";
+    public static final String INTERACT_BLOCK_SECONDARY = "interact-block-secondary";
+    public static final String INTERACT_ENTITY_PRIMARY = "interact-entity-primary";
+    public static final String INTERACT_ENTITY_SECONDARY = "interact-entity-secondary";
     public static final String INTERACT_INVENTORY = "interact-inventory";
     public static final String ITEM_DROP = "item-drop";
     public static final String ITEM_PICKUP = "item-pickup";
     public static final String ITEM_USE = "item-use";
-    public static final String LAVA_FLOW = "lava-flow";
-    public static final String MOB_BLOCK_DAMAGE = "mob-block-damage";
-    public static final String MOB_PLAYER_DAMAGE = "mob-player-damage";
-    public static final String MOB_RIDING = "mob-riding";
+    public static final String LIQUID_FLOW = "liquid-flow";
     public static final String PORTAL_USE = "portal-use";
-    public static final String PROJECTILES_ANY = "projectiles-any";
-    public static final String PROJECTILES_MONSTER = "projectiles-monster";
-    public static final String PROJECTILES_PLAYER = "projectiles-player";
+    public static final String PROJECTILE_IMPACT_BLOCK = "projectile-impact-block";
+    public static final String PROJECTILE_IMPACT_ENTITY = "projectile-impact-entity";
     public static final String PVP = "pvp";
-    public static final String SLEEP = "sleep";
-    public static final String SPAWN_AMBIENTS = "spawn-ambient";
-    public static final String SPAWN_ANY = "spawn-any";
-    public static final String SPAWN_AQUATICS = "spawn-aquatic";
-    public static final String SPAWN_MONSTERS = "spawn-monsters";
-    public static final String SPAWN_ANIMALS = "spawn-animals";
-    public static final String WATER_FLOW = "water-flow";
-    public static final String VILLAGER_TRADING = "villager-trading";
 
-    // Comments
-    public static final String COMMENT_BLOCK_BREAK = "Allow/deny breaking blocks.";
-    public static final String COMMENT_BLOCK_COMMANDS = "Blocked commands.";
-    public static final String COMMENT_BLOCK_PLACE = "Allow/deny placing blocks.";
-    public static final String COMMENT_DAMAGE_PASSIVES = "Allow/deny players damaging passive entities.";
-    public static final String COMMENT_EXPLOSIONS = "Allow/deny explosions.";
-    public static final String COMMENT_FAREWELL_MESSAGE = "Allow/deny farewell message.";
-    public static final String COMMENT_FIRE_SPREAD = "Allow/deny fire spread.";
-    public static final String COMMENT_FORCE_DENY_ALL = "Only intended if you want to explicitly ignore all checking for player permissions.";
-    public static final String COMMENT_GREETING_MESSAGE = "Allow/deny greeting message.";
-    public static final String COMMENT_IGNITE = "Allow/deny ignites.";
-    public static final String COMMENT_INTERACT_PRIMARY = "Allow/deny left-clicking.";
-    public static final String COMMENT_INTERACT_SECONDARY = "Allow/deny right-clicking.";
-    public static final String COMMENT_INTERACT_INVENTORY = "Allow/deny blocks with inventories.";
-    public static final String COMMENT_ITEM_DROP = "Allow/deny item drops.";
-    public static final String COMMENT_ITEM_PICKUP = "Allow/deny picking up items.";
-    public static final String COMMENT_ITEM_USE = "Allow/deny item use.";
-    public static final String COMMENT_LAVA_FLOW = "Allow/deny lava flow.";
-    public static final String COMMENT_MOB_BLOCK_DAMAGE = "Allow/deny mob block damage.";
-    public static final String COMMENT_MOB_PLAYER_DAMAGE = "Allow/deny mob player damage.";
-    public static final String COMMENT_MOB_RIDING = "Allow/deny mob riding.";
-    public static final String COMMENT_PORTAL_USE = "Allow/deny portal use.";
-    public static final String COMMENT_PROJECTILES_ANY = "Allow/deny any projectiles.";
-    public static final String COMMENT_PROJECTILES_MONSTER = "Allow/deny monster projectiles.";
-    public static final String COMMENT_PROJECTILES_PLAYER = "Allow/deny player projectiles.";
-    public static final String COMMENT_PVP = "Allow/deny pvp.";
-    public static final String COMMENT_SLEEP = "Allow/deny sleep.";
-    public static final String COMMENT_SPAWN_AMBIENTS = "Allow/deny the spawning of ambients.";
-    public static final String COMMENT_SPAWN_ANIMALS = "Allow/deny the spawning of animals.";
-    public static final String COMMENT_SPAWN_ANY = "Allow/deny the spawning of any entities.";
-    public static final String COMMENT_SPAWN_AQUATICS = "Allow/deny the spawning of aquatics.";
-    public static final String COMMENT_SPAWN_MONSTERS = "Allow/deny the spawning of monsters.";
-    public static final String COMMENT_WATER_FLOW = "Allow/deny water flow.";
-    public static final String COMMENT_VILLAGER_TRADING = "Allow/deny villager trading.";
+    static {
+        DEFAULT_FLAGS.put(GPFlags.BLOCK_BREAK, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.BLOCK_PLACE, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.COMMAND_EXECUTE, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.COMMAND_EXECUTE_PVP, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.ENTER_CLAIM, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_COLLIDE_BLOCK, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_COLLIDE_ENTITY, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_DAMAGE, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_RIDING, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_SPAWN, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_TELEPORT_FROM, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_TELEPORT_TO, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.EXIT_CLAIM, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.EXPLOSION, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.EXPLOSION_SURFACE, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.FIRE_SPREAD, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.INTERACT_BLOCK_PRIMARY, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.INTERACT_BLOCK_SECONDARY, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.INTERACT_ENTITY_PRIMARY, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.INTERACT_ENTITY_SECONDARY, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.INTERACT_INVENTORY, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ITEM_USE, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_ENTITY, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.PVP, Tristate.FALSE);
 
-    public static Tristate getClaimFlagPermission(User user, Claim claim, String flag) {
-        if (claim.hasFullAccess(user)) {
-            return Tristate.TRUE;
-        }
-
-        if (GriefPrevention.instance.permPluginInstalled) {
-            Set<Context> contextSet = ImmutableSet.of(claim.getContext());
-            Tristate value = user.getPermissionValue(contextSet, flag);
-            if (value != Tristate.UNDEFINED) {
-                return value;
-            }
-        }
-
-        return getClaimFlagPermission(claim, flag);
-    }
-
-    // No user
-    public static Tristate getClaimFlagPermission(Claim claim, String flag) {
-        if (claim == null) {
-            return Tristate.UNDEFINED;
-        }
-        flag = flag.replace("griefprevention.flag.", "");
-        Tristate value = (Tristate) claim.getClaimData().getFlags().getFlagValue(flag);
-
-        if (value == Tristate.UNDEFINED) {
-            Object obj = GriefPrevention.getActiveConfig(claim.world.getProperties()).getConfig().flags.getFlagValue(flag);
-            if (obj != null) {
-                return Tristate.fromBoolean((boolean) obj);
-            }
-        }
-
-        if (value != null) {
-            return value;
-        }
-
-        return Tristate.TRUE;
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.BLOCK_BREAK, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.BLOCK_PLACE, Tristate.TRUE);;
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.COMMAND_EXECUTE, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.COMMAND_EXECUTE_PVP, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_COLLIDE_BLOCK, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_COLLIDE_ENTITY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_DAMAGE, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_RIDING, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_SPAWN, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_TELEPORT_FROM, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_TELEPORT_TO, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.EXPLOSION, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.EXPLOSION_SURFACE, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.FIRE_SPREAD, Tristate.FALSE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_BLOCK_PRIMARY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_BLOCK_SECONDARY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ENTITY_PRIMARY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ENTITY_SECONDARY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_INVENTORY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_USE, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PROJECTILE_IMPACT_ENTITY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PVP, Tristate.TRUE);
     }
 }

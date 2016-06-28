@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -83,7 +84,7 @@ public class DeliverClaimBlocksTask implements Runnable {
                         (lastLocation == null || lastLocation.getPosition().distanceSquared(player.getLocation().getPosition()) >= 0) &&
                         !((net.minecraft.block.Block) player.getLocation().getBlockType()).getMaterial().isLiquid()) {
                     // add blocks
-                    int accruedBlocks = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimBlocksEarned / 6;
+                    int accruedBlocks = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimBlocksEarned / 12;
                     if (accruedBlocks < 0) {
                         accruedBlocks = 1;
                     }

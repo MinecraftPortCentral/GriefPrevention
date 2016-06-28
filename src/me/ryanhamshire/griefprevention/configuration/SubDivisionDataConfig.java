@@ -27,7 +27,6 @@ package me.ryanhamshire.griefprevention.configuration;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.Claim.Type;
-import me.ryanhamshire.griefprevention.configuration.category.ClaimDataFlagsCategory;
 import me.ryanhamshire.griefprevention.configuration.category.ConfigCategory;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import ninja.leaping.configurate.objectmapping.Setting;
@@ -44,36 +43,32 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
 
     private boolean requiresSave = true;
 
-    @Setting(value = ClaimStorageData.MAIN_CLAIM_NAME, comment = "The name associated with subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_NAME)//, comment = "The name associated with subdivision.")
     public Text claimName = Text.of("");
-    @Setting(value = ClaimStorageData.MAIN_CLAIM_TYPE, comment = "The type of claim.")
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_TYPE)//, comment = "The type of claim.")
     public Claim.Type claimType = Claim.Type.SUBDIVISION;
-    @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED, comment = "The date and time this subdivision was created.")
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED)//, comment = "The date and time this subdivision was created.")
     public String dateCreated = Instant.now().toString();
-    @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE, comment = "The last date and time this subdivision was used.")
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE)//, comment = "The last date and time this subdivision was used.")
     public String dateLastActive = Instant.now().toString();
-    @Setting(value = ClaimStorageData.MAIN_CLAIM_GREETING, comment = "The greeting message players will receive when entering subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_GREETING)//, comment = "The greeting message players will receive when entering subdivision.")
     public Text claimGreetingMessage = Text.of("");
-    @Setting(value = ClaimStorageData.MAIN_CLAIM_FAREWELL, comment = "The farewell message players will receive when leaving subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_FAREWELL)//, comment = "The farewell message players will receive when leaving subdivision.")
     public Text claimFarewellMessage = Text.of("");
-    @Setting(value = ClaimStorageData.MAIN_LESSER_BOUNDARY_CORNER, comment = "The lesser boundary corner location of subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_LESSER_BOUNDARY_CORNER)//, comment = "The lesser boundary corner location of subdivision.")
     public String lesserBoundaryCornerPos;
-    @Setting(value = ClaimStorageData.MAIN_GREATER_BOUNDARY_CORNER, comment = "The greater boundary corner location of subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_GREATER_BOUNDARY_CORNER)//, comment = "The greater boundary corner location of subdivision.")
     public String greaterBoundaryCornerPos;
-    @Setting(value = ClaimStorageData.MAIN_ACCESSORS, comment = "The accessors associated with subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_ACCESSORS)//, comment = "The accessors associated with subdivision.")
     public List<UUID> accessors = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_BUILDERS, comment = "The builders associated with subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_BUILDERS)//, comment = "The builders associated with subdivision.")
     public List<UUID> builders = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_CONTAINERS, comment = "The containers associated with subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_CONTAINERS)//, comment = "The containers associated with subdivision.")
     public List<UUID> containers = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_COOWNERS, comment = "The coowners associated with subdivision.")
-    public List<UUID> coowners = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_BANNED_ITEM_LIST, comment = "Item id's that are banned from use in claim.")
+    @Setting(value = ClaimStorageData.MAIN_MANAGERS)//, comment = "The managers associated with subdivision.")
+    public List<UUID> managers = new ArrayList<>();
+    @Setting(value = ClaimStorageData.MAIN_BANNED_ITEM_LIST)//, comment = "Item id's that are banned from use in claim.")
     private List<String> bannedItemList = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within subdivision.")
-    public ArrayList<String> protectionBlacklist = new ArrayList<>();
-    @Setting
-    public ClaimDataFlagsCategory flags = new ClaimDataFlagsCategory();
 
     public SubDivisionDataConfig() {}
 
@@ -138,16 +133,8 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
         return this.containers;
     }
     @Override
-    public List<UUID> getCoowners() {
-        return this.coowners;
-    }
-    @Override
-    public List<String> getProtectionBlackList() {
-        return this.protectionBlacklist;
-    }
-    @Override
-    public ClaimDataFlagsCategory getFlags() {
-        return this.flags;
+    public List<UUID> getManagers() {
+        return this.managers;
     }
 
     public List<String> getBannedItemList() {
@@ -208,14 +195,9 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
         this.containers = containers;
     }
 
-    @Override
-    public void setFlags(ClaimDataFlagsCategory copyFlags) {
-        this.flags = copyFlags;
-    }
-
-    public void setCoowners(List<UUID> coowners) {
+    public void setManagers(List<UUID> coowners) {
         this.requiresSave = true;
-        this.coowners = coowners;
+        this.managers = coowners;
     }
 
     public boolean requiresSave() {

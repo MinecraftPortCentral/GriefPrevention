@@ -25,7 +25,9 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import org.spongepowered.api.entity.living.player.User;
@@ -38,6 +40,7 @@ import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,6 +51,8 @@ public class PlayerData {
     public UUID playerID;
     public WorldProperties worldProperties;
     private GriefPreventionConfig<?> activeConfig;
+    // permission level
+    public Map<UUID, ClaimPermission> permissionLevelMap = Maps.newHashMap();
 
     // the player's claims
     private List<Claim> claimList;
@@ -114,6 +119,7 @@ public class PlayerData {
     // ignore claims mode
     public boolean ignoreClaims = false;
 
+    public boolean debugClaimPermissions = false;
     // the last claim this player was in, that we know of
     public Claim lastClaim = null;
 
@@ -135,7 +141,7 @@ public class PlayerData {
 
     // whether or not this player's dropped items (on death) are unlocked for
     // other players to pick up
-    public boolean dropsAreUnlocked = false;
+    public boolean dropsAreUnlocked = true;
 
     // message to send to player after he respawns
     public Text messageOnRespawn = null;

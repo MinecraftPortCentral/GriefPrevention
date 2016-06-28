@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -320,7 +321,7 @@ public class DatabaseDataStore extends DataStore {
 
     // see datastore.cs. this will ALWAYS be a top level claim
     @Override
-    void writeClaimToStorage(Claim claim) {
+    public void writeClaimToStorage(Claim claim) {
         try {
             this.refreshDataConnection();
 
@@ -474,28 +475,6 @@ public class DatabaseDataStore extends DataStore {
         }
     }*/
 
-    @Override
-    void incrementNextClaimID() {
-        //this.setNextClaimID(this.nextClaimID + 1);
-    }
-
-    // sets the next claim ID. used by incrementNextClaimID() above, and also
-    // while migrating data from a flat file data store
-    void setNextClaimID(long nextID) {
-        // this.nextClaimID = nextID;
-
-        try {
-            this.refreshDataConnection();
-
-            Statement statement = databaseConnection.createStatement();
-            statement.execute("DELETE FROM griefprevention_nextclaimid;");
-            statement.execute("INSERT INTO griefprevention_nextclaimid VALUES (" + nextID + ");");
-        } catch (SQLException e) {
-            GriefPrevention.addLogEntry("Unable to set next claim ID to " + nextID + ".  Details:");
-            GriefPrevention.addLogEntry(e.getMessage());
-        }
-    }
-
     // updates the database with a group's bonus blocks
     @Override
     void saveGroupBonusBlocks(String groupName, int currentValue) {
@@ -603,7 +582,7 @@ public class DatabaseDataStore extends DataStore {
     }
 
     @Override
-    public void loadWorldData(WorldProperties worldProperties) {
+    public void loadWorldData(World world) {
     }
 
     @Override

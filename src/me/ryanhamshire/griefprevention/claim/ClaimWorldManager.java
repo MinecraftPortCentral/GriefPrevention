@@ -22,13 +22,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention;
+package me.ryanhamshire.griefprevention.claim;
 
 import com.google.common.collect.Maps;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.FlatFileDataStore;
+import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.nio.file.Path;
@@ -47,7 +52,7 @@ public class ClaimWorldManager {
     private WorldProperties worldProperties;
     private GriefPreventionConfig<?> activeConfig;
     private boolean useGlobalStorage = false;
-    
+
     // World UUID -> player data
     private Map<UUID, PlayerData> playerDataList = Maps.newHashMap();
     // Player UUID -> storage
@@ -60,6 +65,7 @@ public class ClaimWorldManager {
     private Map<UUID, Claim> claimUniqueIdMap = Maps.newHashMap();
     // String -> Claim
     private ConcurrentHashMap<String, List<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
+    private Claim theWildernessClaim;
 
     public ClaimWorldManager() {
         this.worldProperties = null;
@@ -69,7 +75,7 @@ public class ClaimWorldManager {
 
     public ClaimWorldManager(WorldProperties worldProperties) {
         this.worldProperties = worldProperties;
-        this.activeConfig = GriefPrevention.getActiveConfig(worldProperties);
+        this.activeConfig = GriefPrevention.getActiveConfig(this.worldProperties);
     }
 
     public PlayerData getPlayerData(UUID playerUniqueId) {
@@ -108,7 +114,6 @@ public class ClaimWorldManager {
                 }
             }
         }
-
         playerData = new PlayerData(this.worldProperties, playerUniqueId, playerStorage, this.activeConfig, claimList);
         this.playerStorageList.put(playerUniqueId, playerStorage);
         this.playerDataList.put(playerUniqueId, playerData);
@@ -123,38 +128,49 @@ public class ClaimWorldManager {
     }
 
     public void addWorldClaim(Claim claim) {
-        UUID ownerId = claim.ownerID;
-        if (!this.worldClaims.contains(claim)) {
-            this.worldClaims.add(claim);
-        }
-        if (!this.claimUniqueIdMap.containsKey(claim.id)) {
-            this.claimUniqueIdMap.put(claim.id, claim);
-        }
+        if (!claim.isWildernessClaim()) {
+            if (claim.isSubdivision() || claim.parent != null) {
+                return;
+            }
+    
+            UUID ownerId = claim.ownerID;
+            if (!this.worldClaims.contains(claim)) {
+                this.worldClaims.add(claim);
+            }
+            if (!this.claimUniqueIdMap.containsKey(claim.id)) {
+                this.claimUniqueIdMap.put(claim.id, claim);
+            }
+    
+            PlayerData playerData = this.playerDataList.get(ownerId);
+            if (claim.parent == null && playerData != null) {
+                List<Claim> playerClaims = playerData.getClaims();
+                if (!playerClaims.contains(claim)) {
+                    playerClaims.add(claim);
+                }
+            } else {
+                createPlayerData(ownerId);
+            }
+    
+            ArrayList<String> chunkStrings = claim.getChunkStrings();
+            for (String chunkString : chunkStrings) {
+                List<Claim> claimsInChunk = this.getChunksToClaimsMap().get(chunkString);
+                if (claimsInChunk == null) {
+                    claimsInChunk = new ArrayList<Claim>();
+                    this.getChunksToClaimsMap().put(chunkString, claimsInChunk);
+                }
 
-        PlayerData playerData = this.playerDataList.get(ownerId);
-        if (claim.parent == null && playerData != null) {
-            List<Claim> playerClaims = playerData.getClaims();
-            if (!playerClaims.contains(claim)) {
-                playerClaims.add(claim);
+                claimsInChunk.add(claim);
             }
         } else {
-            createPlayerData(ownerId);
-        }
-
-        ArrayList<String> chunkStrings = claim.getChunkStrings();
-        for (String chunkString : chunkStrings) {
-            List<Claim> claimsInChunk = this.getChunksToClaimsMap().get(chunkString);
-            if (claimsInChunk == null) {
-                claimsInChunk = new ArrayList<Claim>();
-                this.getChunksToClaimsMap().put(chunkString, claimsInChunk);
-            }
-
-            claimsInChunk.add(claim);
+            this.theWildernessClaim = claim;
         }
     }
 
     public void removePlayerClaim(Claim claim) {
-        this.playerClaimList.get(claim.ownerID).remove(claim);
+        // player may be offline so check is needed
+        if (this.playerClaimList.get(claim.ownerID) != null) {
+            this.playerClaimList.get(claim.ownerID).remove(claim);
+        }
         this.worldClaims.remove(claim);
         this.claimUniqueIdMap.remove(claim.id);
     }
@@ -172,6 +188,27 @@ public class ClaimWorldManager {
         return this.playerClaimList.get(playerUniqueId);
     }
 
+    public void createWildernessClaim(WorldProperties worldProperties) {
+        World world = Sponge.getServer().getWorld(worldProperties.getUniqueId()).get();
+        Location<World> lesserCorner = new Location<World>(world, -30000000, 0, -30000000);
+        Location<World> greaterCorner = new Location<World>(world, 29999999, 255, 29999999);
+        Claim worldClaim = new Claim(lesserCorner, greaterCorner, UUID.randomUUID(), null);
+        worldClaim.ownerID = GriefPrevention.WORLD_USER_UUID;
+        worldClaim.type = Claim.Type.WILDERNESS;
+        worldClaim.context = new Context("gp_claim", worldClaim.id.toString());
+        GriefPrevention.instance.dataStore.writeClaimToStorage(worldClaim);
+        worldClaim.inDataStore = true;
+        this.theWildernessClaim = worldClaim;
+    }
+
+    public Claim getWildernessClaim() {
+        return this.theWildernessClaim;
+    }
+
+    public void setWildernessClaim(Claim claim) {
+        this.theWildernessClaim = claim;
+    }
+
     public List<Claim> getWorldClaims() {
         return this.worldClaims;
     }
@@ -180,14 +217,14 @@ public class ClaimWorldManager {
         return this.chunksToClaimsMap;
     }
 
-    public void changeClaimOwner(Claim claim, UUID newOwnerID) throws NoTransferException {
+    public void transferClaimOwner(Claim claim, UUID newOwnerID) throws NoTransferException {
         // if it's a subdivision, throw an exception
         if (claim.parent != null) {
             throw new NoTransferException("Subdivisions can't be transferred.  Only top-level claims may change owners.");
         }
 
         // determine current claim owner
-        if (claim.isAdminClaim()) {
+        if (claim.isAdminClaim() || claim.isWildernessClaim()) {
             return;
         }
 

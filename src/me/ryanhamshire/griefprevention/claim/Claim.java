@@ -25,8 +25,8 @@
  */
 package me.ryanhamshire.griefprevention.claim;
 
-import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPFlags;
+import me.ryanhamshire.griefprevention.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
@@ -34,21 +34,22 @@ import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.SiegeData;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
-import me.ryanhamshire.griefprevention.configuration.IClaimData;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
+import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import me.ryanhamshire.griefprevention.configuration.IClaimData;
+import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
-import net.minecraft.inventory.IInventory;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.item.ItemType;
-import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
 import org.spongepowered.api.util.Tristate;
@@ -58,7 +59,6 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,9 +70,10 @@ import java.util.UUID;
 public class Claim implements ContextSource {
 
     public enum Type {
+        ADMIN,
         BASIC,
         SUBDIVISION,
-        ADMIN
+        WILDERNESS
     }
 
     // two locations, which together define the boundaries of the claim
@@ -167,8 +168,20 @@ public class Claim implements ContextSource {
         return this.type == Type.ADMIN;
     }
 
+    public boolean isBasicClaim() {
+        if (this.parent != null) {
+            return this.parent.isBasicClaim();
+        }
+
+        return this.type == Type.BASIC;
+    }
+
     public boolean isSubdivision() {
         return this.type == Type.SUBDIVISION;
+    }
+
+    public boolean isWildernessClaim() {
+        return this.type == Type.WILDERNESS;
     }
 
     // accessor for ID
@@ -311,13 +324,18 @@ public class Claim implements ContextSource {
             return true;
         }
 
+        if (playerData.debugClaimPermissions) {
+            return false;
+        }
+
         // owner
         if (user.getUniqueId().equals(this.ownerID)) {
             return true;
         }
-        // coowner
-        if (this.claimData.getCoowners().contains(user.getUniqueId())) {
-            return true;
+
+        // if subdivision
+        if (this.parent != null) {
+            return this.parent.hasFullAccess(user);
         }
 
         return false;
@@ -327,6 +345,10 @@ public class Claim implements ContextSource {
     // all of these return NULL when a player has permission, or a String error
     // message when the player doesn't have permission
     public String allowEdit(Player player) {
+        if (this.isWildernessClaim()) {
+            return null;
+        }
+
         if (this.hasFullAccess(player)) {
             return null;
         }
@@ -334,14 +356,14 @@ public class Claim implements ContextSource {
         // special cases...
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
-            if (player.hasPermission(GPPermissions.CLAIMS_ADMIN)) {
+            if (player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
                 return null;
             }
         }
 
         // anyone with deleteclaims permission can modify non-admin claims at any time
         else {
-            if (player.hasPermission(GPPermissions.DELETE_CLAIMS)) {
+            if (player.hasPermission(GPPermissions.COMMAND_DELETE_CLAIMS)) {
                 return null;
             }
         }
@@ -366,21 +388,8 @@ public class Claim implements ContextSource {
         return GriefPrevention.instance.dataStore.getMessage(Messages.OnlyOwnersModifyClaims, this.getOwnerName());
     }
 
-    // TODO: move this to config so it can be customized
-    private List<BlockType> placeableFarmingBlocksList = Arrays.asList(
-            BlockTypes.PUMPKIN_STEM,
-            BlockTypes.WHEAT,
-            BlockTypes.MELON_STEM,
-            BlockTypes.CARROTS,
-            BlockTypes.POTATOES,
-            BlockTypes.NETHER_WART);
-
-    private boolean placeableForFarming(BlockType material) {
-        return this.placeableFarmingBlocksList.contains(material);
-    }
-
     // build permission check
-    public String allowBuild(User user, Location<World> location) {
+    public String allowBuild(Object source, Location<World> location, User user) {
         // when a player tries to build in a claim, if he's under siege, the
         // siege may extend to include the new claim
         if (user instanceof Player) {
@@ -389,7 +398,7 @@ public class Claim implements ContextSource {
 
         // admin claims can always be modified by admins, no exceptions
         if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.CLAIMS_ADMIN)) {
+            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
                 return null;
             }
         }
@@ -411,16 +420,8 @@ public class Claim implements ContextSource {
         }
 
         // anyone with explicit build permission can make changes
-        if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.BLOCK_PLACE) == Tristate.TRUE) {
+        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_PLACE, source, location.getBlock(), Optional.of(user)) == Tristate.TRUE) {
             return null;
-        }
-
-        // allow for farming with /containertrust permission
-        if (this.allowAccess(user, Optional.of(location), location.getBlockType().getId()) == null) {
-            // do allow for farming, if player has /containertrust permission
-            if (this.placeableForFarming(location.getBlock().getType())) {
-                return null;
-            }
         }
 
         // Builders can place blocks in claims
@@ -428,13 +429,9 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        if (GriefPrevention.instance.permPluginInstalled && user.hasPermission(ImmutableSet.of(getContext()), GPPermissions.BLOCK_PLACE)) {
-            return null;
-        }
-
         // subdivision permission inheritance
         if (this.parent != null) {
-            return this.parent.allowBuild(user, location);
+            return this.parent.allowBuild(source, location, user);
         }
 
         // failure message for all other cases
@@ -442,7 +439,7 @@ public class Claim implements ContextSource {
         if (location.getBlock().getType() != BlockTypes.FLOWING_WATER && location.getBlock().getType() != BlockTypes.FLOWING_LAVA) {
             reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
         }
-        if (user.hasPermission(GPPermissions.IGNORE_CLAIMS)) {
+        if (user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
             reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
         }
 
@@ -450,7 +447,7 @@ public class Claim implements ContextSource {
     }
 
     // break permission check
-    public String allowBreak(User user, BlockSnapshot blockSnapshot) {
+    public String allowBreak(Object source, BlockSnapshot blockSnapshot, Optional<User> user) {
         if (!blockSnapshot.getLocation().isPresent()) {
             return null;
         }
@@ -475,44 +472,55 @@ public class Claim implements ContextSource {
             // custom error messages for siege mode
             if (!breakable) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NonSiegeMaterial);
-            } else if (hasFullAccess(user)) {
+            } else if (user.isPresent() && hasFullAccess(user.get())) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NoOwnerBuildUnderSiege);
             } else {
                 return null;
             }
         }
 
-        if (hasFullAccess(user)) {
-            return null;
+        String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
+        if (user.isPresent()) {
+            if (hasFullAccess(user.get())) {
+                return null;
+            }
+    
+            //failure message for all other cases
+            if(user.get().hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
+                reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+            }
+
+            // Builders can break blocks
+            if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) || this.getClaimData().getBuilders().contains(user.get().getUniqueId())) {
+                return null;
+            }
+
+            // Flag order matters
+            // interact should always be checked before break
+            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, blockSnapshot.getState(), user) == Tristate.TRUE) {
+                return null;
+            }
         }
 
-        if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.BLOCK_BREAK) == Tristate.TRUE) {
-            return null;
-        }
-
-        // Builders can break blocks
-        if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) || this.getClaimData().getBuilders().contains(user.getUniqueId())) {
-            return null;
-        }
-        return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
+        return reason;
     }
 
     public String allowAccess(User user) {
-        return allowAccess(user, Optional.empty(), "");
+        return allowAccess(user, null);
     }
 
     // access permission check
-    public String allowAccess(User user, Optional<Location<World>> location, String type) {
+    public String allowAccess(User user, Location<World> location) {
+        // admin claims need adminclaims permission only.
+        if (this.isAdminClaim()) {
+            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+                return null;
+            }
+        }
+
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
-        }
-
-        // admin claims need adminclaims permission only.
-        if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.CLAIMS_ADMIN)) {
-                return null;
-            }
         }
 
         // claim owner and admins in ignoreclaims mode have access
@@ -520,32 +528,59 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        // look for explicit individual inventory permission
-        Optional<TileEntity> tileEntity = Optional.empty();
-        if (location.isPresent() && location.get().getTileEntity().isPresent()) {
-            tileEntity = location.get().getTileEntity();
-            if (tileEntity.get() instanceof IInventory) {
-                // trying to access inventory in a claim may extend an existing siege to include this claim
-                if (user instanceof Player) {
-                    GriefPrevention.instance.dataStore.tryExtendSiege((Player) user, this);
-                }
-    
-                // if under siege, nobody accesses containers
-                if (this.siegeData != null) {
-                    return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersSiege, siegeData.attacker.getName());
-                }
-    
-                if (user instanceof Player) {
-                    PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
-                    if (playerData != null && playerData.inPvpCombat(this.world)) {
-                        return GriefPrevention.instance.dataStore.getMessage(Messages.PvPNoContainers);
-                    }
-                }
-    
-                // check for explicit inventory allow
-                if (GPFlags.getClaimFlagPermission(user, this, GPPermissions.INTERACT_INVENTORY) == Tristate.TRUE) {
-                    return null;
-                }
+        if (this.getClaimData().getAccessors().contains(GriefPrevention.PUBLIC_UUID)
+                || this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) 
+                || this.getClaimData().getContainers().contains(GriefPrevention.PUBLIC_UUID) 
+                || this.getClaimData().getBuilders().contains(user.getUniqueId()) 
+                || this.getClaimData().getContainers().contains(user.getUniqueId())
+                || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
+            return null;
+        }
+
+        if (user instanceof Player && ((Player) user).getItemInHand().isPresent()) {
+            ItemStack itemstack = ((Player) user).getItemInHand().get();
+            Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.ITEM_USE, user, itemstack, Optional.of(user));
+            if (value == Tristate.FALSE) {
+                String reason = GriefPrevention.instance.dataStore.getMessage(Messages.ItemNotAuthorized, itemstack.getItem().getId());
+                return reason;
+            } else if (value == Tristate.TRUE) {
+                return null;
+            }
+        }
+
+        // permission inheritance for subdivisions
+        if (this.parent != null) {
+            return this.parent.allowAccess(user, location);
+        }
+
+        //catch-all error message for all other cases
+        String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
+        if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
+            reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        }
+        return reason;
+    }
+
+    public String allowContainers(User user, Location<World> location) {
+        //trying to access inventory in a claim may extend an existing siege to include this claim
+        if (user instanceof Player) {
+            GriefPrevention.instance.dataStore.tryExtendSiege((Player) user, this);
+        }
+        
+        //if under siege, nobody accesses containers
+        if(this.siegeData != null) {
+            return GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersSiege, siegeData.attacker.getName());
+        }
+        
+        // claim owner and admins in ignoreclaims mode have access
+        if (hasFullAccess(user)) {
+            return null;
+        }
+
+        // admin claims need adminclaims permission only.
+        if (this.isAdminClaim()) {
+            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+                return null;
             }
         }
 
@@ -555,27 +590,56 @@ public class Claim implements ContextSource {
                 || this.getClaimData().getContainers().contains(user.getUniqueId())) {
             return null;
         }
-        if (!tileEntity.isPresent()) {
-            if (!this.getClaimData().getBannedItemList().contains(type)) {
-                if (this.getClaimData().getAccessors().contains(GriefPrevention.PUBLIC_UUID) 
-                        || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
-                    return null;
-                }
-            }
-        }
 
-        // Check for TNT and explosions flag
-        if (GriefPrevention.instance.permPluginInstalled && (user instanceof Player) && ((Player)user).getItemInHand().isPresent() && ((Player)user).getItemInHand().get()
-                .getItem().equals(ItemTypes.TNT) && user.hasPermission(ImmutableSet.of(getContext()), GPPermissions.EXPLOSIONS)) {
+        //permission inheritance for subdivisions
+        if(this.parent != null) {
+            return this.parent.allowContainers(user, location);
+        }
+        
+        //error message for all other cases
+        String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
+        if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
+            reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        }
+        return reason;
+    }
+
+    //grant permission check, relatively simple
+    public String allowGrantPermission(Player player) {
+        //anyone who can modify the claim can do this
+        if(this.allowEdit(player) == null) {
             return null;
         }
-
-        // permission inheritance for subdivisions
-        if (this.parent != null) {
-            return this.parent.allowAccess(user, location, type);
+        
+        //anyone who's in the managers (/PermissionTrust) list can do this
+        for(int i = 0; i < this.getClaimData().getManagers().size(); i++) {
+            UUID managerID = this.getClaimData().getManagers().get(i);
+            if(player.getUniqueId().equals(managerID)) {
+                return null;
+            }
+        }
+        
+        //permission inheritance for subdivisions
+        if(this.parent != null) {
+            return this.parent.allowGrantPermission(player);
+        }
+        
+        //generic error message
+        String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoPermissionTrust, this.getOwnerName());
+        if(player.hasPermission("griefprevention.ignoreclaims")) {
+            reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
         }
 
-        return GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
+        return reason;
+    }
+
+    //clears all permissions (except owner of course)
+    public void clearPermissions() {
+        this.getClaimData().getManagers().clear();
+        
+        for(Claim child : this.children) {
+            child.clearPermissions();
+        }
     }
 
     // returns a copy of the location representing lower x, y, z limits
@@ -602,7 +666,12 @@ public class Claim implements ContextSource {
             return GriefPrevention.instance.dataStore.getMessage(Messages.OwnerNameForAdminClaims);
         }
 
-        return CommandHelper.lookupPlayerName(this.ownerID);
+        String name = CommandHelper.lookupPlayerName(this.ownerID);
+        if (name == null) {
+            return "unknown";
+        }
+
+        return name;
     }
 
     // whether or not a location is in a claim
@@ -899,15 +968,50 @@ public class Claim implements ContextSource {
         this.claimStorage = storage;
     }
 
-    public boolean isItemBlacklisted(ItemType type, int meta) {
-        String nonMetaItemString = type.getId();
-        String metaItemString = type.getId() + ":" + meta;
-        // TODO: fix possible NPE here
-        if (this.claimStorage.getConfig().getProtectionBlackList().contains(nonMetaItemString)) {
-            return true;
-        } else if (this.claimStorage.getConfig().getProtectionBlackList().contains(metaItemString)) {
-            return true;
+    public void updateClaimStorageData() {
+        // owner
+        if (this.isBasicClaim() || this.isAdminClaim()) {
+            this.claimStorage.getConfig().setClaimOwnerUniqueId(this.ownerID);
+            this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
+        } else if (this.isSubdivision()){
+            if (this.getClaimData() == null) {
+                this.setClaimData(new SubDivisionDataConfig(this));
+            }
+            this.claimStorage.getConfig().getSubdivisions().put(this.id, (SubDivisionDataConfig) this.getClaimData());
+        }
+
+        this.claimStorage.getConfig().setClaimType(this.type);
+        this.claimData.setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
+        this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
+        // Will save next world save
+        this.getClaimData().setRequiresSave(true);
+    }
+
+    public boolean protectPlayersInClaim() {
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(this.world.getProperties());
+        if (this.isBasicClaim() || this.isSubdivision()) {
+            if (activeConfig.getConfig().pvp.protectPlayersInClaims) {
+                return true;
+            }
+
+            return false;
+        } else if (this.isAdminClaim()) {
+            if (activeConfig.getConfig().pvp.protectPlayersInAdminClaims) {
+                return true;
+            }
+
+            return false;
+        } else if (this.isSubdivision() && this.parent.isAdminClaim()) {
+            if (activeConfig.getConfig().pvp.protectPlayersInAdminSubDivisions) {
+                return true;
+            }
+
+            return false;
         } else {
+            if (activeConfig.getConfig().pvp.protectPlayersInWilderness) {
+                return true;
+            }
+
             return false;
         }
     }

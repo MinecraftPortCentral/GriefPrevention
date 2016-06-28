@@ -2,6 +2,7 @@
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
  * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,11 +25,12 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import co.aikar.timings.Timings;
 import com.flowpowered.math.vector.Vector3d;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.CreateClaimResult;
 import me.ryanhamshire.griefprevention.configuration.ClaimTemplateStorage;
@@ -40,6 +42,7 @@ import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
 import me.ryanhamshire.griefprevention.event.ClaimDeletedEvent;
 import me.ryanhamshire.griefprevention.task.SecureClaimTask;
 import me.ryanhamshire.griefprevention.task.SiegeCheckupTask;
+import me.ryanhamshire.griefprevention.util.WordFinder;
 import net.minecraft.item.ItemStack;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
@@ -54,7 +57,6 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -81,7 +83,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -102,9 +103,10 @@ public abstract class DataStore {
     protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<>();
 
     // in-memory cache for claim data
+    //public static ConcurrentHashMap<String, ArrayList<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
     public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
     public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
-    public static TreeMap<String, ClaimTemplateStorage> globalTemplates = new TreeMap<>();
+    public static Map<String, ClaimTemplateStorage> globalTemplates = new HashMap<>();
     public static GriefPreventionConfig<GlobalConfig> globalConfig;
 
     // in-memory cache for messages
@@ -138,6 +140,8 @@ public abstract class DataStore {
     static final String SUBDIVISION_VIDEO_URL_RAW = "http://bit.ly/mcgpsub";
 
     public static boolean generateMessages = true;
+    // matcher for banned words
+    public WordFinder bannedWordFinder;
 
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
@@ -171,6 +175,7 @@ public abstract class DataStore {
 
         // load up all the messages from messages.hocon
         this.loadMessages();
+        this.loadBannedWords();
         GriefPrevention.addLogEntry("Customizable messages loaded.");
 
         // load list of soft mutes
@@ -222,23 +227,28 @@ public abstract class DataStore {
         }
     }
 
-    public List<String> loadBannedWords() {
+    public void loadBannedWords() {
         try {
             File bannedWordsFile = bannedWordsFilePath.toFile();
+            boolean regenerateDefaults = false;
             if (!bannedWordsFile.exists()) {
                 Files.touch(bannedWordsFile);
+                regenerateDefaults = true;
+            }
+
+            List<String> bannedWords = Files.readLines(bannedWordsFile, Charset.forName("UTF-8"));
+            if (regenerateDefaults || bannedWords.isEmpty()) {
                 String defaultWords =
                         "nigger\nniggers\nniger\nnigga\nnigers\nniggas\n" +
                                 "fag\nfags\nfaggot\nfaggots\nfeggit\nfeggits\nfaggit\nfaggits\n" +
                                 "cunt\ncunts\nwhore\nwhores\nslut\nsluts\n";
                 Files.write(defaultWords, bannedWordsFile, Charset.forName("UTF-8"));
             }
-
-            return Files.readLines(bannedWordsFile, Charset.forName("UTF-8"));
+            this.bannedWordFinder = new WordFinder(Files.readLines(bannedWordsFile, Charset.forName("UTF-8")));
         } catch (Exception e) {
             GriefPrevention.addLogEntry("Failed to read from the banned words data file: " + e.toString());
             e.printStackTrace();
-            return new ArrayList<String>();
+            this.bannedWordFinder = new WordFinder(new ArrayList<String>());
         }
     }
 
@@ -348,11 +358,7 @@ public abstract class DataStore {
         }
     }
 
-    abstract void writeClaimToStorage(Claim claim);
-
-    // increments the claim ID and updates secondary storage to be sure it's
-    // saved
-    abstract void incrementNextClaimID();
+    public abstract void writeClaimToStorage(Claim claim);
 
     // deletes a claim or subdivision
     public void deleteClaim(Claim claim) {
@@ -401,26 +407,40 @@ public abstract class DataStore {
 
     abstract void deleteClaimFromSecondaryStorage(Claim claim);
 
+    public Claim getClaimAtPlayer(Player player, boolean ignoreHeight) {
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        return this.getClaimAt(player.getLocation(), ignoreHeight, playerData.lastClaim);
+    }
+
+    public Claim getClaimAtPlayer(Player player, Location<World> location, boolean ignoreHeight) {
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        return this.getClaimAt(location, ignoreHeight, playerData.lastClaim);
+    }
+
     // gets the claim at a specific location
     // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
     // cachedClaim can be NULL, but will help performance if you have a
     // reasonable guess about which claim the location is in
     public Claim getClaimAt(Location<World> location, boolean ignoreHeight, Claim cachedClaim) {
+        Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").startTimingIfSync();
         // check cachedClaim guess first. if it's in the datastore and the location is inside it, we're done
-        if (cachedClaim != null && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) {
+        if (cachedClaim != null && !cachedClaim.isWildernessClaim() && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) {
+            Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
             return cachedClaim;
         }
 
         // find a top level claim
         ClaimWorldManager claimWorldManager = this.getClaimWorldManager(location.getExtent().getProperties());
         if (claimWorldManager == null) {
+            Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
             return null;
         }
 
         String chunkID = this.getChunkString(location);
         List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkID);
         if (claimsInChunk == null) {
-            return null;
+            Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+            return claimWorldManager.getWildernessClaim();
         }
 
         for (Claim claim : claimsInChunk) {
@@ -430,16 +450,19 @@ public abstract class DataStore {
                 for (int j = 0; j < claim.children.size(); j++) {
                     Claim subdivision = claim.children.get(j);
                     if (subdivision.inDataStore && subdivision.contains(location, ignoreHeight, false)) {
+                        Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
                         return subdivision;
                     }
                 }
 
+                Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
                 return claim;
             }
         }
 
-        // if no claim found, return null
-        return null;
+        Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+        // if no claim found, return the world claim
+        return claimWorldManager.getWildernessClaim();
     }
 
     // finds a claim by ID
@@ -539,7 +562,7 @@ public abstract class DataStore {
             this.addClaim(newClaim, true);
         }
 
-        newClaim.context = new Context("claim", newClaim.id.toString());
+        newClaim.context = new Context("gp_claim", newClaim.id.toString());
         // return success along with reference to new claim
         result.succeeded = true;
         result.claim = newClaim;
@@ -607,10 +630,10 @@ public abstract class DataStore {
             subdivision.lesserBoundaryCorner = subdivision.lesserBoundaryCorner.setPosition(newLesserPosition);
             newGreaterPosition = new Vector3d(subdivision.greaterBoundaryCorner.getX(), newDepth, subdivision.greaterBoundaryCorner.getZ());
             subdivision.greaterBoundaryCorner = subdivision.greaterBoundaryCorner.setPosition(newGreaterPosition);
+            subdivision.updateClaimStorageData();
         }
 
-        // save changes
-        claim.getClaimData().setRequiresSave(true);
+        claim.updateClaimStorageData();
     }
 
     // starts a siege on a claim
@@ -872,6 +895,8 @@ public abstract class DataStore {
 
             // make original claim ineffective (it's still in the hash map, so let's make it ignored)
             claim.inDataStore = false;
+            result.claim.setClaimData(claim.getClaimData());
+            result.claim.setClaimStorage(claim.getClaimStorage());
             this.deleteClaim(claim);
             // save those changes
             this.writeClaimToStorage(result.claim);
@@ -880,14 +905,15 @@ public abstract class DataStore {
         return result;
     }
 
-    private void loadMessages() {
+    public void loadMessages() {
+        this.messages.clear();
         // initialize defaults
         this.addDefault(Messages.AbandonClaimAdvertisement, "To delete another claim and free up some blocks, use /AbandonClaim.");
         this.addDefault(Messages.AbandonClaimMissing, "Stand in the claim you want to delete, or consider /AbandonAllClaims.");
         this.addDefault(Messages.AbandonSuccess, "Claim abandoned.  You now have {0} available claim blocks.", "0: remaining claim blocks");
         this.addDefault(Messages.AbandonOtherSuccess, "{0}'s claim has been abandoned. {0} now has {1} available claim blocks.", "0: player; 1: remaining claim blocks");
         this.addDefault(Messages.Access, "Access");
-        this.addDefault(Messages.AccessPermission, "use buttons and levers");
+        this.addDefault(Messages.AccessPermission, "interact with everything except inventory containers.");
         this.addDefault(Messages.AdjustBlocksSuccess, "Adjusted {0}'s bonus claim blocks by {1}.  New total bonus blocks: {2}.", "0: player; 1: adjustment; 2: new total");
         this.addDefault(Messages.AdjustGroupBlocksSuccess, "Adjusted bonus claim blocks for players with the {0} permission by {1}.  New total: {2}.", "0: permission; 1: adjustment amount; 2: new total bonus");
         this.addDefault(Messages.AdminClaimsMode, "Administrative claims mode active.  Any claims created will be free and editable by other administrators.");
@@ -943,9 +969,8 @@ public abstract class DataStore {
         this.addDefault(Messages.CommandBannedInPvP, "You can't use that command while in PvP combat.");
         this.addDefault(Messages.ConfirmFluidRemoval, "Abandoning this claim will remove lava inside the claim.  If you're sure, use /AbandonClaim again.");
         this.addDefault(Messages.Containers, "Containers");
-        this.addDefault(Messages.ContainersPermission, "access containers and animals");
+        this.addDefault(Messages.ContainersPermission, "access all containers including inventory.");
         this.addDefault(Messages.ContinueBlockMath, " (-{0} blocks)");
-        this.addDefault(Messages.Coowner, "Coowner");
         this.addDefault(Messages.CreateClaimFailOverlap, "You can't create a claim here because it would overlap your other claim.  Use /abandonclaim to delete it, or use your shovel at a " + "corner to resize it.");
         this.addDefault(Messages.CreateClaimFailOverlapOtherPlayer, "You can't create a claim here because it would overlap {0}'s claim.", "0: other claim owner");
         this.addDefault(Messages.CreateClaimFailOverlapRegion, "You can't claim all of this because you're not allowed to build here.");
@@ -974,7 +999,7 @@ public abstract class DataStore {
         this.addDefault(Messages.IgnoringClaims, "Now ignoring claims.");
         this.addDefault(Messages.InsufficientFunds, "You don't have enough money.  You need {0}, but you only have {1}.", "0: total cost; 1: player's account balance");
         this.addDefault(Messages.InvalidPermissionID, "Please specify a player name, or a permission in [brackets].");
-        this.addDefault(Messages.ItemBanned, "The item {0} that you are attempting to use has been banned on server.");
+        this.addDefault(Messages.ItemNotAuthorized, "You have not been authorized to use the item {0} in this claim.");
         this.addDefault(Messages.LocationAllClaims, "in all your claims");
         this.addDefault(Messages.LocationCurrentClaim, "in this claim");
         this.addDefault(Messages.Manage, "Manage");
@@ -999,17 +1024,24 @@ public abstract class DataStore {
         this.addDefault(Messages.NoDeletePermission, "You don't have permission to delete claims.");
         this.addDefault(Messages.NoDropsAllowed, "You can't drop items in this claim.");
         this.addDefault(Messages.NoEditPermission, "You don't have permission to edit this claim.");
+        this.addDefault(Messages.NoEnterClaim, "You don't have permission to enter this claim.");
+        this.addDefault(Messages.NoExitClaim, "You don't have permission to exit this claim.");
+        this.addDefault(Messages.NoInteractBlockPermission, "You don't have {0}'s permission to interact with the block {1}.", "0: owner name; 1: block id");
         this.addDefault(Messages.NoLavaNearOtherPlayer, "You can't place lava this close to {0}.", "0: nearby player");
         this.addDefault(Messages.NoModifyDuringSiege, "Claims can't be modified while under siege.");
         this.addDefault(Messages.NoOwnerBuildUnderSiege, "You can't make changes while under siege.");
         this.addDefault(Messages.NoPermissionForCommand, "You don't have permission to do that.");
         this.addDefault(Messages.NoPermissionTrust, "You don't have {0}'s permission to manage permissions here.", "0: claim owner's name");
         this.addDefault(Messages.NoPistonsOutsideClaims, "Warning: Pistons won't move blocks outside land claims.");
+        this.addDefault(Messages.NoPortalFromProtectedClaim, "You do not have permission to use portals in this claim owned by {0}.", "0: claim owner's name");
+        this.addDefault(Messages.NoPortalToProtectedClaim, "You do not have permission to travel through this portal into the protected claim owned by {0}.", "0: claim owner's name");
         this.addDefault(Messages.NoProfanity, "Please moderate your language.");
         this.addDefault(Messages.NoSiegeAdminClaim, "Siege is disabled in this area.");
         this.addDefault(Messages.NoSiegeDefenseless, "That player is defenseless.  Go pick on somebody else.");
         this.addDefault(Messages.NoTNTDamageAboveSeaLevel, "Warning: TNT will not destroy blocks above sea level.");
         this.addDefault(Messages.NoTNTDamageClaims, "Warning: TNT will not destroy claimed blocks.");
+        this.addDefault(Messages.NoTeleportFromProtectedClaim, "You do not have permission to teleport from the protected claim owned by {0}.", "0: owner of claim");
+        this.addDefault(Messages.NoTeleportToProtectedClaim, "You do not have permission to teleport into a protected claim owned by {0}.", "0: owner of claim");
         this.addDefault(Messages.NoTeleportPvPCombat, "You can't teleport while fighting another player.");
         this.addDefault(Messages.NoWildernessBuckets, "You may only dump buckets inside your claim(s) or underground.");
         this.addDefault(Messages.NonSiegeMaterial, "That material is too tough to break.");
@@ -1259,15 +1291,15 @@ public abstract class DataStore {
             return claims;
         }
 
-        Optional<Chunk> lesserChunk = location.getExtent().getChunk(location.sub(150, 0, 150).getBlockPosition());
-        Optional<Chunk> greaterChunk = location.getExtent().getChunk(location.add(300, 0, 300).getBlockPosition());
+        Optional<Chunk> lesserChunk = location.getExtent().getChunkAtBlock(location.sub(50, 0, 50).getBlockPosition());
+        Optional<Chunk> greaterChunk = location.getExtent().getChunkAtBlock(location.add(50, 0, 50).getBlockPosition());
 
         if (lesserChunk.isPresent() && greaterChunk.isPresent()) {
             for (int chunk_x = lesserChunk.get().getPosition().getX(); chunk_x <= greaterChunk.get().getPosition().getX(); chunk_x++) {
                 for (int chunk_z = lesserChunk.get().getPosition().getZ(); chunk_z <= greaterChunk.get().getPosition().getZ(); chunk_z++) {
                     Optional<Chunk> chunk = location.getExtent().getChunk(chunk_x, 0, chunk_z);
                     if (chunk.isPresent()) {
-                        String chunkID = this.getChunkString(chunk.get().getWorld().getLocation(0, 0, 0));
+                        String chunkID = String.valueOf(chunk_x) + (chunk_z);
                         List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkID);
                         if (claimsInChunk != null) {
                             claims.addAll(claimsInChunk);
@@ -1325,7 +1357,7 @@ public abstract class DataStore {
 
     abstract PlayerData getPlayerDataFromStorage(UUID playerID);
 
-    public abstract void loadWorldData(WorldProperties worldProperties);
+    public abstract void loadWorldData(World world);
 
     public abstract void unloadWorldData(WorldProperties worldProperties);
 

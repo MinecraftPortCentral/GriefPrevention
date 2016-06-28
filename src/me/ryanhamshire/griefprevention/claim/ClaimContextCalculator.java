@@ -39,7 +39,7 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
     public void accumulateContexts(Subject calculable, Set<Context> accumulator) {
         if (calculable.getCommandSource().isPresent() && calculable.getCommandSource().get() instanceof Player) {
             Player player = (Player) calculable.getCommandSource().get();
-            Claim sourceClaim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
+            Claim sourceClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
             if (sourceClaim != null) {
                 accumulator.add(new Context("claim", sourceClaim.getID().toString()));
             }
@@ -52,7 +52,7 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
         if (context.equals("claim")) {
             if (subject.getCommandSource().isPresent() && subject.getCommandSource().get() instanceof Player) {
                 Player player = (Player) subject.getCommandSource().get();
-                Claim playerClaim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
+                Claim playerClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
                 if (playerClaim != null && playerClaim.getID().equals(UUID.fromString(context.getValue()))) {
                     return true;
                 }

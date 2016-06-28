@@ -24,7 +24,6 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
-import me.ryanhamshire.griefprevention.configuration.category.ClaimDataFlagsCategory;
 import me.ryanhamshire.griefprevention.configuration.category.ConfigCategory;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
@@ -51,14 +50,10 @@ public class ClaimTemplateConfig extends ConfigCategory {
     public ArrayList<UUID> builders = new ArrayList<>();
     @Setting(value = ClaimStorageData.MAIN_CONTAINERS, comment = "The containers associated with subdivision.")
     public ArrayList<UUID> containers = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_COOWNERS, comment = "The coowners associated with subdivision.")
+    @Setting(value = ClaimStorageData.MAIN_MANAGERS, comment = "The coowners associated with subdivision.")
     public ArrayList<UUID> coowners = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_PROTECTION_BLACKLIST, comment = "Item id's that are not protected within subdivision.")
-    public ArrayList<String> protectionBlacklist = new ArrayList<>();
     @Setting(value = ClaimStorageData.MAIN_BANNED_ITEM_LIST, comment = "Item id's that are denied for public usage.")
     public List<String> publicItemBlackList = new ArrayList<>();
-    @Setting
-    public ClaimDataFlagsCategory flags = new ClaimDataFlagsCategory();
 
     public ClaimTemplateConfig() {
 
@@ -88,18 +83,6 @@ public class ClaimTemplateConfig extends ConfigCategory {
 
     public List<UUID> getCoowners() {
         return this.coowners;
-    }
-
-    public List<String> getItemBlackList() {
-        return this.protectionBlacklist;
-    }
-
-    public List<String> getPublicItemBlackList() {
-        return this.publicItemBlackList;
-    }
-
-    public ClaimDataFlagsCategory getFlags() {
-        return this.flags;
     }
 
     public String getTemplateName() {

@@ -1,7 +1,6 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
  * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
@@ -25,19 +24,23 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.text.Text;
 
-public class CommandClaimSubdivide implements CommandExecutor {
+import java.util.HashSet;
+import java.util.Set;
+
+public class CommandClaimFlagReset implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -49,12 +52,33 @@ public class CommandClaimSubdivide implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        playerData.shovelMode = ShovelMode.Subdivide;
-        playerData.claimSubdividing = null;
-        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionMode);
-        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2);
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        if (claim.isWildernessClaim()) {
+            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_WILDERNESS)) {
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset the Wilderness Claim to flag defaults."));
+                return CommandResult.success();
+            }
+        } else if (claim.isAdminClaim()) {
+            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_ADMIN)) {
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset an Admin Claim to flag defaults."));
+                return CommandResult.success();
+            }
+        } else if (claim.isBasicClaim()) {
+            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_BASIC)) {
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset a Basic Claim to flag defaults."));
+                return CommandResult.success();
+            }
+        } else {
+            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_SUBDIVISION)) {
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset a Subdivision Claim to flag defaults."));
+                return CommandResult.success();
+            }
+        }
 
+        Set<Context> contexts = new HashSet<>();
+        contexts.add(claim.getContext());
+        GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).clear();
+        GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Claim flags reset to defaults successfully."));
         return CommandResult.success();
     }
 }
