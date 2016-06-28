@@ -428,7 +428,7 @@ public class GriefPrevention {
                 .description(Text.of("Switches the shovel tool back to basic claims mode"))
                 .permission(GPPermissions.COMMAND_BASIC_CLAIMS)
                 .executor(new CommandClaimBasic())
-                .build(), "basicclaims");
+                .build(), "basicclaims", "bc");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gives a player a manual about claiming land"))

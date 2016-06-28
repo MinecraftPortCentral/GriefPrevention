@@ -92,11 +92,11 @@ public class GPPermissions {
     public static final String COMMAND_UNSEPARATE_PLAYERS = "griefprevention.command.player.unseparate";
     public static final String COMMAND_SOFT_MUTE_PLAYER = "griefprevention.command.player.softmute";
     public static final String COMMAND_UNLOCK_DROPS = "griefprevention.command.player.unlock-drops";
+    public static final String NO_PVP_IMMUNITY = "griefprevention.player.no-pvp-immunity";
+    public static final String NOT_IGNORABLE = "griefprevention.player.not-ignorable";
     public static final String SPAM = "griefprevention.spam-override";
 
     // Misc
-    public static final String NO_PVP_IMMUNITY = "griefprevention.no-pvp-immunity";
-    public static final String NOT_IGNORABLE = "griefprevention.not-ignorable";
     public static final String COMMAND_HELP = "griefprevention.command.help";
 
     // Trust

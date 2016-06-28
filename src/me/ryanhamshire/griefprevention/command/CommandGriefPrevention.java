@@ -147,7 +147,7 @@ public class CommandGriefPrevention {
                                 .description(Text.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
                                 .permission(GPPermissions.COMMAND_SUBDIVIDE_CLAIMS)
                                 .executor(new CommandClaimSubdivide())
-                                .build(), "subdivide")
+                                .build(), "subdivideclaims", "subdivide", "sc")
 
                         .child(CommandSpec.builder()
                                 .description(Text.of("Revokes a player's access to your claim(s)"))
