@@ -50,6 +50,7 @@ import org.spongepowered.api.util.Tristate;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -124,8 +125,8 @@ public class CommandClaimFlag implements CommandExecutor {
                     }
                 }
 
-                Collections.sort(flagList, (t1, t2) -> Text.of(t1).compareTo(Text.of(t2)));
-                List<Text> finalTexts = this.stripeText(flagList);
+
+                List<Text> finalTexts = stripeText(flagList);
 
                 PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
                 PaginationList.Builder paginationBuilder = paginationService.builder()
@@ -148,7 +149,13 @@ public class CommandClaimFlag implements CommandExecutor {
         return CommandResult.success();
     }
 
-    private List<Text> stripeText(List<Object[]> texts) {
+    private static Comparator<Object[]> rawTextComparator() {
+        return (t1, t2) -> Text.of(t1).compareTo(Text.of(t2));
+    }
+
+    public static List<Text> stripeText(List<Object[]> texts) {
+        Collections.sort(texts, rawTextComparator());
+
         ImmutableList.Builder<Text> finalTexts = ImmutableList.builder();
         for (int i = 0; i < texts.size(); i++) {
             Object[] text = texts.get(i);

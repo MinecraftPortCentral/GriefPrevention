@@ -24,6 +24,8 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import static me.ryanhamshire.griefprevention.command.CommandClaimFlag.stripeText;
+
 import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -79,19 +81,20 @@ public class CommandClaimFlagGroup implements CommandExecutor {
             PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
             Subject subj = service.getGroupSubjects().get(group);
             if (subj != null) {
-                List<Text> flagList = Lists.newArrayList();
+                List<Object[]> flagList = Lists.newArrayList();
                 Map<String, Boolean> permissions = subj.getSubjectData().getPermissions(contextSet);
                 for (Map.Entry<String, Boolean> permissionEntry : permissions.entrySet()) {
                     Boolean flagValue = permissionEntry.getValue();
-                    Text flagText = Text.builder().append(Text.of(TextColors.GREEN, permissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                    TextColors.GOLD, flagValue.toString()))
-                            .build();
+                    Object[] flagText = new Object[] { TextColors.GREEN, permissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
+                                    TextColors.GOLD, flagValue.toString() };
                     flagList.add(flagText);
                 }
 
+                List<Text> finalTexts = stripeText(flagList);
+
                 PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
                 PaginationList.Builder paginationBuilder = paginationService.builder()
-                        .title(Text.of(TextColors.AQUA, group + " Flag Permissions")).padding(Text.of("-")).contents(flagList);
+                        .title(Text.of(TextColors.AQUA, group + " Flag Permissions")).padding(Text.of("-")).contents(finalTexts);
                 paginationBuilder.sendTo(src);
             }
             return CommandResult.success();
@@ -104,4 +107,6 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         }
         return CommandHelper.addPermission(src, subj, claim, flag.get(), target.get(), value.get(), context, 2);
     }
+
+
 }
