@@ -1057,6 +1057,7 @@ public abstract class DataStore {
         this.addDefault(Messages.OnlyPurchaseBlocks, "Claim blocks may only be purchased, not sold.");
         this.addDefault(Messages.OnlySellBlocks, "Claim blocks may only be sold, not purchased.");
         this.addDefault(Messages.OwnerNameForAdminClaims, "an administrator", "as in 'You don't have an administrator's permission to build here.'");
+        this.addDefault(Messages.OwnerNameForWildernessClaims, "a wilderness administrator", "as in 'You don't have a wilderness administrator's permission to build here.'");
         this.addDefault(Messages.PermissionsPermission, "manage permissions");
         this.addDefault(Messages.PetGiveawayInvalid, "Pet type {0} is invalid, only vanilla entities are supported.", "0: The entity type.");
         this.addDefault(Messages.PetGiveawayConfirmation, "Pet transferred.");

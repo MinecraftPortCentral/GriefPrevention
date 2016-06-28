@@ -177,6 +177,7 @@ public enum Messages {
     OnlyPurchaseBlocks,
     OnlySellBlocks,
     OwnerNameForAdminClaims,
+    OwnerNameForWildernessClaims,
     PermissionsPermission,
     PetGiveawayConfirmation,
     PetGiveawayInvalid,

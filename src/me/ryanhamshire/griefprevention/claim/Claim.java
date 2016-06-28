@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention.claim;
 
-import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -667,12 +666,16 @@ public class Claim implements ContextSource {
     // returns a friendly owner name (for admin claims, returns "an
     // administrator" as the owner)
     public String getOwnerName() {
-        if (this.parent != null) {
-            return this.parent.getOwnerName();
+        if (this.isWildernessClaim()) {
+            return GriefPrevention.instance.dataStore.getMessage(Messages.OwnerNameForWildernessClaims);
         }
 
-        if (this.ownerID == null) {
+        if (this.isAdminClaim()) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.OwnerNameForAdminClaims);
+        }
+
+        if (this.parent != null) {
+            return this.parent.getOwnerName();
         }
 
         String name = CommandHelper.lookupPlayerName(this.ownerID);
