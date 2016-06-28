@@ -440,12 +440,14 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Sets the farewell message of your claim"))
                 .permission(GPPermissions.COMMAND_SET_CLAIM_FAREWELL)
+                .arguments(string(Text.of("message")))
                 .executor(new CommandClaimFarewell())
                 .build(), "claimfarewell");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Sets the greeting message of your claim"))
                 .permission(GPPermissions.COMMAND_SET_CLAIM_GREETING)
+                .arguments(string(Text.of("message")))
                 .executor(new CommandClaimGreeting())
                 .build(), "claimgreeting");
 

@@ -48,8 +48,6 @@ public class GPPermissions {
     public static final String COMMAND_SIEGE = "griefprevention.claim.command.siege";
     public static final String CLAIM_CREATE = "griefprevention.claim.create";
     public static final String CLAIM_LIST_OTHERS = "griefprevention.claim.list-other";
-    public static final String CLAIM_RESET_FLAGS_BASIC = "griefprevention.claim.reset-flags-basic";
-    public static final String CLAIM_RESET_FLAGS_SUBDIVISION = "griefprevention.claim.reset-flags-subdivision";
     public static final String SIEGE_IMMUNE = "griefprevention.claim.siege.immune";
     public static final String VISUALIZE_CLAIMS = "griefprevention.claim.visualize-claims";
 
@@ -81,8 +79,7 @@ public class GPPermissions {
     public static final String OVERRIDE_CLAIM_COUNT_LIMIT = "griefprevention.admin.claim.override-limit";
     public static final String EAVES_DROP = "griefprevention.admin.eavesdrop";
     public static final String EAVES_DROP_SIGNS = "griefprevention.admin.eavesdrop.signs";
-    public static final String CLAIM_RESET_FLAGS_ADMIN = "griefprevention.admin.claim.reset-admin-flags";
-    public static final String CLAIM_RESET_FLAGS_WILDERNESS = "griefprevention.admin.claim.reset-wilderness-flags";
+    public static final String CLAIM_WILDERNESS_ADMIN = "griefprevention.admin.claim.wilderness";
 
     // Players
     public static final String COMMAND_IGNORE_PLAYER = "griefprevention.command.player.ignore";

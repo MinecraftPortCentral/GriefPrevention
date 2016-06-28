@@ -54,25 +54,18 @@ public class CommandClaimFlagReset implements CommandExecutor {
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
         if (claim.isWildernessClaim()) {
-            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_WILDERNESS)) {
+            if (!src.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
                 GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset the Wilderness Claim to flag defaults."));
                 return CommandResult.success();
             }
         } else if (claim.isAdminClaim()) {
-            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_ADMIN)) {
+            if (!player.getUniqueId().equals(claim.getOwnerUniqueId()) && !src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
                 GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset an Admin Claim to flag defaults."));
                 return CommandResult.success();
             }
-        } else if (claim.isBasicClaim()) {
-            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_BASIC)) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset a Basic Claim to flag defaults."));
-                return CommandResult.success();
-            }
-        } else {
-            if (!src.hasPermission(GPPermissions.CLAIM_RESET_FLAGS_SUBDIVISION)) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset a Subdivision Claim to flag defaults."));
-                return CommandResult.success();
-            }
+        } else if ((claim.isBasicClaim() || claim.isSubdivision()) && !player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset your claim to flag defaults."));
+            return CommandResult.success();
         }
 
         Set<Context> contexts = new HashSet<>();

@@ -332,12 +332,13 @@ public class Claim implements ContextSource {
             return true;
         }
 
-        if (playerData.debugClaimPermissions) {
-            return false;
-        }
-
         // owner
         if (user.getUniqueId().equals(this.ownerID)) {
+            // only check debug claim permissions if owner
+            if (playerData.debugClaimPermissions) {
+                return false;
+            }
+
             return true;
         }
 
@@ -353,10 +354,6 @@ public class Claim implements ContextSource {
     // all of these return NULL when a player has permission, or a String error
     // message when the player doesn't have permission
     public String allowEdit(Player player) {
-        if (this.isWildernessClaim()) {
-            return null;
-        }
-
         if (this.hasFullAccess(player)) {
             return null;
         }
@@ -384,6 +381,10 @@ public class Claim implements ContextSource {
             }
 
             // otherwise, owners can do whatever
+            return null;
+        }
+
+        if (this.isWildernessClaim() && player.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
             return null;
         }
 
@@ -978,7 +979,9 @@ public class Claim implements ContextSource {
 
     public void updateClaimStorageData() {
         // owner
-        if (this.isBasicClaim() || this.isAdminClaim()) {
+        if (this.isWildernessClaim()) {
+            this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
+        } else if (this.isBasicClaim() || this.isAdminClaim()) {
             this.claimStorage.getConfig().setClaimOwnerUniqueId(this.ownerID);
             this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
         } else if (this.isSubdivision()){
