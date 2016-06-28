@@ -157,6 +157,14 @@ public class Claim implements ContextSource {
         }
     }
 
+    public UUID getOwnerUniqueId() {
+        if (this.isSubdivision()) {
+            return this.parent.ownerID;
+        }
+
+        return this.ownerID;
+    }
+
     // whether or not this is an administrative claim
     // administrative claims are created and maintained by players with the
     // griefprevention.adminclaims permission.

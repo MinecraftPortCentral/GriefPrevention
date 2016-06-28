@@ -607,7 +607,7 @@ public class EntityEventHandler {
         Optional<User> user = player != null ? Optional.of(player) : Optional.of(owner);
         // enter
         if (fromClaim != toClaim && toClaim != null) {
-            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, entity, null, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoEnterClaim);
                     GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoEnterClaim) + "]", CustomLogEntryTypes.Debug);
@@ -628,7 +628,7 @@ public class EntityEventHandler {
 
         // exit
         if (fromClaim != null && fromClaim != toClaim) {
-            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.EXIT_CLAIM, entity, null, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.EXIT_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoExitClaim);
                     GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoExitClaim) + "]", CustomLogEntryTypes.Debug);

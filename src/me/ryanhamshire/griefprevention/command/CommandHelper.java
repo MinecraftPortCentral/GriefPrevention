@@ -258,7 +258,7 @@ public class CommandHelper {
         if (src instanceof Player) {
             PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, ((Player) src).getUniqueId());
             if (!playerData.ignoreClaims) {
-                if (!((Player) src).getUniqueId().equals(claim.ownerID)) {
+                if (!((Player) src).getUniqueId().equals(claim.getOwnerUniqueId())) {
                     GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not permission to change flags in this claim."));
                     return CommandResult.success();
                 }
