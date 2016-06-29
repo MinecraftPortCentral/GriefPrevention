@@ -730,7 +730,6 @@ public class PlayerEventHandler {
                 claim.getClaimData().setDateLastActive(dateNow);
                 // update timestamps for subdivisions
                 for (Claim subdivision : claim.children) {
-                    System.out.println("UPDATING TIMESTAMP FOR subdivision " + subdivision.id);
                     subdivision.getClaimData().setDateLastActive(dateNow);
                 }
                 claim.getClaimData().setRequiresSave(true);
