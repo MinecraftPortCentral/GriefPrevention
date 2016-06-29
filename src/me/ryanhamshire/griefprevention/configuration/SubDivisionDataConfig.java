@@ -55,8 +55,6 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     public Text claimGreetingMessage = Text.of("");
     @Setting(value = ClaimStorageData.MAIN_CLAIM_FAREWELL)//, comment = "The farewell message players will receive when leaving subdivision.")
     public Text claimFarewellMessage = Text.of("");
-    @Setting
-    private boolean pvp = false;
     @Setting(value = ClaimStorageData.MAIN_LESSER_BOUNDARY_CORNER)//, comment = "The lesser boundary corner location of subdivision.")
     public String lesserBoundaryCornerPos;
     @Setting(value = ClaimStorageData.MAIN_GREATER_BOUNDARY_CORNER)//, comment = "The greater boundary corner location of subdivision.")
