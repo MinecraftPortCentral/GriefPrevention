@@ -111,7 +111,11 @@ public class CommandClaimInfo implements CommandExecutor {
 
             TextColor claimTypeColor = TextColors.GREEN;
             if (claim.isAdminClaim()) {
-                claimTypeColor = TextColors.RED;
+                if (claim.isSubdivision()) {
+                    claimTypeColor = TextColors.DARK_AQUA;
+                } else {
+                    claimTypeColor = TextColors.RED;
+                }
             } else if (claim.isSubdivision()) {
                 claimTypeColor = TextColors.AQUA;
             }
@@ -164,8 +168,10 @@ public class CommandClaimInfo implements CommandExecutor {
                                 claimName, "\n",
                                 ownerLine, "\n",
                                 claimType, "\n",
-                                pvp, "\n",
                                 claimArea, "\n",
+                                claimGreeting, "\n",
+                                claimFarewell, "\n",
+                                pvp, "\n",
                                 dateCreated, "\n",
                                 claimId, "\n",
                                 footer));

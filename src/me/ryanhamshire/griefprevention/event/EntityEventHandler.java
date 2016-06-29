@@ -627,10 +627,6 @@ public class EntityEventHandler {
 
         Claim fromClaim = this.dataStore.getClaimAt(event.getFromTransform().getLocation(), false, null);
         Claim toClaim = this.dataStore.getClaimAt(event.getToTransform().getLocation(), false, null);
-        if (toClaim != null && toClaim.isWildernessClaim()) {
-            GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
-            return;
-        }
 
         Optional<User> user = player != null ? Optional.of(player) : Optional.of(owner);
         // enter
@@ -655,8 +651,8 @@ public class EntityEventHandler {
         }
 
         // exit
-        if (fromClaim != null && fromClaim != toClaim) {
-            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.EXIT_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
+        if (fromClaim != toClaim) {
+            if (GPPermissionHandler.getClaimPermission(fromClaim, GPPermissions.EXIT_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoExitClaim);
                     GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoExitClaim) + "]", CustomLogEntryTypes.Debug);
