@@ -47,7 +47,6 @@ import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.explosive.Explosive;
 import org.spongepowered.api.entity.living.Living;
-import org.spongepowered.api.entity.living.monster.Monster;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.projectile.Projectile;
@@ -277,14 +276,13 @@ public class EntityEventHandler {
                 return false;
             }
         }
-        if (targetEntity instanceof Monster || !GriefPrevention.isEntityProtected(targetEntity)) {
+        if (!GriefPrevention.isEntityProtected(targetEntity)) {
             return false;
         }
 
         Claim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), false, null);
-
         // Protect owned entities anywhere in world
-        if (damageSource instanceof EntityDamageSource && !(targetEntity instanceof Player) && !(SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER))) {
+        if (damageSource instanceof EntityDamageSource && !(SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER))) {
             EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
             Entity sourceEntity = entityDamageSource.getSource();
             if (entityDamageSource instanceof IndirectEntityDamageSource) {
@@ -292,46 +290,49 @@ public class EntityEventHandler {
             }
 
             Tristate perm = Tristate.UNDEFINED;
-            if (sourceEntity instanceof User) {
-                User sourceUser = (User) sourceEntity;
-                if (sourceUser instanceof Player) {
-                    PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetEntity.getWorld(), sourceUser.getUniqueId());
-                    if (playerData.ignoreClaims) {
+            // Ignore PvP checks for owned entities
+            if (!(sourceEntity instanceof Player) && !(targetEntity instanceof Player)) {
+                if (sourceEntity instanceof User) {
+                    User sourceUser = (User) sourceEntity;
+                    if (sourceUser instanceof Player) {
+                        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetEntity.getWorld(), sourceUser.getUniqueId());
+                        if (playerData.ignoreClaims) {
+                            return false;
+                        }
+                    }
+                    perm = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, Optional.of(sourceUser));
+                    if (targetEntity instanceof EntityLivingBase && perm == Tristate.TRUE) {
                         return false;
                     }
-                }
-                perm = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, Optional.of(sourceUser));
-                if (targetEntity instanceof EntityLivingBase && perm == Tristate.TRUE) {
-                    return false;
-                }
-                Optional<UUID> creatorUuid = targetEntity.getCreator();
-                if (creatorUuid.isPresent()) {
-                    Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(creatorUuid.get());
-                    if (user.isPresent() && !user.get().getUniqueId().equals(sourceUser.getUniqueId())) {
-                        return true;
-                    }
-                } else if (sourceUser.getUniqueId().equals(claim.ownerID)) {
-                    return true;
-                }
-
-                return false;
-            } else {
-                if (targetEntity instanceof Player) {
-                    if (SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entityDamageSource.getSource(), EnumCreatureType.MONSTER)) {
-                        Optional<User> user = cause.first(User.class);
-                        if (!user.isPresent()) {
-                            user = ((IMixinEntity) entityDamageSource.getSource()).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
-                        }
-                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, entityDamageSource.getSource(), targetEntity, user) != Tristate.TRUE) {
-                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
+                    Optional<UUID> creatorUuid = targetEntity.getCreator();
+                    if (creatorUuid.isPresent()) {
+                        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(creatorUuid.get());
+                        if (user.isPresent() && !user.get().getUniqueId().equals(sourceUser.getUniqueId())) {
                             return true;
                         }
-                    }
-                } else if (targetEntity instanceof EntityLivingBase && !SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER)) {
-                    User user = cause.first(User.class).orElse(null);
-                    if (user != null && !user.getUniqueId().equals(claim.ownerID) && perm != Tristate.TRUE) {
-                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Untrusted player attempting to attack entity in claim.]", CustomLogEntryTypes.Debug);
+                    } else if (sourceUser.getUniqueId().equals(claim.ownerID)) {
                         return true;
+                    }
+    
+                    return false;
+                } else {
+                    if (targetEntity instanceof Player) {
+                        if (SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entityDamageSource.getSource(), EnumCreatureType.MONSTER)) {
+                            Optional<User> user = cause.first(User.class);
+                            if (!user.isPresent()) {
+                                user = ((IMixinEntity) entityDamageSource.getSource()).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
+                            }
+                            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, entityDamageSource.getSource(), targetEntity, user) != Tristate.TRUE) {
+                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
+                                return true;
+                            }
+                        }
+                    } else if (targetEntity instanceof EntityLivingBase && !SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER)) {
+                        User user = cause.first(User.class).orElse(null);
+                        if (user != null && !user.getUniqueId().equals(claim.ownerID) && perm != Tristate.TRUE) {
+                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Untrusted player attempting to attack entity in claim.]", CustomLogEntryTypes.Debug);
+                            return true;
+                        }
                     }
                 }
             }
@@ -360,7 +361,7 @@ public class EntityEventHandler {
         }
 
         // if the attacker is a player and defender is a player (pvp combat)
-        if (attacker != null && targetEntity instanceof Player && GriefPrevention.instance.pvpRulesApply(attacker.getWorld())) {
+        if (attacker != null && targetEntity instanceof Player && claim.pvpRulesApply()) {
             // FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
             Player defender = (Player) (targetEntity);
 
@@ -411,6 +412,33 @@ public class EntityEventHandler {
                     }
                 }
             }
+        } else {
+            if (attacker instanceof Player && targetEntity instanceof Player) {
+                PlayerData defenderData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), targetEntity.getUniqueId());
+                // don't protect players already in combat
+                if (defenderData.inPvpCombat(claim.world)) {
+                    return false;
+                }
+                if (!claim.isPvpEnabled()) {
+                    GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
+                    return true;
+                }
+            }
+
+            // check perms
+            Optional<User> user = Optional.empty();
+            if (player.isPresent()) {
+                user = Optional.of((User) player.get());
+            } else if (attacker instanceof User) {
+                user = Optional.of((User) attacker);
+            }
+
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, attacker, targetEntity, user) == Tristate.FALSE) {
+                return true;
+            }
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, user) == Tristate.FALSE) {
+                return true;
+            }
         }
 
         return false;
@@ -441,10 +469,11 @@ public class EntityEventHandler {
             return;
         }
 
+        Claim claim = this.dataStore.getClaimAtPlayer(defender, false);
         EntityDamageSource entityDamageSource = (EntityDamageSource) event.getCause().root();
 
         //if not in a pvp rules world, do nothing
-        if (!GriefPrevention.instance.pvpRulesApply(defender.getWorld())) {
+        if (!claim.isPvpEnabled()) {
             GPTimings.ENTITY_DAMAGE_MONITOR_EVENT.stopTimingIfSync();
             return;
         }
@@ -716,7 +745,7 @@ public class EntityEventHandler {
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
-                } else if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.BLOCK_PLACE, entity, null, user) == Tristate.FALSE) {
+                } /*else if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.BLOCK_PLACE, entity, null, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, sourceClaim.getOwnerName());
                         GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoBuildPortalPermission) + "]", CustomLogEntryTypes.Debug);
@@ -724,7 +753,7 @@ public class EntityEventHandler {
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
-                }
+                }*/
             }
         }
 

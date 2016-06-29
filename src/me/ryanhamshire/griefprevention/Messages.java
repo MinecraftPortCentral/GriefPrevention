@@ -74,6 +74,7 @@ public enum Messages {
     ClaimBlockLimit,
     ClaimCreationFailedOverClaimCountLimit,
     ClaimExplosivesAdvertisement,
+    ClaimFlagOverridden,
     ClaimLastActive,
     ClaimResizeSuccess,
     ClaimStart,

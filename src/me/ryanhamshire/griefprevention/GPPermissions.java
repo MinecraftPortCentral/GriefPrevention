@@ -43,8 +43,9 @@ public class GPPermissions {
     public static final String COMMAND_BUY_CLAIM_BLOCKS = "griefprevention.claim.command.buy-blocks";
     public static final String COMMAND_SELL_CLAIM_BLOCKS = "griefprevention.claim.command.sell-blocks";
     public static final String COMMAND_LIST_CLAIM_FLAGS = "griefprevention.claim.command.list-flags";
-    public static final String COMMAND_CLAIM_BAN_ITEM = "griefprevention.claim.command.ban-item";
-    public static final String COMMAND_CLAIM_UNBAN_ITEM = "griefprevention.claim.command.unban-item";
+    public static final String COMMAND_BAN_ITEM = "griefprevention.claim.command.ban-item";
+    public static final String COMMAND_UNBAN_ITEM = "griefprevention.claim.command.unban-item";
+    public static final String COMMAND_PVP = "griefprevention.claim.command.pvp";
     public static final String COMMAND_SIEGE = "griefprevention.claim.command.siege";
     public static final String CLAIM_CREATE = "griefprevention.claim.create";
     public static final String CLAIM_LIST_OTHERS = "griefprevention.claim.list-other";
@@ -101,8 +102,8 @@ public class GPPermissions {
     public static final String COMMAND_GIVE_CONTAINER_TRUST = "griefprevention.claim.command.trust.container";
     public static final String COMMAND_GIVE_BUILDER_TRUST = "griefprevention.claim.command.trust.build";
     public static final String COMMAND_GIVE_PERMISSION_TRUST = "griefprevention.claim.command.trust.permission";
-    public static final String COMMAND_LIST_TRUST = "griefprevention.claim.trust.command.list";
-    public static final String COMMAND_REMOVE_TRUST = "griefprevention.claim.trust.command.remove";
+    public static final String COMMAND_LIST_TRUST = "griefprevention.claim.command.trust.list";
+    public static final String COMMAND_REMOVE_TRUST = "griefprevention.claim.command.trust.remove";
 
     // Flags
     public static final String BLOCK_BREAK = "griefprevention.claim.flag.block-break";

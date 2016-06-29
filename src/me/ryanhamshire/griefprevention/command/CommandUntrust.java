@@ -95,7 +95,6 @@ public class CommandUntrust implements CommandExecutor {
         claim.getClaimData().getContainers().remove(targetPlayer.get().getUniqueId());
         claim.getClaimData().getManagers().remove(targetPlayer.get().getUniqueId());
         claim.getClaimData().setRequiresSave(true);
-        claim.getClaimStorage().save();
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustIndividualSingleClaim, subject);
         return CommandResult.success();

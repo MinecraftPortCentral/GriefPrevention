@@ -61,6 +61,7 @@ public class CommandClaimAbandon implements CommandExecutor {
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, true);
         if (claim.isWildernessClaim()) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
+            return CommandResult.success();
         } else if (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(claim.ownerID))) {
             // verify ownership
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);

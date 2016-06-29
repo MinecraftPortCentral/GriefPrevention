@@ -41,7 +41,7 @@ import java.util.UUID;
 @ConfigSerializable
 public class SubDivisionDataConfig extends ConfigCategory implements IClaimData {
 
-    private boolean requiresSave = true;
+    private IClaimData parent;
 
     @Setting(value = ClaimStorageData.MAIN_CLAIM_NAME)//, comment = "The name associated with subdivision.")
     public Text claimName = Text.of("");
@@ -55,6 +55,8 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     public Text claimGreetingMessage = Text.of("");
     @Setting(value = ClaimStorageData.MAIN_CLAIM_FAREWELL)//, comment = "The farewell message players will receive when leaving subdivision.")
     public Text claimFarewellMessage = Text.of("");
+    @Setting
+    private boolean pvp = false;
     @Setting(value = ClaimStorageData.MAIN_LESSER_BOUNDARY_CORNER)//, comment = "The lesser boundary corner location of subdivision.")
     public String lesserBoundaryCornerPos;
     @Setting(value = ClaimStorageData.MAIN_GREATER_BOUNDARY_CORNER)//, comment = "The greater boundary corner location of subdivision.")
@@ -75,6 +77,7 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     public SubDivisionDataConfig(Claim claim) {
         this.lesserBoundaryCornerPos = BlockUtils.positionToString(claim.lesserBoundaryCorner);
         this.greaterBoundaryCornerPos = BlockUtils.positionToString(claim.greaterBoundaryCorner);
+        this.parent = claim.parent.getClaimData();
     }
 
     @Override
@@ -147,64 +150,77 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
 
     @Override
     public void setClaimType(Type type) {
+        this.parent.setRequiresSave(true);
         this.claimType = type;
     }
 
     @Override
     public void setDateLastActive(String date) {
+        this.parent.setRequiresSave(true);
         this.dateLastActive = date;
     }
 
     @Override
     public void setClaimName(Text name) {
+        this.parent.setRequiresSave(true);
         this.claimName = name;
     }
 
     @Override
     public void setGreetingMessage(Text message) {
+        this.parent.setRequiresSave(true);
         this.claimGreetingMessage = message;
     }
 
     @Override
     public void setFarewellMessage(Text message) {
+        this.parent.setRequiresSave(true);
         this.claimFarewellMessage = message;
     }
 
     @Override
     public void setLesserBoundaryCorner(String location) {
+        this.parent.setRequiresSave(true);
         this.lesserBoundaryCornerPos = location;
     }
 
     @Override
     public void setGreaterBoundaryCorner(String location) {
+        this.parent.setRequiresSave(true);
         this.greaterBoundaryCornerPos = location;
     }
 
     public void setAccessors(List<UUID> accessors) {
-        this.requiresSave = true;
+        this.parent.setRequiresSave(true);
         this.accessors = accessors;
     }
 
     public void setBuilders(List<UUID> builders) {
-        this.requiresSave = true;
+        this.parent.setRequiresSave(true);
         this.builders = builders;
     }
 
     public void setContainers(List<UUID> containers) {
-        this.requiresSave = true;
+        this.parent.setRequiresSave(true);
         this.containers = containers;
     }
 
     public void setManagers(List<UUID> coowners) {
-        this.requiresSave = true;
+        this.parent.setRequiresSave(true);
         this.managers = coowners;
     }
 
     public boolean requiresSave() {
-        return this.requiresSave;
+        return this.parent.requiresSave();
     }
 
     public void setRequiresSave(boolean flag) {
-        this.requiresSave = flag;
+        if (flag) {
+            this.parent.setRequiresSave(true);
+        }
+    }
+
+    public void setParentData(IClaimData parentData) {
+        this.parent = parentData;
     }
 }

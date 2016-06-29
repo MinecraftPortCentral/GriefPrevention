@@ -125,6 +125,7 @@ public class CommandClaimInfo implements CommandExecutor {
                     claim.getClaimData().getFarewellMessage());
             Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
                     claim.getClaimData().getGreetingMessage());
+            Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", TextColors.RESET, claim.isPvpEnabled() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
             Text lesserCorner = Text.of(TextColors.YELLOW, "LesserCorner", TextColors.WHITE, " : ", TextColors.GRAY,
                     claim.getLesserBoundaryCorner().getBlockPosition());
             Text greaterCorner = Text.of(TextColors.YELLOW, "GreaterCorner", TextColors.WHITE, " : ", TextColors.GRAY,
@@ -151,6 +152,7 @@ public class CommandClaimInfo implements CommandExecutor {
                                 claimCoowners, "\n",
                                 claimGreeting, "\n",
                                 claimFarewell, "\n",
+                                pvp, "\n",
                                 dateCreated, "\n",
                                 dateLastActive, "\n",
                                 claimId, "\n",
@@ -162,6 +164,7 @@ public class CommandClaimInfo implements CommandExecutor {
                                 claimName, "\n",
                                 ownerLine, "\n",
                                 claimType, "\n",
+                                pvp, "\n",
                                 claimArea, "\n",
                                 dateCreated, "\n",
                                 claimId, "\n",

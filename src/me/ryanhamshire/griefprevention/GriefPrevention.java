@@ -64,6 +64,7 @@ import me.ryanhamshire.griefprevention.command.CommandClaimIgnore;
 import me.ryanhamshire.griefprevention.command.CommandClaimInfo;
 import me.ryanhamshire.griefprevention.command.CommandClaimList;
 import me.ryanhamshire.griefprevention.command.CommandClaimName;
+import me.ryanhamshire.griefprevention.command.CommandClaimPvp;
 import me.ryanhamshire.griefprevention.command.CommandClaimSell;
 import me.ryanhamshire.griefprevention.command.CommandClaimSubdivide;
 import me.ryanhamshire.griefprevention.command.CommandClaimTransfer;
@@ -417,7 +418,7 @@ public class GriefPrevention {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
-                .permission(GPPermissions.COMMAND_CLAIM_BAN_ITEM)
+                .permission(GPPermissions.COMMAND_BAN_ITEM)
                 .arguments(optional(catalogedElement(Text.of("item"), ItemType.class)))
                 .executor(new CommandClaimBanItem())
                 .build(), "banitem");
@@ -637,6 +638,12 @@ public class GriefPrevention {
                 .build(), "permissiontrust", "pt");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Toggles pvp mode"))
+                .permission(GPPermissions.COMMAND_PVP)
+                .executor(new CommandClaimPvp())
+                .build(), "pvp");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to restoration mode"))
                 .permission(GPPermissions.COMMAND_RESTORE_NATURE)
                 .executor(new CommandRestoreNature())
@@ -707,7 +714,7 @@ public class GriefPrevention {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
-                .permission(GPPermissions.COMMAND_CLAIM_UNBAN_ITEM)
+                .permission(GPPermissions.COMMAND_UNBAN_ITEM)
                 .arguments(optional(catalogedElement(Text.of("item"), ItemType.class)))
                 .executor(new CommandClaimUnbanItem())
                 .build(), "unbanitem");
@@ -860,8 +867,9 @@ public class GriefPrevention {
             return;
         }
 
-        // if pvp is disabled, do nothing
-        if (!pvpRulesApply(player.getWorld())) {
+        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        // if pvp rules are disabled in claim, do nothing
+        if (!claim.pvpRulesApply()) {
             return;
         }
 
@@ -1189,15 +1197,6 @@ public class GriefPrevention {
         }
 
         return false;
-    }
-
-    public boolean pvpRulesApply(World world) {
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
-        if (activeConfig != null) {
-            return activeConfig.getConfig().pvp.rulesEnabled;
-        }
-
-        return world.getProperties().isPVPEnabled();
     }
 
     public static boolean isEntityProtected(Entity entity) {

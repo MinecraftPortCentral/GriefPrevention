@@ -56,6 +56,6 @@ public class GeneralCategory extends ConfigCategory {
     public List<String> whisperCommandList = new ArrayList<>();
     @Setting(value = "protect-item-drops-death-non-pvp", comment = "Whether players' dropped on death items are protected in non-pvp worlds.")
     public boolean protectItemsOnDeathNonPvp = true;
-    @Setting(value = "chat-protection-enabled", comment = "Enable ")
+    @Setting(value = "chat-rules-enabled", comment = "Whether chat should be monitored and filtered by rules.")
     public boolean chatProtectionEnabled = false;
 }

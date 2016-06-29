@@ -153,7 +153,8 @@ public class PlayerEventHandler {
     @Listener(order = Order.FIRST)
     public void onPlayerChat(MessageChannelEvent.Chat event, @First Player player) {
         GPTimings.PLAYER_CHAT_EVENT.startTimingIfSync();
-        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
+        if (!activeConfig.getConfig().general.chatProtectionEnabled || !GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_CHAT_EVENT.stopTimingIfSync();
             return;
         }
@@ -722,14 +723,17 @@ public class PlayerEventHandler {
         playerData.receivedDropUnlockAdvertisement = false;
         playerData.ipAddress = event.getConnection().getAddress().getAddress();
         ClaimWorldManager claimWorldManager = this.dataStore.getClaimWorldManager(worldProperties);
+        String dateNow = Instant.now().toString();
         for (Claim claim : claimWorldManager.getWorldClaims()) {
             if (claim.ownerID.equals(playerUniqueId)) {
                 // update lastActive timestamp for claim
-                claim.getClaimData().setDateLastActive(Instant.now().toString());
-                claimWorldManager.addWorldClaim(claim);
-            } else if (claim.parent != null && claim.parent.ownerID.equals(playerUniqueId)) {
-                // update lastActive timestamp for subdivisions if parent owner logs on
-                claim.getClaimData().setDateLastActive(Instant.now().toString());
+                claim.getClaimData().setDateLastActive(dateNow);
+                // update timestamps for subdivisions
+                for (Claim subdivision : claim.children) {
+                    System.out.println("UPDATING TIMESTAMP FOR subdivision " + subdivision.id);
+                    subdivision.getClaimData().setDateLastActive(dateNow);
+                }
+                claim.getClaimData().setRequiresSave(true);
                 claimWorldManager.addWorldClaim(claim);
             }
         }
@@ -885,7 +889,8 @@ public class PlayerEventHandler {
         }
 
         // FEATURE: prevent death message spam by implementing a "cooldown period" for death messages
-        PlayerData playerData = this.dataStore.getPlayerData(event.getTargetEntity().getWorld(), event.getTargetEntity().getUniqueId());
+        Player player = (Player) event.getTargetEntity();
+        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), event.getTargetEntity().getUniqueId());
         long now = Calendar.getInstance().getTimeInMillis();
 
         if (now - playerData.lastDeathTimeStamp < GriefPrevention.getGlobalConfig().getConfig().spam.deathMessageCooldown * 1000) {
@@ -898,9 +903,9 @@ public class PlayerEventHandler {
         World world = event.getTargetEntity().getWorld();
         if (world != null) {
             GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
-            boolean isPvPWorld = GriefPrevention.instance.pvpRulesApply(world);
-            if ((isPvPWorld && activeConfig.getConfig().pvp.protectItemsOnDeathPvp) ||
-                    (!isPvPWorld && activeConfig.getConfig().general.protectItemsOnDeathNonPvp)) {
+            Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+            if ((claim.pvpRulesApply() && activeConfig.getConfig().pvp.protectItemsOnDeathPvp) ||
+                    (!claim.isPvpEnabled() && activeConfig.getConfig().general.protectItemsOnDeathNonPvp)) {
                 playerData.dropsAreUnlocked = false;
                 playerData.receivedDropUnlockAdvertisement = false;
             }
@@ -1170,7 +1175,7 @@ public class PlayerEventHandler {
         }
 
         if (owner.isPresent()) {
-            if (!GriefPrevention.instance.pvpRulesApply(targetEntity.getLocation().getExtent())) {
+            if (!claim.pvpRulesApply()) {
                 // otherwise disallow
                 if (event.getCause().root() instanceof Player) {
                     String message = GriefPrevention.instance.dataStore.getMessage(Messages.NotYourPet, owner.get().getName());
@@ -1263,19 +1268,19 @@ public class PlayerEventHandler {
         for (SlotTransaction transaction : event.getTransactions()) {
             ItemStackSnapshot itemPickedUp = transaction.getFinal();
 
-            UUID ownerUniqueId = ((SpongeItemStackSnapshot) itemPickedUp).getCreator().orElse(null);
-            if (ownerUniqueId == null) {
+            Optional<UUID> ownerUniqueId = ((SpongeItemStackSnapshot) itemPickedUp).getCreator();
+            if (ownerUniqueId == null || !ownerUniqueId.isPresent()) {
                 continue;
             }
 
-            Player owner = Sponge.getServer().getPlayer(ownerUniqueId).orElse(null);
+            Player owner = Sponge.getServer().getPlayer(ownerUniqueId.get()).orElse(null);
             if (owner == null) {
                 continue;
             }
 
             // has that player unlocked his drops?
             if (player.getUniqueId().equals(ownerUniqueId)) {
-                PlayerData playerData = this.dataStore.getPlayerData(world, ownerUniqueId);
+                PlayerData playerData = this.dataStore.getPlayerData(world, ownerUniqueId.get());
 
                 // FEATURE: lock dropped items to player who dropped them
                 // decide whether or not to apply this feature to this situation
@@ -1307,8 +1312,9 @@ public class PlayerEventHandler {
             }
         }
 
+        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
         // the rest of this code is specific to pvp worlds
-        if (!GriefPrevention.instance.pvpRulesApply(world)) {
+        if (!claim.pvpRulesApply()) {
             GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
             return;
         }

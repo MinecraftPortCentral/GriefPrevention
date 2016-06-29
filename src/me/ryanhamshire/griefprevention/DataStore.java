@@ -378,7 +378,6 @@ public abstract class DataStore {
             parentClaim.children.remove(claim);
             parentClaim.getClaimStorage().getConfig().getSubdivisions().remove(claim.id);
             // force a save for deletes
-            parentClaim.getClaimData().setRequiresSave(true);
             parentClaim.getClaimStorage().save();
         } else {
             claimWorldManager.removePlayerClaim(claim);
@@ -956,6 +955,7 @@ public abstract class DataStore {
         this.addDefault(Messages.ClaimBlockLimit, "You've reached your claim block limit.  You can't purchase more.");
         this.addDefault(Messages.ClaimCreationFailedOverClaimCountLimit, "You've reached your limit on land claims.  Use /AbandonClaim to remove one before creating another.");
         this.addDefault(Messages.ClaimExplosivesAdvertisement, "To allow explosives to destroy blocks in this land claim, use /ClaimExplosions.");
+        this.addDefault(Messages.ClaimFlagOverridden, "Failed to set claim flag. The flag '{0}' has been overridden by an admin.", "0: The claim flag that has been overridden.");
         this.addDefault(Messages.ClaimLastActive, "Claim last active {0}.", "0: The date and time when this claim was last active");
         this.addDefault(Messages.ClaimResizeSuccess, "Claim resized.  {0} available claim blocks remaining.", "0: remaining blocks");
         this.addDefault(Messages.ClaimStart, "Claim corner set!  Use the shovel again at the opposite corner to claim a rectangle of land.  To cancel, put your shovel away.");

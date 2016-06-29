@@ -107,21 +107,9 @@ public class GPPermissionHandler {
 
         targetPermission = targetPermission.replace(":", ".");
         // First check for claim flag overrides
-        if (!claim.isWildernessClaim()) {
-            Set<Context> contexts = new HashSet<>();
-            if (claim.isAdminClaim()) {
-                contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
-            } else {
-                contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
-            }
-
-            contexts.add(claim.world.getContext());
-            if (!GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getParents(contexts).isEmpty()) {
-                Tristate override = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, targetPermission);
-                if (override != Tristate.UNDEFINED) {
-                    return override;
-                }
-            }
+        Tristate override = getFlagOverride(claim, targetPermission);
+        if (override != Tristate.UNDEFINED) {
+            return override;
         }
 
         if (user.isPresent())
@@ -177,6 +165,17 @@ public class GPPermissionHandler {
         return Tristate.UNDEFINED;
     }
 
+    // helper method for boolean flags that have no targets
+    public static Tristate getClaimBooleanFlagPermission(Claim claim, String permission) {
+        // First check for claim flag overrides
+        Tristate value = getFlagOverride(claim, permission);
+        if (value != Tristate.UNDEFINED) {
+            return value;
+        }
+
+        return getClaimFlagPermission(claim, permission, null);
+    }
+
     public static Tristate getClaimFlagPermission(Claim claim, String permission, Context sourceContext) {
         Tristate value = Tristate.UNDEFINED;
         // Strip base permission node to keep it simpler locally
@@ -228,6 +227,28 @@ public class GPPermissionHandler {
             value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
             if (value != Tristate.UNDEFINED) {
                 return value;
+            }
+        }
+
+        return Tristate.UNDEFINED;
+    }
+
+    public static Tristate getFlagOverride(Claim claim, String permission) {
+        // First check for claim flag overrides
+        if (!claim.isWildernessClaim()) {
+            Set<Context> contexts = new HashSet<>();
+            if (claim.isAdminClaim()) {
+                contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
+            } else {
+                contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
+            }
+
+            contexts.add(claim.world.getContext());
+            if (!GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getParents(contexts).isEmpty()) {
+                Tristate override = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+                if (override != Tristate.UNDEFINED) {
+                    return override;
+                }
             }
         }
 

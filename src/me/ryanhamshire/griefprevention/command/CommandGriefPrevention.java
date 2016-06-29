@@ -281,7 +281,7 @@ public class CommandGriefPrevention {
 
                         .child(CommandSpec.builder()
                                 .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
-                                .permission(GPPermissions.COMMAND_CLAIM_UNBAN_ITEM)
+                                .permission(GPPermissions.COMMAND_UNBAN_ITEM)
                                 .arguments(optional(string(Text.of("itemid"))))
                                 .executor(new CommandClaimUnbanItem())
                                 .build(), "unban")

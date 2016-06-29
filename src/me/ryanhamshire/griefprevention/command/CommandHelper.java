@@ -411,12 +411,7 @@ public class CommandHelper {
                 memberList.add(user.getUniqueId());
             }
 
-            if (currentClaim.parent != null) {
-                currentClaim.parent.getClaimData().setRequiresSave(true);
-            } else {
-                currentClaim.getClaimData().setRequiresSave(true);
-            }
-            currentClaim.getClaimStorage().save();
+            currentClaim.getClaimData().setRequiresSave(true);
         }
 
         //notify player

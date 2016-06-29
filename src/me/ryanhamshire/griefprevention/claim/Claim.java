@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.claim;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -1028,6 +1029,27 @@ public class Claim implements ContextSource {
 
             return false;
         }
+    }
+
+    public boolean isPvpEnabled() {
+        return GPPermissionHandler.getClaimBooleanFlagPermission(this, GPPermissions.PVP) == Tristate.TRUE;
+    }
+
+    public void setPvpEnabled(Tristate value) {
+        GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(ImmutableSet.of(this.context), GPPermissions.PVP, value);
+    }
+
+    public boolean pvpRulesApply() {
+        if (!this.isPvpEnabled()) {
+            return false;
+        }
+
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(this.world.getProperties());
+        if (activeConfig != null) {
+            return activeConfig.getConfig().pvp.rulesEnabled;
+        }
+
+        return false;
     }
 
     @Override

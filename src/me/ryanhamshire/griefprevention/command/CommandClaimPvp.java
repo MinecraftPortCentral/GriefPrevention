@@ -25,9 +25,10 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import me.ryanhamshire.griefprevention.GPPermissionHandler;
+import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
@@ -36,13 +37,11 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Tristate;
 
-import java.util.List;
-import java.util.Optional;
-
-public class CommandUntrustAll implements CommandExecutor {
+public class CommandClaimPvp implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -50,47 +49,30 @@ public class CommandUntrustAll implements CommandExecutor {
         try {
             player = GriefPrevention.checkPlayer(src);
         } catch (CommandException e) {
-            src.sendMessage(Text.of("An error occurred while executing this command."));
+            src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
-        String subject = ctx.<String>getOne("subject").get();
-        Optional<User> targetPlayer = Optional.empty();
-        if (subject.equalsIgnoreCase("public") || subject.equalsIgnoreCase("all")) {
-            targetPlayer = Optional.of(GriefPrevention.PUBLIC_USER);
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        if (claim.allowEdit(player) != null) {
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
+            return CommandResult.success();
+        }
+
+        if (GPPermissionHandler.getFlagOverride(claim, GPPermissions.PVP) != Tristate.UNDEFINED) {
+            GriefPrevention.sendMessage(player, TextMode.Err, "Unable to change PvP mode as it has been overridden by an admin.");
+            return CommandResult.success();
+        }
+
+        // toggle pvp on or off
+        if (claim.isPvpEnabled()) {
+            claim.setPvpEnabled(Tristate.FALSE);
+            GriefPrevention.sendMessage(player, Text.of(TextColors.WHITE, "PvP ", TextColors.RED, "OFF"));
         } else {
-            targetPlayer = GriefPrevention.instance.resolvePlayerByName(subject);
+            claim.setPvpEnabled(Tristate.TRUE);
+            GriefPrevention.sendMessage(player, Text.of(TextColors.WHITE, "PvP ", TextColors.GREEN, "ON"));
         }
 
-        // validate player argument
-        if (!targetPlayer.isPresent()) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
-            return CommandResult.success();
-        } else if (targetPlayer.isPresent() && targetPlayer.get().getUniqueId().equals(player.getUniqueId())) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You cannot not untrust yourself."));
-            return CommandResult.success();
-        }
-
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        List<Claim> claimList = null;
-        if (playerData != null) {
-            claimList = playerData.getClaims();
-        }
-
-        if (playerData == null || claimList == null || claimList.size() == 0) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You have no claims to untrust."));
-            return CommandResult.success();
-        }
-
-        for (Claim claim : claimList) {
-            claim.getClaimData().getAccessors().remove(targetPlayer.get().getUniqueId());
-            claim.getClaimData().getBuilders().remove(targetPlayer.get().getUniqueId());
-            claim.getClaimData().getContainers().remove(targetPlayer.get().getUniqueId());
-            claim.getClaimData().getManagers().remove(targetPlayer.get().getUniqueId());
-            claim.getClaimData().setRequiresSave(true);
-        }
-
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.UntrustIndividualAllClaims, targetPlayer.get().getName());
         return CommandResult.success();
     }
 }

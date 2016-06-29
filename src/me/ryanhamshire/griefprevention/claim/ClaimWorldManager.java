@@ -249,7 +249,10 @@ public class ClaimWorldManager {
     public void save() {
         for (List<Claim> claimList : this.playerClaimList.values()) {
             for (Claim claim : claimList) {
-                claim.getClaimStorage().save();
+                if (claim.getClaimData().requiresSave()) {
+                    claim.getClaimStorage().save();
+                    claim.getClaimData().setRequiresSave(false);
+                }
             }
         }
 

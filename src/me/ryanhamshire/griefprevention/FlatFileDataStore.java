@@ -358,6 +358,7 @@ public class FlatFileDataStore extends DataStore {
             // check for subdivisions
             for(Map.Entry<UUID, SubDivisionDataConfig> mapEntry : claimStorage.getConfig().getSubdivisions().entrySet()) {
                 SubDivisionDataConfig subDivisionData = mapEntry.getValue();
+                subDivisionData.setParentData(claim.getClaimData());
                 Vector3i subLesserBoundaryCornerPos = BlockUtils.positionFromString(subDivisionData.getLesserBoundaryCorner());
                 Vector3i subGreaterBoundaryCornerPos = BlockUtils.positionFromString(subDivisionData.getGreaterBoundaryCorner());
                 Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);

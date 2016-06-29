@@ -93,7 +93,6 @@ public class ClaimStorageData {
             this.configMapper.getInstance().setWorldUniqueId(claim.id);
             this.configMapper.getInstance().setClaimOwnerUniqueId(claim.ownerID);
             reload();
-            save();
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
         }
@@ -123,11 +122,9 @@ public class ClaimStorageData {
 
     public void save() {
         try {
-            if (this.configBase.requiresSave()) {
-                this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
-                this.loader.save(this.root);
-                this.configBase.setRequiresSave(false);
-            }
+            this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
+            this.loader.save(this.root);
+            this.configBase.setRequiresSave(false);
         } catch (IOException | ObjectMappingException e) {
             SpongeImpl.getLogger().error("Failed to save configuration", e);
         }
