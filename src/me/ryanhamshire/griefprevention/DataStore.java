@@ -45,7 +45,7 @@ import me.ryanhamshire.griefprevention.task.SiegeCheckupTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.WordFinder;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.util.math.ChunkPos;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -444,7 +444,7 @@ public abstract class DataStore {
             return null;
         }
 
-        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkCoordIntPair.chunkXZ2Int(location.getBlockX() >> 4, location.getBlockZ() >> 4));
+        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.chunkXZ2Int(location.getBlockX() >> 4, location.getBlockZ() >> 4));
         if (claimsInChunk == null) {
             GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return claimWorldManager.getWildernessClaim();
@@ -1347,7 +1347,7 @@ public abstract class DataStore {
                 for (int chunkZ = lesserChunk.get().getPosition().getZ(); chunkZ <= greaterChunk.get().getPosition().getZ(); chunkZ++) {
                     Optional<Chunk> chunk = location.getExtent().getChunk(chunkX, 0, chunkZ);
                     if (chunk.isPresent()) {
-                        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkCoordIntPair.chunkXZ2Int(chunkX, chunkZ));
+                        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.chunkXZ2Int(chunkX, chunkZ));
                         if (claimsInChunk != null) {
                             claims.addAll(claimsInChunk);
                         }

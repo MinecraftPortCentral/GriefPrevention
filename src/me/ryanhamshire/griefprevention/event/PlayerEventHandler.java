@@ -62,6 +62,7 @@ import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
 import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.data.property.entity.EyeLocationProperty;
+import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
@@ -107,10 +108,8 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.data.util.NbtDataUtil;
-import org.spongepowered.common.entity.SpongeEntitySnapshot;
 import org.spongepowered.common.entity.SpongeEntityType;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
-import org.spongepowered.common.item.inventory.SpongeItemStackSnapshot;
 import org.spongepowered.common.util.VecHelper;
 
 import java.time.Instant;
@@ -1019,7 +1018,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        Entity entity = ((SpongeEntitySnapshot) spawncause.getEntity()).getEntityReference().get();
+        Entity entity = spawncause.getEntity();
         if (!(entity instanceof User)) {
             GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
             return;
@@ -1135,7 +1134,7 @@ public class PlayerEventHandler {
                     spongeEntity.setCreator(playerData.petGiveawayRecipient.getUniqueId());
                     if (targetEntity instanceof EntityTameable) {
                         EntityTameable tameable = (EntityTameable) targetEntity;
-                        tameable.setOwnerId(playerData.petGiveawayRecipient.getUniqueId().toString());
+                        tameable.setOwnerId(playerData.petGiveawayRecipient.getUniqueId());
                     }
                     playerData.petGiveawayRecipient = null;
                     GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetGiveawayConfirmation);
@@ -1237,8 +1236,8 @@ public class PlayerEventHandler {
         }
 
         // if preventing theft, prevent leashing claimed creatures
-        if (targetEntity instanceof Animal && player.getItemInHand().isPresent() && player
-                .getItemInHand().get().getItem().equals(ItemTypes.LEAD)) {
+        if (targetEntity instanceof Animal && player.getItemInHand(HandTypes.MAIN_HAND).isPresent() && player
+                .getItemInHand(HandTypes.MAIN_HAND).get().getItem().equals(ItemTypes.LEAD)) {
             claim = this.dataStore.getClaimAt(targetEntity.getLocation(), false, playerData.lastClaim);
             denyReason = claim.allowAccess(player, targetEntity.getLocation());
             if (denyReason != null) {
@@ -1264,10 +1263,11 @@ public class PlayerEventHandler {
 
         // FEATURE: lock dropped items to player who dropped them
         // who owns this stack?
-        for (SlotTransaction transaction : event.getTransactions()) {
+        // TODO
+        /*for (SlotTransaction transaction : event.getTransactions()) {
             ItemStackSnapshot itemPickedUp = transaction.getFinal();
 
-            Optional<UUID> ownerUniqueId = ((SpongeItemStackSnapshot) itemPickedUp).getCreator();
+            Optional<UUID> ownerUniqueId = ((SpongeItemStackSnapshot) itemPickedUp).get
             if (ownerUniqueId == null || !ownerUniqueId.isPresent()) {
                 continue;
             }
@@ -1294,7 +1294,7 @@ public class PlayerEventHandler {
 
                 // TODO
                 // if locked, don't allow pickup
-                if (player != null && playerData.dropsAreUnlocked == false) {
+                /*if (player != null && playerData.dropsAreUnlocked == false) {
                     GriefPrevention.addEventLogEntry(event, "Drops are locked.");
                     event.setCancelled(true);
 
@@ -1309,7 +1309,7 @@ public class PlayerEventHandler {
                     return;
                 }
             }
-        }
+        }*/
 
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
         // the rest of this code is specific to pvp worlds
@@ -1319,7 +1319,7 @@ public class PlayerEventHandler {
         }
 
         // if we're preventing spawn camping and the player was previously empty handed...
-        if (GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.protectFreshSpawns && !player.getItemInHand().isPresent()) {
+        if (GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.protectFreshSpawns && !player.getItemInHand(HandTypes.MAIN_HAND).isPresent()) {
             // if that player is currently immune to pvp
             PlayerData playerData = this.dataStore.getPlayerData(world, player.getUniqueId());
             if (playerData.pvpImmune) {
@@ -1393,7 +1393,7 @@ public class PlayerEventHandler {
     }
 
     @Listener
-    public void onPlayerInteractBlockPrimary(InteractBlockEvent.Primary event, @First Player player) {
+    public void onPlayerInteractBlockPrimary(InteractBlockEvent.Primary.MainHand event, @First Player player) {
         GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
@@ -1428,7 +1428,8 @@ public class PlayerEventHandler {
     }
 
     @Listener
-    public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event, @First Player player) {
+    public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary.MainHand event, @First Player player) {
+	System.out.println("PACKET RECEIVED");
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
@@ -1436,7 +1437,7 @@ public class PlayerEventHandler {
         }
 
         BlockSnapshot clickedBlock = event.getTargetBlock();
-        Optional<ItemStack> itemInHand = player.getItemInHand();
+        Optional<ItemStack> itemInHand = player.getItemInHand(HandTypes.MAIN_HAND);
 
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
@@ -1573,14 +1574,14 @@ public class PlayerEventHandler {
 
     private void onPlayerHandleShovelAction(InteractBlockEvent event, Player player, PlayerData playerData) {
         GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.startTimingIfSync();
-        if (!player.getItemInHand().isPresent()) {
+        if (!player.getItemInHand(HandTypes.MAIN_HAND).isPresent()) {
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
         }
 
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
         // what's the player holding?
-        ItemType materialInHand = player.getItemInHand().get().getItem();
+        ItemType materialInHand = player.getItemInHand(HandTypes.MAIN_HAND).get().getItem();
         if (!materialInHand.getId().equals(activeConfig.getConfig().claim.modificationTool)) {
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;

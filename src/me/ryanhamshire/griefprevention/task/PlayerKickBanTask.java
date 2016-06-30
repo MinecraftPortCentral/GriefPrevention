@@ -32,6 +32,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.UserListBansEntry;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.common.SpongeImpl;
 
 //kicks or bans a player
 //need a task for this because async threads (like the chat event handlers) can't kick or ban.
@@ -61,16 +62,16 @@ public class PlayerKickBanTask implements Runnable {
     @Override
     public void run() {
         if (this.ban) {
-            MinecraftServer minecraftserver = MinecraftServer.getServer();
+            MinecraftServer minecraftserver = SpongeImpl.getServer();
             GameProfile gameprofile = minecraftserver.getPlayerProfileCache().getGameProfileForUsername(player.getName());
 
             UserListBansEntry userlistbansentry = new UserListBansEntry(gameprofile, null, ((EntityPlayer) player).getName(),
                     null, this.reason);
-            minecraftserver.getConfigurationManager().getBannedPlayers().addEntry(userlistbansentry);
-            EntityPlayerMP entityplayermp = minecraftserver.getConfigurationManager().getPlayerByUsername(this.player.getName());
+            minecraftserver.getPlayerList().getBannedPlayers().addEntry(userlistbansentry);
+            EntityPlayerMP entityplayermp = minecraftserver.getPlayerList().getPlayerByUsername(this.player.getName());
 
             if (entityplayermp != null) {
-                entityplayermp.playerNetServerHandler.kickPlayerFromServer("You are banned from this server.");
+                entityplayermp.connection.kickPlayerFromServer("You are banned from this server.");
             }
         }
     }

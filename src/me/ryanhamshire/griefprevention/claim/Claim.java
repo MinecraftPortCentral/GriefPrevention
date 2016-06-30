@@ -40,13 +40,14 @@ import me.ryanhamshire.griefprevention.configuration.IClaimData;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
-import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.property.block.MatterProperty;
+import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -144,7 +145,7 @@ public class Claim implements ContextSource {
         this.world = lesserBoundaryCorner.getExtent();
 
         // owner
-        if (player != null && player.getItemInHand().isPresent() && player.getItemInHand().get().getItem().getId().equalsIgnoreCase(GriefPrevention.getActiveConfig(this.world.getProperties()).getConfig().claim.modificationTool)) {
+        if (player != null && player.getItemInHand(HandTypes.MAIN_HAND).isPresent() && player.getItemInHand(HandTypes.MAIN_HAND).get().getItem().getId().equalsIgnoreCase(GriefPrevention.getActiveConfig(this.world.getProperties()).getConfig().claim.modificationTool)) {
             this.ownerID = player.getUniqueId();
             PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             if (playerData != null) {
@@ -620,8 +621,8 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        if (location == null && user instanceof Player && ((Player) user).getItemInHand().isPresent()) {
-            ItemStack itemstack = ((Player) user).getItemInHand().get();
+        if (user instanceof Player && ((Player) user).getItemInHand(HandTypes.MAIN_HAND).isPresent()) {
+            ItemStack itemstack = ((Player) user).getItemInHand(HandTypes.MAIN_HAND).get();
             Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.ITEM_USE, user, itemstack, Optional.of(user));
             if (value == Tristate.FALSE) {
                 String reason = GriefPrevention.instance.dataStore.getMessage(Messages.ItemNotAuthorized, itemstack.getItem().getId());
@@ -1032,7 +1033,7 @@ public class Claim implements ContextSource {
 
         for (int x = smallX; x <= largeX; x++) {
             for (int z = smallZ; z <= largeZ; z++) {
-                chunkHashes.add(ChunkCoordIntPair.chunkXZ2Int(x, z));
+                chunkHashes.add(ChunkPos.chunkXZ2Int(x, z));
             }
         }
 

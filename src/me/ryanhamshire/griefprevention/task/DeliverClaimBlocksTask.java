@@ -32,10 +32,13 @@ import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
+import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+
+import java.util.Optional;
 
 //FEATURE: give players claim blocks for playing, as long as they're not away from their computer
 
@@ -80,9 +83,10 @@ public class DeliverClaimBlocksTask implements Runnable {
             Location<World> lastLocation = playerData.lastAfkCheckLocation;
             try {
                 // if he's not in a vehicle and has moved at least three blocks since the last check and he's not being pushed around by fluids
+                Optional<MatterProperty> matterProperty = player.getLocation().getBlock().getProperty(MatterProperty.class);
                 if (!player.get(VehicleData.class).isPresent() &&
                         (lastLocation == null || lastLocation.getPosition().distanceSquared(player.getLocation().getPosition()) >= 0) &&
-                        !((net.minecraft.block.Block) player.getLocation().getBlockType()).getMaterial().isLiquid()) {
+                        matterProperty.isPresent() && matterProperty.get().getValue() != MatterProperty.Matter.LIQUID) {
                     // add blocks
                     int accruedBlocks = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimBlocksEarned / 12;
                     if (accruedBlocks < 0) {

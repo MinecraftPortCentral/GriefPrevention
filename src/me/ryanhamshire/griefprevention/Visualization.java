@@ -28,8 +28,10 @@ package me.ryanhamshire.griefprevention;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.task.VisualizationApplicationTask;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
@@ -314,12 +316,12 @@ public class Visualization {
     // "cling" to the ground or ceiling
     private static Location<World> getVisibleLocation(World world, int x, int y, int z, boolean waterIsTransparent) {
         BlockSnapshot block = world.createSnapshot(x, y, z);
-        Direction direction = (isTransparent(block.getState().getType(), waterIsTransparent)) ? Direction.DOWN : Direction.UP;
+        Direction direction = (isTransparent(block.getState(), waterIsTransparent)) ? Direction.DOWN : Direction.UP;
 
         while (block.getPosition().getY() >= 1 &&
                 block.getPosition().getY() < world.getDimension().getBuildHeight() - 1 &&
-                (!isTransparent(block.getLocation().get().getRelative(Direction.UP).getBlockType(), waterIsTransparent)
-                        || isTransparent(block.getState().getType(), waterIsTransparent))) {
+                (!isTransparent(block.getLocation().get().getRelative(Direction.UP).getBlock(), waterIsTransparent)
+                        || isTransparent(block.getState(), waterIsTransparent))) {
             block = block.getLocation().get().getRelative(direction).createSnapshot();
         }
 
@@ -328,13 +330,13 @@ public class Visualization {
 
     // helper method for above. allows visualization blocks to sit underneath
     // partly transparent blocks like grass and fence
-    private static boolean isTransparent(BlockType block, boolean waterIsTransparent) {
-        Block mcBlock = (net.minecraft.block.Block) block;
-        Optional<MatterProperty> matterProperty = block.getProperty(MatterProperty.class);
+    private static boolean isTransparent(BlockState blockstate, boolean waterIsTransparent) {
+        IBlockState iblockstate = (IBlockState)(Object) blockstate;
+        Optional<MatterProperty> matterProperty = blockstate.getProperty(MatterProperty.class);
         if (!waterIsTransparent && matterProperty.isPresent() && matterProperty.get().getValue() == MatterProperty.Matter.LIQUID) {
             return false;
         }
-        return !mcBlock.isOpaqueCube();
+        return !iblockstate.isOpaqueCube();
     }
 
     public static Visualization fromClaims(Iterable<Claim> claims, int height, VisualizationType type, Location<World> locality) {

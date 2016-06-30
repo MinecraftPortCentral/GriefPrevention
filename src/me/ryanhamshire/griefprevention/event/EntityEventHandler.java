@@ -65,7 +65,7 @@ import org.spongepowered.api.event.entity.AttackEntityEvent;
 import org.spongepowered.api.event.entity.CollideEntityEvent;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
-import org.spongepowered.api.event.entity.DisplaceEntityEvent;
+import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
@@ -109,7 +109,7 @@ public class EntityEventHandler {
             return;
         }
 
-        Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(event.getTargetWorld().getLocation(event.getExplosion().getOrigin()), false, null);
+        Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(event.getExplosion().getLocation(), false, null);
 
         Optional<User> user = event.getCause().first(User.class);
         Object source = event.getCause().root();
@@ -606,7 +606,7 @@ public class EntityEventHandler {
     }
 
     @Listener
-    public void onEntityMove(DisplaceEntityEvent.Move event){
+    public void onEntityMove(MoveEntityEvent event){
         GPTimings.ENTITY_MOVE_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
         World world = event.getTargetEntity().getWorld();
@@ -622,8 +622,8 @@ public class EntityEventHandler {
             player = (Player) entity;
             playerData = this.dataStore.getPlayerData(world, player.getUniqueId());
         } else {
-            if (((net.minecraft.entity.Entity) entity).riddenByEntity instanceof Player) {
-                player = (Player) ((net.minecraft.entity.Entity) entity).riddenByEntity;
+            if (((net.minecraft.entity.Entity) entity).getControllingPassenger() instanceof Player) {
+                player = (Player) ((net.minecraft.entity.Entity) entity).getControllingPassenger();
                 playerData = this.dataStore.getPlayerData(world, player.getUniqueId());
             }
             owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
@@ -684,7 +684,7 @@ public class EntityEventHandler {
 
     // when a player teleports
     @Listener(order = Order.FIRST)
-    public void onEntityTeleport(DisplaceEntityEvent.Teleport event) {
+    public void onEntityTeleport(MoveEntityEvent.Teleport event) {
         GPTimings.ENTITY_TELEPORT_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
         Player player = null;
@@ -801,7 +801,7 @@ public class EntityEventHandler {
                     }
                     event.setCancelled(true);
                     if (entityTeleportCause != null && entityTeleportCause.getTeleporter().getType().equals(EntityTypes.ENDER_PEARL)) {
-                        ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ender_pearl));
+                        ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ENDER_PEARL));
                     }
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;

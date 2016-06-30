@@ -35,6 +35,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
@@ -56,7 +57,7 @@ public class CommandClaimUnbanItem implements CommandExecutor {
 
         String itemToBan = "";
         Optional<ItemType> item = ctx.getOne("item");
-        Optional<ItemStack> itemInHand = player.getItemInHand();
+        Optional<ItemStack> itemInHand = player.getItemInHand(HandTypes.MAIN_HAND);
         if (!item.isPresent() && !itemInHand.isPresent()) {
             GriefPrevention.sendMessage(player, TextMode.Err, "No item id was specified and player is not holding an item.");
             return CommandResult.success();
