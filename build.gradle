@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-20160116.192356-17'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
     }
 }
 
@@ -38,7 +38,7 @@ minecraft {
 version = "$minecraft.version-$project.version-$buildNumber"
 
 dependencies {
-	compile("org.spongepowered:spongeforge:1.8.9-1890-4.2.0-BETA-1562:dev")
+    compile("org.spongepowered:spongeforge:1.10.2-2026-5.0.0-BETA-1599:dev")
 }
 
 sourceSets {
