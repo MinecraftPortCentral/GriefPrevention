@@ -38,7 +38,7 @@ minecraft {
 version = "$minecraft.version-$project.version-$buildNumber"
 
 dependencies {
-	compile("org.spongepowered:spongeforge:1.8.9-1890-4.2.0-BETA-1508:dev")
+	compile("org.spongepowered:spongeforge:1.8.9-1890-4.2.0-BETA-1526:dev")
 }
 
 sourceSets {
