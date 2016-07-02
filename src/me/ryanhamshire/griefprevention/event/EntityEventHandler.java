@@ -741,7 +741,7 @@ public class EntityEventHandler {
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
-                } /*else if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.BLOCK_PLACE, entity, null, user) == Tristate.FALSE) {
+                } else if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.BLOCK_PLACE, entity, null, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, sourceClaim.getOwnerName());
                         GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoBuildPortalPermission) + "]", CustomLogEntryTypes.Debug);
@@ -749,7 +749,7 @@ public class EntityEventHandler {
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
-                }*/
+                }
             }
         }
 
@@ -860,23 +860,30 @@ public class EntityEventHandler {
             return;
         }
 
+        Location<World> impactPoint = event.getImpactPoint();
         for (Entity entity : event.getEntities()) {
             Claim targetClaim = null;
             if (user instanceof Player) {
-                targetClaim = this.dataStore.getClaimAtPlayer((Player) user, event.getImpactPoint(), false);
+                targetClaim = this.dataStore.getClaimAtPlayer((Player) user, impactPoint, false);
             } else {
-                targetClaim = this.dataStore.getClaimAt(event.getImpactPoint(), false, null);
+                targetClaim = this.dataStore.getClaimAt(impactPoint, false, null);
             }
     
-            String denyReason = targetClaim.allowAccess(user);
+            String denyReason = targetClaim.allowAccess(user, impactPoint);
             if (denyReason != null) {
                 if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, event.getCause().root(), entity, Optional.of(user)) == Tristate.TRUE) {
                     GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.stopTimingIfSync();
                     return;
                 }
 
-                GriefPrevention.addLogEntry("[Event: CollideEntityEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + event.getImpactPoint() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addLogEntry("[Event: CollideEntityEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + impactPoint + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                 event.setCancelled(true);
+            } else {
+                if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, event.getCause().root(), entity, Optional.of(user)) == Tristate.FALSE) {
+                    event.setCancelled(true);
+                    GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.stopTimingIfSync();
+                    return;
+                }
             }
         }
         GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.stopTimingIfSync();

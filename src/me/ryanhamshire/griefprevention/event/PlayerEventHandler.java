@@ -892,7 +892,7 @@ public class PlayerEventHandler {
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), event.getTargetEntity().getUniqueId());
         long now = Calendar.getInstance().getTimeInMillis();
 
-        if (now - playerData.lastDeathTimeStamp < GriefPrevention.getGlobalConfig().getConfig().spam.deathMessageCooldown * 1000) {
+        if (GriefPrevention.getGlobalConfig().getConfig().spam.monitorEnabled && (now - playerData.lastDeathTimeStamp) < GriefPrevention.getGlobalConfig().getConfig().spam.deathMessageCooldown * 1000) {
             event.setMessage(Text.of());
         }
 

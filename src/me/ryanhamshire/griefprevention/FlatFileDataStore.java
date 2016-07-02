@@ -26,6 +26,7 @@
 package me.ryanhamshire.griefprevention;
 
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
@@ -38,6 +39,7 @@ import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.DimensionType;
@@ -71,6 +73,7 @@ public class FlatFileDataStore extends DataStore {
     public final static Path claimTemplatePath = claimDataPath.resolve("Templates");
     public final static Path worldClaimDataPath = Paths.get("GriefPreventionData", "WorldClaim");
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
+    public final static Map<UUID, Task> cleanupClaimTasks = Maps.newHashMap();
     private final Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
     public static Path rootWorldSavePath;
 
@@ -144,7 +147,7 @@ public class FlatFileDataStore extends DataStore {
             int cleanupTaskInterval = GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.cleanupTaskInterval;
             if (cleanupTaskInterval > 0) {
                 CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(worldProperties);
-                Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance);
+                cleanupClaimTasks.put(worldProperties.getUniqueId(), Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance));
             }
         }
 
@@ -233,9 +236,19 @@ public class FlatFileDataStore extends DataStore {
     }
 
     public void unloadWorldData(WorldProperties worldProperties) {
-        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
-            this.claimWorldManagers.remove(worldProperties);
+        ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        for (Claim claim : claimWorldManager.getWorldClaims()) {
+            claim.unload();
         }
+        // Task must be cancelled before removing the claimWorldManager reference to avoid a memory leak
+        Task cleanupTask = cleanupClaimTasks.get(worldProperties.getUniqueId());
+        if (cleanupTask != null) {
+           cleanupTask.cancel();
+        }
+
+        this.claimWorldManagers.remove(worldProperties.getUniqueId());
+        DataStore.dimensionConfigMap.remove(worldProperties.getUniqueId());
+        DataStore.worldConfigMap.remove(worldProperties.getUniqueId());
     }
 
     void loadClaimData(File[] files, WorldProperties worldProperties) throws Exception {

@@ -92,8 +92,8 @@ public class GPFlags {
         DEFAULT_FLAGS.put(GPFlags.ITEM_USE, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_ENTITY, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_ENTITY, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.PVP, Tristate.FALSE);
 
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.BLOCK_BREAK, Tristate.TRUE);

@@ -144,7 +144,7 @@ public class BlockEventHandler {
     @Listener(order = Order.FIRST)
     public void onBlockCollide(CollideBlockEvent event, @Root Entity source, @First User user) {
         GPTimings.BLOCK_COLLIDE_EVENT.startTimingIfSync();
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
+        if (event.getTargetSide().equals(Direction.UP) || event.getTargetBlock().getType().equals(BlockTypes.AIR) || !GriefPrevention.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
             GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
             return;
         }
@@ -165,14 +165,15 @@ public class BlockEventHandler {
                 return; // allow siege mode
             }
         }
-        DataStore.generateMessages = false;
+        //DataStore.generateMessages = false;
         if (event.getTargetBlock().getType() == BlockTypes.PORTAL) {
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             } else if (event.getCause().root() instanceof Player){
                 if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
-                    GriefPrevention.sendMessage((Player) user, TextMode.Err, Messages.NoPortalFromProtectedClaim, claim.getOwnerName());
+                    // Disable message temporarily
+                    //GriefPrevention.sendMessage((Player) user, TextMode.Err, Messages.NoPortalFromProtectedClaim, claim.getOwnerName());
                     event.setCancelled(true);
                     GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                     return;
@@ -180,11 +181,11 @@ public class BlockEventHandler {
             }
         }
         String denyReason = claim.allowAccess(user, event.getTargetLocation());
-        DataStore.generateMessages = true;
+        //DataStore.generateMessages = true;
         if (denyReason != null) {
             if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
-                GriefPrevention.addLogEntry("[Event: CollideBlockEvent][RootCause: " + event.getCause().root() + "][TargetBlock: " + event.getTargetBlock() + "][CancelReason: No permission.]", CustomLogEntryTypes.Debug);
-             }
+               GriefPrevention.addLogEntry("[Event: CollideBlockEvent][RootCause: " + event.getCause().root() + "][TargetBlock: " + event.getTargetBlock() + "][CancelReason: No permission.]", CustomLogEntryTypes.Debug);
+            }
             event.setCancelled(true);
         }
         GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
@@ -198,21 +199,26 @@ public class BlockEventHandler {
             return;
         }
 
+        Location<World> impactPoint = event.getImpactPoint();
         Claim targetClaim = null;
         if (user instanceof Player) {
-            targetClaim = this.dataStore.getClaimAtPlayer((Player) user, event.getImpactPoint(), false);
+            targetClaim = this.dataStore.getClaimAtPlayer((Player) user, impactPoint, false);
         } else {
-            targetClaim = this.dataStore.getClaimAt(event.getImpactPoint(), false, null);
+            targetClaim = this.dataStore.getClaimAt(impactPoint, false, null);
         }
 
-        String denyReason = targetClaim.allowAccess(user);
+        String denyReason = targetClaim.allowAccess(user, impactPoint);
         if (denyReason != null) {
             if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
                 GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
                 return;
             }
-            GriefPrevention.addLogEntry("[Event: CollideBlockEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + event.getImpactPoint() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addLogEntry("[Event: CollideBlockEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + impactPoint + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
             event.setCancelled(true);
+        } else {
+            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), Optional.of(user)) == Tristate.FALSE) {
+                event.setCancelled(true);
+            }
         }
         GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
     }
@@ -409,11 +415,11 @@ public class BlockEventHandler {
 
             String denyReason = GriefPrevention.instance.allowBuild(source, block.getLocation().get(), user);
             if (denyReason != null) {
-                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + event.getCause().root() + "][BlockSnapshot: " + block + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + source + "][BlockSnapshot: " + block + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                 if (source instanceof PortalTeleportCause) {
                     if (targetClaim != null && player != null) {
                         // cancel and inform about the reason
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + source + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, targetClaim.getOwnerName());
                         GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
@@ -424,7 +430,9 @@ public class BlockEventHandler {
                     transaction.setValid(false);
                     continue;
                 } else {
-                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, targetClaim.getOwnerName());
+                    if (source instanceof Player) {
+                        GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
+                    }
                     event.setCancelled(true);
                     GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                     return;

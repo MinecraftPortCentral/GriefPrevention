@@ -546,7 +546,7 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        if (user instanceof Player && ((Player) user).getItemInHand().isPresent()) {
+        if (location == null && user instanceof Player && ((Player) user).getItemInHand().isPresent()) {
             ItemStack itemstack = ((Player) user).getItemInHand().get();
             Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.ITEM_USE, user, itemstack, Optional.of(user));
             if (value == Tristate.FALSE) {
@@ -1050,6 +1050,11 @@ public class Claim implements ContextSource {
         }
 
         return false;
+    }
+
+    public void unload() {
+        // clear any references
+        this.world = null;
     }
 
     @Override
