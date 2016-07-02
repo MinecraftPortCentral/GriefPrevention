@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
@@ -34,11 +35,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.text.Text;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class CommandClaimFlagReset implements CommandExecutor {
 
@@ -68,9 +65,7 @@ public class CommandClaimFlagReset implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Set<Context> contexts = new HashSet<>();
-        contexts.add(claim.getContext());
-        GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).clear();
+        GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
         GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Claim flags reset to defaults successfully."));
         return CommandResult.success();
     }

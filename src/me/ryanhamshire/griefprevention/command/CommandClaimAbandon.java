@@ -77,6 +77,7 @@ public class CommandClaimAbandon implements CommandExecutor {
             claim.removeSurfaceFluids(null);
             // remove all context permissions
             player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+            GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
             GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
             // if in a creative mode world, restore the claim area

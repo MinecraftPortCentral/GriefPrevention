@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -66,6 +67,8 @@ public class CommandClaimDelete implements CommandExecutor {
                     playerData.warnedAboutMajorDeletion = true;
                 } else {
                     claim.removeSurfaceFluids(null);
+                    // clear permissions
+                    GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
                     GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
                     // if in a creative mode world, /restorenature the claim

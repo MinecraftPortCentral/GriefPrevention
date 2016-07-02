@@ -244,6 +244,7 @@ public class FlatFileDataStore extends DataStore {
         Task cleanupTask = cleanupClaimTasks.get(worldProperties.getUniqueId());
         if (cleanupTask != null) {
            cleanupTask.cancel();
+           cleanupClaimTasks.remove(worldProperties.getUniqueId());
         }
 
         this.claimWorldManagers.remove(worldProperties.getUniqueId());

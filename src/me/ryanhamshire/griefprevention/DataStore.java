@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention;
 
 import co.aikar.timings.Timings;
 import com.flowpowered.math.vector.Vector3d;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import me.ryanhamshire.griefprevention.claim.Claim;
@@ -866,6 +867,7 @@ public abstract class DataStore {
             for (Claim claim : claimsToDelete) {
                 claim.removeSurfaceFluids(null);
 
+                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
                 this.deleteClaim(claim, true);
 
                 // if in a creative mode world, delete the claim
