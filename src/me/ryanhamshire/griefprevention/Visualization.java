@@ -27,7 +27,6 @@ package me.ryanhamshire.griefprevention;
 
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.task.VisualizationApplicationTask;
-import me.ryanhamshire.griefprevention.util.BlockUtils;
 import net.minecraft.block.Block;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -95,16 +94,16 @@ public class Visualization {
 
             // send real block information for any remaining elements
             for (int i = 0; i < visualization.elements.size(); i++) {
-                Transaction<BlockSnapshot> element = visualization.elements.get(i);
+                BlockSnapshot snapshot = visualization.elements.get(i).getOriginal();
 
                 // check player still in world where visualization exists
                 if (i == 0) {
-                    if (!player.getWorld().equals(element.getOriginal().getLocation().get().getExtent())) {
+                    if (!player.getWorld().equals(snapshot.getLocation().get().getExtent())) {
                         return;
                     }
                 }
 
-                BlockUtils.sendBlockChange(player, element.getOriginal());
+                player.sendBlockChange(snapshot.getPosition(), snapshot.getState());
             }
 
             playerData.currentVisualization = null;
