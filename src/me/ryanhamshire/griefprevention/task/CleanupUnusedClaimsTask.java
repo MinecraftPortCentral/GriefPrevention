@@ -33,6 +33,7 @@ import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -43,19 +44,23 @@ import java.util.Iterator;
 //runs every 5 minutes on the main thread
 public class CleanupUnusedClaimsTask implements Runnable {
 
-    private WorldProperties worldProperties;
-    private ClaimWorldManager claimWorldManager;
+    private WeakReference<WorldProperties> worldPropertiesRef;
 
     public CleanupUnusedClaimsTask(WorldProperties worldProperties) {
-        this.worldProperties = worldProperties;
-        this.claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(this.worldProperties);
+        this.worldPropertiesRef = new WeakReference<>(worldProperties);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void run() {
+        if (this.worldPropertiesRef.isEnqueued()) {
+            return;
+        }
+
+        WorldProperties worldProperties = this.worldPropertiesRef.get();
         // don't do anything when there are no claims
-        ArrayList<Claim> claimList = (ArrayList<Claim>) this.claimWorldManager.getWorldClaims();
+        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(worldProperties);
+        ArrayList<Claim> claimList = (ArrayList<Claim>) claimWorldManager.getWorldClaims();
         if (claimList.size() == 0) {
             return;
         }
@@ -70,7 +75,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
 
             // determine area of the default chest claim
             int areaOfDefaultClaim = 0;
-            GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(this.worldProperties);
+            GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(worldProperties);
             if (activeConfig.getConfig().claim.claimRadius >= 0) {
                 areaOfDefaultClaim = (int) Math.pow(activeConfig.getConfig().claim.claimRadius * 2 + 1, 2);
             }
@@ -90,7 +95,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
                     GriefPrevention.instance.dataStore.deleteClaim(claim, true);
 
                     // if configured to do so, restore the land to natural
-                    if (GriefPrevention.instance.claimModeIsActive(this.worldProperties, ClaimsMode.Creative) || activeConfig
+                    if (GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative) || activeConfig
                             .getConfig().claim.claimAutoNatureRestore) {
                         GriefPrevention.instance.restoreClaim(claim, 0);
                     }
@@ -107,13 +112,13 @@ public class CleanupUnusedClaimsTask implements Runnable {
                     GriefPrevention.addLogEntry(" All of " + claim.getOwnerName() + "'s claims have expired.", CustomLogEntryTypes.AdminActivity);
 
                     // if configured to do so, restore the land to natural
-                    if (GriefPrevention.instance.claimModeIsActive(this.worldProperties, ClaimsMode.Creative)
+                    if (GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative)
                             || activeConfig.getConfig().claim.claimAutoNatureRestore) {
                         GriefPrevention.instance.restoreClaim(claim, 0);
                     }
                 }
             } else if (activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration > 0
-                    && GriefPrevention.instance.claimModeIsActive(this.worldProperties, ClaimsMode.Creative)) {
+                    && GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative)) {
                 // avoid scanning large claims and administrative claims
                 if (claim.isAdminClaim() || claim.getWidth() > 25 || claim.getHeight() > 25) {
                     continue;

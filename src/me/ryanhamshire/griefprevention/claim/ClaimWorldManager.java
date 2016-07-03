@@ -263,6 +263,18 @@ public class ClaimWorldManager {
         }
     }
 
+    public void unload() {
+        this.playerClaimList.clear();
+        this.playerDataList.clear();
+        this.playerStorageList.clear();
+        this.worldClaims.clear();
+        this.claimUniqueIdMap.clear();
+        this.chunksToClaimsMap.clear();
+        this.theWildernessClaim.unload();
+        this.theWildernessClaim = null;
+        this.worldProperties = null;
+    }
+
     @SuppressWarnings("serial")
     public class NoTransferException extends Exception {
 

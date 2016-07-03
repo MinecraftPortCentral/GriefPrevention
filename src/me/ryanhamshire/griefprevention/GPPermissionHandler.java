@@ -112,7 +112,6 @@ public class GPPermissionHandler {
             return override;
         }
 
-        if (user.isPresent())
         if (user.isPresent()) {
             Tristate value = Tristate.UNDEFINED;
             if (sourceContext != null) {

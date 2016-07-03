@@ -247,6 +247,7 @@ public class FlatFileDataStore extends DataStore {
            cleanupClaimTasks.remove(worldProperties.getUniqueId());
         }
 
+        claimWorldManager.unload();
         this.claimWorldManagers.remove(worldProperties.getUniqueId());
         DataStore.dimensionConfigMap.remove(worldProperties.getUniqueId());
         DataStore.worldConfigMap.remove(worldProperties.getUniqueId());
