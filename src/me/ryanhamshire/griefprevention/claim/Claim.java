@@ -45,6 +45,7 @@ import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -428,9 +429,15 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        // anyone with explicit build permission can make changes
-        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_PLACE, source, location.getBlock(), Optional.of(user)) == Tristate.TRUE) {
-            return null;
+        if (!(source instanceof Player)) {
+            if (location.getBlock().getType() == BlockTypes.FIRE) {
+                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.FIRE_SPREAD, source, location.getBlock(), Optional.of(user));
+                if (value == Tristate.TRUE) {
+                    return null;
+                } else if (value == Tristate.FALSE) {
+                    return "You do not have permission to spread fire in this claim.";
+                }
+            }
         }
 
         // Builders can place blocks in claims
@@ -438,6 +445,22 @@ public class Claim implements ContextSource {
             return null;
         }
 
+        if (!(source instanceof Player)) {
+            Optional<MatterProperty> matterProperty = location.getProperty(MatterProperty.class);
+            if (matterProperty.isPresent() && matterProperty.get().getValue() == MatterProperty.Matter.LIQUID) {
+                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.LIQUID_FLOW, source, location.getBlock(), Optional.of(user));
+                if (value == Tristate.TRUE) {
+                    return null;
+                } else if (value == Tristate.FALSE) {
+                    return "You do not have permission to flow liquid in this claim.";
+                }
+            }
+        }
+
+        // anyone with explicit build permission can make changes
+        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_PLACE, source, location.getBlock(), Optional.of(user)) == Tristate.TRUE) {
+            return null;
+        }
         // subdivision permission inheritance
         if (this.parent != null) {
             return this.parent.allowBuild(source, location, user);
@@ -449,7 +472,11 @@ public class Claim implements ContextSource {
             reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
         }
         if (user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
-            reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+            if (!reason.equals("")) {
+                reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+            } else {
+                reason = GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+            }
         }
 
         return reason;
@@ -459,6 +486,23 @@ public class Claim implements ContextSource {
     public String allowBreak(Object source, BlockSnapshot blockSnapshot, Optional<User> user) {
         if (!blockSnapshot.getLocation().isPresent()) {
             return null;
+        }
+
+        // Check if user owns source
+        if (user.isPresent()) {
+            Optional<UUID> sourceUniqueId = Optional.empty();
+            if (source instanceof BlockSnapshot) {
+                BlockSnapshot sourceBlock = (BlockSnapshot) source;
+                if (sourceBlock.getNotifier().isPresent()) {
+                    sourceUniqueId = sourceBlock.getNotifier();
+                } else {
+                    sourceUniqueId = sourceBlock.getCreator();
+                }
+                if (sourceUniqueId.isPresent() && sourceUniqueId.get().equals(user.get().getUniqueId())) {
+                    // users can break their own blocks
+                    return null;
+                }
+            }
         }
 
         Location<World> location = blockSnapshot.getLocation().get();

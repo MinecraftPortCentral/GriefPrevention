@@ -1065,10 +1065,6 @@ public class GriefPrevention {
         PlayerData playerData = user.isPresent() ? this.dataStore.getPlayerData(location.getExtent(), user.get().getUniqueId()) : null;
         Claim claim = this.dataStore.getClaimAt(location, false, playerData != null ? playerData.lastClaim : null);
 
-        if (claim != null && user.isPresent() && claim.ownerID == user.get().getUniqueId()) {
-            return null;
-        }
-
         // exception: administrators in ignore claims mode
         if (user.isPresent() && (playerData.ignoreClaims)) {
             return null;

@@ -364,6 +364,9 @@ public class CommandHelper {
         if (claim == null) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to trust all claims, use /trustall instead."));
             return;
+        } else if (claim.getOwnerUniqueId().equals(user.getUniqueId())) {
+            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You are already the claim owner."));
+            return;
         } else {
             //check permission here
             if(claim.allowGrantPermission(player) != null) {
