@@ -41,8 +41,8 @@ public class ClaimCategory extends ConfigCategory {
     public int claimRadius = 4;
     @Setting(value = "banned-item-ids", comment = "Contains list of banned item ids on server.")
     public List<String> bannedItemIds = new ArrayList<>();
-    @Setting(value = "blocks-accrued-per-hour", comment = "Blocks earned per hour.")
-    public int claimBlocksEarned = 100;
+    @Setting(value = "blocks-accrued-per-hour", comment = "Blocks earned per hour. By default, each 'active' player should receive 10 blocks every 5 min. Note: The player must have moved at least 3 blocks since last delivery.")
+    public int claimBlocksEarned = 120;
     @Setting(value = "cleanup-task-interval", comment = "The interval in minutes for restoring blocks in an expired claim. Set to 0 to disable. Note: This only supports vanilla blocks. Use with caution if using custom biomes.")
     public int cleanupTaskInterval = 5;
     @Setting(value = "deliver-manuals", comment = "Send players manuals on claim creation.")

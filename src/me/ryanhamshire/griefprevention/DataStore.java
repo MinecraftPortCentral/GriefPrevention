@@ -45,6 +45,7 @@ import me.ryanhamshire.griefprevention.task.SecureClaimTask;
 import me.ryanhamshire.griefprevention.task.SiegeCheckupTask;
 import me.ryanhamshire.griefprevention.util.WordFinder;
 import net.minecraft.item.ItemStack;
+import net.minecraft.world.ChunkCoordIntPair;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -385,9 +386,9 @@ public abstract class DataStore {
             this.deleteClaimFromSecondaryStorage(claim);
         }
 
-        ArrayList<String> chunkStrings = claim.getChunkStrings();
-        for (String chunkString : chunkStrings) {
-            List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkString);
+        ArrayList<Long> chunkHashes = claim.getChunkHashes();
+        for (Long chunkHash : chunkHashes) {
+            List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
             for (int j = 0; j < claimsInChunk.size(); j++) {
                 if (claimsInChunk.get(j).id.equals(claim.id)) {
                     claimsInChunk.remove(j);
@@ -436,8 +437,7 @@ public abstract class DataStore {
             return null;
         }
 
-        String chunkID = this.getChunkString(location);
-        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkID);
+        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkCoordIntPair.chunkXZ2Int(location.getBlockX() >> 4, location.getBlockZ() >> 4));
         if (claimsInChunk == null) {
             Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
             return claimWorldManager.getWildernessClaim();
@@ -468,11 +468,6 @@ public abstract class DataStore {
     // finds a claim by ID
     public Claim getClaim(World world, UUID id) {
         return this.getClaimWorldManager(world.getProperties()).getClaimByUUID(id);
-    }
-
-    // gets an almost-unique, persistent identifier string for a chunk
-    String getChunkString(Location<World> location) {
-        return String.valueOf(location.getBlockX() >> 4) + (location.getBlockZ() >> 4);
     }
 
     // creates a claim.
@@ -1298,12 +1293,11 @@ public abstract class DataStore {
         Optional<Chunk> greaterChunk = location.getExtent().getChunkAtBlock(location.add(50, 0, 50).getBlockPosition());
 
         if (lesserChunk.isPresent() && greaterChunk.isPresent()) {
-            for (int chunk_x = lesserChunk.get().getPosition().getX(); chunk_x <= greaterChunk.get().getPosition().getX(); chunk_x++) {
-                for (int chunk_z = lesserChunk.get().getPosition().getZ(); chunk_z <= greaterChunk.get().getPosition().getZ(); chunk_z++) {
-                    Optional<Chunk> chunk = location.getExtent().getChunk(chunk_x, 0, chunk_z);
+            for (int chunkX = lesserChunk.get().getPosition().getX(); chunkX <= greaterChunk.get().getPosition().getX(); chunkX++) {
+                for (int chunkZ = lesserChunk.get().getPosition().getZ(); chunkZ <= greaterChunk.get().getPosition().getZ(); chunkZ++) {
+                    Optional<Chunk> chunk = location.getExtent().getChunk(chunkX, 0, chunkZ);
                     if (chunk.isPresent()) {
-                        String chunkID = String.valueOf(chunk_x) + (chunk_z);
-                        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkID);
+                        List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkCoordIntPair.chunkXZ2Int(chunkX, chunkZ));
                         if (claimsInChunk != null) {
                             claims.addAll(claimsInChunk);
                         }

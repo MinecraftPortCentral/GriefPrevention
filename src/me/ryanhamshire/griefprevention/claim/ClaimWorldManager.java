@@ -63,7 +63,7 @@ public class ClaimWorldManager {
     // Claim UUID -> Claim
     private Map<UUID, Claim> claimUniqueIdMap = Maps.newHashMap();
     // String -> Claim
-    private ConcurrentHashMap<String, List<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, List<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
     private Claim theWildernessClaim;
 
     public ClaimWorldManager() {
@@ -150,12 +150,12 @@ public class ClaimWorldManager {
                 createPlayerData(ownerId);
             }
     
-            ArrayList<String> chunkStrings = claim.getChunkStrings();
-            for (String chunkString : chunkStrings) {
-                List<Claim> claimsInChunk = this.getChunksToClaimsMap().get(chunkString);
+            ArrayList<Long> chunkHashes = claim.getChunkHashes();
+            for (Long chunkHash : chunkHashes) {
+                List<Claim> claimsInChunk = this.getChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk == null) {
                     claimsInChunk = new ArrayList<Claim>();
-                    this.getChunksToClaimsMap().put(chunkString, claimsInChunk);
+                    this.getChunksToClaimsMap().put(chunkHash, claimsInChunk);
                 }
 
                 claimsInChunk.add(claim);
@@ -212,7 +212,7 @@ public class ClaimWorldManager {
         return this.worldClaims;
     }
 
-    public ConcurrentHashMap<String, List<Claim>> getChunksToClaimsMap() {
+    public ConcurrentHashMap<Long, List<Claim>> getChunksToClaimsMap() {
         return this.chunksToClaimsMap;
     }
 

@@ -40,6 +40,7 @@ import me.ryanhamshire.griefprevention.configuration.IClaimData;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import net.minecraft.world.ChunkCoordIntPair;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
@@ -993,8 +994,8 @@ public class Claim implements ContextSource {
         return chunks;
     }
 
-    public ArrayList<String> getChunkStrings() {
-        ArrayList<String> chunkStrings = new ArrayList<String>();
+    public ArrayList<Long> getChunkHashes() {
+        ArrayList<Long> chunkHashes = new ArrayList<Long>();
         int smallX = this.getLesserBoundaryCorner().getBlockX() >> 4;
         int smallZ = this.getLesserBoundaryCorner().getBlockZ() >> 4;
         int largeX = this.getGreaterBoundaryCorner().getBlockX() >> 4;
@@ -1002,11 +1003,11 @@ public class Claim implements ContextSource {
 
         for (int x = smallX; x <= largeX; x++) {
             for (int z = smallZ; z <= largeZ; z++) {
-                chunkStrings.add(String.valueOf(x) + z);
+                chunkHashes.add(ChunkCoordIntPair.chunkXZ2Int(x, z));
             }
         }
 
-        return chunkStrings;
+        return chunkHashes;
     }
 
     public IClaimData getClaimData() {
