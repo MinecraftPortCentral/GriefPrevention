@@ -39,12 +39,10 @@ import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.VisualizationType;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import net.minecraft.block.BlockLiquid;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
-import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -54,6 +52,7 @@ import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.CollideBlockEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
+import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.entity.teleport.PortalTeleportCause;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
@@ -85,6 +84,42 @@ public class BlockEventHandler {
         this.dataStore = dataStore;
     }
 
+    @Listener(order = Order.FIRST)
+    public void onBlockPre(ChangeBlockEvent.Pre event, @Root BlockSnapshot blockSource) {
+        Optional<User> user = event.getCause().first(User.class);
+        Player player = user.isPresent() && user.get() instanceof Player ? (Player) user.get() : null;
+        if  (!blockSource.getLocation().isPresent()) {
+            return;
+        }
+
+        Location<World> sourceLocation = blockSource.getLocation().get();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
+            return;
+        }
+
+        Claim sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get(), true, null);
+        Claim targetClaim = this.dataStore.getClaimAt(event.getLocation(), true, null);
+        if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+            return;
+        } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+            return;
+        } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+            return;
+        }
+
+        String denyReason = GriefPrevention.instance.allowBuild(blockSource, event.getLocation(), user);
+        System.out.println("denyReason = " + denyReason);
+        if (denyReason != null) {
+            GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + event.getLocation() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+            if (player != null) {
+               // System.out.println("deny block location " + block.getLocation().get() + ", type = " + block.getLocation().get().getBlock());
+                GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
+            }
+            event.setCancelled(true);
+            return;
+        }
+    }
+
     // Handle fluids flowing into claims
     @Listener(order = Order.FIRST)
     public void onBlockNotify(NotifyNeighborBlockEvent event, @Root BlockSnapshot blockSource) {
@@ -101,41 +136,30 @@ public class BlockEventHandler {
             return;
         }
 
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(blockSource.getLocation().get().getExtent().getProperties());
-        Claim sourceClaim = null;
-        if (user.isPresent() && user.get() instanceof Player) {            sourceClaim = this.dataStore.getClaimAtPlayer((Player) user.get(), sourceLocation, false);
-        } else {            sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
+        Claim sourceClaim = this.getSourceClaim(event.getCause());
+        if (sourceClaim == null) {
+            return;
         }
 
-        Optional<UUID> sourceBlockNotifier = (sourceLocation.getExtent().getNotifier(sourceLocation.getBlockPosition()));
         Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
         while (iterator.hasNext()) {
             Direction direction = iterator.next();
             Location<World> location = sourceLocation.getRelative(direction);
             Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
 
-            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+            if (sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                continue;
+            } else if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                continue;
+            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                continue;
+            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
                 continue;
             }
-            Optional<UUID> targetBlockNotifier = (location.getExtent().getNotifier(location.getBlockPosition()));
-            if (sourceBlockNotifier.isPresent() && targetBlockNotifier.isPresent() && targetBlockNotifier.get().equals(sourceBlockNotifier.get())) {
-                continue;
-            }  else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
-                continue;
-            } else if (!sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
-                if (user.isPresent()) {
-                    if (user.get() instanceof Player) {
-                        if (targetClaim.doorsOpen && activeConfig.getConfig().siege.winnerAccessibleBlocks
-                                .contains(location.getBlock().getType().getId())) {
-                            continue; // allow siege mode
-                        }
-                    }
-                }
 
-                // no claim crossing unless owned by same owner
-                GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][Removed: " + direction + "][Location: " + location + "]", CustomLogEntryTypes.Debug);
-                iterator.remove();
-            }
+            // no claim crossing unless trusted
+            GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][Removed: " + direction + "][Location: " + location + "]", CustomLogEntryTypes.Debug);
+            iterator.remove();
         }
         GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
     }
@@ -148,25 +172,25 @@ public class BlockEventHandler {
             return;
         }
 
-        Claim claim = null;
+        Claim targetClaim = null;
         if (user instanceof Player) {
-            claim = this.dataStore.getClaimAtPlayer((Player) user, event.getTargetLocation(), false);
+            targetClaim = this.dataStore.getClaimAtPlayer((Player) user, event.getTargetLocation(), false);
         } else {
-            claim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
+            targetClaim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
         }
 
         if (user instanceof Player) {
             Player player = (Player) user;
-            if (claim.doorsOpen && GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.winnerAccessibleBlocks
+            if (targetClaim.doorsOpen && GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.winnerAccessibleBlocks
                     .contains(event
                             .getTargetBlock().getType().getId())) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return; // allow siege mode
             }
         }
-        //DataStore.generateMessages = false;
+
         if (event.getTargetBlock().getType() == BlockTypes.PORTAL) {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             } else if (event.getCause().root() instanceof Player){
@@ -179,10 +203,10 @@ public class BlockEventHandler {
                 }
             }
         }
-        String denyReason = claim.allowAccess(user, event.getTargetLocation());
+        String denyReason = targetClaim.allowAccess(user, event.getTargetLocation());
         //DataStore.generateMessages = true;
         if (denyReason != null) {
-            if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
+            if (GriefPrevention.instance.debugLogging && event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
                GriefPrevention.addLogEntry("[Event: CollideBlockEvent][RootCause: " + event.getCause().root() + "][TargetBlock: " + event.getTargetBlock() + "][CancelReason: No permission.]", CustomLogEntryTypes.Debug);
             }
             event.setCancelled(true);
@@ -272,8 +296,22 @@ public class BlockEventHandler {
 
         Object source = event.getCause().root();
         Optional<User> user = event.getCause().first(User.class);
+        Claim sourceClaim = this.getSourceClaim(event.getCause());
+        if (sourceClaim == null) {
+            return;
+        }
+
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         for (Transaction<BlockSnapshot> transaction : transactions) {
+            Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
+            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                return;
+            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                return;
+            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                return;
+            }
+
             // make sure the player is allowed to break at the location
             String denyReason = GriefPrevention.instance.allowBreak(source, transaction.getOriginal(), user);
             if (denyReason != null) {
@@ -298,48 +336,25 @@ public class BlockEventHandler {
             return;
         }
 
-        Object source = event.getCause().root();
         Optional<User> user = event.getCause().first(User.class);
-        Player player = (user.isPresent() && user.get() instanceof Player) ? (Player) user.get() : null;
-        Optional<BlockSnapshot> blockSource = event.getCause().first(BlockSnapshot.class);
-
-        if (!user.isPresent() && (!blockSource.isPresent() || !blockSource.get().getLocation().isPresent())) {
-            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+        Claim sourceClaim = this.getSourceClaim(event.getCause());
+        if (sourceClaim == null) {
             return;
-        }
-
-        if (blockSource.isPresent()) {
-            Optional<MatterProperty> matterProperty = blockSource.get().getProperty(MatterProperty.class);
-            // ignore liquids
-            if (matterProperty.isPresent() && matterProperty.get().getValue() == MatterProperty.Matter.LIQUID) { 
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                return;
-            }
-        }
-
-        Claim sourceClaim = null;
-        if (blockSource.isPresent()) {
-            sourceClaim = this.dataStore.getClaimAt(blockSource.get().getLocation().get(), false, null);
-        } else if (player != null) {
-            sourceClaim = this.dataStore.getClaimAtPlayer(player, player.getLocation(), false);
         }
 
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
             Vector3i pos = transaction.getFinal().getPosition();
             Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
-            if (sourceClaim != null && sourceClaim.isWildernessClaim() && !targetClaim.isWildernessClaim()) {
-                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][Pos: " + pos + "][CancelReason: " + Messages.BlockChangeFromWilderness + ".]", CustomLogEntryTypes.Debug);
-                event.setCancelled(true);
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 return;
-            } else if (sourceClaim != null && !sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
-                continue;
-            } else if (sourceClaim != null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
-                continue;
+            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                return;
+            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                return;
             }
 
             if (user.isPresent()) {
-                String denyReason = GriefPrevention.instance.allowBuild(source, transaction.getFinal().getLocation().get(), user);
+                String denyReason = GriefPrevention.instance.allowBuild(event.getCause().root(), transaction.getFinal().getLocation().get(), user);
                 if (denyReason != null) {
                     GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                     event.setCancelled(true);
@@ -367,15 +382,11 @@ public class BlockEventHandler {
         if (user.isPresent()) {
             playerData = this.dataStore.getPlayerData(world, user.get().getUniqueId());
         }
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
 
-        Claim sourceClaim = null;
-        Optional<BlockSnapshot> sourceBlock = event.getCause().first(BlockSnapshot.class);
-        if (sourceBlock.isPresent() && sourceBlock.get().getLocation().isPresent()) {
-            Location<World> sourceBlockLocation = sourceBlock.get().getLocation().get();
-            sourceClaim = this.dataStore.getClaimAt(sourceBlockLocation, true, null);
-        } else if (player != null) {
-            sourceClaim = this.dataStore.getClaimAtPlayer(player, player.getLocation(), true);
+        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
+        Claim sourceClaim = this.getSourceClaim(event.getCause());
+        if (sourceClaim == null) {
+            return;
         }
 
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
@@ -385,10 +396,12 @@ public class BlockEventHandler {
             }
 
             Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
-            if (sourceClaim != null && !sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
-                continue;
-            } else if (sourceClaim != null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
-                continue;
+            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                return;
+            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                return;
+            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                return;
             }
 
             String denyReason = GriefPrevention.instance.allowBuild(source, block.getLocation().get(), user);
@@ -404,21 +417,18 @@ public class BlockEventHandler {
                         return;
                     }
                 }
-                if (sourceBlock.isPresent() && sourceBlock.get().getState().getType() instanceof BlockLiquid) {
-                    transaction.setValid(false);
-                    continue;
-                } else {
-                    if (source instanceof Player) {
-                        GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
-                    }
-                    event.setCancelled(true);
-                    GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                    return;
+
+                if (source instanceof Player) {
+                    GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
                 }
+
+                event.setCancelled(true);
+                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                return;
             }
 
             // warn players when they place TNT above sea level, since it doesn't destroy blocks there
-            if (player != null && GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.EXPLOSION_SURFACE, sourceBlock, block.getState(), user) == Tristate.FALSE && block.getState().getType() == BlockTypes.TNT &&
+            if (player != null && GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.EXPLOSION_SURFACE, event.getCause().root(), block.getState(), user) == Tristate.FALSE && block.getState().getType() == BlockTypes.TNT &&
                     !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
                     block.getPosition().getY() > GriefPrevention.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&
                     targetClaim.isWildernessClaim() &&
@@ -568,5 +578,25 @@ public class BlockEventHandler {
             }
         }
         GPTimings.SIGN_CHANGE_EVENT.stopTimingIfSync();
+    }
+
+    public Claim getSourceClaim(Cause cause) {
+        Optional<Entity> entitySource = cause.first(Entity.class);
+        Optional<BlockSnapshot> blockSource = cause.first(BlockSnapshot.class);
+
+        Claim sourceClaim = null;
+        if (blockSource.isPresent()) {
+            sourceClaim = this.dataStore.getClaimAt(blockSource.get().getLocation().get(), false, null);
+        } else if (entitySource.isPresent()) {
+            Entity entity = entitySource.get();
+            if (entity instanceof Player) {
+                Player player = (Player) entity;
+                sourceClaim = this.dataStore.getClaimAtPlayer(player, player.getLocation(), false);
+            } else {
+                sourceClaim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
+            }
+        }
+
+        return sourceClaim;
     }
 }

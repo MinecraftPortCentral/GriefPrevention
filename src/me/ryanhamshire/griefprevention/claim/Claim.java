@@ -344,9 +344,55 @@ public class Claim implements ContextSource {
             return true;
         }
 
+        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
+            if (playerData.debugClaimPermissions) {
+                return false;
+            }
+
+            return true;
+        }
+
         // if subdivision
         if (this.parent != null) {
             return this.parent.hasFullAccess(user);
+        }
+
+        return false;
+    }
+
+    // similar to hasFullAccess except it doesn't get checked by delete/abandon claims
+    public boolean hasFullTrust(User user) {
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
+        if (playerData != null && playerData.ignoreClaims) {
+            return true;
+        }
+
+        // owner
+        if (user.getUniqueId().equals(this.ownerID)) {
+            // only check debug claim permissions if owner
+            if (playerData.debugClaimPermissions) {
+                return false;
+            }
+
+            return true;
+        }
+
+        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
+            if (playerData.debugClaimPermissions) {
+                return false;
+            }
+
+            return true;
+        }
+
+        // Builders can place blocks in claims
+        if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) || this.getClaimData().getBuilders().contains(user.getUniqueId())) {
+            return true;
+        }
+
+        // if subdivision
+        if (this.parent != null) {
+            return this.parent.hasFullTrust(user);
         }
 
         return false;
@@ -487,23 +533,6 @@ public class Claim implements ContextSource {
     public String allowBreak(Object source, BlockSnapshot blockSnapshot, Optional<User> user) {
         if (!blockSnapshot.getLocation().isPresent()) {
             return null;
-        }
-
-        // Check if user owns source
-        if (user.isPresent()) {
-            Optional<UUID> sourceUniqueId = Optional.empty();
-            if (source instanceof BlockSnapshot) {
-                BlockSnapshot sourceBlock = (BlockSnapshot) source;
-                if (sourceBlock.getNotifier().isPresent()) {
-                    sourceUniqueId = sourceBlock.getNotifier();
-                } else {
-                    sourceUniqueId = sourceBlock.getCreator();
-                }
-                if (sourceUniqueId.isPresent() && sourceUniqueId.get().equals(user.get().getUniqueId())) {
-                    // users can break their own blocks
-                    return null;
-                }
-            }
         }
 
         Location<World> location = blockSnapshot.getLocation().get();

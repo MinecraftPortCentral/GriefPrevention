@@ -200,6 +200,7 @@ public class GriefPrevention {
 
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
+    public boolean debugLogging = false;
 
     // how far away to search from a tree trunk for its branch blocks
     public static final int TREE_RADIUS = 5;
@@ -209,7 +210,7 @@ public class GriefPrevention {
 
     // adds a server log entry
     public static void addLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
-        if (customLogType == CustomLogEntryTypes.Debug && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug) {
+        if (customLogType == CustomLogEntryTypes.Debug && !GriefPrevention.instance.debugLogging) {
             return;
         }
 
@@ -243,8 +244,8 @@ public class GriefPrevention {
                     String version = Sponge.getPlatform().getImplementation().getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 1528) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1508+.");
+                    if (spongeVersion < 1541) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1541+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -772,6 +773,7 @@ public class GriefPrevention {
 
             Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
+            this.debugLogging = DataStore.globalConfig.getConfig().logging.loggingDebug;
             for (World world : Sponge.getGame().getServer().getWorlds()) {
                 DimensionType dimType = world.getProperties().getDimensionType();
                 if (!Files.exists(rootConfigPath.resolve(dimType.getId()).resolve(world.getProperties().getWorldName()))) {
