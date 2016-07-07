@@ -108,11 +108,9 @@ public class BlockEventHandler {
         }
 
         String denyReason = GriefPrevention.instance.allowBuild(blockSource, event.getLocation(), user);
-        System.out.println("denyReason = " + denyReason);
         if (denyReason != null) {
             GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + event.getLocation() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
             if (player != null) {
-               // System.out.println("deny block location " + block.getLocation().get() + ", type = " + block.getLocation().get().getBlock());
                 GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
             }
             event.setCancelled(true);
