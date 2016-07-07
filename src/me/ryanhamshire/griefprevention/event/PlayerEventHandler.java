@@ -2204,12 +2204,6 @@ public class PlayerEventHandler {
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(clickedBlock.getLocation().get().getExtent(), player.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
-        if (claim.isWildernessClaim()) {
-            GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
-            GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
-            return false;
-        }
-
         // if holding shift (sneaking), show all claims in area
         if (player.get(Keys.IS_SNEAKING).get() && player.hasPermission(GPPermissions.VISUALIZE_CLAIMS)) {
             // find nearby claims
@@ -2222,6 +2216,13 @@ public class PlayerEventHandler {
             GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
             return true;
         }
+
+        if (claim.isWildernessClaim()) {
+            GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockNotClaimed);
+            GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
+            return false;
+        }
+
         // claim case
         GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockClaimed, claim.getOwnerName());
         // visualize boundary

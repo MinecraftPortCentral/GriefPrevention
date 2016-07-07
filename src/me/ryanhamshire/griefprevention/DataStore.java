@@ -893,6 +893,8 @@ public abstract class DataStore {
             claim.inDataStore = false;
             result.claim.setClaimData(claim.getClaimData());
             result.claim.setClaimStorage(claim.getClaimStorage());
+            // make sure the same claim type is kept
+            result.claim.type = claim.type;
             this.deleteClaim(claim);
             // save those changes
             this.writeClaimToStorage(result.claim);

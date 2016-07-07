@@ -98,23 +98,25 @@ public class BlockEventHandler {
         }
 
         Claim sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get(), true, null);
-        Claim targetClaim = this.dataStore.getClaimAt(event.getLocation(), true, null);
-        if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
-            return;
-        } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
-            return;
-        } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
-            return;
-        }
-
-        String denyReason = GriefPrevention.instance.allowBuild(blockSource, event.getLocation(), user);
-        if (denyReason != null) {
-            GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + event.getLocation() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-            if (player != null) {
-                GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
+        for (Location<World> location : event.getLocations()) {
+            Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
+            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                return;
+            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                return;
+            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                return;
             }
-            event.setCancelled(true);
-            return;
+    
+            String denyReason = GriefPrevention.instance.allowBuild(blockSource, location, user);
+            if (denyReason != null) {
+                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + location + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                if (player != null) {
+                    GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
+                }
+                event.setCancelled(true);
+                return;
+            }
         }
     }
 
