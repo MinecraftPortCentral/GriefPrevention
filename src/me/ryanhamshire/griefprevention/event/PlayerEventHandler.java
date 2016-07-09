@@ -1374,11 +1374,6 @@ public class PlayerEventHandler {
                     GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);
                 }
             } else {
-                // if we have an active visualization that is not claim investigation, revert and update client
-                if (playerData != null && playerData.currentVisualization != null && playerData.currentVisualization.getType() != VisualizationType.ClaimInvestigation) {
-                    Visualization.Revert(player);
-                }
-
                 playerData.lastShovelLocation = null;
                 playerData.claimResizing = null;
             }

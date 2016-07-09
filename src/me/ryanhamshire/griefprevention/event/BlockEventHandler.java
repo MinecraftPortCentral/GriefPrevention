@@ -187,6 +187,9 @@ public class BlockEventHandler {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return; // allow siege mode
             }
+            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
+                return;
+            }
         }
 
         if (event.getTargetBlock().getType() == BlockTypes.PORTAL) {

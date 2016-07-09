@@ -27,7 +27,6 @@ package me.ryanhamshire.griefprevention;
 //just an enumeration of the visualization types, which determine what materials will be for the fake blocks
 public enum VisualizationType {
     Claim,
-    ClaimInvestigation,
     Subdivision,
     ErrorClaim,
     RestoreNature,

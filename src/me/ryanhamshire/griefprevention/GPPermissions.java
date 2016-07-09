@@ -111,6 +111,8 @@ public class GPPermissions {
     public static final String COMMAND_EXECUTE = "griefprevention.claim.flag.command-execute";
     public static final String COMMAND_EXECUTE_PVP = "griefprevention.claim.flag.command-execute-pvp";
     public static final String ENTER_CLAIM = "griefprevention.claim.flag.enter-claim";
+    public static final String ENTITY_COLLIDE_BLOCK = "griefprevention.claim.flag.collide-block";
+    public static final String ENTITY_COLLIDE_ENTITY = "griefprevention.claim.flag.collide-entity";
     public static final String ENTITY_DAMAGE = "griefprevention.claim.flag.entity-damage";
     public static final String ENTITY_EXPLOSION = "griefprevention.claim.flag.explosion";
     public static final String ENTITY_RIDING = "griefprevention.claim.flag.entity-riding";
