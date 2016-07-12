@@ -147,16 +147,14 @@ public class GPPermissionHandler {
         }
 
         // This is required since permissions will check each context separately
-        if (user.getSubjectData().getPermissions(contexts).isEmpty() || user.getSubjectData().getParents(contexts).isEmpty()) {
-            return Tristate.UNDEFINED;
-        }
-
-        Tristate value = user.getPermissionValue(contexts, permission);
-        if (value != Tristate.UNDEFINED) {
-            return value;
-        }
-        if (claim.parent != null) {
-            value = user.getPermissionValue(contexts, permission);
+        if (!user.getSubjectData().getPermissions(contexts).isEmpty() || !user.getSubjectData().getParents(contexts).isEmpty() ) {
+            Tristate value = Tristate.UNDEFINED;
+            // check for the permission manually as PEX doesn't seem to ONLY check contexts i pass into it.
+            for (Map.Entry<String, Boolean> mapEntry : user.getSubjectData().getPermissions(contexts).entrySet()) {
+                if (permission.contains(mapEntry.getKey())) {
+                    value = Tristate.fromBoolean(mapEntry.getValue());
+                }
+            }
             if (value != Tristate.UNDEFINED) {
                 return value;
             }
