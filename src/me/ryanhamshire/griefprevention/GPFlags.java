@@ -73,7 +73,7 @@ public class GPFlags {
         DEFAULT_FLAGS.put(GPFlags.ENTER_CLAIM, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ENTITY_COLLIDE_BLOCK, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.ENTITY_COLLIDE_ENTITY, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_DAMAGE, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ENTITY_DAMAGE, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ENTITY_RIDING, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ENTITY_SPAWN, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ENTITY_TELEPORT_FROM, Tristate.TRUE);

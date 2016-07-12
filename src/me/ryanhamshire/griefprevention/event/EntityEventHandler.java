@@ -433,9 +433,13 @@ public class EntityEventHandler {
                 user = Optional.of((User) attacker);
             }
 
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, attacker, targetEntity, user) == Tristate.FALSE) {
-                return true;
+            // only players can interact
+            if (attacker instanceof Player) {
+                if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, attacker, targetEntity, user) == Tristate.FALSE) {
+                    return true;
+                }
             }
+
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, user) == Tristate.FALSE) {
                 return true;
             }
