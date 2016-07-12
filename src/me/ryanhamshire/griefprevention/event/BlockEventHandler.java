@@ -151,10 +151,14 @@ public class BlockEventHandler {
                 continue;
             } else if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 continue;
-            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
-                continue;
             } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
                 continue;
+            } else if (user.isPresent()) {
+                // Needed to handle levers notifying doors to open etc.
+                String denyReason = targetClaim.allowAccess(user.get(), location);
+                if (denyReason == null) {
+                    return;
+                }
             }
 
             // no claim crossing unless trusted
