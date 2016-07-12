@@ -147,7 +147,7 @@ public class GPPermissionHandler {
         }
 
         // This is required since permissions will check each context separately
-        if (user.getSubjectData().getPermissions(contexts).isEmpty() && user.getSubjectData().getParents(contexts).isEmpty()) {
+        if (user.getSubjectData().getPermissions(contexts).isEmpty() || user.getSubjectData().getParents(contexts).isEmpty()) {
             return Tristate.UNDEFINED;
         }
 

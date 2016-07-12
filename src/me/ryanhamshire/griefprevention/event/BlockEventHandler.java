@@ -157,7 +157,7 @@ public class BlockEventHandler {
                 // Needed to handle levers notifying doors to open etc.
                 String denyReason = targetClaim.allowAccess(user.get(), location);
                 if (denyReason == null) {
-                    return;
+                    continue;
                 }
             }
 
