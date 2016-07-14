@@ -53,11 +53,11 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE)//, comment = "The last date and time this claim was active.")
     private String dateLastActive = Instant.now().toString();
     @Setting(value = ClaimStorageData.MAIN_CLAIM_NAME)//, comment = "The name associated with claim.")
-    private Text claimName = Text.of("");
+    private Text claimName;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_GREETING)//, comment = "The greeting message players will receive when entering claim area.")
-    private Text claimGreetingMessage = Text.of("");
+    private Text claimGreetingMessage;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_FAREWELL)//, comment = "The farewell message players will receive when leaving claim area.")
-    private Text claimFarewellMessage = Text.of("");
+    private Text claimFarewellMessage;
     @Setting(value = ClaimStorageData.MAIN_LESSER_BOUNDARY_CORNER)//, comment = "The lesser boundary corner location of claim.")
     private String lesserBoundaryCornerPos;
     @Setting(value = ClaimStorageData.MAIN_GREATER_BOUNDARY_CORNER)//, comment = "The greater boundary corner location of claim.")

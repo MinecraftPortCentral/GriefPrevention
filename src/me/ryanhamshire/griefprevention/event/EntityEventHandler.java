@@ -648,7 +648,7 @@ public class EntityEventHandler {
             if (playerData != null) {
                 playerData.lastClaim = toClaim;
                 Text welcomeMessage = toClaim.getClaimData().getGreetingMessage();
-                if (!welcomeMessage.equals(Text.of())) {
+                if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
                     player.sendMessage(welcomeMessage);
                 }
             }
@@ -669,7 +669,7 @@ public class EntityEventHandler {
             if (playerData != null) {
                 playerData.lastClaim = toClaim;
                 Text farewellMessage = fromClaim.getClaimData().getFarewellMessage();
-                if (!farewellMessage.equals(Text.of())) {
+                if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
                     player.sendMessage(farewellMessage);
                 }
             }

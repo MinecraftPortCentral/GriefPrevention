@@ -24,15 +24,23 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
+import net.minecraft.entity.EnumCreatureType;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.common.entity.SpongeEntityType;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class GPFlags {
 
     public static final Map<String, Tristate> DEFAULT_FLAGS = Maps.newHashMap();
     public static final Map<String, Tristate> DEFAULT_WILDERNESS_FLAGS = Maps.newHashMap();
+    public static final BiMap<String, EnumCreatureType> SPAWN_TYPES = HashBiMap.create();
 
     // Names
     public static final String BLOCK_BREAK = "block-break";
@@ -123,5 +131,51 @@ public class GPFlags {
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PROJECTILE_IMPACT_ENTITY, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PVP, Tristate.TRUE);
+
+        SPAWN_TYPES.put("ambient", EnumCreatureType.AMBIENT);
+        SPAWN_TYPES.put("animal", EnumCreatureType.CREATURE);
+        SPAWN_TYPES.put("aquatic", EnumCreatureType.WATER_CREATURE);
+        SPAWN_TYPES.put("monster", EnumCreatureType.MONSTER);
+    }
+
+    public static String getEntitySpawnFlag(String flag, String target) {
+        switch (flag) {
+            case GPFlags.ENTER_CLAIM:
+            case GPFlags.ENTITY_COLLIDE_ENTITY:
+            case GPFlags.ENTITY_DAMAGE:
+            case GPFlags.ENTITY_RIDING:
+            case GPFlags.ENTITY_SPAWN:
+            case GPFlags.ENTITY_TELEPORT_FROM:
+            case GPFlags.ENTITY_TELEPORT_TO:
+            case GPFlags.EXIT_CLAIM:
+            case GPFlags.INTERACT_ENTITY_PRIMARY:
+            case GPFlags.INTERACT_ENTITY_SECONDARY:
+            case GPFlags.PROJECTILE_IMPACT_ENTITY:
+                // first check for valid SpawnType
+                String[] parts = target.split(":");
+                EnumCreatureType type = SPAWN_TYPES.get(parts[1]);
+                if (type != null) {
+                    flag += "." + parts[0] + "." + SPAWN_TYPES.inverse().get(type);
+                    return flag;
+                } else {
+                    Optional<EntityType> entityType = Sponge.getRegistry().getType(EntityType.class, target);
+                    if (entityType.isPresent()) {
+                        SpongeEntityType spongeEntityType = (SpongeEntityType) entityType.get();
+                        if (spongeEntityType.getEnumCreatureType() != null) {
+                            String creatureType = SPAWN_TYPES.inverse().get(spongeEntityType.getEnumCreatureType());
+                            flag += "." + parts[0] + "." + creatureType + "." + parts[1];
+                            return flag;
+                        }
+                    }
+                    // Unfortunately this is required until Pixelmon registers their entities correctly in FML
+                    if (target.contains("pixelmon")) {
+                        // If target was not found in registry, assume its a pixelmon animal
+                        flag += "." + parts[0] + ".animal." + parts[1];
+                        return flag;
+                    }
+                }
+            default:
+                return null;
+        }
     }
 }

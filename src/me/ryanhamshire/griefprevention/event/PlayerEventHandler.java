@@ -1469,10 +1469,19 @@ public class PlayerEventHandler {
 
             if(denyReason != null) {
                 boolean result = false;
-                ItemStack itemstack = (itemInHand.isPresent() && itemInHand.get().getItem() instanceof ItemBlock) ? itemInHand.get() : null; 
-                if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, itemstack != null ? itemstack : "any", Optional.of((User) player)) == Tristate.TRUE) {
-                    result = true;
-                    event.setUseItemResult(Tristate.TRUE);
+                ItemStack itemstack = itemInHand.isPresent() ? itemInHand.get() : null;
+                if (itemstack != null) {
+                    if (itemstack instanceof ItemBlock) {
+                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemstack, Optional.of((User) player)) == Tristate.TRUE) {
+                            result = true;
+                            event.setUseItemResult(Tristate.TRUE);
+                        }
+                    } else {
+                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.ITEM_USE, player, itemstack, Optional.of((User) player)) == Tristate.TRUE) {
+                            result = true;
+                            event.setUseItemResult(Tristate.TRUE);
+                        }
+                    }
                 }
 
                 if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, clickedBlock.getState(), Optional.of((User) player)) == Tristate.TRUE) {
@@ -1480,10 +1489,6 @@ public class PlayerEventHandler {
                     event.setUseBlockResult(Tristate.TRUE);
                 }
 
-                if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemstack != null ? itemstack : "any", Optional.of((User) player)) == Tristate.TRUE) {
-                    result = true;
-                    event.setUseBlockResult(Tristate.TRUE);
-                }
                 GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                 if (!result) {
                     // Don't send a deny message if the player successfully investigated the claim
@@ -1494,6 +1499,13 @@ public class PlayerEventHandler {
                     event.setCancelled(true);
                     GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                     return;
+                } else {
+                    if (event.getUseBlockResult() != Tristate.TRUE) {
+                        event.setUseBlockResult(Tristate.FALSE);
+                    }
+                    if (event.getUseItemResult() != Tristate.TRUE) {
+                        event.setUseItemResult(Tristate.FALSE);
+                    }
                 }
             }
         }

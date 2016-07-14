@@ -405,8 +405,6 @@ public class BlockEventHandler {
             Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 return;
-            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
-                return;
             } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
                 return;
             }
@@ -444,7 +442,7 @@ public class BlockEventHandler {
             }
 
             // warn players about disabled pistons outside of land claims
-            if (player != null && activeConfig.getConfig().general.limitPistonsToClaims &&
+            if (player != null && !playerData.ignoreClaims && activeConfig.getConfig().general.limitPistonsToClaims &&
                     (block.getState().getType() == BlockTypes.PISTON || block.getState().getType() == BlockTypes.STICKY_PISTON) &&
                     targetClaim.isWildernessClaim()) {
                 GriefPrevention.sendMessage(player, TextMode.Warn, Messages.NoPistonsOutsideClaims);
@@ -457,7 +455,7 @@ public class BlockEventHandler {
             }
 
             // if the block is being placed within or under an existing claim
-            if (targetClaim != null && !targetClaim.isWildernessClaim()) {
+            if (!targetClaim.isWildernessClaim()) {
                 playerData.lastClaim = targetClaim;
 
                 // if the player has permission for the claim and he's placing UNDER the claim
@@ -471,7 +469,9 @@ public class BlockEventHandler {
 
                 // allow for a build warning in the future
                 playerData.warnedAboutBuildingOutsideClaims = false;
-            } else if (block.getState().getType().equals(BlockTypes.CHEST) && activeConfig.getConfig().claim.claimRadius > -1
+            }
+
+            if (targetClaim.isWildernessClaim() && block.getState().getType().equals(BlockTypes.CHEST) && activeConfig.getConfig().claim.claimRadius > -1
                     && GriefPrevention.instance.claimsEnabledForWorld(block.getLocation().get().getExtent().getProperties())) {
                 // FEATURE: automatically create a claim when a player who has no claims
                 // places a chest otherwise if there's no claim, the player is placing a chest, and new player automatic claims are enabled

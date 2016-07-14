@@ -34,6 +34,7 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Functional;
 import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.util.IpSet;
@@ -41,6 +42,7 @@ import org.spongepowered.common.util.IpSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 
@@ -136,7 +138,22 @@ public class ClaimStorageData {
                     .setSerializers(
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
                     .setHeader(HEADER));
+            // Remove empty strings as they are no longer serializable in 1.9+
+            boolean requiresSave = false;
+            for (Map.Entry<Object, ? extends CommentedConfigurationNode> mapEntry : this.root.getNode(GriefPrevention.MOD_ID).getChildrenMap().entrySet()) {
+                CommentedConfigurationNode node = (CommentedConfigurationNode) mapEntry.getValue();
+                if (node.getValue() instanceof String) {
+                    String value = (String) node.getValue();
+                    if (value.isEmpty()) {
+                        this.root.getNode(GriefPrevention.MOD_ID).removeChild(mapEntry.getKey());
+                        requiresSave = true;
+                    }
+                }
+            }
             this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+            if (requiresSave) {
+                this.save();
+            }
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
         }

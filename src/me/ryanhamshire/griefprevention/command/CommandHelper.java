@@ -275,14 +275,26 @@ public class CommandHelper {
                 // assume vanilla
                 target = "minecraft:" + target;
             }
-            if (!CommandHelper.validateFlagTarget(flag, target)) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + target + "' entered for flag " + flag + "."));
-                return CommandResult.success();
+
+            String[] parts = target.split(":");
+            if (parts[1].equalsIgnoreCase("any")) {
+                target = flag + "." + parts[0];
+            } else {
+                String entitySpawnFlag = GPFlags.getEntitySpawnFlag(flag, target);
+                if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(flag, target)) {
+                    GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + target + "' entered for flag " + flag + "."));
+                    return CommandResult.success();
+                }
+    
+                if (entitySpawnFlag != null) {
+                    target = entitySpawnFlag;
+                } else {
+                    target = flag + "." + target.replace(":", ".").replace("[", ".[");
+                }
             }
 
-            target = target.replace(":", ".").replace("[", ".[");
-            flagPermission = GPPermissions.FLAG_BASE + "." + flag + "." + target;
-            targetFlag = flag + "." + target;
+            flagPermission = GPPermissions.FLAG_BASE + "." + target;
+            targetFlag = target;
         } else {
             target = "";
         }

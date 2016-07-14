@@ -27,15 +27,18 @@ package me.ryanhamshire.griefprevention;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.item.ItemBlock;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.Item;
+import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -74,7 +77,23 @@ public class GPPermissionHandler {
         if (target != null) {
             if (target instanceof Entity) {
                 Entity targetEntity = (Entity) target;
+                net.minecraft.entity.Entity mcEntity = (net.minecraft.entity.Entity) targetEntity;
                 String targetId = targetEntity.getType().getId();
+                // Workaround for pixelmon using same class for most entities.
+                // In this circumstance, we will use the entity name instead
+                if (targetId.equals("pixelmon:pixelmon")) {
+                    targetId = "pixelmon:" + mcEntity.getName().toLowerCase();
+                }
+                if (targetEntity instanceof Living) {
+                    for (EnumCreatureType type : EnumCreatureType.values()) {
+                        if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
+                            String[] parts = targetId.split(":");
+                            targetId =  parts[0] + "." + GPFlags.SPAWN_TYPES.inverse().get(type) + "." + parts[1];
+                            break;
+                        }
+                    }
+                }
+
                 targetPermission += "." + targetId.toLowerCase();
                 if (targetEntity instanceof Item) {
                     targetId = ((Item) targetEntity).getItemType().getId();
@@ -147,20 +166,13 @@ public class GPPermissionHandler {
         }
 
         // This is required since permissions will check each context separately
-        if (user.getSubjectData().getPermissions(contexts).isEmpty() || user.getSubjectData().getParents(contexts).isEmpty()) {
-            return Tristate.UNDEFINED;
-        }
-
-        Tristate value = user.getPermissionValue(contexts, permission);
-        if (value != Tristate.UNDEFINED) {
-            return value;
-        }
-        if (claim.parent != null) {
-            value = user.getPermissionValue(contexts, permission);
+        if (!user.getSubjectData().getPermissions(contexts).isEmpty() || !user.getSubjectData().getParents(contexts).isEmpty()) {
+            Tristate value = user.getPermissionValue(contexts, permission);
             if (value != Tristate.UNDEFINED) {
                 return value;
             }
         }
+
         return Tristate.UNDEFINED;
     }
 

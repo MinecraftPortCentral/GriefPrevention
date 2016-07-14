@@ -47,6 +47,8 @@ import java.util.UUID;
 
 public class CommandClaimInfo implements CommandExecutor {
 
+    private static final Text NONE = Text.of(TextColors.GRAY, "none");
+
     @SuppressWarnings("unused")
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -70,7 +72,9 @@ public class CommandClaimInfo implements CommandExecutor {
                 owner =  GriefPrevention.getOrCreateUser(ownerUniqueId);
             }
 
-            Text claimName = Text.of();
+            Text name = claim.getClaimData().getClaimName();
+            Text greeting = claim.getClaimData().getGreetingMessage();
+            Text farewell = claim.getClaimData().getFarewellMessage();
             String accessors = "";
             String builders = "";
             String containers = "";
@@ -91,7 +95,7 @@ public class CommandClaimInfo implements CommandExecutor {
                 // ignore
             }
 
-            claimName = Text.of(TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, claim.getClaimData().getClaimName());
+            Text claimName = Text.of(TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, name == null ? NONE : name);
             for (UUID uuid : claim.getClaimData().getAccessors()) {
                 User user = GriefPrevention.getOrCreateUser(uuid);
                 accessors += user.getName() + " ";
@@ -126,19 +130,19 @@ public class CommandClaimInfo implements CommandExecutor {
             Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null ? owner.getName() : "administrator");
             Text claimType = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", claimTypeColor, claim.type.name());
             Text claimFarewell = Text.of(TextColors.YELLOW, "Farewell", TextColors.WHITE, " : ", TextColors.RESET,
-                    claim.getClaimData().getFarewellMessage());
+                    farewell == null ? NONE : farewell);
             Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
-                    claim.getClaimData().getGreetingMessage());
+                    greeting == null ? NONE : greeting);
             Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", TextColors.RESET, claim.isPvpEnabled() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
             Text lesserCorner = Text.of(TextColors.YELLOW, "LesserCorner", TextColors.WHITE, " : ", TextColors.GRAY,
                     claim.getLesserBoundaryCorner().getBlockPosition());
             Text greaterCorner = Text.of(TextColors.YELLOW, "GreaterCorner", TextColors.WHITE, " : ", TextColors.GRAY,
                     claim.getGreaterBoundaryCorner().getBlockPosition());
             Text claimArea = Text.of(TextColors.YELLOW, "Area", TextColors.WHITE, " : ", TextColors.GRAY, claim.getArea(), " blocks");
-            Text claimAccessors = Text.of(TextColors.YELLOW, "Accessors", TextColors.WHITE, " : ", TextColors.BLUE, accessors);
-            Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.YELLOW, builders);
-            Text claimContainers = Text.of(TextColors.YELLOW, "Containers", TextColors.WHITE, " : ", TextColors.GREEN, containers);
-            Text claimCoowners = Text.of(TextColors.YELLOW, "Managers", TextColors.WHITE, " : ", TextColors.GOLD, managers);
+            Text claimAccessors = Text.of(TextColors.YELLOW, "Accessors", TextColors.WHITE, " : ", TextColors.BLUE, accessors.equals("") ? NONE : accessors);
+            Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.YELLOW, builders.equals("") ? NONE : builders);
+            Text claimContainers = Text.of(TextColors.YELLOW, "Containers", TextColors.WHITE, " : ", TextColors.GREEN, containers.equals("") ? NONE : containers);
+            Text claimCoowners = Text.of(TextColors.YELLOW, "Managers", TextColors.WHITE, " : ", TextColors.GOLD, managers.equals("") ? NONE : managers);
             Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, created != null ? created : "Unknown");
             Text dateLastActive = Text.of(TextColors.YELLOW, "LastActive", TextColors.WHITE, " : ", TextColors.GRAY, lastActive != null ? lastActive : "Unknown");
             Text footer = Text.of(TextColors.WHITE, TextStyles.STRIKETHROUGH, "------------------------------------------");

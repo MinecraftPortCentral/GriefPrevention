@@ -58,7 +58,11 @@ public class CommandClaimFarewell implements CommandExecutor {
             }
 
             Text message = TextSerializers.FORMATTING_CODE.deserialize(ctx.<String>getOne("message").get());
-            claim.getClaimData().setFarewellMessage(message);
+            if (message.isEmpty()) {
+                claim.getClaimData().setFarewellMessage(null);
+            } else {
+                claim.getClaimData().setFarewellMessage(message);
+            }
             claim.getClaimData().setRequiresSave(true);
             GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Set claim farewell to ", TextColors.AQUA, message));
         } else {

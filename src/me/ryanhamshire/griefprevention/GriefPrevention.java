@@ -290,13 +290,16 @@ public class GriefPrevention {
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
         GLOBAL_SUBJECT = GriefPrevention.instance.permissionService.getSubjects("default").get("default");
         for (EntityType entityType : Sponge.getRegistry().getAllOf(EntityType.class)) {
-            CUSTOM_CONTEXTS.put(entityType.getId(), new Context("gp_entity", entityType.getId()));//this.permissionService.getSubjects("gp_entity").get(entityType.getId()));
+            String entityId = entityType.getId();
+            CUSTOM_CONTEXTS.put(entityId, new Context("gp_entity", entityId));
         }
         for (BlockType blockType : Sponge.getRegistry().getAllOf(BlockType.class)) {
-            CUSTOM_CONTEXTS.put(blockType.getId(), new Context("gp_block", blockType.getId()));//this.permissionService.getSubjects("gp_block").get(blockType.getId()));
+            String blockId = blockType.getId();
+            CUSTOM_CONTEXTS.put(blockId, new Context("gp_block", blockId));
         }
         for (ItemType itemType : Sponge.getRegistry().getAllOf(ItemType.class)) {
-            CUSTOM_CONTEXTS.put(itemType.getId(), new Context("gp_item", itemType.getId()));//this.permissionService.getSubjects("gp_block").get(blockType.getId()));
+            String itemId = itemType.getId();
+            CUSTOM_CONTEXTS.put(itemId, new Context("gp_item", itemId));
         }
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
         Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));

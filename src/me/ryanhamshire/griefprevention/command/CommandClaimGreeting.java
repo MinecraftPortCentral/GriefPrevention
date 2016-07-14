@@ -58,7 +58,11 @@ public class CommandClaimGreeting implements CommandExecutor {
             }
 
             Text message = TextSerializers.FORMATTING_CODE.deserialize(ctx.<String>getOne("message").get());
-            claim.getClaimData().setGreetingMessage(message);
+            if (message.isEmpty()) {
+                claim.getClaimData().setGreetingMessage(null);
+            } else {
+                claim.getClaimData().setGreetingMessage(message);
+            }
             claim.getClaimData().setRequiresSave(true);
             GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Set claim greeting to ", TextColors.AQUA, message));
         } else {
