@@ -1801,6 +1801,9 @@ public class PlayerEventHandler {
 
             newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
             newy2 = clickedBlock.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance;
+            if (newy2 < 0) {
+                newy2 = 0;
+            }
 
             // for top level claims, apply size rules and claim blocks requirement
             if (playerData.claimResizing.parent == null) {

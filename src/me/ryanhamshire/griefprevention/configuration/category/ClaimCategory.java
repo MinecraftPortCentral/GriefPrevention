@@ -55,7 +55,7 @@ public class ClaimCategory extends ConfigCategory {
     public int daysInactiveUnusedClaimExpiration = 14;
     @Setting(value = "auto-nature-restore", comment = "Whether survival claims will be automatically restored to nature when auto-deleted.")
     public boolean claimAutoNatureRestore = false;
-    @Setting(value = "extend-into-ground-distance", comment = "How far below the shoveled block a new claim will reach.")
+    @Setting(value = "extend-into-ground-distance", comment = "How far below the shoveled block a new claim will reach. Set to 255 if you want to always extend to bedrock.")
     public int extendIntoGroundDistance = 5;
     @Setting(value = "claim-max-depth", comment = "Limit on how deep claims can go.")
     public int maxClaimDepth = 0;
