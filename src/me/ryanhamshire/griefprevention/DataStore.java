@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import co.aikar.timings.Timings;
 import com.flowpowered.math.vector.Vector3d;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -423,23 +422,23 @@ public abstract class DataStore {
     // cachedClaim can be NULL, but will help performance if you have a
     // reasonable guess about which claim the location is in
     public Claim getClaimAt(Location<World> location, boolean ignoreHeight, Claim cachedClaim) {
-        Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").startTimingIfSync();
+        GPTimings.CLAIM_GETCLAIM.startTimingIfSync();
         // check cachedClaim guess first. if it's in the datastore and the location is inside it, we're done
         if (cachedClaim != null && !cachedClaim.isWildernessClaim() && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) {
-            Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return cachedClaim;
         }
 
         // find a top level claim
         ClaimWorldManager claimWorldManager = this.getClaimWorldManager(location.getExtent().getProperties());
         if (claimWorldManager == null) {
-            Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return null;
         }
 
         List<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkCoordIntPair.chunkXZ2Int(location.getBlockX() >> 4, location.getBlockZ() >> 4));
         if (claimsInChunk == null) {
-            Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return claimWorldManager.getWildernessClaim();
         }
 
@@ -450,17 +449,17 @@ public abstract class DataStore {
                 for (int j = 0; j < claim.children.size(); j++) {
                     Claim subdivision = claim.children.get(j);
                     if (subdivision.inDataStore && subdivision.contains(location, ignoreHeight, false)) {
-                        Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+                        GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                         return subdivision;
                     }
                 }
 
-                Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+                GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                 return claim;
             }
         }
 
-        Timings.of(GriefPrevention.instance.pluginContainer, "getClaimAt").stopTimingIfSync();
+        GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
         // if no claim found, return the world claim
         return claimWorldManager.getWildernessClaim();
     }
