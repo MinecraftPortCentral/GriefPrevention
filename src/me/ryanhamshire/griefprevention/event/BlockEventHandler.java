@@ -86,14 +86,17 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST)
     public void onBlockPre(ChangeBlockEvent.Pre event, @Root BlockSnapshot blockSource) {
+        GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
         Optional<User> user = event.getCause().first(User.class);
         Player player = user.isPresent() && user.get() instanceof Player ? (Player) user.get() : null;
         if  (!blockSource.getLocation().isPresent()) {
+            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
             return;
         }
 
         Location<World> sourceLocation = blockSource.getLocation().get();
         if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
+            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -101,10 +104,13 @@ public class BlockEventHandler {
         for (Location<World> location : event.getLocations()) {
             Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
     
@@ -115,9 +121,11 @@ public class BlockEventHandler {
                     GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
                 }
                 event.setCancelled(true);
+                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
         }
+        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
     }
 
     // Handle fluids flowing into claims
@@ -132,12 +140,13 @@ public class BlockEventHandler {
 
         Location<World> sourceLocation = blockSource.getLocation().get();
         if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
-            GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();;
+            GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
             return;
         }
 
         Claim sourceClaim = this.getSourceClaim(event.getCause());
         if (sourceClaim == null) {
+            GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -192,6 +201,7 @@ public class BlockEventHandler {
                 return; // allow siege mode
             }
             if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
+                GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             }
         }
@@ -305,6 +315,7 @@ public class BlockEventHandler {
         Optional<User> user = event.getCause().first(User.class);
         Claim sourceClaim = this.getSourceClaim(event.getCause());
         if (sourceClaim == null) {
+            GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -312,10 +323,13 @@ public class BlockEventHandler {
         for (Transaction<BlockSnapshot> transaction : transactions) {
             Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
             } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
             } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
             }
 
@@ -346,6 +360,7 @@ public class BlockEventHandler {
         Optional<User> user = event.getCause().first(User.class);
         Claim sourceClaim = this.getSourceClaim(event.getCause());
         if (sourceClaim == null) {
+            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -353,10 +368,13 @@ public class BlockEventHandler {
             Vector3i pos = transaction.getFinal().getPosition();
             Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
                 return;
             } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
                 return;
             } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
                 return;
             }
 
@@ -393,6 +411,7 @@ public class BlockEventHandler {
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
         Claim sourceClaim = this.getSourceClaim(event.getCause());
         if (sourceClaim == null) {
+            GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -404,8 +423,10 @@ public class BlockEventHandler {
 
             Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             }
 
