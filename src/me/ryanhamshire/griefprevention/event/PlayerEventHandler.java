@@ -63,7 +63,6 @@ import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.data.property.entity.EyeLocationProperty;
 import org.spongepowered.api.entity.Entity;
-import org.spongepowered.api.entity.Item;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -204,7 +203,7 @@ public class PlayerEventHandler {
                 if (!playerData.profanityWarned) {
                     playerData.profanityWarned = true;
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoProfanity);
-                    GriefPrevention.addLogEntry("[Event: MessageChannelEvent.Chat][RootCause: " + event.getCause().root() + "][Message: " + event.getRawMessage() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoProfanity) + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoProfanity));
                     event.setCancelled(true);
                     GPTimings.PLAYER_CHAT_EVENT.stopTimingIfSync();
                     return;
@@ -513,13 +512,13 @@ public class PlayerEventHandler {
             argument = argument + "." + arg;
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command + argument, Optional.of((User)player)) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
-                GriefPrevention.addLogEntry("[Event: SendCommandEvent][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked command.]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, "Blocked command.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
             } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command + argument, Optional.of((User)player)) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
-                GriefPrevention.addLogEntry("[Event: SendCommandEvent][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked pvp command.]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
@@ -528,13 +527,13 @@ public class PlayerEventHandler {
         // second check the full command
         if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command, Optional.of((User) player)) == Tristate.FALSE) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
-            GriefPrevention.addLogEntry("[Event: MessageChannelEvent.Chat][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked command.]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, "Blocked command '" + command + "'.");
             event.setCancelled(true);
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
         } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command, Optional.of((User) player)) == Tristate.FALSE) {
             GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
-            GriefPrevention.addLogEntry("[Event: SendCommandEvent][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked pvp command.]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
             event.setCancelled(true);
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
@@ -543,13 +542,13 @@ public class PlayerEventHandler {
         if (modCommand.length > 1) {
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, modCommand[1], Optional.of((User) player)) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
-                GriefPrevention.addLogEntry("[Event: MessageChannelEvent.Chat][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked command.]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, "Blocked command '" + command + "'.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
             } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, modCommand[1], Optional.of((User) player)) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
-                GriefPrevention.addLogEntry("[Event: SendCommandEvent][RootCause: " + event.getCause().root() + "][Message: " + message + "][CancelReason: Blocked pvp command.]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
@@ -1035,7 +1034,7 @@ public class PlayerEventHandler {
 
         // in creative worlds, dropping items is blocked
         if (GriefPrevention.instance.claimModeIsActive(world.getProperties(), ClaimsMode.Creative)) {
-            GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: Drops not allowed in creative worlds.]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, "Drops not allowed in creative worlds.");
             event.setCancelled(true);
             GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
             return;
@@ -1051,7 +1050,7 @@ public class PlayerEventHandler {
         // if in combat, don't let him drop it
         if (player != null && !GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.allowCombatItemDrops && playerData.inPvpCombat(player.getWorld())) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.PvPNoDrop);
-            GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.PvPNoDrop) + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.PvPNoDrop));
             event.setCancelled(true);
             GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
             return;
@@ -1060,7 +1059,7 @@ public class PlayerEventHandler {
         // if he's under siege, don't let him drop it
         else if (player != null && playerData.siegeData != null) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoDrop);
-            GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.SiegeNoDrop) + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.SiegeNoDrop));
             event.setCancelled(true);
             GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
             return;
@@ -1069,7 +1068,6 @@ public class PlayerEventHandler {
         for (Entity entityItem : event.getEntities()) {
             Location<World> location = entityItem.getLocation();
             Claim claim = this.dataStore.getClaimAtPlayer(player, location, false);
-            Item item = (Item) entityItem;
             if (claim != null) {
                 // allow trusted users
                 if (claim.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) 
@@ -1127,7 +1125,8 @@ public class PlayerEventHandler {
             if (player.getUniqueId().equals(ownerID) || playerData.ignoreClaims) {
                 // if giving away pet, do that instead
                 if (playerData.petGiveawayRecipient != null) {
-                    if (!((SpongeEntityType) spongeEntity.getType()).getModId().equalsIgnoreCase("minecraft")) {
+                    SpongeEntityType spongeEntityType = ((SpongeEntityType) spongeEntity.getType());
+                    if (spongeEntityType != null && !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.PetGiveawayInvalid, spongeEntity.getType().getId());
                         playerData.petGiveawayRecipient = null;
                         GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
@@ -1140,7 +1139,7 @@ public class PlayerEventHandler {
                     }
                     playerData.petGiveawayRecipient = null;
                     GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetGiveawayConfirmation);
-                    GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Pet giveaway.]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, "Pet giveaway.");
                     event.setCancelled(true);
                 }
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
@@ -1166,7 +1165,7 @@ public class PlayerEventHandler {
         }
         String denyReason = claim.allowAccess(player, targetEntity.getLocation());
         if (denyReason != null) {
-            GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, denyReason);
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
             event.setCancelled(true);
             GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
@@ -1183,7 +1182,7 @@ public class PlayerEventHandler {
                     }
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
                 }
-                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: Entity is tamed.]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, "Entity is tamed.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
@@ -1199,7 +1198,7 @@ public class PlayerEventHandler {
                 denyReason = claim.allowAccess(player);
                 if (denyReason != null) {
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
-                    GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, denyReason);
                     event.setCancelled(true);
                     GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                     return;
@@ -1211,15 +1210,16 @@ public class PlayerEventHandler {
             denyReason = claim.allowAccess(player, targetEntity.getLocation());
             if (denyReason != null) {
                 GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
-                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
             }
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, targetEntity, Optional.of((User) player)) == Tristate.FALSE) {
-                //String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoAccessPermission, claim.getOwnerName());
-                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
-                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                String entityId = targetEntity.getType() != null ? targetEntity.getType().getId() : ((net.minecraft.entity.Entity) targetEntity).getName();
+                String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoInteractEntityPermission, claim.getOwnerName(), entityId);
+                GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
@@ -1229,7 +1229,7 @@ public class PlayerEventHandler {
             if (denyReason != null) {
                 String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
                 GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
-                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
@@ -1244,7 +1244,7 @@ public class PlayerEventHandler {
             if (denyReason != null) {
                 event.setCancelled(true);
                 GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
-                GriefPrevention.addLogEntry("[Event: InteractEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + event.getTargetEntity() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
             }
@@ -1295,7 +1295,7 @@ public class PlayerEventHandler {
                 // TODO
                 // if locked, don't allow pickup
                 if (player != null && playerData.dropsAreUnlocked == false) {
-                    GriefPrevention.addLogEntry("[Event: ChangeInventoryEvent.Pickup][RootCause: " + player + "][Item: " + itemPickedUp.getType().getId() + "][CancelReason: Drops are locked.]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, "Drops are locked.");
                     event.setCancelled(true);
 
                     // if hasn't been instructed how to unlock, send explanatory messages
@@ -1327,7 +1327,7 @@ public class PlayerEventHandler {
                 long now = Calendar.getInstance().getTimeInMillis();
                 long elapsedSinceLastSpawn = now - playerData.lastSpawn;
                 if (elapsedSinceLastSpawn < 10000) {
-                    GriefPrevention.addLogEntry("[Event: CollideEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: Player PVP Immune.]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, "Player PVP Immune.");
                     event.setCancelled(true);
                     GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
                     return;
@@ -1418,7 +1418,7 @@ public class PlayerEventHandler {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 return;
             }
-            GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Primary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, denyReason);
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
             event.setCancelled(true);
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
@@ -1489,7 +1489,7 @@ public class PlayerEventHandler {
                     event.setUseBlockResult(Tristate.TRUE);
                 }
 
-                GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 if (!result) {
                     // Don't send a deny message if the player successfully investigated the claim
                     if (!investigateResult) {
@@ -1519,7 +1519,7 @@ public class PlayerEventHandler {
 
             // block container use while under siege, so players can't hide items from attackers
             if (playerData.siegeData != null) {
-                GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.SiegeNoContainers) + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.SiegeNoContainers));
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
                 event.setCancelled(true);
                 GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
@@ -1528,7 +1528,7 @@ public class PlayerEventHandler {
 
             // block container use during pvp combat, same reason
             if (playerData.inPvpCombat(player.getWorld())) {
-                GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.PvPNoContainers) + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.PvPNoContainers));
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.PvPNoContainers);
                 event.setCancelled(true);
                 GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
@@ -1559,7 +1559,7 @@ public class PlayerEventHandler {
             if (playerData == null)
                 playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             if (playerData.siegeData != null) {
-                GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.SiegeNoShovel) + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.SiegeNoShovel));
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoShovel);
                 event.setCancelled(true);
                 GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
@@ -1589,7 +1589,7 @@ public class PlayerEventHandler {
         BlockSnapshot clickedBlock = event.getTargetBlock();
         // disable golden shovel while under siege
         if (playerData.siegeData != null) {
-            GriefPrevention.addLogEntry("[Event: InteractBlockEvent.Secondary][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.SiegeNoShovel) + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.SiegeNoShovel));
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoShovel);
             event.setCancelled(true);
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();

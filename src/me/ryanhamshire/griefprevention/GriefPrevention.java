@@ -124,6 +124,7 @@ import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
+import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
@@ -218,6 +219,12 @@ public class GriefPrevention {
 
         if (!excludeFromServerLogs) {
             GriefPrevention.instance.logger.info("GriefPrevention: " + entry);
+        }
+    }
+
+    public static void addEventLogEntry(Event event, String reason) {
+        if (GriefPrevention.instance.debugLogging) {
+            addLogEntry("[Event: " + event.getClass().getName() + "][RootCause: " + event.getCause().root() + "][CancelReason: " + reason + "]");
         }
     }
 

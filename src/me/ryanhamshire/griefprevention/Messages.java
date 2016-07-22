@@ -148,6 +148,7 @@ public enum Messages {
     NoEnterClaim,
     NoExitClaim,
     NoInteractBlockPermission,
+    NoInteractEntityPermission,
     NoLavaNearOtherPlayer,
     NoModifyDuringSiege,
     NoOwnerBuildUnderSiege,

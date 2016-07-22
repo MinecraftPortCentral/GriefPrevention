@@ -187,19 +187,19 @@ public class EntityEventHandler {
                     net.minecraft.entity.Entity nmsEntity = (net.minecraft.entity.Entity) entity;
                     if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.AMBIENT)
                             && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn ambients within claim.]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn ambients within claim.");
                         return false;
                     } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.WATER_CREATURE) 
                             && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) != Tristate.TRUE) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn aquatics within claim.]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn aquatics within claim.");
                         return false;
                     } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.MONSTER)
                             && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn monsters within claim.]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn monsters within claim.");
                         return false;
                     } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.CREATURE)
                             && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
-                        GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Not allowed to spawn animals within claim.]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn animals within claim.");
                         return false;
                     }
                 }
@@ -221,7 +221,7 @@ public class EntityEventHandler {
 
             if (player != null) {
                 if (stack != null && !stack.getItem().equals(ItemTypes.SPAWN_EGG)) {
-                    GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][FilterReason: Cannot spawn entities in creative worlds.]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, "Cannot spawn entities in creative worlds.");
                     event.setCancelled(true);
                     GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
                     return;
@@ -232,7 +232,7 @@ public class EntityEventHandler {
             Claim claim = this.dataStore.getClaimAt(location, false, null);
             String denyReason = claim.allowMoreEntities();
             if (denyReason != null) {
-                GriefPrevention.addLogEntry("[Event: SpawnEntityEvent][RootCause: " + event.getCause().root() + "][Entity: " + entity + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
             }
         }
@@ -323,14 +323,18 @@ public class EntityEventHandler {
                                 user = ((IMixinEntity) entityDamageSource.getSource()).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
                             }
                             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, entityDamageSource.getSource(), targetEntity, user) != Tristate.TRUE) {
-                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
+                                if (GriefPrevention.instance.debugLogging) {
+                                    GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Monsters not allowed to attack players within claim.]", CustomLogEntryTypes.Debug);
+                                }
                                 return true;
                             }
                         }
                     } else if (targetEntity instanceof EntityLivingBase && !SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER)) {
                         User user = cause.first(User.class).orElse(null);
                         if (user != null && !user.getUniqueId().equals(claim.ownerID) && perm != Tristate.TRUE) {
-                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Untrusted player attempting to attack entity in claim.]", CustomLogEntryTypes.Debug);
+                            if (GriefPrevention.instance.debugLogging) {
+                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Untrusted player attempting to attack entity in claim.]", CustomLogEntryTypes.Debug);
+                            }
                             return true;
                         }
                     }
@@ -371,13 +375,17 @@ public class EntityEventHandler {
 
                 // otherwise if protecting spawning players
                 if (defenderData.pvpImmune) {
-                    GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Defender PVP Immune.]", CustomLogEntryTypes.Debug);
+                    if (GriefPrevention.instance.debugLogging) {
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Defender PVP Immune.]", CustomLogEntryTypes.Debug);
+                    }
                     GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.ThatPlayerPvPImmune);
                     return true;
                 }
 
                 if (attackerData.pvpImmune) {
-                    GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Attacker PVP Immune.]", CustomLogEntryTypes.Debug);
+                    if (GriefPrevention.instance.debugLogging) {
+                        GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Attacker PVP Immune.]", CustomLogEntryTypes.Debug);
+                    }
                     GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
                     return true;
                 }
@@ -392,7 +400,9 @@ public class EntityEventHandler {
                         Sponge.getGame().getEventManager().post(pvpEvent);
                         if (!pvpEvent.isCancelled()) {
                             pvpEvent.setCancelled(true);
-                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Player in PVP Safe Zone.]", CustomLogEntryTypes.Debug);
+                            if (GriefPrevention.instance.debugLogging) {
+                                GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Player in PVP Safe Zone.]", CustomLogEntryTypes.Debug);
+                            }
                             GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
                             return true;
                         }
@@ -405,7 +415,6 @@ public class EntityEventHandler {
                         Sponge.getGame().getEventManager().post(pvpEvent);
                         if (!pvpEvent.isCancelled()) {
                             pvpEvent.setCancelled(true);
-                            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Player in PVP Safe Zone.]", CustomLogEntryTypes.Debug);
                             GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
                             return true;
                         }
@@ -542,7 +551,7 @@ public class EntityEventHandler {
 
         // special rule for creative worlds: killed entities don't drop items or experience orbs
         if (GriefPrevention.instance.claimModeIsActive(livingEntity.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
-            GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + event.getCause().root() + "][CancelReason: Drops not allowed in creative worlds.]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, "Drops not allowed in creative worlds.");
             event.setCancelled(true);
             GPTimings.ENTITY_DROP_ITEM_DEATH_EVENT.stopTimingIfSync();
             return;
@@ -559,7 +568,7 @@ public class EntityEventHandler {
                         event.getCause().first(Player.class).isPresent() ? event.getCause().first(Player.class).get().getName() : null,
                         player.getName(), true);
                 // don't drop items as usual, they will be sent to the siege winner
-                GriefPrevention.addLogEntry("[Event: DropItemEvent.Destruct][RootCause: " + event.getCause().root() + "][CancelReason: Siege in progress.]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, "Siege in progress.");
                 event.setCancelled(true);
             }
         }
@@ -638,7 +647,7 @@ public class EntityEventHandler {
             if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoEnterClaim);
-                    GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoEnterClaim) + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoEnterClaim));
                 }
                 event.setCancelled(true);
                 GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
@@ -659,7 +668,7 @@ public class EntityEventHandler {
             if (GPPermissionHandler.getClaimPermission(fromClaim, GPPermissions.EXIT_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoExitClaim);
-                    GriefPrevention.addLogEntry("[Event: DropItemEvent.Dispense][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoExitClaim) + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoExitClaim));
                 }
                 event.setCancelled(true);
                 GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
@@ -715,7 +724,7 @@ public class EntityEventHandler {
         if (sourceClaim != null) {
             if (player != null && GriefPrevention.getActiveConfig(sourceLocation.getExtent().getProperties()).getConfig().siege.siegeEnabled && sourceClaim.siegeData != null) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoTeleport);
-                GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.SiegeNoTeleport) + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.SiegeNoTeleport));
                 event.setCancelled(true);
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
@@ -727,7 +736,7 @@ public class EntityEventHandler {
                 } else if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, entityTeleportCause.getTeleportType().getId(), entity, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoTeleportFromProtectedClaim, sourceClaim.getOwnerName());
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim) + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
                     }
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -740,7 +749,7 @@ public class EntityEventHandler {
                 } else if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.PORTAL_USE, type.getId(), entity, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoPortalToProtectedClaim, sourceClaim.getOwnerName());
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoPortalToProtectedClaim) + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoPortalToProtectedClaim));
                     }
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -748,7 +757,7 @@ public class EntityEventHandler {
                 } else if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.BLOCK_PLACE, entity, null, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, sourceClaim.getOwnerName());
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoBuildPortalPermission) + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoBuildPortalPermission));
                     }
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -768,7 +777,7 @@ public class EntityEventHandler {
         if (toClaim != null) {
             if (player != null && GriefPrevention.getActiveConfig(destination.getExtent().getProperties()).getConfig().siege.siegeEnabled && toClaim.siegeData != null) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.BesiegedNoTeleport);
-                GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.BesiegedNoTeleport) + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.BesiegedNoTeleport));
                 event.setCancelled(true);
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
@@ -782,7 +791,7 @@ public class EntityEventHandler {
                 } else if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTITY_TELEPORT_TO, entityTeleportCause.getTeleportType().getId(), entity, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoTeleportToProtectedClaim, toClaim.getOwnerName());
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim) + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
                     }
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -792,7 +801,7 @@ public class EntityEventHandler {
                 if (denyReason != null) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport][RootCause: " + event.getCause().root() + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, denyReason);
                     }
                     event.setCancelled(true);
                     if (entityTeleportCause != null && entityTeleportCause.getTeleporter().getType().equals(EntityTypes.ENDER_PEARL)) {
@@ -808,7 +817,7 @@ public class EntityEventHandler {
                 } else if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.PORTAL_USE, entity, null, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoPortalToProtectedClaim, toClaim.getOwnerName());
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Teleport][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoPortalToProtectedClaim) + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoPortalToProtectedClaim));
                     }
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -816,7 +825,7 @@ public class EntityEventHandler {
                 } else if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.BLOCK_PLACE, entity, null, user) == Tristate.FALSE) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, toClaim.getOwnerName());
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + event.getCause().root() + "][CancelReason: " + this.dataStore.getMessage(Messages.NoBuildPortalPermission) + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoBuildPortalPermission));
                     }
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -880,7 +889,7 @@ public class EntityEventHandler {
                     return;
                 }
 
-                GriefPrevention.addLogEntry("[Event: CollideEntityEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + impactPoint + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
             } else {
                 if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, event.getCause().root(), entity, Optional.of(user)) == Tristate.FALSE) {

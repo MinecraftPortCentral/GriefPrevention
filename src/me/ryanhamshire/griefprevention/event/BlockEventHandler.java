@@ -116,7 +116,7 @@ public class BlockEventHandler {
     
             String denyReason = GriefPrevention.instance.allowBuild(blockSource, location, user);
             if (denyReason != null) {
-                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + location + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
                 }
@@ -171,7 +171,7 @@ public class BlockEventHandler {
             }
 
             // no claim crossing unless trusted
-            GriefPrevention.addLogEntry("[Event: NotifyNeighborBlockEvent][RootCause: " + event.getCause().root() + "][Removed: " + direction + "][Location: " + location + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, "Removed direction.");
             iterator.remove();
         }
         GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
@@ -253,7 +253,7 @@ public class BlockEventHandler {
                 GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
                 return;
             }
-            GriefPrevention.addLogEntry("[Event: CollideBlockEvent.Impact][RootCause: " + event.getCause().root() + "][ImpactPoint: " + impactPoint + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, denyReason);
             event.setCancelled(true);
         } else {
             if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), Optional.of(user)) == Tristate.FALSE) {
@@ -340,7 +340,7 @@ public class BlockEventHandler {
                     GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
                 }
 
-                GriefPrevention.addLogEntry("[Event: BlockBreakEvent][RootCause: " + event.getCause().root() + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
@@ -381,7 +381,7 @@ public class BlockEventHandler {
             if (user.isPresent()) {
                 String denyReason = GriefPrevention.instance.allowBuild(event.getCause().root(), transaction.getFinal().getLocation().get(), user);
                 if (denyReason != null) {
-                    GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Pos: " + pos + "][FirstTransaction: " + event.getTransactions().get(0) + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                    GriefPrevention.addEventLogEntry(event, denyReason);
                     event.setCancelled(true);
                     GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
                     return;
@@ -432,11 +432,10 @@ public class BlockEventHandler {
 
             String denyReason = GriefPrevention.instance.allowBuild(source, block.getLocation().get(), user);
             if (denyReason != null) {
-                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Place][RootCause: " + source + "][BlockSnapshot: " + block + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
                 if (source instanceof PortalTeleportCause) {
                     if (targetClaim != null && player != null) {
                         // cancel and inform about the reason
-                        GriefPrevention.addLogEntry("[Event: DisplaceEntityEvent.Portal][RootCause: " + source + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                        GriefPrevention.addEventLogEntry(event, denyReason);
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, targetClaim.getOwnerName());
                         GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
@@ -583,7 +582,7 @@ public class BlockEventHandler {
 
         // prevent signs with blocked IP addresses
         if (!user.hasPermission(GPPermissions.SPAM) && GriefPrevention.instance.containsBlockedIP(signMessage)) {
-            GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Post][RootCause: " + event.getCause().root() + "][Sign: " + event.getTargetTile() + "][CancelReason: contains blocked IP address " + signMessage + "]", CustomLogEntryTypes.Debug);
+            GriefPrevention.addEventLogEntry(event, "contains blocked IP address " + signMessage + ".");
             event.setCancelled(true);
             GPTimings.SIGN_CHANGE_EVENT.stopTimingIfSync();
             return;
