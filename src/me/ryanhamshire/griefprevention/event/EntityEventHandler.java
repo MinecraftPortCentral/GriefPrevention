@@ -180,10 +180,6 @@ public class EntityEventHandler {
 
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
                 if (claim != null) {
-                    if (user.isPresent() && claim.allowAccess(user.get()) == null) {
-                        return true;
-                    }
-
                     net.minecraft.entity.Entity nmsEntity = (net.minecraft.entity.Entity) entity;
                     if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.AMBIENT)
                             && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {

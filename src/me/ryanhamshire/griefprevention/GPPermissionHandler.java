@@ -50,8 +50,11 @@ public class GPPermissionHandler {
         if (claim == null) {
             return Tristate.UNDEFINED;
         }
-        if (user.isPresent() && claim.hasFullAccess(user.get())) {
-            return Tristate.TRUE;
+        if (user.isPresent()) {
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, user.get().getUniqueId());
+            if (playerData.ignoreClaims) {
+                return Tristate.TRUE;
+            }
         }
 
         String sourceId = null;
@@ -132,6 +135,9 @@ public class GPPermissionHandler {
         }
 
         if (user.isPresent()) {
+            if (claim.hasFullAccess(user.get())) {
+                return Tristate.TRUE;
+            }
             Tristate value = Tristate.UNDEFINED;
             if (sourceContext != null) {
                 value = getUserPermission(user.get(), claim, targetPermission, sourceContext);
