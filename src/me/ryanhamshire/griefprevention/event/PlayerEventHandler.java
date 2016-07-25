@@ -1430,7 +1430,6 @@ public class PlayerEventHandler {
 
     @Listener
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary.MainHand event, @First Player player) {
-	System.out.println("PACKET RECEIVED");
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
