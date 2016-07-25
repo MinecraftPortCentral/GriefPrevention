@@ -88,7 +88,6 @@ public class BlockEventHandler {
     public void onBlockPre(ChangeBlockEvent.Pre event, @Root BlockSnapshot blockSource) {
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
         Optional<User> user = event.getCause().first(User.class);
-        Player player = user.isPresent() && user.get() instanceof Player ? (Player) user.get() : null;
         if  (!blockSource.getLocation().isPresent()) {
             GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
             return;
@@ -116,10 +115,11 @@ public class BlockEventHandler {
     
             String denyReason = GriefPrevention.instance.allowBuild(blockSource, location, user);
             if (denyReason != null) {
-                GriefPrevention.addEventLogEntry(event, denyReason);
-                if (player != null) {
+                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + location + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
+                // PRE events can be spammy so we need to avoid sending player messages here.
+                /*if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
-                }
+                }*/
                 event.setCancelled(true);
                 GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
