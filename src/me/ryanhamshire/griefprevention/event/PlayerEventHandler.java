@@ -101,6 +101,7 @@ import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.util.blockray.BlockRay;
 import org.spongepowered.api.util.blockray.BlockRayHit;
+import org.spongepowered.api.world.BlockChangeFlag;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.DimensionTypes;
@@ -1726,7 +1727,7 @@ public class PlayerEventHandler {
                                 || block.getState().getType() == BlockTypes.TALLGRASS) {
                             // if the top level, always use the default filler picked above
                             if (y == maxHeight) {
-                                block.withState(defaultFiller.getDefaultState()).restore(true, false);
+                                block.withState(defaultFiller.getDefaultState()).restore(true, BlockChangeFlag.PHYSICS);
                             }
 
                             // otherwise look to neighbors for an appropriate fill block
@@ -1738,18 +1739,18 @@ public class PlayerEventHandler {
 
                                 // first, check lateral neighbors (ideally, want to keep natural layers)
                                 if (allowedFillBlocks.contains(eastBlock.getBlockType())) {
-                                    block.withState(eastBlock.getBlock()).restore(true, false);
+                                    block.withState(eastBlock.getBlock()).restore(true, BlockChangeFlag.PHYSICS);
                                 } else if (allowedFillBlocks.contains(westBlock.getBlockType())) {
-                                    block.withState(westBlock.getBlock()).restore(true, false);
+                                    block.withState(westBlock.getBlock()).restore(true, BlockChangeFlag.PHYSICS);
                                 } else if (allowedFillBlocks.contains(northBlock.getBlockType())) {
-                                    block.withState(northBlock.getBlock()).restore(true, false);
+                                    block.withState(northBlock.getBlock()).restore(true, BlockChangeFlag.PHYSICS);
                                 } else if (allowedFillBlocks.contains(southBlock.getBlockType())) {
-                                    block.withState(southBlock.getBlock()).restore(true, false);
+                                    block.withState(southBlock.getBlock()).restore(true, BlockChangeFlag.PHYSICS);
                                 }
 
                                 // if all else fails, use the default filler selected above
                                 else {
-                                    block.withState(defaultFiller.getDefaultState()).restore(true, false);
+                                    block.withState(defaultFiller.getDefaultState()).restore(true, BlockChangeFlag.PHYSICS);
                                 }
                             }
                         }

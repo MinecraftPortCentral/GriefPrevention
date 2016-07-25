@@ -127,6 +127,7 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.item.ItemType;
@@ -168,6 +169,7 @@ public class GriefPrevention {
     // for convenience, a reference to the instance of this plugin
     public static GriefPrevention instance;
     public static final String MOD_ID = "GriefPrevention";
+    public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
 
@@ -277,6 +279,7 @@ public class GriefPrevention {
         }
 
         instance = this;
+        pluginCause = Cause.of(NamedCause.source(this.pluginContainer));
         this.loadConfig();
         this.customLogger = new CustomLogger();
         addLogEntry("Grief Prevention boot start.");

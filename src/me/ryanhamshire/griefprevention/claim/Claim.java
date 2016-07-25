@@ -56,6 +56,7 @@ import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.world.BlockChangeFlag;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -259,7 +260,7 @@ public class Claim implements ContextSource {
 
                     if (block.getState().getType() == BlockTypes.LAVA || block.getState().getType() == BlockTypes.FLOWING_WATER
                             || block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.FLOWING_LAVA) {
-                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, false);
+                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, BlockChangeFlag.PHYSICS);
                     }
                 }
             }

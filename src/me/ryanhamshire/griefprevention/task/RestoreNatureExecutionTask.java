@@ -37,6 +37,7 @@ import org.spongepowered.api.entity.hanging.Hanging;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.util.Direction;
+import org.spongepowered.api.world.BlockChangeFlag;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -89,7 +90,7 @@ class RestoreNatureExecutionTask implements Runnable {
                             break;
                         }
 
-                        blockUpdate.restore(true, false);
+                        blockUpdate.restore(true, BlockChangeFlag.PHYSICS);
                     }
                 }
             }
@@ -109,8 +110,8 @@ class RestoreNatureExecutionTask implements Runnable {
 
                 // for players, always ensure there's air where the player is standing
                 else {
-                    entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState());
-                    entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState());
+                    entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState(), GriefPrevention.pluginCause);
+                    entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState(), GriefPrevention.pluginCause);
                 }
             }
         }
