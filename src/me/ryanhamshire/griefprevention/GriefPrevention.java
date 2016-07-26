@@ -163,7 +163,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "1.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "1.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
@@ -253,8 +253,8 @@ public class GriefPrevention {
                     String version = Sponge.getPlatform().getImplementation().getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 1542) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1542+.");
+                    if (spongeVersion < 1599) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1599+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
