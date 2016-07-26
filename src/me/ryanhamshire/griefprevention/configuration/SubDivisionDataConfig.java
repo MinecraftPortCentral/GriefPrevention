@@ -44,7 +44,7 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     private IClaimData parent;
 
     @Setting(value = ClaimStorageData.MAIN_CLAIM_NAME)//, comment = "The name associated with subdivision.")
-    public Text claimName = Text.of("");
+    public Text claimName;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_TYPE)//, comment = "The type of claim.")
     public Claim.Type claimType = Claim.Type.SUBDIVISION;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED)//, comment = "The date and time this subdivision was created.")
@@ -52,9 +52,9 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE)//, comment = "The last date and time this subdivision was used.")
     public String dateLastActive = Instant.now().toString();
     @Setting(value = ClaimStorageData.MAIN_CLAIM_GREETING)//, comment = "The greeting message players will receive when entering subdivision.")
-    public Text claimGreetingMessage = Text.of("");
+    public Text claimGreetingMessage;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_FAREWELL)//, comment = "The farewell message players will receive when leaving subdivision.")
-    public Text claimFarewellMessage = Text.of("");
+    public Text claimFarewellMessage;
     @Setting(value = ClaimStorageData.MAIN_LESSER_BOUNDARY_CORNER)//, comment = "The lesser boundary corner location of subdivision.")
     public String lesserBoundaryCornerPos;
     @Setting(value = ClaimStorageData.MAIN_GREATER_BOUNDARY_CORNER)//, comment = "The greater boundary corner location of subdivision.")

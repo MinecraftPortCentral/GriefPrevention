@@ -1864,9 +1864,8 @@ public class PlayerEventHandler {
             }
 
             // ask the datastore to try and resize the claim, this checks for conflicts with other claims
-            CreateClaimResult result =
-                    GriefPrevention.instance.dataStore.resizeClaim(playerData.claimResizing, newx1, newx2, newy1, newy2, newz1, newz2, player);
-            if (result.succeeded) {
+            Claim claimResult = GriefPrevention.instance.dataStore.resizeClaim(playerData.claimResizing, newx1, newx2, newy1, newy2, newz1, newz2, player);
+            if (claimResult.id.equals(playerData.claimResizing.id)) {
                 // decide how many claim blocks are available for more resizing
                 int claimBlocksRemaining = 0;
                 if (!playerData.claimResizing.isAdminClaim()) {
@@ -1890,7 +1889,7 @@ public class PlayerEventHandler {
                 // inform about success, visualize, communicate remaining blocks available
                 GriefPrevention.sendMessage(player, TextMode.Success, Messages.ClaimResizeSuccess, String.valueOf(claimBlocksRemaining));
                 Visualization visualization =
-                        Visualization.FromClaim(result.claim, clickedBlock.getPosition().getY(), VisualizationType.Claim, player.getLocation());
+                        Visualization.FromClaim(claimResult, clickedBlock.getPosition().getY(), VisualizationType.Claim, player.getLocation());
                 Visualization.Apply(player, visualization);
 
                 // if resizing someone else's claim, make a log entry
@@ -1900,7 +1899,7 @@ public class PlayerEventHandler {
                 }
 
                 // if increased to a sufficiently large size and no subdivisions yet, send subdivision instructions
-                if (oldClaim.getArea() < 1000 && result.claim.getArea() >= 1000 && result.claim.children.size() == 0
+                if (oldClaim.getArea() < 1000 && claimResult.getArea() >= 1000 && claimResult.children.size() == 0
                         && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
                     GriefPrevention.sendMessage(player, TextMode.Info, Messages.BecomeMayor, 200L);
                     GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L);
@@ -1918,16 +1917,12 @@ public class PlayerEventHandler {
                 playerData.claimResizing = null;
                 playerData.lastShovelLocation = null;
             } else {
-                if (result.claim != null) {
-                    // inform player
-                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlap);
-                    // show the player the conflicting claim
-                    Visualization visualization =
-                            Visualization.FromClaim(result.claim, clickedBlock.getPosition().getY(), VisualizationType.ErrorClaim, player.getLocation());
-                    Visualization.Apply(player, visualization);
-                } else {
-                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlapRegion);
-                }
+                // inform player
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlap);
+                // show the player the conflicting claim
+                Visualization visualization =
+                        Visualization.FromClaim(claimResult, clickedBlock.getPosition().getY(), VisualizationType.ErrorClaim, player.getLocation());
+                Visualization.Apply(player, visualization);
             }
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
@@ -1992,7 +1987,7 @@ public class PlayerEventHandler {
                                 playerData.lastShovelLocation.getBlockY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                                 clickedBlock.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                                 playerData.lastShovelLocation.getBlockZ(), clickedBlock.getPosition().getZ(),
-                                UUID.randomUUID(), playerData.claimSubdividing, player);
+                                UUID.randomUUID(), playerData.claimSubdividing, Claim.Type.SUBDIVISION, player);
 
                         // if it didn't succeed, tell the player why
                         if (!result.succeeded) {
@@ -2136,7 +2131,7 @@ public class PlayerEventHandler {
                     lastShovelLocation.getBlockY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                     clickedBlock.getPosition().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance,
                     lastShovelLocation.getBlockZ(), clickedBlock.getPosition().getZ(),
-                    UUID.randomUUID(), null, player);
+                    UUID.randomUUID(), null, null, player);
 
             // if it didn't succeed, tell the player why
             if (!result.succeeded) {

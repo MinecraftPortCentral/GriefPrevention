@@ -42,6 +42,7 @@ import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
 import me.ryanhamshire.griefprevention.event.ClaimDeletedEvent;
 import me.ryanhamshire.griefprevention.task.SecureClaimTask;
 import me.ryanhamshire.griefprevention.task.SiegeCheckupTask;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.WordFinder;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.ChunkCoordIntPair;
@@ -143,6 +144,7 @@ public abstract class DataStore {
     public static boolean generateMessages = true;
     // matcher for banned words
     public WordFinder bannedWordFinder;
+    private boolean deletingSubdivisions = false;
 
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
@@ -369,17 +371,23 @@ public abstract class DataStore {
     public void deleteClaim(Claim claim, boolean fireEvent) {
         // delete any children
         for (int j = 0; j < claim.children.size(); j++) {
-            this.deleteClaim(claim.children.get(j--), true);
+            Claim subdivision = claim.children.get(j);
+            this.deletingSubdivisions = true;
+            this.deleteClaim(subdivision, true);
+            this.deletingSubdivisions = false;
         }
+        claim.children.clear();
 
         ClaimWorldManager claimWorldManager = this.getClaimWorldManager(claim.world.getProperties());
         // subdivisions must also be removed from the parent claim child list
         if (claim.parent != null) {
             Claim parentClaim = claim.parent;
-            parentClaim.children.remove(claim);
             parentClaim.getClaimStorage().getConfig().getSubdivisions().remove(claim.id);
-            // force a save for deletes
-            parentClaim.getClaimStorage().save();
+            // force a save for subdivision deletes
+            if (!this.deletingSubdivisions) {
+                parentClaim.children.remove(claim);
+                parentClaim.getClaimStorage().save();
+            }
         } else {
             claimWorldManager.removePlayerClaim(claim);
             this.deleteClaimFromSecondaryStorage(claim);
@@ -481,7 +489,7 @@ public abstract class DataStore {
     // does NOT check a player has permission to create a claim, or enough claim blocks.
     // does NOT check minimum claim size constraints
     // does NOT visualize the new claim for any players
-    public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID claimId, Claim parent, Player player) {
+    public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID claimId, Claim parent, Claim.Type claimType, Player player) {
         CreateClaimResult result = new CreateClaimResult();
 
         int smallx, bigx, smally, bigy, smallz, bigz;
@@ -537,6 +545,9 @@ public abstract class DataStore {
             newClaim.inDataStore = true;
         } else {
             claimsToCheck = (ArrayList<Claim>) this.getClaimWorldManager(world.getProperties()).getWorldClaims();
+            if (claimType != null) {
+                newClaim.type = claimType;
+            }
             newClaim.ownerID = player.getUniqueId();
         }
 
@@ -872,34 +883,71 @@ public abstract class DataStore {
         }
     }
 
-    // tries to resize a claim
-    // see CreateClaim() for details on return value
-    public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2,
+    public Claim resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2,
             Player player) {
-        // try to create this new claim, ignoring the original when checking for overlap
-        CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getExtent(), newx1, newx2, newy1, newy2, newz1, newz2,
-                claim.id, claim.parent, player);
 
-        // if succeeded
-        if (result.succeeded) {
-            // restore subdivisions
-            for (Claim subdivision : claim.children) {
-                subdivision.parent = result.claim;
-                result.claim.children.add(subdivision);
-            }
+        int smallx, bigx, smally, bigy, smallz, bigz;
 
-            // make original claim ineffective (it's still in the hash map, so let's make it ignored)
-            claim.inDataStore = false;
-            result.claim.setClaimData(claim.getClaimData());
-            result.claim.setClaimStorage(claim.getClaimStorage());
-            // make sure the same claim type is kept
-            result.claim.type = claim.type;
-            this.deleteClaim(claim);
-            // save those changes
-            this.writeClaimToStorage(result.claim);
+        // determine small versus big inputs
+        if (newx1 < newx2) {
+            smallx = newx1;
+            bigx = newx2;
+        } else {
+            smallx = newx2;
+            bigx = newx1;
         }
 
-        return result;
+        if (newy1 < newy2) {
+            smally = newy1;
+            bigy = newy2;
+        } else {
+            smally = newy2;
+            bigy = newy1;
+        }
+
+        if (newz1 < newz2) {
+            smallz = newz1;
+            bigz = newz2;
+        } else {
+            smallz = newz2;
+            bigz = newz1;
+        }
+
+        // creative mode claims always go to bedrock
+        if (GriefPrevention.instance.claimModeIsActive(claim.world.getProperties(), ClaimsMode.Creative)) {
+            smally = 2;
+        }
+
+        Location<World> currentLesserCorner = claim.getLesserBoundaryCorner();
+        Location<World> currentGreaterCorner = claim.getGreaterBoundaryCorner();
+        // This needs to be adjusted before we check for overlaps
+        claim.lesserBoundaryCorner = new Location<World>(claim.world, smallx, smally, smallz);
+        claim.greaterBoundaryCorner = new Location<World>(claim.world, bigx, bigy, bigz);
+        ArrayList<Claim> claimsToCheck = null;
+        if (!claim.isSubdivision()) {
+            claimsToCheck = (ArrayList<Claim>) this.getClaimWorldManager(claim.world.getProperties()).getWorldClaims();
+        }
+        if (claimsToCheck != null) {
+            for (int i = 0; i < claimsToCheck.size(); i++) {
+                Claim otherClaim = claimsToCheck.get(i);
+
+                // if we find an existing claim which will be overlapped
+                if (otherClaim.id != claim.id && otherClaim.inDataStore && otherClaim.overlaps(claim)) {
+                    // revert boundary locations
+                    claim.lesserBoundaryCorner = currentLesserCorner;
+                    claim.greaterBoundaryCorner = currentGreaterCorner;
+                    // result = fail, return conflicting claim
+                    return otherClaim;
+                }
+            }
+        }
+
+        claim.getClaimData().setLesserBoundaryCorner(BlockUtils.positionToString(claim.lesserBoundaryCorner));
+        claim.getClaimData().setGreaterBoundaryCorner(BlockUtils.positionToString(claim.greaterBoundaryCorner));
+        claim.getClaimData().setRequiresSave(true);
+        claim.getClaimStorage().save();
+
+        return claim;
     }
 
     public void loadMessages() {
@@ -944,7 +992,7 @@ public abstract class DataStore {
         this.addDefault(Messages.Build, "Build");
         this.addDefault(Messages.BuildPermission, "build");
         this.addDefault(Messages.BuildingOutsideClaims, "Other players can build here, too.  Consider creating a land claim to protect your work!");
-        this.addDefault(Messages.BuySellNotConfigured, "Sorry, buying anhd selling claim blocks is disabled.");
+        this.addDefault(Messages.BuySellNotConfigured, "Sorry, buying and selling claim blocks is disabled.");
         this.addDefault(Messages.CantDeleteAdminClaim, "You don't have permission to delete administrative claims.");
         this.addDefault(Messages.CantFightWhileImmune, "You can't fight someone while you're protected from PvP.");
         this.addDefault(Messages.CantGrantThatPermission, "You can't grant a permission you don't have yourself.");

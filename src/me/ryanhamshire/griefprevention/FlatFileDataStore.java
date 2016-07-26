@@ -420,9 +420,14 @@ public class FlatFileDataStore extends DataStore {
 
             ClaimStorageData claimStorage = claim.getClaimStorage();
             if (claimStorage == null) {
-                claimStorage = new ClaimStorageData(claim, claimFile.toPath());
-                claim.setClaimStorage(claimStorage);
-                claim.setClaimData(claimStorage.getConfig());
+                if (claim.isSubdivision()) {
+                    claim.setClaimStorage(claim.parent.getClaimStorage());
+                    claim.setClaimData(new SubDivisionDataConfig());
+                } else {
+                    claimStorage = new ClaimStorageData(claim, claimFile.toPath());
+                    claim.setClaimStorage(claimStorage);
+                    claim.setClaimData(claimStorage.getConfig());
+                }
             }
 
             claim.updateClaimStorageData();

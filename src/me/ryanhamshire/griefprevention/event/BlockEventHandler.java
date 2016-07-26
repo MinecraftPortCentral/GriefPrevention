@@ -509,7 +509,7 @@ public class BlockEventHandler {
                     // radius == 0 means protect ONLY the chest
                     if (activeConfig.getConfig().claim.claimRadius == 0) {
                         this.dataStore.createClaim(block.getLocation().get().getExtent(), block.getPosition().getX(), block.getPosition().getX(),
-                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(), UUID.randomUUID(), null, player);
+                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(), UUID.randomUUID(), null, Claim.Type.BASIC, player);
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Success, Messages.ChestClaimConfirmation));
                     }
 
@@ -524,6 +524,7 @@ public class BlockEventHandler {
                                 block.getPosition().getZ() - radius, block.getPosition().getZ() + radius,
                                 UUID.randomUUID(),
                                 null,
+                                Claim.Type.BASIC,
                                 player).succeeded) {
                             radius--;
                         }
