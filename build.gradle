@@ -35,7 +35,7 @@ minecraft {
     runDir = "run"
 }
 
-version = "$minecraft.version-$project.version-$buildNumber"
+version = "$minecraft.version-$project.version.$buildNumber"
 
 dependencies {
     compile("org.spongepowered:spongeforge:1.10.2-2026-5.0.0-BETA-1602:dev")
