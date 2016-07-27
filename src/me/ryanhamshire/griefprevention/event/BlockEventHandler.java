@@ -42,6 +42,7 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
@@ -85,44 +86,58 @@ public class BlockEventHandler {
     }
 
     @Listener(order = Order.FIRST)
-    public void onBlockPre(ChangeBlockEvent.Pre event, @Root BlockSnapshot blockSource) {
+    public void onBlockPre(ChangeBlockEvent.Pre event) {
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
         Optional<User> user = event.getCause().first(User.class);
-        if  (!blockSource.getLocation().isPresent()) {
-            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        Location<World> sourceLocation = blockSource.getLocation().get();
-        if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
-            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        Claim sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get(), true, null);
-        for (Location<World> location : event.getLocations()) {
-            Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
-            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                return;
-            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                return;
-            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+        Optional<BlockSnapshot> blockSourceOpt = event.getCause().first(BlockSnapshot.class);
+        Optional<TileEntity> tileEntityOpt = event.getCause().first(TileEntity.class);
+        Object rootCause = event.getCause().root();
+        Location<World> sourceLocation = blockSourceOpt.isPresent() ? blockSourceOpt.get().getLocation().orElse(null) : tileEntityOpt.isPresent() ? tileEntityOpt.get().getLocation() : null;
+        if (sourceLocation != null) {
+            if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
                 GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
     
-            String denyReason = GriefPrevention.instance.allowBuild(blockSource, location, user);
-            if (denyReason != null) {
-                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + location + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                // PRE events can be spammy so we need to avoid sending player messages here.
-                /*if (player != null) {
-                    GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
-                }*/
-                event.setCancelled(true);
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                return;
+            Claim sourceClaim = this.dataStore.getClaimAt(sourceLocation, true, null);
+            for (Location<World> location : event.getLocations()) {
+                Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
+                if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
+
+                String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
+                if (denyReason != null) {
+                    GriefPrevention.addEventLogEntry(event, denyReason);
+                    // PRE events can be spammy so we need to avoid sending player messages here.
+                    event.setCancelled(true);
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
+            }
+        } else if (user.isPresent()) {
+            for (Location<World> location : event.getLocations()) {
+                Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
+                if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
+
+                String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
+                if (denyReason != null) {
+                    GriefPrevention.addEventLogEntry(event, denyReason);
+                    // PRE events can be spammy so we need to avoid sending player messages here.
+                    event.setCancelled(true);
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
             }
         }
         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
