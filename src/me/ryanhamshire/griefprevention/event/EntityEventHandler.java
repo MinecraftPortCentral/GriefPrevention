@@ -111,7 +111,7 @@ public class EntityEventHandler {
 
         Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(event.getTargetWorld().getLocation(event.getExplosion().getOrigin()), false, null);
 
-        Optional<User> user = event.getCause().first(User.class);
+        User user = event.getCause().first(User.class).orElse(null);
         Object source = event.getCause().root();
         Optional<Explosive> explosive = Optional.empty();
         if (event.getExplosion() instanceof Explosion) {
@@ -121,10 +121,10 @@ public class EntityEventHandler {
         if (explosive.isPresent()) {
             Entity entity = (Entity) explosive.get();
 
-            if (!user.isPresent()) {
+            if (user == null) {
                 Optional<UUID> uuid = entity.getCreator();
                 if (uuid.isPresent()) {
-                    user = Sponge.getServiceManager().provide(UserStorageService.class).get().get(uuid.get());
+                    user = Sponge.getServiceManager().provide(UserStorageService.class).get().get(uuid.get()).orElse(null);
                 }
             }
             if(GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_EXPLOSION, entity, null, user) == Tristate.FALSE) {
@@ -148,7 +148,7 @@ public class EntityEventHandler {
             return;
         }
 
-        Optional<User> user = event.getCause().first(User.class);
+        User user = event.getCause().first(User.class).orElse(null);
         Iterator<Entity> iterator = event.getEntities().iterator();
         while (iterator.hasNext()) {
             Entity entity = iterator.next();
@@ -170,7 +170,7 @@ public class EntityEventHandler {
             return;
         }
 
-        Optional<User> user = event.getCause().first(User.class);
+        User user = event.getCause().first(User.class).orElse(null);
         event.filterEntities(new Predicate<Entity>() {
             @Override
             public boolean test(Entity entity) {
@@ -265,6 +265,7 @@ public class EntityEventHandler {
 
     public boolean protectEntity(Entity targetEntity, Cause cause, DamageSource damageSource) {
         // monsters are never protected
+        User user = cause.first(User.class).orElse(null);
         Optional<Player> player = cause.first(Player.class);
         if (player.isPresent()) {
             PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetEntity.getWorld(), player.get().getUniqueId());
@@ -296,14 +297,14 @@ public class EntityEventHandler {
                             return false;
                         }
                     }
-                    perm = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, Optional.of(sourceUser));
+                    perm = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, sourceUser);
                     if (targetEntity instanceof EntityLivingBase && perm == Tristate.TRUE) {
                         return false;
                     }
                     Optional<UUID> creatorUuid = targetEntity.getCreator();
                     if (creatorUuid.isPresent()) {
-                        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(creatorUuid.get());
-                        if (user.isPresent() && !user.get().getUniqueId().equals(sourceUser.getUniqueId())) {
+                        Optional<User> creator = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(creatorUuid.get());
+                        if (creator.isPresent() && !creator.get().getUniqueId().equals(sourceUser.getUniqueId())) {
                             return true;
                         }
                     } else if (sourceUser.getUniqueId().equals(claim.ownerID)) {
@@ -314,9 +315,8 @@ public class EntityEventHandler {
                 } else {
                     if (targetEntity instanceof Player) {
                         if (SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entityDamageSource.getSource(), EnumCreatureType.MONSTER)) {
-                            Optional<User> user = cause.first(User.class);
-                            if (!user.isPresent()) {
-                                user = ((IMixinEntity) entityDamageSource.getSource()).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
+                            if (user == null) {
+                                user = ((IMixinEntity) entityDamageSource.getSource()).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
                             }
                             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, entityDamageSource.getSource(), targetEntity, user) != Tristate.TRUE) {
                                 if (GriefPrevention.instance.debugLogging) {
@@ -326,7 +326,6 @@ public class EntityEventHandler {
                             }
                         }
                     } else if (targetEntity instanceof EntityLivingBase && !SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER)) {
-                        User user = cause.first(User.class).orElse(null);
                         if (user != null && !user.getUniqueId().equals(claim.ownerID) && perm != Tristate.TRUE) {
                             if (GriefPrevention.instance.debugLogging) {
                                 GriefPrevention.addLogEntry("[Event: DamageEntityEvent][RootCause: " + cause.root() + "][Entity: " + targetEntity + "][CancelReason: Untrusted player attempting to attack entity in claim.]", CustomLogEntryTypes.Debug);
@@ -431,21 +430,21 @@ public class EntityEventHandler {
             }
 
             // check perms
-            Optional<User> user = Optional.empty();
+            User sourceUser = null;
             if (player.isPresent()) {
-                user = Optional.of((User) player.get());
+                sourceUser = player.get();
             } else if (attacker instanceof User) {
-                user = Optional.of((User) attacker);
+                sourceUser = attacker;
             }
 
             // only players can interact
             if (attacker instanceof Player) {
-                if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, attacker, targetEntity, user) == Tristate.FALSE) {
+                if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, attacker, targetEntity, sourceUser) == Tristate.FALSE) {
                     return true;
                 }
             }
 
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, sourceUser) == Tristate.FALSE) {
                 return true;
             }
         }
@@ -637,10 +636,10 @@ public class EntityEventHandler {
         Claim fromClaim = this.dataStore.getClaimAt(event.getFromTransform().getLocation(), false, null);
         Claim toClaim = this.dataStore.getClaimAt(event.getToTransform().getLocation(), false, null);
 
-        Optional<User> user = player != null ? Optional.of(player) : Optional.of(owner);
+        User user = player != null ? player : owner;
         // enter
         if (fromClaim != toClaim && toClaim != null) {
-            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, user, entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoEnterClaim);
                     GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoEnterClaim));
@@ -661,7 +660,7 @@ public class EntityEventHandler {
 
         // exit
         if (fromClaim != toClaim) {
-            if (GPPermissionHandler.getClaimPermission(fromClaim, GPPermissions.EXIT_CLAIM, user.orElse(null), entity, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(fromClaim, GPPermissions.EXIT_CLAIM, user, entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoExitClaim);
                     GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.NoExitClaim));
@@ -688,15 +687,15 @@ public class EntityEventHandler {
         GPTimings.ENTITY_TELEPORT_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
         Player player = null;
-        Optional<User> user = Optional.empty();
+        User user = null;
         if (entity instanceof Player) {
             player = (Player) entity;
-            user = Optional.of(player);
+            user = player;
         } else {
-            user = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
+            user = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
         }
 
-        if (!user.isPresent() || !GriefPrevention.instance.claimsEnabledForWorld(event.getFromTransform().getExtent().getProperties())) {
+        if (user == null || !GriefPrevention.instance.claimsEnabledForWorld(event.getFromTransform().getExtent().getProperties())) {
             GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
             return;
         }
@@ -793,7 +792,7 @@ public class EntityEventHandler {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
                 }
-                String denyReason = toClaim.allowAccess(user.get());
+                String denyReason = toClaim.allowAccess(user);
                 if (denyReason != null) {
                     if (player != null) {
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
@@ -893,12 +892,12 @@ public class EntityEventHandler {
                     }
 
                     if (claim.allowAccess(user) != null) {
-                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, Optional.of(user)) == Tristate.TRUE) {
+                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, user) == Tristate.TRUE) {
                             return true;
                         }
                         return false;
                     } else if (claim.allowAccess(owner) != null) {
-                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, Optional.of(owner)) == Tristate.TRUE) {
+                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, owner) == Tristate.TRUE) {
                             return true;
                         }
                         return false;
@@ -929,7 +928,7 @@ public class EntityEventHandler {
     
             String denyReason = targetClaim.allowAccess(user, impactPoint);
             if (denyReason != null) {
-                if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, event.getCause().root(), entity, Optional.of(user)) == Tristate.TRUE) {
+                if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, event.getCause().root(), entity, user) == Tristate.TRUE) {
                     GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.stopTimingIfSync();
                     return;
                 }
@@ -937,7 +936,7 @@ public class EntityEventHandler {
                 GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
             } else {
-                if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, event.getCause().root(), entity, Optional.of(user)) == Tristate.FALSE) {
+                if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, event.getCause().root(), entity, user) == Tristate.FALSE) {
                     event.setCancelled(true);
                     GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.stopTimingIfSync();
                     return;

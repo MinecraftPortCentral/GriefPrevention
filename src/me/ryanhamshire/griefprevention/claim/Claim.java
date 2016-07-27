@@ -447,6 +447,10 @@ public class Claim implements ContextSource {
 
     // build permission check
     public String allowBuild(Object source, Location<World> location, User user) {
+        if (user == null) {
+            return null;
+        }
+
         // when a player tries to build in a claim, if he's under siege, the
         // siege may extend to include the new claim
         if (user instanceof Player) {
@@ -478,7 +482,7 @@ public class Claim implements ContextSource {
 
         if (!(source instanceof Player)) {
             if (location.getBlock().getType() == BlockTypes.FIRE) {
-                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.FIRE_SPREAD, source, location.getBlock(), Optional.of(user));
+                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user);
                 if (value == Tristate.TRUE) {
                     return null;
                 } else if (value == Tristate.FALSE) {
@@ -495,7 +499,7 @@ public class Claim implements ContextSource {
         if (!(source instanceof Player)) {
             Optional<MatterProperty> matterProperty = location.getProperty(MatterProperty.class);
             if (matterProperty.isPresent() && matterProperty.get().getValue() == MatterProperty.Matter.LIQUID) {
-                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.LIQUID_FLOW, source, location.getBlock(), Optional.of(user));
+                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user);
                 if (value == Tristate.TRUE) {
                     return null;
                 } else if (value == Tristate.FALSE) {
@@ -505,7 +509,7 @@ public class Claim implements ContextSource {
         }
 
         // anyone with explicit build permission can make changes
-        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_PLACE, source, location.getBlock(), Optional.of(user)) == Tristate.TRUE) {
+        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_PLACE, source, location.getBlock(),user) == Tristate.TRUE) {
             return null;
         }
         // subdivision permission inheritance
@@ -530,7 +534,7 @@ public class Claim implements ContextSource {
     }
 
     // break permission check
-    public String allowBreak(Object source, BlockSnapshot blockSnapshot, Optional<User> user) {
+    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
         if (!blockSnapshot.getLocation().isPresent()) {
             return null;
         }
@@ -555,7 +559,7 @@ public class Claim implements ContextSource {
             // custom error messages for siege mode
             if (!breakable) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NonSiegeMaterial);
-            } else if (user.isPresent() && hasFullAccess(user.get())) {
+            } else if (user != null && hasFullAccess(user)) {
                 return GriefPrevention.instance.dataStore.getMessage(Messages.NoOwnerBuildUnderSiege);
             } else {
                 return null;
@@ -563,18 +567,18 @@ public class Claim implements ContextSource {
         }
 
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
-        if (user.isPresent()) {
-            if (hasFullAccess(user.get())) {
+        if (user != null) {
+            if (hasFullAccess(user)) {
                 return null;
             }
     
             //failure message for all other cases
-            if(user.get().hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
+            if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
                 reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
             }
 
             // Builders can break blocks
-            if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) || this.getClaimData().getBuilders().contains(user.get().getUniqueId())) {
+            if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) || this.getClaimData().getBuilders().contains(user.getUniqueId())) {
                 return null;
             }
 
@@ -622,7 +626,7 @@ public class Claim implements ContextSource {
 
         if (location == null && user instanceof Player && ((Player) user).getItemInHand().isPresent()) {
             ItemStack itemstack = ((Player) user).getItemInHand().get();
-            Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.ITEM_USE, user, itemstack, Optional.of(user));
+            Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.ITEM_USE, user, itemstack, user);
             if (value == Tristate.FALSE) {
                 String reason = GriefPrevention.instance.dataStore.getMessage(Messages.ItemNotAuthorized, itemstack.getItem().getId());
                 return reason;

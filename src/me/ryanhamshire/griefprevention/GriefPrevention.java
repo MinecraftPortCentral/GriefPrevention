@@ -251,8 +251,8 @@ public class GriefPrevention {
                     String version = Sponge.getPlatform().getImplementation().getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 1542) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1542+.");
+                    if (spongeVersion < 1617) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1617+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -1041,10 +1041,10 @@ public class GriefPrevention {
         return GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.claimMode == mode.ordinal();
     }
 
-    public String allowBuild(Object source, Location<World> targetLocation, Optional<User> user) {
+    public String allowBuild(Object source, Location<World> targetLocation, User user) {
         PlayerData playerData = null;
-        if (user.isPresent()) {
-            playerData = this.dataStore.getPlayerData(targetLocation.getExtent(), user.get().getUniqueId());
+        if (user != null) {
+            playerData = this.dataStore.getPlayerData(targetLocation.getExtent(), user.getUniqueId());
         } else {
             Claim claim = this.dataStore.getClaimAt(targetLocation, false, null);
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.BLOCK_PLACE, source, targetLocation, user) == Tristate.FALSE) {
@@ -1065,20 +1065,20 @@ public class GriefPrevention {
         if (playerData != null) {
             playerData.lastClaim = claim;
         }
-        return claim.allowBuild(source, targetLocation, user.get());
+        return claim.allowBuild(source, targetLocation, user);
     }
 
-    public String allowBreak(Object source, BlockSnapshot blockSnapshot, Optional<User> user) {
+    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
         if (!blockSnapshot.getLocation().isPresent()) {
             return null;
         }
 
         Location<World> location = blockSnapshot.getLocation().get();
-        PlayerData playerData = user.isPresent() ? this.dataStore.getPlayerData(location.getExtent(), user.get().getUniqueId()) : null;
+        PlayerData playerData = user != null ? this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId()) : null;
         Claim claim = this.dataStore.getClaimAt(location, false, playerData != null ? playerData.lastClaim : null);
 
         // exception: administrators in ignore claims mode
-        if (user.isPresent() && (playerData.ignoreClaims)) {
+        if (user != null && (playerData.ignoreClaims)) {
             return null;
         }
 

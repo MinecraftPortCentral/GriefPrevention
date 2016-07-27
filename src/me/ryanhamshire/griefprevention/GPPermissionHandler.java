@@ -41,17 +41,16 @@ import org.spongepowered.api.util.Tristate;
 import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 public class GPPermissionHandler {
 
-    public static Tristate getClaimPermission(Claim claim, String flagPermission, Object source, Object target, Optional<User> user) {
+    public static Tristate getClaimPermission(Claim claim, String flagPermission, Object source, Object target, User user) {
         if (claim == null) {
             return Tristate.UNDEFINED;
         }
-        if (user.isPresent()) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, user.get().getUniqueId());
+        if (user != null) {
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, user.getUniqueId());
             if (playerData.ignoreClaims) {
                 return Tristate.TRUE;
             }
@@ -134,19 +133,19 @@ public class GPPermissionHandler {
             return override;
         }
 
-        if (user.isPresent()) {
-            if (claim.hasFullAccess(user.get())) {
+        if (user != null) {
+            if (claim.hasFullAccess(user)) {
                 return Tristate.TRUE;
             }
             Tristate value = Tristate.UNDEFINED;
             if (sourceContext != null) {
-                value = getUserPermission(user.get(), claim, targetPermission, sourceContext);
+                value = getUserPermission(user, claim, targetPermission, sourceContext);
                 if (value == Tristate.FALSE) {
                     return value;
                 }
             }
 
-            value = getUserPermission(user.get(), claim, targetPermission, null);
+            value = getUserPermission(user, claim, targetPermission, null);
             if (value != Tristate.UNDEFINED) {
                 return value;
             }
