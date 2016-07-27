@@ -42,6 +42,7 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
@@ -85,44 +86,60 @@ public class BlockEventHandler {
     }
 
     @Listener(order = Order.FIRST)
-    public void onBlockPre(ChangeBlockEvent.Pre event, @Root BlockSnapshot blockSource) {
+    public void onBlockPre(ChangeBlockEvent.Pre event) {
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
-        Optional<User> user = event.getCause().first(User.class);
-        if  (!blockSource.getLocation().isPresent()) {
-            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        Location<World> sourceLocation = blockSource.getLocation().get();
-        if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
-            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        Claim sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get(), true, null);
-        for (Location<World> location : event.getLocations()) {
-            Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
-            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                return;
-            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                return;
-            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+        User user = event.getCause().first(User.class).orElse(null);
+        Optional<BlockSnapshot> blockSourceOpt = event.getCause().first(BlockSnapshot.class);
+        Optional<TileEntity> tileEntityOpt = event.getCause().first(TileEntity.class);
+        Object rootCause = event.getCause().root();
+        Location<World> sourceLocation = blockSourceOpt.isPresent() ? blockSourceOpt.get().getLocation().orElse(null) : tileEntityOpt.isPresent() ? tileEntityOpt.get().getLocation() : null;
+        if (sourceLocation != null) {
+            if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
                 GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
     
-            String denyReason = GriefPrevention.instance.allowBuild(blockSource, location, user);
-            if (denyReason != null) {
-                GriefPrevention.addLogEntry("[Event: ChangeBlockEvent.Pre][RootCause: " + blockSource + "][TargetBlock: " + location + "][CancelReason: " + denyReason + "]", CustomLogEntryTypes.Debug);
-                // PRE events can be spammy so we need to avoid sending player messages here.
-                /*if (player != null) {
-                    GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
-                }*/
-                event.setCancelled(true);
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                return;
+            Claim sourceClaim = this.dataStore.getClaimAt(sourceLocation, true, null);
+            for (Location<World> location : event.getLocations()) {
+                Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
+                if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                } else if (user != null && targetClaim.hasFullTrust(user)) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
+
+                String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
+                if (denyReason != null) {
+                    GriefPrevention.addEventLogEntry(event, denyReason);
+                    // PRE events can be spammy so we need to avoid sending player messages here.
+                    event.setCancelled(true);
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
+            }
+        } else if (user != null) {
+            for (Location<World> location : event.getLocations()) {
+                Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
+                if (targetClaim.hasFullTrust(user)) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
+
+                String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
+                if (denyReason != null) {
+                    GriefPrevention.addEventLogEntry(event, denyReason);
+                    if (user instanceof Player) {
+                        GriefPrevention.sendMessage((Player) user, Text.of(TextMode.Err, denyReason));
+                    }
+                    event.setCancelled(true);
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
             }
         }
         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -200,14 +217,14 @@ public class BlockEventHandler {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return; // allow siege mode
             }
-            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), user) == Tristate.TRUE) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             }
         }
 
         if (event.getTargetBlock().getType() == BlockTypes.PORTAL) {
-            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), user) == Tristate.TRUE) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             } else if (event.getCause().root() instanceof Player){
@@ -249,14 +266,14 @@ public class BlockEventHandler {
 
         String denyReason = targetClaim.allowAccess(user, impactPoint);
         if (denyReason != null) {
-            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), Optional.of(user)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), user) == Tristate.TRUE) {
                 GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
                 return;
             }
             GriefPrevention.addEventLogEntry(event, denyReason);
             event.setCancelled(true);
         } else {
-            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), Optional.of(user)) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), user) == Tristate.FALSE) {
                 event.setCancelled(true);
             }
         }
@@ -272,10 +289,10 @@ public class BlockEventHandler {
         }
 
         Object source = event.getCause().root();
-        Optional<User> creator = Optional.empty();
+        User creator = null;
         if (source instanceof Entity) {
             Entity entity = (Entity) source;
-            creator = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
+            creator = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
         }
 
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
@@ -312,7 +329,7 @@ public class BlockEventHandler {
         }
 
         Object source = event.getCause().root();
-        Optional<User> user = event.getCause().first(User.class);
+        User user = event.getCause().first(User.class).orElse(null);
         Claim sourceClaim = this.getSourceClaim(event.getCause());
         if (sourceClaim == null) {
             GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
@@ -325,10 +342,10 @@ public class BlockEventHandler {
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
-            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+            } else if (user != null && targetClaim.hasFullTrust(user)) {
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
-            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
             }
@@ -357,7 +374,7 @@ public class BlockEventHandler {
             return;
         }
 
-        Optional<User> user = event.getCause().first(User.class);
+        User user = event.getCause().first(User.class).orElse(null);
         Claim sourceClaim = this.getSourceClaim(event.getCause());
         if (sourceClaim == null) {
             GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
@@ -370,15 +387,15 @@ public class BlockEventHandler {
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
                 return;
-            } else if (user.isPresent() && targetClaim.hasFullTrust(user.get())) {
+            } else if (user != null && targetClaim.hasFullTrust(user)) {
                 GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
                 return;
-            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
                 return;
             }
 
-            if (user.isPresent()) {
+            if (user != null) {
                 String denyReason = GriefPrevention.instance.allowBuild(event.getCause().root(), transaction.getFinal().getLocation().get(), user);
                 if (denyReason != null) {
                     GriefPrevention.addEventLogEntry(event, denyReason);
@@ -401,11 +418,11 @@ public class BlockEventHandler {
 
         World world = event.getTargetWorld();
         Object source = event.getCause().root();
-        Optional<User> user = event.getCause().first(User.class);
-        Player player = user.isPresent() && user.get() instanceof Player ? (Player) user.get() : null;
+        User user = event.getCause().first(User.class).orElse(null);
+        Player player = user != null && user instanceof Player ? (Player) user : null;
         PlayerData playerData = null;
-        if (user.isPresent()) {
-            playerData = this.dataStore.getPlayerData(world, user.get().getUniqueId());
+        if (user != null) {
+            playerData = this.dataStore.getPlayerData(world, user.getUniqueId());
         }
 
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
@@ -425,7 +442,7 @@ public class BlockEventHandler {
             if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
-            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             }

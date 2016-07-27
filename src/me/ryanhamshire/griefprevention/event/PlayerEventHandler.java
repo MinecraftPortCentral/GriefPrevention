@@ -510,13 +510,13 @@ public class PlayerEventHandler {
         String argument = "";
         for (String arg : args) {
             argument = argument + "." + arg;
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command + argument, Optional.of((User)player)) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command + argument, player) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
                 GriefPrevention.addEventLogEntry(event, "Blocked command.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
-            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command + argument, Optional.of((User)player)) == Tristate.FALSE) {
+            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command + argument, player) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
                 GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
                 event.setCancelled(true);
@@ -525,13 +525,13 @@ public class PlayerEventHandler {
             }
         }
         // second check the full command
-        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command, Optional.of((User) player)) == Tristate.FALSE) {
+        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command, player) == Tristate.FALSE) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
             GriefPrevention.addEventLogEntry(event, "Blocked command '" + command + "'.");
             event.setCancelled(true);
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
-        } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command, Optional.of((User) player)) == Tristate.FALSE) {
+        } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command, player) == Tristate.FALSE) {
             GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
             GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
             event.setCancelled(true);
@@ -540,13 +540,13 @@ public class PlayerEventHandler {
         }
         // third check command without the modid
         if (modCommand.length > 1) {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, modCommand[1], Optional.of((User) player)) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, modCommand[1], player) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
                 GriefPrevention.addEventLogEntry(event, "Blocked command '" + command + "'.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
-            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, modCommand[1], Optional.of((User) player)) == Tristate.FALSE) {
+            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, modCommand[1], player) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
                 GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
                 event.setCancelled(true);
@@ -1079,7 +1079,7 @@ public class PlayerEventHandler {
                     return;
                 }
 
-                Tristate perm = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ITEM_DROP, user, entityItem, Optional.of(user));
+                Tristate perm = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ITEM_DROP, user, entityItem, user);
                 if (perm == Tristate.TRUE) {
                     GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
                     return;
@@ -1153,12 +1153,12 @@ public class PlayerEventHandler {
         }
 
         if (event instanceof InteractEntityEvent.Secondary) {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, targetEntity, Optional.of((User) player)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, targetEntity, player) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
             }
         } else {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, player, targetEntity, Optional.of((User) player)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, player, targetEntity, player) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
             }
@@ -1215,7 +1215,7 @@ public class PlayerEventHandler {
                 GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
                 return;
             }
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, targetEntity, Optional.of((User) player)) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, targetEntity, player) == Tristate.FALSE) {
                 String entityId = targetEntity.getType() != null ? targetEntity.getType().getId() : ((net.minecraft.entity.Entity) targetEntity).getName();
                 String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoInteractEntityPermission, claim.getOwnerName(), entityId);
                 GriefPrevention.sendMessage(player, Text.of(TextMode.Err, message));
@@ -1411,11 +1411,11 @@ public class PlayerEventHandler {
 
         String denyReason = claim.allowAccess(player, clickedBlock.getLocation().get());
         if (denyReason != null) {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), Optional.of((User) player)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 return;
             }
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), Optional.of((User) player)) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 return;
             }
@@ -1473,19 +1473,19 @@ public class PlayerEventHandler {
                 ItemStack itemstack = itemInHand.isPresent() ? itemInHand.get() : null;
                 if (itemstack != null) {
                     if (itemstack instanceof ItemBlock) {
-                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemstack, Optional.of((User) player)) == Tristate.TRUE) {
+                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemstack, player) == Tristate.TRUE) {
                             result = true;
                             event.setUseItemResult(Tristate.TRUE);
                         }
                     } else {
-                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.ITEM_USE, player, itemstack, Optional.of((User) player)) == Tristate.TRUE) {
+                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.ITEM_USE, player, itemstack, player) == Tristate.TRUE) {
                             result = true;
                             event.setUseItemResult(Tristate.TRUE);
                         }
                     }
                 }
 
-                if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, clickedBlock.getState(), Optional.of((User) player)) == Tristate.TRUE) {
+                if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, clickedBlock.getState(), player) == Tristate.TRUE) {
                     result = true;
                     event.setUseBlockResult(Tristate.TRUE);
                 }
