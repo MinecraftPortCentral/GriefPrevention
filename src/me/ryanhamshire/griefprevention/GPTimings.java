@@ -38,6 +38,7 @@ public class GPTimings {
     public static final Timing ENTITY_EXPLOSION_PRE_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onEntityExplosionPre");
     public static final Timing ENTITY_EXPLOSION_DETONATE_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onEntityExplosionDetonate");
     public static final Timing ENTITY_ATTACK_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onEntityAttack");
+    public static final Timing ENTITY_COLLIDE_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onEntityCollide");
     public static final Timing ENTITY_DAMAGE_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onEntityDamage");
     public static final Timing ENTITY_DAMAGE_MONITOR_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onEntityDamageMonitor");
     public static final Timing ENTITY_DEATH_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onEntityDeath");

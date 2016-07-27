@@ -862,6 +862,55 @@ public class EntityEventHandler {
     }
 
     @Listener(order = Order.FIRST)
+    public void onEntityCollideEntity(CollideEntityEvent event, @First User user) {
+        GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            GPTimings.ENTITY_COLLIDE_EVENT.stopTimingIfSync();
+            return;
+        }
+
+        Object rootCause = event.getCause().root();
+        event.filterEntities(new Predicate<Entity>() {
+            @Override
+            public boolean test(Entity entity) {
+                // always allow collisions with players
+                if (entity instanceof Player) {
+                    return true;
+                }
+
+                User owner = null;
+                Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
+                if (claim != null) {
+                    // check owner
+                    owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
+                    if (owner == null) {
+                        return true;
+                    }
+
+                    // check if user owns entity
+                    if (owner.getUniqueId().equals(user.getUniqueId())) {
+                        return true;
+                    }
+
+                    if (claim.allowAccess(user) != null) {
+                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, Optional.of(user)) == Tristate.TRUE) {
+                            return true;
+                        }
+                        return false;
+                    } else if (claim.allowAccess(owner) != null) {
+                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, Optional.of(owner)) == Tristate.TRUE) {
+                            return true;
+                        }
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+        GPTimings.ENTITY_COLLIDE_EVENT.stopTimingIfSync();
+    }
+
+    @Listener(order = Order.FIRST)
     public void onProjectileImpactEntity(CollideEntityEvent.Impact event, @First User user) {
         GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
