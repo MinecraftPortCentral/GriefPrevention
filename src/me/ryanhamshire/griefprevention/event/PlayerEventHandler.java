@@ -1398,6 +1398,7 @@ public class PlayerEventHandler {
         Tristate value = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType(), player);
         if (denyMessage != null) {
             if (value == Tristate.TRUE) {
+                GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
                 return;
             }
 
@@ -1409,6 +1410,7 @@ public class PlayerEventHandler {
             GriefPrevention.sendMessage(player, TextMode.Err, message);
             event.setCancelled(true);
         }
+        GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
     }
 
     // educates a player about /adminclaims and /acb, if he can use them
