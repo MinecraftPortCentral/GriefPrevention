@@ -35,6 +35,7 @@ import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.Item;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.util.Tristate;
@@ -118,6 +119,8 @@ public class GPPermissionHandler {
                     targetId = itemstack.getItem().getId();
                 }
                 targetPermission += "." + targetId.toLowerCase();
+            } else if (target instanceof ItemType) {
+                targetPermission += "." + ((ItemType) target).getId().toLowerCase();
             } else if (target instanceof String) {
                 targetPermission += "." + target;
             }

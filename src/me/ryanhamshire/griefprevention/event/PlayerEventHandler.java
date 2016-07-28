@@ -47,6 +47,7 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.task.AutoExtendClaimTask;
 import me.ryanhamshire.griefprevention.task.PlayerKickBanTask;
 import me.ryanhamshire.griefprevention.task.WelcomeTask;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.block.BlockDoor;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.inventory.IInventory;
@@ -62,6 +63,7 @@ import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
 import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.data.property.entity.EyeLocationProperty;
+import org.spongepowered.api.data.type.HandType;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.animal.Animal;
@@ -82,6 +84,7 @@ import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.item.inventory.UseItemStackEvent;
 import org.spongepowered.api.event.message.MessageChannelEvent;
 import org.spongepowered.api.event.message.MessageEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
@@ -1237,8 +1240,7 @@ public class PlayerEventHandler {
         }
 
         // if preventing theft, prevent leashing claimed creatures
-        if (targetEntity instanceof Animal && player.getItemInHand(HandTypes.MAIN_HAND).isPresent() && player
-                .getItemInHand(HandTypes.MAIN_HAND).get().getItem().equals(ItemTypes.LEAD)) {
+        if (targetEntity instanceof Animal && PlayerUtils.hasItemInOneHand(player, ItemTypes.LEAD)) {
             claim = this.dataStore.getClaimAt(targetEntity.getLocation(), false, playerData.lastClaim);
             denyReason = claim.allowAccess(player, targetEntity.getLocation());
             if (denyReason != null) {
@@ -1320,7 +1322,7 @@ public class PlayerEventHandler {
         }
 
         // if we're preventing spawn camping and the player was previously empty handed...
-        if (GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.protectFreshSpawns && !player.getItemInHand(HandTypes.MAIN_HAND).isPresent()) {
+        if (GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.protectFreshSpawns && PlayerUtils.hasItemInOneHand(player, ItemTypes.NONE)) {
             // if that player is currently immune to pvp
             PlayerData playerData = this.dataStore.getPlayerData(world, player.getUniqueId());
             if (playerData.pvpImmune) {
@@ -1382,6 +1384,33 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_CHANGE_HELD_ITEM_EVENT.stopTimingIfSync();
     }
 
+    @Listener(order = Order.FIRST)
+    public void onPlayerUseItem(UseItemStackEvent.Start event, @First Player player) {
+        GPTimings.PLAYER_USE_ITEM_EVENT.startTimingIfSync();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
+            return;
+        }
+
+        Location<World> location = player.getLocation();
+        Claim claim = this.dataStore.getClaimAtPlayer(player, location, false);
+        String denyMessage = claim.allowAccess(player);
+        Tristate value = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType(), player);
+        if (denyMessage != null) {
+            if (value == Tristate.TRUE) {
+                return;
+            }
+
+            String message = GriefPrevention.instance.dataStore.getMessage(Messages.ItemNotAuthorized, event.getItemStackInUse().getType().getId());
+            GriefPrevention.sendMessage(player, TextMode.Err, message);
+            event.setCancelled(true);
+        } else if (value == Tristate.FALSE) {
+            String message = GriefPrevention.instance.dataStore.getMessage(Messages.ItemNotAuthorized, event.getItemStackInUse().getType().getId());
+            GriefPrevention.sendMessage(player, TextMode.Err, message);
+            event.setCancelled(true);
+        }
+    }
+
     // educates a player about /adminclaims and /acb, if he can use them
     private void tryAdvertiseAdminAlternatives(Player player) {
         if (player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && player.hasPermission(GPPermissions.COMMAND_ADJUST_CLAIM_BLOCKS)) {
@@ -1429,15 +1458,20 @@ public class PlayerEventHandler {
     }
 
     @Listener
-    public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary.MainHand event, @First Player player) {
+    public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event, @First Player player) {
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
             return;
         }
 
+        HandType handType = HandTypes.MAIN_HAND;
+        if (event instanceof InteractBlockEvent.Secondary.OffHand) {
+            handType = HandTypes.OFF_HAND;
+        }
+
         BlockSnapshot clickedBlock = event.getTargetBlock();
-        Optional<ItemStack> itemInHand = player.getItemInHand(HandTypes.MAIN_HAND);
+        Optional<ItemStack> itemInHand = player.getItemInHand(handType);
 
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
@@ -1445,7 +1479,7 @@ public class PlayerEventHandler {
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         if (!clickedBlock.getLocation().isPresent()) {
-            onPlayerHandleShovelAction(event, player, playerData);
+            onPlayerHandleShovelAction(event, player, handType, playerData);
             GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
             return;
         }
@@ -1567,21 +1601,21 @@ public class PlayerEventHandler {
                 return;
             }
 
-            onPlayerHandleShovelAction(event, player, playerData);
+            onPlayerHandleShovelAction(event, player, handType, playerData);
         }
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
     }
 
-    private void onPlayerHandleShovelAction(InteractBlockEvent event, Player player, PlayerData playerData) {
+    private void onPlayerHandleShovelAction(InteractBlockEvent event, Player player, HandType handType, PlayerData playerData) {
         GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.startTimingIfSync();
-        if (!player.getItemInHand(HandTypes.MAIN_HAND).isPresent()) {
+        if (!player.getItemInHand(handType).isPresent()) {
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
         }
 
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
         // what's the player holding?
-        ItemType materialInHand = player.getItemInHand(HandTypes.MAIN_HAND).get().getItem();
+        ItemType materialInHand = player.getItemInHand(handType).get().getItem();
         if (!materialInHand.getId().equals(activeConfig.getConfig().claim.modificationTool)) {
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;

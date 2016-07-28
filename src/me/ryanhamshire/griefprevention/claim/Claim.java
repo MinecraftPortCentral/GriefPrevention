@@ -40,6 +40,7 @@ import me.ryanhamshire.griefprevention.configuration.IClaimData;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -47,12 +48,10 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.property.block.MatterProperty;
-import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.item.ItemType;
-import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
 import org.spongepowered.api.util.Tristate;
@@ -146,7 +145,7 @@ public class Claim implements ContextSource {
         this.world = lesserBoundaryCorner.getExtent();
 
         // owner
-        if (player != null && player.getItemInHand(HandTypes.MAIN_HAND).isPresent() && player.getItemInHand(HandTypes.MAIN_HAND).get().getItem().getId().equalsIgnoreCase(GriefPrevention.getActiveConfig(this.world.getProperties()).getConfig().claim.modificationTool)) {
+        if (player != null && PlayerUtils.hasItemInOneHand(player, GriefPrevention.instance.modificationTool)) {
             this.ownerID = player.getUniqueId();
             PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             if (playerData != null) {
@@ -624,17 +623,6 @@ public class Claim implements ContextSource {
                 || this.getClaimData().getContainers().contains(user.getUniqueId())
                 || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
             return null;
-        }
-
-        if (location == null && user instanceof Player && ((Player) user).getItemInHand(HandTypes.MAIN_HAND).isPresent()) {
-            ItemStack itemstack = ((Player) user).getItemInHand(HandTypes.MAIN_HAND).get();
-            Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.ITEM_USE, user, itemstack, user);
-            if (value == Tristate.FALSE) {
-                String reason = GriefPrevention.instance.dataStore.getMessage(Messages.ItemNotAuthorized, itemstack.getItem().getId());
-                return reason;
-            } else if (value == Tristate.TRUE) {
-                return null;
-            }
         }
 
         // permission inheritance for subdivisions

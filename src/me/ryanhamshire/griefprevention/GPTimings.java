@@ -62,6 +62,7 @@ public class GPTimings {
     public static final Timing PLAYER_PICKUP_ITEM_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onPlayerPickupItem");
     public static final Timing PLAYER_QUIT_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onPlayerQuit");
     public static final Timing PLAYER_RESPAWN_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onPlayerRespawn");
+    public static final Timing PLAYER_USE_ITEM_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onPlayerUseItem");
     public static final Timing SIGN_CHANGE_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onSignChange");
     public static final Timing PROJECTILE_IMPACT_BLOCK_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onProjectileImpactBlock");
     public static final Timing PROJECTILE_IMPACT_ENTITY_EVENT = Timings.of(GriefPrevention.instance.pluginContainer, "onProjectileImpactEntity");
