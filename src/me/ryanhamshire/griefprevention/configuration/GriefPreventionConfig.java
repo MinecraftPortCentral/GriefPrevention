@@ -61,11 +61,11 @@ public class GriefPreventionConfig<T extends ConfigBase> {
         }
     }
 
-    public static final String HEADER = "12.1.7\n"
+    public static final String HEADER = "1.0.0\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us at the IRC or drop by our forums and leave a post.\n"
-            + "# IRC: #spongedev @ irc.esper.net ( http://webchat.esper.net/?channel=spongedev )\n"
-            + "# Forums: https://forums.spongepowered.org/\n";
+            + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"
+            + "# Forums: https://forums.spongepowered.org/t/griefprevention-official-thread-1-8-9-1-10-2/1123/\n";
 
     private Type type;
     private HoconConfigurationLoader loader;

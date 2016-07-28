@@ -38,6 +38,7 @@ import me.ryanhamshire.griefprevention.configuration.types.DimensionConfig;
 import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.RedProtectMigrator;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
@@ -73,6 +74,7 @@ public class FlatFileDataStore extends DataStore {
     public final static Path claimTemplatePath = claimDataPath.resolve("Templates");
     public final static Path worldClaimDataPath = Paths.get("GriefPreventionData", "WorldClaim");
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
+    public final static Path redProtectDataPath = Paths.get("config", "RedProtect", "data");
     public final static Map<UUID, Task> cleanupClaimTasks = Maps.newHashMap();
     private final Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
     public static Path rootWorldSavePath;
@@ -160,21 +162,34 @@ public class FlatFileDataStore extends DataStore {
         }
 
         try {
-            if (Files.exists(rootWorldSavePath.resolve(claimData))) {
-                File[] files = rootWorldSavePath.resolve(claimData).toFile().listFiles();
-                this.loadClaimData(files, worldProperties);
-                GriefPrevention.addLogEntry("[" + worldProperties.getWorldName() + "]" + files.length + " total claims loaded.");
-            } else {
+            if (!Files.exists(rootWorldSavePath.resolve(claimData))) {
                 Files.createDirectories(rootWorldSavePath.resolve(claimData));
             }
-    
+
+            // check for RedProtectData
+            if (GriefPrevention.getGlobalConfig().getConfig().migrator.redProtectMigrator) {
+                Path redProtectFilePath = redProtectDataPath.resolve("data_" + worldProperties.getWorldName() + ".conf");
+                Path gpMigratedPath = redProtectDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
+                if (Files.exists(redProtectFilePath) && !Files.exists(gpMigratedPath)) {
+                    RedProtectMigrator.migrate(world, redProtectFilePath, rootWorldSavePath.resolve(claimData));
+                    Files.createFile(gpMigratedPath);
+                }
+            }
+
+            File[] files = rootWorldSavePath.resolve(claimData).toFile().listFiles();
+            if (files.length > 0) {
+                this.loadClaimData(files, worldProperties);
+                GriefPrevention.addLogEntry("[" + worldProperties.getWorldName() + "]" + files.length + " total claims loaded.");
+            }
+
             if (Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
-                File[] files = rootWorldSavePath.resolve(worldPlayerDataPath).toFile().listFiles();
+                files = rootWorldSavePath.resolve(worldPlayerDataPath).toFile().listFiles();
                 this.loadPlayerData(worldProperties, files);
             }
             if (!Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
                 Files.createDirectories(rootWorldSavePath.resolve(worldPlayerDataPath));
             }
+
             ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
             if (claimWorldManager != null && claimWorldManager.getWildernessClaim() == null) {
                 claimWorldManager.createWildernessClaim(worldProperties);
