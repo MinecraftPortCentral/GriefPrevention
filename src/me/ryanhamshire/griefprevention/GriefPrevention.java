@@ -213,6 +213,10 @@ public class GriefPrevention {
     // how long to wait before deciding a player is staying online or staying offline, for notication messages
     public static final int NOTIFICATION_SECONDS = 20;
 
+    public Logger getLogger() {
+        return this.logger;
+    }
+
     // adds a server log entry
     public static void addLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
         if (customLogType == CustomLogEntryTypes.Debug && !GriefPrevention.instance.debugLogging) {
