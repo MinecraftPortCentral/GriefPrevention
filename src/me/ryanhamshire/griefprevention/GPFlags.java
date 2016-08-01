@@ -96,7 +96,7 @@ public class GPFlags {
         DEFAULT_FLAGS.put(GPFlags.INTERACT_ENTITY_SECONDARY, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.INTERACT_INVENTORY, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ITEM_USE, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);

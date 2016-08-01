@@ -873,7 +873,7 @@ public class EntityEventHandler {
             @Override
             public boolean test(Entity entity) {
                 // always allow collisions with players
-                if (entity instanceof Player) {
+                if (entity instanceof Player || entity instanceof EntityItem) {
                     return true;
                 }
 
