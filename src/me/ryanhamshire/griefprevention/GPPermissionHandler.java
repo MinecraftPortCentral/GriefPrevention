@@ -80,7 +80,10 @@ public class GPPermissionHandler {
             if (target instanceof Entity) {
                 Entity targetEntity = (Entity) target;
                 net.minecraft.entity.Entity mcEntity = (net.minecraft.entity.Entity) targetEntity;
-                String targetId = targetEntity.getType().getId();
+                String targetId = "";
+                if (targetEntity.getType() != null) {
+                    targetId = targetEntity.getType().getId();
+                }
                 // Workaround for pixelmon using same class for most entities.
                 // In this circumstance, we will use the entity name instead
                 if (targetId.equals("pixelmon:pixelmon")) {
@@ -160,25 +163,21 @@ public class GPPermissionHandler {
 
     public static Tristate getUserPermission(User user, Claim claim, String permission, Context sourceContext) {
         Set<Context> contexts = new HashSet<>();
-        if (claim.parent != null) {
-            contexts.add(claim.parent.getContext());
-        } else {
-            contexts.add(claim.getContext());
-        }
+        contexts.add(claim.getContext());
 
         if (sourceContext != null) {
             contexts.add(sourceContext);
         }
 
-        // This is required since permissions will check each context separately
-        if (!user.getSubjectData().getPermissions(contexts).isEmpty() || !user.getSubjectData().getParents(contexts).isEmpty()) {
-            Tristate value = user.getPermissionValue(contexts, permission);
-            if (value != Tristate.UNDEFINED) {
-                return value;
-            }
+        Tristate value = user.getPermissionValue(contexts, permission);
+        if (value == Tristate.UNDEFINED && claim.parent != null) {
+            // check subdivision's parent
+            contexts.remove(claim.getContext());
+            contexts.add(claim.parent.getContext());
+            return user.getPermissionValue(contexts, permission);
         }
 
-        return Tristate.UNDEFINED;
+        return value;
     }
 
     // helper method for boolean flags that have no targets
