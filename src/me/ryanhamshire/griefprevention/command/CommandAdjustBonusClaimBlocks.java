@@ -39,19 +39,33 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.service.user.UserStorageService;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {
-        Player player;
-        try {
-            player = GriefPrevention.checkPlayer(src);
-        } catch (CommandException e1) {
-            src.sendMessage(e1.getText());
-            return CommandResult.success();
+        Player player = null;
+        if (src instanceof Player) {
+            player = (Player) src;
+        }
+
+        WorldProperties worldProperties = null;
+        if (args.hasAny("world")) {
+            Optional<WorldProperties> optionalWorldProperties = args.<WorldProperties> getOne("world");
+            worldProperties = optionalWorldProperties.orElse(null);
+        } else {
+            if (player != null) {
+                worldProperties = player.getWorld().getProperties();
+            } else {
+                src.sendMessage(Text.of(TextColors.DARK_RED, "Error! ", TextColors.RED, "No valid world could be found!"));
+                return CommandResult.success();
+            }
         }
 
         // parse the adjustment amount
@@ -63,13 +77,9 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
             String permissionIdentifier = target.substring(1, target.length() - 1);
             int newTotal = GriefPrevention.instance.dataStore.adjustGroupBonusBlocks(permissionIdentifier, adjustment);
 
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.AdjustGroupBlocksSuccess, permissionIdentifier,
+            GriefPrevention.sendMessage(src, TextMode.Success, Messages.AdjustGroupBlocksSuccess, permissionIdentifier, 
                     String.valueOf(adjustment), String.valueOf(newTotal));
-            if (player != null) {
-                GriefPrevention
-                        .addLogEntry(
-                                player.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
-            }
+            GriefPrevention.addLogEntry(src.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
 
             return CommandResult.success();
         }
@@ -94,19 +104,16 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
         }
 
         // give blocks to player
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), targetPlayer.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(worldProperties, targetPlayer.getUniqueId());
         playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
         playerData.getStorageData().save();
 
         GriefPrevention
-                .sendMessage(player, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment),
+                .sendMessage(src, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment),
                         String.valueOf(playerData.getBonusClaimBlocks()));
-        if (player != null) {
-            GriefPrevention.addLogEntry(
-                    player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".",
-                    CustomLogEntryTypes.AdminActivity);
-        }
-
+        GriefPrevention.addLogEntry(
+                src.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".",
+                CustomLogEntryTypes.AdminActivity);
 
         return CommandResult.success();
     }

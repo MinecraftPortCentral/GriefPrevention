@@ -397,7 +397,7 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Adds or subtracts bonus claim blocks for a player"))
                 .permission(GPPermissions.COMMAND_ADJUST_CLAIM_BLOCKS)
-                .arguments(string(Text.of("player")), integer(Text.of("amount")))
+                .arguments(string(Text.of("player")), integer(Text.of("amount")), optional(GenericArguments.world(Text.of("world"))))
                 .executor(new CommandAdjustBonusClaimBlocks())
                 .build(), "adjustbonusclaimblocks", "acb");
 
