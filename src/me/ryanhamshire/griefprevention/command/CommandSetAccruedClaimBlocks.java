@@ -30,42 +30,43 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
-import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 public class CommandSetAccruedClaimBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {
-        Player player;
-        try {
-            player = GriefPrevention.checkPlayer(src);
-        } catch (CommandException e) {
-            src.sendMessage(e.getText());
-            return CommandResult.success();
+        WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(null);
+
+        if (worldProperties == null) {
+            if (src instanceof Player) {
+                worldProperties = ((Player) src).getWorld().getProperties();
+            } else {
+                src.sendMessage(Text.of(TextColors.DARK_RED, "Error! ", TextColors.RED, "No valid world could be found!"));
+                return CommandResult.success();
+            }
         }
 
         // parse the adjustment amount
         int newAmount = args.<Integer>getOne("amount").get();
-
-        // find the specified player
-        User targetPlayer = args.<User>getOne("user").get();
+        User user = args.<User>getOne("user").get();
 
         // set player's blocks
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), targetPlayer.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(worldProperties, user.getUniqueId());
         playerData.setAccruedClaimBlocks(newAmount);
         playerData.getStorageData().save();
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.SetClaimBlocksSuccess);
-        if (player != null) {
-            GriefPrevention.addLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".",
-                    CustomLogEntryTypes.AdminActivity);
-        }
+        GriefPrevention.sendMessage(src, TextMode.Success, Messages.SetClaimBlocksSuccess);
+        GriefPrevention.addLogEntry(src.getName() + " set " + user.getName() + "'s accrued claim blocks to " + newAmount + ".",
+                CustomLogEntryTypes.AdminActivity);
 
         return CommandResult.success();
     }
