@@ -43,25 +43,17 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {
-        Player player = null;
-        if (src instanceof Player) {
-            player = (Player) src;
-        }
+        WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(null);
 
-        WorldProperties worldProperties = null;
-        if (args.hasAny("world")) {
-            Optional<WorldProperties> optionalWorldProperties = args.<WorldProperties> getOne("world");
-            worldProperties = optionalWorldProperties.orElse(null);
-        } else {
-            if (player != null) {
-                worldProperties = player.getWorld().getProperties();
+        if (worldProperties == null) {
+            if (src instanceof Player) {
+                worldProperties = ((Player) src).getWorld().getProperties();
             } else {
                 src.sendMessage(Text.of(TextColors.DARK_RED, "Error! ", TextColors.RED, "No valid world could be found!"));
                 return CommandResult.success();
