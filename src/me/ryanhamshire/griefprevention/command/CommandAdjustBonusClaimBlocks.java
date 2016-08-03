@@ -30,20 +30,15 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.storage.WorldProperties;
-
-import java.util.UUID;
 
 public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
 
@@ -62,49 +57,18 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
 
         // parse the adjustment amount
         int adjustment = args.<Integer>getOne("amount").get();
-        String target = args.<String>getOne("player").get();
-
-        // if granting blocks to all players with a specific permission
-        if (target.startsWith("[") && target.endsWith("]")) {
-            String permissionIdentifier = target.substring(1, target.length() - 1);
-            int newTotal = GriefPrevention.instance.dataStore.adjustGroupBonusBlocks(permissionIdentifier, adjustment);
-
-            GriefPrevention.sendMessage(src, TextMode.Success, Messages.AdjustGroupBlocksSuccess, permissionIdentifier, 
-                    String.valueOf(adjustment), String.valueOf(newTotal));
-            GriefPrevention.addLogEntry(src.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
-
-            return CommandResult.success();
-        }
-
-        // otherwise, find the specified player
-        User targetPlayer;
-        try {
-            UUID playerID = UUID.fromString(target);
-            targetPlayer = Sponge.getGame().getServiceManager().provideUnchecked(UserStorageService.class).get(playerID).orElse(null);
-
-        } catch (IllegalArgumentException e) {
-            targetPlayer = GriefPrevention.instance.resolvePlayerByName(target).orElse(null);
-        }
-
-        if (targetPlayer == null) {
-            try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.PlayerNotFound2));
-            } catch (CommandException e) {
-                src.sendMessage(e.getText());
-                return CommandResult.success();
-            }
-        }
+        User user = args.<User>getOne("user").get();
 
         // give blocks to player
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(worldProperties, targetPlayer.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(worldProperties, user.getUniqueId());
         playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
         playerData.getStorageData().save();
 
         GriefPrevention
-                .sendMessage(src, TextMode.Success, Messages.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment),
+                .sendMessage(src, TextMode.Success, Messages.AdjustBlocksSuccess, user.getName(), String.valueOf(adjustment),
                         String.valueOf(playerData.getBonusClaimBlocks()));
         GriefPrevention.addLogEntry(
-                src.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".",
+                src.getName() + " adjusted " + user.getName() + "'s bonus claim blocks by " + adjustment + ".",
                 CustomLogEntryTypes.AdminActivity);
 
         return CommandResult.success();
