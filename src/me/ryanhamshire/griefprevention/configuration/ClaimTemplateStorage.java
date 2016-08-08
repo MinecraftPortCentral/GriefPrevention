@@ -46,15 +46,9 @@ import java.util.UUID;
 
 public class ClaimTemplateStorage {
 
-    public static final String HEADER = "12.1.7\n"
-            + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
-            + "# join us at the IRC or drop by our forums and leave a post.\n"
-            + "# IRC: #spongedev @ irc.esper.net ( http://webchat.esper.net/?channel=spongedev )\n"
-            + "# Forums: https://forums.spongepowered.org/\n";
-
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(HEADER));
+            .setHeader(GriefPrevention.CONFIG_HEADER));
     private ObjectMapper<ClaimTemplateConfig>.BoundInstance configMapper;
     private ClaimTemplateConfig configBase;
     public Path filePath;
@@ -125,7 +119,7 @@ public class ClaimTemplateStorage {
             this.root = this.loader.load(ConfigurationOptions.defaults()
                     .setSerializers(
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
-                    .setHeader(HEADER));
+                    .setHeader(GriefPrevention.CONFIG_HEADER));
             this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);

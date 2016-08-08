@@ -35,7 +35,9 @@ import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.Item;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.common.SpongeImplHooks;
@@ -72,6 +74,8 @@ public class GPPermissionHandler {
             } else if (source instanceof ItemStack) {
                 ItemStack itemstack = (ItemStack) source;
                 sourceId = itemstack.getItem().getId();
+            } else if (source instanceof PluginContainer) {
+                sourceId = ((PluginContainer) source).getId();
             }
         }
 
@@ -121,6 +125,8 @@ public class GPPermissionHandler {
                     targetId = itemstack.getItem().getId();
                 }
                 targetPermission += "." + targetId.toLowerCase();
+            } else if (target instanceof ItemType) {
+                targetPermission += "." + ((ItemType) target).getId().toLowerCase();
             } else if (target instanceof String) {
                 targetPermission += "." + target;
             }
@@ -170,7 +176,7 @@ public class GPPermissionHandler {
         }
 
         Tristate value = user.getPermissionValue(contexts, permission);
-        if (value == Tristate.UNDEFINED && claim.parent != null) {
+        if (value == Tristate.UNDEFINED && claim.parent != null && claim.inheritParent) {
             // check subdivision's parent
             contexts.remove(claim.getContext());
             contexts.add(claim.parent.getContext());
@@ -202,7 +208,7 @@ public class GPPermissionHandler {
         contexts.add(claim.getContext());
         // This is required since permissions will check each context separately
         if (!GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getParents(contexts).isEmpty()) {
-            if (claim.isSubdivision()) {
+            if (claim.parent != null && claim.inheritParent) {
                 // first check subdivision context
                 value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
                 if (value != Tristate.UNDEFINED) {

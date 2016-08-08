@@ -270,7 +270,7 @@ public class DatabaseDataStore extends DataStore {
                 List<String> managerNames = Arrays.asList(managersString.split(";"));
                 managerNames = this.convertNameListToUUIDList(managerNames);
 
-                Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner);
+                Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, Claim.Type.BASIC);
                 claim.ownerID = owner.get().getUniqueId();
 
                 if (removeClaim) {
@@ -303,7 +303,6 @@ public class DatabaseDataStore extends DataStore {
             // claim
             childClaim.parent = topLevelClaim;
             topLevelClaim.children.add(childClaim);
-            childClaim.inDataStore = true;
         }
 
         for (int i = 0; i < claimsToRemove.size(); i++) {

@@ -176,12 +176,12 @@ public class FlatFileDataStore extends DataStore {
                 }
             }
 
-            File[] files = rootWorldSavePath.resolve(claimData).toFile().listFiles();
+                File[] files = rootWorldSavePath.resolve(claimData).toFile().listFiles();
             if (files.length > 0) {
                 this.loadClaimData(files, worldProperties);
                 GriefPrevention.addLogEntry("[" + worldProperties.getWorldName() + "]" + files.length + " total claims loaded.");
             }
-
+    
             if (Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
                 files = rootWorldSavePath.resolve(worldPlayerDataPath).toFile().listFiles();
                 this.loadPlayerData(worldProperties, files);
@@ -374,10 +374,11 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // instantiate
-        claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, claimId);
+        claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getClaimType());
         claim.ownerID = ownerID;
         claim.world = lesserBoundaryCorner.getExtent();
         claim.type = claimStorage.getConfig().getClaimType();
+        claim.cuboid = claimStorage.getConfig().isCuboid();
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
         claim.context = new Context("gp_claim", claim.id.toString());
@@ -394,16 +395,15 @@ public class FlatFileDataStore extends DataStore {
                 Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);
                 Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
     
-                Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey());
+                Claim subDivision = new Claim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey(), Claim.Type.SUBDIVISION);
                 subDivision.id = mapEntry.getKey();
                 subDivision.world = subLesserBoundaryCorner.getExtent();
                 subDivision.setClaimStorage(claimStorage);
                 subDivision.context = new Context("claim", subDivision.id.toString());
                 subDivision.parent = claim;
                 subDivision.type = Claim.Type.SUBDIVISION;
+                subDivision.cuboid = subDivisionData.isCuboid();
                 subDivision.setClaimData(subDivisionData);
-                // this needs to be set or visuals will not work
-                subDivision.inDataStore = true;
                 // add subdivision to parent
                 claim.children.add(subDivision);
             }

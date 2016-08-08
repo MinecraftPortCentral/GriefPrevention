@@ -48,6 +48,8 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     private UUID ownerUniqueId;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_TYPE)//, comment = "The type of claim.")
     private Claim.Type claimType = Claim.Type.BASIC;
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_CUBOID)
+    private boolean isCuboid = false;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED)//, comment = "The date and time this claim was created.")
     private String dateCreated = Instant.now().toString();
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE)//, comment = "The last date and time this claim was active.")
@@ -91,6 +93,10 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
 
     public void setWorldUniqueId(UUID uuid) {
         this.worldUniqueId = uuid;
+    }
+
+    public boolean isCuboid() {
+        return this.isCuboid;
     }
 
     public Claim.Type getClaimType() {
@@ -139,6 +145,10 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
 
     public List<UUID> getManagers() {
         return this.managers;
+    }
+
+    public void setCuboid(boolean cuboid) {
+        this.isCuboid = cuboid;
     }
 
     public void setClaimType(Claim.Type type) {

@@ -34,6 +34,8 @@ public interface IClaimData {
 
     boolean requiresSave();
 
+    boolean isCuboid();
+
     UUID getWorldUniqueId();
 
     UUID getOwnerUniqueId();
@@ -67,6 +69,8 @@ public interface IClaimData {
     void setWorldUniqueId(UUID uuid);
 
     void setClaimType(Claim.Type type);
+
+    void setCuboid(boolean cuboid);
 
     void setDateLastActive(String date);
 

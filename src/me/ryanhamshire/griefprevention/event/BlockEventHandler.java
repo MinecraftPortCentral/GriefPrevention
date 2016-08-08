@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention.event;
 
-import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPermissionHandler;
@@ -68,6 +67,7 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 
+import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -133,8 +133,8 @@ public class BlockEventHandler {
                 String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
                 if (denyReason != null) {
                     GriefPrevention.addEventLogEntry(event, denyReason);
-                    if (user instanceof Player) {
-                        GriefPrevention.sendMessage((Player) user, Text.of(TextMode.Err, denyReason));
+                    if (rootCause instanceof Player) {
+                        GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
                     }
                     event.setCancelled(true);
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -367,48 +367,6 @@ public class BlockEventHandler {
     }
 
     @Listener(order = Order.FIRST)
-    public void onBlockPost(ChangeBlockEvent.Post event) {
-        GPTimings.BLOCK_POST_EVENT.startTimingIfSync();
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
-            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        User user = event.getCause().first(User.class).orElse(null);
-        Claim sourceClaim = this.getSourceClaim(event.getCause());
-        if (sourceClaim == null) {
-            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-            Vector3i pos = transaction.getFinal().getPosition();
-            Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
-            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                return;
-            } else if (user != null && targetClaim.hasFullTrust(user)) {
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                return;
-            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                return;
-            }
-
-            if (user != null) {
-                String denyReason = GriefPrevention.instance.allowBuild(event.getCause().root(), transaction.getFinal().getLocation().get(), user);
-                if (denyReason != null) {
-                    GriefPrevention.addEventLogEntry(event, denyReason);
-                    event.setCancelled(true);
-                    GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                    return;
-                }
-            }
-        }
-        GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-    }
-
-    @Listener(order = Order.FIRST)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
         GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
@@ -492,8 +450,8 @@ public class BlockEventHandler {
             }
 
             // if the block is being placed within or under an existing claim
-            if (!targetClaim.isWildernessClaim()) {
-                playerData.lastClaim = targetClaim;
+            if (!targetClaim.isWildernessClaim() && !targetClaim.cuboid) {
+                playerData.lastClaim = new WeakReference<>(targetClaim);
 
                 // if the player has permission for the claim and he's placing UNDER the claim
                 if (block.getPosition().getY() <= targetClaim.lesserBoundaryCorner.getBlockY()) {
@@ -526,7 +484,7 @@ public class BlockEventHandler {
                     // radius == 0 means protect ONLY the chest
                     if (activeConfig.getConfig().claim.claimRadius == 0) {
                         this.dataStore.createClaim(block.getLocation().get().getExtent(), block.getPosition().getX(), block.getPosition().getX(),
-                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(), UUID.randomUUID(), null, Claim.Type.BASIC, player);
+                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(), UUID.randomUUID(), null, Claim.Type.BASIC, false, player);
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Success, Messages.ChestClaimConfirmation));
                     }
 
@@ -541,7 +499,7 @@ public class BlockEventHandler {
                                 block.getPosition().getZ() - radius, block.getPosition().getZ() + radius,
                                 UUID.randomUUID(),
                                 null,
-                                Claim.Type.BASIC,
+                                Claim.Type.BASIC, false,
                                 player).succeeded) {
                             radius--;
                         }
@@ -551,9 +509,9 @@ public class BlockEventHandler {
 
                         // show the player the protected area
                         Claim newClaim = this.dataStore.getClaimAt(block.getLocation().get(), false, null);
-                        Visualization visualization =
-                                Visualization.FromClaim(newClaim, block.getPosition().getY(), VisualizationType.Claim, player.getLocation());
-                        Visualization.Apply(player, visualization);
+                        Visualization visualization = new Visualization(newClaim, VisualizationType.Claim);
+                        visualization.createClaimBlockVisuals(block.getPosition().getY(), player.getLocation(), playerData);
+                        visualization.apply(player);
                     }
 
                     GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);

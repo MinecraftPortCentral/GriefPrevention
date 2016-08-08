@@ -61,16 +61,10 @@ public class GriefPreventionConfig<T extends ConfigBase> {
         }
     }
 
-    public static final String HEADER = "1.0.0\n"
-            + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
-            + "# join us at the IRC or drop by our forums and leave a post.\n"
-            + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"
-            + "# Forums: https://forums.spongepowered.org/t/griefprevention-official-thread-1-8-9-1-10-2/1123/\n";
-
     private Type type;
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(HEADER));
+            .setHeader(GriefPrevention.CONFIG_HEADER));
     private ObjectMapper<T>.BoundInstance configMapper;
     private T configBase;
 
@@ -113,7 +107,7 @@ public class GriefPreventionConfig<T extends ConfigBase> {
             this.root = this.loader.load(ConfigurationOptions.defaults()
                     .setSerializers(
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
-                    .setHeader(HEADER));
+                    .setHeader(GriefPrevention.CONFIG_HEADER));
             this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);

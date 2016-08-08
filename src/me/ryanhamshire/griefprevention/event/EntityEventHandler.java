@@ -84,6 +84,7 @@ import org.spongepowered.common.SpongeImplHooks;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 
+import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Iterator;
@@ -222,14 +223,6 @@ public class EntityEventHandler {
                     GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
                     return;
                 }
-            }
-
-            // otherwise, just apply the limit on total entities per claim (and no spawning in the wilderness!)
-            Claim claim = this.dataStore.getClaimAt(location, false, null);
-            String denyReason = claim.allowMoreEntities();
-            if (denyReason != null) {
-                GriefPrevention.addEventLogEntry(event, denyReason);
-                event.setCancelled(true);
             }
         }
         GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
@@ -390,7 +383,7 @@ public class EntityEventHandler {
                 if (!attackerData.ignoreClaims) {
                     // ignore claims mode allows for pvp inside land claims
                     if (attackerClaim != null && !attackerData.inPvpCombat(defender.getWorld()) && attackerClaim.protectPlayersInClaim()) {
-                        attackerData.lastClaim = attackerClaim;
+                        attackerData.lastClaim = new WeakReference<>(attackerClaim);
                         PreventPvPEvent pvpEvent = new PreventPvPEvent(attackerClaim);
                         Sponge.getGame().getEventManager().post(pvpEvent);
                         if (!pvpEvent.isCancelled()) {
@@ -405,7 +398,7 @@ public class EntityEventHandler {
 
                     Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim);
                     if (defenderClaim != null && !defenderData.inPvpCombat(defender.getWorld()) && defenderClaim.protectPlayersInClaim()) {
-                        defenderData.lastClaim = defenderClaim;
+                        defenderData.lastClaim = new WeakReference<>(defenderClaim);
                         PreventPvPEvent pvpEvent = new PreventPvPEvent(defenderClaim);
                         Sponge.getGame().getEventManager().post(pvpEvent);
                         if (!pvpEvent.isCancelled()) {
@@ -650,7 +643,7 @@ public class EntityEventHandler {
             }
 
             if (playerData != null) {
-                playerData.lastClaim = toClaim;
+                playerData.lastClaim = new WeakReference<>(toClaim);
                 Text welcomeMessage = toClaim.getClaimData().getGreetingMessage();
                 if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
                     player.sendMessage(welcomeMessage);
@@ -671,7 +664,7 @@ public class EntityEventHandler {
             }
 
             if (playerData != null) {
-                playerData.lastClaim = toClaim;
+                playerData.lastClaim = new WeakReference<>(toClaim);
                 Text farewellMessage = fromClaim.getClaimData().getFarewellMessage();
                 if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
                     player.sendMessage(farewellMessage);

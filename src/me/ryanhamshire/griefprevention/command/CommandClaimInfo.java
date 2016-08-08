@@ -60,7 +60,7 @@ public class CommandClaimInfo implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
 
         if (claim != null) {
             UUID ownerUniqueId = claim.getClaimData().getOwnerUniqueId();
@@ -129,6 +129,8 @@ public class CommandClaimInfo implements CommandExecutor {
                             .onShiftClick(TextActions.insertText(claim.id.toString())).build()));
             Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null ? owner.getName() : "administrator");
             Text claimType = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", claimTypeColor, claim.type.name());
+            Text claimCuboid = Text.of(TextColors.YELLOW, "Cuboid", TextColors.WHITE, " : ", TextColors.GREEN, claim.cuboid ? "3D" : "2D");
+            Text claimInherit = Text.of(TextColors.YELLOW, "InheritParent", TextColors.WHITE, " : ", claim.inheritParent ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
             Text claimFarewell = Text.of(TextColors.YELLOW, "Farewell", TextColors.WHITE, " : ", TextColors.RESET,
                     farewell == null ? NONE : farewell);
             Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
@@ -146,13 +148,15 @@ public class CommandClaimInfo implements CommandExecutor {
             Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, created != null ? created : "Unknown");
             Text dateLastActive = Text.of(TextColors.YELLOW, "LastActive", TextColors.WHITE, " : ", TextColors.GRAY, lastActive != null ? lastActive : "Unknown");
             Text footer = Text.of(TextColors.WHITE, TextStyles.STRIKETHROUGH, "------------------------------------------");
-            if (!claim.isWildernessClaim()) {
+            if (claim.parent != null) {
                 GriefPrevention.sendMessage(src,
                         Text.of("\n",
                                 footer, "\n",
                                 claimName, "\n",
                                 ownerLine, "\n",
                                 claimType, "\n",
+                                claimCuboid, "\n",
+                                claimInherit, "\n",
                                 claimArea, "\n",
                                 claimAccessors, "\n",
                                 claimBuilders, "\n",
@@ -165,7 +169,27 @@ public class CommandClaimInfo implements CommandExecutor {
                                 dateLastActive, "\n",
                                 claimId, "\n",
                                 footer));
-            } else {
+            } else if (!claim.isWildernessClaim()) {
+                GriefPrevention.sendMessage(src,
+                        Text.of("\n",
+                                footer, "\n",
+                                claimName, "\n",
+                                ownerLine, "\n",
+                                claimType, "\n",
+                                claimCuboid, "\n",
+                                claimArea, "\n",
+                                claimAccessors, "\n",
+                                claimBuilders, "\n",
+                                claimContainers, "\n",
+                                claimCoowners, "\n",
+                                claimGreeting, "\n",
+                                claimFarewell, "\n",
+                                pvp, "\n",
+                                dateCreated, "\n",
+                                dateLastActive, "\n",
+                                claimId, "\n",
+                                footer));
+            } else { // wilderness
                 GriefPrevention.sendMessage(src,
                         Text.of("\n",
                                 footer, "\n",

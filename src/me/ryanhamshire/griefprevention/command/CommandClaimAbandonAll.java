@@ -30,7 +30,6 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -75,14 +74,14 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         }
 
         // delete them
-        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId(), false);
+        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId());
 
         // inform the player
         int remainingBlocks = playerData.getRemainingClaimBlocks();
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.SuccessfulAbandon, String.valueOf(remainingBlocks));
 
         // revert any current visualization
-        Visualization.Revert(player);
+        playerData.revertActiveVisual(player);
 
         return CommandResult.success();
     }

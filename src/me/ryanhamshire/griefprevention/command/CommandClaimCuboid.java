@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
@@ -36,9 +35,8 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
 
-public class CommandClaimDeleteAll implements CommandExecutor {
+public class CommandClaimCuboid implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -50,20 +48,14 @@ public class CommandClaimDeleteAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        // try to find that player
-        User otherPlayer = ctx.<User>getOne("player").get();
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        playerData.setCuboidMode(!playerData.getCuboidMode());
 
-        // delete all that player's claims
-        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId());
-
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
-        if (player != null) {
-            GriefPrevention.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
-                    CustomLogEntryTypes.AdminActivity);
-
-            // revert any current visualization
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-            playerData.revertActiveVisual(player);
+        // toggle cuboid claims mode on or off
+        if (!playerData.getCuboidMode()) {
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.CuboidClaimDisabled);
+        } else {
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.CuboidClaimEnabled);
         }
 
         return CommandResult.success();

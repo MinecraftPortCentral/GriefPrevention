@@ -131,7 +131,7 @@ public class CommandClaimFlag implements CommandExecutor {
                 return CommandResult.success();
             } else if (flag.isPresent() && value.isPresent()) {
                 if (GPFlags.DEFAULT_FLAGS.containsKey(flag.get())) {
-                    CommandHelper.addPermission(src, GriefPrevention.GLOBAL_SUBJECT, claim, flag.get(), target.get(), value.get(), context, 0);
+                    CommandHelper.addFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, claim, flag.get(), target.get(), value.get(), context, 0);
                 } else {
                     GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid flag entered."));
                 }

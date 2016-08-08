@@ -31,8 +31,8 @@ import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.SiegeData;
+import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
@@ -50,7 +50,6 @@ import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
@@ -61,9 +60,10 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 //represents a player claim
@@ -79,8 +79,7 @@ public class Claim implements ContextSource {
     }
 
     // two locations, which together define the boundaries of the claim
-    // note that the upper Y value is always ignored, because claims ALWAYS
-    // extend up to the sky
+    // Note: 2D cuboids will ignore the upper Y value while 3D cuboids do not
     public Location<World> lesserBoundaryCorner;
     public Location<World> greaterBoundaryCorner;
     public World world;
@@ -99,12 +98,6 @@ public class Claim implements ContextSource {
     private ClaimStorageData claimStorage;
     private IClaimData claimData;
 
-    // whether or not this claim is in the data store
-    // if a claim instance isn't in the data store, it isn't "active" - players can't interract with it
-    // why keep this? so that claims which have been removed from the data store can be correctly
-    // ignored even though they may have references floating around
-    public boolean inDataStore = false;
-
     // parent claim
     // only used for claim subdivisions. top level claims have null here
     public Claim parent = null;
@@ -119,22 +112,26 @@ public class Claim implements ContextSource {
     // following a siege, buttons/levers are unlocked temporarily. This represents that state
     public boolean doorsOpen = false;
 
-    // items not allowed to be used in claim
-    public Map<ItemType, List<Integer>> bannedItemIds;
+    public boolean cuboid = false;
 
-    // used for visualizations/contain checks
-    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner) {
-        this(lesserBoundaryCorner, greaterBoundaryCorner, null);
+    // used by subdivisions to inherit parent permissions
+    public boolean inheritParent = true;
+
+    public Visualization visualization;
+    public List<UUID> playersWatching = new ArrayList<>();
+
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, Type type) {
+        this(lesserBoundaryCorner, greaterBoundaryCorner, UUID.randomUUID(), type);
     }
 
     // Used at server startup
-    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId) {
-        this(lesserBoundaryCorner, greaterBoundaryCorner, claimId, null);
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, Type type) {
+        this(lesserBoundaryCorner, greaterBoundaryCorner, claimId, null, null);
     }
 
     // main constructor. note that only creating a claim instance does nothing -
     // a claim must be added to the data store to be effective
-    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, Player player) {
+    public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, Type type, Player player) {
         // id
         this.id = claimId;
 
@@ -142,21 +139,17 @@ public class Claim implements ContextSource {
         this.lesserBoundaryCorner = lesserBoundaryCorner;
         this.greaterBoundaryCorner = greaterBoundaryCorner;
         this.world = lesserBoundaryCorner.getExtent();
-
-        // owner
-        if (player != null && player.getItemInHand().isPresent() && player.getItemInHand().get().getItem().getId().equalsIgnoreCase(GriefPrevention.getActiveConfig(this.world.getProperties()).getConfig().claim.modificationTool)) {
+        if (player != null) {
             this.ownerID = player.getUniqueId();
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
-            if (playerData != null) {
-                if (playerData.shovelMode == ShovelMode.Admin) {
-                    this.type = Type.ADMIN;
-                } else if (playerData.shovelMode == ShovelMode.Basic) {
-                    this.type = Type.BASIC;
-                } else if (playerData.shovelMode == ShovelMode.Subdivide) {
-                    this.type = Type.SUBDIVISION;
-                }
-            }
         }
+        this.type = type;
+    }
+
+    public Visualization getVisualizer() {
+        if (this.visualization == null) {
+            this.visualization = new Visualization(this, Visualization.getVisualizationType(this));
+        }
+        return this.visualization;
     }
 
     public UUID getOwnerUniqueId() {
@@ -317,17 +310,6 @@ public class Claim implements ContextSource {
         return this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
     }
 
-    // distance check for claims, distance in this case is a band around the
-    // outside of the claim rather then euclidean distance
-    public boolean isNear(Location<World> location, int howNear) {
-        Claim claim = new Claim(new Location<World>(this.lesserBoundaryCorner.getExtent(), this.lesserBoundaryCorner.getBlockX() - howNear,
-                this.lesserBoundaryCorner.getBlockY(), this.lesserBoundaryCorner.getBlockZ() - howNear),
-                new Location<World>(this.greaterBoundaryCorner.getExtent(), this.greaterBoundaryCorner.getBlockX() + howNear,
-                        this.greaterBoundaryCorner.getBlockY(), this.greaterBoundaryCorner.getBlockZ() + howNear));
-
-        return claim.contains(location, false, true);
-    }
-
     public boolean hasFullAccess(User user) {
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
         if (playerData != null && playerData.ignoreClaims) {
@@ -344,7 +326,7 @@ public class Claim implements ContextSource {
             return true;
         }
 
-        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
+        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
             if (playerData.debugClaimPermissions) {
                 return false;
             }
@@ -377,7 +359,7 @@ public class Claim implements ContextSource {
             return true;
         }
 
-        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
+        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
             if (playerData.debugClaimPermissions) {
                 return false;
             }
@@ -392,6 +374,10 @@ public class Claim implements ContextSource {
 
         // if subdivision
         if (this.parent != null) {
+            if (!this.inheritParent) {
+                // check if parent owner
+                return this.parent.hasFullAccess(user);
+            }
             return this.parent.hasFullTrust(user);
         }
 
@@ -432,12 +418,12 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        if (this.isWildernessClaim() && player.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
+        if (this.isWildernessClaim() && player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
             return null;
         }
 
         // permission inheritance for subdivisions
-        if (this.parent != null) {
+        if (this.parent != null && this.inheritParent) {
             return this.parent.allowEdit(player);
         }
 
@@ -513,7 +499,7 @@ public class Claim implements ContextSource {
             return null;
         }
         // subdivision permission inheritance
-        if (this.parent != null) {
+        if (this.parent != null && this.inheritParent) {
             return this.parent.allowBuild(source, location, user);
         }
 
@@ -636,7 +622,7 @@ public class Claim implements ContextSource {
         }
 
         // permission inheritance for subdivisions
-        if (this.parent != null) {
+        if (this.parent != null && this.inheritParent) {
             return this.parent.allowAccess(user, location);
         }
 
@@ -679,7 +665,7 @@ public class Claim implements ContextSource {
         }
 
         //permission inheritance for subdivisions
-        if(this.parent != null) {
+        if(this.parent != null && this.inheritParent) {
             return this.parent.allowContainers(user, location);
         }
         
@@ -707,7 +693,7 @@ public class Claim implements ContextSource {
         }
         
         //permission inheritance for subdivisions
-        if(this.parent != null) {
+        if(this.parent != null && this.inheritParent) {
             return this.parent.allowGrantPermission(player);
         }
         
@@ -769,21 +755,25 @@ public class Claim implements ContextSource {
     // ignoreHeight = true means location UNDER the claim will return TRUE
     // excludeSubdivisions = true means that locations inside subdivisions of the claim will return FALSE
     public boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeSubdivisions) {
+        if (this.cuboid) {
+            return this.contains(location);
+        }
+
         // not in the same world implies false
         if (!location.getExtent().equals(this.lesserBoundaryCorner.getExtent())) {
             return false;
         }
 
-        double x = location.getX();
-        double y = location.getY();
-        double z = location.getZ();
+        int x = location.getBlockX();
+        int y = location.getBlockY();
+        int z = location.getBlockZ();
 
         // main check
         boolean inClaim = (ignoreHeight || y >= this.lesserBoundaryCorner.getY()) &&
-                x >= this.lesserBoundaryCorner.getX() &&
-                x < this.greaterBoundaryCorner.getX() + 1 &&
-                z >= this.lesserBoundaryCorner.getZ() &&
-                z < this.greaterBoundaryCorner.getZ() + 1;
+                x >= this.lesserBoundaryCorner.getBlockX() &&
+                x < this.greaterBoundaryCorner.getBlockX() + 1 &&
+                z >= this.lesserBoundaryCorner.getBlockZ() &&
+                z < this.greaterBoundaryCorner.getBlockZ() + 1;
 
         if (!inClaim) {
             return false;
@@ -795,7 +785,7 @@ public class Claim implements ContextSource {
         // it's possible that
         // a subdivision can reach outside of its parent's boundaries. so this
         // check is important!
-        if (this.parent != null) {
+        if (this.parent != null && this.inheritParent) {
             return this.parent.contains(location, ignoreHeight, false);
         }
 
@@ -814,72 +804,73 @@ public class Claim implements ContextSource {
         return true;
     }
 
-    // whether or not two claims overlap
-    // used internally to prevent overlaps when creating claims
+    // 3d cuboid check
+    public boolean contains(Location<World> location) {
+        if (!location.getExtent().equals(this.lesserBoundaryCorner.getExtent())) {
+            return false;
+        }
+
+        int x = location.getBlockX();
+        int y = location.getBlockY();
+        int z = location.getBlockZ();
+
+        boolean inClaim = (
+                x >= this.lesserBoundaryCorner.getBlockX() &&
+                x <= this.greaterBoundaryCorner.getBlockX() &&
+                y >= this.lesserBoundaryCorner.getBlockY() &&
+                y <= this.greaterBoundaryCorner.getBlockY() &&
+                z >= this.lesserBoundaryCorner.getBlockZ() &&
+                z <= this.greaterBoundaryCorner.getBlockZ());
+
+        if (!inClaim) {
+            return false;
+        }
+
+        return true;
+    }
+
     public boolean overlaps(Claim otherClaim) {
-        // NOTE: if trying to understand this makes your head hurt, don't feel
-        // bad - it hurts mine too.
-        // try drawing pictures to visualize test cases.
+        if (this.id == otherClaim.id) {
+            return false;
+        }
 
         if (!this.lesserBoundaryCorner.getExtent().equals(otherClaim.getLesserBoundaryCorner().getExtent())) {
             return false;
         }
 
-        // first, check the corners of this claim aren't inside any existing
-        // claims
-        if (otherClaim.contains(this.lesserBoundaryCorner, true, false)) {
-            return true;
-        }
-        if (otherClaim.contains(this.greaterBoundaryCorner, true, false)) {
-            return true;
-        }
-        if (otherClaim.contains(
-                new Location<World>(this.lesserBoundaryCorner.getExtent(), this.lesserBoundaryCorner.getBlockX(), 0,
-                        this.greaterBoundaryCorner.getBlockZ()),
-                true, false)) {
-            return true;
-        }
-        if (otherClaim.contains(
-                new Location<World>(this.lesserBoundaryCorner.getExtent(), this.greaterBoundaryCorner.getBlockX(), 0,
-                        this.lesserBoundaryCorner.getBlockZ()),
-                true, false)) {
+        if (this.parent != null && otherClaim.parent != null && this.parent.id != otherClaim.parent.id) {
             return true;
         }
 
-        // verify that no claim's lesser boundary point is inside this new
-        // claim, to cover the "existing claim is entirely inside new claim"
-        // case
-        if (this.contains(otherClaim.getLesserBoundaryCorner(), true, false)) {
-            return true;
-        }
+        int smallX = otherClaim.getLesserBoundaryCorner().getBlockX();
+        int smallY = otherClaim.getLesserBoundaryCorner().getBlockY();
+        int smallZ = otherClaim.getLesserBoundaryCorner().getBlockZ();
+        int bigX = otherClaim.getGreaterBoundaryCorner().getBlockX();
+        int bigY = otherClaim.getGreaterBoundaryCorner().getBlockY();
+        int bigZ = otherClaim.getGreaterBoundaryCorner().getBlockZ();
 
-        // verify this claim doesn't band across an existing claim, either
-        // horizontally or vertically
-        if (this.getLesserBoundaryCorner().getBlockZ() <= otherClaim.getGreaterBoundaryCorner().getBlockZ() &&
-                this.getLesserBoundaryCorner().getBlockZ() >= otherClaim.getLesserBoundaryCorner().getBlockZ() &&
-                this.getLesserBoundaryCorner().getBlockX() < otherClaim.getLesserBoundaryCorner().getBlockX() &&
-                this.getGreaterBoundaryCorner().getBlockX() > otherClaim.getGreaterBoundaryCorner().getBlockX()) {
-            return true;
-        }
+        boolean inArea = 
+                ((this.lesserBoundaryCorner.getBlockX() >= smallX &&
+                 this.lesserBoundaryCorner.getBlockX() <= bigX) ||
+                (this.greaterBoundaryCorner.getBlockX() >= smallX &&
+                 this.greaterBoundaryCorner.getBlockX() <= bigX)) &&
+                ((this.lesserBoundaryCorner.getBlockZ() >= smallZ &&
+                  this.lesserBoundaryCorner.getBlockZ() <= bigZ) ||
+                 (this.greaterBoundaryCorner.getBlockZ() >= smallZ &&
+                  this.greaterBoundaryCorner.getBlockZ() <= bigZ));
 
-        if (this.getGreaterBoundaryCorner().getBlockZ() <= otherClaim.getGreaterBoundaryCorner().getBlockZ() &&
-                this.getGreaterBoundaryCorner().getBlockZ() >= otherClaim.getLesserBoundaryCorner().getBlockZ() &&
-                this.getLesserBoundaryCorner().getBlockX() < otherClaim.getLesserBoundaryCorner().getBlockX() &&
-                this.getGreaterBoundaryCorner().getBlockX() > otherClaim.getGreaterBoundaryCorner().getBlockX()) {
-            return true;
-        }
+        if (inArea) {
+            if (this.cuboid && otherClaim.cuboid) {
+                // check height
+                if ((this.lesserBoundaryCorner.getBlockY() >= smallY &&
+                     this.lesserBoundaryCorner.getBlockY() <= bigY) ||
+                    (this.greaterBoundaryCorner.getBlockY() <= smallY &&
+                     this.greaterBoundaryCorner.getBlockY() >= smallY)) {
+                    return true;
+                }
 
-        if (this.getLesserBoundaryCorner().getBlockX() <= otherClaim.getGreaterBoundaryCorner().getBlockX() &&
-                this.getLesserBoundaryCorner().getBlockX() >= otherClaim.getLesserBoundaryCorner().getBlockX() &&
-                this.getLesserBoundaryCorner().getBlockZ() < otherClaim.getLesserBoundaryCorner().getBlockZ() &&
-                this.getGreaterBoundaryCorner().getBlockZ() > otherClaim.getGreaterBoundaryCorner().getBlockZ()) {
-            return true;
-        }
-
-        if (this.getGreaterBoundaryCorner().getBlockX() <= otherClaim.getGreaterBoundaryCorner().getBlockX() &&
-                this.getGreaterBoundaryCorner().getBlockX() >= otherClaim.getLesserBoundaryCorner().getBlockX() &&
-                this.getLesserBoundaryCorner().getBlockZ() < otherClaim.getLesserBoundaryCorner().getBlockZ() &&
-                this.getGreaterBoundaryCorner().getBlockZ() > otherClaim.getGreaterBoundaryCorner().getBlockZ()) {
+                return false;
+            }
             return true;
         }
 
@@ -1027,8 +1018,8 @@ public class Claim implements ContextSource {
         return chunks;
     }
 
-    public ArrayList<Long> getChunkHashes() {
-        ArrayList<Long> chunkHashes = new ArrayList<Long>();
+    public Set<Long> getChunkHashes() {
+        Set<Long> chunkHashes = new HashSet<Long>();
         int smallX = this.getLesserBoundaryCorner().getBlockX() >> 4;
         int smallZ = this.getLesserBoundaryCorner().getBlockZ() >> 4;
         int largeX = this.getGreaterBoundaryCorner().getBlockX() >> 4;
@@ -1076,6 +1067,7 @@ public class Claim implements ContextSource {
         this.claimStorage.getConfig().setClaimType(this.type);
         this.claimData.setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
         this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
+        this.claimData.setCuboid(this.cuboid);
         // Will save next world save
         this.getClaimData().setRequiresSave(true);
     }

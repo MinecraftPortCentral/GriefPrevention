@@ -31,6 +31,7 @@ import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -144,7 +145,7 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // attacker must be close to the claim he wants to siege
-        if (!defenderClaim.isNear(attacker.getLocation(), 25)) {
+        if (!BlockUtils.isLocationNearClaim(defenderClaim, attacker.getLocation(), 25)) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.SiegeTooFarAway));
             } catch (CommandException e) {

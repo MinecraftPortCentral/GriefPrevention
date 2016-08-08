@@ -1,7 +1,6 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
  * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
@@ -25,20 +24,19 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
-public class CommandClaimDeleteAll implements CommandExecutor {
+public class CommandClaimInherit implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -50,20 +48,17 @@ public class CommandClaimDeleteAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        // try to find that player
-        User otherPlayer = ctx.<User>getOne("player").get();
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
+        if (claim.parent == null) {
+            GriefPrevention.sendMessage(player, TextMode.Err, "This command can only be used in subdivisions.");
+            return CommandResult.success();
+        }
+        claim.inheritParent = !claim.inheritParent;
 
-        // delete all that player's claims
-        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId());
-
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
-        if (player != null) {
-            GriefPrevention.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
-                    CustomLogEntryTypes.AdminActivity);
-
-            // revert any current visualization
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-            playerData.revertActiveVisual(player);
+        if (!claim.inheritParent) {
+            GriefPrevention.sendMessage(player, Text.of(TextColors.WHITE, "Subdivision inheritance ", TextColors.RED, "OFF"));
+        } else {
+            GriefPrevention.sendMessage(player, Text.of(TextColors.WHITE, "Subdivision inheritance ", TextColors.GREEN, "ON"));
         }
 
         return CommandResult.success();
