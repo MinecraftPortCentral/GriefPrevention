@@ -32,6 +32,7 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.entity.living.player.Player;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 //applies a visualization for a player by sending him block change packets
@@ -49,23 +50,25 @@ public class VisualizationApplicationTask implements Runnable {
 
     @Override
     public void run() {
-        // for each element (=block) of the visualization
-        for (int i = 0; i < visualization.elements.size(); i++) {
-            BlockSnapshot snapshot = visualization.elements.get(i).getFinal();
-
-            // send the player a fake block change event
-            if (!snapshot.getLocation().get().getExtent().isLoaded()) {
-                continue; // cheap distance check
-            }
-            player.sendBlockChange(snapshot.getPosition(), snapshot.getState());
+        if (this.playerData.visualBlocks != null) {
+            // revert now
+            this.playerData.revertActiveVisual(this.player);
         }
 
-        // remember the visualization applied to this player for later (so it
-        // can be inexpensively reverted)
-        playerData.currentVisualization = visualization;
+        for (int i = 0; i < visualization.elements.size(); i++) {
+            BlockSnapshot snapshot = visualization.elements.get(i).getFinal();
+            this.player.sendBlockChange(snapshot.getPosition(), snapshot.getState());
+        }
+
+        // remember the visualization applied to this player for later (so it can be inexpensively reverted)
+        if (this.visualization.getClaim() != null) {
+            this.playerData.visualClaimId = this.visualization.getClaim().id;
+            this.visualization.getClaim().playersWatching.add(this.player.getUniqueId());
+        }
+        this.playerData.visualBlocks = new ArrayList<>(visualization.elements);
 
         // schedule automatic visualization reversion in 60 seconds.
-        Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES)
-                .execute(new VisualizationReversionTask(player, playerData, visualization)).submit(GriefPrevention.instance);
+        this.playerData.visualRevertTask = Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES)
+                .execute(new VisualizationReversionTask(this.player, this.playerData)).submit(GriefPrevention.instance);
     }
 }

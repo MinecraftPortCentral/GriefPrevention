@@ -38,8 +38,10 @@ import org.spongepowered.api.world.storage.WorldProperties;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,7 +65,7 @@ public class ClaimWorldManager {
     // Claim UUID -> Claim
     private Map<UUID, Claim> claimUniqueIdMap = Maps.newHashMap();
     // String -> Claim
-    private ConcurrentHashMap<Long, List<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, Set<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
     private Claim theWildernessClaim;
 
     public ClaimWorldManager() {
@@ -128,7 +130,7 @@ public class ClaimWorldManager {
 
     public void addWorldClaim(Claim claim) {
         if (!claim.isWildernessClaim()) {
-            if (claim.isSubdivision() || claim.parent != null) {
+            if (claim.parent != null) {
                 return;
             }
     
@@ -150,11 +152,11 @@ public class ClaimWorldManager {
                 createPlayerData(ownerId);
             }
     
-            ArrayList<Long> chunkHashes = claim.getChunkHashes();
+            Set<Long> chunkHashes = claim.getChunkHashes();
             for (Long chunkHash : chunkHashes) {
-                List<Claim> claimsInChunk = this.getChunksToClaimsMap().get(chunkHash);
+                Set<Claim> claimsInChunk = this.getChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk == null) {
-                    claimsInChunk = new ArrayList<Claim>();
+                    claimsInChunk = new HashSet<Claim>();
                     this.getChunksToClaimsMap().put(chunkHash, claimsInChunk);
                 }
 
@@ -191,12 +193,11 @@ public class ClaimWorldManager {
         World world = Sponge.getServer().getWorld(worldProperties.getUniqueId()).get();
         Location<World> lesserCorner = new Location<World>(world, -30000000, 0, -30000000);
         Location<World> greaterCorner = new Location<World>(world, 29999999, 255, 29999999);
-        Claim worldClaim = new Claim(lesserCorner, greaterCorner, UUID.randomUUID(), null);
+        Claim worldClaim = new Claim(lesserCorner, greaterCorner, UUID.randomUUID(), Claim.Type.WILDERNESS, null);
         worldClaim.ownerID = GriefPrevention.WORLD_USER_UUID;
         worldClaim.type = Claim.Type.WILDERNESS;
         worldClaim.context = new Context("gp_claim", worldClaim.id.toString());
         GriefPrevention.instance.dataStore.writeClaimToStorage(worldClaim);
-        worldClaim.inDataStore = true;
         this.theWildernessClaim = worldClaim;
     }
 
@@ -212,7 +213,7 @@ public class ClaimWorldManager {
         return this.worldClaims;
     }
 
-    public ConcurrentHashMap<Long, List<Claim>> getChunksToClaimsMap() {
+    public ConcurrentHashMap<Long, Set<Claim>> getChunksToClaimsMap() {
         return this.chunksToClaimsMap;
     }
 

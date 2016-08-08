@@ -47,6 +47,8 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     public Text claimName;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_TYPE)//, comment = "The type of claim.")
     public Claim.Type claimType = Claim.Type.SUBDIVISION;
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_CUBOID)
+    private boolean isCuboid = false;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED)//, comment = "The date and time this subdivision was created.")
     public String dateCreated = Instant.now().toString();
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE)//, comment = "The last date and time this subdivision was used.")
@@ -75,6 +77,7 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     public SubDivisionDataConfig(Claim claim) {
         this.lesserBoundaryCornerPos = BlockUtils.positionToString(claim.lesserBoundaryCorner);
         this.greaterBoundaryCornerPos = BlockUtils.positionToString(claim.greaterBoundaryCorner);
+        this.isCuboid = claim.cuboid;
         this.parent = claim.parent.getClaimData();
     }
 
@@ -88,6 +91,10 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     }
     @Override
     public void setClaimOwnerUniqueId(UUID newClaimOwner) {
+    }
+    @Override
+    public boolean isCuboid() {
+        return this.isCuboid;
     }
     @Override
     public Type getClaimType() {
@@ -144,6 +151,11 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
 
     @Override
     public void setWorldUniqueId(UUID uuid) {
+    }
+
+    @Override
+    public void setCuboid(boolean cuboid) {
+        this.isCuboid = cuboid;
     }
 
     @Override

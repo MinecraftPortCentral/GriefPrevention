@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.claim;
 
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextCalculator;
@@ -41,7 +42,14 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
             Player player = (Player) calculable.getCommandSource().get();
             Claim sourceClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
             if (sourceClaim != null) {
-                accumulator.add(new Context("claim", sourceClaim.getID().toString()));
+                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+                if (playerData != null && playerData.ignoreClaims) {
+                    return;
+                }
+                accumulator.add(sourceClaim.getContext());
+                if (sourceClaim.parent != null && sourceClaim.inheritParent) {
+                    accumulator.add(sourceClaim.parent.getContext());
+                }
             }
         }
 
@@ -49,11 +57,11 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
 
     @Override
     public boolean matches(Context context, Subject subject) {
-        if (context.equals("claim")) {
+        if (context.equals("gp_claim")) {
             if (subject.getCommandSource().isPresent() && subject.getCommandSource().get() instanceof Player) {
                 Player player = (Player) subject.getCommandSource().get();
                 Claim playerClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
-                if (playerClaim != null && playerClaim.getID().equals(UUID.fromString(context.getValue()))) {
+                if (playerClaim != null && playerClaim.id.equals(UUID.fromString(context.getValue()))) {
                     return true;
                 }
             }

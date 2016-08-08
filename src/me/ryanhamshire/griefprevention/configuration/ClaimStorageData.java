@@ -47,15 +47,9 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ClaimStorageData {
 
-    public static final String HEADER = "1.0.0\n"
-            + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
-            + "# join us at the IRC or drop by our forums and leave a post.\n"
-            + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"
-            + "# Forums: https://forums.spongepowered.org/t/griefprevention-official-thread-1-8-9-1-10-2/1123/\n";
-
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(HEADER));
+            .setHeader(GriefPrevention.CONFIG_HEADER));
     private ObjectMapper<ClaimDataConfig>.BoundInstance configMapper;
     private ClaimDataConfig configBase;
     public Path filePath;
@@ -67,6 +61,7 @@ public class ClaimStorageData {
     public static final String MAIN_CLAIM_GREETING = "claim-greeting";
     public static final String MAIN_CLAIM_FAREWELL = "claim-farewell";
     public static final String MAIN_CLAIM_TYPE = "claim-type";
+    public static final String MAIN_CLAIM_CUBOID = "cuboid";
     public static final String MAIN_CLAIM_DATE_CREATED = "date-created";
     public static final String MAIN_CLAIM_DATE_LAST_ACTIVE = "date-last-active";
     public static final String MAIN_SUBDIVISION_UUID = "uuid";
@@ -93,6 +88,7 @@ public class ClaimStorageData {
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bindToNew();
             this.configMapper.getInstance().setWorldUniqueId(claim.id);
             this.configMapper.getInstance().setClaimOwnerUniqueId(claim.ownerID);
+            this.configMapper.getInstance().setClaimType(claim.type);
             reload();
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
@@ -136,7 +132,7 @@ public class ClaimStorageData {
             this.root = this.loader.load(ConfigurationOptions.defaults()
                     .setSerializers(
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
-                    .setHeader(HEADER));
+                    .setHeader(GriefPrevention.CONFIG_HEADER));
             // Remove empty strings as they are no longer serializable in 1.9+
             boolean requiresSave = false;
             for (Map.Entry<Object, ? extends CommentedConfigurationNode> mapEntry : this.root.getNode(GriefPrevention.MOD_ID).getChildrenMap().entrySet()) {

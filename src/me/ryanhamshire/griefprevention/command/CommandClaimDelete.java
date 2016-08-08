@@ -32,7 +32,6 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import org.spongepowered.api.command.CommandException;
@@ -84,7 +83,7 @@ public class CommandClaimDelete implements CommandExecutor {
                             CustomLogEntryTypes.AdminActivity);
 
                     // revert any current visualization
-                    Visualization.Revert(player);
+                    playerData.revertActiveVisual(player);
 
                     playerData.warnedAboutMajorDeletion = false;
                 }

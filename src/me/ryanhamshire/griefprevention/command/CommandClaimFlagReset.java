@@ -51,7 +51,7 @@ public class CommandClaimFlagReset implements CommandExecutor {
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
         if (claim.isWildernessClaim()) {
-            if (!src.hasPermission(GPPermissions.CLAIM_WILDERNESS_ADMIN)) {
+            if (!src.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
                 GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset the Wilderness Claim to flag defaults."));
                 return CommandResult.success();
             }

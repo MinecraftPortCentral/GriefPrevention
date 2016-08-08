@@ -26,8 +26,7 @@
 package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Visualization;
-import me.ryanhamshire.griefprevention.VisualizationType;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
@@ -42,6 +41,7 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
+import java.lang.ref.WeakReference;
 import java.util.Optional;
 
 //this main thread task takes the output from the RestoreNatureProcessingTask\
@@ -77,7 +77,7 @@ class RestoreNatureExecutionTask implements Runnable {
         // band around the outside of the chunk)
         // those data were sent to the processing thread for referernce
         // purposes, but aren't part of the area selected for restoration
-        Claim cachedClaim = null;
+        WeakReference<Claim> cachedClaim = null;
         for (int x = 1; x < this.snapshots.length - 1; x++) {
             for (int z = 1; z < this.snapshots[0][0].length - 1; z++) {
                 for (int y = this.miny; y < this.snapshots[0].length; y++) {
@@ -86,7 +86,7 @@ class RestoreNatureExecutionTask implements Runnable {
                     if (blockUpdate.getState() != currentBlock) {
                         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(blockUpdate.getLocation().get(), false, cachedClaim);
                         if (claim != null) {
-                            cachedClaim = claim;
+                            cachedClaim = new WeakReference<>(claim);
                             break;
                         }
 
@@ -118,10 +118,13 @@ class RestoreNatureExecutionTask implements Runnable {
 
         // show visualization to player who started the restoration
         if (player != null) {
-            Claim claim = new Claim(lesserCorner, greaterCorner);
+            Claim claim = new Claim(lesserCorner, greaterCorner, Claim.Type.BASIC);
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, player.getUniqueId());
+            // TODO
+            /*claim.getVisualizer().createClaimBlockVisuals(height, locality, playerData);
             Visualization visualization =
-                    Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation());
-            Visualization.Apply(player, visualization);
+                    Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation(), playerData);
+            Visualization.Apply(player, visualization);*/
         }
     }
 }

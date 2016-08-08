@@ -67,6 +67,7 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 
+import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -132,8 +133,8 @@ public class BlockEventHandler {
                 String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
                 if (denyReason != null) {
                     GriefPrevention.addEventLogEntry(event, denyReason);
-                    if (user instanceof Player) {
-                        GriefPrevention.sendMessage((Player) user, Text.of(TextMode.Err, denyReason));
+                    if (rootCause instanceof Player) {
+                        GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
                     }
                     event.setCancelled(true);
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -449,8 +450,8 @@ public class BlockEventHandler {
             }
 
             // if the block is being placed within or under an existing claim
-            if (!targetClaim.isWildernessClaim()) {
-                playerData.lastClaim = targetClaim;
+            if (!targetClaim.isWildernessClaim() && !targetClaim.cuboid) {
+                playerData.lastClaim = new WeakReference<>(targetClaim);
 
                 // if the player has permission for the claim and he's placing UNDER the claim
                 if (block.getPosition().getY() <= targetClaim.lesserBoundaryCorner.getBlockY()) {
@@ -483,7 +484,7 @@ public class BlockEventHandler {
                     // radius == 0 means protect ONLY the chest
                     if (activeConfig.getConfig().claim.claimRadius == 0) {
                         this.dataStore.createClaim(block.getLocation().get().getExtent(), block.getPosition().getX(), block.getPosition().getX(),
-                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(), UUID.randomUUID(), null, Claim.Type.BASIC, player);
+                                block.getPosition().getY(), block.getPosition().getY(), block.getPosition().getZ(), block.getPosition().getZ(), UUID.randomUUID(), null, Claim.Type.BASIC, false, player);
                         GriefPrevention.sendMessage(player, Text.of(TextMode.Success, Messages.ChestClaimConfirmation));
                     }
 
@@ -498,7 +499,7 @@ public class BlockEventHandler {
                                 block.getPosition().getZ() - radius, block.getPosition().getZ() + radius,
                                 UUID.randomUUID(),
                                 null,
-                                Claim.Type.BASIC,
+                                Claim.Type.BASIC, false,
                                 player).succeeded) {
                             radius--;
                         }
@@ -508,9 +509,9 @@ public class BlockEventHandler {
 
                         // show the player the protected area
                         Claim newClaim = this.dataStore.getClaimAt(block.getLocation().get(), false, null);
-                        Visualization visualization =
-                                Visualization.FromClaim(newClaim, block.getPosition().getY(), VisualizationType.Claim, player.getLocation());
-                        Visualization.Apply(player, visualization);
+                        Visualization visualization = new Visualization(newClaim, VisualizationType.Claim);
+                        visualization.createClaimBlockVisuals(block.getPosition().getY(), player.getLocation(), playerData);
+                        visualization.apply(player);
                     }
 
                     GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);

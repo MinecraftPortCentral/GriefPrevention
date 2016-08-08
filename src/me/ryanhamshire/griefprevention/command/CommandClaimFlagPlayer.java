@@ -104,6 +104,6 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         }
 
         Subject subj = user.getContainingCollection().get(user.getIdentifier());
-        return CommandHelper.addPermission(src, subj, claim, flag.get(), target.get(), value.get(), context, 1);
+        return CommandHelper.addFlagPermission(src, subj, claim, flag.get(), target.get(), value.get(), context, 1);
     }
 }

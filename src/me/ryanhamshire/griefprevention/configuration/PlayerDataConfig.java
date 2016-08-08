@@ -42,6 +42,9 @@ public class PlayerDataConfig extends ConfigCategory {
     @Setting(value = "bonus-claim-blocks",
             comment = "How many claim blocks the player has been gifted in world by admins, or purchased via economy integration.")
     private int bonusClaimBlocks = 0;
+    @Setting(value = "cuboid-mode",
+            comment = "Whether this player is currently in 3D cuboid mode.")
+    private boolean cuboidMode = false;
 
     public String getPlayerUniqueId() {
         return this.playerUniqueId;
@@ -53,6 +56,10 @@ public class PlayerDataConfig extends ConfigCategory {
 
     public int getBonusClaimBlocks() {
         return this.bonusClaimBlocks;
+    }
+
+    public boolean getCuboidMode() {
+        return this.cuboidMode;
     }
 
     public void setPlayerUniqueId(UUID uuid) {
@@ -68,6 +75,11 @@ public class PlayerDataConfig extends ConfigCategory {
     public void setBonusClaimBlocks(int blocks) {
         this.requiresSave = true;
         this.bonusClaimBlocks = blocks;
+    }
+
+    public void setCuboidMode(boolean cuboidMode) {
+        this.requiresSave = true;
+        this.cuboidMode = cuboidMode;
     }
 
     public boolean requiresSave() {

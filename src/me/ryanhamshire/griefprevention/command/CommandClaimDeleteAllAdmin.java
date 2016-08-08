@@ -29,8 +29,8 @@ import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.Visualization;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -57,14 +57,15 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
         }
 
         // delete all admin claims
-        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(null, true); // null for owner
+        GriefPrevention.instance.dataStore.deleteAllAdminClaims(player.getWorld()); // null for owner
         // id indicates an administrative claim
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
         GriefPrevention.addLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
 
         // revert any current visualization
-        Visualization.Revert(player);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        playerData.revertActiveVisual(player);
 
         return CommandResult.success();
     }

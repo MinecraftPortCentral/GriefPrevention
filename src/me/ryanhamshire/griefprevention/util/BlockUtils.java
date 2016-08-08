@@ -26,6 +26,7 @@
 package me.ryanhamshire.griefprevention.util;
 
 import com.flowpowered.math.vector.Vector3i;
+import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -64,5 +65,64 @@ public class BlockUtils {
         int z = Integer.parseInt(zString);
 
         return new Vector3i(x, y, z);
+    }
+
+    // distance check for claims, distance in this case is a band around the
+    // outside of the claim rather then euclidean distance
+    public static boolean isLocationNearClaim(Claim claim, Location<World> location, int howNear) {
+        Location<World> lesserBoundaryCorner = new Location<World>(claim.lesserBoundaryCorner.getExtent(), claim.lesserBoundaryCorner.getBlockX() - howNear,
+                claim.lesserBoundaryCorner.getBlockY(), claim.lesserBoundaryCorner.getBlockZ() - howNear);
+        Location<World> greaterBoundaryCorner = new Location<World>(claim.greaterBoundaryCorner.getExtent(), claim.greaterBoundaryCorner.getBlockX() + howNear,
+                claim.greaterBoundaryCorner.getBlockY(), claim.greaterBoundaryCorner.getBlockZ() + howNear);
+        // not in the same world implies false
+        if (!location.getExtent().equals(lesserBoundaryCorner.getExtent())) {
+            return false;
+        }
+
+        double x = location.getX();
+        double y = location.getY();
+        double z = location.getZ();
+
+        // main check
+        boolean inClaim = false;
+        if (claim.cuboid) {
+            inClaim = (
+                    x >= lesserBoundaryCorner.getX() &&
+                    x <= greaterBoundaryCorner.getX() &&
+                    y >= lesserBoundaryCorner.getY()) &&
+                    y <= greaterBoundaryCorner.getY() &&
+                    z >= lesserBoundaryCorner.getZ() &&
+                    z <= greaterBoundaryCorner.getZ();
+        } else {
+            inClaim = (y >= lesserBoundaryCorner.getY()) &&
+                x >= lesserBoundaryCorner.getX() &&
+                x < greaterBoundaryCorner.getX() + 1 &&
+                z >= lesserBoundaryCorner.getZ() &&
+                z < greaterBoundaryCorner.getZ() + 1;
+        }
+
+        if (!inClaim) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static boolean clickedClaimCorner(Claim claim, Vector3i clickedPos) {
+        int clickedX = clickedPos.getX();
+        int clickedY = clickedPos.getY();
+        int clickedZ = clickedPos.getZ();
+        int lesserX = claim.getLesserBoundaryCorner().getBlockX();
+        int lesserY = claim.getLesserBoundaryCorner().getBlockY();
+        int lesserZ = claim.getLesserBoundaryCorner().getBlockZ();
+        int greaterX = claim.getGreaterBoundaryCorner().getBlockX();
+        int greaterY = claim.getGreaterBoundaryCorner().getBlockY();
+        int greaterZ = claim.getGreaterBoundaryCorner().getBlockZ();
+        if ((clickedX == lesserX || clickedX == greaterX) && (clickedZ == lesserZ || clickedZ == greaterZ)
+                && (!claim.cuboid || (clickedY == lesserY || clickedY == greaterY))) {
+            return true;
+        }
+
+        return false;
     }
 }

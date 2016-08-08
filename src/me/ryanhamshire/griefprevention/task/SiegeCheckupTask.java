@@ -29,6 +29,7 @@ import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.SiegeData;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.scheduler.Task;
@@ -100,7 +101,7 @@ public class SiegeCheckupTask implements Runnable {
     private boolean playerRemains(Player player) {
         for (int i = 0; i < this.siegeData.claims.size(); i++) {
             Claim claim = this.siegeData.claims.get(i);
-            if (claim.isNear(player.getLocation(), 25)) {
+            if (BlockUtils.isLocationNearClaim(claim, player.getLocation(), 25)) {
                 return true;
             }
         }

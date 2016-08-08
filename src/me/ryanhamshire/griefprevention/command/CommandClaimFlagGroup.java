@@ -105,7 +105,7 @@ public class CommandClaimFlagGroup implements CommandExecutor {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
             return CommandResult.success();
         }
-        return CommandHelper.addPermission(src, subj, claim, flag.get(), target.get(), value.get(), context, 2);
+        return CommandHelper.addFlagPermission(src, subj, claim, flag.get(), target.get(), value.get(), context, 2);
     }
 
 

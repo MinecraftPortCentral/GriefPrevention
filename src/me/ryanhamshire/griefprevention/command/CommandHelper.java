@@ -31,7 +31,6 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
@@ -72,7 +71,7 @@ public class CommandHelper {
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // which claim is being abandoned?
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
         if (claim.isWildernessClaim()) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
         }
@@ -112,8 +111,7 @@ public class CommandHelper {
             }
 
             // revert any current visualization
-            Visualization.Revert(player);
-
+            playerData.revertActiveVisual(player);
             playerData.warnedAboutMajorDeletion = false;
         }
 
@@ -254,7 +252,7 @@ public class CommandHelper {
         }
     }
 
-    public static CommandResult addPermission(CommandSource src, Subject subject, Claim claim, String flag, String target, Tristate value, Optional<String> context, int type) {
+    public static CommandResult addFlagPermission(CommandSource src, Subject subject, Claim claim, String flag, String target, Tristate value, Optional<String> context, int type) {
         if (src instanceof Player) {
             String denyReason = claim.allowEdit((Player) src);
             if (denyReason != null) {
@@ -336,7 +334,7 @@ public class CommandHelper {
                 } else {
                     contexts.add(claim.world.getContext());
                 }
-                
+
                 GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, value);
                 src.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", TextColors.AQUA, targetFlag, TextColors.GREEN, " to ", TextColors.LIGHT_PURPLE, value, TextColors.GREEN, " for ", TextColors.GOLD, "ALL."));
             } else if (type == 1) {

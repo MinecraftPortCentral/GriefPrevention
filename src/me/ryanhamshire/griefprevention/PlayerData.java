@@ -30,12 +30,17 @@ import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
+import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.data.Transaction;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.lang.ref.WeakReference;
 import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.Date;
@@ -60,7 +65,7 @@ public class PlayerData {
     private PlayerStorageData playerStorage;
 
     // where this player was the last time we checked on him for earning claim blocks
-    public Location<World> lastAfkCheckLocation = null;
+    public Location<World> lastAfkCheckLocation;
 
     // what "mode" the shovel is in determines what it will do when it's used
     public ShovelMode shovelMode = ShovelMode.Basic;
@@ -70,13 +75,14 @@ public class PlayerData {
 
     // last place the player used the shovel, useful in creating and resizing claims,
     // because the player must use the shovel twice in those instances
-    public Location<World> lastShovelLocation = null;
+    public Location<World> lastShovelLocation;
+    public Location<World> lastValidInspectLocation;
 
     // the claim this player is currently resizing
-    public Claim claimResizing = null;
+    public Claim claimResizing;
 
     // the claim this player is currently subdividing
-    public Claim claimSubdividing = null;
+    public Claim claimSubdividing;
 
     // whether or not the player has a pending /trapped rescue
     public boolean pendingTrapped = false;
@@ -95,7 +101,7 @@ public class PlayerData {
 
     // spam when the player last logged into the server
     @SuppressWarnings("unused")
-    private Date lastLogin = null;
+    private Date lastLogin;
 
     // the player's last chat message, or slash command complete with parameters
     public String lastMessage = "";
@@ -110,7 +116,9 @@ public class PlayerData {
     public boolean spamWarned = false;
 
     // visualization
-    public Visualization currentVisualization = null;
+    public List<Transaction<BlockSnapshot>> visualBlocks;
+    public UUID visualClaimId;
+    public Task visualRevertTask;
 
     // anti-camping pvp protection
     public boolean pvpImmune = false;
@@ -121,10 +129,10 @@ public class PlayerData {
 
     public boolean debugClaimPermissions = false;
     // the last claim this player was in, that we know of
-    public Claim lastClaim = null;
+    public WeakReference<Claim> lastClaim;
 
     // siege
-    public SiegeData siegeData = null;
+    public SiegeData siegeData;
 
     // pvp
     public long lastPvpTimestamp = 0;
@@ -144,16 +152,16 @@ public class PlayerData {
     public boolean dropsAreUnlocked = true;
 
     // message to send to player after he respawns
-    public Text messageOnRespawn = null;
+    public Text messageOnRespawn;
 
     // player which a pet will be given to when it's right-clicked
-    public User petGiveawayRecipient = null;
+    public User petGiveawayRecipient;
 
     // timestamp for last "you're building outside your land claims" message
-    public Long buildWarningTimestamp = null;
+    public Long buildWarningTimestamp;
 
     // spot where a player can't talk, used to mute new players until they've moved a little this is an anti-bot strategy.
-    public Location<World> noChatLocation = null;
+    public Location<World> noChatLocation;
 
     // ignore list true means invisible (admin-forced ignore), false means player-created ignore
     public ConcurrentHashMap<UUID, Boolean> ignoredPlayers = new ConcurrentHashMap<UUID, Boolean>();
@@ -168,6 +176,28 @@ public class PlayerData {
         this.playerStorage = playerStorage;
         this.claimList = claims;
         this.activeConfig = activeConfig;
+    }
+
+    public void revertActiveVisual(Player player) {
+        if (this.visualRevertTask != null) {
+            this.visualRevertTask.cancel();
+        }
+
+        if (this.visualClaimId != null) {
+            Claim claim = GriefPrevention.instance.dataStore.getClaim(this.worldProperties, this.visualClaimId);
+            if (claim != null) {
+                claim.playersWatching.remove(this.playerID);
+            }
+        }
+        this.visualClaimId = null;
+        if (this.visualBlocks == null || !player.getWorld().equals(this.visualBlocks.get(0).getFinal().getLocation().get().getExtent())) {
+            return;
+        }
+
+        for (int i = 0; i < this.visualBlocks.size(); i++) {
+            BlockSnapshot snapshot = this.visualBlocks.get(i).getOriginal();
+            player.sendBlockChange(snapshot.getPosition(), snapshot.getState());
+        }
     }
 
     // whether or not this player is "in" pvp combat
@@ -227,6 +257,14 @@ public class PlayerData {
 
     public void setBonusClaimBlocks(int bonusClaimBlocks) {
         this.playerStorage.getConfig().setBonusClaimBlocks(bonusClaimBlocks);
+    }
+
+    public boolean getCuboidMode() {
+        return this.playerStorage.getConfig().getCuboidMode();
+    }
+
+    public void setCuboidMode(boolean cuboidMode) {
+        this.playerStorage.getConfig().setCuboidMode(cuboidMode);
     }
 
     public void saveAllData() {

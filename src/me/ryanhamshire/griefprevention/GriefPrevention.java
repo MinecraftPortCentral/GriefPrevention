@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
@@ -50,6 +51,7 @@ import me.ryanhamshire.griefprevention.command.CommandClaimBanItem;
 import me.ryanhamshire.griefprevention.command.CommandClaimBasic;
 import me.ryanhamshire.griefprevention.command.CommandClaimBook;
 import me.ryanhamshire.griefprevention.command.CommandClaimBuy;
+import me.ryanhamshire.griefprevention.command.CommandClaimCuboid;
 import me.ryanhamshire.griefprevention.command.CommandClaimDelete;
 import me.ryanhamshire.griefprevention.command.CommandClaimDeleteAll;
 import me.ryanhamshire.griefprevention.command.CommandClaimDeleteAllAdmin;
@@ -62,8 +64,12 @@ import me.ryanhamshire.griefprevention.command.CommandClaimFlagReset;
 import me.ryanhamshire.griefprevention.command.CommandClaimGreeting;
 import me.ryanhamshire.griefprevention.command.CommandClaimIgnore;
 import me.ryanhamshire.griefprevention.command.CommandClaimInfo;
+import me.ryanhamshire.griefprevention.command.CommandClaimInherit;
 import me.ryanhamshire.griefprevention.command.CommandClaimList;
 import me.ryanhamshire.griefprevention.command.CommandClaimName;
+import me.ryanhamshire.griefprevention.command.CommandClaimPermission;
+import me.ryanhamshire.griefprevention.command.CommandClaimPermissionGroup;
+import me.ryanhamshire.griefprevention.command.CommandClaimPermissionPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimPvp;
 import me.ryanhamshire.griefprevention.command.CommandClaimSell;
 import me.ryanhamshire.griefprevention.command.CommandClaimSubdivide;
@@ -130,6 +136,7 @@ import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
+import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
@@ -151,6 +158,7 @@ import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.SpongeImplHooks;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -164,7 +172,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "1.1.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.1.0", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
@@ -173,6 +181,11 @@ public class GriefPrevention {
     public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
+    public static final String CONFIG_HEADER = "2.1.0\n"
+            + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
+            + "# join us at the IRC or drop by our forums and leave a post.\n"
+            + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"
+            + "# Forums: https://forums.spongepowered.org/t/griefprevention-official-thread-1-8-9-1-10-2/1123/\n";
 
     // GP Public user info
     public static final UUID PUBLIC_UUID = UUID.fromString("41C82C87-7AfB-4024-BA57-13D2C99CAE77");
@@ -202,7 +215,9 @@ public class GriefPrevention {
 
     public boolean permPluginInstalled = false;
 
-    public ItemType modificationTool = ItemTypes.NONE;
+    public ItemType modificationTool = ItemTypes.GOLDEN_SHOVEL;
+    public int maxInspectionDistance = 100;
+
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
     public boolean debugLogging = false;
@@ -244,12 +259,12 @@ public class GriefPrevention {
         addLogEntry(entry, CustomLogEntryTypes.Debug);
     }
 
-    /*@Listener
+    @Listener
     public void onChangeServiceProvider(ChangeServiceProviderEvent event) {
         if (event.getNewProvider() instanceof PermissionService) {
             ((PermissionService) event.getNewProvider()).registerContextCalculator(new ClaimContextCalculator());
         }
-    }*/
+    }
 
     private boolean validateSpongeVersion() {
         if (Sponge.getPlatform().getImplementation().getName().equals("SpongeForge")) {
@@ -259,8 +274,8 @@ public class GriefPrevention {
                     String version = Sponge.getPlatform().getImplementation().getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 1619) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1619+.");
+                    if (spongeVersion < 1659) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1659+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -479,6 +494,12 @@ public class GriefPrevention {
                 .build(), "buyclaimblocks", "buyclaim");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Toggles cuboid claims mode"))
+                .permission(GPPermissions.COMMAND_CUBOID_CLAIMS)
+                .executor(new CommandClaimCuboid())
+                .build(), "cuboidclaims", "cuboid");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission(GPPermissions.COMMAND_DELETE_CLAIM)
                 .executor(new CommandClaimDelete())
@@ -571,6 +592,12 @@ public class GriefPrevention {
                 .build(), "ignoreclaims", "ic");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Toggles subdivision inherit mode"))
+                .permission(GPPermissions.COMMAND_SUBDIVISION_INHERIT)
+                .executor(new CommandClaimInherit())
+                .build(), "inheritpermissions", "inherit");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("List information about a player's claim blocks and claims"))
                 .permission(GPPermissions.COMMAND_LIST_CLAIMS)
                 .arguments(onlyOne(playerOrSource(Text.of("player"))))
@@ -637,6 +664,29 @@ public class GriefPrevention {
                 .arguments(onlyOne(player(Text.of("player"))))
                 .executor(new CommandIgnorePlayer())
                 .build(), "ignoreplayer", "ignore");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Sets a permission for all players with a claim context"))
+                .permission(GPPermissions.COMMAND_CLAIM_PERMISSION)
+                .arguments(optional(GenericArguments.seq(string(Text.of("permission")), string(Text.of("value")))))
+                .executor(new CommandClaimPermission())
+                .build(), "claimpermission", "cp");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Sets a permission on a group with a claim context"))
+                .permission(GPPermissions.COMMAND_CLAIM_PERMISSION_GROUP)
+                .arguments(string(Text.of("group")), 
+                        optional(GenericArguments.seq(string(Text.of("permission")), string(Text.of("value")))))
+                .executor(new CommandClaimPermissionGroup())
+                .build(), "claimpermissiongroup", "cpg");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Sets a permission on a player with a claim context"))
+                .permission(GPPermissions.COMMAND_CLAIM_PERMISSION_PLAYER)
+                .arguments(user(Text.of("user")),
+                        optional(GenericArguments.seq(string(Text.of("permission")), string(Text.of("value")))))
+                .executor(new CommandClaimPermissionPlayer())
+                .build(), "claimpermissionplayer", "cpp");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Sets the name of your claim"))
@@ -794,6 +844,7 @@ public class GriefPrevention {
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
             this.debugLogging = DataStore.globalConfig.getConfig().logging.loggingDebug;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.NONE);
+            this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;
             for (World world : Sponge.getGame().getServer().getWorlds()) {
                 DimensionType dimType = world.getProperties().getDimensionType();
                 if (!Files.exists(rootConfigPath.resolve(dimType.getId()).resolve(world.getProperties().getWorldName()))) {
@@ -1002,24 +1053,35 @@ public class GriefPrevention {
     }
 
     // sends a color-coded message to a player
-    public static void sendMessage(CommandSource player, Text message) {
+    public static void sendMessage(CommandSource source, Text message) {
+        if (source instanceof Player && SpongeImplHooks.isFakePlayer((net.minecraft.entity.Entity) source)) {
+            return;
+        }
         if (message == Text.of() || message == null) {
             return;
         }
 
-        if (player == null) {
+        if (source == null) {
             GriefPrevention.addLogEntry(Text.of(message).toPlain());
         } else {
-            player.sendMessage(message);
+            source.sendMessage(message);
         }
     }
 
-    public static void sendMessage(CommandSource player, Text message, long delayInTicks) {
-        SendPlayerMessageTask task = new SendPlayerMessageTask((Player) player, message);
-        if (delayInTicks > 0) {
-            Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(delayInTicks).execute(task).submit(GriefPrevention.instance);
+    public static void sendMessage(CommandSource source, Text message, long delayInTicks) {
+        if (source instanceof Player && SpongeImplHooks.isFakePlayer((net.minecraft.entity.Entity) source)) {
+            return;
+        }
+
+        if (source instanceof Player) {
+            SendPlayerMessageTask task = new SendPlayerMessageTask((Player) source, message);
+            if (delayInTicks > 0) {
+                Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(delayInTicks).execute(task).submit(GriefPrevention.instance);
+            } else {
+                task.run();
+            }
         } else {
-            task.run();
+            source.sendMessage(message);
         }
     }
 
@@ -1073,7 +1135,7 @@ public class GriefPrevention {
 
         // cache the claim for later reference
         if (playerData != null) {
-            playerData.lastClaim = claim;
+            playerData.lastClaim = new WeakReference<>(claim);
         }
         return claim.allowBuild(source, targetLocation, user);
     }
@@ -1085,7 +1147,7 @@ public class GriefPrevention {
 
         Location<World> location = blockSnapshot.getLocation().get();
         PlayerData playerData = user != null ? this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId()) : null;
-        Claim claim = this.dataStore.getClaimAt(location, false, playerData != null ? playerData.lastClaim : null);
+        Claim claim = this.dataStore.getClaimAt(location, false, null);
 
         // exception: administrators in ignore claims mode
         if (user != null && (playerData.ignoreClaims)) {
@@ -1094,7 +1156,7 @@ public class GriefPrevention {
 
         // cache the claim for later reference
         if (playerData != null) {
-            playerData.lastClaim = claim;
+            playerData.lastClaim = new WeakReference<>(claim);
         }
 
         // if not in the wilderness, then apply claim rules (permissions, etc)

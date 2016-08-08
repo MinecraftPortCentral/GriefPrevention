@@ -24,10 +24,13 @@
  */
 package me.ryanhamshire.griefprevention.util;
 
+import me.ryanhamshire.griefprevention.ShovelMode;
+import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.util.Tristate;
 
 public class PlayerUtils {
 
@@ -49,5 +52,43 @@ public class PlayerUtils {
         }
 
         return false;
+    }
+
+    public static Claim.Type getClaimTypeFromShovel(ShovelMode shovelMode) {
+        if (shovelMode == ShovelMode.Admin) {
+            return Claim.Type.ADMIN;
+        }
+        if (shovelMode == ShovelMode.Subdivide) {
+            return Claim.Type.SUBDIVISION;
+        }
+        return Claim.Type.BASIC;
+    }
+
+    public static Tristate getTristateFromString(String value) {
+        Tristate tristate = null;
+        int intValue = -999;
+        try {
+            intValue = Integer.parseInt(value);
+            if (intValue <= -1) {
+                tristate = Tristate.FALSE;
+            } else if (intValue == 0) {
+                tristate = Tristate.UNDEFINED;
+            } else {
+                tristate = Tristate.TRUE;
+            }
+            return tristate;
+
+        } catch (NumberFormatException e) {
+            // ignore
+        }
+
+        // check if boolean
+        try {
+            tristate = Tristate.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+
+        return tristate;
     }
 }

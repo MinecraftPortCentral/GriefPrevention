@@ -30,7 +30,6 @@ import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import org.spongepowered.api.command.CommandException;
@@ -39,6 +38,8 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+
+import java.util.UUID;
 
 public class CommandClaimAbandon implements CommandExecutor {
 
@@ -59,10 +60,14 @@ public class CommandClaimAbandon implements CommandExecutor {
         }
         // which claim is being abandoned?
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, true);
+        UUID ownerId = claim.ownerID;
+        if (claim.parent != null) {
+            ownerId = claim.parent.ownerID;
+        }
         if (claim.isWildernessClaim()) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
             return CommandResult.success();
-        } else if (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(claim.ownerID))) {
+        } else if (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId))) {
             // verify ownership
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
             return CommandResult.success();
@@ -73,6 +78,7 @@ public class CommandClaimAbandon implements CommandExecutor {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
             return CommandResult.empty();
         } else {
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             // delete it
             claim.removeSurfaceFluids(null);
             // remove all context permissions
@@ -88,21 +94,19 @@ public class CommandClaimAbandon implements CommandExecutor {
                 GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
             }
 
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             // this prevents blocks being gained without spending adjust claim blocks when abandoning a top level claim
             if (!claim.isSubdivision() && !claim.isAdminClaim()) {
                 int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - (int) Math
                         .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
                                 .getConfig().claim.abandonReturnRatio)));
                 playerData.setAccruedClaimBlocks( newAccruedClaimCount);
-                // tell the player how many claim blocks he has left
-                int remainingBlocks = playerData.getRemainingClaimBlocks();
-                GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
             }
 
+            // tell the player how many claim blocks he has left
+            int remainingBlocks = playerData.getRemainingClaimBlocks();
+            GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
             // revert any current visualization
-            Visualization.Revert(player);
-
+            playerData.revertActiveVisual(player);
             playerData.warnedAboutMajorDeletion = false;
         }
 

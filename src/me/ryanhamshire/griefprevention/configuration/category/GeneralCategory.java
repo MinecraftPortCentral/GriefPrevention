@@ -37,7 +37,7 @@ public class GeneralCategory extends ConfigCategory {
     public boolean generalAdminSignNotifications = false;
     @Setting(value = "admin-whisper-notifications", comment = "Enable whisper notifications for admins.")
     public boolean generalAdminWhisperNotifications = false;
-    @Setting(value = "initial-claim-blocks", comment = "The number of claim blocks a new player starts with.")
+    @Setting(value = "initial-claim-blocks", comment = "The number of claim blocks a new player starts with. (Default: 100)")
     public int claimInitialBlocks = 100;
     @Setting(value = "limit-pistons-to-claims",
             comment = "Whether pistons are limited to only move blocks located within the piston's land claim.")
@@ -46,8 +46,10 @@ public class GeneralCategory extends ConfigCategory {
     public boolean allowSkyTrees = true;
     @Setting(value = "limit-tree-growth", comment = "Whether trees should be prevented from growing into a claim from outside.")
     public boolean limitTreeGrowh = false;
-    @Setting(value = "max-players-per-ip", comment = "How many players can share an IP address.")
+    @Setting(value = "max-players-per-ip", comment = "How many players can share an IP address. (Default: 3)")
     public int sharedIpLimit = 3;
+    @Setting(value = "max-claim-inspection-distance", comment = "The max claim inspection block distance. (Default: 100)")
+    public int maxClaimInspectionDistance = 100;
     @Setting(value = "smart-ban", comment = "Whether to ban accounts which very likely owned by a banned player.")
     public boolean smartBan = false;
     @Setting(value = "admin-whispers", comment = "Whether whispered messages will broadcast to administrators in game.")
