@@ -47,6 +47,7 @@ import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.interfaces.world.IMixinDimensionType;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -121,9 +122,10 @@ public class FlatFileDataStore extends DataStore {
     public void loadWorldData(World world) {
         WorldProperties worldProperties = world.getProperties();
         DimensionType dimType = worldProperties.getDimensionType();
-        if (!Files.exists(rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()))) {
+        String dimFolder = ((IMixinDimensionType) dimType).getFolderName();
+        if (!Files.exists(rootConfigPath.resolve(dimFolder).resolve(worldProperties.getWorldName()))) {
             try {
-                Files.createDirectories(rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()));
+                Files.createDirectories(rootConfigPath.resolve(dimFolder).resolve(worldProperties.getWorldName()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -131,10 +133,10 @@ public class FlatFileDataStore extends DataStore {
         // create/load configs
         // create dimension config
         DataStore.dimensionConfigMap.put(worldProperties.getUniqueId(),
-                new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
+                new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimFolder).resolve("dimension.conf")));
         // create world config
         DataStore.worldConfigMap.put(worldProperties.getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
-                rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()).resolve("world.conf")));
+                rootConfigPath.resolve(dimFolder).resolve(worldProperties.getWorldName()).resolve("world.conf")));
 
         // check if claims are supported
         GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldProperties.getUniqueId());
