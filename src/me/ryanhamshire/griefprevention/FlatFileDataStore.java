@@ -122,10 +122,10 @@ public class FlatFileDataStore extends DataStore {
     public void loadWorldData(World world) {
         WorldProperties worldProperties = world.getProperties();
         DimensionType dimType = worldProperties.getDimensionType();
-        String dimFolder = ((IMixinDimensionType) dimType).getFolderName();
-        if (!Files.exists(rootConfigPath.resolve(dimFolder).resolve(worldProperties.getWorldName()))) {
+        Path dimPath = rootConfigPath.resolve(((IMixinDimensionType) dimType).getModId()).resolve(((IMixinDimensionType) dimType).getEnumName());
+        if (!Files.exists(dimPath.resolve(worldProperties.getWorldName()))) {
             try {
-                Files.createDirectories(rootConfigPath.resolve(dimFolder).resolve(worldProperties.getWorldName()));
+                Files.createDirectories(dimPath.resolve(worldProperties.getWorldName()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -133,10 +133,10 @@ public class FlatFileDataStore extends DataStore {
         // create/load configs
         // create dimension config
         DataStore.dimensionConfigMap.put(worldProperties.getUniqueId(),
-                new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, rootConfigPath.resolve(dimFolder).resolve("dimension.conf")));
+                new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, dimPath.resolve("dimension.conf")));
         // create world config
         DataStore.worldConfigMap.put(worldProperties.getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
-                rootConfigPath.resolve(dimFolder).resolve(worldProperties.getWorldName()).resolve("world.conf")));
+                dimPath.resolve(worldProperties.getWorldName()).resolve("world.conf")));
 
         // check if claims are supported
         GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldProperties.getUniqueId());
