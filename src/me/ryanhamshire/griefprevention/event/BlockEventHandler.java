@@ -102,10 +102,7 @@ public class BlockEventHandler {
             Claim sourceClaim = this.dataStore.getClaimAt(sourceLocation, true, null);
             for (Location<World> location : event.getLocations()) {
                 Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
-                if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim() && rootCause != user) {
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
-                } else if (user != null && targetClaim.hasFullTrust(user)) {
+                if (user != null && targetClaim.hasFullTrust(user)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     return;
                 } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
@@ -339,10 +336,7 @@ public class BlockEventHandler {
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         for (Transaction<BlockSnapshot> transaction : transactions) {
             Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
-            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim() && source != user) {
-                GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
-                return;
-            } else if (user != null && targetClaim.hasFullTrust(user)) {
+            if (user != null && targetClaim.hasFullTrust(user)) {
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
             } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
@@ -397,10 +391,7 @@ public class BlockEventHandler {
             }
 
             Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
-            if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim() && source != player) {
-                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                return;
-            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
+            if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             }
