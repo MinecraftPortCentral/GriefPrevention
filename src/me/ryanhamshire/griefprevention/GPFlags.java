@@ -165,6 +165,9 @@ public class GPFlags {
                             String creatureType = SPAWN_TYPES.inverse().get(spongeEntityType.getEnumCreatureType());
                             flag += "." + parts[0] + "." + creatureType + "." + parts[1];
                             return flag;
+                        } else {
+                            flag += "." + parts[0] + "." + parts[1];
+                            return flag;
                         }
                     }
                     // Unfortunately this is required until Pixelmon registers their entities correctly in FML
