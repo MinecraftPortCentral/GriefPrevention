@@ -306,6 +306,12 @@ public class BlockEventHandler {
 
             String denyReason = claim.allowBreak(source, transaction.getFinal(), creator);
             if (denyReason != null) {
+                // Avoid lagging server from large explosions.
+                if (event.getTransactions().size() > 50) {
+                    event.setCancelled(true);
+                    GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
+                    return;
+                }
                 transaction.setValid(false);
             }
         }
