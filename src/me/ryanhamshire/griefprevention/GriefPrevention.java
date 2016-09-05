@@ -319,7 +319,7 @@ public class GriefPrevention {
         }
 
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
-        GLOBAL_SUBJECT = GriefPrevention.instance.permissionService.getSubjects("default").get("default");
+        GLOBAL_SUBJECT = GriefPrevention.instance.permissionService.getDefaults();
         for (EntityType entityType : Sponge.getRegistry().getAllOf(EntityType.class)) {
             String entityId = entityType.getId();
             CUSTOM_CONTEXTS.put(entityId, new Context("gp_entity", entityId));
