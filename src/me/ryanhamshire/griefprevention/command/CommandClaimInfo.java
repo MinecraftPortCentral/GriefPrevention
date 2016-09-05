@@ -147,6 +147,7 @@ public class CommandClaimInfo implements CommandExecutor {
             Text claimCoowners = Text.of(TextColors.YELLOW, "Managers", TextColors.WHITE, " : ", TextColors.GOLD, managers.equals("") ? NONE : managers);
             Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, created != null ? created : "Unknown");
             Text dateLastActive = Text.of(TextColors.YELLOW, "LastActive", TextColors.WHITE, " : ", TextColors.GRAY, lastActive != null ? lastActive : "Unknown");
+            Text worldName = Text.of(TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, claim.world.getProperties().getWorldName());
             Text footer = Text.of(TextColors.WHITE, TextStyles.STRIKETHROUGH, "------------------------------------------");
             if (claim.parent != null) {
                 GriefPrevention.sendMessage(src,
@@ -165,6 +166,7 @@ public class CommandClaimInfo implements CommandExecutor {
                                 claimGreeting, "\n",
                                 claimFarewell, "\n",
                                 pvp, "\n",
+                                worldName, "\n",
                                 dateCreated, "\n",
                                 dateLastActive, "\n",
                                 claimId, "\n",
@@ -185,6 +187,7 @@ public class CommandClaimInfo implements CommandExecutor {
                                 claimGreeting, "\n",
                                 claimFarewell, "\n",
                                 pvp, "\n",
+                                worldName, "\n",
                                 dateCreated, "\n",
                                 dateLastActive, "\n",
                                 claimId, "\n",
@@ -200,6 +203,7 @@ public class CommandClaimInfo implements CommandExecutor {
                                 claimGreeting, "\n",
                                 claimFarewell, "\n",
                                 pvp, "\n",
+                                worldName, "\n",
                                 dateCreated, "\n",
                                 claimId, "\n",
                                 footer));
