@@ -292,27 +292,25 @@ public class BlockEventHandler {
             creator = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
         }
 
-        for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-            if (!transaction.getFinal().getLocation().isPresent()) {
+        Iterator<Location<World>> iterator = event.getAffectedLocations().iterator();
+        while (iterator.hasNext()) {
+            Location<World> location = iterator.next();
+            Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(location, false, null);
+
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, location.getBlock(), creator) == Tristate.FALSE && location.getPosition().getY() > ((net.minecraft.world.World) event.getTargetWorld()).getSeaLevel()) {
+                iterator.remove();
                 continue;
             }
 
-            Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
-
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, transaction.getFinal().getLocation().get().getBlock(), creator) == Tristate.FALSE && transaction.getFinal().getLocation().get().getPosition().getY() > ((net.minecraft.world.World) event.getTargetWorld()).getSeaLevel()) {
-                transaction.setValid(false);
-                continue;
-            }
-
-            String denyReason = claim.allowBreak(source, transaction.getFinal(), creator);
+            String denyReason = claim.allowBreak(source, location, creator);
             if (denyReason != null) {
                 // Avoid lagging server from large explosions.
-                if (event.getTransactions().size() > 50) {
+                if (event.getAffectedLocations().size() > 100) {
                     event.setCancelled(true);
                     GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
                     return;
                 }
-                transaction.setValid(false);
+                iterator.remove();
             }
         }
         GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
