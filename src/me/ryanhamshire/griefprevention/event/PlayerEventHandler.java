@@ -2376,7 +2376,7 @@ public class PlayerEventHandler {
 
     private Claim findNearbyClaim(Player player) {
         int maxDistance = GriefPrevention.instance.maxInspectionDistance;
-        BlockRay<World> blockRay = BlockRay.from(player).blockLimit(maxDistance).build();
+        BlockRay<World> blockRay = BlockRay.from(player).distanceLimit(maxDistance).build();
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         Claim claim = null;
         int count = 0;
@@ -2406,7 +2406,7 @@ public class PlayerEventHandler {
     }
 
     private BlockSnapshot getTargetBlock(Player player, int maxDistance) throws IllegalStateException {
-        BlockRay<World> blockRay = BlockRay.from(player).blockLimit(maxDistance).build();
+        BlockRay<World> blockRay = BlockRay.from(player).distanceLimit(maxDistance).build();
 
         while (blockRay.hasNext()) {
             BlockRayHit<World> blockRayHit = blockRay.next();
