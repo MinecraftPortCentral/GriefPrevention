@@ -181,22 +181,9 @@ public class EntityEventHandler {
 
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
                 if (claim != null) {
-                    net.minecraft.entity.Entity nmsEntity = (net.minecraft.entity.Entity) entity;
-                    if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.AMBIENT)
-                            && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
-                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn ambients within claim.");
-                        return false;
-                    } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.WATER_CREATURE) 
-                            && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) != Tristate.TRUE) {
-                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn aquatics within claim.");
-                        return false;
-                    } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.MONSTER)
-                            && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
-                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn monsters within claim.");
-                        return false;
-                    } else if (SpongeImplHooks.isCreatureOfType(nmsEntity, EnumCreatureType.CREATURE)
-                            && GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
-                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn animals within claim.");
+                    String entityType = entity.getType() == null ? "entity" : entity.getType().getId();
+                    if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
+                        GriefPrevention.addEventLogEntry(event, "Not allowed to spawn " + entityType + " within claim.");
                         return false;
                     }
                 }
