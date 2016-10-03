@@ -135,7 +135,7 @@ public class EntityEventHandler {
             }
         }
 
-        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION, source, null, user) != Tristate.TRUE) {
+        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION, source, null, user) == Tristate.FALSE) {
             event.setCancelled(true);
         }
         GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
