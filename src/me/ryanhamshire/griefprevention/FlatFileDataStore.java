@@ -251,7 +251,7 @@ public class FlatFileDataStore extends DataStore {
     }
 
     public void unloadWorldData(WorldProperties worldProperties) {
-        ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(worldProperties);
         for (Claim claim : claimWorldManager.getWorldClaims()) {
             claim.unload();
         }
