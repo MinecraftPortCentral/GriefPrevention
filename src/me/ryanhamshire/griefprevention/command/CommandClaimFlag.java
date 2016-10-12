@@ -93,7 +93,7 @@ public class CommandClaimFlag implements CommandExecutor {
                 if (!overrideContexts.isEmpty()) {
                     overrideContexts.add(claim.world.getContext());
                 }
-                Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
+                Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
                 Map<String, Boolean> overridePermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(overrideContexts);
                 Map<String, Boolean> claimPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(ImmutableSet.of(claim.context));
                 for (Map.Entry<String, Boolean> overridePermissionEntry : overridePermissions.entrySet()) {

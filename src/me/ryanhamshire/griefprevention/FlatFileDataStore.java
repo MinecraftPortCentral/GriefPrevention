@@ -214,10 +214,10 @@ public class FlatFileDataStore extends DataStore {
     }
 
     public void validateFlagDefaults(Set<Context> contexts, Map<String, Tristate> defaultFlags) {
-        Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
+        Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
         if (defaultPermissions.isEmpty()) {
             for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
-                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), mapEntry.getValue());
+                GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), mapEntry.getValue());
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
@@ -228,7 +228,7 @@ public class FlatFileDataStore extends DataStore {
             for (String flagPermission : defaultPermissions.keySet()) {
                 String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
                 if (!defaultFlags.containsKey(flag)) {
-                    GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
                     try {
                         Thread.sleep(10);
                     } catch (InterruptedException e) {
@@ -240,7 +240,7 @@ public class FlatFileDataStore extends DataStore {
             for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
                 String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
                 if (!defaultPermissions.keySet().contains(flagPermission)) {
-                    GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, mapEntry.getValue());
+                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, mapEntry.getValue());
                     try {
                         Thread.sleep(10);
                     } catch (InterruptedException e) {

@@ -244,7 +244,16 @@ public class GPPermissionHandler {
         }
 
         contexts.add(claim.world.getContext());
+        // check persisted default data
         if (!GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getParents(contexts).isEmpty()) {
+            value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+            if (value != Tristate.UNDEFINED) {
+                return value;
+            }
+        }
+
+        // finally, check non-persisted default data
+        if (!GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getParents(contexts).isEmpty()) {
             value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
             if (value != Tristate.UNDEFINED) {
                 return value;
