@@ -180,7 +180,7 @@ public class Claim implements ContextSource {
     }
 
     public boolean isSubdivision() {
-        return this.type == Type.SUBDIVISION;
+        return this.parent != null && this.type == Type.SUBDIVISION;
     }
 
     public boolean isWildernessClaim() {
