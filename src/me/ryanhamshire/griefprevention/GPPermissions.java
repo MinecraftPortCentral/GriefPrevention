@@ -140,6 +140,8 @@ public class GPPermissions {
     public static final String INTERACT_ENTITY_PRIMARY = "griefprevention.claim.flag.interact-entity-primary";
     public static final String INTERACT_ENTITY_SECONDARY = "griefprevention.claim.flag.interact-entity-secondary";
     public static final String INTERACT_INVENTORY = "griefprevention.claim.flag.interact-inventory";
+    public static final String INTERACT_ITEM_PRIMARY = "griefprevention.claim.flag.interact-item-primary";
+    public static final String INTERACT_ITEM_SECONDARY = "griefprevention.claim.flag.interact-item-secondary";
     public static final String ITEM_DROP = "griefprevention.claim.flag.item-drop";
     public static final String ITEM_PICKUP = "griefprevention.claim.flag.item-pickup";
     public static final String ITEM_USE = "griefprevention.claim.flag.item-use";

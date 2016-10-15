@@ -85,6 +85,7 @@ import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.item.inventory.UseItemStackEvent;
 import org.spongepowered.api.event.message.MessageChannelEvent;
 import org.spongepowered.api.event.message.MessageEvent;
@@ -1264,6 +1265,36 @@ public class PlayerEventHandler {
             }
         }
         GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
+    }
+
+    @Listener(order = Order.FIRST)
+    public void onPlayerInteractItem(InteractItemEvent.Primary event, @Root Player player) {
+        World world = player.getWorld();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(world.getProperties())) {
+            return;
+        }
+
+        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        String denyReason = claim.allowAccess(player, player.getLocation());
+        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack(), player) == Tristate.FALSE) {
+            GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
+            event.setCancelled(true);
+        }
+    }
+
+    @Listener(order = Order.FIRST)
+    public void onPlayerInteractItem(InteractItemEvent.Secondary event, @Root Player player) {
+        World world = player.getWorld();
+        if (!GriefPrevention.instance.claimsEnabledForWorld(world.getProperties())) {
+            return;
+        }
+
+        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        String denyReason = claim.allowAccess(player, player.getLocation());
+        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack(), player) == Tristate.FALSE) {
+            GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
+            event.setCancelled(true);
+        }
     }
 
     // when a player picks up an item...

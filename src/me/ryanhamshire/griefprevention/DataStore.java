@@ -1220,6 +1220,7 @@ public abstract class DataStore {
         this.addDefault(Messages.NoExitClaim, "You don't have permission to exit this claim.");
         this.addDefault(Messages.NoInteractBlockPermission, "You don't have {0}'s permission to interact with the block {1}.", "0: owner name; 1: block id");
         this.addDefault(Messages.NoInteractEntityPermission, "You don't have {0}'s permission to interact with the entity {1}.", "0: owner name; 1: entity id");
+        this.addDefault(Messages.NoInteractItemPermission, "You don't have {0}'s permission to interact with the item {1}.", "0: owner name; 1: item id");
         this.addDefault(Messages.NoLavaNearOtherPlayer, "You can't place lava this close to {0}.", "0: nearby player");
         this.addDefault(Messages.NoModifyDuringSiege, "Claims can't be modified while under siege.");
         this.addDefault(Messages.NoOwnerBuildUnderSiege, "You can't make changes while under siege.");

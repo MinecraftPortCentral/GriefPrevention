@@ -64,6 +64,8 @@ public class GPFlags {
     public static final String INTERACT_ENTITY_PRIMARY = "interact-entity-primary";
     public static final String INTERACT_ENTITY_SECONDARY = "interact-entity-secondary";
     public static final String INTERACT_INVENTORY = "interact-inventory";
+    public static final String INTERACT_ITEM_PRIMARY = "interact-item-primary";
+    public static final String INTERACT_ITEM_SECONDARY = "interact-item-secondary";
     public static final String ITEM_DROP = "item-drop";
     public static final String ITEM_PICKUP = "item-pickup";
     public static final String ITEM_USE = "item-use";
@@ -95,9 +97,11 @@ public class GPFlags {
         DEFAULT_FLAGS.put(GPFlags.INTERACT_ENTITY_PRIMARY, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.INTERACT_ENTITY_SECONDARY, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.INTERACT_INVENTORY, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.INTERACT_ITEM_PRIMARY, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.INTERACT_ITEM_SECONDARY, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ITEM_USE, Tristate.FALSE);
+        DEFAULT_FLAGS.put(GPFlags.ITEM_USE, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.FALSE);
@@ -123,6 +127,8 @@ public class GPFlags {
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ENTITY_PRIMARY, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ENTITY_SECONDARY, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_INVENTORY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ITEM_PRIMARY, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ITEM_SECONDARY, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_USE, Tristate.TRUE);
