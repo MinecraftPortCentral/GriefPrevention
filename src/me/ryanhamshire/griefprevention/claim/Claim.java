@@ -317,12 +317,16 @@ public class Claim implements ContextSource {
         }
 
         // owner
-        if (user.getUniqueId().equals(this.ownerID)) {
+        if (!this.isAdminClaim() && user.getUniqueId().equals(this.ownerID)) {
             // only check debug claim permissions if owner
             if (playerData.debugClaimPermissions) {
                 return false;
             }
 
+            return true;
+        }
+
+        if (this.isAdminClaim() && user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
             return true;
         }
 
@@ -350,12 +354,16 @@ public class Claim implements ContextSource {
         }
 
         // owner
-        if (user.getUniqueId().equals(this.ownerID)) {
+        if (!this.isAdminClaim() && user.getUniqueId().equals(this.ownerID)) {
             // only check debug claim permissions if owner
             if (playerData.debugClaimPermissions) {
                 return false;
             }
 
+            return true;
+        }
+
+        if (this.isAdminClaim() && user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
             return true;
         }
 
