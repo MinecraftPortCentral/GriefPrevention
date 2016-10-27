@@ -38,6 +38,7 @@ import me.ryanhamshire.griefprevention.Visualization;
 import me.ryanhamshire.griefprevention.VisualizationType;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import net.minecraft.inventory.IInventory;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
@@ -463,8 +464,13 @@ public class BlockEventHandler {
                 playerData.warnedAboutBuildingOutsideClaims = false;
             }
 
-            if (targetClaim.isWildernessClaim() && block.getState().getType().equals(BlockTypes.CHEST) && activeConfig.getConfig().claim.claimRadius > -1
-                    && GriefPrevention.instance.claimsEnabledForWorld(block.getLocation().get().getExtent().getProperties())) {
+            if (targetClaim.isWildernessClaim() && activeConfig.getConfig().claim.claimRadius > -1) {
+                net.minecraft.tileentity.TileEntity tileEntity = (net.minecraft.tileentity.TileEntity) block.getLocation().get().getTileEntity().orElse(null);
+                if (tileEntity == null || !(tileEntity instanceof IInventory)) {
+                    GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                    return;
+                }
+
                 // FEATURE: automatically create a claim when a player who has no claims
                 // places a chest otherwise if there's no claim, the player is placing a chest, and new player automatic claims are enabled
                 // if the chest is too deep underground, don't create the claim and explain why
