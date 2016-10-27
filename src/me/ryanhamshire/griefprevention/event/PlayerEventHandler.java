@@ -1513,52 +1513,19 @@ public class PlayerEventHandler {
             if (clickedBlock.getLocation().get().hasTileEntity()) {
                 denyReason = playerClaim.allowContainers(player, clickedBlock.getLocation().get());
             } else {
-                denyReason = playerClaim.allowAccess(player, clickedBlock.getLocation().get());
+                denyReason = playerClaim.allowAccess(player, clickedBlock.getLocation().get(), true);
             }
 
             if(denyReason != null) {
-                boolean result = false;
-                if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, clickedBlock.getState(), player) == Tristate.TRUE) {
-                    result = true;
-                    event.setUseBlockResult(Tristate.TRUE);
-                }
-
-                // If player is not able to interact with block, check item use permission
-                if (!result) {
-                    ItemStack itemstack = itemInHand.isPresent() ? itemInHand.get() : null;
-                    if (itemstack != null) {
-                        if (itemstack instanceof ItemBlock) {
-                            if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemstack, player) == Tristate.TRUE) {
-                                result = true;
-                                event.setUseItemResult(Tristate.TRUE);
-                            }
-                        } else {
-                            if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.ITEM_USE, player, itemstack, player) == Tristate.TRUE) {
-                                result = true;
-                                event.setUseItemResult(Tristate.TRUE);
-                            }
-                        }
-                    }
-                }
-
                 GriefPrevention.addEventLogEntry(event, denyReason);
-                if (!result) {
-                    // Don't send a deny message if the player successfully investigated the claim
-                    if (!investigateResult) {
-                        GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
-                    }
-
-                    event.setCancelled(true);
-                    GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
-                    return;
-                } else {
-                    if (event.getUseBlockResult() != Tristate.TRUE) {
-                        event.setUseBlockResult(Tristate.FALSE);
-                    }
-                    if (event.getUseItemResult() != Tristate.TRUE) {
-                        event.setUseItemResult(Tristate.FALSE);
-                    }
+                // Don't send a deny message if the player successfully investigated the claim
+                if (!investigateResult) {
+                    GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
                 }
+
+                event.setCancelled(true);
+                GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
+                return;
             }
         }
 

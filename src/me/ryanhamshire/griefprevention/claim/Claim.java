@@ -590,8 +590,12 @@ public class Claim implements ContextSource {
         return allowAccess(user, null);
     }
 
-    // access permission check
     public String allowAccess(User user, Location<World> location) {
+        return allowAccess(user, location, false);
+    }
+
+    // access permission check
+    public String allowAccess(User user, Location<World> location, boolean interact) {
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
             if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
@@ -618,13 +622,8 @@ public class Claim implements ContextSource {
             return null;
         }
 
-        if (location == null && user instanceof Player && ((Player) user).getItemInHand().isPresent()) {
-            ItemStack itemstack = ((Player) user).getItemInHand().get();
-            Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.ITEM_USE, user, itemstack, user);
-            if (value == Tristate.FALSE) {
-                String reason = GriefPrevention.instance.dataStore.getMessage(Messages.ItemNotAuthorized, itemstack.getItem().getId());
-                return reason;
-            } else if (value == Tristate.TRUE) {
+        if (interact) {
+            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user) == Tristate.TRUE) {
                 return null;
             }
         }
@@ -672,11 +671,15 @@ public class Claim implements ContextSource {
             return null;
         }
 
+        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user) == Tristate.TRUE) {
+            return null;
+        }
+
         //permission inheritance for subdivisions
         if(this.parent != null && this.inheritParent) {
             return this.parent.allowContainers(user, location);
         }
-        
+
         //error message for all other cases
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
         if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
