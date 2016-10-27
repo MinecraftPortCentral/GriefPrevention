@@ -1554,24 +1554,27 @@ public class PlayerEventHandler {
 
             if(denyReason != null) {
                 boolean result = false;
-                ItemStack itemstack = itemInHand.isPresent() ? itemInHand.get() : null;
-                if (itemstack != null) {
-                    if (itemstack instanceof ItemBlock) {
-                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemstack, player) == Tristate.TRUE) {
-                            result = true;
-                            event.setUseItemResult(Tristate.TRUE);
-                        }
-                    } else {
-                        if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.ITEM_USE, player, itemstack, player) == Tristate.TRUE) {
-                            result = true;
-                            event.setUseItemResult(Tristate.TRUE);
-                        }
-                    }
-                }
-
                 if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, clickedBlock.getState(), player) == Tristate.TRUE) {
                     result = true;
                     event.setUseBlockResult(Tristate.TRUE);
+                }
+
+                // If player is not able to interact with block, check item use permission
+                if (!result) {
+                    ItemStack itemstack = itemInHand.isPresent() ? itemInHand.get() : null;
+                    if (itemstack != null) {
+                        if (itemstack instanceof ItemBlock) {
+                            if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemstack, player) == Tristate.TRUE) {
+                                result = true;
+                                event.setUseItemResult(Tristate.TRUE);
+                            }
+                        } else {
+                            if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.ITEM_USE, player, itemstack, player) == Tristate.TRUE) {
+                                result = true;
+                                event.setUseItemResult(Tristate.TRUE);
+                            }
+                        }
+                    }
                 }
 
                 GriefPrevention.addEventLogEntry(event, denyReason);
