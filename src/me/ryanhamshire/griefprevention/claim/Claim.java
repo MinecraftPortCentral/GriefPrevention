@@ -592,8 +592,12 @@ public class Claim implements ContextSource {
         return allowAccess(user, null);
     }
 
-    // access permission check
     public String allowAccess(User user, Location<World> location) {
+        return allowAccess(user, location, false);
+    }
+
+    // access permission check
+    public String allowAccess(User user, Location<World> location, boolean interact) {
         // admin claims need adminclaims permission only.
         if (this.isAdminClaim()) {
             if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
@@ -618,6 +622,12 @@ public class Claim implements ContextSource {
                 || this.getClaimData().getContainers().contains(user.getUniqueId())
                 || this.getClaimData().getAccessors().contains(user.getUniqueId())) {
             return null;
+        }
+
+        if (interact) {
+            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user) == Tristate.TRUE) {
+                return null;
+            }
         }
 
         // permission inheritance for subdivisions
@@ -663,11 +673,15 @@ public class Claim implements ContextSource {
             return null;
         }
 
+        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user) == Tristate.TRUE) {
+            return null;
+        }
+
         //permission inheritance for subdivisions
         if(this.parent != null && this.inheritParent) {
             return this.parent.allowContainers(user, location);
         }
-        
+
         //error message for all other cases
         String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
         if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
