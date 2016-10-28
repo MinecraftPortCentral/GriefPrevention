@@ -216,6 +216,7 @@ public class GriefPrevention {
     public boolean permPluginInstalled = false;
 
     public ItemType modificationTool = ItemTypes.GOLDEN_SHOVEL;
+    public ItemType investigationTool = ItemTypes.STICK;
     public int maxInspectionDistance = 100;
 
     // log entry manager for GP's custom log files
@@ -844,6 +845,7 @@ public class GriefPrevention {
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
             this.debugLogging = DataStore.globalConfig.getConfig().logging.loggingDebug;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.NONE);
+            this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.NONE);
             this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;
             for (World world : Sponge.getGame().getServer().getWorlds()) {
                 DimensionType dimType = world.getProperties().getDimensionType();

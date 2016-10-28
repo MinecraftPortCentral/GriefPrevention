@@ -51,8 +51,9 @@ import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.block.BlockDoor;
 import net.minecraft.entity.passive.EntityTameable;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemBlock;
+import net.minecraft.util.math.RayTraceResult;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -65,7 +66,6 @@ import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.data.property.entity.EyeLocationProperty;
 import org.spongepowered.api.data.type.HandType;
-import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
@@ -1289,10 +1289,21 @@ public class PlayerEventHandler {
             return;
         }
 
+        Optional<ItemStack> itemInHand = player.getItemInHand(event.getHandType());
+        boolean investigateResult = false;
+        EntityPlayerMP mcPlayer = ((EntityPlayerMP) player);
+        RayTraceResult rayTrace = PlayerUtils.rayTracePlayerEyes(mcPlayer);
+        // If player right-clicked AIR, run investigate hook
+        if (rayTrace == null) {
+            investigateResult = investigateClaim(player, BlockSnapshot.NONE, itemInHand);
+        }
+
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
         String denyReason = claim.allowAccess(player, player.getLocation());
         if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack(), player) == Tristate.FALSE) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
+            if (!investigateResult) {
+                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
+            }
             event.setCancelled(true);
         }
     }
@@ -1515,17 +1526,13 @@ public class PlayerEventHandler {
             return;
         }
 
-        HandType handType = HandTypes.MAIN_HAND;
-        if (event instanceof InteractBlockEvent.Secondary.OffHand) {
-            handType = HandTypes.OFF_HAND;
-        }
-
         BlockSnapshot clickedBlock = event.getTargetBlock();
+        HandType handType = event.getHandType();
         Optional<ItemStack> itemInHand = player.getItemInHand(handType);
 
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
-        boolean investigateResult = investigateClaim(player, clickedBlock, itemInHand);
+        investigateClaim(player, clickedBlock, itemInHand);
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         if (!clickedBlock.getLocation().isPresent()) {
@@ -1554,8 +1561,8 @@ public class PlayerEventHandler {
 
             if(denyReason != null) {
                 GriefPrevention.addEventLogEntry(event, denyReason);
-                // Don't send a deny message if the player successfully investigated the claim
-                if (!investigateResult) {
+                // Don't send a deny message if the player is holding an investigation tool
+                if (!PlayerUtils.hasItemInOneHand(player, GriefPrevention.instance.investigationTool)) {
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
                 }
 
@@ -2299,10 +2306,9 @@ public class PlayerEventHandler {
     // helper methods for player events
     private boolean investigateClaim(Player player, BlockSnapshot clickedBlock, Optional<ItemStack> itemInHand) {
         GPTimings.PLAYER_INVESTIGATE_CLAIM.startTimingIfSync();
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
 
         // if he's investigating a claim
-        if (!itemInHand.isPresent() || !itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
+        if (!itemInHand.isPresent() || itemInHand.get().getItem() != GriefPrevention.instance.investigationTool) {
             GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
             return false;
         }

@@ -83,10 +83,10 @@ public class WelcomeTask implements Runnable {
             page1.append(URL).append("\n\n");
             page1.append(intro).append("\n\n");
             String editToolName =
-                    GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.modificationTool.replace('_', ' ')
+                    GriefPrevention.instance.modificationTool.getId().replace('_', ' ')
                             .toLowerCase();
             String infoToolName =
-                    GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.investigationTool.replace('_', ' ')
+                    GriefPrevention.instance.investigationTool.getId().replace('_', ' ')
                             .toLowerCase();
             String configClaimTools = datastore.getMessage(Messages.BookTools, editToolName, infoToolName);
             page1.append(configClaimTools);

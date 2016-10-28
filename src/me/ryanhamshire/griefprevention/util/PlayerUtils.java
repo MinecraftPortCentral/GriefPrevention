@@ -26,11 +26,15 @@ package me.ryanhamshire.griefprevention.util;
 
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec3d;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.common.SpongeImplHooks;
 
 public class PlayerUtils {
 
@@ -90,5 +94,17 @@ public class PlayerUtils {
         }
 
         return tristate;
+    }
+
+    public static RayTraceResult rayTracePlayerEyes(EntityPlayerMP player) {
+        double distance = SpongeImplHooks.getBlockReachDistance(player) + 1;
+        Vec3d startPos = new Vec3d(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+        Vec3d endPos = startPos.add(new Vec3d(player.getLookVec().xCoord * distance, player.getLookVec().yCoord * distance, player.getLookVec().zCoord * distance));
+        return player.worldObj.rayTraceBlocks(startPos, endPos);
+    }
+
+    public static Vec3d rayTracePlayerEyeHitVec(EntityPlayerMP player) {
+        RayTraceResult result = rayTracePlayerEyes(player);
+        return result == null ? null : result.hitVec;
     }
 }
