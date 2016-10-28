@@ -1612,7 +1612,7 @@ public class PlayerEventHandler {
             }
             // what's the player holding?
             ItemType materialInHand = itemInHand.get().getItem();
-            if (!materialInHand.getId().equals(activeConfig.getConfig().claim.modificationTool)) {
+            if (materialInHand != GriefPrevention.instance.modificationTool) {
                 GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                 return;
             }
@@ -1629,6 +1629,8 @@ public class PlayerEventHandler {
             }
 
             onPlayerHandleShovelAction(event, player, handType, playerData);
+            // avoid changing blocks after using a shovel
+            event.setCancelled(true);
         }
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
     }
