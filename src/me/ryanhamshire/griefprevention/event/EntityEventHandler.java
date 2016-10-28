@@ -165,6 +165,10 @@ public class EntityEventHandler {
     // when a creature spawns...
     @Listener(order = Order.FIRST)
     public void onEntitySpawn(SpawnEntityEvent event, @First SpawnCause spawnCause) {
+        if (event instanceof DropItemEvent) {
+            return;
+        }
+
         GPTimings.ENTITY_SPAWN_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
@@ -175,14 +179,17 @@ public class EntityEventHandler {
         event.filterEntities(new Predicate<Entity>() {
             @Override
             public boolean test(Entity entity) {
-                if (entity instanceof EntityItem) {
-                    return true;
-                }
-
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
                 if (claim != null) {
-                    String entityType = entity.getType() == null ? "entity" : entity.getType().getId();
-                    if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_SPAWN, spawnCause, entity, user) == Tristate.FALSE) {
+                    String permission = GPPermissions.ENTITY_SPAWN;
+                    if (entity instanceof EntityItem) {
+                        permission = GPPermissions.ITEM_SPAWN;
+                        if (user != null && claim.allowAccess(user) == null) {
+                            return true;
+                        }
+                    }
+                    String entityType = entity.getType() == null ? "unknown" : entity.getType().getId();
+                    if (GPPermissionHandler.getClaimPermission(claim, permission, spawnCause, entity, user) == Tristate.FALSE) {
                         GriefPrevention.addEventLogEntry(event, "Not allowed to spawn " + entityType + " within claim.");
                         return false;
                     }
@@ -191,27 +198,6 @@ public class EntityEventHandler {
             }
         });
 
-        for (Entity entity : event.getEntities()) {
-            final Location<World> location = entity.getLocation();
-            // these rules apply only to creative worlds
-            if (!GriefPrevention.instance.claimModeIsActive(location.getExtent().getProperties(), ClaimsMode.Creative)) {
-                GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
-                return;
-            }
-
-            final Cause cause = event.getCause();
-            final Player player = cause.first(Player.class).orElse(null);
-            final ItemStack stack = cause.first(ItemStack.class).orElse(null);
-
-            if (player != null) {
-                if (stack != null && !stack.getItem().equals(ItemTypes.SPAWN_EGG)) {
-                    GriefPrevention.addEventLogEntry(event, "Cannot spawn entities in creative worlds.");
-                    event.setCancelled(true);
-                    GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
-                    return;
-                }
-            }
-        }
         GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
     }
 

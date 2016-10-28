@@ -68,6 +68,7 @@ public class GPFlags {
     public static final String INTERACT_ITEM_SECONDARY = "interact-item-secondary";
     public static final String ITEM_DROP = "item-drop";
     public static final String ITEM_PICKUP = "item-pickup";
+    public static final String ITEM_SPAWN = "item-spawn";
     public static final String ITEM_USE = "item-use";
     public static final String LIQUID_FLOW = "liquid-flow";
     public static final String PORTAL_USE = "portal-use";
@@ -101,6 +102,7 @@ public class GPFlags {
         DEFAULT_FLAGS.put(GPFlags.INTERACT_ITEM_SECONDARY, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
+        DEFAULT_FLAGS.put(GPFlags.ITEM_SPAWN, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.ITEM_USE, Tristate.TRUE);
         DEFAULT_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.FALSE);
         DEFAULT_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);
@@ -131,6 +133,7 @@ public class GPFlags {
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ITEM_SECONDARY, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
+        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_SPAWN, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_USE, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.TRUE);
         DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);

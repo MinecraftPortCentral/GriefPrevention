@@ -144,6 +144,7 @@ public class GPPermissions {
     public static final String INTERACT_ITEM_SECONDARY = "griefprevention.claim.flag.interact-item-secondary";
     public static final String ITEM_DROP = "griefprevention.claim.flag.item-drop";
     public static final String ITEM_PICKUP = "griefprevention.claim.flag.item-pickup";
+    public static final String ITEM_SPAWN = "griefprevention.claim.flag.item-spawn";
     public static final String ITEM_USE = "griefprevention.claim.flag.item-use";
     public static final String PORTAL_USE = "griefprevention.claim.flag.portal-use";
     public static final String PROJECTILE_IMPACT_BLOCK = "griefprevention.claim.flag.projectile-impact-block";
