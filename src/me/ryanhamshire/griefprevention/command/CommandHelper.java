@@ -173,14 +173,10 @@ public class CommandHelper {
             case GPFlags.INTERACT_ENTITY_SECONDARY :
                 return validateEntityTarget(target);
             case GPFlags.ENTITY_SPAWN :
-                if (validateEntityTarget(target) ||
-                    validateItemTarget(target)) {
-                    return true;
-                }
-
-                return false;
+                return validateEntityTarget(target);
             case GPFlags.ITEM_DROP :
             case GPFlags.ITEM_PICKUP :
+            case GPFlags.ITEM_SPAWN :
             case GPFlags.ITEM_USE :
                 return validateItemTarget(target);
             default :

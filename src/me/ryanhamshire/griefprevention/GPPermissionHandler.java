@@ -28,6 +28,7 @@ import me.ryanhamshire.griefprevention.claim.Claim;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemBlock;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
@@ -85,8 +86,17 @@ public class GPPermissionHandler {
                 Entity targetEntity = (Entity) target;
                 net.minecraft.entity.Entity mcEntity = (net.minecraft.entity.Entity) targetEntity;
                 String targetId = "";
-                if (targetEntity.getType() != null) {
-                    targetId = targetEntity.getType().getId();
+                if (mcEntity instanceof EntityItem) {
+                    EntityItem mcItem = (EntityItem) mcEntity;
+                    net.minecraft.item.ItemStack itemStack = (net.minecraft.item.ItemStack) mcItem.getEntityItem();
+                    if (itemStack != null && itemStack.getItem() != null) {
+                        ItemType itemType = (ItemType) itemStack.getItem();
+                        targetId = itemType.getId() + "." + itemStack.getItemDamage();
+                    }
+                } else {
+                    if (targetEntity.getType() != null) {
+                        targetId = targetEntity.getType().getId();
+                    }
                 }
                 // Workaround for pixelmon using same class for most entities.
                 // In this circumstance, we will use the entity name instead
