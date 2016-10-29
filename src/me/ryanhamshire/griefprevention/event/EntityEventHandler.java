@@ -185,10 +185,10 @@ public class EntityEventHandler {
                 if (claim != null) {
                     String permission = GPPermissions.ENTITY_SPAWN;
                     if (entity instanceof EntityItem) {
-                        permission = GPPermissions.ITEM_SPAWN;
-                        if (user != null && claim.allowAccess(user) == null) {
+                        if (user == null || claim.allowAccess(user) == null) {
                             return true;
                         }
+                        permission = GPPermissions.ITEM_SPAWN;
                     }
                     String entityType = entity.getType() == null ? "unknown" : entity.getType().getId();
                     if (GPPermissionHandler.getClaimPermission(claim, permission, spawnCause, entity, user) == Tristate.FALSE) {
