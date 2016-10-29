@@ -37,9 +37,11 @@ import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import org.spongepowered.api.Sponge;
@@ -838,6 +840,11 @@ public class EntityEventHandler {
         event.filterEntities(new Predicate<Entity>() {
             @Override
             public boolean test(Entity entity) {
+                // Avoid living entities breaking itemframes
+                if (rootCause instanceof EntityItemFrame && entity instanceof EntityLiving) {
+                    return false;
+                }
+
                 // always allow collisions with players
                 if (entity instanceof Player || entity instanceof EntityItem) {
                     return true;
@@ -858,15 +865,13 @@ public class EntityEventHandler {
                     }
 
                     if (claim.allowAccess(user) != null) {
-                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, user) == Tristate.TRUE) {
-                            return true;
+                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, user) == Tristate.FALSE) {
+                            return false;
                         }
-                        return false;
                     } else if (claim.allowAccess(owner) != null) {
-                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, owner) == Tristate.TRUE) {
-                            return true;
+                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, owner) == Tristate.FALSE) {
+                            return false;
                         }
-                        return false;
                     }
                 }
                 return true;
