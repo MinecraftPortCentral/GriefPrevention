@@ -350,7 +350,7 @@ public class BlockEventHandler {
             }
 
             // make sure the player is allowed to break at the location
-            String denyReason = GriefPrevention.instance.allowBreak(source, transaction.getFinal(), user);
+            String denyReason = GriefPrevention.instance.allowBreak(source, transaction.getOriginal(), user);
             if (denyReason != null) {
                 if (event.getCause().root() instanceof Player) {
                     GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
