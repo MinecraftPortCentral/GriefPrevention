@@ -279,7 +279,7 @@ public class BlockEventHandler {
     }
 
     @Listener(order = Order.FIRST)
-    public void onExplosion(ExplosionEvent.Detonate event) {
+    public void onExplosion(ExplosionEvent.Post event) {
         GPTimings.EXPLOSION_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
@@ -293,25 +293,28 @@ public class BlockEventHandler {
             creator = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
         }
 
-        Iterator<Location<World>> iterator = event.getAffectedLocations().iterator();
-        while (iterator.hasNext()) {
-            Location<World> location = iterator.next();
-            Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(location, false, null);
-
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, location.getBlock(), creator) == Tristate.FALSE && location.getPosition().getY() > ((net.minecraft.world.World) event.getTargetWorld()).getSeaLevel()) {
-                iterator.remove();
+        for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
+            BlockSnapshot blockSnapshot = transaction.getOriginal();
+            Location<World> location = blockSnapshot.getLocation().orElse(null);
+            if (location == null) {
                 continue;
             }
 
-            String denyReason = claim.allowBreak(source, location, creator);
+            Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), false, null);
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot.getLocation(), creator) == Tristate.FALSE && location.getPosition().getY() > ((net.minecraft.world.World) event.getTargetWorld()).getSeaLevel()) {
+                transaction.setValid(false);
+                continue;
+            }
+
+            String denyReason = claim.allowBreak(source, blockSnapshot, creator);
             if (denyReason != null) {
                 // Avoid lagging server from large explosions.
-                if (event.getAffectedLocations().size() > 100) {
+                if (event.getTransactions().size() > 100) {
                     event.setCancelled(true);
                     GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
                     return;
                 }
-                iterator.remove();
+                transaction.setValid(false);
             }
         }
         GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
