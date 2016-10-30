@@ -578,7 +578,7 @@ public class Claim implements ContextSource {
             // Flag order matters
             // interact should always be checked before break
             // pass the blocksnapshot here as the live location represents the final transaction which would be AIR at this point
-            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, blockSnapshot, user) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, blockSnapshot.getState(), user) == Tristate.TRUE) {
                 return null;
             }
         }
