@@ -527,13 +527,12 @@ public class Claim implements ContextSource {
         return reason;
     }
 
-    // break permission check
     public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
-        if (!blockSnapshot.getLocation().isPresent()) {
+        Location<World> location = blockSnapshot.getLocation().orElse(null);
+        if (location == null) {
             return null;
         }
 
-        Location<World> location = blockSnapshot.getLocation().get();
         // if under siege, some blocks will be breakable
         if (this.siegeData != null || this.doorsOpen) {
             boolean breakable = false;
@@ -578,7 +577,8 @@ public class Claim implements ContextSource {
 
             // Flag order matters
             // interact should always be checked before break
-            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, blockSnapshot.getState(), user) == Tristate.TRUE) {
+            // pass the blocksnapshot here as the live location represents the final transaction which would be AIR at this point
+            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, blockSnapshot, user) == Tristate.TRUE) {
                 return null;
             }
         }

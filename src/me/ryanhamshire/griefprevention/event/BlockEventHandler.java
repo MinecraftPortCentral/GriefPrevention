@@ -294,21 +294,22 @@ public class BlockEventHandler {
         }
 
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-            if (!transaction.getFinal().getLocation().isPresent()) {
+            BlockSnapshot blockSnapshot = transaction.getOriginal();
+            Location<World> location = blockSnapshot.getLocation().orElse(null);
+            if (location == null) {
                 continue;
             }
 
-            Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
-
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, transaction.getFinal().getLocation().get().getBlock(), creator) == Tristate.FALSE && transaction.getFinal().getLocation().get().getPosition().getY() > ((net.minecraft.world.World) event.getTargetWorld()).getSeaLevel()) {
+            Claim claim =  GriefPrevention.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), false, null);
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot.getLocation(), creator) == Tristate.FALSE && location.getPosition().getY() > ((net.minecraft.world.World) event.getTargetWorld()).getSeaLevel()) {
                 transaction.setValid(false);
                 continue;
             }
 
-            String denyReason = claim.allowBreak(source, transaction.getFinal(), creator);
+            String denyReason = claim.allowBreak(source, blockSnapshot, creator);
             if (denyReason != null) {
                 // Avoid lagging server from large explosions.
-                if (event.getTransactions().size() > 50) {
+                if (event.getTransactions().size() > 100) {
                     event.setCancelled(true);
                     GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
                     return;
