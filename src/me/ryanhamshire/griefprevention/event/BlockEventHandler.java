@@ -369,6 +369,49 @@ public class BlockEventHandler {
     }
 
     @Listener(order = Order.FIRST)
+    public void onBlockPost(ChangeBlockEvent.Post event) {
+        GPTimings.BLOCK_POST_EVENT.startTimingIfSync();
+
+        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+            return;
+        }
+
+        User user = event.getCause().first(User.class).orElse(null);
+        Claim sourceClaim = this.getSourceClaim(event.getCause());
+        if (sourceClaim == null || user == null || event.getCause().root() instanceof Player) {
+            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+            return;
+        }
+
+        List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
+        for (Transaction<BlockSnapshot> transaction : transactions) {
+            Location<World> location = transaction.getFinal().getLocation().orElse(null);
+            if (location == null) {
+                continue;
+            }
+
+            Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
+            if (user != null && targetClaim.hasFullTrust(user)) {
+                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+                continue;
+            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
+                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+                continue;
+            }
+
+            String denyReason = GriefPrevention.instance.allowBuild(event.getCause().root(), location, user);
+            if (denyReason != null) {
+                GriefPrevention.addEventLogEntry(event, denyReason);
+                event.setCancelled(true);
+                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+                return;
+            }
+        }
+        GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
+    }
+
+    @Listener(order = Order.FIRST)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
         GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
         if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
