@@ -641,6 +641,41 @@ public class Claim implements ContextSource {
         return reason;
     }
 
+    public String allowItemDrop(User user, Location<World> location) {
+        // admin claims need adminclaims permission only.
+        if (this.isAdminClaim()) {
+            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+                return null;
+            }
+        }
+
+        // claim owner and admins in ignoreclaims mode have access
+        if (hasFullAccess(user)) {
+            return null;
+        }
+
+        if (this.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) 
+                || this.getClaimData().getBuilders().contains(user.getUniqueId())) {
+            return null;
+        }
+
+        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, user, location.getBlock(), user) == Tristate.TRUE) {
+            return null;
+        }
+
+        // permission inheritance for subdivisions
+        if (this.parent != null && this.inheritParent) {
+            return this.parent.allowAccess(user, location);
+        }
+
+        //catch-all error message for all other cases
+        String reason = GriefPrevention.instance.dataStore.getMessage(Messages.NoDropsAllowed, this.getOwnerName());
+        if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
+            reason += "  " + GriefPrevention.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
+        }
+        return reason;
+    }
+
     public String allowContainers(User user, Location<World> location) {
         //trying to access inventory in a claim may extend an existing siege to include this claim
         if (user instanceof Player) {

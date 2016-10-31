@@ -70,11 +70,8 @@ import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.filter.cause.First;
-import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
-import org.spongepowered.api.item.ItemTypes;
-import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Tristate;
@@ -185,7 +182,7 @@ public class EntityEventHandler {
                 if (claim != null) {
                     String permission = GPPermissions.ENTITY_SPAWN;
                     if (entity instanceof EntityItem) {
-                        if (user == null || claim.allowAccess(user) == null) {
+                        if (user == null || claim.allowItemDrop(user, entity.getLocation()) == null) {
                             return true;
                         }
                         permission = GPPermissions.ITEM_SPAWN;
