@@ -1276,7 +1276,7 @@ public class PlayerEventHandler {
 
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
         String denyReason = claim.allowAccess(player, player.getLocation());
-        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack(), player) == Tristate.FALSE) {
+        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack().getType(), player) == Tristate.FALSE) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
             event.setCancelled(true);
         }
@@ -1300,7 +1300,7 @@ public class PlayerEventHandler {
 
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
         String denyReason = claim.allowAccess(player, player.getLocation());
-        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack(), player) == Tristate.FALSE) {
+        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType(), player) == Tristate.FALSE) {
             if (!investigateResult) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
             }
