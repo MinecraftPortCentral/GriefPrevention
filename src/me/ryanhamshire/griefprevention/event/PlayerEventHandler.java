@@ -73,6 +73,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
+import org.spongepowered.api.event.action.InteractEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
@@ -1296,6 +1297,10 @@ public class PlayerEventHandler {
         // If player right-clicked AIR, run investigate hook
         if (rayTrace == null) {
             investigateResult = investigateClaim(player, BlockSnapshot.NONE, itemInHand);
+            if (!investigateResult) {
+                onPlayerHandleShovelAction(event, BlockSnapshot.NONE, player, event.getHandType(), this.dataStore.getPlayerData(world, player.getUniqueId()));
+                return;
+            }
         }
 
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
@@ -1536,7 +1541,7 @@ public class PlayerEventHandler {
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         if (!clickedBlock.getLocation().isPresent()) {
-            onPlayerHandleShovelAction(event, player, handType, playerData);
+            onPlayerHandleShovelAction(event, event.getTargetBlock(), player, handType, playerData);
             GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
             return;
         }
@@ -1628,14 +1633,14 @@ public class PlayerEventHandler {
                 return;
             }
 
-            onPlayerHandleShovelAction(event, player, handType, playerData);
+            onPlayerHandleShovelAction(event, event.getTargetBlock(), player, handType, playerData);
             // avoid changing blocks after using a shovel
             event.setCancelled(true);
         }
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
     }
 
-    private void onPlayerHandleShovelAction(InteractBlockEvent event, Player player, HandType handType, PlayerData playerData) {
+    private void onPlayerHandleShovelAction(InteractEvent event, BlockSnapshot targetBlock, Player player, HandType handType, PlayerData playerData) {
         GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.startTimingIfSync();
         if (!player.getItemInHand(handType).isPresent()) {
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
@@ -1650,7 +1655,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        BlockSnapshot clickedBlock = event.getTargetBlock();
+        BlockSnapshot clickedBlock = targetBlock;
         // disable golden shovel while under siege
         if (playerData.siegeData != null) {
             GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.SiegeNoShovel));
