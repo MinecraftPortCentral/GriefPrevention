@@ -42,6 +42,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityItemFrame;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import org.spongepowered.api.Sponge;
@@ -182,9 +183,13 @@ public class EntityEventHandler {
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
                 if (claim != null) {
                     String permission = GPPermissions.ENTITY_SPAWN;
-                    if (entity instanceof EntityItem) {
+                    if (entity instanceof EntityItem || entity instanceof EntityXPOrb) {
                         if (user == null || claim.allowItemDrop(user, entity.getLocation()) == null) {
                             return true;
+                        }
+                        // If we reached this point, XP orbs shouldn't be allowed to spawn
+                        if (entity instanceof EntityXPOrb) {
+                            return false;
                         }
                         permission = GPPermissions.ITEM_SPAWN;
                     }
