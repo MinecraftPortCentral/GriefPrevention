@@ -24,9 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.flowpowered.math.vector.Vector3d;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -39,17 +41,19 @@ import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class CommandClaimInfo implements CommandExecutor {
 
     private static final Text NONE = Text.of(TextColors.GRAY, "none");
 
-    @SuppressWarnings("unused")
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
@@ -79,6 +83,12 @@ public class CommandClaimInfo implements CommandExecutor {
             String builders = "";
             String containers = "";
             String managers = "";
+            
+            Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
+            Location<World> northWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.lesserBoundaryCorner.getPosition().getZ()));
+            Location<World> southEast = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.greaterBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
+            Location<World> northEast = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.greaterBoundaryCorner.getPosition().getX(), 65.0D, claim.lesserBoundaryCorner.getPosition().getZ()));
+            // String southWestCorner = 
             Date created = null;
             Date lastActive = null;
             try {
@@ -136,10 +146,30 @@ public class CommandClaimInfo implements CommandExecutor {
             Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
                     greeting == null ? NONE : greeting);
             Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", TextColors.RESET, claim.isPvpEnabled() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
-            Text lesserCorner = Text.of(TextColors.YELLOW, "LesserCorner", TextColors.WHITE, " : ", TextColors.GRAY,
-                    claim.getLesserBoundaryCorner().getBlockPosition());
-            Text greaterCorner = Text.of(TextColors.YELLOW, "GreaterCorner", TextColors.WHITE, " : ", TextColors.GRAY,
-                    claim.getGreaterBoundaryCorner().getBlockPosition());
+            Text southWestCorner = Text.builder()
+                    .append(Text.of(TextColors.LIGHT_PURPLE, "SW", TextColors.WHITE, " : ", TextColors.GRAY, southWest.getBlockPosition(), " "))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, southWest)))
+                    .build();
+            Text southEastCorner = Text.builder()
+                    .append(Text.of(TextColors.LIGHT_PURPLE, "SE", TextColors.WHITE, " : ", TextColors.GRAY, southEast.getBlockPosition(), " "))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, southEast)))
+                    .build();
+            Text southCorners = Text.builder()
+                    .append(Text.of(TextColors.YELLOW, "SouthCorners", TextColors.WHITE, " : "))
+                    .append(southWestCorner)
+                    .append(southEastCorner).build();
+            Text northWestCorner = Text.builder()
+                    .append(Text.of(TextColors.LIGHT_PURPLE, "NW", TextColors.WHITE, " : ", TextColors.GRAY, northWest.getBlockPosition(), " "))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, northWest)))
+                    .build();
+            Text northEastCorner = Text.builder()
+                    .append(Text.of(TextColors.LIGHT_PURPLE, "NE", TextColors.WHITE, " : ", TextColors.GRAY, northEast.getBlockPosition(), " "))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, northEast)))
+                    .build();
+            Text northCorners = Text.builder()
+                    .append(Text.of(TextColors.YELLOW, "NorthCorners", TextColors.WHITE, " : "))
+                    .append(northWestCorner)
+                    .append(northEastCorner).build();
             Text claimArea = Text.of(TextColors.YELLOW, "Area", TextColors.WHITE, " : ", TextColors.GRAY, claim.getArea(), " blocks");
             Text claimAccessors = Text.of(TextColors.YELLOW, "Accessors", TextColors.WHITE, " : ", TextColors.BLUE, accessors.equals("") ? NONE : accessors);
             Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.YELLOW, builders.equals("") ? NONE : builders);
@@ -170,6 +200,8 @@ public class CommandClaimInfo implements CommandExecutor {
                                 dateCreated, "\n",
                                 dateLastActive, "\n",
                                 claimId, "\n",
+                                northCorners, "\n",
+                                southCorners, "\n",
                                 footer));
             } else if (!claim.isWildernessClaim()) {
                 GriefPrevention.sendMessage(src,
@@ -191,6 +223,8 @@ public class CommandClaimInfo implements CommandExecutor {
                                 dateCreated, "\n",
                                 dateLastActive, "\n",
                                 claimId, "\n",
+                                northCorners, "\n",
+                                southCorners, "\n",
                                 footer));
             } else { // wilderness
                 GriefPrevention.sendMessage(src,
@@ -213,5 +247,23 @@ public class CommandClaimInfo implements CommandExecutor {
         }
 
         return CommandResult.success();
+    }
+
+    public Consumer<CommandSource> createTeleportConsumer(CommandSource src, Location<World> location) {
+        return teleport -> {
+        Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location).orElse(null);
+        if (safeLocation == null) {
+            src.sendMessage(
+                    Text.builder().append(Text.of(TextColors.RED, "Location is not safe. "), 
+                    Text.builder().append(Text.of(TextColors.GREEN, "Are you sure you want to teleport here?")).onClick(TextActions.executeCallback(this.createForceTeleportConsumer(src, location))).style(TextStyles.UNDERLINE).build()).build());
+        } else {
+            ((Player) src).setLocation(safeLocation);
+        }};
+    }
+
+    public Consumer<CommandSource> createForceTeleportConsumer(CommandSource src, Location<World> location) {
+        return teleport -> {
+            ((Player) src).setLocation(location);
+        };
     }
 }
