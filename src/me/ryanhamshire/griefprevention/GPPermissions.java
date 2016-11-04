@@ -38,7 +38,10 @@ public class GPPermissions {
     public static final String COMMAND_BASIC_CLAIMS = "griefprevention.claim.command.basic-mode";
     public static final String COMMAND_GIVE_BOOK = "griefprevention.claim.command.give-book";
     public static final String COMMAND_GIVE_PET = "griefprevention.claim.command.give-pet";
-    public static final String COMMAND_CLAIM_INFO = "griefprevention.claim.command.info";
+    public static final String COMMAND_CLAIM_INFO_OTHERS = "griefprevention.claim.command.info.others";
+    public static final String COMMAND_CLAIM_INFO_BASE = "griefprevention.claim.command.info.base";
+    public static final String COMMAND_CLAIM_INFO_TELEPORT_OTHERS = "griefprevention.claim.command.info.teleport.others";
+    public static final String COMMAND_CLAIM_INFO_TELEPORT_BASE = "griefprevention.claim.command.info.teleport.base";
     public static final String COMMAND_SET_CLAIM_NAME = "griefprevention.claim.command.set-name";
     public static final String COMMAND_SET_CLAIM_FAREWELL = "griefprevention.claim.command.set-farewell";
     public static final String COMMAND_SET_CLAIM_GREETING = "griefprevention.claim.command.set-greeting";

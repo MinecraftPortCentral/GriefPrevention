@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.flowpowered.math.vector.Vector3d;
+import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
@@ -71,6 +72,17 @@ public class CommandClaimInfo implements CommandExecutor {
             if (claim.parent != null) {
                 ownerUniqueId = claim.parent.ownerID;
             }
+            // if not owner of claim, validate perms
+            if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+                if (!claim.getClaimData().getContainers().contains(player.getUniqueId()) 
+                        && !claim.getClaimData().getBuilders().contains(player.getUniqueId())
+                        && !claim.getClaimData().getManagers().contains(player.getUniqueId())
+                        && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_OTHERS)) {
+                    player.sendMessage(Text.of(TextColors.RED, "You do not have permission to view information in this claim.")); 
+                    return CommandResult.success();
+                }
+            }
+
             User owner = null;
             if (!claim.isWildernessClaim()) {
                 owner =  GriefPrevention.getOrCreateUser(ownerUniqueId);
@@ -148,11 +160,11 @@ public class CommandClaimInfo implements CommandExecutor {
             Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", TextColors.RESET, claim.isPvpEnabled() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
             Text southWestCorner = Text.builder()
                     .append(Text.of(TextColors.LIGHT_PURPLE, "SW", TextColors.WHITE, " : ", TextColors.GRAY, southWest.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, southWest)))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, southWest, claim)))
                     .build();
             Text southEastCorner = Text.builder()
                     .append(Text.of(TextColors.LIGHT_PURPLE, "SE", TextColors.WHITE, " : ", TextColors.GRAY, southEast.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, southEast)))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, southEast, claim)))
                     .build();
             Text southCorners = Text.builder()
                     .append(Text.of(TextColors.YELLOW, "SouthCorners", TextColors.WHITE, " : "))
@@ -160,11 +172,11 @@ public class CommandClaimInfo implements CommandExecutor {
                     .append(southEastCorner).build();
             Text northWestCorner = Text.builder()
                     .append(Text.of(TextColors.LIGHT_PURPLE, "NW", TextColors.WHITE, " : ", TextColors.GRAY, northWest.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, northWest)))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, northWest, claim)))
                     .build();
             Text northEastCorner = Text.builder()
                     .append(Text.of(TextColors.LIGHT_PURPLE, "NE", TextColors.WHITE, " : ", TextColors.GRAY, northEast.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(src, northEast)))
+                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, northEast, claim)))
                     .build();
             Text northCorners = Text.builder()
                     .append(Text.of(TextColors.YELLOW, "NorthCorners", TextColors.WHITE, " : "))
@@ -249,21 +261,36 @@ public class CommandClaimInfo implements CommandExecutor {
         return CommandResult.success();
     }
 
-    public Consumer<CommandSource> createTeleportConsumer(CommandSource src, Location<World> location) {
+    public Consumer<CommandSource> createTeleportConsumer(Player player, Location<World> location, Claim claim) {
         return teleport -> {
-        Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location).orElse(null);
-        if (safeLocation == null) {
-            src.sendMessage(
-                    Text.builder().append(Text.of(TextColors.RED, "Location is not safe. "), 
-                    Text.builder().append(Text.of(TextColors.GREEN, "Are you sure you want to teleport here?")).onClick(TextActions.executeCallback(this.createForceTeleportConsumer(src, location))).style(TextStyles.UNDERLINE).build()).build());
-        } else {
-            ((Player) src).setLocation(safeLocation);
-        }};
+            // if not owner of claim, validate perms
+            if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+                if (!claim.getClaimData().getContainers().contains(player.getUniqueId()) 
+                        && !claim.getClaimData().getBuilders().contains(player.getUniqueId())
+                        && !claim.getClaimData().getManagers().contains(player.getUniqueId())
+                        && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS)) {
+                    player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
+                    return;
+                }
+            } else if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_BASE)) {
+                player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in your claim.")); 
+                return;
+            }
+
+            Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location).orElse(null);
+            if (safeLocation == null) {
+                player.sendMessage(
+                        Text.builder().append(Text.of(TextColors.RED, "Location is not safe. "), 
+                        Text.builder().append(Text.of(TextColors.GREEN, "Are you sure you want to teleport here?")).onClick(TextActions.executeCallback(this.createForceTeleportConsumer(player, location))).style(TextStyles.UNDERLINE).build()).build());
+            } else {
+                player.setLocation(safeLocation);
+            }
+        };
     }
 
-    public Consumer<CommandSource> createForceTeleportConsumer(CommandSource src, Location<World> location) {
+    public Consumer<CommandSource> createForceTeleportConsumer(Player player, Location<World> location) {
         return teleport -> {
-            ((Player) src).setLocation(location);
+            player.setLocation(location);
         };
     }
 }
