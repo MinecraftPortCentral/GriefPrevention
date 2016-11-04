@@ -87,7 +87,7 @@ public class CommandGriefPrevention {
 
                         .child(CommandSpec.builder()
                                 .description(Text.of("Gets information about a claim"))
-                                .permission(GPPermissions.COMMAND_CLAIM_INFO)
+                                .permission(GPPermissions.COMMAND_CLAIM_INFO_BASE)
                                 .executor(new CommandClaimInfo())
                                 .build(), "info")
 
