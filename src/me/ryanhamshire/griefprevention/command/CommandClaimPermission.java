@@ -66,7 +66,7 @@ public class CommandClaimPermission implements CommandExecutor {
         }
 
         String permission = args.<String>getOne("permission").orElse(null);
-        if (!player.hasPermission(permission)) {
+        if (permission != null && !player.hasPermission(permission)) {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign a permission that you do not have."));
             return CommandResult.success();
         }
