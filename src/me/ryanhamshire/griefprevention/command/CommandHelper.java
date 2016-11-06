@@ -38,12 +38,14 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.command.CommandMapping;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.item.ItemType;
+import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
@@ -56,6 +58,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CommandHelper {
 
@@ -264,33 +268,44 @@ public class CommandHelper {
 
         String flagPermission = GPPermissions.FLAG_BASE + "." + flag;
         String targetFlag = flag;
-        if (!target.equalsIgnoreCase("any")) {
-            if (!target.contains(":")) {
-                // assume vanilla
-                target = "minecraft:" + target;
+        // special handling for commands
+        if (flag.equals(GPFlags.COMMAND_EXECUTE) || flag.equals(GPFlags.COMMAND_EXECUTE_PVP)) {
+            target = handleCommandFlag(src, target);
+            if (target == null) {
+                // failed
+                return CommandResult.success();
             }
-
-            String[] parts = target.split(":");
-            if (parts[1].equalsIgnoreCase("any")) {
-                target = flag + "." + parts[0];
-            } else {
-                String entitySpawnFlag = GPFlags.getEntitySpawnFlag(flag, target);
-                if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(flag, target)) {
-                    GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + target + "' entered for flag " + flag + "."));
-                    return CommandResult.success();
+            targetFlag = targetFlag + "." + target;
+            flagPermission = GPPermissions.FLAG_BASE + "." + targetFlag;
+        } else {
+            if (!target.equalsIgnoreCase("any")) {
+                if (!target.contains(":")) {
+                    // assume vanilla
+                    target = "minecraft:" + target;
                 }
     
-                if (entitySpawnFlag != null) {
-                    target = entitySpawnFlag;
+                String[] parts = target.split(":");
+                if (parts[1].equalsIgnoreCase("any")) {
+                    target = flag + "." + parts[0];
                 } else {
-                    target = flag + "." + target.replace(":", ".").replace("[", ".[");
+                    String entitySpawnFlag = GPFlags.getEntitySpawnFlag(flag, target);
+                    if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(flag, target)) {
+                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + target + "' entered for flag " + flag + "."));
+                        return CommandResult.success();
+                    }
+        
+                    if (entitySpawnFlag != null) {
+                        target = entitySpawnFlag;
+                    } else {
+                        target = flag + "." + target.replace(":", ".").replace("[", ".[");
+                    }
                 }
+    
+                targetFlag = target;
+                flagPermission = GPPermissions.FLAG_BASE + "." + targetFlag;
+            } else {
+                target = "";
             }
-
-            flagPermission = GPPermissions.FLAG_BASE + "." + target;
-            targetFlag = target;
-        } else {
-            target = "";
         }
 
         // check permission
@@ -348,6 +363,83 @@ public class CommandHelper {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
             return CommandResult.success();
         }
+    }
+
+    public static String handleCommandFlag(CommandSource src, String target) {
+        String pluginId = "minecraft";
+        String args = "";
+        String command = "";
+        int argsIndex = target.indexOf("[");
+        if (argsIndex != -1) {
+            if (argsIndex == 0) {
+                // invalid
+                src.sendMessage(Text.of(
+                        TextColors.RED, "No valid command entered."));
+                return null;
+            }
+            command = target.substring(0, argsIndex);
+            String[] parts = command.split(":");
+            if (parts.length > 1) {
+                pluginId = parts[0];
+                command = parts[1];
+            }
+            if (!validateCommandMapping(src, command, pluginId)) {
+                return null;
+            }
+            if (!pluginId.equals("minecraft")) {
+                PluginContainer pluginContainer = Sponge.getPluginManager().getPlugin(pluginId).orElse(null);
+                if (pluginContainer == null) {
+                    src.sendMessage(Text.of(
+                            TextColors.RED, "Could not locate a plugin with id '", 
+                            TextColors.AQUA, pluginId, 
+                            TextColors.RED, "'."));
+                    return null;
+                }
+            }
+            args = target.substring(argsIndex, target.length());
+            Pattern p = Pattern.compile("\\[([^\\]]+)\\]");
+            Matcher m = p.matcher(args);
+            if (!m.find()) {
+                // invalid
+                src.sendMessage(Text.of(
+                        TextColors.RED, "Invalid arguments '", 
+                        TextColors.AQUA, args, 
+                        TextColors.RED, "' entered. Check syntax matches  'command[arg1:arg2:etc]'"));
+                return null;
+            }
+            args = m.group(1);
+            target = pluginId + "." + command + "." + args.replace(":", ".");
+        } else {
+            String[] parts = target.split(":");
+            if (parts.length > 1) {
+                pluginId = parts[0];
+                command = parts[1];
+            } else {
+                command = target;
+            }
+            target = pluginId + "." + command;
+        }
+
+        // validate command
+        if (!validateCommandMapping(src, command, pluginId)) {
+            return null;
+        }
+
+        return target;
+    }
+
+    private static boolean validateCommandMapping(CommandSource src, String command, String pluginId) {
+        CommandMapping commandMapping = Sponge.getCommandManager().get(command).orElse(null);
+        if (commandMapping == null) {
+            src.sendMessage(Text.of(
+                    TextColors.RED, "Could not locate the command '", 
+                    TextColors.GREEN, command, 
+                    TextColors.RED, "' for mod id '", 
+                    TextColors.AQUA, pluginId, 
+                    TextColors.RED, "'."));
+            return false;
+        }
+        return true;
     }
 
     public static void handleTrustCommand(Player player, ClaimPermission claimPermission, String target) {
