@@ -67,7 +67,6 @@ import me.ryanhamshire.griefprevention.command.CommandClaimInfo;
 import me.ryanhamshire.griefprevention.command.CommandClaimInherit;
 import me.ryanhamshire.griefprevention.command.CommandClaimList;
 import me.ryanhamshire.griefprevention.command.CommandClaimName;
-import me.ryanhamshire.griefprevention.command.CommandClaimPermission;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimPvp;
@@ -661,13 +660,6 @@ public class GriefPrevention {
                 .arguments(onlyOne(player(Text.of("player"))))
                 .executor(new CommandIgnorePlayer())
                 .build(), "ignoreplayer", "ignore");
-
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Sets a permission for all players with a claim context"))
-                .permission(GPPermissions.COMMAND_CLAIM_PERMISSION)
-                .arguments(optional(GenericArguments.seq(string(Text.of("permission")), string(Text.of("value")))))
-                .executor(new CommandClaimPermission())
-                .build(), "claimpermission", "cp");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Sets a permission on a group with a claim context"))
