@@ -58,6 +58,7 @@ import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.tileentity.TileEntity;
+import org.spongepowered.api.command.CommandMapping;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
@@ -93,6 +94,7 @@ import org.spongepowered.api.item.inventory.Carrier;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
+import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.permission.option.OptionSubjectData;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.statistic.achievement.Achievements;
@@ -501,27 +503,50 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_COMMAND_EVENT.startTimingIfSync();
         String command = event.getCommand();
         String[] args = event.getArguments().split(" ");
-        String[] modCommand = command.split(":");
+        String[] parts = command.split(":");
+        String pluginId = null;
+
+        if (parts.length > 1) {
+            pluginId = parts[0];
+            command = parts[1];
+        }
 
         String message = "/" + event.getCommand() + " " + event.getArguments();
+        if (pluginId == null || !pluginId.equals("minecraft")) {
+            CommandMapping commandMapping = Sponge.getCommandManager().get(command).orElse(null);
+            PluginContainer pluginContainer = null;
+            if (commandMapping != null) {
+                pluginContainer = Sponge.getCommandManager().getOwner(commandMapping).orElse(null);
+                if (pluginContainer != null) {
+                    pluginId = pluginContainer.getId();
+                }
+            }
+            if (pluginId == null) {
+                pluginId = "minecraft";
+            }
+        }
+
         if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
         }
+
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         // if requires access trust, check for permission
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        String commandPermission = pluginId + "." + command;
+
         // first check the args
         String argument = "";
         for (String arg : args) {
             argument = argument + "." + arg;
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command + argument, player) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, commandPermission + argument, player) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
                 GriefPrevention.addEventLogEntry(event, "Blocked command.");
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
-            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command + argument, player) == Tristate.FALSE) {
+            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission + argument, player) == Tristate.FALSE) {
                 GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
                 GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
                 event.setCancelled(true);
@@ -530,34 +555,18 @@ public class PlayerEventHandler {
             }
         }
         // second check the full command
-        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, command, player) == Tristate.FALSE) {
+        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, commandPermission, player) == Tristate.FALSE) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
             GriefPrevention.addEventLogEntry(event, "Blocked command '" + command + "'.");
             event.setCancelled(true);
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
-        } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, command, player) == Tristate.FALSE) {
+        } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission, player) == Tristate.FALSE) {
             GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
             GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
             event.setCancelled(true);
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
-        }
-        // third check command without the modid
-        if (modCommand.length > 1) {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE, null, modCommand[1], player) == Tristate.FALSE) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.BlockedCommand, "'" + message + "'", claim.getOwnerName());
-                GriefPrevention.addEventLogEntry(event, "Blocked command '" + command + "'.");
-                event.setCancelled(true);
-                GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
-                return;
-            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld()) || playerData.siegeData != null) && GPPermissionHandler.getClaimPermission(claim, GPPermissions.COMMAND_EXECUTE_PVP, null, modCommand[1], player) == Tristate.FALSE) {
-                GriefPrevention.sendMessage(event.getCause().first(Player.class).get(), TextMode.Err, Messages.CommandBannedInPvP);
-                GriefPrevention.addEventLogEntry(event, "Blocked pvp command '" + command + "'.");
-                event.setCancelled(true);
-                GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
-                return;
-            }
         }
 
         // if a whisper
