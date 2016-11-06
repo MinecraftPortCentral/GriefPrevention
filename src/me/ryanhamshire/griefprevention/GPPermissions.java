@@ -55,9 +55,6 @@ public class GPPermissions {
     public static final String COMMAND_PVP = "griefprevention.claim.command.pvp";
     public static final String COMMAND_SIEGE = "griefprevention.claim.command.siege";
     public static final String COMMAND_SUBDIVISION_INHERIT = "griefprevention.claim.command.inherit";
-    public static final String COMMAND_CLAIM_PERMISSION = "griefprevention.claim.command.permission.base";
-    public static final String COMMAND_CLAIM_PERMISSION_GROUP = "griefprevention.claim.command.permission.group";
-    public static final String COMMAND_CLAIM_PERMISSION_PLAYER = "griefprevention.claim.command.permission.player";
     public static final String CLAIM_CREATE = "griefprevention.claim.create";
     public static final String CLAIM_CUBOID_BASIC = "griefprevention.claim.cuboid.basic";
     public static final String CLAIM_CUBOID_SUBDIVISION = "griefprevention.claim.cuboid.subdivision";
@@ -76,6 +73,8 @@ public class GPPermissions {
     // Admin
     public static final String COMMAND_ADJUST_CLAIM_BLOCKS = "griefprevention.admin.command.adjust-claim-blocks";
     public static final String COMMAND_ADMIN_CLAIMS = "griefprevention.admin.command.admin-claims";
+    public static final String COMMAND_CLAIM_PERMISSION_GROUP = "griefprevention.admin.command.claim-permission.group";
+    public static final String COMMAND_CLAIM_PERMISSION_PLAYER = "griefprevention.admin.command.claim-permission.player";
     public static final String COMMAND_DEBUG = "griefprevention.admin.command.debug";
     public static final String COMMAND_DELETE_CLAIM = "griefprevention.admin.command.delete-claim";
     public static final String COMMAND_DELETE_CLAIMS = "griefprevention.admin.command.delete-claims";
