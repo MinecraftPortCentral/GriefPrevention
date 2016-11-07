@@ -229,19 +229,19 @@ public class CommandHelper {
         if (customContext != null) {
             return customContext;
         } else if (context.equalsIgnoreCase("default") || context.equalsIgnoreCase("defaults")) {
-            if (claim.isBasicClaim()) {
-                return GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT;
-            } else if (claim.isAdminClaim()) {
+            if (claim.isAdminClaim()) {
                 return GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT;
+            } else if (claim.isBasicClaim() || claim.isSubdivision()) {
+                return GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT;
             } else {
                 src.sendMessage(Text.of(TextMode.Err, "Claim type " + claim.type.name() + " does not support flag defaults."));
                 return null;
             }
         } else if (context.equalsIgnoreCase("override") || context.equalsIgnoreCase("overrides")) {
-            if (claim.isBasicClaim()) {
-                return GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT;
-            } else if (claim.isAdminClaim()) {
+            if (claim.isAdminClaim()) {
                 return GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT;
+            } else if (claim.isBasicClaim() || claim.isSubdivision()) {
+                return GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT;
             } else {
                 src.sendMessage(Text.of(TextMode.Err, "Claim type " + claim.type.name() + " does not support flag overrides."));
                 return null;

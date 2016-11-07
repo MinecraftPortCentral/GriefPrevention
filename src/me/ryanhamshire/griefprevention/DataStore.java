@@ -674,7 +674,6 @@ public abstract class DataStore {
             subdivision.lesserBoundaryCorner = subdivision.lesserBoundaryCorner.setPosition(newLesserPosition);
             newGreaterPosition = new Vector3d(subdivision.greaterBoundaryCorner.getX(), newDepth, subdivision.greaterBoundaryCorner.getZ());
             subdivision.greaterBoundaryCorner = subdivision.greaterBoundaryCorner.setPosition(newGreaterPosition);
-            subdivision.updateClaimStorageData();
         }
 
         claim.updateClaimStorageData();

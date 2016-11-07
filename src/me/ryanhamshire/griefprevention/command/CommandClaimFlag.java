@@ -80,12 +80,12 @@ public class CommandClaimFlag implements CommandExecutor {
                 List<Object[]> flagList = Lists.newArrayList();
                 Set<Context> contexts = new HashSet<>();
                 Set<Context> overrideContexts = new HashSet<>();
-                if (claim.isBasicClaim() || (!claim.isAdminClaim() && claim.isSubdivision())) {
-                    contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
-                    overrideContexts.add(GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
-                } else if (claim.isAdminClaim()) {
+                if (claim.isAdminClaim()) {
                     contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
                     overrideContexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
+                } else if (claim.isBasicClaim() || claim.isSubdivision()) {
+                    contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
+                    overrideContexts.add(GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
                 } else {
                     contexts.add(GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
                 }

@@ -72,8 +72,9 @@ public class ClaimStorageData {
     public static final String MAIN_BUILDERS = "builders";
     public static final String MAIN_CONTAINERS = "managers";
     public static final String MAIN_MANAGERS = "coowners";
-    public static final String MAIN_BANNED_ITEM_LIST = "banned-item-ids";
     public static final String MAIN_SUBDIVISIONS = "sub-divisions";
+    // SUB
+    public static final String SUB_INHERIT_PARENT = "inherit-parent";
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public ClaimStorageData(Claim claim, Path path) {

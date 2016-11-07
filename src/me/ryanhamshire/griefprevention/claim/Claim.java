@@ -172,15 +172,11 @@ public class Claim implements ContextSource {
     }
 
     public boolean isBasicClaim() {
-        if (this.parent != null) {
-            return this.parent.isBasicClaim();
-        }
-
         return this.type == Type.BASIC;
     }
 
     public boolean isSubdivision() {
-        return this.parent != null && this.type == Type.SUBDIVISION;
+        return this.parent != null;
     }
 
     public boolean isWildernessClaim() {
@@ -762,14 +758,12 @@ public class Claim implements ContextSource {
     }
 
     // returns a copy of the location representing lower x, y, z limits
-    @SuppressWarnings("unchecked")
     public Location<World> getLesserBoundaryCorner() {
         return (Location<World>) this.lesserBoundaryCorner.copy();
     }
 
     // returns a copy of the location representing upper x, y, z limits
     // NOTE: remember upper Y will always be ignored, all claims always extend to the sky
-    @SuppressWarnings("unchecked")
     public Location<World> getGreaterBoundaryCorner() {
         return (Location<World>) this.greaterBoundaryCorner.copy();
     }
@@ -1100,14 +1094,16 @@ public class Claim implements ContextSource {
         // owner
         if (this.isWildernessClaim()) {
             this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
-        } else if (this.isBasicClaim() || this.isAdminClaim()) {
-            this.claimStorage.getConfig().setClaimOwnerUniqueId(this.ownerID);
-            this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
-        } else if (this.isSubdivision()){
+        } else if (this.isSubdivision()) {
             if (this.getClaimData() == null) {
                 this.setClaimData(new SubDivisionDataConfig(this));
             }
+
+            this.claimData.setInheritParent(this.inheritParent);
             this.claimStorage.getConfig().getSubdivisions().put(this.id, (SubDivisionDataConfig) this.getClaimData());
+        } else if (this.isBasicClaim() || this.isAdminClaim()) {
+            this.claimStorage.getConfig().setClaimOwnerUniqueId(this.ownerID);
+            this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
         }
 
         this.claimStorage.getConfig().setClaimType(this.type);
@@ -1116,6 +1112,10 @@ public class Claim implements ContextSource {
         this.claimData.setCuboid(this.cuboid);
         // Will save next world save
         this.getClaimData().setRequiresSave(true);
+        // Update SubdivisionData
+        for (Claim subdivision : this.children) {
+            subdivision.updateClaimStorageData();
+        }
     }
 
     public boolean protectPlayersInClaim() {

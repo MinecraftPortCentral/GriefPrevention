@@ -52,8 +52,6 @@ public class ClaimTemplateConfig extends ConfigCategory {
     public ArrayList<UUID> containers = new ArrayList<>();
     @Setting(value = ClaimStorageData.MAIN_MANAGERS, comment = "The coowners associated with subdivision.")
     public ArrayList<UUID> coowners = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_BANNED_ITEM_LIST, comment = "Item id's that are denied for public usage.")
-    public List<String> publicItemBlackList = new ArrayList<>();
 
     public ClaimTemplateConfig() {
 

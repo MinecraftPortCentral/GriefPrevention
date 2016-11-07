@@ -251,6 +251,7 @@ public class ClaimWorldManager {
         for (List<Claim> claimList : this.playerClaimList.values()) {
             for (Claim claim : claimList) {
                 if (claim.getClaimData().requiresSave()) {
+                    claim.updateClaimStorageData();
                     claim.getClaimStorage().save();
                     claim.getClaimData().setRequiresSave(false);
                 }
