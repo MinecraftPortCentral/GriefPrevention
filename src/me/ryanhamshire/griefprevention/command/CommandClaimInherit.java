@@ -54,6 +54,7 @@ public class CommandClaimInherit implements CommandExecutor {
             return CommandResult.success();
         }
         claim.inheritParent = !claim.inheritParent;
+        claim.getClaimData().setRequiresSave(true);
 
         if (!claim.inheritParent) {
             GriefPrevention.sendMessage(player, Text.of(TextColors.WHITE, "Subdivision inheritance ", TextColors.RED, "OFF"));

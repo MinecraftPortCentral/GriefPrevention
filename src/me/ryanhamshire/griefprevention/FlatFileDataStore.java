@@ -403,6 +403,7 @@ public class FlatFileDataStore extends DataStore {
                 subDivision.parent = claim;
                 subDivision.type = Claim.Type.SUBDIVISION;
                 subDivision.cuboid = subDivisionData.isCuboid();
+                subDivision.inheritParent = subDivisionData.inheritParent();
                 subDivision.setClaimData(subDivisionData);
                 // add subdivision to parent
                 claim.children.add(subDivision);

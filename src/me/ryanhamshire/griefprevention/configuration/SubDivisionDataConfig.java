@@ -69,8 +69,8 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     public List<UUID> containers = new ArrayList<>();
     @Setting(value = ClaimStorageData.MAIN_MANAGERS)//, comment = "The managers associated with subdivision.")
     public List<UUID> managers = new ArrayList<>();
-    @Setting(value = ClaimStorageData.MAIN_BANNED_ITEM_LIST)//, comment = "Item id's that are banned from use in claim.")
-    private List<String> bannedItemList = new ArrayList<>();
+    @Setting(value = ClaimStorageData.SUB_INHERIT_PARENT)
+    public boolean inheritParent = true;
 
     public SubDivisionDataConfig() {}
 
@@ -143,10 +143,6 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     @Override
     public List<UUID> getManagers() {
         return this.managers;
-    }
-
-    public List<String> getBannedItemList() {
-        return this.bannedItemList;
     }
 
     @Override
@@ -232,5 +228,15 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
 
     public void setParentData(IClaimData parentData) {
         this.parent = parentData;
+    }
+
+    @Override
+    public boolean inheritParent() {
+        return this.inheritParent;
+    }
+
+    @Override
+    public void setInheritParent(boolean flag) {
+        this.inheritParent = flag;
     }
 }

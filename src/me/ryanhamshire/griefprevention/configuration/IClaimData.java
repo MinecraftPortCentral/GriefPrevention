@@ -36,6 +36,8 @@ public interface IClaimData {
 
     boolean isCuboid();
 
+    boolean inheritParent();
+
     UUID getWorldUniqueId();
 
     UUID getOwnerUniqueId();
@@ -93,4 +95,6 @@ public interface IClaimData {
     void setManagers(List<UUID> coowners);
 
     void setRequiresSave(boolean flag);
+
+    void setInheritParent(boolean flag);
 }

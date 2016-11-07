@@ -217,4 +217,14 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     public void setRequiresSave(boolean flag) {
         this.requiresSave = flag;
     }
+
+    @Override
+    public boolean inheritParent() {
+        return true;
+    }
+
+    @Override
+    public void setInheritParent(boolean flag) {
+        // only used by subdivisions
+    }
 }
