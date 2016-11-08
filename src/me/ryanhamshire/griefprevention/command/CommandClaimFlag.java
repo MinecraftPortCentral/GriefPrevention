@@ -93,7 +93,8 @@ public class CommandClaimFlag implements CommandExecutor {
                 if (!overrideContexts.isEmpty()) {
                     overrideContexts.add(claim.world.getContext());
                 }
-                Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
+                Map<String, Boolean> defaultTransientPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
+                Map<String, Boolean> defaultTransientOverridePermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
                 Map<String, Boolean> overridePermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(overrideContexts);
                 Map<String, Boolean> claimPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(ImmutableSet.of(claim.context));
                 for (Map.Entry<String, Boolean> overridePermissionEntry : overridePermissions.entrySet()) {
@@ -103,11 +104,18 @@ public class CommandClaimFlag implements CommandExecutor {
                     flagList.add(flagText);
                 }
 
-                for (Map.Entry<String, Boolean> defaultPermissionEntry : defaultPermissions.entrySet()) {
+                for (Map.Entry<String, Boolean> defaultPermissionEntry : defaultTransientPermissions.entrySet()) {
                     if (!claimPermissions.containsKey(defaultPermissionEntry.getKey()) && !overridePermissions.containsKey(defaultPermissionEntry.getKey())) {
-                        Boolean flagValue = defaultPermissionEntry.getValue();
-                        Object[] flagText = new Object[] { TextColors.GREEN, defaultPermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                        TextColors.LIGHT_PURPLE, flagValue.toString() };
+                        Object[] flagText = null;
+                        // check if transient default has been overridden and if so display that value instead
+                        Boolean defaultTransientOverrideValue = defaultTransientOverridePermissions.get(defaultPermissionEntry.getKey());
+                        if (defaultTransientOverrideValue != null) {
+                            flagText = new Object[] { TextColors.GREEN, defaultPermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
+                                   TextColors.LIGHT_PURPLE, defaultTransientOverrideValue.toString() };
+                        } else {
+                            flagText = new Object[] { TextColors.GREEN, defaultPermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
+                                   TextColors.LIGHT_PURPLE, defaultPermissionEntry.getValue().toString() };
+                        }
                         flagList.add(flagText);
                     }
                 }
