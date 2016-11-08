@@ -1106,7 +1106,7 @@ public class Claim implements ContextSource {
             this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
         }
 
-        this.claimStorage.getConfig().setClaimType(this.type);
+        this.claimData.setClaimType(this.type);
         this.claimData.setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
         this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
         this.claimData.setCuboid(this.cuboid);
