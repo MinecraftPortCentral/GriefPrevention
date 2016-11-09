@@ -67,11 +67,13 @@ public class GriefPreventionConfig<T extends ConfigBase> {
             .setHeader(GriefPrevention.CONFIG_HEADER));
     private ObjectMapper<T>.BoundInstance configMapper;
     private T configBase;
+    private Path path;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public GriefPreventionConfig(Type type, Path path) {
 
         this.type = type;
+        this.path = path;
 
         try {
             Files.createDirectories(path.getParent());
@@ -140,5 +142,9 @@ public class GriefPreventionConfig<T extends ConfigBase> {
 
     public Type getType() {
         return this.type;
+    }
+
+    public Path getPath() {
+        return this.path;
     }
 }

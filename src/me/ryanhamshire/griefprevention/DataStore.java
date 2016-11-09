@@ -111,6 +111,7 @@ public abstract class DataStore {
     public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
     public static Map<String, ClaimTemplateStorage> globalTemplates = new HashMap<>();
     public static GriefPreventionConfig<GlobalConfig> globalConfig;
+    public static boolean USE_GLOBAL_PLAYER_STORAGE = true;
 
     // in-memory cache for messages
     protected EnumMap<Messages, CustomizableMessage> messages = new EnumMap<>(Messages.class);
@@ -120,11 +121,10 @@ public abstract class DataStore {
 
     // path information, for where stuff stored on disk is well... stored
     protected final static Path dataLayerFolderPath = Paths.get("config").resolve("GriefPrevention");
-    final static Path globalDataPath = Paths.get("GriefPreventionData").resolve("GlobalPlayerData");
+    public final static Path globalPlayerDataPath = dataLayerFolderPath.resolve("GlobalPlayerData");
     final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
     final static Path bannedWordsFilePath = dataLayerFolderPath.resolve("bannedWords.txt");
-    public Path globalPlayerDataPath;
 
     // the latest version of the data schema implemented here
     protected static final int latestSchemaVersion = 2;
@@ -167,14 +167,13 @@ public abstract class DataStore {
     // initialization!
     void initialize() throws Exception {
         // ensure global player data folder exists
-        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+        USE_GLOBAL_PLAYER_STORAGE = GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage;
+        if (USE_GLOBAL_PLAYER_STORAGE) {
             this.globalClaimWorldManager = new ClaimWorldManager();
-        }
-
-        this.globalPlayerDataPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getServer().getDefaultWorldName()).resolve(globalDataPath);
-        File globalPlayerDataFolder = this.globalPlayerDataPath.toFile();
-        if (!globalPlayerDataFolder.exists()) {
-            globalPlayerDataFolder.mkdirs();
+            File globalPlayerDataFolder = globalPlayerDataPath.toFile();
+            if (!globalPlayerDataFolder.exists()) {
+                globalPlayerDataFolder.mkdirs();
+            }
         }
 
         // load up all the messages from messages.hocon
@@ -914,7 +913,7 @@ public abstract class DataStore {
     public void deleteClaimsForPlayer(UUID playerID) {
         // make a list of the player's claims
         List<ClaimWorldManager> claimWorldManagers = new ArrayList<>();
-        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
             claimWorldManagers.add(this.globalClaimWorldManager);
         } else {
             claimWorldManagers.addAll(this.claimWorldManagers.values());
@@ -1529,7 +1528,7 @@ public abstract class DataStore {
 
     @Nullable
     public ClaimWorldManager getClaimWorldManager(WorldProperties worldProperties) {
-        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
             return this.globalClaimWorldManager;
         }
 
@@ -1542,7 +1541,7 @@ public abstract class DataStore {
     }
 
     public void removeClaimWorldManager(WorldProperties worldProperties) {
-        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
             return;
         }
         this.claimWorldManagers.remove(worldProperties.getUniqueId());

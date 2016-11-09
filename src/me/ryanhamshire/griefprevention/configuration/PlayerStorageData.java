@@ -24,7 +24,6 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
-import com.google.common.reflect.TypeToken;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -32,10 +31,8 @@ import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.spongepowered.api.util.Functional;
 import org.spongepowered.common.SpongeImpl;
-import org.spongepowered.common.util.IpSet;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -92,8 +89,6 @@ public class PlayerStorageData {
     public void reload() {
         try {
             this.root = this.loader.load(ConfigurationOptions.defaults()
-                    .setSerializers(
-                            TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
                     .setHeader(GriefPrevention.CONFIG_HEADER));
             this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
         } catch (Exception e) {

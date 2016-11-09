@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.claim;
 
 import com.google.common.collect.Maps;
+import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
@@ -52,7 +53,6 @@ public class ClaimWorldManager {
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
     private WorldProperties worldProperties;
     private GriefPreventionConfig<?> activeConfig;
-    private boolean useGlobalStorage = false;
 
     // World UUID -> player data
     private Map<UUID, PlayerData> playerDataList = Maps.newHashMap();
@@ -71,7 +71,6 @@ public class ClaimWorldManager {
     public ClaimWorldManager() {
         this.worldProperties = null;
         this.activeConfig = GriefPrevention.getGlobalConfig();
-        this.useGlobalStorage = true;
     }
 
     public ClaimWorldManager(WorldProperties worldProperties) {
@@ -94,12 +93,11 @@ public class ClaimWorldManager {
             return playerData;
         }
 
-        Path rootPath = Sponge.getGame().getSavesDirectory().resolve(Sponge.getGame().getServer().getDefaultWorld().get().getWorldName());
         Path playerFilePath = null;
-        if (this.useGlobalStorage || this.worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-            playerFilePath = rootPath.resolve(playerDataPath).resolve(playerUniqueId.toString());
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            playerFilePath = DataStore.globalPlayerDataPath.resolve(playerUniqueId.toString());
         } else {
-            playerFilePath = rootPath.resolve(this.worldProperties.getWorldName()).resolve(playerDataPath).resolve(playerUniqueId.toString());
+            playerFilePath = DataStore.worldConfigMap.get(this.worldProperties.getUniqueId()).getPath().getParent().resolve("PlayerData").resolve(playerUniqueId.toString());
         }
 
         PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath, playerUniqueId, this.activeConfig.getConfig().general.claimInitialBlocks);

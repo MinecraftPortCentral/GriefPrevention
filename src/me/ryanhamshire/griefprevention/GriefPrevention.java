@@ -171,7 +171,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.1.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.1.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
@@ -180,7 +180,7 @@ public class GriefPrevention {
     public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
-    public static final String CONFIG_HEADER = "2.1.0\n"
+    public static final String CONFIG_HEADER = "2.1.1\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us at the IRC or drop by our forums and leave a post.\n"
             + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"
@@ -363,7 +363,7 @@ public class GriefPrevention {
                     .submit(GriefPrevention.instance);
         }
 
-        if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage && Sponge.getServer().getDefaultWorld().isPresent()) {
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE && Sponge.getServer().getDefaultWorld().isPresent()) {
             // run cleanup task
             int cleanupTaskInterval = GriefPrevention.getGlobalConfig().getConfig().claim.cleanupTaskInterval;
             if (cleanupTaskInterval > 0) {
@@ -835,6 +835,7 @@ public class GriefPrevention {
 
             Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
+            DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
             this.debugLogging = DataStore.globalConfig.getConfig().logging.loggingDebug;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.NONE);
             this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.NONE);
