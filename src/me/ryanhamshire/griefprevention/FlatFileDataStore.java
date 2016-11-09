@@ -39,6 +39,7 @@ import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.RedProtectMigrator;
+import org.apache.commons.io.FileUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
@@ -143,7 +144,15 @@ public class FlatFileDataStore extends DataStore {
             return;
         }
 
-        if (!GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+        // check if world has existing data
+        Path oldWorldDataPath = rootWorldSavePath.resolve(worldProperties.getWorldName()).resolve(claimDataPath);
+        Path oldPlayerDataPath = rootWorldSavePath.resolve(worldProperties.getWorldName()).resolve(playerDataPath);
+        if (worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
+            oldWorldDataPath = rootWorldSavePath.resolve(claimDataPath);
+            oldPlayerDataPath = rootWorldSavePath.resolve(playerDataPath);
+        }
+
+        if (!DataStore.USE_GLOBAL_PLAYER_STORAGE) {
             this.claimWorldManagers.put(worldProperties.getUniqueId(), new ClaimWorldManager(worldProperties));
             // run cleanup task
             int cleanupTaskInterval = GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.cleanupTaskInterval;
@@ -151,43 +160,61 @@ public class FlatFileDataStore extends DataStore {
                 CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(worldProperties);
                 cleanupClaimTasks.put(worldProperties.getUniqueId(), Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance));
             }
+        } else {
+            // use global player data
+            oldPlayerDataPath = rootWorldSavePath.resolve(playerDataPath);
         }
 
-        // check if world has existing data
-        Path claimData = Paths.get(worldProperties.getWorldName()).resolve(claimDataPath);
-        Path worldPlayerDataPath = Paths.get(worldProperties.getWorldName()).resolve(playerDataPath);
-        if (worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-            claimData = claimDataPath;
-            worldPlayerDataPath = playerDataPath;
-        }
+        Path newWorldDataPath = rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName());
 
+        // Migrate old data
         try {
-            if (!Files.exists(rootWorldSavePath.resolve(claimData))) {
-                Files.createDirectories(rootWorldSavePath.resolve(claimData));
+            // Check for old data location
+            if (Files.exists(oldWorldDataPath)) {
+                GriefPrevention.instance.getLogger().info("Detected GP claim data in old location.");
+                GriefPrevention.instance.getLogger().info("Migrating GP claim data from " + oldWorldDataPath.toAbsolutePath() + " to " + newWorldDataPath.toAbsolutePath() + "...");
+                FileUtils.moveDirectoryToDirectory(oldWorldDataPath.toFile(), newWorldDataPath.toFile(), true);
+                GriefPrevention.instance.getLogger().info("Done.");
             }
+            if (Files.exists(oldPlayerDataPath)) {
+                GriefPrevention.instance.getLogger().info("Detected GP player data in old location.");
+                GriefPrevention.instance.getLogger().info("Migrating GP player data from " + oldPlayerDataPath.toAbsolutePath() + " to " + newWorldDataPath.toAbsolutePath() + "...");
+                FileUtils.moveDirectoryToDirectory(oldPlayerDataPath.toFile(), newWorldDataPath.toFile(), true);
+                GriefPrevention.instance.getLogger().info("Done.");
+            }
+            // Check if new data location is empty
+            if (!Files.exists(newWorldDataPath)) {
+                Files.createDirectories(newWorldDataPath);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
+        // Load Claim Data
+        try {
             // check for RedProtectData
             if (GriefPrevention.getGlobalConfig().getConfig().migrator.redProtectMigrator) {
                 Path redProtectFilePath = redProtectDataPath.resolve("data_" + worldProperties.getWorldName() + ".conf");
                 Path gpMigratedPath = redProtectDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
                 if (Files.exists(redProtectFilePath) && !Files.exists(gpMigratedPath)) {
-                    RedProtectMigrator.migrate(world, redProtectFilePath, rootWorldSavePath.resolve(claimData));
+                    RedProtectMigrator.migrate(world, redProtectFilePath, newWorldDataPath);
                     Files.createFile(gpMigratedPath);
                 }
             }
 
-                File[] files = rootWorldSavePath.resolve(claimData).toFile().listFiles();
+            File[] files = newWorldDataPath.resolve("ClaimData").toFile().listFiles();
             if (files.length > 0) {
                 this.loadClaimData(files, worldProperties);
-                GriefPrevention.addLogEntry("[" + worldProperties.getWorldName() + "]" + files.length + " total claims loaded.");
+                GriefPrevention.instance.getLogger().info("[" + worldProperties.getWorldName() + "] " + files.length + " total claims loaded.");
             }
-    
-            if (Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
-                files = rootWorldSavePath.resolve(worldPlayerDataPath).toFile().listFiles();
+
+            if (GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
+                files = globalPlayerDataPath.toFile().listFiles();
+            } else {
+                files = newWorldDataPath.resolve("PlayerData").toFile().listFiles();
+            }
+            if (files.length > 0) {
                 this.loadPlayerData(worldProperties, files);
-            }
-            if (!Files.exists(rootWorldSavePath.resolve(worldPlayerDataPath))) {
-                Files.createDirectories(rootWorldSavePath.resolve(worldPlayerDataPath));
             }
 
             ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
@@ -278,7 +305,7 @@ public class FlatFileDataStore extends DataStore {
                 try {
                     claimId = UUID.fromString(files[i].getName());
                 } catch (Exception e) {
-                    GriefPrevention.addLogEntry("ERROR!! could not read claim file " + files[i].getAbsolutePath());
+                    GriefPrevention.instance.getLogger().error("Could not read claim file " + files[i].getAbsolutePath());
                     continue;
                 }
 
@@ -310,7 +337,7 @@ public class FlatFileDataStore extends DataStore {
                 try {
                     playerUUID = UUID.fromString(files[i].getName());
                 } catch (Exception e) {
-                    GriefPrevention.addLogEntry("ERROR!! could not read player file " + files[i].getAbsolutePath());
+                    GriefPrevention.instance.getLogger().error("Could not read player file " + files[i].getAbsolutePath());
                     continue;
                 }
 
@@ -418,11 +445,7 @@ public class FlatFileDataStore extends DataStore {
             // open the claim's file
             Path claimDataFolderPath = null;
             // check if main world
-            if (claim.world.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-                claimDataFolderPath = rootWorldSavePath.resolve(claimDataPath);
-            } else {
-                claimDataFolderPath = rootWorldSavePath.resolve(claim.world.getName()).resolve(claimDataPath);
-            }
+            claimDataFolderPath = DataStore.worldConfigMap.get(claim.world.getUniqueId()).getPath().getParent().resolve("ClaimData");
 
             UUID claimId = claim.parent != null ? claim.parent.id : claim.id;
             File claimFile = new File(claimDataFolderPath + File.separator + claimId);
