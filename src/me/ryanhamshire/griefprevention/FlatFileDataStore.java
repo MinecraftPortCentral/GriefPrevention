@@ -167,7 +167,6 @@ public class FlatFileDataStore extends DataStore {
 
         Path newWorldDataPath = rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName());
 
-        // Migrate old data
         try {
             // Check for old data location
             if (Files.exists(oldWorldDataPath)) {
@@ -182,17 +181,20 @@ public class FlatFileDataStore extends DataStore {
                 FileUtils.moveDirectoryToDirectory(oldPlayerDataPath.toFile(), newWorldDataPath.toFile(), true);
                 GriefPrevention.instance.getLogger().info("Done.");
             }
-            // Check if new data location is empty
-            if (!Files.exists(newWorldDataPath)) {
-                Files.createDirectories(newWorldDataPath);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        // Load Claim Data
-        try {
-            // check for RedProtectData
+            // Create data folders if they do not exist
+            if (!Files.exists(newWorldDataPath.resolve("ClaimData"))) {
+                Files.createDirectories(newWorldDataPath.resolve("ClaimData"));
+            }
+            if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+                if (!globalPlayerDataPath.toFile().exists()) {
+                    Files.createDirectories(globalPlayerDataPath);
+                }
+            } else if (!Files.exists(newWorldDataPath.resolve("PlayerData"))) {
+                Files.createDirectories(newWorldDataPath.resolve("PlayerData"));
+            }
+
+            // Migrate RedProtectData if enabled
             if (GriefPrevention.getGlobalConfig().getConfig().migrator.redProtectMigrator) {
                 Path redProtectFilePath = redProtectDataPath.resolve("data_" + worldProperties.getWorldName() + ".conf");
                 Path gpMigratedPath = redProtectDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
@@ -201,9 +203,14 @@ public class FlatFileDataStore extends DataStore {
                     Files.createFile(gpMigratedPath);
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
+        // Load Claim Data
+        try {
             File[] files = newWorldDataPath.resolve("ClaimData").toFile().listFiles();
-            if (files.length > 0) {
+            if (files != null && files.length > 0) {
                 this.loadClaimData(files, worldProperties);
                 GriefPrevention.instance.getLogger().info("[" + worldProperties.getWorldName() + "] " + files.length + " total claims loaded.");
             }
@@ -213,7 +220,7 @@ public class FlatFileDataStore extends DataStore {
             } else {
                 files = newWorldDataPath.resolve("PlayerData").toFile().listFiles();
             }
-            if (files.length > 0) {
+            if (files != null && files.length > 0) {
                 this.loadPlayerData(worldProperties, files);
             }
 
@@ -374,6 +381,7 @@ public class FlatFileDataStore extends DataStore {
             GriefPrevention.addLogEntry("Found mismatch world UUID in claim file " + claimFile + ". Expected " + worldProperties.getUniqueId() + ", found " + worldUniqueId + ". Updating file with correct UUID...", CustomLogEntryTypes.Exception);
             claimStorage.getConfig().setWorldUniqueId(worldProperties.getUniqueId());
             claimStorage.getConfig().setRequiresSave(true);
+            claimStorage.save();
         }
 
         World world = Sponge.getServer().loadWorld(worldProperties).orElse(null);
