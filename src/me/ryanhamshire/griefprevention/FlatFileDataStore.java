@@ -35,7 +35,6 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.configuration.types.DimensionConfig;
-import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.RedProtectMigrator;
@@ -137,12 +136,8 @@ public class FlatFileDataStore extends DataStore {
         DataStore.worldConfigMap.put(worldProperties.getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
                 rootConfigPath.resolve(dimType.getId()).resolve(worldProperties.getWorldName()).resolve("world.conf")));
 
-        // check if claims are supported
-        GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldProperties.getUniqueId());
-        if (worldConfig != null && worldConfig.getConfig().configEnabled && worldConfig.getConfig().claim.claimMode == 0) {
-            GriefPrevention.addLogEntry("Error - World '" + worldProperties.getWorldName() + "' does not allow claims. Skipping...");
-            return;
-        }
+        ClaimWorldManager claimWorldManager = new ClaimWorldManager(worldProperties);
+        this.claimWorldManagers.put(worldProperties.getUniqueId(), claimWorldManager);
 
         // check if world has existing data
         Path oldWorldDataPath = rootWorldSavePath.resolve(worldProperties.getWorldName()).resolve(claimDataPath);
@@ -153,7 +148,6 @@ public class FlatFileDataStore extends DataStore {
         }
 
         if (!DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            this.claimWorldManagers.put(worldProperties.getUniqueId(), new ClaimWorldManager(worldProperties));
             // run cleanup task
             int cleanupTaskInterval = GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.cleanupTaskInterval;
             if (cleanupTaskInterval > 0) {
@@ -224,8 +218,8 @@ public class FlatFileDataStore extends DataStore {
                 this.loadPlayerData(worldProperties, files);
             }
 
-            ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
-            if (claimWorldManager != null && claimWorldManager.getWildernessClaim() == null) {
+            // If a wilderness claim was not loaded, create a new one
+            if (claimWorldManager.getWildernessClaim() == null) {
                 claimWorldManager.createWildernessClaim(worldProperties);
             }
         } catch (Exception e) {
