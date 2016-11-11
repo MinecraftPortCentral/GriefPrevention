@@ -270,8 +270,10 @@ public class ClaimWorldManager {
         this.worldClaims.clear();
         this.claimUniqueIdMap.clear();
         this.chunksToClaimsMap.clear();
-        this.theWildernessClaim.unload();
-        this.theWildernessClaim = null;
+        if (this.theWildernessClaim != null) {
+            this.theWildernessClaim.unload();
+            this.theWildernessClaim = null;
+        }
         this.worldProperties = null;
     }
 

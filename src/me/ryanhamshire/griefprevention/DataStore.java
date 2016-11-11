@@ -99,14 +99,11 @@ public abstract class DataStore {
 
     // World UUID -> PlayerDataWorldManager
     protected final Map<UUID, ClaimWorldManager> claimWorldManagers = Maps.newHashMap();
-    // Global PlayerData manager
-    protected ClaimWorldManager globalClaimWorldManager;
 
     // in-memory cache for group (permission-based) data
     protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<>();
 
     // in-memory cache for claim data
-    //public static ConcurrentHashMap<String, ArrayList<Claim>> chunksToClaimsMap = new ConcurrentHashMap<>();
     public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
     public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
     public static Map<String, ClaimTemplateStorage> globalTemplates = new HashMap<>();
@@ -169,7 +166,6 @@ public abstract class DataStore {
         // ensure global player data folder exists
         USE_GLOBAL_PLAYER_STORAGE = GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage;
         if (USE_GLOBAL_PLAYER_STORAGE) {
-            this.globalClaimWorldManager = new ClaimWorldManager();
             File globalPlayerDataFolder = globalPlayerDataPath.toFile();
             if (!globalPlayerDataFolder.exists()) {
                 globalPlayerDataFolder.mkdirs();
@@ -636,7 +632,7 @@ public abstract class DataStore {
                 }
 
                 // write data to file
-                File playerDataFile = this.globalPlayerDataPath.resolve(playerID.toString() + ".ignore").toFile();
+                File playerDataFile = globalPlayerDataPath.resolve(playerID.toString() + ".ignore").toFile();
                 Files.write(fileContent.toString().trim().getBytes("UTF-8"), playerDataFile);
             }
 
@@ -913,11 +909,7 @@ public abstract class DataStore {
     public void deleteClaimsForPlayer(UUID playerID) {
         // make a list of the player's claims
         List<ClaimWorldManager> claimWorldManagers = new ArrayList<>();
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            claimWorldManagers.add(this.globalClaimWorldManager);
-        } else {
-            claimWorldManagers.addAll(this.claimWorldManagers.values());
-        }
+        claimWorldManagers.addAll(this.claimWorldManagers.values());
 
         for (ClaimWorldManager claimWorldManager : claimWorldManagers) {
             List<Claim> claims = claimWorldManager.getPlayerClaims(playerID);
@@ -1528,10 +1520,6 @@ public abstract class DataStore {
 
     @Nullable
     public ClaimWorldManager getClaimWorldManager(WorldProperties worldProperties) {
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            return this.globalClaimWorldManager;
-        }
-
         ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
         if (claimWorldManager == null) {
             claimWorldManager = new ClaimWorldManager(worldProperties);
