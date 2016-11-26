@@ -156,18 +156,8 @@ public class GPPermissionHandler {
             if (claim.hasFullAccess(user)) {
                 return Tristate.TRUE;
             }
-            Tristate value = Tristate.UNDEFINED;
-            if (sourceContext != null) {
-                value = getUserPermission(user, claim, targetPermission, sourceContext);
-                if (value == Tristate.FALSE) {
-                    return value;
-                }
-            }
 
-            value = getUserPermission(user, claim, targetPermission, null);
-            if (value != Tristate.UNDEFINED) {
-                return value;
-            }
+            return getUserPermission(user, claim, targetPermission, sourceContext);
         }
 
         if (sourceContext != null && getClaimFlagPermission(claim, targetPermission, sourceContext) == Tristate.FALSE) {
@@ -216,33 +206,27 @@ public class GPPermissionHandler {
         }
 
         contexts.add(claim.getContext());
-        // This is required since permissions will check each context separately
-        if (!GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getParents(contexts).isEmpty()) {
-            if (claim.parent != null && claim.inheritParent) {
-                // first check subdivision context
-                value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
-                if (value != Tristate.UNDEFINED) {
-                    return value;
-                }
-                // check parent context
-                contexts.remove(claim.getContext());
-                contexts.add(claim.parent.getContext());
-                value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
-                if (value != Tristate.UNDEFINED) {
-                    return value;
-                }
-            } else {
-                // check parent
-                value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
-                if (value != Tristate.UNDEFINED) {
-                    return value;
-                }
+        if (claim.parent != null && claim.inheritParent) {
+            // first check subdivision context
+            value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+            if (value != Tristate.UNDEFINED) {
+                return value;
+            }
+            // check parent context
+            contexts.remove(claim.getContext());
+            contexts.add(claim.parent.getContext());
+            value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+            if (value != Tristate.UNDEFINED) {
+                return value;
+            }
+        } else {
+            // check parent
+            value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+            if (value != Tristate.UNDEFINED) {
+                return value;
             }
         }
 
-        if (sourceContext != null) {
-            return Tristate.UNDEFINED;
-        }
         // Fallback to defaults
         contexts = new HashSet<>();
         if (claim.isAdminClaim()) {
@@ -254,20 +238,10 @@ public class GPPermissionHandler {
         }
 
         contexts.add(claim.world.getContext());
-        // check persisted default data
-        if (!GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getParents(contexts).isEmpty()) {
-            value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
-            if (value != Tristate.UNDEFINED) {
-                return value;
-            }
-        }
-
-        // finally, check non-persisted default data
-        if (!GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getParents(contexts).isEmpty()) {
-            value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
-            if (value != Tristate.UNDEFINED) {
-                return value;
-            }
+        // check persisted/transient default data
+        value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+        if (value != Tristate.UNDEFINED) {
+            return value;
         }
 
         return Tristate.UNDEFINED;
@@ -284,26 +258,12 @@ public class GPPermissionHandler {
             }
 
             contexts.add(claim.world.getContext());
-            if (!GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts).isEmpty() || !GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getParents(contexts).isEmpty()) {
-                Tristate override = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
-                if (override != Tristate.UNDEFINED) {
-                    return override;
-                }
+            Tristate override = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+            if (override != Tristate.UNDEFINED) {
+                return override;
             }
         }
 
         return Tristate.UNDEFINED;
-    }
-
-    public static String getBlockStateIdWithMeta(BlockState state) {
-        String blockTypeId = state.getType().getId();
-        Block block = (net.minecraft.block.Block) state.getType();
-        int meta = block.getMetaFromState((IBlockState)state);
-        return blockTypeId + ":" + meta;
-    }
-
-    public static String getBlockStateId(BlockState state) {
-        String blockTypeId = state.getType().getId();
-        return blockTypeId;
     }
 }
