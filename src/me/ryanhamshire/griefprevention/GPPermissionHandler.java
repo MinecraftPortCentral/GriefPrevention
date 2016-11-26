@@ -180,9 +180,12 @@ public class GPPermissionHandler {
             // check subdivision's parent
             contexts.remove(claim.getContext());
             contexts.add(claim.parent.getContext());
-            return user.getPermissionValue(contexts, permission);
+            value = user.getPermissionValue(contexts, permission);
         }
 
+        if (value == Tristate.UNDEFINED) {
+            return getFlagDefault(claim, permission);
+        }
         return value;
     }
 
@@ -228,7 +231,12 @@ public class GPPermissionHandler {
         }
 
         // Fallback to defaults
-        contexts = new HashSet<>();
+        return getFlagDefault(claim, permission);
+    }
+
+    private static Tristate getFlagDefault(Claim claim, String permission) {
+        // Fallback to defaults
+        Set<Context> contexts = new HashSet<>();
         if (claim.isAdminClaim()) {
             contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
         } else if (claim.isBasicClaim() || claim.isSubdivision()) {
@@ -239,7 +247,7 @@ public class GPPermissionHandler {
 
         contexts.add(claim.world.getContext());
         // check persisted/transient default data
-        value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+        Tristate value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
         if (value != Tristate.UNDEFINED) {
             return value;
         }
