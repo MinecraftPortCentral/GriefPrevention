@@ -24,13 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import static me.ryanhamshire.griefprevention.command.CommandClaimFlag.stripeText;
-
-import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -44,14 +42,17 @@ import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class CommandClaimFlagPlayer implements CommandExecutor {
 
@@ -66,33 +67,58 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         }
 
         String name = ctx.<String>getOne("player").get();
-        Optional<String> flag = ctx.<String>getOne("flag");
-        Optional<String> target = ctx.<String>getOne("target");
-        Optional<Tristate> value = ctx.<Tristate>getOne("value");
+        String flag = ctx.<String>getOne("flag").orElse(null);
+        String source = ctx.<String>getOne("source").orElse(null);
+        // Workaround command API issue not handling onlyOne arguments with sequences properly
+        List<String> targetValues = new ArrayList<>(ctx.<String>getAll("target"));
+        String target = null;
+        if (!targetValues.isEmpty()) {
+            if (targetValues.size() > 1) {
+                source = "any";
+                target = targetValues.get(1);
+            } else {
+                target = targetValues.get(0);
+            }
+        }
+        Tristate value = ctx.<Tristate>getOne("value").orElse(null);
         Optional<String> context = ctx.<String>getOne("context");
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
-        Optional<User> targetUser = GriefPrevention.instance.resolvePlayerByName(name);
+        Optional<User> targetUser = PlayerUtils.resolvePlayerByName(name);
         if (!targetUser.isPresent()) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "The playername " + name + " was not found."));
             return CommandResult.empty();
-        } else if (!flag.isPresent() && !value.isPresent()) {
-            Set<Context> contextSet = new HashSet<>();
-            contextSet.add(claim.getContext());
-            List<Object[]> flagList = Lists.newArrayList();
-            Map<String, Boolean> permissions = targetUser.get().getSubjectData().getPermissions(contextSet);
+        } else if (flag == null && value == null) {
+            Set<Context> contexts = new HashSet<>();
+            contexts.add(claim.getContext());
+            if (source != null) {
+                Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
+                if (sourceContext != null) {
+                    contexts.add(sourceContext);
+                }
+            } else {
+                source = "any";
+            }
+            Subject subject = targetUser.get();
+            Map<String, Text> flagList = new TreeMap<>();
+            Map<String, Boolean> permissions = subject.getSubjectData().getPermissions(contexts);
             for (Map.Entry<String, Boolean> permissionEntry : permissions.entrySet()) {
-                Boolean flagValue = permissionEntry.getValue();
-                Object[] flagText = new Object[] { TextColors.GREEN, permissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                TextColors.GOLD, flagValue.toString() };
-                flagList.add(flagText);
+                String flagPermission = permissionEntry.getKey();
+                String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
+                        .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
+                Text flagText = Text.of(
+                        TextColors.GREEN, baseFlagText, "  ",
+                        TextColors.WHITE, "[",
+                        TextColors.LIGHT_PURPLE, CommandHelper.getClickableText(src, subject, name, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source),
+                        TextColors.WHITE, "]");
+                flagList.put(flagPermission, flagText);
             }
 
-            List<Text> finalTexts = stripeText(flagList);
-
+            List<Text> textList = new ArrayList<>(flagList.values());
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.AQUA, name + " Flag Permissions")).padding(Text.of("-")).contents(finalTexts);
+                    .title(Text.of(TextColors.GOLD, name, TextColors.AQUA, " Flag Permissions")).padding(Text.of("-")).contents(textList);
             paginationBuilder.sendTo(src);
             return CommandResult.success();
         }
@@ -104,6 +130,6 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         }
 
         Subject subj = user.getContainingCollection().get(user.getIdentifier());
-        return CommandHelper.addFlagPermission(src, subj, claim, flag.get(), target.get(), value.get(), context, 1);
+        return CommandHelper.addFlagPermission(src, subj, name, claim, flag, source, target, value, context);
     }
 }

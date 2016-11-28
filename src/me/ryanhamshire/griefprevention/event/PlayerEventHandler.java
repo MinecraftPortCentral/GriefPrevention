@@ -51,9 +51,7 @@ import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.block.BlockDoor;
 import net.minecraft.entity.passive.EntityTameable;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.util.math.RayTraceResult;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -76,6 +74,7 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.action.InteractEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
 import org.spongepowered.api.event.command.SendCommandEvent;
@@ -734,7 +733,7 @@ public class PlayerEventHandler {
         // remember the player's ip address
         WorldProperties worldProperties = event.getToTransform().getExtent().getProperties();
         UUID playerUniqueId = player.getUniqueId();
-        PlayerData playerData = this.dataStore.createPlayerData(worldProperties, playerUniqueId);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(worldProperties, playerUniqueId);
         playerData.receivedDropUnlockAdvertisement = false;
         playerData.ipAddress = event.getConnection().getAddress().getAddress();
         ClaimWorldManager claimWorldManager = this.dataStore.getClaimWorldManager(worldProperties);
@@ -1300,16 +1299,11 @@ public class PlayerEventHandler {
         }
 
         Optional<ItemStack> itemInHand = player.getItemInHand(event.getHandType());
-        boolean investigateResult = false;
-        EntityPlayerMP mcPlayer = ((EntityPlayerMP) player);
-        RayTraceResult rayTrace = PlayerUtils.rayTracePlayerEyes(mcPlayer);
-        // If player right-clicked AIR, run investigate hook
-        if (rayTrace == null) {
-            investigateResult = investigateClaim(player, BlockSnapshot.NONE, itemInHand);
-            if (!investigateResult) {
-                onPlayerHandleShovelAction(event, BlockSnapshot.NONE, player, event.getHandType(), this.dataStore.getPlayerData(world, player.getUniqueId()));
-                return;
-            }
+        BlockSnapshot blockSnapshot = event.getCause().get(NamedCause.HIT_TARGET, BlockSnapshot.class).orElse(BlockSnapshot.NONE);
+        boolean investigateResult = investigateClaim(player, blockSnapshot, itemInHand);
+        if (!investigateResult) {
+            onPlayerHandleShovelAction(event, blockSnapshot, player, event.getHandType(), this.dataStore.getPlayerData(world, player.getUniqueId()));
+            return;
         }
 
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
@@ -1331,56 +1325,6 @@ public class PlayerEventHandler {
             GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
             return;
         }
-
-        // FEATURE: lock dropped items to player who dropped them
-        // who owns this stack?
-        // TODO
-        /*for (SlotTransaction transaction : event.getTransactions()) {
-            ItemStackSnapshot itemPickedUp = transaction.getFinal();
-
-            Optional<UUID> ownerUniqueId = ((SpongeItemStackSnapshot) itemPickedUp).get
-            if (ownerUniqueId == null || !ownerUniqueId.isPresent()) {
-                continue;
-            }
-
-            Player owner = Sponge.getServer().getPlayer(ownerUniqueId.get()).orElse(null);
-            if (owner == null) {
-                continue;
-            }
-
-            // has that player unlocked his drops?
-            if (player.getUniqueId().equals(ownerUniqueId)) {
-                PlayerData playerData = this.dataStore.getPlayerData(world, ownerUniqueId.get());
-
-                // FEATURE: lock dropped items to player who dropped them
-                // decide whether or not to apply this feature to this situation
-                // (depends on the world where it happens)
-               /* boolean isPvPWorld = GriefPrevention.instance.pvpRulesApply(world);
-                if ((isPvPWorld && GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.protectItemsOnDeathPvp) ||
-                        (!isPvPWorld && GriefPrevention.getActiveConfig(world.getProperties()).getConfig().general.protectItemsOnDeathNonPvp)) {
-
-                    // allow the player to receive a message about how to unlock any drops
-                    playerData.receivedDropUnlockAdvertisement = false;
-                }*/
-
-                // TODO
-                // if locked, don't allow pickup
-                /*if (player != null && playerData.dropsAreUnlocked == false) {
-                    GriefPrevention.addEventLogEntry(event, "Drops are locked.");
-                    event.setCancelled(true);
-
-                    // if hasn't been instructed how to unlock, send explanatory messages
-                    PlayerData targetPlayerData = GriefPrevention.instance.dataStore.getPlayerData(world, player.getUniqueId());
-                    if (!targetPlayerData.receivedDropUnlockAdvertisement) {
-                        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DropUnlockAdvertisement);
-                        GriefPrevention.sendMessage(player, TextMode.Err, Messages.PickupBlockedExplanation, owner.getName());
-                        targetPlayerData.receivedDropUnlockAdvertisement = true;
-                    }
-                    GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
-                    return;
-                }
-            }
-        }*/
 
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
         // the rest of this code is specific to pvp worlds
@@ -1546,7 +1490,6 @@ public class PlayerEventHandler {
 
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
-        investigateClaim(player, clickedBlock, itemInHand);
         PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
 
         if (!clickedBlock.getLocation().isPresent()) {
@@ -2183,18 +2126,8 @@ public class PlayerEventHandler {
         if (lastShovelLocation == null) {
             // if he's at the claim count per player limit already and
             // doesn't have permission to bypass, display an error message
-            String limit = player.getSubjectData().getOptions(new HashSet<>()).get(GPPermissions.OPTION_CLAIM_LIMIT);
-            int claimLimit = activeConfig.getConfig().claim.maxClaimsPerPlayer;
-            if (limit != null) {
-                try {
-                    claimLimit = Integer.parseInt(limit);
-                } catch (NumberFormatException e) {
-                    // ignore
-                }
-            }
-
-            if (claimLimit > 0 && !player.hasPermission(GPPermissions.OVERRIDE_CLAIM_COUNT_LIMIT) &&
-                    playerData.getClaims().size() >= claimLimit) {
+            if (playerData.optionCreateClaimLimit > 0 && !player.hasPermission(GPPermissions.OVERRIDE_CLAIM_COUNT_LIMIT) &&
+                    playerData.getClaims().size() >= playerData.optionCreateClaimLimit) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimCreationFailedOverClaimCountLimit);
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;

@@ -27,9 +27,11 @@ package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.DataStore;
+import me.ryanhamshire.griefprevention.GPOptions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.data.property.block.MatterProperty;
@@ -55,10 +57,6 @@ public class DeliverClaimBlocksTask implements Runnable {
     public void run() {
         if (this.player == null) {
             for (World world : Sponge.getServer().getWorlds()) {
-                if (GriefPrevention.getActiveConfig(world.getProperties()).getConfig().claim.claimBlocksEarned  <= 0) {
-                    return;
-                }
-
                 // if no player specified, this task will create a player-specific task
                 // for each player, scheduled one tick apart
                 int i = 0;
@@ -68,9 +66,12 @@ public class DeliverClaimBlocksTask implements Runnable {
                     }
 
                     Player player = (Player) entity;
-                    DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(player);
-                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(i++).execute(newTask)
-                            .submit(GriefPrevention.instance);
+                    int accrualPerHour = PlayerUtils.getOptionIntValue(player, GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
+                    if (accrualPerHour > 0) {
+                        DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(player);
+                        Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(i++).execute(newTask)
+                                .submit(GriefPrevention.instance);
+                    }
                 }
             }
         }
@@ -79,34 +80,27 @@ public class DeliverClaimBlocksTask implements Runnable {
         else {
             DataStore dataStore = GriefPrevention.instance.dataStore;
             PlayerData playerData = dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-
             Location<World> lastLocation = playerData.lastAfkCheckLocation;
-            try {
-                // if he's not in a vehicle and has moved at least three blocks since the last check and he's not being pushed around by fluids
-                Optional<MatterProperty> matterProperty = player.getLocation().getBlock().getProperty(MatterProperty.class);
-                if (!player.get(VehicleData.class).isPresent() &&
-                        (lastLocation == null || lastLocation.getPosition().distanceSquared(player.getLocation().getPosition()) >= 0) &&
-                        matterProperty.isPresent() && matterProperty.get().getValue() != MatterProperty.Matter.LIQUID) {
-                    // add blocks
-                    int accruedBlocks = GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.claimBlocksEarned / 12;
-                    if (accruedBlocks < 0) {
-                        accruedBlocks = 1;
-                    }
-
-                    GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
-                    PlayerStorageData playerStorage = playerData.getStorageData();
-                    if (playerStorage == null) {
-                        GriefPrevention.instance.dataStore.createPlayerData(player.getWorld().getProperties(), player.getUniqueId());
-                        playerStorage = playerData.getStorageData();
-                    }
-                    playerStorage.getConfig().setAccruedClaimBlocks(playerStorage.getConfig().getAccruedClaimBlocks() + accruedBlocks);
-                } else {
-                    GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
+            // if he's not in a vehicle and has moved at least three blocks since the last check and he's not being pushed around by fluids
+            Optional<MatterProperty> matterProperty = player.getLocation().getBlock().getProperty(MatterProperty.class);
+            if (!player.get(VehicleData.class).isPresent() &&
+                    (lastLocation == null || lastLocation.getPosition().distanceSquared(player.getLocation().getPosition()) >= 0) &&
+                    matterProperty.isPresent() && matterProperty.get().getValue() != MatterProperty.Matter.LIQUID) {
+                // add blocks
+                int accruedBlocks = playerData.optionBlocksAccruedPerHour / 12;
+                if (accruedBlocks < 0) {
+                    accruedBlocks = 1;
                 }
-            } catch (IllegalArgumentException e) {
-            } catch (Exception e) {
-                GriefPrevention.addLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
-                e.printStackTrace();
+
+                GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
+                PlayerStorageData playerStorage = playerData.getStorageData();
+                if (playerStorage == null) {
+                    GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld().getProperties(), player.getUniqueId());
+                    playerStorage = playerData.getStorageData();
+                }
+                playerStorage.getConfig().setAccruedClaimBlocks(playerStorage.getConfig().getAccruedClaimBlocks() + accruedBlocks);
+            } else {
+                GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
             }
 
             // remember current location for next time

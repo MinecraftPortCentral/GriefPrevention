@@ -100,14 +100,12 @@ public abstract class DataStore {
     // World UUID -> PlayerDataWorldManager
     protected final Map<UUID, ClaimWorldManager> claimWorldManagers = Maps.newHashMap();
 
-    // in-memory cache for group (permission-based) data
-    protected ConcurrentHashMap<String, Integer> permissionToBonusBlocksMap = new ConcurrentHashMap<>();
-
     // in-memory cache for claim data
     public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
     public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
     public static Map<String, ClaimTemplateStorage> globalTemplates = new HashMap<>();
     public static GriefPreventionConfig<GlobalConfig> globalConfig;
+    public static Map<UUID, PlayerData> GLOBAL_PLAYER_DATA = Maps.newHashMap();
     public static boolean USE_GLOBAL_PLAYER_STORAGE = true;
 
     // in-memory cache for messages
@@ -307,42 +305,6 @@ public abstract class DataStore {
     public void clearCachedPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         this.getClaimWorldManager(worldProperties).removePlayer(playerUniqueId);
     }
-
-    // gets the number of bonus blocks a player has from his permissions
-    // this will return 0 when he's offline, and the correct number when online.
-    public int getGroupBonusBlocks(UUID playerID) {
-        int bonusBlocks = 0;
-        Set<String> keys = permissionToBonusBlocksMap.keySet();
-        Iterator<String> iterator = keys.iterator();
-        while (iterator.hasNext()) {
-            String groupName = iterator.next();
-            Optional<Player> player = Sponge.getGame().getServer().getPlayer(playerID);
-            if (player.isPresent() && player.get().hasPermission(groupName)) {
-                bonusBlocks += this.permissionToBonusBlocksMap.get(groupName);
-            }
-        }
-
-        return bonusBlocks;
-    }
-
-    // grants a group (players with a specific permission) bonus claim blocks as
-    // long as they're still members of the group
-    public int adjustGroupBonusBlocks(String groupName, int amount) {
-        Integer currentValue = this.permissionToBonusBlocksMap.get(groupName);
-        if (currentValue == null) {
-            currentValue = 0;
-        }
-
-        currentValue += amount;
-        this.permissionToBonusBlocksMap.put(groupName, currentValue);
-
-        // write changes to storage to ensure they don't get lost
-        this.saveGroupBonusBlocks(groupName, currentValue);
-
-        return currentValue;
-    }
-
-    abstract void saveGroupBonusBlocks(String groupName, int amount);
 
     // adds a claim to the datastore, making it an effective claim
     void addClaim(Claim newClaim, boolean writeToStorage) {
@@ -1288,7 +1250,7 @@ public abstract class DataStore {
         this.addDefault(Messages.SiegeTooFarAway, "You're too far away to siege.");
         this.addDefault(Messages.SiegeWinDoorsOpen, "Congratulations!  Buttons and levers are temporarily unlocked (five minutes).");
         this.addDefault(Messages.SoftMuted, "Soft-muted {0}.", "0: The changed player's name.");
-        this.addDefault(Messages.StartBlockMath, "{0} blocks from play + {1} bonus = {2} total.");
+        this.addDefault(Messages.StartBlockMath, "{0} blocks from play + {1} bonus + {2} initial = {3} total.");
         this.addDefault(Messages.SubdivisionNoClaimFound, "No claim exists at selected corner. Please click a valid opposite corner within parent claim in order to create your subdivision.");
         this.addDefault(Messages.SubdivisionMode, "Subdivision mode.  Use your shovel to create subdivisions in your existing claims.  Use /basicclaims to exit.");
         this.addDefault(Messages.SubdivisionStart, "Subdivision corner set!  Use your shovel at the location for the opposite corner of this new subdivision.");
@@ -1500,17 +1462,12 @@ public abstract class DataStore {
     // if the player has never been on the server before, this will return a
     // fresh player data with default values
     public PlayerData getPlayerData(World world, UUID playerID) {
-        return getPlayerData(world.getProperties(), playerID);
+        return getOrCreatePlayerData(world.getProperties(), playerID);
     }
 
-    public PlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+    public PlayerData getOrCreatePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         ClaimWorldManager claimWorldManager = this.getClaimWorldManager(worldProperties);
-        return claimWorldManager.getPlayerData(playerUniqueId);
-    }
-
-    public PlayerData createPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(worldProperties);
-        return claimWorldManager.createPlayerData(playerUniqueId);
+        return claimWorldManager.getOrCreatePlayerData(playerUniqueId);
     }
 
     public void removePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
@@ -1520,7 +1477,13 @@ public abstract class DataStore {
 
     @Nullable
     public ClaimWorldManager getClaimWorldManager(WorldProperties worldProperties) {
-        ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        ClaimWorldManager claimWorldManager = null;
+        if (worldProperties == null) {
+            claimWorldManager = this.claimWorldManagers.get(Sponge.getServer().getDefaultWorld().get().getUniqueId());
+        } else {
+            claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        }
+
         if (claimWorldManager == null) {
             claimWorldManager = new ClaimWorldManager(worldProperties);
             this.claimWorldManagers.put(worldProperties.getUniqueId(), claimWorldManager);

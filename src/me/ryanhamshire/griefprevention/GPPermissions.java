@@ -26,15 +26,12 @@ package me.ryanhamshire.griefprevention;
 
 public class GPPermissions {
 
-    // Options
-    public static final String OPTION_CLAIM_LIMIT = "griefprevention.claim-limit";
-
     // Claims
     public static final String COMMAND_ABANDON_CLAIM = "griefprevention.claim.command.abandon";
     public static final String COMMAND_ABANDON_ALL_CLAIMS = "griefprevention.claim.command.abandon-all";
     public static final String COMMAND_ABANDON_TOP_LEVEL_CLAIM = "griefprevention.claim.command.abandon-top-level";
     public static final String COMMAND_CUBOID_CLAIMS = "griefprevention.claim.command.cuboid";
-    public static final String COMMAND_LIST_CLAIMS = "griefprevention.claim.command.list";
+    public static final String COMMAND_LIST_CLAIMS_BASE = "griefprevention.claim.command.list.base";
     public static final String COMMAND_BASIC_CLAIMS = "griefprevention.claim.command.basic-mode";
     public static final String COMMAND_GIVE_BOOK = "griefprevention.claim.command.give-book";
     public static final String COMMAND_GIVE_PET = "griefprevention.claim.command.give-pet";
@@ -58,7 +55,6 @@ public class GPPermissions {
     public static final String CLAIM_CREATE = "griefprevention.claim.create";
     public static final String CLAIM_CUBOID_BASIC = "griefprevention.claim.cuboid.basic";
     public static final String CLAIM_CUBOID_SUBDIVISION = "griefprevention.claim.cuboid.subdivision";
-    public static final String CLAIM_LIST_OTHERS = "griefprevention.claim.list-other";
     public static final String SIEGE_IMMUNE = "griefprevention.claim.siege.immune";
     public static final String VISUALIZE_CLAIMS = "griefprevention.claim.visualize-claims";
 
@@ -83,19 +79,23 @@ public class GPPermissions {
     public static final String COMMAND_IGNORE_CLAIMS = "griefprevention.admin.command.ignore-claims";
     public static final String COMMAND_SET_ACCRUED_CLAIM_BLOCKS = "griefprevention.admin.command.set-accrued-claim-blocks";
     public static final String COMMAND_RESTORE_NATURE = "griefprevention.admin.command.restore-nature";
-    public static final String COMAND_RESTORE_NATURE_AGGRESSIVE = "griefprevention.admin.command.restore-nature-aggressive";
+    public static final String COMMAND_RESTORE_NATURE_AGGRESSIVE = "griefprevention.admin.command.restore-nature-aggressive";
     public static final String COMMAND_RESTORE_NATURE_FILL = "griefprevention.admin.command.restore-nature-fill";
     public static final String COMMAND_RELOAD = "griefprevention.admin.command.reload";
     public static final String SET_ADMIN_FLAGS = "griefprevention.admin.claim.set-admin-flags";
+    public static final String LIST_BASIC_CLAIMS = "griefprevention.admin.claim.list-basic-claims";
     public static final String MANAGE_FLAG_DEFAULTS = "griefprevention.admin.claim.manage.flag-defaults";
     public static final String MANAGE_FLAG_OVERRIDES = "griefprevention.admin.claim.manage.flag-overrides";
     public static final String MANAGE_WILDERNESS = "griefprevention.admin.claim.manage.wilderness";
+    public static final String MANAGE_PERMISSION_OPTIONS = "griefprevention.admin.claim.manage.options";
     public static final String OVERRIDE_CLAIM_COUNT_LIMIT = "griefprevention.admin.claim.override-limit";
     public static final String EAVES_DROP = "griefprevention.admin.eavesdrop";
     public static final String EAVES_DROP_SIGNS = "griefprevention.admin.eavesdrop.signs";
 
     // Players
     public static final String COMMAND_IGNORE_PLAYER = "griefprevention.command.player.ignore";
+    public static final String COMMAND_PLAYER_INFO_BASE = "griefprevention.command.player.info.base";
+    public static final String COMMAND_PLAYER_INFO_OTHERS = "griefprevention.command.player.info.others";
     public static final String COMMAND_UNIGNORE_PLAYER = "griefprevention.command.player.unignore";
     public static final String COMMAND_LIST_IGNORED_PLAYERS = "griefprevention.command.player.list";
     public static final String COMMAND_SEPARATE_PLAYERS = "griefprevention.command.player.separate";

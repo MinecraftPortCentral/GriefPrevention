@@ -336,8 +336,8 @@ public class EntityEventHandler {
             Player defender = (Player) (targetEntity);
 
             if (attacker != defender) {
-                PlayerData defenderData = this.dataStore.getPlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
-                PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
+                PlayerData defenderData = this.dataStore.getOrCreatePlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
+                PlayerData attackerData = this.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
 
                 // otherwise if protecting spawning players
                 if (defenderData.pvpImmune) {
@@ -389,7 +389,7 @@ public class EntityEventHandler {
             }
         } else {
             if (attacker instanceof Player && targetEntity instanceof Player) {
-                PlayerData defenderData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), targetEntity.getUniqueId());
+                PlayerData defenderData = this.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), targetEntity.getUniqueId());
                 // don't protect players already in combat
                 if (defenderData.inPvpCombat(claim.world)) {
                     return false;
@@ -479,8 +479,8 @@ public class EntityEventHandler {
             return;
         }
 
-        PlayerData defenderData = this.dataStore.getPlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
-        PlayerData attackerData = this.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
+        PlayerData defenderData = this.dataStore.getOrCreatePlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
+        PlayerData attackerData = this.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
         Claim attackerClaim = this.dataStore.getClaimAtPlayer(attacker, false);
         Claim defenderClaim = this.dataStore.getClaimAtPlayer(defender, false);
 
@@ -525,7 +525,7 @@ public class EntityEventHandler {
 
         if (livingEntity instanceof Player) {
             Player player = (Player) livingEntity;
-            PlayerData playerData = this.dataStore.getPlayerData(player.getWorld().getProperties(), player.getUniqueId());
+            PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld().getProperties(), player.getUniqueId());
 
             // if involved in a siege
             if (playerData.siegeData != null) {
@@ -562,7 +562,7 @@ public class EntityEventHandler {
         }
 
         Player player = (Player) entity;
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld().getProperties(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld().getProperties(), player.getUniqueId());
         EntityDamageSource damageSource = event.getCause().first(EntityDamageSource.class).get();
 
         // if involved in a siege

@@ -29,7 +29,6 @@ import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -43,14 +42,13 @@ import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.util.Tristate;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class CommandClaimPermissionPlayer implements CommandExecutor {
+public class CommandClaimOptionPlayer implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
@@ -62,52 +60,49 @@ public class CommandClaimPermissionPlayer implements CommandExecutor {
             return CommandResult.success();
         }
 
-        String permission = args.<String>getOne("permission").orElse(null);
-        if (permission != null && !player.hasPermission(permission)) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign a permission that you do not have."));
+        String option = args.<String>getOne("option").orElse(null);
+        if (option != null && !player.hasPermission(GPPermissions.MANAGE_PERMISSION_OPTIONS)) {
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign an option to players."));
             return CommandResult.success();
         }
         User user = args.<User>getOne("user").orElse(null);
         String value = args.<String>getOne("value").orElse(null);
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
         if (claim.isWildernessClaim() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim permissions here."));
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim options here."));
             return CommandResult.success();
         } else if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim permissions."));
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim options."));
             return CommandResult.success();
         }
 
         Set<Context> contexts = new HashSet<>();
         contexts.add(claim.getContext());
-        if (permission == null || value == null) {
-            // display current permissions for user
-            List<Object[]> permList = Lists.newArrayList();
-            Map<String, Boolean> permissions = user.getSubjectData().getPermissions(contexts);
-            for (Map.Entry<String, Boolean> permissionEntry : permissions.entrySet()) {
-                Boolean permValue = permissionEntry.getValue();
-                Object[] permText = new Object[] { TextColors.GREEN, permissionEntry.getKey(), "  ",
-                                TextColors.GOLD, permValue.toString() };
-                permList.add(permText);
+        if (option == null || value == null) {
+            // display current options for user
+            List<Object[]> optionList = Lists.newArrayList();
+            Map<String, String> options = user.getSubjectData().getOptions(contexts);
+            for (Map.Entry<String, String> optionEntry : options.entrySet()) {
+                String optionValue = optionEntry.getValue();
+                Object[] optionText = new Object[] { TextColors.GREEN, optionEntry.getKey(), "  ",
+                                TextColors.GOLD, optionValue };
+                optionList.add(optionText);
             }
 
-            List<Text> finalTexts = CommandHelper.stripeText(permList);
+            List<Text> finalTexts = CommandHelper.stripeText(optionList);
 
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.AQUA, user.getName() + " Permissions")).padding(Text.of("-")).contents(finalTexts);
+                    .title(Text.of(TextColors.AQUA, user.getName() + " Options")).padding(Text.of("-")).contents(finalTexts);
             paginationBuilder.sendTo(src);
             return CommandResult.success();
         }
 
-        Tristate tristateValue = PlayerUtils.getTristateFromString(value);
-        if (tristateValue == null) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid value entered. '" + value + "' is not a valid value. Valid values are : true, false, undefined, 1, -1, or 0."));
-            return CommandResult.success();
+        if (user.getSubjectData().setOption(contexts, option, value)) {
+            GriefPrevention.sendMessage(src, Text.of("Set option ", TextColors.AQUA, option, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on user ", TextColors.GOLD, user.getName(), TextColors.WHITE, "."));
+        } else {
+            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "The permission plugin failed to set the option."));
         }
-
-        user.getSubjectData().setPermission(contexts, permission, tristateValue);
-        GriefPrevention.sendMessage(src, Text.of("Set permission ", TextColors.AQUA, permission, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on user ", TextColors.GOLD, user.getName(), TextColors.WHITE, "."));
 
         return CommandResult.success();
     }

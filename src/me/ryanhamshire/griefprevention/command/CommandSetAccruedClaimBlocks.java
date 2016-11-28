@@ -45,10 +45,10 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {
         WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(null);
-
+        Player player = src instanceof Player ? (Player)src : null;
         if (worldProperties == null) {
-            if (src instanceof Player) {
-                worldProperties = ((Player) src).getWorld().getProperties();
+            if (player != null) {
+                worldProperties = player.getWorld().getProperties();
             } else {
                 src.sendMessage(Text.of(TextColors.DARK_RED, "Error! ", TextColors.RED, "No valid world could be found!"));
                 return CommandResult.success();
@@ -60,8 +60,14 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
         User user = args.<User>getOne("user").get();
 
         // set player's blocks
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(worldProperties, user.getUniqueId());
-        playerData.setAccruedClaimBlocks(newAmount);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
+        if (!playerData.setAccruedClaimBlocks(newAmount)) {
+            if (player != null) {
+                player.sendMessage(Text.of(TextColors.RED, "User " + user.getName() + " has a total of " + playerData.getAccruedClaimBlocks() + " and will exceed the maximum allowed accrued claim blocks if granted an additional " + newAmount + " blocks. ",
+                        "Either lower the amount or have an admin grant the user with an override."));
+            }
+            return CommandResult.success();
+        }
         playerData.getStorageData().save();
 
         GriefPrevention.sendMessage(src, TextMode.Success, Messages.SetClaimBlocksSuccess);

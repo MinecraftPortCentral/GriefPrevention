@@ -37,7 +37,6 @@ import org.spongepowered.common.SpongeImpl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 
@@ -50,7 +49,7 @@ public class PlayerStorageData {
     private PlayerDataConfig configBase;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public PlayerStorageData(Path path, UUID playerUniqueId, int initialClaimBlocks) {
+    public PlayerStorageData(Path path) {
 
         try {
             Files.createDirectories(path.getParent());
@@ -60,8 +59,6 @@ public class PlayerStorageData {
 
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(PlayerDataConfig.class).bindToNew();
-            this.configMapper.getInstance().setAccruedClaimBlocks(initialClaimBlocks);
-            this.configMapper.getInstance().setPlayerUniqueId(playerUniqueId);
 
             reload();
             save();

@@ -25,40 +25,105 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.flowpowered.math.vector.Vector3d;
+import com.google.common.collect.Lists;
+import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
-import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.command.CommandPermissionException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.service.pagination.PaginationList;
+import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
+
+import java.util.List;
+import java.util.function.Consumer;
 
 public class CommandClaimAdminList implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
-        Player player;
-        try {
-            player = GriefPrevention.checkPlayer(src);
-        } catch (CommandException e) {
-            src.sendMessage(e.getText());
-            return CommandResult.success();
-        }
-
-        // find admin claims
-        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
-        for (Claim claim : claimWorldManager.getWorldClaims()) {
-            if (claim.isAdminClaim()) {
-                GriefPrevention.sendMessage(src, TextMode.Instr, Messages.ClaimsListHeader);;
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Instr, GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner())));
+        WorldProperties worldProperties = ctx.<WorldProperties>getOne("world").orElse(null);
+        if (worldProperties == null) {
+            if (src instanceof Player) {
+                worldProperties = ((Player) src).getWorld().getProperties();
+            } else {
+                worldProperties = Sponge.getServer().getDefaultWorld().get();
             }
         }
 
+        if (!src.hasPermission(GPPermissions.COMMAND_LIST_ADMIN_CLAIMS)) {
+            try {
+                throw new CommandPermissionException();
+            } catch (CommandPermissionException e) {
+                src.sendMessage(e.getText());
+                return CommandResult.success();
+            }
+        }
+
+        ClaimWorldManager claimWorldManager =  GriefPrevention.instance.dataStore.getClaimWorldManager(worldProperties);
+        List<Claim> claimList = claimWorldManager.getWorldClaims();
+        List<Text> claimsTextList = Lists.newArrayList();
+        if (claimList.size() > 0) {
+            for (Claim claim : claimList) {
+                if (!claim.isAdminClaim()) {
+                    continue;
+                }
+                Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
+                Text claimName = claim.getClaimData().getClaimName();
+                if (claimName == null) {
+                    claimName = Text.of(TextColors.GREEN, "Claim");
+                }
+
+                Text claimInfoCommandClick = Text.builder().append(Text.of(
+                        TextColors.GREEN, claimName))
+                .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claiminfo", claim.id.toString(), createReturnClaimListConsumer(src, worldProperties.getWorldName()))))
+                .onHover(TextActions.showText(Text.of("Click here to check claim info.")))
+                .build();
+
+                Text claimCoordsTPClick = Text.builder().append(Text.of(
+                        TextColors.GRAY, southWest.getBlockPosition()))
+                .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(src, southWest, claim)))
+                .onHover(TextActions.showText(Text.of("Click here to teleport to ", claimName, ".")))
+                .build();
+
+                claimsTextList.add(Text.builder()
+                        .append(Text.of(
+                                claimInfoCommandClick, TextColors.WHITE, " : ", 
+                                claimCoordsTPClick, " ", 
+                                TextColors.YELLOW, "(Area : " + claim.getArea() + " blocks)"))
+                        .build());
+            }
+            if (claimsTextList.size() == 0) {
+                claimsTextList.add(Text.of(TextColors.RED, "No admin claims found in world."));
+            }
+        }
+
+        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
+        PaginationList.Builder paginationBuilder = paginationService.builder()
+                .title(Text.of(TextColors.AQUA, "Admin Claims")).padding(Text.of("-")).contents(claimsTextList);
+        paginationBuilder.sendTo(src);
+
         return CommandResult.success();
+    }
+
+    private Consumer<CommandSource> createReturnClaimListConsumer(CommandSource src, String arguments) {
+        return consumer -> {
+            Text claimListReturnCommand = Text.builder().append(Text.of(
+                    TextColors.WHITE, "\n[", TextColors.AQUA, "Return to claimslist", TextColors.WHITE, "]\n"))
+                .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "adminclaimslist", arguments))).build();
+            src.sendMessage(claimListReturnCommand);
+        };
     }
 }

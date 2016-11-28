@@ -76,8 +76,8 @@ public class CommandClaimBanItem implements CommandExecutor {
         }
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
-        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, claim, GPFlags.INTERACT_ITEM_PRIMARY, itemToBan, Tristate.FALSE, null, 0);
-        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, claim, GPFlags.INTERACT_ITEM_SECONDARY, itemToBan, Tristate.FALSE, null, 0);
+        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_PRIMARY, "any", itemToBan, Tristate.FALSE, null);
+        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_SECONDARY, "any", itemToBan, Tristate.FALSE, null);
 
         return CommandResult.success();
     }

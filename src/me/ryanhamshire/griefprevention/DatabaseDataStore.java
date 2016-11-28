@@ -40,10 +40,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -119,38 +117,12 @@ public class DatabaseDataStore extends DataStore {
 
         // load group data into memory
         Statement statement = databaseConnection.createStatement();
-        ResultSet results = statement.executeQuery("SELECT * FROM griefprevention_playerdata;");
-
-        while (results.next()) {
-            String name = results.getString("name");
-
-            // ignore non-groups. all group names start with a dollar sign.
-            if (!name.startsWith("$")) {
-                continue;
-            }
-
-            String groupName = name.substring(1);
-            if (groupName == null || groupName.isEmpty()) {
-                continue; // defensive coding, avoid unlikely cases
-            }
-
-            int groupBonusBlocks = results.getInt("bonusblocks");
-
-            this.permissionToBonusBlocksMap.put(groupName, groupBonusBlocks);
-        }
-
         // load next claim number into memory
-        results = statement.executeQuery("SELECT * FROM griefprevention_nextclaimid;");
+        ResultSet results = statement.executeQuery("SELECT * FROM griefprevention_nextclaimid;");
 
         // if there's nothing yet, add it
         if (!results.next()) {
             statement.execute("INSERT INTO griefprevention_nextclaimid VALUES(0);");
-            //this.nextClaimID = (long) 0;
-        }
-
-        // otherwise load it
-        else {
-            //this.nextClaimID = results.getLong("nextid");
         }
 
         if (this.getSchemaVersion() == 0) {
@@ -474,28 +446,6 @@ public class DatabaseDataStore extends DataStore {
         }
     }*/
 
-    // updates the database with a group's bonus blocks
-    @Override
-    void saveGroupBonusBlocks(String groupName, int currentValue) {
-        // group bonus blocks are stored in the player data table, with player
-        // name = $groupName
-        try {
-            this.refreshDataConnection();
-
-            SimpleDateFormat sqlFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String dateString = sqlFormat.format(new Date());
-
-            Statement statement = databaseConnection.createStatement();
-            statement.execute("DELETE FROM griefprevention_playerdata WHERE name='$" + groupName + "';");
-            statement = databaseConnection.createStatement();
-            statement.execute("INSERT INTO griefprevention_playerdata (name, lastlogin, accruedblocks, bonusblocks) VALUES ('$" + groupName + "', '"
-                    + dateString + "', " + "0" + ", " + String.valueOf(currentValue) + ");");
-        } catch (SQLException e) {
-            GriefPrevention.addLogEntry("Unable to save data for group " + groupName + ".  Details:");
-            GriefPrevention.addLogEntry(e.getMessage());
-        }
-    }
-
     void close() {
         if (this.databaseConnection != null) {
             try {
@@ -571,12 +521,7 @@ public class DatabaseDataStore extends DataStore {
     }
 
     @Override
-    public PlayerData createPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
-        return null;
-    }
-
-    @Override
-    public PlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+    public PlayerData getOrCreatePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         return null;
     }
 

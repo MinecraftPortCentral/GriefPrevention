@@ -30,11 +30,13 @@ import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -55,6 +57,7 @@ public class PlayerData {
     // the player's ID
     public UUID playerID;
     public WorldProperties worldProperties;
+    private WeakReference<Subject> playerSubject;
     private GriefPreventionConfig<?> activeConfig;
     // permission level
     public Map<UUID, ClaimPermission> permissionLevelMap = Maps.newHashMap();
@@ -170,12 +173,37 @@ public class PlayerData {
     // profanity warning, once per play session
     public boolean profanityWarned = false;
 
-    public PlayerData(WorldProperties worldProperties, UUID playerUniqueId, PlayerStorageData playerStorage, GriefPreventionConfig<?> activeConfig, List<Claim> claims) {
+    // cached option values
+    public double optionAbandonReturnRatio = 1.0;
+    public int optionBlocksAccruedPerHour = 120;
+    public int optionCreateClaimLimit = 0;
+    public int optionInitialClaimBlocks = 100;
+    public int optionMaxAccruedBlocks = 80000;
+    public int optionChestClaimExpiration = 7;
+    public int optionPlayerClaimExpiration = 14;
+
+    public PlayerData(WorldProperties worldProperties, UUID playerUniqueId, PlayerStorageData playerStorage, Subject playerSubject, GriefPreventionConfig<?> activeConfig, List<Claim> claims) {
         this.worldProperties = worldProperties;
         this.playerID = playerUniqueId;
         this.playerStorage = playerStorage;
         this.claimList = claims;
         this.activeConfig = activeConfig;
+        this.playerSubject = new WeakReference<>(playerSubject);
+        this.refreshPlayerOptions();
+    }
+
+    public void refreshPlayerOptions() {
+        if (this.playerSubject == null || this.playerSubject.get() == null) {
+            Subject subject = GriefPrevention.instance.permissionService.getUserSubjects().get(this.playerID.toString());
+            this.playerSubject = new WeakReference<>(subject);
+        }
+        this.optionAbandonReturnRatio = PlayerUtils.getOptionDoubleValue(this.playerSubject.get(), GPOptions.ABANDON_RETURN_RATIO, 1.0);
+        this.optionBlocksAccruedPerHour = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
+        this.optionChestClaimExpiration = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.CHEST_CLAIM_EXPIRATION, 7);
+        this.optionCreateClaimLimit = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.CREATE_CLAIM_LIMIT, 0);
+        this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.INITIAL_CLAIM_BLOCKS, 0);
+        this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_ACCRUED_BLOCKS, 0);
+        this.optionPlayerClaimExpiration = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.PLAYER_CLAIM_EXPIRATION, 14);
     }
 
     public void revertActiveVisual(Player player) {
@@ -221,34 +249,29 @@ public class PlayerData {
 
     // the number of claim blocks a player has available for claiming land
     public int getRemainingClaimBlocks() {
-        int remainingBlocks = this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
+        int remainingBlocks = this.optionInitialClaimBlocks + this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
         for (Claim claim : this.claimList) {
             if (!claim.isAdminClaim() && !claim.isSubdivision()) {
                 remainingBlocks -= claim.getArea();
             }
         }
 
-        // add any blocks this player might have based on group membership (permissions)
-        remainingBlocks += GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
-
         return remainingBlocks;
     }
 
-    // don't load data from secondary storage until it's needed
     public int getAccruedClaimBlocks() {
-        // if player is over accrued limit, accrued limit was probably reduced
-        // in config file AFTER he accrued
-        // in that case, leave his blocks where they are
-        int currentTotal = this.playerStorage.getConfig().getAccruedClaimBlocks();
-        if (currentTotal >= this.activeConfig.getConfig().claim.maxAccruedBlocks) {
-            return currentTotal;
-        }
-
         return this.playerStorage.getConfig().getAccruedClaimBlocks();
     }
 
-    public void setAccruedClaimBlocks(int accruedClaimBlocks) {
-        this.playerStorage.getConfig().setAccruedClaimBlocks(accruedClaimBlocks);
+    public boolean setAccruedClaimBlocks(int newAccruedClaimBlocks) {
+        int currentTotal = this.getAccruedClaimBlocks();
+        if ((currentTotal + newAccruedClaimBlocks) >= this.optionMaxAccruedBlocks) {
+            // player has exceeded limit, set nothing
+            return false;
+        }
+
+        this.playerStorage.getConfig().setAccruedClaimBlocks(currentTotal + newAccruedClaimBlocks);
+        return true;
     }
 
     public int getBonusClaimBlocks() {

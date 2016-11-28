@@ -40,6 +40,7 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
@@ -77,10 +78,10 @@ import me.ryanhamshire.griefprevention.command.CommandClaimUnbanItem;
 import me.ryanhamshire.griefprevention.command.CommandContainerTrust;
 import me.ryanhamshire.griefprevention.command.CommandGivePet;
 import me.ryanhamshire.griefprevention.command.CommandGpReload;
-import me.ryanhamshire.griefprevention.command.CommandHelp;
 import me.ryanhamshire.griefprevention.command.CommandIgnorePlayer;
 import me.ryanhamshire.griefprevention.command.CommandIgnoredPlayerList;
 import me.ryanhamshire.griefprevention.command.CommandPermissionTrust;
+import me.ryanhamshire.griefprevention.command.CommandPlayerInfo;
 import me.ryanhamshire.griefprevention.command.CommandRestoreNature;
 import me.ryanhamshire.griefprevention.command.CommandRestoreNatureAggressive;
 import me.ryanhamshire.griefprevention.command.CommandRestoreNatureFill;
@@ -110,6 +111,7 @@ import me.ryanhamshire.griefprevention.task.IgnoreLoaderThread;
 import me.ryanhamshire.griefprevention.task.PvPImmunityValidationTask;
 import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import me.ryanhamshire.griefprevention.task.SendPlayerMessageTask;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -155,6 +157,8 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.SpongeImplHooks;
+import org.spongepowered.common.entity.SpongeEntityType;
+import org.spongepowered.common.interfaces.world.IMixinDimensionType;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -171,7 +175,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.1.1", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.2.0", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
@@ -180,7 +184,7 @@ public class GriefPrevention {
     public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
-    public static final String CONFIG_HEADER = "2.1.1\n"
+    public static final String CONFIG_HEADER = "2.2.0\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us at the IRC or drop by our forums and leave a post.\n"
             + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"
@@ -261,7 +265,7 @@ public class GriefPrevention {
 
     @Listener
     public void onChangeServiceProvider(ChangeServiceProviderEvent event) {
-        if (event.getNewProvider() instanceof PermissionService) {
+        if (event.getNewProvider() instanceof PermissionService && this.validateSpongeVersion()) {
             ((PermissionService) event.getNewProvider()).registerContextCalculator(new ClaimContextCalculator());
         }
     }
@@ -274,8 +278,8 @@ public class GriefPrevention {
                     String version = Sponge.getPlatform().getImplementation().getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 1800) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1800+.");
+                    if (spongeVersion < 1914) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1914+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -322,15 +326,23 @@ public class GriefPrevention {
         GLOBAL_SUBJECT = GriefPrevention.instance.permissionService.getDefaults();
         for (EntityType entityType : Sponge.getRegistry().getAllOf(EntityType.class)) {
             String entityId = entityType.getId();
-            CUSTOM_CONTEXTS.put(entityId, new Context("gp_entity", entityId));
+            CUSTOM_CONTEXTS.put(entityId, new Context("gp_source", entityId));
+            String modId = ((SpongeEntityType) entityType).getModId();
+            if (CUSTOM_CONTEXTS.get(modId) == null) {
+                CUSTOM_CONTEXTS.put(modId, new Context("gp_source", modId));
+            }
         }
         for (BlockType blockType : Sponge.getRegistry().getAllOf(BlockType.class)) {
             String blockId = blockType.getId();
-            CUSTOM_CONTEXTS.put(blockId, new Context("gp_block", blockId));
+            CUSTOM_CONTEXTS.put(blockId, new Context("gp_source", blockId));
+            String modId = blockId.split(":")[0];
+            if (CUSTOM_CONTEXTS.get(modId) == null) {
+                CUSTOM_CONTEXTS.put(modId, new Context("gp_source", modId));
+            }
         }
         for (ItemType itemType : Sponge.getRegistry().getAllOf(ItemType.class)) {
             String itemId = itemType.getId();
-            CUSTOM_CONTEXTS.put(itemId, new Context("gp_item", itemId));
+            CUSTOM_CONTEXTS.put(itemId, new Context("gp_source", itemId));
         }
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
         Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
@@ -357,20 +369,16 @@ public class GriefPrevention {
                 .getOrCreate(GameProfile.of(GriefPrevention.WORLD_USER_UUID, GriefPrevention.WORLD_USER_NAME));
         // unless claim block accrual is disabled, start the recurring per 10
         // minute event to give claim blocks to online players
-        if (GriefPrevention.getGlobalConfig().getConfig().claim.claimBlocksEarned > 0) {
-            DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-            Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
-                    .submit(GriefPrevention.instance);
-        }
+        DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
+        Sponge.getGame().getScheduler().createTaskBuilder().interval(10, TimeUnit.SECONDS).execute(task)
+                .submit(GriefPrevention.instance);
 
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE && Sponge.getServer().getDefaultWorld().isPresent()) {
-            // run cleanup task
-            int cleanupTaskInterval = GriefPrevention.getGlobalConfig().getConfig().claim.cleanupTaskInterval;
-            if (cleanupTaskInterval > 0) {
-                CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(Sponge.getServer().getDefaultWorld().get());
-                Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask)
-                        .submit(GriefPrevention.instance);
-            }
+        // run cleanup task
+        int cleanupTaskInterval = GriefPrevention.getGlobalConfig().getConfig().claim.cleanupTaskInterval;
+        if (cleanupTaskInterval > 0) {
+            CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask();
+            Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask)
+                    .submit(GriefPrevention.instance);
         }
 
         // if economy is enabled
@@ -443,13 +451,14 @@ public class GriefPrevention {
                 .description(Text.of("Switches the shovel tool to administrative claims mode"))
                 .permission(GPPermissions.COMMAND_ADMIN_CLAIMS)
                 .executor(new CommandClaimAdmin())
-                .build(), "adminclaims");
+                .build(), "adminclaims", "ac");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("List all administrative claims"))
                 .permission(GPPermissions.COMMAND_LIST_ADMIN_CLAIMS)
+                .arguments(optional(GenericArguments.world(Text.of("world"))))
                 .executor(new CommandClaimAdminList())
-                .build(), "adminclaimslist", "claimadminlist");
+                .build(), "adminclaimlist", "adminclaimslist", "claimadminlist");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
@@ -527,55 +536,104 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gets/Sets claim flags in the claim you are standing in"))
                 .permission(GPPermissions.COMMAND_FLAGS_CLAIM)
-                .arguments(optional(GenericArguments.seq(choices(Text.of("flag"), flagChoices),
-                        GenericArguments.onlyOne(string(Text.of("target"))),
-                        GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                .put("-1", Tristate.FALSE)
-                                .put("0", Tristate.UNDEFINED)
-                                .put("1", Tristate.TRUE)
-                                .put("false", Tristate.FALSE)
-                                .put("default", Tristate.UNDEFINED)
-                                .put("true", Tristate.TRUE)
-                                .build()))),
-                        optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context")))))))
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(
+                            choices(Text.of("flag"), flagChoices),
+                            GenericArguments.firstParsing(
+                                GenericArguments.seq(
+                                    GenericArguments.onlyOne(string(Text.of("source"))),
+                                    GenericArguments.string(Text.of("target")),
+                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                            .put("-1", Tristate.FALSE)
+                                            .put("0", Tristate.UNDEFINED)
+                                            .put("1", Tristate.TRUE)
+                                            .put("false", Tristate.FALSE)
+                                            .put("default", Tristate.UNDEFINED)
+                                            .put("true", Tristate.TRUE)
+                                            .build())),
+                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
+                                GenericArguments.seq(
+                                    GenericArguments.string(Text.of("target")),
+                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                            .put("-1", Tristate.FALSE)
+                                            .put("0", Tristate.UNDEFINED)
+                                            .put("1", Tristate.TRUE)
+                                            .put("false", Tristate.FALSE)
+                                            .put("default", Tristate.UNDEFINED)
+                                            .put("true", Tristate.TRUE)
+                                            .build())),
+                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))))),
+                        optional(GenericArguments.onlyOne(string(Text.of("source"))))))
                 .executor(new CommandClaimFlag())
                 .build(), "claimflag", "cf");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Adds flag permission to group."))
                 .permission(GPPermissions.COMMAND_FLAGS_GROUP)
-                .arguments(GenericArguments.seq(
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("group"))),
-                        optional(GenericArguments.seq(choices(Text.of("flag"), flagChoices),
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("target"))),
-                        GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                .put("-1", Tristate.FALSE)
-                                .put("0", Tristate.UNDEFINED)
-                                .put("1", Tristate.TRUE)
-                                .put("false", Tristate.FALSE)
-                                .put("default", Tristate.UNDEFINED)
-                                .put("true", Tristate.TRUE)
-                                .build()))),
-                        optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))))))
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(
+                            onlyOne(string(Text.of("group"))),
+                            GenericArguments.firstParsing(
+                                GenericArguments.seq(
+                                    choices(Text.of("flag"), flagChoices),
+                                    GenericArguments.firstParsing(
+                                            GenericArguments.seq(
+                                                GenericArguments.onlyOne(string(Text.of("source"))),
+                                                GenericArguments.string(Text.of("target")),
+                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build()))),
+                                            GenericArguments.seq(
+                                                GenericArguments.string(Text.of("target")),
+                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build()))))),
+                                    optional(onlyOne(string(Text.of("source"))))))))
                 .executor(new CommandClaimFlagGroup())
                 .build(), "claimflaggroup", "cfg");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Adds flag permission to player."))
                 .permission(GPPermissions.COMMAND_FLAGS_PLAYER)
-                .arguments(GenericArguments.seq(
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("player"))),
-                        optional(GenericArguments.seq(choices(Text.of("flag"), flagChoices),
-                        GenericArguments.onlyOne(GenericArguments.string(Text.of("target"))),
-                        GenericArguments.firstParsing(onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                .put("-1", Tristate.FALSE)
-                                .put("0", Tristate.UNDEFINED)
-                                .put("1", Tristate.TRUE)
-                                .put("false", Tristate.FALSE)
-                                .put("default", Tristate.UNDEFINED)
-                                .put("true", Tristate.TRUE)
-                                .build()))),
-                        optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))))))
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(
+                            onlyOne(string(Text.of("player"))),
+                            GenericArguments.firstParsing(
+                                GenericArguments.seq(
+                                    choices(Text.of("flag"), flagChoices),
+                                    GenericArguments.firstParsing(
+                                            GenericArguments.seq(
+                                                GenericArguments.onlyOne(string(Text.of("source"))),
+                                                GenericArguments.string(Text.of("target")),
+                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build()))),
+                                            GenericArguments.seq(
+                                                GenericArguments.string(Text.of("target")),
+                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build()))))),
+                                    optional(onlyOne(string(Text.of("source"))))))))
                 .executor(new CommandClaimFlagPlayer())
                 .build(), "claimflagplayer", "cfp");
 
@@ -599,14 +657,20 @@ public class GriefPrevention {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("List information about a player's claim blocks and claims"))
-                .permission(GPPermissions.COMMAND_LIST_CLAIMS)
-                .arguments(onlyOne(playerOrSource(Text.of("player"))))
+                .permission(GPPermissions.COMMAND_LIST_CLAIMS_BASE)
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(
+                                GenericArguments.user(Text.of("user")),
+                                onlyOne(GenericArguments.world(Text.of("world")))),
+                        GenericArguments.user(Text.of("user")),
+                        optional(onlyOne(GenericArguments.world(Text.of("world"))))))
                 .executor(new CommandClaimList())
-                .build(), "claimslist", "claimlist");
+                .build(), "claimlist", "claimslist");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gets information about a claim"))
                 .permission(GPPermissions.COMMAND_CLAIM_INFO_BASE)
+                .arguments(optional(string(Text.of("id"))))
                 .executor(new CommandClaimInfo())
                 .build(), "claiminfo", "claimsinfo");
 
@@ -646,11 +710,12 @@ public class GriefPrevention {
                 .executor(new CommandGivePet())
                 .build(), "givepet");
 
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
+        // TODO - rewrite help command to list all commands with nice overlays showing help
+        /*Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Lists detailed information on each command."))
                 .permission(GPPermissions.COMMAND_HELP)
                 .executor(new CommandHelp())
-                .build(), "gphelp");
+                .build(), "gphelp");*/
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Lists the players you're ignoring in chat"))
@@ -701,6 +766,13 @@ public class GriefPrevention {
                 .build(), "permissiontrust", "pt");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gets information about a player"))
+                .permission(GPPermissions.COMMAND_PLAYER_INFO_BASE)
+                .arguments(optional(string(Text.of("player"))), optional(string(Text.of("world"))))
+                .executor(new CommandPlayerInfo())
+                .build(), "playerinfo");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Toggles pvp mode"))
                 .permission(GPPermissions.COMMAND_PVP)
                 .executor(new CommandClaimPvp())
@@ -714,7 +786,7 @@ public class GriefPrevention {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to aggressive restoration mode"))
-                .permission(GPPermissions.COMAND_RESTORE_NATURE_AGGRESSIVE)
+                .permission(GPPermissions.COMMAND_RESTORE_NATURE_AGGRESSIVE)
                 .executor(new CommandRestoreNatureAggressive())
                 .build(), "restorenatureaggressive", "rna");
 
@@ -842,18 +914,26 @@ public class GriefPrevention {
             this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;
             for (World world : Sponge.getGame().getServer().getWorlds()) {
                 DimensionType dimType = world.getProperties().getDimensionType();
-                if (!Files.exists(rootConfigPath.resolve(dimType.getId()).resolve(world.getProperties().getWorldName()))) {
+                Path dimPath = rootConfigPath.resolve(((IMixinDimensionType) dimType).getModId()).resolve(((IMixinDimensionType) dimType).getEnumName());
+                if (!Files.exists(dimPath.resolve(world.getProperties().getWorldName()))) {
                     try {
-                        Files.createDirectories(rootConfigPath.resolve(dimType.getId()).resolve(world.getProperties().getWorldName()));
+                        Files.createDirectories(rootConfigPath.resolve(dimType.getId()).resolve(world.getName()));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
 
-                DataStore.dimensionConfigMap.put(world.getProperties().getUniqueId(), new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION,
-                        rootConfigPath.resolve(dimType.getId()).resolve("dimension.conf")));
+                DataStore.dimensionConfigMap.put(world.getProperties().getUniqueId(),
+                        new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, dimPath.resolve("dimension.conf")));
                 DataStore.worldConfigMap.put(world.getProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
-                        rootConfigPath.resolve(dimType.getId()).resolve(world.getProperties().getWorldName()).resolve("world.conf")));
+                        dimPath.resolve(world.getProperties().getWorldName()).resolve("world.conf")));
+
+                // refresh player data
+                for (ClaimWorldManager claimWorldManager : GriefPrevention.instance.dataStore.claimWorldManagers.values()) {
+                    for (PlayerData playerData : claimWorldManager.getPlayerDataList().values()) {
+                        playerData.refreshPlayerOptions();
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -891,41 +971,12 @@ public class GriefPrevention {
         if (entry.startsWith("[") || entry.equals("public")) {
             return entry;
         } else {
-            return GriefPrevention.lookupPlayerName(entry);
+            return PlayerUtils.lookupPlayerName(entry);
         }
     }
 
     public static String getfriendlyLocationString(Location<World> location) {
         return location.getExtent().getName() + ": x" + location.getBlockX() + ", z" + location.getBlockZ();
-    }
-
-    public Optional<User> resolvePlayerByName(String name) {
-        // try online players first
-        Optional<Player> targetPlayer = Sponge.getGame().getServer().getPlayer(name);
-        if (targetPlayer.isPresent()) {
-            return Optional.of((User) targetPlayer.get());
-        }
-
-        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(name);
-        if (user.isPresent()) {
-            return user;
-        }
-
-        return Optional.empty();
-    }
-
-    // string overload for above helper
-    static String lookupPlayerName(String uuid) {
-        if (uuid.equals(WORLD_USER_UUID.toString())) {
-            return "administrator";
-        }
-        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(UUID.fromString(uuid));
-        if (!user.isPresent()) {
-            GriefPrevention.addLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
-            return "someone";
-        }
-
-        return user.get().getName();
     }
 
     // called when a player spawns, applies protection for that player if necessary

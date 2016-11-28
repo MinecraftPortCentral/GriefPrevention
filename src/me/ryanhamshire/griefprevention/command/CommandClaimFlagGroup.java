@@ -24,9 +24,6 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import static me.ryanhamshire.griefprevention.command.CommandClaimFlag.stripeText;
-
-import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
@@ -44,14 +41,17 @@ import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class CommandClaimFlagGroup implements CommandExecutor {
 
@@ -66,35 +66,59 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         }
 
         String group = ctx.<String>getOne("group").get();
-        Optional<String> flag = ctx.<String>getOne("flag");
-        Optional<String> target = ctx.<String>getOne("target");
-        Optional<Tristate> value = ctx.<Tristate>getOne("value");
+        String flag = ctx.<String>getOne("flag").orElse(null);
+        String source = ctx.<String>getOne("source").orElse(null);
+        // Workaround command API issue not handling onlyOne arguments with sequences properly
+        List<String> targetValues = new ArrayList<>(ctx.<String>getAll("target"));
+        String target = null;
+        if (!targetValues.isEmpty()) {
+            if (targetValues.size() > 1) {
+                source = "any";
+                target = targetValues.get(1);
+            } else {
+                target = targetValues.get(0);
+            }
+        }
+        Tristate value = ctx.<Tristate>getOne("value").orElse(null);
         Optional<String> context = ctx.<String>getOne("context");
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
         if (claim == null) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found."));
             return CommandResult.success();
-        } else if (!flag.isPresent() && !value.isPresent()) {
-            Set<Context> contextSet = new HashSet<>();
-            contextSet.add(claim.getContext());
+        } else if (flag == null && value == null) {
+            Set<Context> contexts = new HashSet<>();
+            contexts.add(claim.getContext());
+            if (source != null) {
+                Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
+                if (sourceContext != null) {
+                    contexts.add(sourceContext);
+                }
+            } else {
+                source = "any";
+            }
             PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
             Subject subj = service.getGroupSubjects().get(group);
             if (subj != null) {
-                List<Object[]> flagList = Lists.newArrayList();
-                Map<String, Boolean> permissions = subj.getSubjectData().getPermissions(contextSet);
+                Map<String, Text> flagList = new TreeMap<>();
+                Map<String, Boolean> permissions = subj.getSubjectData().getPermissions(contexts);
                 for (Map.Entry<String, Boolean> permissionEntry : permissions.entrySet()) {
-                    Boolean flagValue = permissionEntry.getValue();
-                    Object[] flagText = new Object[] { TextColors.GREEN, permissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                    TextColors.GOLD, flagValue.toString() };
-                    flagList.add(flagText);
+                    String flagPermission = permissionEntry.getKey();
+                    String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                    Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
+                            .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
+                    Text flagText = Text.of(
+                            TextColors.GREEN, baseFlagText, "  ",
+                            TextColors.WHITE, "[",
+                            TextColors.LIGHT_PURPLE, CommandHelper.getClickableText(src, subj, group, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source),
+                            TextColors.WHITE, "]");
+                    flagList.put(flagPermission, flagText);
                 }
 
-                List<Text> finalTexts = stripeText(flagList);
-
+                List<Text> textList = new ArrayList<>(flagList.values());
                 PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
                 PaginationList.Builder paginationBuilder = paginationService.builder()
-                        .title(Text.of(TextColors.AQUA, group + " Flag Permissions")).padding(Text.of("-")).contents(finalTexts);
+                        .title(Text.of(TextColors.GOLD, group, TextColors.AQUA, " Flag Permissions")).padding(Text.of("-")).contents(textList);
                 paginationBuilder.sendTo(src);
             }
             return CommandResult.success();
@@ -105,8 +129,6 @@ public class CommandClaimFlagGroup implements CommandExecutor {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
             return CommandResult.success();
         }
-        return CommandHelper.addFlagPermission(src, subj, claim, flag.get(), target.get(), value.get(), context, 2);
+        return CommandHelper.addFlagPermission(src, subj, group, claim, flag, source, target, value, context);
     }
-
-
 }

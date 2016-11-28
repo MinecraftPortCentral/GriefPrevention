@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -34,6 +35,8 @@ import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
+import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
@@ -50,14 +53,23 @@ import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
+import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -106,8 +118,7 @@ public class CommandHelper {
             if (!claim.isSubdivision() && !claim.isAdminClaim()) {
                 playerData.setAccruedClaimBlocks(
                         playerData.getAccruedClaimBlocks() - (int) Math
-                                .ceil((claim.getArea() * (1 - GriefPrevention.getActiveConfig(player.getWorld().getProperties())
-                                        .getConfig().claim.abandonReturnRatio))));
+                                .ceil((claim.getArea() * (1 - playerData.optionAbandonReturnRatio))));
 
                 // tell the player how many claim blocks he has left
                 int remainingBlocks = playerData.getRemainingClaimBlocks();
@@ -225,10 +236,7 @@ public class CommandHelper {
     }
 
     public static Context validateCustomContext(CommandSource src, Claim claim, String context) {
-        Context customContext = GriefPrevention.CUSTOM_CONTEXTS.get(context);
-        if (customContext != null) {
-            return customContext;
-        } else if (context.equalsIgnoreCase("default") || context.equalsIgnoreCase("defaults")) {
+        if (context.equalsIgnoreCase("default") || context.equalsIgnoreCase("defaults")) {
             if (claim.isAdminClaim()) {
                 return GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT;
             } else if (claim.isBasicClaim() || claim.isSubdivision()) {
@@ -237,7 +245,7 @@ public class CommandHelper {
                 src.sendMessage(Text.of(TextMode.Err, "Claim type " + claim.type.name() + " does not support flag defaults."));
                 return null;
             }
-        } else if (context.equalsIgnoreCase("override") || context.equalsIgnoreCase("overrides")) {
+        } else if (context.equalsIgnoreCase("override") || context.equalsIgnoreCase("overrides") || context.equalsIgnoreCase("force") || context.equalsIgnoreCase("forced")) {
             if (claim.isAdminClaim()) {
                 return GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT;
             } else if (claim.isBasicClaim() || claim.isSubdivision()) {
@@ -252,7 +260,7 @@ public class CommandHelper {
         }
     }
 
-    public static CommandResult addFlagPermission(CommandSource src, Subject subject, Claim claim, String flag, String target, Tristate value, Optional<String> context, int type) {
+    public static CommandResult addFlagPermission(CommandSource src, Subject subject, String subjectName, Claim claim, String baseFlag, String source, String target, Tristate value, Optional<String> context) {
         if (src instanceof Player) {
             String denyReason = claim.allowEdit((Player) src);
             if (denyReason != null) {
@@ -261,22 +269,20 @@ public class CommandHelper {
             }
         }
 
-        if (GPFlags.DEFAULT_FLAGS.get(flag) == null) {
+        if (GPFlags.DEFAULT_FLAGS.get(baseFlag) == null) {
             src.sendMessage(Text.of(TextColors.RED, "Flag not found."));
             return CommandResult.success();
         }
 
-        String flagPermission = GPPermissions.FLAG_BASE + "." + flag;
-        String targetFlag = flag;
+        String flagPermission = GPPermissions.FLAG_BASE + "." + baseFlag;
         // special handling for commands
-        if (flag.equals(GPFlags.COMMAND_EXECUTE) || flag.equals(GPFlags.COMMAND_EXECUTE_PVP)) {
+        if (baseFlag.equals(GPFlags.COMMAND_EXECUTE) || baseFlag.equals(GPFlags.COMMAND_EXECUTE_PVP)) {
             target = handleCommandFlag(src, target);
             if (target == null) {
                 // failed
                 return CommandResult.success();
             }
-            targetFlag = targetFlag + "." + target;
-            flagPermission = GPPermissions.FLAG_BASE + "." + targetFlag;
+            flagPermission = GPPermissions.FLAG_BASE + "." + baseFlag + "." + target;
         } else {
             if (!target.equalsIgnoreCase("any")) {
                 if (!target.contains(":")) {
@@ -286,83 +292,219 @@ public class CommandHelper {
     
                 String[] parts = target.split(":");
                 if (parts[1].equalsIgnoreCase("any")) {
-                    target = flag + "." + parts[0];
+                    target = baseFlag + "." + parts[0];
                 } else {
-                    String entitySpawnFlag = GPFlags.getEntitySpawnFlag(flag, target);
-                    if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(flag, target)) {
-                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + target + "' entered for flag " + flag + "."));
+                    String entitySpawnFlag = GPFlags.getEntitySpawnFlag(baseFlag, target);
+                    if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(baseFlag, target)) {
+                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + target + "' entered for flag " + baseFlag + "."));
                         return CommandResult.success();
                     }
         
                     if (entitySpawnFlag != null) {
                         target = entitySpawnFlag;
                     } else {
-                        target = flag + "." + target.replace(":", ".").replace("[", ".[");
+                        target = baseFlag + "." + target.replace(":", ".");//.replace("[", ".[");
                     }
                 }
-    
-                targetFlag = target;
-                flagPermission = GPPermissions.FLAG_BASE + "." + targetFlag;
+
+                flagPermission = GPPermissions.FLAG_BASE + "." + target;
             } else {
                 target = "";
             }
         }
 
-        // check permission
-        if (src.hasPermission(GPPermissions.MANAGE_FLAGS + "." + flag) || (!target.equals("") && src.hasPermission(GPPermissions.MANAGE_FLAGS + "." + targetFlag))) {
-            Set<Context> contexts = new HashSet<>();
-            Context customContext = null;
-            if (context != null && context.isPresent()) {
-                String targetContext = context.get();
-                customContext = CommandHelper.validateCustomContext(src, claim, targetContext);
-                if (customContext == null) {
-                    GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Context '" + targetContext + "' is invalid."));
-                    return CommandResult.success();
-                } else {
-                    // validate perms
-                    if (customContext == GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT || 
-                            customContext == GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT || 
-                            customContext == GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT) {
-                        if (!src.hasPermission(GPPermissions.MANAGE_FLAG_DEFAULTS)) {
-                            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag defaults."));
-                            return CommandResult.success();
-                        }
-                    } else if (customContext == GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT || 
-                            customContext == GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT) {
-                        if (!src.hasPermission(GPPermissions.MANAGE_FLAG_OVERRIDES)) {
-                            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag overrides."));
-                            return CommandResult.success();
-                        }
-                    }
-                }
-                contexts.add(customContext);
-            }
+        return applyFlagPermission(src, subject, subjectName, claim, flagPermission, source, target, value, context, null);
+    }
 
-            if (type == 0) {
-                if (customContext == null || (customContext != GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT
-                        && customContext != GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT)) {
-                    contexts.add(claim.getContext());
-                } else {
-                    contexts.add(claim.world.getContext());
-                }
+    public static CommandResult applyFlagPermission(CommandSource src, Subject subject, String subjectName, Claim claim, String flagPermission, String source, String target, Tristate value, Optional<String> context, FlagType flagType) {
+        String baseFlag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+        String targetFlag = baseFlag;
+        int endIndex = baseFlag.indexOf(".");
+        if (endIndex != -1) {
+            baseFlag = baseFlag.substring(0, endIndex);
+        }
 
-                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, value);
-                src.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", TextColors.AQUA, targetFlag, TextColors.GREEN, " to ", TextColors.LIGHT_PURPLE, value, TextColors.GREEN, " for ", TextColors.GOLD, "ALL."));
-            } else if (type == 1) {
-                contexts.add(claim.getContext());
-                subject.getSubjectData().setPermission(contexts, flagPermission, value);
-                src.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", TextColors.AQUA, targetFlag, TextColors.GREEN, " to ", TextColors.LIGHT_PURPLE, value, TextColors.GREEN, " for ", TextColors.GOLD, subject.getCommandSource().get().getName(), "."));
-            } else if (type == 2) {
-                contexts.add(claim.getContext());
-                subject.getSubjectData().setPermission(contexts, flagPermission, value);
-                src.sendMessage(Text.of(TextColors.GREEN, "Set permission of ", TextColors.AQUA, targetFlag, TextColors.GREEN, " to ", TextColors.LIGHT_PURPLE, value, TextColors.GREEN, " for group ", TextColors.GOLD, subject.getIdentifier(), "."));
-            }
-
-            return CommandResult.success();
-        } else {
+        if (!src.hasPermission(GPPermissions.MANAGE_FLAGS + "." + baseFlag) || (target.equals("") && !src.hasPermission(GPPermissions.MANAGE_FLAGS + "." + baseFlag))) {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
             return CommandResult.success();
         }
+
+        Set<Context> contexts = new HashSet<>();
+        Context customContext = null;
+        if (context != null && context.isPresent()) {
+            String targetContext = context.get();
+            customContext = CommandHelper.validateCustomContext(src, claim, targetContext);
+            if (customContext == null) {
+                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Context '" + targetContext + "' is invalid."));
+                return CommandResult.success();
+            } else {
+                // validate perms
+                if (customContext == GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT || 
+                        customContext == GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT || 
+                        customContext == GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT) {
+                    if (!src.hasPermission(GPPermissions.MANAGE_FLAG_DEFAULTS)) {
+                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag defaults."));
+                        return CommandResult.success();
+                    }
+                } else if (customContext == GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT || 
+                        customContext == GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT) {
+                    if (!src.hasPermission(GPPermissions.MANAGE_FLAG_OVERRIDES)) {
+                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag overrides."));
+                        return CommandResult.success();
+                    }
+                }
+            }
+            contexts.add(customContext);
+        }
+
+        // check source context
+        Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
+        if (sourceContext != null) {
+            contexts.add(sourceContext);
+        }
+
+        if (subject == GriefPrevention.GLOBAL_SUBJECT) {
+            if (customContext == null || (customContext != GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT
+                    && customContext != GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT)) {
+                contexts.add(claim.getContext());
+            } else {
+                contexts.add(claim.world.getContext());
+            }
+
+            GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, value);
+            src.sendMessage(Text.of(
+                    Text.builder().append(Text.of(
+                            TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
+                        .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflag", ""))).build(),
+                    TextColors.GREEN, "Set permission of ", 
+                    TextColors.AQUA, targetFlag, 
+                    TextColors.GREEN, " to ", 
+                    flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  GriefPrevention.GLOBAL_SUBJECT, subjectName, contexts, flagPermission, targetFlag, value, flagType)), 
+                    TextColors.GREEN, " for ", 
+                    TextColors.GOLD, "ALL."));
+        } else {
+            if (!contexts.contains(claim.getContext())) {
+                contexts.add(claim.getContext());
+            }
+
+            subject.getSubjectData().setPermission(contexts, flagPermission, value);
+            src.sendMessage(Text.of(
+                    Text.builder().append(Text.of(
+                            TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
+                        .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflaggroup", subjectName))).build(),
+                    TextColors.GREEN, "Set permission of ", 
+                    TextColors.AQUA, targetFlag, 
+                    TextColors.GREEN, " to ", 
+                    flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  subject, subjectName, contexts, flagPermission, targetFlag, value, flagType)), 
+                    TextColors.GREEN, " for ", 
+                    TextColors.GOLD, subjectName));
+        }
+
+        return CommandResult.success();
+    }
+
+    public static TextColor getFlagTypeColor(FlagType type) {
+        TextColor color = TextColors.LIGHT_PURPLE;
+        if (type == FlagType.CLAIM) {
+            color = TextColors.GOLD;
+        } else if (type == FlagType.OVERRIDE) {
+            color = TextColors.RED;
+        }
+
+        return color;
+    }
+
+    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, String targetFlag, Tristate flagValue, FlagType type) {
+        return consumer -> {
+            Tristate newValue = Tristate.UNDEFINED;
+            if (flagValue == Tristate.TRUE) {
+                newValue = Tristate.FALSE;
+            } else if (flagValue == Tristate.UNDEFINED) {
+                newValue = Tristate.TRUE;
+            }
+
+            Set<Context> newContexts = new HashSet<>(contexts);
+            subject.getSubjectData().setPermission(newContexts, flagPermission, newValue);
+            src.sendMessage(Text.of(
+                    TextColors.GREEN, "Set permission of ", 
+                    TextColors.AQUA, targetFlag, 
+                    TextColors.GREEN, " to ", 
+                    getFlagTypeColor(type), getClickableText(src, subject, subjectName, newContexts, flagPermission, targetFlag, newValue, type), 
+                    TextColors.GREEN, " for ", 
+                    TextColors.GOLD, subjectName, "."));
+        };
+    }
+
+    public static Consumer<CommandSource> createCommandConsumer(CommandSource src, String command, String arguments) {
+        return createCommandConsumer(src, command, arguments, null);
+    }
+
+    public static Consumer<CommandSource> createCommandConsumer(CommandSource src, String command, String arguments, Consumer<CommandSource> postConsumerTask) {
+        return consumer -> {
+            try {
+                Sponge.getCommandManager().get(command).get().getCallable().process(src, arguments);
+            } catch (CommandException e) {
+                src.sendMessage(e.getText());
+            }
+            if (postConsumerTask != null) {
+                postConsumerTask.accept(src);
+            }
+        };
+    }
+
+    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, Claim claim, String flagPermission, Tristate flagValue, String source) {
+        return consumer -> {
+            String target = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+            if (target.isEmpty()) {
+                target = "any";
+            }
+            Tristate newValue = Tristate.UNDEFINED;
+            if (flagValue == Tristate.TRUE) {
+                newValue = Tristate.FALSE;
+            } else if (flagValue == Tristate.UNDEFINED) {
+                newValue = Tristate.TRUE;
+            }
+
+            CommandHelper.applyFlagPermission(src, subject, subjectName, claim, flagPermission, source, target, newValue, Optional.empty(), FlagType.GROUP);
+        };
+    }
+
+    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, String targetFlag, Tristate flagValue, FlagType type) {
+        String onClickText = "Click here to toggle " + type.name().toLowerCase() + " value.";
+        Text.Builder textBuilder = Text.builder()
+        .append(Text.of(flagValue.toString().toLowerCase()))
+        .onHover(TextActions.showText(Text.of(onClickText, "\nColorKey: ", 
+                TextColors.LIGHT_PURPLE, "DEFAULT",
+                TextColors.WHITE, ", ",
+                TextColors.GOLD, "CLAIM",
+                TextColors.WHITE, ", ",
+                TextColors.RED, "OVERRIDE")))
+        .onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, flagPermission, targetFlag, flagValue, type)));
+        return textBuilder.build();
+    }
+
+    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, Claim claim, String flagPermission, Tristate flagValue, String source) {
+        String onClickText = "Click here to toggle flag value.";
+        boolean hasPermission = true;
+        if (src instanceof Player) {
+            String denyReason = claim.allowEdit((Player) src);
+            if (denyReason != null) {
+                onClickText = denyReason;
+                hasPermission = false;
+            }
+        }
+        Text.Builder textBuilder = Text.builder().append(Text.of(
+                flagValue.toString().toLowerCase()))
+        .onHover(TextActions.showText(Text.of(onClickText, "\nColorKey: ", 
+                TextColors.LIGHT_PURPLE, "DEFAULT",
+                TextColors.WHITE, ", ",
+                TextColors.GOLD, "CLAIM",
+                TextColors.WHITE, ", ",
+                TextColors.RED, "OVERRIDE")));
+        if (hasPermission) {
+            textBuilder.onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, claim, flagPermission, flagValue, source)));
+        }
+        return textBuilder.build();
     }
 
     public static String handleCommandFlag(CommandSource src, String target) {
@@ -446,7 +588,7 @@ public class CommandHelper {
 
         User user = null;
         if (!target.equalsIgnoreCase("all") && !target.equalsIgnoreCase("public")) {
-            user = GriefPrevention.instance.resolvePlayerByName(target).orElse(null);
+            user = PlayerUtils.resolvePlayerByName(target).orElse(null);
         } else {
             user = GriefPrevention.PUBLIC_USER;
         }
@@ -532,5 +674,236 @@ public class CommandHelper {
         }
 
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
+    }
+
+    public static Consumer<CommandSource> createTeleportConsumer(CommandSource src, Location<World> location, Claim claim) {
+        return teleport -> {
+            if (!(src instanceof Player)) {
+                // ignore
+                return;
+            }
+            Player player = (Player) src;
+            // if not owner of claim, validate perms
+            if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+                if (!claim.getClaimData().getContainers().contains(player.getUniqueId()) 
+                        && !claim.getClaimData().getBuilders().contains(player.getUniqueId())
+                        && !claim.getClaimData().getManagers().contains(player.getUniqueId())
+                        && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS)) {
+                    player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
+                    return;
+                }
+            } else if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_BASE)) {
+                player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in your claim.")); 
+                return;
+            }
+
+            Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location).orElse(null);
+            if (safeLocation == null) {
+                player.sendMessage(
+                        Text.builder().append(Text.of(TextColors.RED, "Location is not safe. "), 
+                        Text.builder().append(Text.of(TextColors.GREEN, "Are you sure you want to teleport here?")).onClick(TextActions.executeCallback(createForceTeleportConsumer(player, location))).style(TextStyles.UNDERLINE).build()).build());
+            } else {
+                player.setLocation(safeLocation);
+            }
+        };
+    }
+
+    public static Consumer<CommandSource> createForceTeleportConsumer(Player player, Location<World> location) {
+        return teleport -> {
+            player.setLocation(location);
+        };
+    }
+
+    private static Comparator<Object[]> rawTextComparator() {
+        return (t1, t2) -> Text.of(t1).compareTo(Text.of(t2));
+    }
+
+    public static List<Text> stripeText(List<Object[]> texts) {
+        Collections.sort(texts, rawTextComparator());
+
+        ImmutableList.Builder<Text> finalTexts = ImmutableList.builder();
+        for (int i = 0; i < texts.size(); i++) {
+            Object[] text = texts.get(i);
+            text[0] = i % 2 == 0 ? TextColors.GREEN : TextColors.AQUA; // Set starting color
+            finalTexts.add(Text.of(text));
+        }
+        return finalTexts.build();
+    }
+
+    public static Text getBaseFlagOverlayText(String flagPermission) {
+        String baseFlag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+        int endIndex = baseFlag.indexOf(".");
+        if (endIndex != -1) {
+            baseFlag = baseFlag.substring(0, endIndex);
+        }
+
+        switch(baseFlag) {
+            case GPFlags.BLOCK_BREAK :
+                return Text.of("Controls whether a block can be broken.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent any source from breaking dirt blocks, enter\n",
+                        TextColors.GREEN, "/cf block-break minecraft:dirt false\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : ", "minecraft represents the modid and dirt represents the block id.\n",
+                            "Specifying no modid will always default to minecraft.\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent players from breaking dirt blocks, enter\n",
+                        TextColors.GREEN, "/cf block-break minecraft:player minecraft:dirt false\n");
+            case GPFlags.BLOCK_PLACE :
+                return Text.of("Controls whether a block can be placed.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent any source from placing dirt blocks, enter\n",
+                        TextColors.GREEN, "/cf block-place minecraft:dirt false\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : ", "minecraft represents the modid and dirt represents the block id.\n",
+                            "Specifying no modid will always default to minecraft.\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent players from placing dirt blocks, enter\n",
+                        TextColors.GREEN, "/cf block-place minecraft:player minecraft:dirt false\n");
+            case GPFlags.COMMAND_EXECUTE :
+                return Text.of("Controls whether a command can be executed.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent pixelmon's command '/shop select' from being run, enter\n",
+                        TextColors.GREEN, "/cf command-execute pixelmon:shop[select] false\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : ", 
+                        TextStyles.ITALIC, TextColors.GOLD, "pixelmon", TextStyles.RESET, TextColors.RESET, " represents the modid, ", 
+                        TextStyles.ITALIC, TextColors.GOLD, "shop", TextStyles.RESET, TextColors.RESET, " represents the base command, and ",
+                        TextStyles.ITALIC, TextColors.GOLD, "select", TextStyles.RESET, TextColors.RESET,  " represents the argument.\n",
+                            "Specifying no modid will always default to minecraft.\n");
+            case GPFlags.COMMAND_EXECUTE_PVP :
+                return Text.of("Controls whether a command can be executed while engaged in ", TextColors.RED, "PvP.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent pixelmon's command '/shop select' from being run, enter\n",
+                        TextColors.GREEN, "/cf command-execute pixelmon:shop[select] false\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : ", 
+                        TextStyles.ITALIC, TextColors.GOLD, "pixelmon", TextStyles.RESET, TextColors.RESET, " represents the modid, ", 
+                        TextStyles.ITALIC, TextColors.GOLD, "shop", TextStyles.RESET, TextColors.RESET, " represents the base command, and ",
+                        TextStyles.ITALIC, TextColors.GOLD, "select", TextStyles.RESET, TextColors.RESET,  " represents the argument.\n",
+                            "Specifying no modid will always default to minecraft.\n");
+            case GPFlags.ENTER_CLAIM :
+                return Text.of("Controls whether an entity can enter claim.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : If you want to use this for players, it is recommended to use \n", 
+                        "the '/cfg' command with the group the player is in.");
+            case GPFlags.ENTITY_COLLIDE_BLOCK :
+                return Text.of("Controls whether an entity can collide with a block.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent entity collisions with dirt blocks, enter\n",
+                        TextColors.GREEN, "/cf entity-collide-block minecraft:dirt false");
+            case GPFlags.ENTITY_COLLIDE_ENTITY :
+                return Text.of("Controls whether an entity can collide with an entity.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent entity collisions with item frames, enter\n",
+                        TextColors.GREEN, "/cf entity-collide-entity minecraft:itemframe false");
+            case GPFlags.ENTITY_DAMAGE :
+                return Text.of("Controls whether an entity can be damaged.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent horses from being damaged, enter\n",
+                        TextColors.GREEN, "/cf entity-damage minecraft:horse false\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent all animals from being damaged, enter\n",
+                        TextColors.GREEN, "/cf entity-damage minecraft:animals false");
+            case GPFlags.ENTITY_RIDING :
+                return Text.of("Controls whether an entity can be mounted.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent horses from being mounted enter\n",
+                        TextColors.GREEN, "/cf entity-riding minecraft:horse false");
+            case GPFlags.ENTITY_SPAWN :
+                return Text.of("Controls whether an entity can be spawned into the world.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : This does not include entity items. See item-spawn flag.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent horses from being mounted enter\n",
+                        TextColors.GREEN, "/cf entity-riding minecraft:horse false");
+            case GPFlags.ENTITY_TELEPORT_FROM :
+                return Text.of("Controls whether an entity can teleport from their current location.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : If you want to use this for players, it is recommended to use \n", 
+                        "the '/cfg' command with the group the player is in.");
+            case GPFlags.ENTITY_TELEPORT_TO :
+                return Text.of("Controls whether an entity can teleport to a location.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent creepers from traveling and/or teleporting within your claim, enter\n",
+                        TextColors.GREEN, "/cf entity-teleport-to minecraft:creeper false\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : If you want to use this for players, it is recommended to use \n", 
+                        "the '/cfg' command with the group the player is in.");
+            case GPFlags.EXIT_CLAIM :
+                return Text.of("Controls whether an entity can exit claim.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : If you want to use this for players, it is recommended to use \n", 
+                        "the '/cfg' command with the group the player is in.");
+            case GPFlags.EXPLOSION :
+                return Text.of("Controls whether an explosion can occur in the world.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent any explosion, enter\n",
+                        TextColors.GREEN, "/cf explosion any false");
+            case GPFlags.EXPLOSION_SURFACE :
+                return Text.of("Controls whether an explosion can occur above the surface in a world.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent an explosion above surface, enter\n",
+                        TextColors.GREEN, "/cf explosion-surface any false");
+            case GPFlags.FIRE_SPREAD :
+                return Text.of("Controls whether fire can spread in a world.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : This does not prevent the initial fire being placed, only spread.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent fire from spreading, enter\n",
+                        TextColors.GREEN, "/cf fire-spread any false");
+            case GPFlags.INTERACT_BLOCK_PRIMARY :
+                return Text.of("Controls whether a player can left-click(attack) a block.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from left-clicking chests, enter\n",
+                        TextColors.GREEN, "/cf interact-block-primary minecraft:chest false");
+            case GPFlags.INTERACT_BLOCK_SECONDARY :
+                return Text.of("Controls whether a player can right-click a block.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from right-clicking(opening) chests, enter\n",
+                        TextColors.GREEN, "/cf interact-block-secondary minecraft:chest false");
+            case GPFlags.INTERACT_ENTITY_PRIMARY :
+                return Text.of("Controls whether a player can left-click(attack) an entity.\n",
+                    TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from left-clicking horses, enter\n",
+                    TextColors.GREEN, "/cf interact-entity-primary minecraft:player minecraft:horse false\n");
+            case GPFlags.INTERACT_ENTITY_SECONDARY :
+                return Text.of("Controls whether a player can right-click on an entity.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent horses from being mounted, enter\n",
+                        TextColors.GREEN, "/cf interact-entity-secondary minecraft:horse false\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : ", "minecraft represents the modid and horse represents the entity id.\n",
+                            "Specifying no modid will always default to minecraft.\n");
+            case GPFlags.INTERACT_INVENTORY :
+                return Text.of("Controls whether a player can interact with a block that contains inventory such as a chest.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from interacting with any block that contains inventory, enter\n",
+                        TextColors.GREEN, "/cf interact-inventory any false");
+            case GPFlags.INTERACT_ITEM_PRIMARY :
+                return Text.of("Controls whether a player can left-click(attack) with an item.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from left-clicking while holding a diamond sword, enter\n",
+                        TextColors.GREEN, "/cf interact-item-primary minecraft:diamond_sword false");
+            case GPFlags.INTERACT_ITEM_SECONDARY :
+                return Text.of("Controls whether a player can right-click with an item.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from right-clicking while holding a flint and steel, enter\n",
+                        TextColors.GREEN, "/cf interact-item-secondary minecraft:flint_and_steel false");
+            case GPFlags.ITEM_DROP :
+                return Text.of("Controls whether an item can be dropped.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent tnt from dropping in the world, enter\n",
+                        TextColors.GREEN, "/cf item-drop minecraft:tnt false");
+            case GPFlags.ITEM_PICKUP :
+                return Text.of("Controls whether an item can be picked up.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent tnt from dropping in the world, enter\n",
+                        TextColors.GREEN, "/cf item-drop minecraft:tnt false");
+            case GPFlags.ITEM_SPAWN :
+                return Text.of("Controls whether an item can be spawned into the world up.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent feather's from dropping in the world, enter\n",
+                        TextColors.GREEN, "/cf item-drop minecraft:tnt false");
+            case GPFlags.ITEM_USE :
+                return Text.of("Controls whether an item can be used.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent usage of diamond swords, enter\n",
+                        TextColors.GREEN, "/cf item-use minecraft:diamond_sword false");
+            case GPFlags.LIQUID_FLOW :
+                return Text.of("Controls whether liquid is allowed to flow.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent liquid flow, enter\n",
+                        TextColors.GREEN, "/cf liquid-flow any false");
+            case GPFlags.PORTAL_USE :
+                return Text.of("Controls whether a portal can be used.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent any source from using portals, enter\n",
+                        TextColors.GREEN, "/cf portal-use any false\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent only players from using portals, enter\n",
+                        TextColors.GREEN, "/cf portal-use minecraft:player any false");
+            case GPFlags.PROJECTILE_IMPACT_BLOCK :
+                return Text.of("Controls whether a projectile can impact(collide) with a block.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : This involves things such as potions, arrows, throwables, pixelmon pokeballs, etc.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent any projectile from impacting a block, enter\n",
+                        TextColors.GREEN, "/cf projectile-impact-block any false\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To allow pixelmon pokeball's to impact blocks, enter\n",
+                        TextColors.GREEN, "/cf projectile-impact-block pixelmon:occupiedpokeball any true");
+            case GPFlags.PROJECTILE_IMPACT_ENTITY :
+                return Text.of("Controls whether a projectile can impact(collide) with an entity.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : This involves things such as potions, arrows, throwables, pixelmon pokeballs, etc.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent any projectile from impacting an entity, enter\n",
+                        TextColors.GREEN, "/cf projectile-impact-entity any false\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To allow arrows to impact entities, enter\n",
+                        TextColors.GREEN, "/cf projectile-impact-entity minecraft:arrow any true");
+            case GPFlags.PVP :
+                return Text.of("Controls whether PvP is allowed.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent PvP in claim, enter\n",
+                        TextColors.GREEN, "/cf pvp any false\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent PvP in all claims, enter\n",
+                        TextColors.GREEN, "/cf pvp any false override");
+                default :
+                    return Text.of("Not defined.");
+        }
     }
 }

@@ -37,8 +37,6 @@ public class GeneralCategory extends ConfigCategory {
     public boolean generalAdminSignNotifications = false;
     @Setting(value = "admin-whisper-notifications", comment = "Enable whisper notifications for admins.")
     public boolean generalAdminWhisperNotifications = false;
-    @Setting(value = "initial-claim-blocks", comment = "The number of claim blocks a new player starts with. (Default: 100)")
-    public int claimInitialBlocks = 100;
     @Setting(value = "limit-pistons-to-claims",
             comment = "Whether pistons are limited to only move blocks located within the piston's land claim.")
     public boolean limitPistonsToClaims = false;

@@ -31,9 +31,9 @@ import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -44,99 +44,69 @@ import java.util.Iterator;
 //runs every 5 minutes on the main thread
 public class CleanupUnusedClaimsTask implements Runnable {
 
-    private WeakReference<WorldProperties> worldPropertiesRef;
-
-    public CleanupUnusedClaimsTask(WorldProperties worldProperties) {
-        this.worldPropertiesRef = new WeakReference<>(worldProperties);
-    }
-
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void run() {
-        if (this.worldPropertiesRef.isEnqueued()) {
-            return;
-        }
-
-        WorldProperties worldProperties = this.worldPropertiesRef.get();
-        // don't do anything when there are no claims
-        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(worldProperties);
-        ArrayList<Claim> claimList = (ArrayList<Claim>) claimWorldManager.getWorldClaims();
-        if (claimList.size() == 0) {
-            return;
-        }
-
-        Iterator<Claim> iterator = ((ArrayList) claimList.clone()).iterator();
-        while (iterator.hasNext()) {
-            Claim claim = iterator.next();
-            // skip administrative claims
-            if (claim.isAdminClaim()) {
+        for (WorldProperties worldProperties : Sponge.getServer().getAllWorldProperties()) {
+            // don't do anything when there are no claims
+            ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(worldProperties);
+            ArrayList<Claim> claimList = (ArrayList<Claim>) claimWorldManager.getWorldClaims();
+            if (claimList.size() == 0) {
                 continue;
             }
 
-            // determine area of the default chest claim
-            int areaOfDefaultClaim = 0;
-            GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(worldProperties);
-            if (activeConfig.getConfig().claim.claimRadius >= 0) {
-                areaOfDefaultClaim = (int) Math.pow(activeConfig.getConfig().claim.claimRadius * 2 + 1, 2);
-            }
-
-            Instant claimLastActive = null;
-            try {
-                claimLastActive = Instant.parse(claim.getClaimData().getDateLastActive());
-            } catch (DateTimeParseException e) {
-                return;
-            }
-
-            // if this claim is a chest claim and those are set to expire
-            if (claim.getArea() <= areaOfDefaultClaim && activeConfig.getConfig().claim.daysInactiveChestClaimExpiration > 0) {
-                if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveChestClaimExpiration))
-                        .isBefore(Instant.now())) {
-                    claim.removeSurfaceFluids(null);
-                    GriefPrevention.instance.dataStore.deleteClaim(claim, true);
-
-                    // if configured to do so, restore the land to natural
-                    if (GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative) || activeConfig
-                            .getConfig().claim.claimAutoNatureRestore) {
-                        GriefPrevention.instance.restoreClaim(claim, 0);
-                    }
-
-                    GriefPrevention.addLogEntry(" " + claim.getOwnerName() + "'s new player claim expired.", CustomLogEntryTypes.AdminActivity);
-                }
-            }
-
-            // if configured to always remove claims after some inactivity period without exceptions...
-            else if (activeConfig.getConfig().claim.daysInactiveClaimExpiration > 0) {
-                if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveClaimExpiration))
-                        .isBefore(Instant.now())) {
-                    GriefPrevention.instance.dataStore.deleteClaim(claim);
-                    GriefPrevention.addLogEntry(" All of " + claim.getOwnerName() + "'s claims have expired.", CustomLogEntryTypes.AdminActivity);
-
-                    // if configured to do so, restore the land to natural
-                    if (GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative)
-                            || activeConfig.getConfig().claim.claimAutoNatureRestore) {
-                        GriefPrevention.instance.restoreClaim(claim, 0);
-                    }
-                }
-            } else if (activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration > 0
-                    && GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative)) {
-                // avoid scanning large claims and administrative claims
-                if (claim.isAdminClaim() || claim.getWidth() > 25 || claim.getHeight() > 25) {
+            Iterator<Claim> iterator = ((ArrayList) claimList.clone()).iterator();
+            while (iterator.hasNext()) {
+                Claim claim = iterator.next();
+                // skip administrative claims
+                if (claim.isAdminClaim() || claim.ownerPlayerData == null) {
                     continue;
                 }
-
-                // otherwise scan the claim content
-                int minInvestment = 400;
-
-                long investmentScore = claim.getPlayerInvestmentScore();
-                if (investmentScore < minInvestment) {
-                    if (claimLastActive.plus(Duration.ofDays(activeConfig.getConfig().claim.daysInactiveUnusedClaimExpiration))
+    
+                GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(worldProperties);
+                // determine area of the default chest claim
+                int areaOfDefaultClaim = 0;
+                if (activeConfig.getConfig().claim.claimRadius >= 0) {
+                    areaOfDefaultClaim = (int) Math.pow(activeConfig.getConfig().claim.claimRadius * 2 + 1, 2);
+                }
+    
+                Instant claimLastActive = null;
+                try {
+                    claimLastActive = Instant.parse(claim.getClaimData().getDateLastActive());
+                } catch (DateTimeParseException e) {
+                    continue;
+                }
+    
+                // if this claim is a chest claim and those are set to expire
+                if (claim.getArea() <= areaOfDefaultClaim && claim.ownerPlayerData.optionChestClaimExpiration > 0) {
+                    if (claimLastActive.plus(Duration.ofDays(claim.ownerPlayerData.optionChestClaimExpiration))
+                            .isBefore(Instant.now())) {
+                        claim.removeSurfaceFluids(null);
+                        GriefPrevention.instance.dataStore.deleteClaim(claim, true);
+    
+                        // if configured to do so, restore the land to natural
+                        if (GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative) || activeConfig
+                                .getConfig().claim.claimAutoNatureRestore) {
+                            GriefPrevention.instance.restoreClaim(claim, 0);
+                        }
+    
+                        GriefPrevention.addLogEntry(" " + claim.getOwnerName() + "'s new player claim " + "'" + claim.id + "' expired.", CustomLogEntryTypes.AdminActivity);
+                    }
+                }
+    
+                if (claim.ownerPlayerData.optionPlayerClaimExpiration > 0) {
+                    if (claimLastActive.plus(Duration.ofDays(claim.ownerPlayerData.optionPlayerClaimExpiration))
                             .isBefore(Instant.now())) {
                         GriefPrevention.instance.dataStore.deleteClaim(claim, true);
                         GriefPrevention.addLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "
                                 + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()), CustomLogEntryTypes.AdminActivity);
 
-                        // restore the claim area to natural state
-                        GriefPrevention.instance.restoreClaim(claim, 0);
+                        // if configured to do so, restore the land to natural
+                        if (GriefPrevention.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative)
+                                || activeConfig.getConfig().claim.claimAutoNatureRestore) {
+                            // restore the claim area to natural state
+                            GriefPrevention.instance.restoreClaim(claim, 0);
+                        }
                     }
                 }
             }
