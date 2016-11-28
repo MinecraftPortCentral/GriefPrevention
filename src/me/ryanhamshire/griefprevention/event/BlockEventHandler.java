@@ -263,17 +263,14 @@ public class BlockEventHandler {
         }
 
         String denyReason = targetClaim.allowAccess(user, impactPoint);
-        if (denyReason != null) {
-            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), user) == Tristate.TRUE) {
-                GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
-                return;
-            }
+        Tristate result = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), user);
+        if (result == Tristate.TRUE) {
+            GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
+            return;
+        }
+        if (denyReason != null || result == Tristate.FALSE) {
             GriefPrevention.addEventLogEntry(event, denyReason);
             event.setCancelled(true);
-        } else {
-            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, event.getCause().root(), event.getTargetBlock(), user) == Tristate.FALSE) {
-                event.setCancelled(true);
-            }
         }
         GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
     }

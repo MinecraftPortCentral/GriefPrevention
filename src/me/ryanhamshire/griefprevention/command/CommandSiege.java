@@ -67,7 +67,7 @@ public class CommandSiege implements CommandExecutor {
 
         // can't start a siege when you're already involved in one
         Player attacker = player;
-        PlayerData attackerData = GriefPrevention.instance.dataStore.getPlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
+        PlayerData attackerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
         if (attackerData.siegeData != null) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.AlreadySieging));
@@ -112,7 +112,7 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // victim must not be under siege already
-        PlayerData defenderData = GriefPrevention.instance.dataStore.getPlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
+        PlayerData defenderData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
         if (defenderData.siegeData != null) {
             try {
                 throw new CommandException(GriefPrevention.getMessage(Messages.AlreadyUnderSiegePlayer));

@@ -75,7 +75,7 @@ public class CommandClaimUnbanItem implements CommandExecutor {
         }
 
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
-        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, claim, GPFlags.ITEM_USE, itemToBan, Tristate.UNDEFINED, null, 0);
+        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, GPFlags.ITEM_USE, "any", itemToBan, Tristate.UNDEFINED, null);
 
         return CommandResult.success();
     }

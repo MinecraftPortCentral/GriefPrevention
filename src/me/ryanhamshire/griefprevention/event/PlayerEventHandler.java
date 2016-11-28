@@ -732,7 +732,7 @@ public class PlayerEventHandler {
         // remember the player's ip address
         WorldProperties worldProperties = event.getToTransform().getExtent().getProperties();
         UUID playerUniqueId = player.getUniqueId();
-        PlayerData playerData = this.dataStore.createPlayerData(worldProperties, playerUniqueId);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(worldProperties, playerUniqueId);
         playerData.receivedDropUnlockAdvertisement = false;
         playerData.ipAddress = event.getConnection().getAddress().getAddress();
         ClaimWorldManager claimWorldManager = this.dataStore.getClaimWorldManager(worldProperties);
@@ -2133,21 +2133,8 @@ public class PlayerEventHandler {
         if (lastShovelLocation == null) {
             // if he's at the claim count per player limit already and
             // doesn't have permission to bypass, display an error message
-
-            int claimLimit = activeConfig.getConfig().claim.maxClaimsPerPlayer;
-            if (player.getSubjectData() instanceof OptionSubjectData) {
-                String limit = ((OptionSubjectData) player.getSubjectData()).getOptions(new HashSet<>()).get(GPPermissions.OPTION_CLAIM_LIMIT);
-                if (limit != null) {
-                    try {
-                        claimLimit = Integer.parseInt(limit);
-                    } catch (NumberFormatException e) {
-                        // ignore
-                    }
-                }
-            }
-
-            if (claimLimit > 0 && !player.hasPermission(GPPermissions.OVERRIDE_CLAIM_COUNT_LIMIT) &&
-                    playerData.getClaims().size() >= claimLimit) {
+            if (playerData.optionCreateClaimLimit > 0 && !player.hasPermission(GPPermissions.OVERRIDE_CLAIM_COUNT_LIMIT) &&
+                    playerData.getClaims().size() >= playerData.optionCreateClaimLimit) {
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.ClaimCreationFailedOverClaimCountLimit);
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;

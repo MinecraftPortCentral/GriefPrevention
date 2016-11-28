@@ -33,26 +33,16 @@ import java.util.List;
 @ConfigSerializable
 public class ClaimCategory extends ConfigCategory {
 
-    @Setting(value = "abandon-return-ratio", comment = "The portion of claim blocks returned to a player when a claim is abandoned.")
-    public double abandonReturnRatio = 1.0;
     @Setting(value = "accesstrust-commands", comment = "The list of slashcommands requiring access trust when in a claim.")
     public List<String> accessTrustCommands = new ArrayList<>();
     @Setting(value = "auto-claim-radius", comment = "Radius used for auto-created claims")
     public int claimRadius = 4;
     @Setting(value = "banned-item-ids", comment = "Contains list of banned item ids on server.")
     public List<String> bannedItemIds = new ArrayList<>();
-    @Setting(value = "blocks-accrued-per-hour", comment = "Blocks earned per hour. By default, each 'active' player should receive 10 blocks every 5 min. Note: The player must have moved at least 3 blocks since last delivery.")
-    public int claimBlocksEarned = 120;
     @Setting(value = "cleanup-task-interval", comment = "The interval in minutes for restoring blocks in an expired claim. Set to 0 to disable. Note: This only supports vanilla blocks. Use with caution if using custom biomes.")
     public int cleanupTaskInterval = 5;
     @Setting(value = "deliver-manuals", comment = "Send players manuals on claim creation.")
     public boolean deliverManuals = false;
-    @Setting(value = "player-all-claim-expiration-days", comment = "How many days of inactivity before a player loses his claims.")
-    public int daysInactiveClaimExpiration = 0;
-    @Setting(value = "auto-claim-chest-expiration-days", comment = "Number of days of inactivity before an automatic chest claim will be deleted.")
-    public int daysInactiveChestClaimExpiration = 7;
-    @Setting(value = "unused-claim-expiration-days", comment = "Number of days of inactivity before an unused claim will be deleted.")
-    public int daysInactiveUnusedClaimExpiration = 14;
     @Setting(value = "auto-nature-restore", comment = "Whether survival claims will be automatically restored to nature when auto-deleted.")
     public boolean claimAutoNatureRestore = false;
     @Setting(value = "extend-into-ground-distance", comment = "How far below the shoveled block a new claim will reach. Set to 255 if you want to always extend to bedrock.")
@@ -61,11 +51,6 @@ public class ClaimCategory extends ConfigCategory {
     public int maxClaimDepth = 0;
     @Setting(value = "investigation-tool", comment = "The item used to investigate claims with a right-click.")
     public String investigationTool = "minecraft:stick";
-    @Setting(value = "max-accrued-blocks",
-            comment = "The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.")
-    public int maxAccruedBlocks = 80000;
-    @Setting(value = "max-claims-per-player", comment = "Maximum number of claims per player.")
-    public int maxClaimsPerPlayer = 0;
     @Setting(value = "minimum-area", comment = "Minimum area for non-admin claims.")
     public int claimMinimumArea = 100;
     @Setting(value = "minimum-width", comment = "Minimum width for non-admin claims.")

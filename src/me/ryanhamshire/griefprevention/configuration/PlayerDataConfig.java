@@ -28,15 +28,11 @@ import me.ryanhamshire.griefprevention.configuration.category.ConfigCategory;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
-import java.util.UUID;
-
 @ConfigSerializable
 public class PlayerDataConfig extends ConfigCategory {
 
     private boolean requiresSave = true;
 
-    @Setting(value = "uuid", comment = "The player's uuid.")
-    private String playerUniqueId;
     @Setting(value = "accrued-claim-blocks", comment = "How many claim blocks the player has earned in world via play time.")
     private int accruedClaimBlocks;
     @Setting(value = "bonus-claim-blocks",
@@ -45,10 +41,6 @@ public class PlayerDataConfig extends ConfigCategory {
     @Setting(value = "cuboid-mode",
             comment = "Whether this player is currently in 3D cuboid mode.")
     private boolean cuboidMode = false;
-
-    public String getPlayerUniqueId() {
-        return this.playerUniqueId;
-    }
 
     public int getAccruedClaimBlocks() {
         return this.accruedClaimBlocks;
@@ -60,11 +52,6 @@ public class PlayerDataConfig extends ConfigCategory {
 
     public boolean getCuboidMode() {
         return this.cuboidMode;
-    }
-
-    public void setPlayerUniqueId(UUID uuid) {
-        this.requiresSave = true;
-        this.playerUniqueId = uuid.toString();
     }
 
     public void setAccruedClaimBlocks(int blocks) {

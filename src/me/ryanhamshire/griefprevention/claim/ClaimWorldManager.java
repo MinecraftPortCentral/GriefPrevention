@@ -32,12 +32,12 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -50,11 +50,10 @@ import javax.annotation.Nullable;
 
 public class ClaimWorldManager {
 
-    public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
     private WorldProperties worldProperties;
     private GriefPreventionConfig<?> activeConfig;
 
-    // World UUID -> player data
+    // Player UUID -> player data
     private Map<UUID, PlayerData> playerDataList = Maps.newHashMap();
     // Player UUID -> storage
     private Map<UUID, PlayerStorageData> playerStorageList = Maps.newHashMap();
@@ -78,8 +77,13 @@ public class ClaimWorldManager {
         this.activeConfig = GriefPrevention.getActiveConfig(this.worldProperties);
     }
 
-    public PlayerData getPlayerData(UUID playerUniqueId) {
-        PlayerData playerData = this.playerDataList.get(playerUniqueId);
+    public PlayerData getOrCreatePlayerData(UUID playerUniqueId) {
+        PlayerData playerData = null;
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            playerData = DataStore.GLOBAL_PLAYER_DATA.get(playerUniqueId);
+        } else {
+            playerData = this.playerDataList.get(playerUniqueId);
+        }
         if (playerData == null) {
             return createPlayerData(playerUniqueId);
         } else {
@@ -87,12 +91,7 @@ public class ClaimWorldManager {
         }
     }
 
-    public PlayerData createPlayerData(UUID playerUniqueId) {
-        PlayerData playerData = this.playerDataList.get(playerUniqueId);
-        if (playerData != null) {
-            return playerData;
-        }
-
+    private PlayerData createPlayerData(UUID playerUniqueId) {
         Path playerFilePath = null;
         if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
             playerFilePath = DataStore.globalPlayerDataPath.resolve(playerUniqueId.toString());
@@ -100,7 +99,8 @@ public class ClaimWorldManager {
             playerFilePath = DataStore.worldConfigMap.get(this.worldProperties.getUniqueId()).getPath().getParent().resolve("PlayerData").resolve(playerUniqueId.toString());
         }
 
-        PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath, playerUniqueId, this.activeConfig.getConfig().general.claimInitialBlocks);
+        Subject playerSubject = GriefPrevention.instance.permissionService.getUserSubjects().get(playerUniqueId.toString());
+        PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath);
         List<Claim> claimList = new ArrayList<>();
         for (Claim claim : this.worldClaims) {
             if (claim.parent != null) {
@@ -113,17 +113,26 @@ public class ClaimWorldManager {
                 }
             }
         }
-        playerData = new PlayerData(this.worldProperties, playerUniqueId, playerStorage, this.activeConfig, claimList);
-        this.playerStorageList.put(playerUniqueId, playerStorage);
-        this.playerDataList.put(playerUniqueId, playerData);
+
+        PlayerData playerData = new PlayerData(this.worldProperties, playerUniqueId, playerStorage, playerSubject, this.activeConfig, claimList);
         this.playerClaimList.put(playerUniqueId, claimList);
+        this.playerStorageList.put(playerUniqueId, playerStorage);
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            DataStore.GLOBAL_PLAYER_DATA.put(playerUniqueId, playerData);
+        } else {
+            this.playerDataList.put(playerUniqueId, playerData);
+        }
         return playerData;
     }
 
     public void removePlayer(UUID playerUniqueId) {
         this.playerClaimList.remove(playerUniqueId);
         this.playerStorageList.remove(playerUniqueId);
-        this.playerDataList.remove(playerUniqueId);
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            DataStore.GLOBAL_PLAYER_DATA.remove(playerUniqueId);
+        } else {
+            this.playerDataList.remove(playerUniqueId);
+        }
     }
 
     public void addWorldClaim(Claim claim) {
@@ -139,15 +148,20 @@ public class ClaimWorldManager {
             if (!this.claimUniqueIdMap.containsKey(claim.id)) {
                 this.claimUniqueIdMap.put(claim.id, claim);
             }
-    
-            PlayerData playerData = this.playerDataList.get(ownerId);
+
+            PlayerData playerData = null;
+            if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+                playerData = DataStore.GLOBAL_PLAYER_DATA.get(ownerId);
+            } else {
+                playerData = this.playerDataList.get(ownerId);
+            }
             if (claim.parent == null && playerData != null) {
                 List<Claim> playerClaims = playerData.getClaims();
                 if (!playerClaims.contains(claim)) {
                     playerClaims.add(claim);
                 }
             } else {
-                createPlayerData(ownerId);
+                this.createPlayerData(ownerId);
             }
     
             Set<Long> chunkHashes = claim.getChunkHashes();
@@ -182,7 +196,7 @@ public class ClaimWorldManager {
     @Nullable
     public List<Claim> getPlayerClaims(UUID playerUniqueId) {
         if (this.playerClaimList.get(playerUniqueId) == null) {
-            this.createPlayerData(playerUniqueId);
+            this.getOrCreatePlayerData(playerUniqueId);
         }
         return this.playerClaimList.get(playerUniqueId);
     }
@@ -211,6 +225,13 @@ public class ClaimWorldManager {
         return this.worldClaims;
     }
 
+    public Map<UUID, PlayerData> getPlayerDataList() {
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            return DataStore.GLOBAL_PLAYER_DATA;
+        }
+        return this.playerDataList;
+    }
+
     public ConcurrentHashMap<Long, Set<Claim>> getChunksToClaimsMap() {
         return this.chunksToClaimsMap;
     }
@@ -226,9 +247,9 @@ public class ClaimWorldManager {
             return;
         }
 
-        PlayerData ownerData = this.getPlayerData(claim.ownerID);
+        PlayerData ownerData = this.getOrCreatePlayerData(claim.ownerID);
         // determine new owner
-        PlayerData newOwnerData = this.getPlayerData(newOwnerID);
+        PlayerData newOwnerData = this.getOrCreatePlayerData(newOwnerID);
 
         if (newOwnerData == null) {
             throw new NoTransferException("Could not locate PlayerData for new owner with UUID " + newOwnerID + ".");

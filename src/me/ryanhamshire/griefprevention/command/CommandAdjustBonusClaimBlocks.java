@@ -26,6 +26,7 @@
 package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
@@ -46,13 +47,12 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext args) {
         WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(null);
 
-        if (worldProperties == null) {
-            if (src instanceof Player) {
-                worldProperties = ((Player) src).getWorld().getProperties();
-            } else {
-                src.sendMessage(Text.of(TextColors.DARK_RED, "Error! ", TextColors.RED, "No valid world could be found!"));
-                return CommandResult.success();
-            }
+        if (worldProperties == null && src instanceof Player) {
+            worldProperties = ((Player) src).getWorld().getProperties();
+        }
+        if (worldProperties == null && !DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            src.sendMessage(Text.of(TextColors.DARK_RED, "Error! ", TextColors.RED, "No valid world could be found!"));
+            return CommandResult.success();
         }
 
         // parse the adjustment amount
@@ -60,7 +60,7 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
         User user = args.<User>getOne("user").get();
 
         // give blocks to player
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(worldProperties, user.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
         playerData.getStorageData().save();
 

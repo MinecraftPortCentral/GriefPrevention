@@ -29,8 +29,8 @@ import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
@@ -44,12 +44,12 @@ import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 public class CommandClaimInfo implements CommandExecutor {
 
@@ -57,240 +57,231 @@ public class CommandClaimInfo implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
-        Player player;
-        try {
-            player = GriefPrevention.checkPlayer(src);
-        } catch (CommandException e) {
-            src.sendMessage(e.getText());
+        String claimIdentifier = ctx.<String>getOne("id").orElse(null);
+        Player player = null;
+        if (src instanceof Player) {
+            player = (Player) src;
+        }
+
+        if (player == null && claimIdentifier == null) {
+            src.sendMessage(Text.of("No valid player or claim id found."));
             return CommandResult.success();
         }
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
-
-        if (claim != null) {
-            UUID ownerUniqueId = claim.getClaimData().getOwnerUniqueId();
-            if (claim.parent != null) {
-                ownerUniqueId = claim.parent.ownerID;
-            }
-            // if not owner of claim, validate perms
-            if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-                if (!claim.getClaimData().getContainers().contains(player.getUniqueId()) 
-                        && !claim.getClaimData().getBuilders().contains(player.getUniqueId())
-                        && !claim.getClaimData().getManagers().contains(player.getUniqueId())
-                        && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_OTHERS)) {
-                    player.sendMessage(Text.of(TextColors.RED, "You do not have permission to view information in this claim.")); 
-                    return CommandResult.success();
-                }
-            }
-
-            User owner = null;
-            if (!claim.isWildernessClaim()) {
-                owner =  GriefPrevention.getOrCreateUser(ownerUniqueId);
-            }
-
-            Text name = claim.getClaimData().getClaimName();
-            Text greeting = claim.getClaimData().getGreetingMessage();
-            Text farewell = claim.getClaimData().getFarewellMessage();
-            String accessors = "";
-            String builders = "";
-            String containers = "";
-            String managers = "";
-            
-            Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
-            Location<World> northWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.lesserBoundaryCorner.getPosition().getZ()));
-            Location<World> southEast = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.greaterBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
-            Location<World> northEast = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.greaterBoundaryCorner.getPosition().getX(), 65.0D, claim.lesserBoundaryCorner.getPosition().getZ()));
-            // String southWestCorner = 
-            Date created = null;
-            Date lastActive = null;
-            try {
-                Instant instant = Instant.parse(claim.getClaimData().getDateCreated());
-                created = Date.from(instant);
-            } catch(DateTimeParseException ex) {
-                // ignore
-            }
-
-            try {
-                Instant instant = Instant.parse(claim.getClaimData().getDateLastActive());
-                lastActive = Date.from(instant);
-            } catch(DateTimeParseException ex) {
-                // ignore
-            }
-
-            Text claimName = Text.of(TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, name == null ? NONE : name);
-            for (UUID uuid : claim.getClaimData().getAccessors()) {
-                User user = GriefPrevention.getOrCreateUser(uuid);
-                accessors += user.getName() + " ";
-            }
-            for (UUID uuid : claim.getClaimData().getBuilders()) {
-                User user = GriefPrevention.getOrCreateUser(uuid);
-                builders += user.getName() + " ";
-            }
-            for (UUID uuid : claim.getClaimData().getContainers()) {
-                User user = GriefPrevention.getOrCreateUser(uuid);
-                containers += user.getName() + " ";
-            }
-            for (UUID uuid : claim.getClaimData().getManagers()) {
-                User user = GriefPrevention.getOrCreateUser(uuid);
-                managers += user.getName() + " ";
-            }
-
-            TextColor claimTypeColor = TextColors.GREEN;
-            if (claim.isAdminClaim()) {
-                if (claim.isSubdivision()) {
-                    claimTypeColor = TextColors.DARK_AQUA;
-                } else {
-                    claimTypeColor = TextColors.RED;
-                }
-            } else if (claim.isSubdivision()) {
-                claimTypeColor = TextColors.AQUA;
-            }
-            Text claimId = Text.join(Text.of(TextColors.YELLOW, "UUID", TextColors.WHITE, " : ",
-                    Text.builder()
-                            .append(Text.of(TextColors.GRAY, claim.id.toString()))
-                            .onShiftClick(TextActions.insertText(claim.id.toString())).build()));
-            Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null ? owner.getName() : "administrator");
-            Text claimType = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", claimTypeColor, claim.type.name());
-            Text claimCuboid = Text.of(TextColors.YELLOW, "Cuboid", TextColors.WHITE, " : ", TextColors.GREEN, claim.cuboid ? "3D" : "2D");
-            Text claimInherit = Text.of(TextColors.YELLOW, "InheritParent", TextColors.WHITE, " : ", claim.inheritParent ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
-            Text claimFarewell = Text.of(TextColors.YELLOW, "Farewell", TextColors.WHITE, " : ", TextColors.RESET,
-                    farewell == null ? NONE : farewell);
-            Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
-                    greeting == null ? NONE : greeting);
-            Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", TextColors.RESET, claim.isPvpEnabled() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
-            Text southWestCorner = Text.builder()
-                    .append(Text.of(TextColors.LIGHT_PURPLE, "SW", TextColors.WHITE, " : ", TextColors.GRAY, southWest.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, southWest, claim)))
-                    .build();
-            Text southEastCorner = Text.builder()
-                    .append(Text.of(TextColors.LIGHT_PURPLE, "SE", TextColors.WHITE, " : ", TextColors.GRAY, southEast.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, southEast, claim)))
-                    .build();
-            Text southCorners = Text.builder()
-                    .append(Text.of(TextColors.YELLOW, "SouthCorners", TextColors.WHITE, " : "))
-                    .append(southWestCorner)
-                    .append(southEastCorner).build();
-            Text northWestCorner = Text.builder()
-                    .append(Text.of(TextColors.LIGHT_PURPLE, "NW", TextColors.WHITE, " : ", TextColors.GRAY, northWest.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, northWest, claim)))
-                    .build();
-            Text northEastCorner = Text.builder()
-                    .append(Text.of(TextColors.LIGHT_PURPLE, "NE", TextColors.WHITE, " : ", TextColors.GRAY, northEast.getBlockPosition(), " "))
-                    .onClick(TextActions.executeCallback(this.createTeleportConsumer(player, northEast, claim)))
-                    .build();
-            Text northCorners = Text.builder()
-                    .append(Text.of(TextColors.YELLOW, "NorthCorners", TextColors.WHITE, " : "))
-                    .append(northWestCorner)
-                    .append(northEastCorner).build();
-            Text claimArea = Text.of(TextColors.YELLOW, "Area", TextColors.WHITE, " : ", TextColors.GRAY, claim.getArea(), " blocks");
-            Text claimAccessors = Text.of(TextColors.YELLOW, "Accessors", TextColors.WHITE, " : ", TextColors.BLUE, accessors.equals("") ? NONE : accessors);
-            Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.YELLOW, builders.equals("") ? NONE : builders);
-            Text claimContainers = Text.of(TextColors.YELLOW, "Containers", TextColors.WHITE, " : ", TextColors.GREEN, containers.equals("") ? NONE : containers);
-            Text claimCoowners = Text.of(TextColors.YELLOW, "Managers", TextColors.WHITE, " : ", TextColors.GOLD, managers.equals("") ? NONE : managers);
-            Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, created != null ? created : "Unknown");
-            Text dateLastActive = Text.of(TextColors.YELLOW, "LastActive", TextColors.WHITE, " : ", TextColors.GRAY, lastActive != null ? lastActive : "Unknown");
-            Text worldName = Text.of(TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, claim.world.getProperties().getWorldName());
-            Text footer = Text.of(TextColors.WHITE, TextStyles.STRIKETHROUGH, "------------------------------------------");
-            if (claim.parent != null) {
-                GriefPrevention.sendMessage(src,
-                        Text.of("\n",
-                                footer, "\n",
-                                claimName, "\n",
-                                ownerLine, "\n",
-                                claimType, "\n",
-                                claimCuboid, "\n",
-                                claimInherit, "\n",
-                                claimArea, "\n",
-                                claimAccessors, "\n",
-                                claimBuilders, "\n",
-                                claimContainers, "\n",
-                                claimCoowners, "\n",
-                                claimGreeting, "\n",
-                                claimFarewell, "\n",
-                                pvp, "\n",
-                                worldName, "\n",
-                                dateCreated, "\n",
-                                dateLastActive, "\n",
-                                claimId, "\n",
-                                northCorners, "\n",
-                                southCorners, "\n",
-                                footer));
-            } else if (!claim.isWildernessClaim()) {
-                GriefPrevention.sendMessage(src,
-                        Text.of("\n",
-                                footer, "\n",
-                                claimName, "\n",
-                                ownerLine, "\n",
-                                claimType, "\n",
-                                claimCuboid, "\n",
-                                claimArea, "\n",
-                                claimAccessors, "\n",
-                                claimBuilders, "\n",
-                                claimContainers, "\n",
-                                claimCoowners, "\n",
-                                claimGreeting, "\n",
-                                claimFarewell, "\n",
-                                pvp, "\n",
-                                worldName, "\n",
-                                dateCreated, "\n",
-                                dateLastActive, "\n",
-                                claimId, "\n",
-                                northCorners, "\n",
-                                southCorners, "\n",
-                                footer));
-            } else { // wilderness
-                GriefPrevention.sendMessage(src,
-                        Text.of("\n",
-                                footer, "\n",
-                                claimName, "\n",
-                                ownerLine, "\n",
-                                claimType, "\n",
-                                claimArea, "\n",
-                                claimGreeting, "\n",
-                                claimFarewell, "\n",
-                                pvp, "\n",
-                                worldName, "\n",
-                                dateCreated, "\n",
-                                claimId, "\n",
-                                footer));
-            }
+        Claim claim = null;
+        if (player != null && claimIdentifier == null) {
+            claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
         } else {
+            for (WorldProperties worldProperties : Sponge.getServer().getAllWorldProperties()) {
+                ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(worldProperties);
+                for (Claim worldClaim : claimWorldManager.getWorldClaims()) {
+                    if (worldClaim.id.toString().equalsIgnoreCase(claimIdentifier)) {
+                        claim = worldClaim;
+                        break;
+                    }
+                    Text claimName = worldClaim.getClaimData().getClaimName();
+                    if (claimName != null && !claimName.isEmpty()) {
+                        if (claimName.toPlain().equalsIgnoreCase(claimIdentifier)) {
+                            claim = worldClaim;
+                            break;
+                        }
+                    }
+                }
+                if (claim != null) {
+                    break;
+                }
+            }
+        }
+
+        if (claim == null) {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
+            return CommandResult.success();
+        }
+
+        UUID ownerUniqueId = claim.getClaimData().getOwnerUniqueId();
+        if (claim.parent != null) {
+            ownerUniqueId = claim.parent.ownerID;
+        }
+        // if not owner of claim, validate perms
+        if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+            if (!claim.getClaimData().getContainers().contains(player.getUniqueId()) 
+                    && !claim.getClaimData().getBuilders().contains(player.getUniqueId())
+                    && !claim.getClaimData().getManagers().contains(player.getUniqueId())
+                    && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_OTHERS)) {
+                player.sendMessage(Text.of(TextColors.RED, "You do not have permission to view information in this claim.")); 
+                return CommandResult.success();
+            }
+        }
+
+        User owner = null;
+        if (!claim.isWildernessClaim()) {
+            owner =  GriefPrevention.getOrCreateUser(ownerUniqueId);
+        }
+
+        Text name = claim.getClaimData().getClaimName();
+        Text greeting = claim.getClaimData().getGreetingMessage();
+        Text farewell = claim.getClaimData().getFarewellMessage();
+        String accessors = "";
+        String builders = "";
+        String containers = "";
+        String managers = "";
+        
+        Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
+        Location<World> northWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.lesserBoundaryCorner.getPosition().getZ()));
+        Location<World> southEast = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.greaterBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
+        Location<World> northEast = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.greaterBoundaryCorner.getPosition().getX(), 65.0D, claim.lesserBoundaryCorner.getPosition().getZ()));
+        // String southWestCorner = 
+        Date created = null;
+        Date lastActive = null;
+        try {
+            Instant instant = Instant.parse(claim.getClaimData().getDateCreated());
+            created = Date.from(instant);
+        } catch(DateTimeParseException ex) {
+            // ignore
+        }
+
+        try {
+            Instant instant = Instant.parse(claim.getClaimData().getDateLastActive());
+            lastActive = Date.from(instant);
+        } catch(DateTimeParseException ex) {
+            // ignore
+        }
+
+        Text claimName = Text.of(TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, name == null ? NONE : name);
+        for (UUID uuid : claim.getClaimData().getAccessors()) {
+            User user = GriefPrevention.getOrCreateUser(uuid);
+            accessors += user.getName() + " ";
+        }
+        for (UUID uuid : claim.getClaimData().getBuilders()) {
+            User user = GriefPrevention.getOrCreateUser(uuid);
+            builders += user.getName() + " ";
+        }
+        for (UUID uuid : claim.getClaimData().getContainers()) {
+            User user = GriefPrevention.getOrCreateUser(uuid);
+            containers += user.getName() + " ";
+        }
+        for (UUID uuid : claim.getClaimData().getManagers()) {
+            User user = GriefPrevention.getOrCreateUser(uuid);
+            managers += user.getName() + " ";
+        }
+
+        TextColor claimTypeColor = TextColors.GREEN;
+        if (claim.isAdminClaim()) {
+            if (claim.isSubdivision()) {
+                claimTypeColor = TextColors.DARK_AQUA;
+            } else {
+                claimTypeColor = TextColors.RED;
+            }
+        } else if (claim.isSubdivision()) {
+            claimTypeColor = TextColors.AQUA;
+        }
+        Text claimId = Text.join(Text.of(TextColors.YELLOW, "UUID", TextColors.WHITE, " : ",
+                Text.builder()
+                        .append(Text.of(TextColors.GRAY, claim.id.toString()))
+                        .onShiftClick(TextActions.insertText(claim.id.toString())).build()));
+        Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null ? owner.getName() : "administrator");
+        Text claimType = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", 
+                TextColors.GREEN, claim.cuboid ? "3D " : "2D ", claimTypeColor, claim.type.name(),
+                TextColors.WHITE, " (", TextColors.GRAY, claim.getArea(), " blocks",
+                TextColors.WHITE, " )");
+        Text claimInherit = Text.of(TextColors.YELLOW, "InheritParent", TextColors.WHITE, " : ", claim.inheritParent ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
+        Text claimFarewell = Text.of(TextColors.YELLOW, "Farewell", TextColors.WHITE, " : ", TextColors.RESET,
+                farewell == null ? NONE : farewell);
+        Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
+                greeting == null ? NONE : greeting);
+        Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", TextColors.RESET, claim.isPvpEnabled() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
+        Text southWestCorner = Text.builder()
+                .append(Text.of(TextColors.LIGHT_PURPLE, "SW", TextColors.WHITE, " : ", TextColors.GRAY, southWest.getBlockPosition(), " "))
+                .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(player, southWest, claim)))
+                .onHover(TextActions.showText(Text.of("Click here to teleport to SW corner of claim.")))
+                .build();
+        Text southEastCorner = Text.builder()
+                .append(Text.of(TextColors.LIGHT_PURPLE, "SE", TextColors.WHITE, " : ", TextColors.GRAY, southEast.getBlockPosition(), " "))
+                .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(player, southEast, claim)))
+                .onHover(TextActions.showText(Text.of("Click here to teleport to SE corner of claim.")))
+                .build();
+        Text southCorners = Text.builder()
+                .append(Text.of(TextColors.YELLOW, "SouthCorners", TextColors.WHITE, " : "))
+                .append(southWestCorner)
+                .append(southEastCorner).build();
+        Text northWestCorner = Text.builder()
+                .append(Text.of(TextColors.LIGHT_PURPLE, "NW", TextColors.WHITE, " : ", TextColors.GRAY, northWest.getBlockPosition(), " "))
+                .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(player, northWest, claim)))
+                .onHover(TextActions.showText(Text.of("Click here to teleport to NW corner of claim.")))
+                .build();
+        Text northEastCorner = Text.builder()
+                .append(Text.of(TextColors.LIGHT_PURPLE, "NE", TextColors.WHITE, " : ", TextColors.GRAY, northEast.getBlockPosition(), " "))
+                .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(player, northEast, claim)))
+                .onHover(TextActions.showText(Text.of("Click here to teleport to NE corner of claim.")))
+                .build();
+        Text northCorners = Text.builder()
+                .append(Text.of(TextColors.YELLOW, "NorthCorners", TextColors.WHITE, " : "))
+                .append(northWestCorner)
+                .append(northEastCorner).build();
+        Text claimAccessors = Text.of(TextColors.YELLOW, "Accessors", TextColors.WHITE, " : ", TextColors.BLUE, accessors.equals("") ? NONE : accessors);
+        Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.YELLOW, builders.equals("") ? NONE : builders);
+        Text claimContainers = Text.of(TextColors.YELLOW, "Containers", TextColors.WHITE, " : ", TextColors.GREEN, containers.equals("") ? NONE : containers);
+        Text claimCoowners = Text.of(TextColors.YELLOW, "Managers", TextColors.WHITE, " : ", TextColors.GOLD, managers.equals("") ? NONE : managers);
+        Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, created != null ? created : "Unknown");
+        Text dateLastActive = Text.of(TextColors.YELLOW, "LastActive", TextColors.WHITE, " : ", TextColors.GRAY, lastActive != null ? lastActive : "Unknown");
+        Text worldName = Text.of(TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, claim.world.getProperties().getWorldName());
+        Text footer = Text.of(TextColors.WHITE, TextStyles.STRIKETHROUGH, "------------------------------------------");
+        if (claim.parent != null) {
+            GriefPrevention.sendMessage(src,
+                    Text.of(footer, "\n",
+                            claimName, "\n",
+                            ownerLine, "\n",
+                            claimType, "\n",
+                            claimInherit, "\n",
+                            claimAccessors, "\n",
+                            claimBuilders, "\n",
+                            claimContainers, "\n",
+                            claimCoowners, "\n",
+                            claimGreeting, "\n",
+                            claimFarewell, "\n",
+                            pvp, "\n",
+                            worldName, "\n",
+                            dateCreated, "\n",
+                            dateLastActive, "\n",
+                            claimId, "\n",
+                            northCorners, "\n",
+                            southCorners, "\n",
+                            footer));
+        } else if (!claim.isWildernessClaim()) {
+            GriefPrevention.sendMessage(src,
+                    Text.of(footer, "\n",
+                            claimName, "\n",
+                            ownerLine, "\n",
+                            claimType, "\n",
+                            claimAccessors, "\n",
+                            claimBuilders, "\n",
+                            claimContainers, "\n",
+                            claimCoowners, "\n",
+                            claimGreeting, "\n",
+                            claimFarewell, "\n",
+                            pvp, "\n",
+                            worldName, "\n",
+                            dateCreated, "\n",
+                            dateLastActive, "\n",
+                            claimId, "\n",
+                            northCorners, "\n",
+                            southCorners, "\n",
+                            footer));
+        } else { // wilderness
+            GriefPrevention.sendMessage(src,
+                    Text.of(footer, "\n",
+                            claimName, "\n",
+                            ownerLine, "\n",
+                            claimType, "\n",
+                            claimGreeting, "\n",
+                            claimFarewell, "\n",
+                            pvp, "\n",
+                            worldName, "\n",
+                            dateCreated, "\n",
+                            claimId, "\n",
+                            footer));
         }
 
         return CommandResult.success();
-    }
-
-    public Consumer<CommandSource> createTeleportConsumer(Player player, Location<World> location, Claim claim) {
-        return teleport -> {
-            // if not owner of claim, validate perms
-            if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-                if (!claim.getClaimData().getContainers().contains(player.getUniqueId()) 
-                        && !claim.getClaimData().getBuilders().contains(player.getUniqueId())
-                        && !claim.getClaimData().getManagers().contains(player.getUniqueId())
-                        && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS)) {
-                    player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
-                    return;
-                }
-            } else if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_BASE)) {
-                player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in your claim.")); 
-                return;
-            }
-
-            Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location).orElse(null);
-            if (safeLocation == null) {
-                player.sendMessage(
-                        Text.builder().append(Text.of(TextColors.RED, "Location is not safe. "), 
-                        Text.builder().append(Text.of(TextColors.GREEN, "Are you sure you want to teleport here?")).onClick(TextActions.executeCallback(this.createForceTeleportConsumer(player, location))).style(TextStyles.UNDERLINE).build()).build());
-            } else {
-                player.setLocation(safeLocation);
-            }
-        };
-    }
-
-    public Consumer<CommandSource> createForceTeleportConsumer(Player player, Location<World> location) {
-        return teleport -> {
-            player.setLocation(location);
-        };
     }
 }

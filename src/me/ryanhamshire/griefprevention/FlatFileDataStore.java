@@ -35,13 +35,13 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.configuration.types.DimensionConfig;
-import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.RedProtectMigrator;
 import org.apache.commons.io.FileUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.permission.option.OptionSubjectData;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
@@ -63,7 +63,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore {
@@ -147,14 +146,7 @@ public class FlatFileDataStore extends DataStore {
             oldPlayerDataPath = rootWorldSavePath.resolve(playerDataPath);
         }
 
-        if (!DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            // run cleanup task
-            int cleanupTaskInterval = GriefPrevention.getActiveConfig(worldProperties).getConfig().claim.cleanupTaskInterval;
-            if (cleanupTaskInterval > 0) {
-                CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask(worldProperties);
-                cleanupClaimTasks.put(worldProperties.getUniqueId(), Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask).submit(GriefPrevention.instance));
-            }
-        } else {
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
             // use global player data
             oldPlayerDataPath = rootWorldSavePath.resolve(playerDataPath);
         }
@@ -278,6 +270,13 @@ public class FlatFileDataStore extends DataStore {
         }
     }
 
+    public void setOptionDefaults(Set<Context> contexts) {
+        final OptionSubjectData globalSubjectData = ((OptionSubjectData) GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData());
+        for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
+            globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
+        }
+    }
+
     public void unloadWorldData(WorldProperties worldProperties) {
         ClaimWorldManager claimWorldManager = this.getClaimWorldManager(worldProperties);
         for (Claim claim : claimWorldManager.getWorldClaims()) {
@@ -342,12 +341,12 @@ public class FlatFileDataStore extends DataStore {
                     continue;
                 }
 
-                if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
+                /*if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
                     return;
-                }
+                }*/
 
                 try {
-                    this.createPlayerData(worldProperties, playerUUID);
+                    this.getOrCreatePlayerData(worldProperties, playerUUID);
                 }
 
                 // if there's any problem with the file's content, log an error message and skip it
@@ -411,6 +410,10 @@ public class FlatFileDataStore extends DataStore {
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
         claim.context = new Context("gp_claim", claim.id.toString());
+        // Initialize owner's player data for any tasks that may need to check player options such as CleanupUnusedClaimsTask
+        if (claim.isBasicClaim()) {
+            claim.ownerPlayerData = this.claimWorldManagers.get(claim.world.getUniqueId()).getOrCreatePlayerData(claim.ownerID);
+        }
 
         // add parent claim first
         this.addClaim(claim, false);
@@ -492,40 +495,6 @@ public class FlatFileDataStore extends DataStore {
             e.printStackTrace();
             GriefPrevention.addLogEntry("Error: Unable to delete claim file \"" + claim.getClaimStorage().filePath + "\".");
         }
-    }
-
-    // grants a group (players with a specific permission) bonus claim blocks as
-    // long as they're still members of the group
-    // TODO - hook into permissions
-    @Override
-    void saveGroupBonusBlocks(String groupName, int currentValue) {
-        /*
-        // write changes to file to ensure they don't get lost
-        BufferedWriter outStream = null;
-        try {
-            // open the group's file
-            File groupDataFile = new File(playerDataFolderPath + File.separator + "$" + groupName);
-            groupDataFile.createNewFile();
-            outStream = new BufferedWriter(new FileWriter(groupDataFile));
-
-            // first line is number of bonus blocks
-            outStream.write(String.valueOf(currentValue));
-            outStream.newLine();
-        }
-
-        // if any problem, log it
-        catch (Exception e) {
-            GriefPrevention.AddLogEntry("Unexpected exception saving data for group \"" + groupName + "\": " + e.getMessage());
-        }
-
-        try {
-            // close the file
-            if (outStream != null) {
-                outStream.close();
-            }
-        } catch (IOException exception) {
-        }
-        */
     }
 
     @Override

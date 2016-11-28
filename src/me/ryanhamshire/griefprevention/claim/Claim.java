@@ -38,7 +38,6 @@ import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.IClaimData;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
-import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import net.minecraft.world.ChunkCoordIntPair;
 import org.spongepowered.api.Sponge;
@@ -120,6 +119,8 @@ public class Claim implements ContextSource {
     public Visualization visualization;
     public List<UUID> playersWatching = new ArrayList<>();
 
+    public PlayerData ownerPlayerData;
+
     public Claim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, Type type) {
         this(lesserBoundaryCorner, greaterBoundaryCorner, UUID.randomUUID(), type);
     }
@@ -141,6 +142,7 @@ public class Claim implements ContextSource {
         this.world = lesserBoundaryCorner.getExtent();
         if (player != null) {
             this.ownerID = player.getUniqueId();
+            this.ownerPlayerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, this.ownerID);
         }
         this.type = type;
     }
@@ -990,49 +992,6 @@ public class Claim implements ContextSource {
         }
 
         return thisCorner.getExtent().getUniqueId().compareTo(otherCorner.getExtent().getUniqueId()) < 0;
-    }
-
-    public long getPlayerInvestmentScore() {
-        // decide which blocks will be considered player placed
-        Location<World> lesserBoundaryCorner = this.getLesserBoundaryCorner();
-        ArrayList<BlockType> playerBlocks = RestoreNatureProcessingTask.getPlayerBlocks(lesserBoundaryCorner.getExtent().getDimension().getType(),
-                lesserBoundaryCorner.getBiome());
-
-        // scan the claim for player placed blocks
-        double score = 0;
-
-        boolean creativeMode = GriefPrevention.instance.claimModeIsActive(lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative);
-
-        for (int x = this.lesserBoundaryCorner.getBlockX(); x <= this.greaterBoundaryCorner.getBlockX(); x++) {
-            for (int z = this.lesserBoundaryCorner.getBlockZ(); z <= this.greaterBoundaryCorner.getBlockZ(); z++) {
-                int y = this.lesserBoundaryCorner.getBlockY();
-                for (; y < GriefPrevention.instance.getSeaLevel(this.lesserBoundaryCorner.getExtent()) - 5; y++) {
-                    BlockState block = this.lesserBoundaryCorner.getExtent().getBlock(x, y, z);
-                    if (playerBlocks.contains(block.getType())) {
-                        if (block.getType() == BlockTypes.CHEST && !creativeMode) {
-                            score += 10;
-                        } else {
-                            score += .5;
-                        }
-                    }
-                }
-
-                for (; y < this.lesserBoundaryCorner.getExtent().getDimension().getBuildHeight(); y++) {
-                    BlockState block = this.lesserBoundaryCorner.getExtent().getBlock(x, y, z);
-                    if (playerBlocks.contains(block.getType())) {
-                        if (block.getType() == BlockTypes.CHEST && !creativeMode) {
-                            score += 10;
-                        } else if (creativeMode && (block.getType() == BlockTypes.LAVA || block.getType() == BlockTypes.FLOWING_LAVA)) {
-                            score -= 10;
-                        } else {
-                            score += 1;
-                        }
-                    }
-                }
-            }
-        }
-
-        return (long) score;
     }
 
     public ArrayList<Chunk> getChunks() {

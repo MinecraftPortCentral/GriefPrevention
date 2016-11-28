@@ -24,9 +24,20 @@
  */
 package me.ryanhamshire.griefprevention.util;
 
+import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.service.permission.Subject;
+import org.spongepowered.api.service.permission.option.OptionSubjectData;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.util.Tristate;
+
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.UUID;
 
 public class PlayerUtils {
 
@@ -66,5 +77,66 @@ public class PlayerUtils {
         }
 
         return tristate;
+    }
+
+    public static int getOptionIntValue(Subject subject, String key, int defaultValue) {
+    	final OptionSubjectData subjectData = ((OptionSubjectData) subject.getSubjectData());
+        String optionValue = subjectData.getOptions(new HashSet<>()).get(key);
+        if (optionValue != null) {
+            try {
+                return Integer.parseInt(optionValue);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        // Set default option
+        ((OptionSubjectData) GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData()).setOption(new HashSet<>(), key, String.valueOf(defaultValue));
+
+        return defaultValue;
+    }
+
+    public static double getOptionDoubleValue(Subject subject, String key, double defaultValue) {
+    	final OptionSubjectData subjectData = ((OptionSubjectData) subject.getSubjectData());
+        String optionValue = subjectData.getOptions(new HashSet<>()).get(key);
+        if (optionValue != null) {
+            try {
+                return Double.parseDouble(optionValue);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        // Set default option
+        ((OptionSubjectData) GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData()).setOption(new HashSet<>(), key, String.valueOf(defaultValue));
+
+        return defaultValue;
+    }
+
+    public static Optional<User> resolvePlayerByName(String name) {
+        // try online players first
+        Optional<Player> targetPlayer = Sponge.getGame().getServer().getPlayer(name);
+        if (targetPlayer.isPresent()) {
+            return Optional.of((User) targetPlayer.get());
+        }
+
+        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(name);
+        if (user.isPresent()) {
+            return user;
+        }
+
+        return Optional.empty();
+    }
+
+    // string overload for above helper
+    public static String lookupPlayerName(String uuid) {
+        if (uuid.equals(GriefPrevention.WORLD_USER_UUID.toString())) {
+            return "administrator";
+        }
+        Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(UUID.fromString(uuid));
+        if (!user.isPresent()) {
+            GriefPrevention.addLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
+            return "someone";
+        }
+
+        return user.get().getName();
     }
 }

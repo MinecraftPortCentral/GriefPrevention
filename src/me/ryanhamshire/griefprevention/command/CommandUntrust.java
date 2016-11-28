@@ -30,6 +30,7 @@ import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -59,7 +60,7 @@ public class CommandUntrust implements CommandExecutor {
         if (subject.equalsIgnoreCase("public") || subject.equalsIgnoreCase("all")) {
             targetPlayer = Optional.of(GriefPrevention.PUBLIC_USER);
         } else {
-            targetPlayer = GriefPrevention.instance.resolvePlayerByName(subject);
+            targetPlayer = PlayerUtils.resolvePlayerByName(subject);
         }
 
         if (!targetPlayer.isPresent()) {
@@ -85,7 +86,7 @@ public class CommandUntrust implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (!claim.hasFullAccess(player) && !(playerData != null && playerData.ignoreClaims)) {
+        if (claim.allowEdit(player) != null && !(playerData != null && playerData.ignoreClaims)) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You do not have permission to edit this claim."));
             return CommandResult.success();
         }

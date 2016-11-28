@@ -24,8 +24,6 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import static me.ryanhamshire.griefprevention.command.CommandClaimFlag.stripeText;
-
 import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -99,7 +97,7 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
                 permList.add(permText);
             }
 
-            List<Text> finalTexts = stripeText(permList);
+            List<Text> finalTexts = CommandHelper.stripeText(permList);
 
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()

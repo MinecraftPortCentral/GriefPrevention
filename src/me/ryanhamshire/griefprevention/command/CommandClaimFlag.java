@@ -24,9 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -44,26 +42,46 @@ import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.Consumer;
 
 public class CommandClaimFlag implements CommandExecutor {
 
+    public enum FlagType {
+        DEFAULT,
+        CLAIM,
+        OVERRIDE,
+        GROUP,
+        PLAYER
+    }
+
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
-        Optional<String> flag = ctx.<String>getOne("flag");
-        Optional<String> target = ctx.<String>getOne("target");
-        Optional<Tristate> value = ctx.<Tristate>getOne("value");
+        String flag = ctx.<String>getOne("flag").orElse(null);
+        String source = ctx.<String>getOne("source").orElse(null);
+        // Workaround command API issue not handling onlyOne arguments with sequences properly
+        List<String> targetValues = new ArrayList<>(ctx.<String>getAll("target"));
+        String target = null;
+        if (!targetValues.isEmpty()) {
+            if (targetValues.size() > 1) {
+                source = "any";
+                target = targetValues.get(1);
+            } else {
+                target = targetValues.get(0);
+            }
+        }
+        Tristate value = ctx.<Tristate>getOne("value").orElse(null);
         Optional<String> context = ctx.<String>getOne("context");
-
         Player player;
 
         try {
@@ -76,8 +94,8 @@ public class CommandClaimFlag implements CommandExecutor {
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
 
         if (claim != null) {
-            if (!flag.isPresent() && !value.isPresent() && src.hasPermission(GPPermissions.COMMAND_LIST_CLAIM_FLAGS)) {
-                List<Object[]> flagList = Lists.newArrayList();
+            if (flag == null && value == null && src.hasPermission(GPPermissions.COMMAND_LIST_CLAIM_FLAGS)) {
+                Map<String, Text> flagList = new TreeMap<>();
                 Set<Context> contexts = new HashSet<>();
                 Set<Context> overrideContexts = new HashSet<>();
                 if (claim.isAdminClaim()) {
@@ -93,53 +111,84 @@ public class CommandClaimFlag implements CommandExecutor {
                 if (!overrideContexts.isEmpty()) {
                     overrideContexts.add(claim.world.getContext());
                 }
+                if (source != null) {
+                    Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
+                    if (sourceContext != null) {
+                        contexts.add(sourceContext);
+                    }
+                } else {
+                    source = "any";
+                }
                 Map<String, Boolean> defaultTransientPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
                 Map<String, Boolean> defaultTransientOverridePermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
                 Map<String, Boolean> overridePermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(overrideContexts);
                 Map<String, Boolean> claimPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(ImmutableSet.of(claim.context));
-                for (Map.Entry<String, Boolean> overridePermissionEntry : overridePermissions.entrySet()) {
-                    Boolean flagValue = overridePermissionEntry.getValue();
-                    Object[] flagText = new Object[] { TextColors.GREEN, overridePermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                    TextColors.RED, flagValue.toString() };
-                    flagList.add(flagText);
-                }
-
                 for (Map.Entry<String, Boolean> defaultPermissionEntry : defaultTransientPermissions.entrySet()) {
-                    if (!claimPermissions.containsKey(defaultPermissionEntry.getKey()) && !overridePermissions.containsKey(defaultPermissionEntry.getKey())) {
-                        Object[] flagText = null;
-                        // check if transient default has been overridden and if so display that value instead
-                        Boolean defaultTransientOverrideValue = defaultTransientOverridePermissions.get(defaultPermissionEntry.getKey());
-                        if (defaultTransientOverrideValue != null) {
-                            flagText = new Object[] { TextColors.GREEN, defaultPermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                   TextColors.LIGHT_PURPLE, defaultTransientOverrideValue.toString() };
-                        } else {
-                            flagText = new Object[] { TextColors.GREEN, defaultPermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                   TextColors.LIGHT_PURPLE, defaultPermissionEntry.getValue().toString() };
-                        }
-                        flagList.add(flagText);
+                    Text flagText = null;
+                    String flagPermission = defaultPermissionEntry.getKey();
+                    String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                    Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
+                            .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
+                    // check if transient default has been overridden and if so display that value instead
+                    Boolean defaultTransientOverrideValue = defaultTransientOverridePermissions.get(defaultPermissionEntry.getKey());
+                    if (defaultTransientOverrideValue != null) {
+                        flagText = Text.of(
+                                baseFlagText, "  ",
+                                TextColors.WHITE, "[",
+                                TextColors.LIGHT_PURPLE, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(defaultTransientOverrideValue), source, FlagType.DEFAULT));
+                    } else {
+                        flagText = Text.of(
+                                baseFlagText, "  ",
+                                TextColors.WHITE, "[",
+                                TextColors.LIGHT_PURPLE, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(defaultPermissionEntry.getValue()), source, FlagType.DEFAULT));
                     }
+                    if (claimPermissions.get(defaultPermissionEntry.getKey()) == null && overridePermissions.get(defaultPermissionEntry.getKey()) == null) {
+                        flagText = Text.join(flagText, 
+                                Text.of(
+                                TextColors.WHITE, ", ",
+                                TextColors.GOLD, getClickableText(src, claim, flagPermission, Tristate.UNDEFINED, source, FlagType.CLAIM),    
+                                TextColors.WHITE, "]"));
+                    }
+                    flagList.put(flagPermission, flagText);
                 }
 
                 for (Map.Entry<String, Boolean> permissionEntry : claimPermissions.entrySet()) {
-                    if (!overridePermissions.containsKey(permissionEntry.getKey())) {
-                        Boolean flagValue = permissionEntry.getValue();
-                        Object[] flagText = new Object[] { TextColors.GREEN, permissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", ""), "  ",
-                                        TextColors.GOLD, flagValue.toString() };
-                        flagList.add(flagText);
+                    String flagPermission = permissionEntry.getKey();
+                    Boolean flagValue = permissionEntry.getValue();
+                    Text flagText = Text.of(TextColors.GOLD, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(flagValue), source, FlagType.CLAIM));
+                    if (flagList.get(flagPermission) != null) {
+                        flagText = Text.join(flagList.get(flagPermission), 
+                                Text.of(
+                                        TextColors.WHITE, ", ",
+                                        flagText));
+                        if (overridePermissions.get(permissionEntry.getKey()) == null) {
+                            flagText = Text.join(flagText, 
+                                    Text.of(    
+                                    TextColors.WHITE, "]"));
+                        }
+                        flagList.put(flagPermission, flagText);
                     }
                 }
 
+                for (Map.Entry<String, Boolean> overridePermissionEntry : overridePermissions.entrySet()) {
+                    //String flagKey = overridePermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", "");
+                    String flagPermission = overridePermissionEntry.getKey();
+                    Boolean flagValue = overridePermissionEntry.getValue();
+                    Text flagText = Text.of(TextColors.RED, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(flagValue), source, FlagType.OVERRIDE));
+                    if (flagList.get(flagPermission) != null) {
+                        Text.join(flagList.get(flagPermission), Text.of(" ", flagText, TextColors.WHITE, "]"));
+                    }
+                }
 
-                List<Text> finalTexts = stripeText(flagList);
-
+                List<Text> textList = new ArrayList<>(flagList.values());
                 PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
                 PaginationList.Builder paginationBuilder = paginationService.builder()
-                        .title(Text.of(TextColors.AQUA, "Claim Flag Permissions")).padding(Text.of("-")).contents(finalTexts);
+                        .title(Text.of(TextColors.AQUA, "Claim Flag Permissions")).padding(Text.of("-")).contents(textList);
                 paginationBuilder.sendTo(src);
                 return CommandResult.success();
-            } else if (flag.isPresent() && value.isPresent()) {
-                if (GPFlags.DEFAULT_FLAGS.containsKey(flag.get())) {
-                    CommandHelper.addFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, claim, flag.get(), target.get(), value.get(), context, 0);
+            } else if (flag != null && value != null) {
+                if (GPFlags.DEFAULT_FLAGS.containsKey(flag)) {
+                    CommandHelper.addFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flag, source, target, value, context);
                 } else {
                     GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid flag entered."));
                 }
@@ -153,47 +202,67 @@ public class CommandClaimFlag implements CommandExecutor {
         return CommandResult.success();
     }
 
-    private static Comparator<Object[]> rawTextComparator() {
-        return (t1, t2) -> Text.of(t1).compareTo(Text.of(t2));
+    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Claim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
+        return consumer -> {
+            // Toggle DEFAULT type
+            if (type == FlagType.DEFAULT) {
+                Tristate newValue = Tristate.UNDEFINED;
+                if (flagValue == Tristate.TRUE) {
+                    newValue = Tristate.FALSE;
+                } else if (flagValue == Tristate.UNDEFINED) {
+                    newValue = Tristate.TRUE;
+                }
+                CommandHelper.applyFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, Optional.of("default"), type);
+            // Toggle CLAIM type
+            } else if (type == FlagType.CLAIM) {
+                Tristate newValue = Tristate.UNDEFINED;
+                if (flagValue == Tristate.TRUE) {
+                    newValue = Tristate.FALSE;
+                } else if (flagValue == Tristate.UNDEFINED) {
+                    newValue = Tristate.TRUE;
+                }
+                CommandHelper.applyFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, Optional.empty(), type);
+            // Toggle OVERRIDE type
+            } else if (type == FlagType.OVERRIDE) {
+                Tristate newValue = Tristate.UNDEFINED;
+                if (flagValue == Tristate.TRUE) {
+                    newValue = Tristate.FALSE;
+                } else if (flagValue == Tristate.UNDEFINED) {
+                    newValue = Tristate.TRUE;
+                }
+                CommandHelper.applyFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, Optional.of("forced"), type);
+            }
+        };
     }
 
-    public static List<Text> stripeText(List<Object[]> texts) {
-        Collections.sort(texts, rawTextComparator());
-
-        ImmutableList.Builder<Text> finalTexts = ImmutableList.builder();
-        for (int i = 0; i < texts.size(); i++) {
-            Object[] text = texts.get(i);
-            text[0] = i % 2 == 0 ? TextColors.GREEN : TextColors.AQUA; // Set starting color
-            finalTexts.add(Text.of(text));
+    public static Text getClickableText(CommandSource src, Claim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
+        String onClickText = "Click here to toggle " + type.name().toLowerCase() + " value.";
+        boolean hasPermission = true;
+        if (type == FlagType.DEFAULT && !src.hasPermission(GPPermissions.MANAGE_FLAG_DEFAULTS)) {
+            onClickText = "You do not have permission to change flag defaults.";
+            hasPermission = false;
         }
-        return finalTexts.build();
-
-        // TODO - figure out alignment taking into account variable character width
-
-        /*List<List<Object[]>> pages = Lists.partition(texts, 20); // Page size of 20
-        int[] maximums = new int[pages.size()];
-
-        for (int i = 0; i < pages.size(); i++) {
-            List<Object[]> page = pages.get(i);
-
-            int max = 0;
-            for (Object[] text: page) {
-                int len = ((String) text[1]).length();
-                if (len > max) {
-                    max = len;
-                }
+        if (type == FlagType.OVERRIDE && !src.hasPermission(GPPermissions.MANAGE_FLAG_OVERRIDES)) {
+            onClickText = "This flag has been forced by an admin and cannot be changed.";
+            hasPermission = false;
+        } else if (src instanceof Player) {
+            String denyReason = claim.allowEdit((Player) src);
+            if (denyReason != null) {
+                onClickText = denyReason;
+                hasPermission = false;
             }
-            maximums[i] = max;
-        }*/
-
-        /*ImmutableList.Builder<Text> finalTexts = ImmutableList.builder();
-        for (int i = 0; i < pages.size(); i++) {
-            for (Object[] text: pages.get(i)) {
-                text[0] = i % 2 == 0 ? TextColors.GREEN : TextColors.AQUA; // Set starting color
-                text[2] = Strings.repeat(" ", Math.max(2, (maximums[i] - ((String) text[1]).length()))); // Set number of spaces to page maximum minus flag (text[1]) length
-
-                finalTexts.add(Text.of(text));
-            }
-        }*/
+        }
+        Text.Builder textBuilder = Text.builder()
+        .append(Text.of(flagValue.toString().toLowerCase()))
+        .onHover(TextActions.showText(Text.of(onClickText, "\nColorKey: ", 
+                TextColors.LIGHT_PURPLE, "DEFAULT",
+                TextColors.WHITE, ", ",
+                TextColors.GOLD, "CLAIM",
+                TextColors.WHITE, ", ",
+                TextColors.RED, "OVERRIDE")));
+        if (hasPermission) {
+            textBuilder.onClick(TextActions.executeCallback(createFlagConsumer(src, claim, flagPermission, flagValue, source, type)));
+        }
+        return textBuilder.build();
     }
 }

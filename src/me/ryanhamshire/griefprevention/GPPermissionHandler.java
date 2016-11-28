@@ -59,92 +59,15 @@ public class GPPermissionHandler {
             }
         }
 
-        String sourceId = null;
-        if (source != null) {
-            if (source instanceof Entity) {
-                Entity sourceEntity = (Entity) source;
-                sourceId = sourceEntity.getType().getId();
-                if (sourceEntity instanceof Item) {
-                    sourceId = ((Item) sourceEntity).getItemType().getId();
-                }
-            } else if (source instanceof BlockType) {
-                sourceId = ((BlockType) source).getId();
-            } else if (source instanceof BlockState) {
-                BlockState sourceBlock = (BlockState) source;
-                sourceId = sourceBlock.getId().replace("[", ".[");
-            } else if (source instanceof ItemStack) {
-                ItemStack itemstack = (ItemStack) source;
-                sourceId = itemstack.getItem().getId();
-            } else if (source instanceof PluginContainer) {
-                sourceId = ((PluginContainer) source).getId();
-            }
-        }
-
+        String sourceId = getPermissionIdentifier(source);
         String targetPermission = flagPermission;
-        if (target != null) {
-            if (target instanceof Entity) {
-                Entity targetEntity = (Entity) target;
-                net.minecraft.entity.Entity mcEntity = (net.minecraft.entity.Entity) targetEntity;
-                String targetId = "";
-                if (mcEntity instanceof EntityItem) {
-                    EntityItem mcItem = (EntityItem) mcEntity;
-                    net.minecraft.item.ItemStack itemStack = (net.minecraft.item.ItemStack) mcItem.getEntityItem();
-                    if (itemStack != null && itemStack.getItem() != null) {
-                        ItemType itemType = (ItemType) itemStack.getItem();
-                        targetId = itemType.getId() + "." + itemStack.getItemDamage();
-                    }
-                } else {
-                    if (targetEntity.getType() != null) {
-                        targetId = targetEntity.getType().getId();
-                    }
-                }
-                // Workaround for pixelmon using same class for most entities.
-                // In this circumstance, we will use the entity name instead
-                if (targetId.equals("pixelmon:pixelmon")) {
-                    targetId = "pixelmon:" + mcEntity.getName().toLowerCase();
-                }
-                if (targetEntity instanceof Living) {
-                    for (EnumCreatureType type : EnumCreatureType.values()) {
-                        if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
-                            String[] parts = targetId.split(":");
-                            targetId =  parts[0] + "." + GPFlags.SPAWN_TYPES.inverse().get(type) + "." + parts[1];
-                            break;
-                        }
-                    }
-                }
-
-                targetPermission += "." + targetId.toLowerCase();
-                if (targetEntity instanceof Item) {
-                    targetId = ((Item) targetEntity).getItemType().getId();
-                }
-            } else if (target instanceof BlockType) {
-                targetPermission += "." + ((BlockType) target).getId();
-            } else if (target instanceof BlockState) {
-                BlockState targetBlock = (BlockState) target;
-                String targetId = targetBlock.getId().replace("[", ".[");
-                targetPermission += "." + targetId.toLowerCase();
-            } else if (target instanceof ItemStack) {
-                ItemStack itemstack = (ItemStack) target;
-                String targetId = "";
-                if (itemstack.getItem() instanceof ItemBlock) {
-                    ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
-                    net.minecraft.item.ItemStack nmsStack = (net.minecraft.item.ItemStack)(Object) itemstack;
-                    BlockState blockState = ((BlockState) itemBlock.getBlock().getStateFromMeta(nmsStack.getItemDamage()));
-                    targetId = blockState.getId().replace("[", ".[");
-                } else {
-                    targetId = itemstack.getItem().getId();
-                }
-                targetPermission += "." + targetId.toLowerCase();
-            } else if (target instanceof ItemType) {
-                targetPermission += "." + ((ItemType) target).getId().toLowerCase();
-            } else if (target instanceof String) {
-                targetPermission += "." + target;
-            }
+        String targetId = getPermissionIdentifier(target);
+        if (!targetId.isEmpty()) {
+            targetPermission += "." + targetId;
         }
 
         // first check source for deny
         Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(sourceId);
-
         targetPermission = targetPermission.replace(":", ".");
         // First check for claim flag overrides
         Tristate override = getFlagOverride(claim, targetPermission);
@@ -182,9 +105,27 @@ public class GPPermissionHandler {
             contexts.add(claim.parent.getContext());
             value = user.getPermissionValue(contexts, permission);
         }
+        // If source context is not null, check with mod id this time
+        if (sourceContext != null) {
+            String modId = sourceContext.getValue().split(":")[0];
+            Context modContext = GriefPrevention.CUSTOM_CONTEXTS.get(modId);
+            contexts = new HashSet<>();
+            contexts.add(modContext);
+            contexts.add(claim.getContext());
+            Tristate value2 = user.getPermissionValue(contexts, permission);
+            if (value2 == Tristate.UNDEFINED && claim.parent != null && claim.inheritParent) {
+                // check subdivision's parent
+                contexts.remove(claim.getContext());
+                contexts.add(claim.parent.getContext());
+                value2 = user.getPermissionValue(contexts, permission);
+            }
+            if (value2 != Tristate.UNDEFINED) {
+                return value2;
+            }
+        }
 
         if (value == Tristate.UNDEFINED) {
-            return getFlagDefault(claim, permission);
+            return getFlagDefaultPermission(claim, permission);
         }
         return value;
     }
@@ -230,11 +171,39 @@ public class GPPermissionHandler {
             }
         }
 
-        // Fallback to defaults
-        return getFlagDefault(claim, permission);
+        // If source context is not null, check with mod id this time
+        if (sourceContext != null) {
+            contexts = new HashSet<>();
+            String modId = sourceContext.getValue().split(":")[0];
+            Context modContext = GriefPrevention.CUSTOM_CONTEXTS.get(modId);
+            contexts.add(modContext);
+            contexts.add(claim.getContext());
+            if (claim.parent != null && claim.inheritParent) {
+                // first check subdivision context
+                value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+                if (value != Tristate.UNDEFINED) {
+                    return value;
+                }
+                // check parent context
+                contexts.remove(claim.getContext());
+                contexts.add(claim.parent.getContext());
+                value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+                if (value != Tristate.UNDEFINED) {
+                    return value;
+                }
+            } else {
+                // check parent
+                value = GriefPrevention.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+                if (value != Tristate.UNDEFINED) {
+                    return value;
+                }
+            }
+        }
+
+        return getFlagDefaultPermission(claim, permission);
     }
 
-    private static Tristate getFlagDefault(Claim claim, String permission) {
+    private static Tristate getFlagDefaultPermission(Claim claim, String permission) {
         // Fallback to defaults
         Set<Context> contexts = new HashSet<>();
         if (claim.isAdminClaim()) {
@@ -273,5 +242,94 @@ public class GPPermissionHandler {
         }
 
         return Tristate.UNDEFINED;
+    }
+
+    @SuppressWarnings("deprecation")
+    public static String getPermissionIdentifier(Object obj) {
+        if (obj != null) {
+            if (obj instanceof Entity) {
+                Entity targetEntity = (Entity) obj;
+                net.minecraft.entity.Entity mcEntity = (net.minecraft.entity.Entity) targetEntity;
+                String targetId = "";
+                if (mcEntity instanceof EntityItem) {
+                    EntityItem mcItem = (EntityItem) mcEntity;
+                    net.minecraft.item.ItemStack itemStack = (net.minecraft.item.ItemStack) mcItem.getEntityItem();
+                    if (itemStack != null && itemStack.getItem() != null) {
+                        ItemType itemType = (ItemType) itemStack.getItem();
+                        targetId = itemType.getId() + "." + itemStack.getItemDamage();
+                    }
+                } else {
+                    if (targetEntity.getType() != null) {
+                        targetId = targetEntity.getType().getId();
+                    }
+                }
+                // Workaround for pixelmon using same class for most entities.
+                // In this circumstance, we will use the entity name instead
+                if (targetId.equals("pixelmon:pixelmon")) {
+                    targetId = "pixelmon:" + mcEntity.getName().toLowerCase();
+                }
+                if (targetEntity instanceof Living) {
+                    for (EnumCreatureType type : EnumCreatureType.values()) {
+                        if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
+                            String[] parts = targetId.split(":");
+                            targetId =  parts[0] + "." + GPFlags.SPAWN_TYPES.inverse().get(type) + "." + parts[1];
+                            break;
+                        }
+                    }
+                }
+
+                if (targetEntity instanceof Item) {
+                    targetId = ((Item) targetEntity).getItemType().getId();
+                }
+
+                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                    GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
+                }
+
+                return targetId.toLowerCase();
+            } else if (obj instanceof BlockType) {
+                String targetId = ((BlockType) obj).getId();
+                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                    GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
+                }
+
+                return targetId;
+            } else if (obj instanceof BlockState) {
+                BlockState targetBlock = (BlockState) obj;
+                Block mcBlock = (net.minecraft.block.Block) targetBlock.getType();
+                String targetId = targetBlock.getType().getId() + "." + mcBlock.getMetaFromState((IBlockState) targetBlock);//.replace("[", ".[");
+                return targetId.toLowerCase();
+            } else if (obj instanceof ItemStack) {
+                ItemStack itemstack = (ItemStack) obj;
+                String targetId = "";
+                if (itemstack.getItem() instanceof ItemBlock) {
+                    ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
+                    net.minecraft.item.ItemStack nmsStack = (net.minecraft.item.ItemStack)(Object) itemstack;
+                    BlockState blockState = ((BlockState) itemBlock.getBlock().getStateFromMeta(nmsStack.getItemDamage()));
+                    targetId = blockState.getType().getId() + "." + nmsStack.getItemDamage();//.replace("[", ".[");
+                } else {
+                    targetId = itemstack.getItem().getId() + "." + ((net.minecraft.item.ItemStack)(Object) itemstack).getItemDamage();
+                }
+
+                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                    GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
+                }
+
+                return targetId.toLowerCase();
+            } else if (obj instanceof ItemType) {
+                String targetId = ((ItemType) obj).getId().toLowerCase();
+                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                    GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
+                }
+
+                return targetId;
+            } else if (obj instanceof String) {
+                return obj.toString().toLowerCase();
+            } else if (obj instanceof PluginContainer) {
+                return ((PluginContainer) obj).getId();
+            }
+        }
+
+        return "";
     }
 }
