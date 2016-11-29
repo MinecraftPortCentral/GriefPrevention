@@ -175,7 +175,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.2.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "3.0.0", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPrevention {
 
     // for convenience, a reference to the instance of this plugin
@@ -184,7 +184,7 @@ public class GriefPrevention {
     public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
-    public static final String CONFIG_HEADER = "2.2.0\n"
+    public static final String CONFIG_HEADER = "3.0.0\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us at the IRC or drop by our forums and leave a post.\n"
             + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"

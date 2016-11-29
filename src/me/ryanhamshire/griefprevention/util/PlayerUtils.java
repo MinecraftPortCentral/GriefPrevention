@@ -109,7 +109,7 @@ public class PlayerUtils {
         double distance = SpongeImplHooks.getBlockReachDistance(player) + 1;
         Vec3d startPos = new Vec3d(player.posX, player.posY + player.getEyeHeight(), player.posZ);
         Vec3d endPos = startPos.add(new Vec3d(player.getLookVec().xCoord * distance, player.getLookVec().yCoord * distance, player.getLookVec().zCoord * distance));
-        return player.worldObj.rayTraceBlocks(startPos, endPos);
+        return player.world.rayTraceBlocks(startPos, endPos);
     }
 
     public static Vec3d rayTracePlayerEyeHitVec(EntityPlayerMP player) {

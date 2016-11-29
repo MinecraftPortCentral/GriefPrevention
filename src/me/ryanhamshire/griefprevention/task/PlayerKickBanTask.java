@@ -71,7 +71,7 @@ public class PlayerKickBanTask implements Runnable {
             EntityPlayerMP entityplayermp = minecraftserver.getPlayerList().getPlayerByUsername(this.player.getName());
 
             if (entityplayermp != null) {
-                entityplayermp.connection.kickPlayerFromServer("You are banned from this server.");
+                entityplayermp.connection.disconnect("You are banned from this server.");
             }
         }
     }

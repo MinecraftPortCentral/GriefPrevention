@@ -1026,7 +1026,7 @@ public class Claim implements ContextSource {
 
         for (int x = smallX; x <= largeX; x++) {
             for (int z = smallZ; z <= largeZ; z++) {
-                chunkHashes.add(ChunkPos.chunkXZ2Int(x, z));
+                chunkHashes.add(ChunkPos.asLong(x, z));
             }
         }
 

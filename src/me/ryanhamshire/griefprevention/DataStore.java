@@ -409,7 +409,7 @@ public abstract class DataStore {
             return null;
         }
 
-        Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.chunkXZ2Int(location.getBlockX() >> 4, location.getBlockZ() >> 4));
+        Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.asLong(location.getBlockX() >> 4, location.getBlockZ() >> 4));
         if (claimsInChunk == null) {
             GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return claimWorldManager.getWildernessClaim();
@@ -736,9 +736,9 @@ public abstract class DataStore {
                 net.minecraft.entity.player.EntityPlayerMP loserPlayer = (net.minecraft.entity.player.EntityPlayerMP) loser.get();
                 net.minecraft.entity.player.EntityPlayerMP winnerPlayer = (net.minecraft.entity.player.EntityPlayerMP) winner.get();
                 List<ItemStack> loserItems = new ArrayList<ItemStack>();
-                for (int i = 0; i < loserPlayer.inventory.mainInventory.length; i++) {
-                    if (loserPlayer.inventory.mainInventory[i] != null) {
-                        loserItems.add(loserPlayer.inventory.mainInventory[i]);
+                for (int i = 0; i < loserPlayer.inventory.mainInventory.size(); i++) {
+                    if (loserPlayer.inventory.mainInventory.get(i)!= null) {
+                        loserItems.add(loserPlayer.inventory.mainInventory.get(i));
                     }
                 }
 
@@ -761,7 +761,7 @@ public abstract class DataStore {
                             new net.minecraft.entity.item.EntityItem((net.minecraft.world.World) winnerLocation.getExtent(), winnerLocation.getX(),
                                     winnerLocation.getY(), winnerLocation.getZ(), loserItems.get(i));
                     entity.setPickupDelay(10);
-                    ((net.minecraft.world.World) winnerLocation.getExtent()).spawnEntityInWorld(entity);
+                    ((net.minecraft.world.World) winnerLocation.getExtent()).spawnEntity(entity);
                 }
             }
         }
@@ -1446,7 +1446,7 @@ public abstract class DataStore {
                 for (int chunkZ = lesserChunk.get().getPosition().getZ(); chunkZ <= greaterChunk.get().getPosition().getZ(); chunkZ++) {
                     Optional<Chunk> chunk = location.getExtent().getChunk(chunkX, 0, chunkZ);
                     if (chunk.isPresent()) {
-                        Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.chunkXZ2Int(chunkX, chunkZ));
+                        Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.asLong(chunkX, chunkZ));
                         if (claimsInChunk != null) {
                             claims.addAll(claimsInChunk);
                         }

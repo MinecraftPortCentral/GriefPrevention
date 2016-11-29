@@ -48,7 +48,7 @@ public class NbtDataHelper {
                 NBTTagCompound creatorNBT = forgeNBT.getCompoundTag(SPONGE_DATA).getCompoundTag(SPONGE_ENTITY_CREATOR);
                 UUID uuid = new UUID(creatorNBT.getLong("uuid_most"), creatorNBT.getLong("uuid_least"));
                 // get player if online
-                EntityPlayer player = entity.worldObj.getPlayerEntityByUUID(uuid);
+                EntityPlayer player = entity.world.getPlayerEntityByUUID(uuid);
                 if (player != null) {
                     return Optional.of((User) player);
                 }
