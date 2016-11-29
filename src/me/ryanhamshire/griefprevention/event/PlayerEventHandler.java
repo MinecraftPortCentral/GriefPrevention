@@ -1300,18 +1300,14 @@ public class PlayerEventHandler {
 
         Optional<ItemStack> itemInHand = player.getItemInHand(event.getHandType());
         BlockSnapshot blockSnapshot = event.getCause().get(NamedCause.HIT_TARGET, BlockSnapshot.class).orElse(BlockSnapshot.NONE);
-        boolean investigateResult = investigateClaim(player, blockSnapshot, itemInHand);
-        if (!investigateResult) {
-            onPlayerHandleShovelAction(event, blockSnapshot, player, event.getHandType(), this.dataStore.getPlayerData(world, player.getUniqueId()));
+        if (investigateClaim(player, blockSnapshot, itemInHand)) {
             return;
         }
 
         Claim claim = this.dataStore.getClaimAtPlayer(player, false);
         String denyReason = claim.allowAccess(player, player.getLocation());
         if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType(), player) == Tristate.FALSE) {
-            if (!investigateResult) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
-            }
+            GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
             event.setCancelled(true);
         }
     }
