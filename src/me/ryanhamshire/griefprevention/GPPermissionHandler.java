@@ -48,6 +48,8 @@ import java.util.Set;
 
 public class GPPermissionHandler {
 
+    private static final String UNKNOWN_CONTEXT = UNKNOWN_CONTEXT;
+
     public static Tristate getClaimPermission(Claim claim, String flagPermission, Object source, Object target, User user) {
         if (claim == null) {
             return Tristate.UNDEFINED;
@@ -110,7 +112,9 @@ public class GPPermissionHandler {
             String modId = sourceContext.getValue().split(":")[0];
             Context modContext = GriefPrevention.CUSTOM_CONTEXTS.get(modId);
             contexts = new HashSet<>();
-            contexts.add(modContext);
+            if (modContext != null) {
+                contexts.add(modContext);
+            }
             contexts.add(claim.getContext());
             Tristate value2 = user.getPermissionValue(contexts, permission);
             if (value2 == Tristate.UNDEFINED && claim.parent != null && claim.inheritParent) {
@@ -176,7 +180,9 @@ public class GPPermissionHandler {
             contexts = new HashSet<>();
             String modId = sourceContext.getValue().split(":")[0];
             Context modContext = GriefPrevention.CUSTOM_CONTEXTS.get(modId);
-            contexts.add(modContext);
+            if (modContext != null) {
+                contexts.add(modContext);
+            }
             contexts.add(claim.getContext());
             if (claim.parent != null && claim.inheritParent) {
                 // first check subdivision context
@@ -282,14 +288,14 @@ public class GPPermissionHandler {
                     targetId = ((Item) targetEntity).getItemType().getId();
                 }
 
-                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                if (!targetId.equals(UNKNOWN_CONTEXT) && GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
                     GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
                 }
 
                 return targetId.toLowerCase();
             } else if (obj instanceof BlockType) {
                 String targetId = ((BlockType) obj).getId();
-                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                if (!targetId.equals(UNKNOWN_CONTEXT) && GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
                     GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
                 }
 
@@ -311,14 +317,14 @@ public class GPPermissionHandler {
                     targetId = itemstack.getItem().getId() + "." + ((net.minecraft.item.ItemStack)(Object) itemstack).getItemDamage();
                 }
 
-                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                if (!targetId.equals(UNKNOWN_CONTEXT) && GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
                     GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
                 }
 
                 return targetId.toLowerCase();
             } else if (obj instanceof ItemType) {
                 String targetId = ((ItemType) obj).getId().toLowerCase();
-                if (GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
+                if (!targetId.equals(UNKNOWN_CONTEXT) && GriefPrevention.CUSTOM_CONTEXTS.get(targetId) == null) {
                     GriefPrevention.CUSTOM_CONTEXTS.put(targetId, new Context("gp_source", targetId));
                 }
 
