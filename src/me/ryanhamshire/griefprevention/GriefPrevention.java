@@ -365,7 +365,7 @@ public class GriefPrevention {
         // unless claim block accrual is disabled, start the recurring per 10
         // minute event to give claim blocks to online players
         DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-        Sponge.getGame().getScheduler().createTaskBuilder().interval(10, TimeUnit.SECONDS).execute(task)
+        Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
                 .submit(GriefPrevention.instance);
 
         // run cleanup task
