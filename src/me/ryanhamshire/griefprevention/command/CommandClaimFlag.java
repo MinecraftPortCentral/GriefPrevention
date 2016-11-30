@@ -130,7 +130,7 @@ public class CommandClaimFlag implements CommandExecutor {
                     Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
                             .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
                     // check if transient default has been overridden and if so display that value instead
-                    Boolean defaultTransientOverrideValue = defaultTransientOverridePermissions.get(defaultPermissionEntry.getKey());
+                    Boolean defaultTransientOverrideValue = defaultTransientOverridePermissions.get(flagPermission);
                     if (defaultTransientOverrideValue != null) {
                         flagText = Text.of(
                                 baseFlagText, "  ",
@@ -142,12 +142,14 @@ public class CommandClaimFlag implements CommandExecutor {
                                 TextColors.WHITE, "[",
                                 TextColors.LIGHT_PURPLE, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(defaultPermissionEntry.getValue()), source, FlagType.DEFAULT));
                     }
-                    if (claimPermissions.get(defaultPermissionEntry.getKey()) == null && overridePermissions.get(defaultPermissionEntry.getKey()) == null) {
+                    if (claimPermissions.get(defaultPermissionEntry.getKey()) == null) {
                         flagText = Text.join(flagText, 
                                 Text.of(
                                 TextColors.WHITE, ", ",
-                                TextColors.GOLD, getClickableText(src, claim, flagPermission, Tristate.UNDEFINED, source, FlagType.CLAIM),    
-                                TextColors.WHITE, "]"));
+                                TextColors.GOLD, getClickableText(src, claim, flagPermission, Tristate.UNDEFINED, source, FlagType.CLAIM)));
+                        if (overridePermissions.get(flagPermission) == null) {
+                            flagText = Text.join(flagText, Text.of(TextColors.WHITE, "]"));
+                        }
                     }
                     flagList.put(flagPermission, flagText);
                 }
@@ -156,27 +158,23 @@ public class CommandClaimFlag implements CommandExecutor {
                     String flagPermission = permissionEntry.getKey();
                     Boolean flagValue = permissionEntry.getValue();
                     Text flagText = Text.of(TextColors.GOLD, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(flagValue), source, FlagType.CLAIM));
-                    if (flagList.get(flagPermission) != null) {
-                        flagText = Text.join(flagList.get(flagPermission), 
-                                Text.of(
-                                        TextColors.WHITE, ", ",
-                                        flagText));
-                        if (overridePermissions.get(permissionEntry.getKey()) == null) {
-                            flagText = Text.join(flagText, 
-                                    Text.of(    
-                                    TextColors.WHITE, "]"));
+                    Text currentText = flagList.get(flagPermission);
+                    if (currentText != null) {
+                        if (overridePermissions.get(flagPermission) == null) {
+                            flagList.put(flagPermission, Text.join(currentText, Text.of(", ", flagText, TextColors.WHITE, "]")));
+                        } else {
+                            flagList.put(flagPermission, Text.join(currentText, Text.of(", ", flagText)));
                         }
-                        flagList.put(flagPermission, flagText);
                     }
                 }
 
                 for (Map.Entry<String, Boolean> overridePermissionEntry : overridePermissions.entrySet()) {
-                    //String flagKey = overridePermissionEntry.getKey().replace(GPPermissions.FLAG_BASE + ".", "");
                     String flagPermission = overridePermissionEntry.getKey();
                     Boolean flagValue = overridePermissionEntry.getValue();
                     Text flagText = Text.of(TextColors.RED, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(flagValue), source, FlagType.OVERRIDE));
-                    if (flagList.get(flagPermission) != null) {
-                        Text.join(flagList.get(flagPermission), Text.of(" ", flagText, TextColors.WHITE, "]"));
+                    Text currentText = flagList.get(flagPermission);
+                    if (currentText != null) {
+                        flagList.put(flagPermission, Text.join(currentText, Text.of(", ", flagText, TextColors.WHITE, "]")));
                     }
                 }
 
@@ -252,14 +250,10 @@ public class CommandClaimFlag implements CommandExecutor {
                 hasPermission = false;
             }
         }
+
         Text.Builder textBuilder = Text.builder()
         .append(Text.of(flagValue.toString().toLowerCase()))
-        .onHover(TextActions.showText(Text.of(onClickText, "\nColorKey: ", 
-                TextColors.LIGHT_PURPLE, "DEFAULT",
-                TextColors.WHITE, ", ",
-                TextColors.GOLD, "CLAIM",
-                TextColors.WHITE, ", ",
-                TextColors.RED, "OVERRIDE")));
+        .onHover(TextActions.showText(Text.of(onClickText, "\n", CommandHelper.getFlagTypeHoverText(type))));
         if (hasPermission) {
             textBuilder.onClick(TextActions.executeCallback(createFlagConsumer(src, claim, flagPermission, flagValue, source, type)));
         }
