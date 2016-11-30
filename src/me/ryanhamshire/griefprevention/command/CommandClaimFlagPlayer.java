@@ -28,6 +28,7 @@ import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -110,7 +111,7 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
                 Text flagText = Text.of(
                         TextColors.GREEN, baseFlagText, "  ",
                         TextColors.WHITE, "[",
-                        TextColors.LIGHT_PURPLE, CommandHelper.getClickableText(src, subject, name, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source),
+                        TextColors.LIGHT_PURPLE, CommandHelper.getClickableText(src, subject, name, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.PLAYER),
                         TextColors.WHITE, "]");
                 flagList.put(flagPermission, flagText);
             }
