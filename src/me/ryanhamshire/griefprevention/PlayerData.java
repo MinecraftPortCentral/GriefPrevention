@@ -201,8 +201,8 @@ public class PlayerData {
         this.optionBlocksAccruedPerHour = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
         this.optionChestClaimExpiration = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.CHEST_CLAIM_EXPIRATION, 7);
         this.optionCreateClaimLimit = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.CREATE_CLAIM_LIMIT, 0);
-        this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.INITIAL_CLAIM_BLOCKS, 0);
-        this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_ACCRUED_BLOCKS, 0);
+        this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.INITIAL_CLAIM_BLOCKS, 100);
+        this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_ACCRUED_BLOCKS, 80000);
         this.optionPlayerClaimExpiration = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.PLAYER_CLAIM_EXPIRATION, 14);
     }
 
