@@ -473,17 +473,12 @@ public class CommandHelper {
         String onClickText = "Click here to toggle " + type.name().toLowerCase() + " value.";
         Text.Builder textBuilder = Text.builder()
         .append(Text.of(flagValue.toString().toLowerCase()))
-        .onHover(TextActions.showText(Text.of(onClickText, "\nColorKey: ", 
-                TextColors.LIGHT_PURPLE, "DEFAULT",
-                TextColors.WHITE, ", ",
-                TextColors.GOLD, "CLAIM",
-                TextColors.WHITE, ", ",
-                TextColors.RED, "OVERRIDE")))
+        .onHover(TextActions.showText(Text.of(onClickText, "\n", getFlagTypeHoverText(type))))
         .onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, flagPermission, targetFlag, flagValue, type)));
         return textBuilder.build();
     }
 
-    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, Claim claim, String flagPermission, Tristate flagValue, String source) {
+    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, Claim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
         String onClickText = "Click here to toggle flag value.";
         boolean hasPermission = true;
         if (src instanceof Player) {
@@ -493,14 +488,10 @@ public class CommandHelper {
                 hasPermission = false;
             }
         }
-        Text.Builder textBuilder = Text.builder().append(Text.of(
-                flagValue.toString().toLowerCase()))
-        .onHover(TextActions.showText(Text.of(onClickText, "\nColorKey: ", 
-                TextColors.LIGHT_PURPLE, "DEFAULT",
-                TextColors.WHITE, ", ",
-                TextColors.GOLD, "CLAIM",
-                TextColors.WHITE, ", ",
-                TextColors.RED, "OVERRIDE")));
+
+        Text.Builder textBuilder = Text.builder()
+        .append(Text.of(flagValue.toString().toLowerCase()))
+        .onHover(TextActions.showText(Text.of(onClickText, "\n", getFlagTypeHoverText(type))));
         if (hasPermission) {
             textBuilder.onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, claim, flagPermission, flagValue, source)));
         }
@@ -728,6 +719,18 @@ public class CommandHelper {
             finalTexts.add(Text.of(text));
         }
         return finalTexts.build();
+    }
+
+    public static Text getFlagTypeHoverText(FlagType type) {
+        Text hoverText = Text.of("");
+        if (type == FlagType.DEFAULT) {
+            hoverText = Text.of(TextColors.LIGHT_PURPLE, "DEFAULT ", TextColors.WHITE, " : Default is last to be checked. Both claim and override take priority over this.");
+        } else if (type == FlagType.CLAIM) {
+            hoverText = Text.of(TextColors.GOLD, "CLAIM", TextColors.WHITE, " : Claim is checked before default values. Allows claim owners to specify flag settings in claim only.");
+        } else if (type == FlagType.OVERRIDE) {
+            hoverText = Text.of(TextColors.RED, "OVERRIDE", TextColors.WHITE, " : Override has highest priority and is checked above both default and claim values. Allows admins to override all basic and admin claims.");
+        }
+        return hoverText;
     }
 
     public static Text getBaseFlagOverlayText(String flagPermission) {
