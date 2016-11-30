@@ -48,7 +48,7 @@ import java.util.Set;
 
 public class GPPermissionHandler {
 
-    private static final String UNKNOWN_CONTEXT = UNKNOWN_CONTEXT;
+    private static final String UNKNOWN_CONTEXT = "unknown:unknown";
 
     public static Tristate getClaimPermission(Claim claim, String flagPermission, Object source, Object target, User user) {
         if (claim == null) {
