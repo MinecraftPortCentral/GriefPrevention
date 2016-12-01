@@ -129,7 +129,7 @@ public class GPPermissionHandler {
         }
 
         if (value == Tristate.UNDEFINED) {
-            return getFlagDefaultPermission(claim, permission);
+            return getClaimFlagPermission(claim, permission, sourceContext);
         }
         return value;
     }
@@ -209,6 +209,7 @@ public class GPPermissionHandler {
         return getFlagDefaultPermission(claim, permission);
     }
 
+    // Only uses world and claim type contexts
     private static Tristate getFlagDefaultPermission(Claim claim, String permission) {
         // Fallback to defaults
         Set<Context> contexts = new HashSet<>();
