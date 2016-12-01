@@ -40,12 +40,17 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
     public void accumulateContexts(Subject calculable, Set<Context> accumulator) {
         if (calculable.getCommandSource().isPresent() && calculable.getCommandSource().get() instanceof Player) {
             Player player = (Player) calculable.getCommandSource().get();
-            Claim sourceClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            if (playerData == null) {
+                return;
+            }
+
+            Claim sourceClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
             if (sourceClaim != null) {
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-                if (playerData != null && playerData.ignoreClaims) {
+                if (playerData == null || playerData.ignoreClaims) {
                     return;
                 }
+
                 accumulator.add(sourceClaim.getContext());
                 if (sourceClaim.parent != null && sourceClaim.inheritParent) {
                     accumulator.add(sourceClaim.parent.getContext());
@@ -60,7 +65,12 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
         if (context.equals("gp_claim")) {
             if (subject.getCommandSource().isPresent() && subject.getCommandSource().get() instanceof Player) {
                 Player player = (Player) subject.getCommandSource().get();
-                Claim playerClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+                if (playerData == null) {
+                    return false;
+                }
+
+                Claim playerClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
                 if (playerClaim != null && playerClaim.id.equals(UUID.fromString(context.getValue()))) {
                     return true;
                 }

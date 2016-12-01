@@ -392,7 +392,7 @@ public class GriefPrevention {
         // load ignore lists for any already-online players
         Collection<Player> players = Sponge.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
-            new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId()).ignoredPlayers)
+            new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId()).ignoredPlayers)
                     .start();
         }
 
@@ -949,7 +949,7 @@ public class GriefPrevention {
     }
 
     public void setIgnoreStatus(World world, User ignorer, User ignoree, IgnoreMode mode) {
-        PlayerData playerData = this.dataStore.getPlayerData(world, ignorer.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(world, ignorer.getUniqueId());
         if (mode == IgnoreMode.None) {
             playerData.ignoredPlayers.remove(ignoree.getUniqueId());
         } else {
@@ -986,7 +986,8 @@ public class GriefPrevention {
             return;
         }
 
-        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         // if pvp rules are disabled in claim, do nothing
         if (!claim.pvpRulesApply()) {
             return;
@@ -1005,7 +1006,6 @@ public class GriefPrevention {
         // check inventory for well, anything
         if (GriefPrevention.isInventoryEmpty(player)) {
             // if empty, apply immunity
-            PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             playerData.pvpImmune = true;
 
             // inform the player after he finishes respawning
@@ -1038,11 +1038,11 @@ public class GriefPrevention {
         // look for a suitable location
         Location<World> candidateLocation = player.getLocation();
         while (true) {
-            Claim claim = null;
-            claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+            PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
 
             // if there's a claim here, keep looking
-            if (claim != null) {
+            if (!claim.isWildernessClaim()) {
                 candidateLocation = new Location<World>(claim.lesserBoundaryCorner.getExtent(), claim.lesserBoundaryCorner.getBlockX() - 1,
                         claim.lesserBoundaryCorner.getBlockY(), claim.lesserBoundaryCorner.getBlockZ() - 1);
                 continue;
@@ -1162,7 +1162,7 @@ public class GriefPrevention {
     public String allowBuild(Object source, Location<World> targetLocation, User user) {
         PlayerData playerData = null;
         if (user != null) {
-            playerData = this.dataStore.getPlayerData(targetLocation.getExtent(), user.getUniqueId());
+            playerData = this.dataStore.getOrCreatePlayerData(targetLocation.getExtent(), user.getUniqueId());
         } else {
             Claim claim = this.dataStore.getClaimAt(targetLocation, false, null);
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.BLOCK_PLACE, source, targetLocation, user) == Tristate.FALSE) {
@@ -1192,7 +1192,7 @@ public class GriefPrevention {
         }
 
         Location<World> location = blockSnapshot.getLocation().get();
-        PlayerData playerData = user != null ? this.dataStore.getPlayerData(location.getExtent(), user.getUniqueId()) : null;
+        PlayerData playerData = user != null ? this.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId()) : null;
         Claim claim = this.dataStore.getClaimAt(location, false, null);
 
         // exception: administrators in ignore claims mode

@@ -49,7 +49,7 @@ public class CommandRestoreNatureFill implements CommandExecutor {
             return CommandResult.success();
         }
         // change shovel mode
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.RestoreNatureFill;
 
         // set radius based on arguments

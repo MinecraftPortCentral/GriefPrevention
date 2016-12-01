@@ -55,7 +55,7 @@ public class GPPermissionHandler {
             return Tristate.UNDEFINED;
         }
         if (user != null) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, user.getUniqueId());
+            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(claim.world, user.getUniqueId());
             if (playerData.ignoreClaims) {
                 return Tristate.TRUE;
             }

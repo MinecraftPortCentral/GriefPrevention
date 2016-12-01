@@ -50,7 +50,7 @@ public class CommandClaimAbandonAll implements CommandExecutor {
             return CommandResult.success();
         }
         // count claims
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         int originalClaimCount = playerData.getClaims().size();
 
         // check count
@@ -70,7 +70,7 @@ public class CommandClaimAbandonAll implements CommandExecutor {
             if (claim.isSubdivision() || claim.isAdminClaim() || claim.isWildernessClaim()) {
                 continue;
             }
-            playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - playerData.optionAbandonReturnRatio))));
+            playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatio))));
         }
 
         // delete them

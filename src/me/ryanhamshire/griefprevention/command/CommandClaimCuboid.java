@@ -48,7 +48,7 @@ public class CommandClaimCuboid implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.setCuboidMode(!playerData.getCuboidMode());
 
         // toggle cuboid claims mode on or off

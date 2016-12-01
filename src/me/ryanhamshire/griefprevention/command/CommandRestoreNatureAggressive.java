@@ -49,7 +49,7 @@ public class CommandRestoreNatureAggressive implements CommandExecutor {
             return CommandResult.success();
         }
         // change shovel mode
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.RestoreNatureAggressive;
         GriefPrevention.sendMessage(player, TextMode.Warn, Messages.RestoreNatureAggressiveActivate);
         return CommandResult.success();

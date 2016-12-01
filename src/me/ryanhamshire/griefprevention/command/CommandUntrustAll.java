@@ -72,7 +72,7 @@ public class CommandUntrustAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         List<Claim> claimList = null;
         if (playerData != null) {
             claimList = playerData.getClaims();

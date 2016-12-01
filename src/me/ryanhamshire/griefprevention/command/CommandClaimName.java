@@ -26,6 +26,7 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
@@ -50,7 +51,8 @@ public class CommandClaimName implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim != null) {
             if (claim.allowEdit(player) != null) {
                 GriefPrevention.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
