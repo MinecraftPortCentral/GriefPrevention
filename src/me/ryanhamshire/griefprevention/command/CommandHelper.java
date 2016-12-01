@@ -294,9 +294,20 @@ public class CommandHelper {
                 if (parts[1].equalsIgnoreCase("any")) {
                     target = baseFlag + "." + parts[0];
                 } else {
-                    String entitySpawnFlag = GPFlags.getEntitySpawnFlag(baseFlag, target);
-                    if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(baseFlag, target)) {
-                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + target + "' entered for flag " + baseFlag + "."));
+                    // check for meta
+                    parts = target.split("\\.");
+                    String targetFlag = parts[0];
+                    if (parts.length > 1) {
+                        try {
+                            Integer.parseInt(parts[1]);
+                        } catch (NumberFormatException e) {
+                            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target meta '" + parts[1] + "' entered for flag " + baseFlag + "."));
+                            return CommandResult.success();
+                        }
+                    }
+                    String entitySpawnFlag = GPFlags.getEntitySpawnFlag(baseFlag, targetFlag);
+                    if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(baseFlag, targetFlag)) {
+                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + targetFlag + "' entered for flag " + baseFlag + "."));
                         return CommandResult.success();
                     }
         
