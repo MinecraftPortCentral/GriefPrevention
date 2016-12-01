@@ -159,12 +159,21 @@ public class CommandClaimFlag implements CommandExecutor {
                     Boolean flagValue = permissionEntry.getValue();
                     Text flagText = Text.of(TextColors.GOLD, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(flagValue), source, FlagType.CLAIM));
                     Text currentText = flagList.get(flagPermission);
-                    if (currentText != null) {
-                        if (overridePermissions.get(flagPermission) == null) {
-                            flagList.put(flagPermission, Text.join(currentText, Text.of(", ", flagText, TextColors.WHITE, "]")));
-                        } else {
-                            flagList.put(flagPermission, Text.join(currentText, Text.of(", ", flagText)));
-                        }
+                    boolean customFlag = false;
+                    if (currentText == null) {
+                        customFlag = true;
+                        // custom flag
+                        String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                        currentText = Text.builder().append(Text.of(
+                                TextColors.GREEN, baseFlagPerm, "  ",
+                                TextColors.WHITE, "["))
+                                .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
+                    }
+
+                    if (overridePermissions.get(flagPermission) == null) {
+                        flagList.put(flagPermission, Text.join(currentText, Text.of(customFlag ? "" : ", ", flagText, TextColors.WHITE, "]")));
+                    } else {
+                        flagList.put(flagPermission, Text.join(currentText, Text.of(customFlag ? "" : ", ", flagText)));
                     }
                 }
 
@@ -173,9 +182,18 @@ public class CommandClaimFlag implements CommandExecutor {
                     Boolean flagValue = overridePermissionEntry.getValue();
                     Text flagText = Text.of(TextColors.RED, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(flagValue), source, FlagType.OVERRIDE));
                     Text currentText = flagList.get(flagPermission);
-                    if (currentText != null) {
-                        flagList.put(flagPermission, Text.join(currentText, Text.of(", ", flagText, TextColors.WHITE, "]")));
+                    boolean customFlag = false;
+                    if (currentText == null) {
+                        customFlag = true;
+                        // custom flag
+                        String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                        currentText = Text.builder().append(Text.of(
+                                TextColors.GREEN, baseFlagPerm, "  ",
+                                TextColors.WHITE, "["))
+                                .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
                     }
+
+                    flagList.put(flagPermission, Text.join(currentText, Text.of(customFlag ? "" : ", ", flagText, TextColors.WHITE, "]")));
                 }
 
                 List<Text> textList = new ArrayList<>(flagList.values());
