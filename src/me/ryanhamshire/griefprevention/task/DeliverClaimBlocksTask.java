@@ -79,7 +79,7 @@ public class DeliverClaimBlocksTask implements Runnable {
         // otherwise, deliver claim blocks to the specified player
         else {
             DataStore dataStore = GriefPrevention.instance.dataStore;
-            PlayerData playerData = dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            PlayerData playerData = dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             Location<World> lastLocation = playerData.lastAfkCheckLocation;
             // if he's not in a vehicle and has moved at least three blocks since the last check and he's not being pushed around by fluids
             Optional<MatterProperty> matterProperty = player.getLocation().getBlock().getProperty(MatterProperty.class);

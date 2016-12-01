@@ -142,7 +142,7 @@ public class Claim implements ContextSource {
         this.world = lesserBoundaryCorner.getExtent();
         if (player != null) {
             this.ownerID = player.getUniqueId();
-            this.ownerPlayerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, this.ownerID);
+            this.ownerPlayerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerID);
         }
         this.type = type;
     }
@@ -309,7 +309,7 @@ public class Claim implements ContextSource {
     }
 
     public boolean hasFullAccess(User user) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
         if (playerData != null && playerData.ignoreClaims) {
             return true;
         }
@@ -346,7 +346,7 @@ public class Claim implements ContextSource {
 
     // similar to hasFullAccess except it doesn't get checked by delete/abandon claims
     public boolean hasFullTrust(User user) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.world, user.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
         if (playerData != null && playerData.ignoreClaims) {
             return true;
         }
@@ -462,7 +462,7 @@ public class Claim implements ContextSource {
         }
 
         // no building while in pvp combat
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(location.getExtent(), user.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId());
         if (playerData.inPvpCombat(location.getExtent())) {
             return GriefPrevention.instance.dataStore.getMessage(Messages.NoBuildPvP);
         }

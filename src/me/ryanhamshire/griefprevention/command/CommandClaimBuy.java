@@ -93,7 +93,7 @@ public class CommandClaimBuy implements CommandExecutor {
                     String.valueOf(balance));
             return CommandResult.success();
         } else {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
             // try to parse number of blocks
             int blockCount = blockCountOpt.get();

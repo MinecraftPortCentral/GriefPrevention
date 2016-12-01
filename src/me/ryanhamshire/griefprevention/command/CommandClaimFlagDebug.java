@@ -50,13 +50,13 @@ public class CommandClaimFlagDebug implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim.allowEdit(player) != null) {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         playerData.debugClaimPermissions = !playerData.debugClaimPermissions;
 
         if (!playerData.debugClaimPermissions) {

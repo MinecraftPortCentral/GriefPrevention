@@ -26,6 +26,7 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import net.minecraft.item.ItemBlock;
@@ -75,7 +76,8 @@ public class CommandClaimBanItem implements CommandExecutor {
             itemToBan = item.get().getId();
         }
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_PRIMARY, "any", itemToBan, Tristate.FALSE, null);
         CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_SECONDARY, "any", itemToBan, Tristate.FALSE, null);
 

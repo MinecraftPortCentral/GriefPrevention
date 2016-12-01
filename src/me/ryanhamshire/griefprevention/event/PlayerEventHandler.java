@@ -207,7 +207,7 @@ public class PlayerEventHandler {
             // if player not new warn for the first infraction per play session.
             Optional<AchievementData> data = player.get(AchievementData.class);
             if (data.isPresent() && player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+                PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
                 if (!playerData.profanityWarned) {
                     playerData.profanityWarned = true;
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoProfanity);
@@ -234,7 +234,7 @@ public class PlayerEventHandler {
 
             // based on ignore lists, remove some of the audience
             Set<CommandSource> recipientsToRemove = new HashSet<>();
-            PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             for (MessageReceiver recipient : recipients) {
                 if (recipient instanceof Player) {
                     Player reciever = (Player) recipient;
@@ -242,7 +242,7 @@ public class PlayerEventHandler {
                     if (playerData.ignoredPlayers.containsKey(reciever.getUniqueId())) {
                         recipientsToRemove.add((Player) recipient);
                     } else {
-                        PlayerData targetPlayerData = this.dataStore.getPlayerData(reciever.getWorld(), reciever.getUniqueId());
+                        PlayerData targetPlayerData = this.dataStore.getOrCreatePlayerData(reciever.getWorld(), reciever.getUniqueId());
                         if (targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId())) {
                             recipientsToRemove.add((Player) recipient);
                         }
@@ -294,7 +294,7 @@ public class PlayerEventHandler {
         String mutedReason = null;
 
         // prevent bots from chatting - require movement before talking for any newish players
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         if (playerData.noChatLocation != null) {
             Location<World> currentLocation = player.getLocation();
             if (currentLocation.getBlockX() == playerData.noChatLocation.getBlockX() &&
@@ -532,9 +532,9 @@ public class PlayerEventHandler {
             return;
         }
 
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         // if requires access trust, check for permission
-        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         String commandPermission = pluginId + "." + command;
 
         // first check the args
@@ -601,14 +601,14 @@ public class PlayerEventHandler {
             // ignore feature
             if (targetPlayer != null && targetPlayer.isOnline()) {
                 // if either is ignoring the other, cancel this command
-                playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+                playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
                 if (playerData.ignoredPlayers.containsKey(targetPlayer.getUniqueId())) {
                     event.setCancelled(true);
                     GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                     return;
                 }
 
-                PlayerData targetPlayerData = this.dataStore.getPlayerData(targetPlayer.getWorld(), targetPlayer.getUniqueId());
+                PlayerData targetPlayerData = this.dataStore.getOrCreatePlayerData(targetPlayer.getWorld(), targetPlayer.getUniqueId());
                 if (targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId())) {
                     event.setCancelled(true);
                     GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
@@ -768,7 +768,7 @@ public class PlayerEventHandler {
         // note login time
         Date nowDate = new Date();
         long now = nowDate.getTime();
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), playerID);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), playerID);
         playerData.lastSpawn = now;
 
         // if newish, prevent chat until he's moved a bit to prove he's not a bot
@@ -869,7 +869,7 @@ public class PlayerEventHandler {
     public void onPlayerDisconnect(ClientConnectionEvent.Disconnect event) {
         // clear active visuals
         Player player = event.getTargetEntity();
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.visualBlocks = null;
         if (playerData.visualRevertTask != null) {
             playerData.visualRevertTask.cancel();
@@ -886,7 +886,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
         playerData.lastPvpTimestamp = 0; // no longer in pvp combat
 
@@ -913,7 +913,7 @@ public class PlayerEventHandler {
 
         // FEATURE: prevent death message spam by implementing a "cooldown period" for death messages
         Player player = (Player) event.getTargetEntity();
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), event.getTargetEntity().getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), event.getTargetEntity().getUniqueId());
         long now = Calendar.getInstance().getTimeInMillis();
 
         if (GriefPrevention.getGlobalConfig().getConfig().spam.monitorEnabled && (now - playerData.lastDeathTimeStamp) < GriefPrevention.getGlobalConfig().getConfig().spam.deathMessageCooldown * 1000) {
@@ -926,7 +926,7 @@ public class PlayerEventHandler {
         World world = event.getTargetEntity().getWorld();
         if (world != null) {
             GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
-            Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+            Claim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
             if ((claim.pvpRulesApply() && activeConfig.getConfig().pvp.protectItemsOnDeathPvp) ||
                     (!claim.isPvpEnabled() && activeConfig.getConfig().general.protectItemsOnDeathNonPvp)) {
                 playerData.dropsAreUnlocked = false;
@@ -941,7 +941,7 @@ public class PlayerEventHandler {
     public void onPlayerKicked(KickPlayerEvent event) {
         GPTimings.PLAYER_KICK_EVENT.startTimingIfSync();
         Player player = event.getTargetEntity();
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.wasKicked = true;
         GPTimings.PLAYER_KICK_EVENT.stopTimingIfSync();
     }
@@ -957,7 +957,7 @@ public class PlayerEventHandler {
         }
 
         UUID playerID = player.getUniqueId();
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), playerID);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), playerID);
         boolean isBanned = false;
 /*        if (playerData.wasKicked) {
             isBanned = player.isBanned();
@@ -1066,7 +1066,7 @@ public class PlayerEventHandler {
         }
 
         Player player = user instanceof Player ? (Player) user : null;
-        PlayerData playerData = this.dataStore.getPlayerData(world, user.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
 
         // FEATURE: players under siege or in PvP combat, can't throw items on
         // the ground to hide
@@ -1092,7 +1092,7 @@ public class PlayerEventHandler {
 
         for (Entity entityItem : event.getEntities()) {
             Location<World> location = entityItem.getLocation();
-            Claim claim = this.dataStore.getClaimAtPlayer(player, location, false);
+            Claim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
             if (claim != null) {
                 // allow trusted users
                 if (claim.getClaimData().getBuilders().contains(GriefPrevention.PUBLIC_UUID) 
@@ -1138,7 +1138,7 @@ public class PlayerEventHandler {
         }
 
         Claim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), false, null);
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         // if entity has an owner, apply special rules
         IMixinEntity spongeEntity = (IMixinEntity) targetEntity;
@@ -1283,7 +1283,8 @@ public class PlayerEventHandler {
             return;
         }
 
-        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         String denyReason = claim.allowAccess(player, player.getLocation());
         if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack().getType(), player) == Tristate.FALSE) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
@@ -1304,7 +1305,8 @@ public class PlayerEventHandler {
             return;
         }
 
-        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         String denyReason = claim.allowAccess(player, player.getLocation());
         if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType(), player) == Tristate.FALSE) {
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
@@ -1322,7 +1324,8 @@ public class PlayerEventHandler {
             return;
         }
 
-        Claim claim = this.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         // the rest of this code is specific to pvp worlds
         if (!claim.pvpRulesApply()) {
             GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
@@ -1332,7 +1335,6 @@ public class PlayerEventHandler {
         // if we're preventing spawn camping and the player was previously empty handed...
         if (GriefPrevention.getActiveConfig(world.getProperties()).getConfig().pvp.protectFreshSpawns && PlayerUtils.hasItemInOneHand(player, ItemTypes.NONE)) {
             // if that player is currently immune to pvp
-            PlayerData playerData = this.dataStore.getPlayerData(world, player.getUniqueId());
             if (playerData.pvpImmune) {
                 // if it's been less than 10 seconds since the last time he spawned, don't pick up the item
                 long now = Calendar.getInstance().getTimeInMillis();
@@ -1360,7 +1362,7 @@ public class PlayerEventHandler {
             GPTimings.PLAYER_CHANGE_HELD_ITEM_EVENT.stopTimingIfSync();
             return;
         }
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         int count = 0;
         // if he's switching to the golden shovel
@@ -1406,7 +1408,8 @@ public class PlayerEventHandler {
         }
 
         Location<World> location = player.getLocation();
-        Claim claim = this.dataStore.getClaimAtPlayer(player, location, false);
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
         String denyMessage = claim.allowAccess(player);
         Tristate value = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType(), player);
         if (denyMessage != null) {
@@ -1451,9 +1454,11 @@ public class PlayerEventHandler {
             return;
         }
 
-        Claim claim = this.dataStore.getClaimAtPlayer(player, clickedBlock.getLocation().get(), false);
+        Location<World> location = clickedBlock.getLocation().get();
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
 
-        String denyReason = claim.allowAccess(player, clickedBlock.getLocation().get());
+        String denyReason = claim.allowAccess(player, location);
         if (denyReason != null) {
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
@@ -1486,7 +1491,7 @@ public class PlayerEventHandler {
 
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
-        PlayerData playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         if (!clickedBlock.getLocation().isPresent()) {
             onPlayerHandleShovelAction(event, event.getTargetBlock(), player, handType, playerData);
@@ -1494,7 +1499,8 @@ public class PlayerEventHandler {
             return;
         }
 
-        Claim playerClaim = this.dataStore.getClaimAtPlayer(player, clickedBlock.getLocation().get(), false);
+        Location<World> location = clickedBlock.getLocation().get();
+        Claim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location, false);
         if (playerData != null && !playerData.ignoreClaims) {
             // following a siege where the defender lost, the claim will allow everyone access for a time
             if (playerClaim.doorsOpen && activeConfig.getConfig().siege.winnerAccessibleBlocks.contains(clickedBlock.getState().getType().getId())) {
@@ -1507,9 +1513,9 @@ public class PlayerEventHandler {
 
             String denyReason = "";
             if (clickedBlock.getLocation().get().hasTileEntity()) {
-                denyReason = playerClaim.allowContainers(player, clickedBlock.getLocation().get());
+                denyReason = playerClaim.allowContainers(player, location);
             } else {
-                denyReason = playerClaim.allowAccess(player, clickedBlock.getLocation().get(), true);
+                denyReason = playerClaim.allowAccess(player, location, true);
             }
 
             if(denyReason != null) {
@@ -1529,7 +1535,7 @@ public class PlayerEventHandler {
         Optional<TileEntity> tileEntity = clickedBlock.getLocation().get().getTileEntity();
         if (tileEntity.isPresent() && tileEntity.get() instanceof IInventory) {
             if (playerData == null) {
-                playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+                playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             }
 
             // block container use while under siege, so players can't hide items from attackers
@@ -1572,7 +1578,7 @@ public class PlayerEventHandler {
 
             // disable golden shovel while under siege
             if (playerData == null)
-                playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+                playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             if (playerData.siegeData != null) {
                 GriefPrevention.addEventLogEntry(event, this.dataStore.getMessage(Messages.SiegeNoShovel));
                 GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoShovel);
@@ -1634,7 +1640,7 @@ public class PlayerEventHandler {
 
         // if the player is in restore nature mode, do only that
         UUID playerID = player.getUniqueId();
-        playerData = this.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         if (playerData.shovelMode == ShovelMode.RestoreNature || playerData.shovelMode == ShovelMode.RestoreNatureAggressive) {
             // if the clicked block is in a claim, visualize that claim and deliver an error message
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), false, playerData.lastClaim);
@@ -1963,7 +1969,7 @@ public class PlayerEventHandler {
                     if (ownerID.equals(player.getUniqueId())) {
                         claimBlocksRemaining = playerData.getRemainingClaimBlocks();
                     } else {
-                        PlayerData ownerData = this.dataStore.getPlayerData(player.getWorld(), ownerID);
+                        PlayerData ownerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), ownerID);
                         claimBlocksRemaining = ownerData.getRemainingClaimBlocks();
                         Optional<User> owner = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(ownerID);
                         if (owner.isPresent() && !owner.get().isOnline()) {
@@ -2258,7 +2264,7 @@ public class PlayerEventHandler {
             return false;
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         // if holding shift (sneaking), show all claims in area
 
         Claim claim = null;
@@ -2329,7 +2335,7 @@ public class PlayerEventHandler {
     private Claim findNearbyClaim(Player player) {
         int maxDistance = GriefPrevention.instance.maxInspectionDistance;
         BlockRay<World> blockRay = BlockRay.from(player).distanceLimit(maxDistance).build();
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         Claim claim = null;
         int count = 0;
         while (blockRay.hasNext()) {

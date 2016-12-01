@@ -369,7 +369,7 @@ public abstract class DataStore {
         for (UUID playerUniqueId : playersWatching) {
             Player player = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
             if (player != null) {
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, playerUniqueId);
+                PlayerData playerData = this.getPlayerData(claim.world, playerUniqueId);
                 playerData.revertActiveVisual(player);
             }
         }
@@ -382,13 +382,7 @@ public abstract class DataStore {
 
     abstract void deleteClaimFromSecondaryStorage(Claim claim);
 
-    public Claim getClaimAtPlayer(Player player, boolean ignoreHeight) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-        return this.getClaimAt(player.getLocation(), ignoreHeight, playerData.lastClaim);
-    }
-
-    public Claim getClaimAtPlayer(Player player, Location<World> location, boolean ignoreHeight) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+    public Claim getClaimAtPlayer(PlayerData playerData, Location<World> location, boolean ignoreHeight) {
         return this.getClaimAt(location, ignoreHeight, playerData.lastClaim);
     }
 
@@ -1458,11 +1452,18 @@ public abstract class DataStore {
         return claims;
     }
 
+    public PlayerData getPlayerData(World world, UUID playerUniqueId) {
+        PlayerData playerData = null;
+        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(world.getProperties());
+        playerData = claimWorldManager.getPlayerDataList().get(playerUniqueId);
+        return playerData;
+    }
+
     // retrieves player data from memory or secondary storage, as necessary
     // if the player has never been on the server before, this will return a
     // fresh player data with default values
-    public PlayerData getPlayerData(World world, UUID playerID) {
-        return getOrCreatePlayerData(world.getProperties(), playerID);
+    public PlayerData getOrCreatePlayerData(World world, UUID playerUniqueId) {
+        return getOrCreatePlayerData(world.getProperties(), playerUniqueId);
     }
 
     public PlayerData getOrCreatePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {

@@ -48,7 +48,7 @@ public class CommandUnlockDrops implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.dropsAreUnlocked = true;
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.DropUnlockConfirmation);
 

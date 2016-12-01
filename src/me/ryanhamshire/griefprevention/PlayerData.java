@@ -263,7 +263,7 @@ public class PlayerData {
         return this.playerStorage.getConfig().getAccruedClaimBlocks();
     }
 
-    public boolean setAccruedClaimBlocks(int newAccruedClaimBlocks) {
+    public boolean addAccruedClaimBlocks(int newAccruedClaimBlocks) {
         int currentTotal = this.getAccruedClaimBlocks();
         if ((currentTotal + newAccruedClaimBlocks) >= this.optionMaxAccruedBlocks) {
             // player has exceeded limit, set nothing
@@ -274,12 +274,26 @@ public class PlayerData {
         return true;
     }
 
+    public boolean setAccruedClaimBlocks(int newAccruedClaimBlocks) {
+        if (newAccruedClaimBlocks >= this.optionMaxAccruedBlocks) {
+            // player has exceeded limit, set nothing
+            return false;
+        }
+
+        this.playerStorage.getConfig().setAccruedClaimBlocks(newAccruedClaimBlocks);
+        return true;
+    }
+
     public int getBonusClaimBlocks() {
         return this.playerStorage.getConfig().getBonusClaimBlocks();
     }
 
     public void setBonusClaimBlocks(int bonusClaimBlocks) {
         this.playerStorage.getConfig().setBonusClaimBlocks(bonusClaimBlocks);
+    }
+
+    public double getAbandonedReturnRatio() {
+        return this.optionAbandonReturnRatio;
     }
 
     public boolean getCuboidMode() {

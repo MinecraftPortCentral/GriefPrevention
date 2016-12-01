@@ -52,7 +52,7 @@ public class CommandIgnoredPlayerList implements CommandExecutor {
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         StringBuilder builder = new StringBuilder();
         for (Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet()) {
             if (entry.getValue() != null) {

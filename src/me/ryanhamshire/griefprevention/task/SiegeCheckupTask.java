@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.SiegeData;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
@@ -53,7 +54,8 @@ public class SiegeCheckupTask implements Runnable {
         Player attacker = this.siegeData.attacker;
 
         // where is the defender?
-        Claim defenderClaim = dataStore.getClaimAtPlayer(defender, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
+        Claim defenderClaim = dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
 
         // if this is a new claim and he has some permission there, extend the siege to include it
         if (defenderClaim != null) {

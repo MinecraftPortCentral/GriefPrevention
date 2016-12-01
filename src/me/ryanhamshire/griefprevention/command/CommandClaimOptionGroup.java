@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.command;
 import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.Sponge;
@@ -74,7 +75,8 @@ public class CommandClaimOptionGroup implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim.isWildernessClaim() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
             GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim options here."));
             return CommandResult.success();

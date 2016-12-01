@@ -239,7 +239,7 @@ public class EntityEventHandler {
         User user = cause.first(User.class).orElse(null);
         Optional<Player> player = cause.first(Player.class);
         if (player.isPresent()) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetEntity.getWorld(), player.get().getUniqueId());
+            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(targetEntity.getWorld(), player.get().getUniqueId());
             if (playerData.ignoreClaims) {
                 return false;
             }
@@ -263,7 +263,7 @@ public class EntityEventHandler {
                 if (sourceEntity instanceof User) {
                     User sourceUser = (User) sourceEntity;
                     if (sourceUser instanceof Player) {
-                        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetEntity.getWorld(), sourceUser.getUniqueId());
+                        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(targetEntity.getWorld(), sourceUser.getUniqueId());
                         if (playerData.ignoreClaims) {
                             return false;
                         }
@@ -448,7 +448,8 @@ public class EntityEventHandler {
             return;
         }
 
-        Claim claim = this.dataStore.getClaimAtPlayer(defender, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
+        Claim claim = this.dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
         EntityDamageSource entityDamageSource = (EntityDamageSource) event.getCause().root();
 
         //if not in a pvp rules world, do nothing
@@ -481,8 +482,8 @@ public class EntityEventHandler {
 
         PlayerData defenderData = this.dataStore.getOrCreatePlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
         PlayerData attackerData = this.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
-        Claim attackerClaim = this.dataStore.getClaimAtPlayer(attacker, false);
-        Claim defenderClaim = this.dataStore.getClaimAtPlayer(defender, false);
+        Claim attackerClaim = this.dataStore.getClaimAtPlayer(attackerData, attacker.getLocation(), false);
+        Claim defenderClaim = this.dataStore.getClaimAtPlayer(defenderData, defender.getLocation(), false);
 
         if (attacker != defender) {
             long now = Calendar.getInstance().getTimeInMillis();
@@ -590,11 +591,11 @@ public class EntityEventHandler {
         User owner = null;
         if (entity instanceof Player) {
             player = (Player) entity;
-            playerData = this.dataStore.getPlayerData(world, player.getUniqueId());
+            playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         } else {
             if (((net.minecraft.entity.Entity) entity).getControllingPassenger() instanceof Player) {
                 player = (Player) ((net.minecraft.entity.Entity) entity).getControllingPassenger();
-                playerData = this.dataStore.getPlayerData(world, player.getUniqueId());
+                playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
             }
             owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
         }
@@ -681,8 +682,10 @@ public class EntityEventHandler {
 
         Location<World> sourceLocation = event.getFromTransform().getLocation();
         Claim sourceClaim = null;
+        PlayerData playerData = null;
         if (player != null) {
-            sourceClaim = this.dataStore.getClaimAtPlayer(player, false);
+            playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         } else {
             sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
         }
@@ -894,8 +897,10 @@ public class EntityEventHandler {
         Location<World> impactPoint = event.getImpactPoint();
         for (Entity entity : event.getEntities()) {
             Claim targetClaim = null;
+            PlayerData playerData = null;
             if (user instanceof Player) {
-                targetClaim = this.dataStore.getClaimAtPlayer((Player) user, impactPoint, false);
+                playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(impactPoint.getExtent(), user.getUniqueId());
+                targetClaim = this.dataStore.getClaimAtPlayer(playerData, impactPoint, false);
             } else {
                 targetClaim = this.dataStore.getClaimAt(impactPoint, false, null);
             }

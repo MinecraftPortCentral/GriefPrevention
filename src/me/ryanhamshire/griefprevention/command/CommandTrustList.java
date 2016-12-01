@@ -29,6 +29,7 @@ import static org.spongepowered.api.command.CommandMessageFormatting.SPACE_TEXT;
 
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import org.spongepowered.api.command.CommandException;
@@ -55,7 +56,9 @@ public class CommandTrustList implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, true);
+
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
 
         // if no claim here, error message
         if (claim == null) {
