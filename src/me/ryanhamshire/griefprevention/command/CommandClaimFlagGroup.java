@@ -26,6 +26,7 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
@@ -83,7 +84,8 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         Tristate value = ctx.<Tristate>getOne("value").orElse(null);
         Optional<String> context = ctx.<String>getOne("context");
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim == null) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found."));
             return CommandResult.success();

@@ -132,7 +132,8 @@ public class CommandSiege implements CommandExecutor {
             }
         }
 
-        Claim defenderClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(defender, false);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
+        Claim defenderClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
 
         // defender must have some level of permission there to be protected
         if (defenderClaim == null || defenderClaim.allowAccess(defender) != null) {

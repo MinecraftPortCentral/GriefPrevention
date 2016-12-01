@@ -50,7 +50,7 @@ public class PvPImmunityValidationTask implements Runnable {
             return;
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         if (!playerData.pvpImmune) {
             return;
         }

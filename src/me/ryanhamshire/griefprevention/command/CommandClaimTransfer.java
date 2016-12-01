@@ -4,6 +4,7 @@ import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
@@ -30,7 +31,8 @@ public class CommandClaimTransfer implements CommandExecutor {
             return CommandResult.success();
         }
         // which claim is the user in?
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, true);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
         if (claim == null || claim.isWildernessClaim()) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferClaimMissing);
             return CommandResult.empty();

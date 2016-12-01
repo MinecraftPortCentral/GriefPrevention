@@ -49,7 +49,7 @@ public class CommandRestoreNature implements CommandExecutor {
             return CommandResult.success();
         }
         // change shovel mode
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.RestoreNature;
         GriefPrevention.sendMessage(player, TextMode.Instr, Messages.RestoreNatureActivate);
         return CommandResult.success();

@@ -138,7 +138,7 @@ public class Visualization {
 
     // sends a visualization to a player
     public void apply(Player player) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         // if he has any current visualization, clear it first
         playerData.revertActiveVisual(player);
@@ -158,7 +158,7 @@ public class Visualization {
             return;
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         int minx = player.getLocation().getBlockX() - 100;
         int minz = player.getLocation().getBlockZ() - 100;

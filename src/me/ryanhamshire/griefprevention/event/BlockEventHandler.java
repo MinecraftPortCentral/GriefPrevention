@@ -201,8 +201,11 @@ public class BlockEventHandler {
         }
 
         Claim targetClaim = null;
+        PlayerData playerData = null;
         if (user instanceof Player) {
-            targetClaim = this.dataStore.getClaimAtPlayer((Player) user, event.getTargetLocation(), false);
+            Player player = (Player) user;
+            playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            targetClaim = this.dataStore.getClaimAtPlayer(playerData, event.getTargetLocation(), false);
         } else {
             targetClaim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
         }
@@ -256,8 +259,10 @@ public class BlockEventHandler {
 
         Location<World> impactPoint = event.getImpactPoint();
         Claim targetClaim = null;
+        PlayerData playerData = null;
         if (user instanceof Player) {
-            targetClaim = this.dataStore.getClaimAtPlayer((Player) user, impactPoint, false);
+            playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(impactPoint.getExtent(), user.getUniqueId());
+            targetClaim = this.dataStore.getClaimAtPlayer(playerData, impactPoint, false);
         } else {
             targetClaim = this.dataStore.getClaimAt(impactPoint, false, null);
         }
@@ -379,7 +384,7 @@ public class BlockEventHandler {
         Player player = user != null && user instanceof Player ? (Player) user : null;
         PlayerData playerData = null;
         if (user != null) {
-            playerData = this.dataStore.getPlayerData(world, user.getUniqueId());
+            playerData = this.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
         }
 
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
@@ -566,7 +571,7 @@ public class BlockEventHandler {
         }
 
         // if not empty and wasn't the same as the last sign, log it and remember it for later
-        PlayerData playerData = this.dataStore.getPlayerData(world, user.getUniqueId());
+        PlayerData playerData = this.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
         if (notEmpty && playerData.lastMessage != null && !playerData.lastMessage.equals(signMessage)) {
             GriefPrevention.addLogEntry(user.getName() + lines.toString().replace("\n  ", ";"), null);
             //PlayerEventHandler.makeSocialLogEntry(player.get().getName(), signMessage);
@@ -595,7 +600,8 @@ public class BlockEventHandler {
             Entity entity = entitySource.get();
             if (entity instanceof Player) {
                 Player player = (Player) entity;
-                sourceClaim = this.dataStore.getClaimAtPlayer(player, player.getLocation(), false);
+                PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+                sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
             } else {
                 sourceClaim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
             }

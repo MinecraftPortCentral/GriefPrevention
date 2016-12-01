@@ -84,7 +84,7 @@ public class CommandHelper {
     }
 
     public static CommandResult abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         // which claim is being abandoned?
         Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
@@ -601,7 +601,8 @@ public class CommandHelper {
         }
 
         // determine which claim the player is standing in
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, true);
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
         ArrayList<Claim> targetClaims = new ArrayList<>();
         if (claim == null) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to trust all claims, use /trustall instead."));
@@ -811,8 +812,8 @@ public class CommandHelper {
             case GPFlags.ENTITY_SPAWN :
                 return Text.of("Controls whether an entity can be spawned into the world.\n",
                         TextColors.AQUA, "Note", TextColors.WHITE, " : This does not include entity items. See item-spawn flag.\n",
-                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent horses from being mounted enter\n",
-                        TextColors.GREEN, "/cf entity-riding minecraft:horse false");
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent horses from spawning enter\n",
+                        TextColors.GREEN, "/cf entity-spawn minecraft:horse false");
             case GPFlags.ENTITY_TELEPORT_FROM :
                 return Text.of("Controls whether an entity can teleport from their current location.\n",
                         TextColors.AQUA, "Note", TextColors.WHITE, " : If you want to use this for players, it is recommended to use \n", 

@@ -68,14 +68,14 @@ public class CommandUntrust implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(player, true);
+        // determine which claim the player is standing in
+        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
         if (claim == null) {
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to untrust all claims, use /untrustall instead."));
             return CommandResult.success();
         }
 
-        // determine which claim the player is standing in
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
         // verify player has full perms
         UUID ownerID = claim.ownerID;
         if (ownerID == null && claim.parent != null) {

@@ -118,7 +118,7 @@ class RestoreNatureExecutionTask implements Runnable {
         // show visualization to player who started the restoration
         if (player != null) {
             Claim claim = new Claim(lesserCorner, greaterCorner, Claim.Type.BASIC);
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, player.getUniqueId());
+            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(claim.world, player.getUniqueId());
             // TODO
             /*claim.getVisualizer().createClaimBlockVisuals(height, locality, playerData);
             Visualization visualization =
