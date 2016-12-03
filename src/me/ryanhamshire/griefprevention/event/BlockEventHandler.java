@@ -404,15 +404,7 @@ public class BlockEventHandler {
             }
 
             Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
-            if (user != null && targetClaim.hasFullTrust(user)) {
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                continue;
-            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                continue;
-            }
-
-            String denyReason = GriefPrevention.instance.allowBuild(event.getCause().root(), location, user);
+            String denyReason = targetClaim.allowAccess(user);
             if (denyReason != null) {
                 GriefPrevention.addEventLogEntry(event, denyReason);
                 event.setCancelled(true);
