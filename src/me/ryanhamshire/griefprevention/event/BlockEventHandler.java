@@ -134,13 +134,19 @@ public class BlockEventHandler {
                 }
 
                 String denyReason= GriefPrevention.instance.allowBuild(rootCause, location, user);
-                boolean canBreak = true;
-                if (denyReason == null) {
-                    canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
+                boolean userAllowed = denyReason == null;
+                boolean canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
+                if (hasFakePlayer) {
+                    if (!canBreak) {
+                        userAllowed = false;
+                    }
+                } else if (canBreak) {
+                    userAllowed = true;
                 }
-                if (denyReason != null || !canBreak) {
+
+                if (!userAllowed) {
                     GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
-                    if (!hasFakePlayer && rootPlayer) {
+                    if (!hasFakePlayer && denyReason != null && rootPlayer) {
                         GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
                     }
                     event.setCancelled(true);
@@ -380,41 +386,6 @@ public class BlockEventHandler {
             }
         }
         GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
-    }
-
-    @Listener(order = Order.FIRST)
-    public void onBlockPost(ChangeBlockEvent.Post event) {
-        GPTimings.BLOCK_POST_EVENT.startTimingIfSync();
-
-        if (!GriefPrevention.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
-            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        User user = event.getCause().first(User.class).orElse(null);
-        Claim sourceClaim = this.getSourceClaim(event.getCause());
-        if (sourceClaim == null || user == null || event.getCause().root() instanceof Player) {
-            GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
-        for (Transaction<BlockSnapshot> transaction : transactions) {
-            Location<World> location = transaction.getFinal().getLocation().orElse(null);
-            if (location == null) {
-                continue;
-            }
-
-            Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
-            String denyReason = targetClaim.allowAccess(user);
-            if (denyReason != null) {
-                GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
-                event.setCancelled(true);
-                GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
-                return;
-            }
-        }
-        GPTimings.BLOCK_POST_EVENT.stopTimingIfSync();
     }
 
     @Listener(order = Order.FIRST)
