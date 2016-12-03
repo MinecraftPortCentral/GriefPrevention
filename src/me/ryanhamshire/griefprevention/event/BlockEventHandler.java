@@ -116,7 +116,7 @@ public class BlockEventHandler {
                 if (denyReason == null) {
                     canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
                 }
-                if (denyReason != null && !canBreak) {
+                if (denyReason != null || !canBreak) {
                     GriefPrevention.addEventLogEntry(event, denyReason);
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
@@ -139,7 +139,7 @@ public class BlockEventHandler {
                 if (denyReason == null) {
                     canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
                     }
-                if (denyReason != null && !canBreak) {
+                if (denyReason != null || !canBreak) {
                     GriefPrevention.addEventLogEntry(event, denyReason);
                     if (!hasFakePlayer && rootPlayer) {
                         GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
