@@ -93,6 +93,8 @@ public class BlockEventHandler {
         Optional<BlockSnapshot> blockSourceOpt = event.getCause().first(BlockSnapshot.class);
         Optional<TileEntity> tileEntityOpt = event.getCause().first(TileEntity.class);
         Object rootCause = event.getCause().root();
+        boolean rootPlayer = rootCause instanceof User;
+        boolean hasFakePlayer = event.getCause().containsNamed("FakePlayer");
         Location<World> sourceLocation = blockSourceOpt.isPresent() ? blockSourceOpt.get().getLocation().orElse(null) : tileEntityOpt.isPresent() ? tileEntityOpt.get().getLocation() : null;
         if (sourceLocation != null) {
             if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
@@ -130,8 +132,12 @@ public class BlockEventHandler {
 
                 String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
                 if (denyReason != null) {
+                    // check break
+                    if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE) {
+                        return;
+                    }
                     GriefPrevention.addEventLogEntry(event, denyReason);
-                    if (rootCause instanceof Player) {
+                    if (!hasFakePlayer && rootPlayer) {
                         GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
                     }
                     event.setCancelled(true);
