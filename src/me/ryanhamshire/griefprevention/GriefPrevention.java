@@ -1179,12 +1179,11 @@ public class GriefPrevention {
         return claim.allowBuild(source, targetLocation, user);
     }
 
-    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
-        if (!blockSnapshot.getLocation().isPresent()) {
+    public String allowBreak(Object source, Location<World> location, User user) {
+        if (location == null) {
             return null;
         }
 
-        Location<World> location = blockSnapshot.getLocation().get();
         PlayerData playerData = user != null ? this.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId()) : null;
         Claim claim = this.dataStore.getClaimAt(location, false, null);
 
@@ -1199,7 +1198,7 @@ public class GriefPrevention {
         }
 
         // if not in the wilderness, then apply claim rules (permissions, etc)
-        return claim.allowBreak(source, blockSnapshot, user);
+        return claim.allowBreak(source, location, user);
     }
 
     // restores nature in multiple chunks, as described by a claim instance
