@@ -92,7 +92,7 @@ public class DeliverClaimBlocksTask implements Runnable {
                     accruedBlocks = 1;
                 }
 
-                GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
+                GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, false);
                 PlayerStorageData playerStorage = playerData.getStorageData();
                 if (playerStorage == null) {
                     GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld().getProperties(), player.getUniqueId());
@@ -100,7 +100,7 @@ public class DeliverClaimBlocksTask implements Runnable {
                 }
                 playerStorage.getConfig().setAccruedClaimBlocks(playerStorage.getConfig().getAccruedClaimBlocks() + accruedBlocks);
             } else {
-                GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, true);
+                GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, false);
             }
 
             // remember current location for next time

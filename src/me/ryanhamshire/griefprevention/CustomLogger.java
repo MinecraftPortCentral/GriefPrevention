@@ -101,7 +101,7 @@ public class CustomLogger {
         if (entryType == CustomLogEntryTypes.AdminActivity && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingAdminActivity) {
             return false;
         }
-        if (entryType == CustomLogEntryTypes.Debug && !GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug) {
+        if (entryType == CustomLogEntryTypes.Debug && !GriefPrevention.debugLogging) {
             return false;
         }
 
@@ -169,7 +169,7 @@ public class CustomLogger {
                     // throw this away - effectively ignoring any files without
                     // the correct filename format
                     GriefPrevention.addLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(),
-                            CustomLogEntryTypes.Debug, true);
+                            CustomLogEntryTypes.Debug, false);
                 }
             }
         } catch (Exception e) {
