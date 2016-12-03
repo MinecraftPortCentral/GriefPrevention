@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import static org.spongepowered.api.command.args.GenericArguments.bool;
 import static org.spongepowered.api.command.args.GenericArguments.catalogedElement;
 import static org.spongepowered.api.command.args.GenericArguments.choices;
 import static org.spongepowered.api.command.args.GenericArguments.integer;
@@ -76,6 +77,7 @@ import me.ryanhamshire.griefprevention.command.CommandClaimSubdivide;
 import me.ryanhamshire.griefprevention.command.CommandClaimTransfer;
 import me.ryanhamshire.griefprevention.command.CommandClaimUnbanItem;
 import me.ryanhamshire.griefprevention.command.CommandContainerTrust;
+import me.ryanhamshire.griefprevention.command.CommandDebug;
 import me.ryanhamshire.griefprevention.command.CommandGivePet;
 import me.ryanhamshire.griefprevention.command.CommandGpReload;
 import me.ryanhamshire.griefprevention.command.CommandIgnorePlayer;
@@ -150,6 +152,7 @@ import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColor;
+import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
@@ -224,7 +227,10 @@ public class GriefPrevention {
 
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
-    public boolean debugLogging = false;
+    public static boolean debugLogging = false;
+    public static boolean debugVerbose = false;
+    public static User debugUser = null;
+    public static CommandSource debugSource = null;
 
     // how far away to search from a tree trunk for its branch blocks
     public static final int TREE_RADIUS = 5;
@@ -237,21 +243,48 @@ public class GriefPrevention {
     }
 
     // adds a server log entry
-    public static void addLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
-        if (customLogType == CustomLogEntryTypes.Debug && !GriefPrevention.instance.debugLogging) {
+    public static void addLogEntry(String entry, CustomLogEntryTypes customLogType, boolean verbose) {
+        if (customLogType == CustomLogEntryTypes.Debug && !GriefPrevention.debugLogging) {
             return;
         }
 
         GriefPrevention.instance.customLogger.addEntry(entry, customLogType);
 
-        if (!excludeFromServerLogs) {
-            GriefPrevention.instance.logger.info("GriefPrevention: " + entry);
+        if (verbose) {
+            GriefPrevention.instance.logger.info("[GriefPrevention DEBUG]: " + entry);
         }
     }
 
-    public static void addEventLogEntry(Event event, String reason) {
-        if (GriefPrevention.instance.debugLogging) {
-            addLogEntry("[Event: " + event.getClass().getName() + "][RootCause: " + event.getCause().root() + "][CancelReason: " + reason + "]");
+    public static void addEventLogEntry(Event event, Claim claim, Location<World> location, User user, String reason) {
+        if (GriefPrevention.debugLogging) {
+            String message = "[Claim: " + claim.getID().toString() +
+                            "][Event: " + event.getClass().getSimpleName().replace('$', '.').replace(".Impl", "") +
+                            "][Cause: " + event.getCause().root()  +
+                            "][Location: " + (location == null ? "none" : location.getBlockPosition()) + 
+                            "][User: " + (user == null ? "none" : user.getName());
+                            // TODO: Add more reasons                
+                            //"][Reason: " + (reason == null ? "none" : reason + "]");
+
+            if (GriefPrevention.debugUser == null) {
+                addLogEntry(message);
+            } else if (user != null && GriefPrevention.debugUser.getUniqueId().equals(user.getUniqueId())) {
+                if (GriefPrevention.debugVerbose) {
+                    CommandSource src = GriefPrevention.debugSource;
+                    if (src instanceof Player) {
+                        final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
+                        GriefPrevention.debugSource.sendMessage(Text.of(
+                                GP_TEXT, TextColors.GRAY, "Event: ", TextColors.GREEN, event.getClass().getSimpleName().replace('$', '.').replace(".Impl", ""), "\n", 
+                                GP_TEXT, TextColors.GRAY, "Cause: ", TextColors.LIGHT_PURPLE, GPPermissionHandler.getPermissionIdentifier(event.getCause().root()), "\n", 
+                                GP_TEXT, TextColors.GRAY, "Location: ", TextColors.WHITE, location == null ? "NONE" : location.getBlockPosition(), "\n", 
+                                GP_TEXT, TextColors.GRAY, "User: ", TextColors.GOLD, user == null ? "NONE" : user.getName(), "\n"));
+                                // TODO: Add more reasons
+                                //GP_TEXT, TextColors.GRAY, "Reason: ", TextColors.RED, reason == null ? "NONE" : reason, "\n"));
+                    } else {
+                        src.sendMessage(Text.of(message));
+                    }
+                }
+                addLogEntry(message);
+            }
         }
     }
 
@@ -260,7 +293,7 @@ public class GriefPrevention {
     }
 
     public static void addLogEntry(String entry) {
-        addLogEntry(entry, CustomLogEntryTypes.Debug);
+        addLogEntry(entry, CustomLogEntryTypes.Debug, GriefPrevention.debugVerbose);
     }
 
     @Listener
@@ -278,8 +311,8 @@ public class GriefPrevention {
                     String version = Sponge.getPlatform().getImplementation().getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 1914) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1914+.");
+                    if (spongeVersion < 1928) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 1928+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -299,7 +332,7 @@ public class GriefPrevention {
 
         this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).get();
         if (Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase("sponge")) {
-            this.logger.error("Unable to initialize plugin. GriefPrevention requires a permissions plugin. PEX is strongly recommended.");
+            this.logger.error("Unable to initialize plugin. GriefPrevention requires one of the following permission plugins : LuckPerms, PEX, or PermissionsManager.");
             return;
         }
 
@@ -710,6 +743,16 @@ public class GriefPrevention {
                 .executor(new CommandGivePet())
                 .build(), "givepet");
 
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Toggles debug"))
+                .permission(GPPermissions.COMMAND_DEBUG)
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(user(Text.of("user")),
+                                bool(Text.of("verbose"))),
+                        optional(bool(Text.of("verbose")))))
+                .executor(new CommandDebug())
+                .build(), "gpdebug");
+
         // TODO - rewrite help command to list all commands with nice overlays showing help
         /*Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Lists detailed information on each command."))
@@ -908,7 +951,6 @@ public class GriefPrevention {
             Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
             DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
-            this.debugLogging = DataStore.globalConfig.getConfig().logging.loggingDebug;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.NONE);
             this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.NONE);
             this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;
@@ -1186,12 +1228,11 @@ public class GriefPrevention {
         return claim.allowBuild(source, targetLocation, user);
     }
 
-    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
-        if (!blockSnapshot.getLocation().isPresent()) {
+    public String allowBreak(Object source, Location<World> location, User user) {
+        if (location == null) {
             return null;
         }
 
-        Location<World> location = blockSnapshot.getLocation().get();
         PlayerData playerData = user != null ? this.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId()) : null;
         Claim claim = this.dataStore.getClaimAt(location, false, null);
 
@@ -1206,7 +1247,7 @@ public class GriefPrevention {
         }
 
         // if not in the wilderness, then apply claim rules (permissions, etc)
-        return claim.allowBreak(source, blockSnapshot, user);
+        return claim.allowBreak(source, location, user);
     }
 
     // restores nature in multiple chunks, as described by a claim instance

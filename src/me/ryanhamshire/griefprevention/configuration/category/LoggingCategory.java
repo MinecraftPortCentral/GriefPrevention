@@ -38,6 +38,4 @@ public class LoggingCategory extends ConfigCategory {
     public boolean loggingSocialActions = false;
     @Setting(value = "suspicious-activity", comment = "Log suspicious activity.")
     public boolean loggingSuspiciousActivity = false;
-    @Setting(value = "debug", comment = "Enable debug logging.")
-    public boolean loggingDebug = false;
 }

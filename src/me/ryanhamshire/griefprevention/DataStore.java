@@ -835,16 +835,18 @@ public abstract class DataStore {
         claim.siegeData = playerData.siegeData;
     }
 
-    public void deleteAllAdminClaims(World world) {
+    public boolean deleteAllAdminClaims(World world) {
         ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(world.getProperties().getUniqueId());
         if (claimWorldManager == null) {
-            return;
+            return false;
         }
 
         List<Claim> claimsToDelete = new ArrayList<Claim>();
+        boolean adminClaimDeleted = false;
         for (Claim claim : claimWorldManager.getWorldClaims()) {
             if (claim.isAdminClaim()) {
                 claimsToDelete.add(claim);
+                adminClaimDeleted = true;
             }
         }
 
@@ -859,6 +861,8 @@ public abstract class DataStore {
                 GriefPrevention.instance.restoreClaim(claim, 0);
             }
         }
+
+        return adminClaimDeleted;
     }
 
     // deletes all claims owned by a player
