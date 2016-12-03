@@ -93,8 +93,6 @@ public class BlockEventHandler {
         Optional<BlockSnapshot> blockSourceOpt = event.getCause().first(BlockSnapshot.class);
         Optional<TileEntity> tileEntityOpt = event.getCause().first(TileEntity.class);
         Object rootCause = event.getCause().root();
-        boolean rootPlayer = rootCause instanceof User;
-        boolean hasFakePlayer = event.getCause().containsNamed("FakePlayer");
         Location<World> sourceLocation = blockSourceOpt.isPresent() ? blockSourceOpt.get().getLocation().orElse(null) : tileEntityOpt.isPresent() ? tileEntityOpt.get().getLocation() : null;
         if (sourceLocation != null) {
             if (!GriefPrevention.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
@@ -114,7 +112,11 @@ public class BlockEventHandler {
                 }
 
                 String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
-                if (denyReason != null) {
+                boolean canBreak = true;
+                if (denyReason == null) {
+                    canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
+                }
+                if (denyReason != null && !canBreak) {
                     GriefPrevention.addEventLogEntry(event, denyReason);
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
@@ -123,6 +125,8 @@ public class BlockEventHandler {
                 }
             }
         } else if (user != null) {
+            boolean rootPlayer = rootCause instanceof User;
+            boolean hasFakePlayer = event.getCause().containsNamed("FakePlayer");
             for (Location<World> location : event.getLocations()) {
                 Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
                 if (targetClaim.hasFullTrust(user)) {
@@ -131,11 +135,11 @@ public class BlockEventHandler {
                 }
 
                 String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
-                if (denyReason != null) {
-                    // check break
-                    if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE) {
-                        return;
+                boolean canBreak = true;
+                if (denyReason == null) {
+                    canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
                     }
+                if (denyReason != null && !canBreak) {
                     GriefPrevention.addEventLogEntry(event, denyReason);
                     if (!hasFakePlayer && rootPlayer) {
                         GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
@@ -314,7 +318,7 @@ public class BlockEventHandler {
                 continue;
             }
 
-            String denyReason = claim.allowBreak(source, blockSnapshot, creator);
+            String denyReason = claim.allowBreak(source, location, creator);
             if (denyReason != null) {
                 // Avoid lagging server from large explosions.
                 if (event.getTransactions().size() > 100) {
@@ -361,7 +365,7 @@ public class BlockEventHandler {
             }
 
             // make sure the player is allowed to break at the location
-            String denyReason = GriefPrevention.instance.allowBreak(source, transaction.getOriginal(), user);
+            String denyReason = GriefPrevention.instance.allowBreak(source, transaction.getOriginal().getLocation().orElse(null), user);
             if (denyReason != null) {
                 if (event.getCause().root() instanceof Player) {
                     GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
