@@ -257,8 +257,9 @@ public class GriefPrevention {
                             "][Event: " + event.getClass().getSimpleName().replace('$', '.').replace(".Impl", "") +
                             "][Cause: " + event.getCause().root()  +
                             "][Location: " + (location == null ? "none" : location.getBlockPosition()) + 
-                            "][User: " + (user == null ? "none" : user.getName()) + 
-                            "][Reason: " + (reason == null ? "none" : reason + "]");
+                            "][User: " + (user == null ? "none" : user.getName());
+                            // TODO: Add more reasons                
+                            //"][Reason: " + (reason == null ? "none" : reason + "]");
 
             if (GriefPrevention.debugUser == null) {
                 addLogEntry(message);
@@ -271,8 +272,9 @@ public class GriefPrevention {
                                 GP_TEXT, TextColors.GRAY, "Event: ", TextColors.GREEN, event.getClass().getSimpleName().replace('$', '.').replace(".Impl", ""), "\n", 
                                 GP_TEXT, TextColors.GRAY, "Cause: ", TextColors.LIGHT_PURPLE, GPPermissionHandler.getPermissionIdentifier(event.getCause().root()), "\n", 
                                 GP_TEXT, TextColors.GRAY, "Location: ", TextColors.WHITE, location == null ? "NONE" : location.getBlockPosition(), "\n", 
-                                GP_TEXT, TextColors.GRAY, "User: ", TextColors.GOLD, user == null ? "NONE" : user.getName(), "\n", 
-                                GP_TEXT, TextColors.GRAY, "Reason: ", TextColors.RED, reason == null ? "NONE" : reason, "\n"));
+                                GP_TEXT, TextColors.GRAY, "User: ", TextColors.GOLD, user == null ? "NONE" : user.getName(), "\n"));
+                                // TODO: Add more reasons
+                                //GP_TEXT, TextColors.GRAY, "Reason: ", TextColors.RED, reason == null ? "NONE" : reason, "\n"));
                     } else {
                         src.sendMessage(Text.of(message));
                     }

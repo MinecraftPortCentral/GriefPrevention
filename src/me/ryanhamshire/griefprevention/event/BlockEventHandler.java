@@ -134,13 +134,19 @@ public class BlockEventHandler {
                 }
 
                 String denyReason= GriefPrevention.instance.allowBuild(rootCause, location, user);
-                boolean canBreak = true;
-                if (denyReason == null) {
-                    canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
+                boolean userAllowed = denyReason == null;
+                boolean canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
+                if (hasFakePlayer) {
+                    if (!canBreak) {
+                        userAllowed = false;
+                    }
+                } else if (canBreak) {
+                    userAllowed = true;
                 }
-                if (denyReason != null || !canBreak) {
+
+                if (!userAllowed) {
                     GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
-                    if (!hasFakePlayer && rootPlayer) {
+                    if (!hasFakePlayer && denyReason != null && rootPlayer) {
                         GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
                     }
                     event.setCancelled(true);
