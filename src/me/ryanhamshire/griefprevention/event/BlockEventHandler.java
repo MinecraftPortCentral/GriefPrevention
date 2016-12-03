@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention.event;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.GPPermissions;
@@ -111,13 +110,13 @@ public class BlockEventHandler {
                     return;
                 }
 
-                String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
+                String denyReason= GriefPrevention.instance.allowBuild(rootCause, location, user);
                 boolean canBreak = true;
                 if (denyReason == null) {
                     canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
                 }
                 if (denyReason != null || !canBreak) {
-                    GriefPrevention.addEventLogEntry(event, denyReason);
+                    GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -134,13 +133,13 @@ public class BlockEventHandler {
                     return;
                 }
 
-                String denyReason = GriefPrevention.instance.allowBuild(rootCause, location, user);
+                String denyReason= GriefPrevention.instance.allowBuild(rootCause, location, user);
                 boolean canBreak = true;
                 if (denyReason == null) {
                     canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
-                    }
+                }
                 if (denyReason != null || !canBreak) {
-                    GriefPrevention.addEventLogEntry(event, denyReason);
+                    GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
                     if (!hasFakePlayer && rootPlayer) {
                         GriefPrevention.sendMessage((Player) rootCause, Text.of(TextMode.Err, denyReason));
                     }
@@ -157,7 +156,7 @@ public class BlockEventHandler {
     @Listener(order = Order.FIRST)
     public void onBlockNotify(NotifyNeighborBlockEvent event, @Root BlockSnapshot blockSource) {
         GPTimings.BLOCK_NOTIFY_EVENT.startTimingIfSync();
-        Optional<User> user = event.getCause().first(User.class);
+        User user = event.getCause().first(User.class).orElse(null);
         if  (!blockSource.getLocation().isPresent()) {
             GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
             return;
@@ -185,18 +184,18 @@ public class BlockEventHandler {
                 continue;
             } else if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 continue;
-            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && !user.isPresent()) {
+            } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
                 continue;
-            } else if (user.isPresent()) {
+            } else if (user != null) {
                 // Needed to handle levers notifying doors to open etc.
-                String denyReason = targetClaim.allowAccess(user.get(), location);
+                String denyReason = targetClaim.allowAccess(user, location);
                 if (denyReason == null) {
                     continue;
                 }
             }
 
             // no claim crossing unless trusted
-            GriefPrevention.addEventLogEntry(event, "Removed direction.");
+            GriefPrevention.addEventLogEntry(event, targetClaim, location, user, "Removed direction.");
             iterator.remove();
         }
         GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
@@ -242,6 +241,7 @@ public class BlockEventHandler {
                 if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
                     // Disable message temporarily
                     //GriefPrevention.sendMessage((Player) user, TextMode.Err, Messages.NoPortalFromProtectedClaim, claim.getOwnerName());
+                    GriefPrevention.addEventLogEntry(event, targetClaim, event.getTargetLocation(), user, GriefPrevention.getMessage(Messages.NoPortalFromProtectedClaim, user.getName()).toPlain());
                     event.setCancelled(true);
                     GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                     return;
@@ -251,8 +251,8 @@ public class BlockEventHandler {
         String denyReason = targetClaim.allowAccess(user, event.getTargetLocation());
         //DataStore.generateMessages = true;
         if (denyReason != null) {
-            if (GriefPrevention.instance.debugLogging && event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
-               GriefPrevention.addLogEntry("[Event: CollideBlockEvent][RootCause: " + event.getCause().root() + "][TargetBlock: " + event.getTargetBlock() + "][CancelReason: No permission.]", CustomLogEntryTypes.Debug);
+            if (GriefPrevention.debugLogging && event.getTargetLocation().getExtent().getProperties().getTotalTime() % 100 == 0L) { // log once a second to avoid spam
+               GriefPrevention.addEventLogEntry(event, targetClaim, event.getTargetLocation(), user, denyReason);
             }
             event.setCancelled(true);
         }
@@ -284,7 +284,7 @@ public class BlockEventHandler {
             return;
         }
         if (denyReason != null || result == Tristate.FALSE) {
-            GriefPrevention.addEventLogEntry(event, denyReason);
+            GriefPrevention.addEventLogEntry(event, targetClaim, impactPoint, user, denyReason);
             event.setCancelled(true);
         }
         GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
@@ -322,6 +322,7 @@ public class BlockEventHandler {
             if (denyReason != null) {
                 // Avoid lagging server from large explosions.
                 if (event.getTransactions().size() > 100) {
+                    GriefPrevention.addEventLogEntry(event, claim, location, creator, denyReason);
                     event.setCancelled(true);
                     GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
                     return;
@@ -355,7 +356,8 @@ public class BlockEventHandler {
 
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         for (Transaction<BlockSnapshot> transaction : transactions) {
-            Claim targetClaim = this.dataStore.getClaimAt(transaction.getFinal().getLocation().get(), false, null);
+            Location<World> location = transaction.getOriginal().getLocation().orElse(null);
+            Claim targetClaim = this.dataStore.getClaimAt(location, false, null);
             if (user != null && targetClaim.hasFullTrust(user)) {
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
@@ -365,13 +367,13 @@ public class BlockEventHandler {
             }
 
             // make sure the player is allowed to break at the location
-            String denyReason = GriefPrevention.instance.allowBreak(source, transaction.getOriginal().getLocation().orElse(null), user);
+            String denyReason = GriefPrevention.instance.allowBreak(source, location, user);
             if (denyReason != null) {
                 if (event.getCause().root() instanceof Player) {
                     GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));
                 }
 
-                GriefPrevention.addEventLogEntry(event, denyReason);
+                GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
                 event.setCancelled(true);
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
@@ -406,22 +408,23 @@ public class BlockEventHandler {
 
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
             BlockSnapshot block = transaction.getFinal();
-            if (!block.getLocation().isPresent()) {
+            Location<World> location = block.getLocation().orElse(null);
+            if (location == null) {
                 continue;
             }
 
-            Claim targetClaim = this.dataStore.getClaimAt(block.getLocation().get(), true, null);
+            Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
             if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             }
 
-            String denyReason = GriefPrevention.instance.allowBuild(source, block.getLocation().get(), user);
+            String denyReason = GriefPrevention.instance.allowBuild(source, location, user);
             if (denyReason != null) {
                 if (source instanceof PortalTeleportCause) {
                     if (targetClaim != null && player != null) {
                         // cancel and inform about the reason
-                        GriefPrevention.addEventLogEntry(event, denyReason);
+                        GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
                         event.setCancelled(true);
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, targetClaim.getOwnerName());
                         GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
@@ -433,6 +436,7 @@ public class BlockEventHandler {
                     GriefPrevention.sendMessage(player, TextMode.Err, denyReason);
                 }
 
+                GriefPrevention.addEventLogEntry(event, targetClaim, location, user, denyReason);
                 event.setCancelled(true);
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
@@ -552,14 +556,15 @@ public class BlockEventHandler {
             return;
         }
 
+        Location<World> location = event.getTargetTile().getLocation();
         // send sign content to online administrators
-        if (!GriefPrevention.getActiveConfig(event.getTargetTile().getLocation().getExtent().getProperties())
+        if (!GriefPrevention.getActiveConfig(location.getExtent().getProperties())
                 .getConfig().general.generalAdminSignNotifications) {
             GPTimings.SIGN_CHANGE_EVENT.stopTimingIfSync();
             return;
         }
 
-        World world = event.getTargetTile().getLocation().getExtent();
+        World world = location.getExtent();
         StringBuilder lines = new StringBuilder(" placed a sign @ " + GriefPrevention.getfriendlyLocationString(event.getTargetTile().getLocation()));
         boolean notEmpty = false;
         for (int i = 0; i < event.getText().lines().size(); i++) {
@@ -571,10 +576,10 @@ public class BlockEventHandler {
         }
 
         String signMessage = lines.toString();
-
         // prevent signs with blocked IP addresses
         if (!user.hasPermission(GPPermissions.SPAM) && GriefPrevention.instance.containsBlockedIP(signMessage)) {
-            GriefPrevention.addEventLogEntry(event, "contains blocked IP address " + signMessage + ".");
+            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(location, false, null);
+            GriefPrevention.addEventLogEntry(event, claim, location, user, "contains blocked IP address " + signMessage + ".");
             event.setCancelled(true);
             GPTimings.SIGN_CHANGE_EVENT.stopTimingIfSync();
             return;

@@ -26,31 +26,39 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.TextMode;
-import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 public class CommandDebug implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
-        Player player;
-        try {
-            player = GriefPrevention.checkPlayer(src);
-        } catch (CommandException e) {
-            src.sendMessage(e.getText());
-            return CommandResult.success();
-        }
+        User user = ctx.<User>getOne("user").orElse(null);
+        boolean verbose = ctx.<Boolean>getOne("verbose").orElse(false);
 
-        if (GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug) {
-            GriefPrevention.sendMessage(player, TextMode.Success, "Debug disabled.");
-            GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug = false;
+        final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
+        if (GriefPrevention.debugLogging) {
+            src.sendMessage(Text.of(
+                    GP_TEXT, TextColors.GRAY, "Debug ", TextColors.GREEN, "ON", TextColors.WHITE, " | ", 
+                    TextColors.GRAY, "Verbose ", TextColors.RED, "OFF"));
+            GriefPrevention.debugLogging = false;
+            GriefPrevention.debugVerbose = false;
+            GriefPrevention.debugUser = null;
+            GriefPrevention.debugSource = null;
         } else {
-            GriefPrevention.sendMessage(player, TextMode.Success, "Debug enabled.");
-            GriefPrevention.getGlobalConfig().getConfig().logging.loggingDebug = true;
+            
+            src.sendMessage(Text.of(
+                    GP_TEXT, TextColors.GRAY, "Debug ", TextColors.GREEN, "ON", TextColors.WHITE, " | ", 
+                    TextColors.GRAY, "Verbose ", verbose ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")));
+            GriefPrevention.debugLogging = true;
+            GriefPrevention.debugVerbose = verbose;
+            GriefPrevention.debugUser = user;
+            GriefPrevention.debugSource = src;
         }
 
         return CommandResult.success();
