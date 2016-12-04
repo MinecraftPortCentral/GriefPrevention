@@ -1623,7 +1623,7 @@ public class PlayerEventHandler {
         BlockSnapshot clickedBlock = event.getTargetBlock();
         // disable golden shovel while under siege
         if (playerData.siegeData != null) {
-            GriefPrevention.addEventLogEntry(event, null, targetBlock.getLocation().orElse(null), player, this.dataStore.getMessage(Messages.SiegeNoShovel));
+            GriefPrevention.addEventLogEntry(event, null, clickedBlock.getLocation().orElse(null), player, this.dataStore.getMessage(Messages.SiegeNoShovel));
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoShovel);
             event.setCancelled(true);
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
