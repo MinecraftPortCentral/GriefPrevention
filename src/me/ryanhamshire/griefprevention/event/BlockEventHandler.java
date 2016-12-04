@@ -126,6 +126,7 @@ public class BlockEventHandler {
         } else if (user != null) {
             boolean rootPlayer = rootCause instanceof User;
             boolean hasFakePlayer = event.getCause().containsNamed("FakePlayer");
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(event.getTargetWorld(), user.getUniqueId());
             for (Location<World> location : event.getLocations()) {
                 Claim targetClaim = this.dataStore.getClaimAt(location, true, null);
                 if (targetClaim.hasFullTrust(user)) {
@@ -133,6 +134,10 @@ public class BlockEventHandler {
                     return;
                 }
 
+                if (playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
+                	GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
                 String denyReason= GriefPrevention.instance.allowBuild(rootCause, location, user);
                 boolean userAllowed = denyReason == null;
                 boolean canBreak = GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
