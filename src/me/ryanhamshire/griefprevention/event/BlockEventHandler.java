@@ -423,7 +423,7 @@ public class BlockEventHandler {
             return;
         }
 
-        if (playerData != null && playerData.checkLastInteraction(sourceClaim, user)) {
+        if (!(source instanceof User) && playerData != null && playerData.checkLastInteraction(sourceClaim, user)) {
             GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
             return;
         }
