@@ -392,7 +392,7 @@ public class GriefPrevention {
         }
 
         if (Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase("sponge")) {
-            this.logger.error("Unable to initialize plugin. GriefPrevention requires a permissions plugin. PEX is strongly recommended.");
+            this.logger.error("Unable to initialize plugin. GriefPrevention requires one of the following permission plugins : LuckPerms, PEX, or PermissionsManager.");
             return;
         }
 
@@ -811,7 +811,12 @@ public class GriefPrevention {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gets information about a player"))
                 .permission(GPPermissions.COMMAND_PLAYER_INFO_BASE)
-                .arguments(optional(string(Text.of("player"))), optional(string(Text.of("world"))))
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(
+                                GenericArguments.user(Text.of("user")),
+                                onlyOne(GenericArguments.world(Text.of("world")))),
+                        GenericArguments.user(Text.of("user")),
+                        optional(onlyOne(GenericArguments.world(Text.of("world"))))))
                 .executor(new CommandPlayerInfo())
                 .build(), "playerinfo");
 
