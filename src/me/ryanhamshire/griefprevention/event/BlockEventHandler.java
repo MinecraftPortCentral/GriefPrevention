@@ -182,7 +182,7 @@ public class BlockEventHandler {
 
         if (user != null) {
             PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(sourceClaim.world, user.getUniqueId());
-            if (playerData.checkLastInteraction(sourceClaim, user)) {
+            if (playerData != null && playerData.checkLastInteraction(sourceClaim, user)) {
                 GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
                 return;
             }
