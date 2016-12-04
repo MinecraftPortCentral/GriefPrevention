@@ -51,7 +51,9 @@ import me.ryanhamshire.griefprevention.task.WelcomeTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.block.BlockDoor;
+import net.minecraft.entity.passive.EntityHorse;
 import net.minecraft.entity.passive.EntityTameable;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -67,6 +69,7 @@ import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
 import org.spongepowered.api.data.property.entity.EyeLocationProperty;
 import org.spongepowered.api.data.type.HandType;
 import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -116,6 +119,7 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.entity.SpongeEntityType;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
@@ -1158,7 +1162,7 @@ public class PlayerEventHandler {
                 // if giving away pet, do that instead
                 if (playerData.petGiveawayRecipient != null) {
                     SpongeEntityType spongeEntityType = ((SpongeEntityType) spongeEntity.getType());
-                    if (spongeEntityType != null && !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
+                    if (spongeEntityType == null || spongeEntityType.equals(EntityTypes.UNKNOWN) || !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
                         GriefPrevention.sendMessage(player, TextMode.Err, Messages.PetGiveawayInvalid, spongeEntity.getType().getId());
                         playerData.petGiveawayRecipient = null;
                         GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
@@ -1168,6 +1172,10 @@ public class PlayerEventHandler {
                     if (targetEntity instanceof EntityTameable) {
                         EntityTameable tameable = (EntityTameable) targetEntity;
                         tameable.setOwnerId(playerData.petGiveawayRecipient.getUniqueId());
+                    } else if (targetEntity instanceof EntityHorse) {
+                        EntityHorse horse = (EntityHorse) targetEntity;
+                        horse.setOwnerUniqueId(playerData.petGiveawayRecipient.getUniqueId());
+                        horse.setHorseTamed(true);
                     }
                     playerData.petGiveawayRecipient = null;
                     GriefPrevention.sendMessage(player, TextMode.Success, Messages.PetGiveawayConfirmation);
@@ -1321,6 +1329,12 @@ public class PlayerEventHandler {
         Claim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
         String denyReason = claim.allowAccess(player, location);
         if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType(), player) == Tristate.FALSE) {
+            if (blockSnapshot != BlockSnapshot.NONE) {
+                TileEntity tileEntity = world.getTileEntity(location.getBlockPosition()).orElse(null);
+                if (tileEntity != null) {
+                    ((EntityPlayerMP) player).closeScreen();
+                }
+            }
             GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
             GriefPrevention.addEventLogEntry(event, claim, location, player, denyReason);
             event.setCancelled(true);
@@ -1490,6 +1504,7 @@ public class PlayerEventHandler {
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
+        playerData.setLastInteractData(claim);
         GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
     }
 
@@ -1579,19 +1594,7 @@ public class PlayerEventHandler {
             }
         }
         // otherwise handle right click (shovel, string, bonemeal)
-        else {
-
-            if (!itemInHand.isPresent()) {
-                GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
-                return;
-            }
-            // what's the player holding?
-            ItemType materialInHand = itemInHand.get().getItem();
-            if (materialInHand != GriefPrevention.instance.modificationTool) {
-                GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
-                return;
-            }
-
+        else if (itemInHand.isPresent() && itemInHand.get().getItem() == GriefPrevention.instance.modificationTool) {
             // disable golden shovel while under siege
             if (playerData == null)
                 playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -1607,6 +1610,7 @@ public class PlayerEventHandler {
             // avoid changing blocks after using a shovel
             event.setCancelled(true);
         }
+        playerData.setLastInteractData(playerClaim);
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
     }
 

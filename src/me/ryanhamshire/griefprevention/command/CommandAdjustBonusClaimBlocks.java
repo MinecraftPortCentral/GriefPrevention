@@ -26,33 +26,31 @@
 package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.Messages;
 import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {
-        WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(null);
+        WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(Sponge.getServer().getDefaultWorld().get());
 
-        if (worldProperties == null && src instanceof Player) {
-            worldProperties = ((Player) src).getWorld().getProperties();
-        }
-        if (worldProperties == null && !DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            src.sendMessage(Text.of(TextColors.DARK_RED, "Error! ", TextColors.RED, "No valid world could be found!"));
-            return CommandResult.success();
+        if (worldProperties == null) {
+            if (src instanceof Player) {
+                worldProperties = ((Player) src).getWorld().getProperties();
+            } else {
+                worldProperties = Sponge.getServer().getDefaultWorld().get();
+            }
         }
 
         // parse the adjustment amount

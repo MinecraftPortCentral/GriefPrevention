@@ -44,7 +44,7 @@ public class CommandDebug implements CommandExecutor {
         final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
         if (GriefPrevention.debugLogging) {
             src.sendMessage(Text.of(
-                    GP_TEXT, TextColors.GRAY, "Debug ", TextColors.GREEN, "ON", TextColors.WHITE, " | ", 
+                    GP_TEXT, TextColors.GRAY, "Debug ", TextColors.RED, "OFF", TextColors.WHITE, " | ", 
                     TextColors.GRAY, "Verbose ", TextColors.RED, "OFF"));
             GriefPrevention.debugLogging = false;
             GriefPrevention.debugVerbose = false;

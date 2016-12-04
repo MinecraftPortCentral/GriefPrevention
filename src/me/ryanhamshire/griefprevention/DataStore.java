@@ -54,11 +54,13 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.permission.SubjectData;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -1501,6 +1503,56 @@ public abstract class DataStore {
             return;
         }
         this.claimWorldManagers.remove(worldProperties.getUniqueId());
+    }
+
+    public void setupDefaultPermissions(World world) {
+        Set<Context> contexts = new HashSet<>();
+        contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(world.getContext());
+        this.setFlagDefaultPermissions(contexts, GPFlags.DEFAULT_FLAGS);
+        this.setOptionDefaultPermissions(contexts);
+        contexts = new HashSet<>();
+        contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(world.getContext());
+        this.setFlagDefaultPermissions(contexts, GPFlags.DEFAULT_FLAGS);
+        this.setOptionDefaultPermissions(contexts);
+        contexts = new HashSet<>();
+        contexts.add(GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(world.getContext());
+        this.setFlagDefaultPermissions(contexts, GPFlags.DEFAULT_WILDERNESS_FLAGS);
+        this.setOptionDefaultPermissions(contexts);
+    }
+
+    private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Tristate> defaultFlags) {
+        Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
+        if (defaultPermissions.isEmpty()) {
+            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
+                GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), mapEntry.getValue());
+            }
+        } else {
+            // remove invalid flag entries
+            for (String flagPermission : defaultPermissions.keySet()) {
+                String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+                if (!defaultFlags.containsKey(flag)) {
+                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+                }
+            }
+
+            // make sure all defaults are available
+            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
+                String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
+                if (!defaultPermissions.keySet().contains(flagPermission)) {
+                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, mapEntry.getValue());
+                }
+            }
+        }
+    }
+
+    private void setOptionDefaultPermissions(Set<Context> contexts) {
+        final SubjectData globalSubjectData = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData();
+        for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
+            globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
+        }
     }
 
     abstract PlayerData getPlayerDataFromStorage(UUID playerID);

@@ -218,8 +218,6 @@ public class EntityEventHandler {
         }
 
         if (protectEntity(event, event.getTargetEntity(), event.getCause(), damageSource)) {
-            User user = event.getCause().first(User.class).orElse(null);
-            GriefPrevention.addEventLogEntry(event, null, event.getTargetEntity().getLocation(), user, null);
             event.setCancelled(true);
         }
         GPTimings.ENTITY_ATTACK_EVENT.stopTimingIfSync();
@@ -234,8 +232,6 @@ public class EntityEventHandler {
         }
 
         if (protectEntity(event, event.getTargetEntity(), event.getCause(), damageSource)) {
-            User user = event.getCause().first(User.class).orElse(null);
-            GriefPrevention.addEventLogEntry(event, null, event.getTargetEntity().getLocation(), user, null);
             event.setCancelled(true);
         }
         GPTimings.ENTITY_DAMAGE_EVENT.stopTimingIfSync();

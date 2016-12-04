@@ -257,9 +257,9 @@ public class GriefPrevention {
 
     public static void addEventLogEntry(Event event, Claim claim, Location<World> location, User user, String reason) {
         if (GriefPrevention.debugLogging) {
-            String message = "[Claim: " + claim.getID().toString() +
+            String message = "[Claim: " + claim == null ? "none" : claim.getID().toString() +
                             "][Event: " + event.getClass().getSimpleName().replace('$', '.').replace(".Impl", "") +
-                            "][Cause: " + event.getCause().root()  +
+                            "][Cause: " + GPPermissionHandler.getPermissionIdentifier(event.getCause().root())  +
                             "][Location: " + (location == null ? "none" : location.getBlockPosition()) + 
                             "][User: " + (user == null ? "none" : user.getName());
                             // TODO: Add more reasons                
