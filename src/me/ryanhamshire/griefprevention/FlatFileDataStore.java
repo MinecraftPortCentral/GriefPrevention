@@ -41,8 +41,6 @@ import org.apache.commons.io.FileUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
-import org.spongepowered.api.service.permission.option.OptionSubjectData;
-import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -59,9 +57,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 //manages data stored in the file system
@@ -219,62 +215,7 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // handle default flag permissions
-        Set<Context> contexts = new HashSet<>();
-        contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
-        contexts.add(world.getContext());
-        validateFlagDefaults(contexts, GPFlags.DEFAULT_FLAGS);
-        contexts = new HashSet<>();
-        contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
-        contexts.add(world.getContext());
-        validateFlagDefaults(contexts, GPFlags.DEFAULT_FLAGS);
-        contexts = new HashSet<>();
-        contexts.add(GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
-        contexts.add(world.getContext());
-        validateFlagDefaults(contexts, GPFlags.DEFAULT_WILDERNESS_FLAGS);
-    }
-
-    public void validateFlagDefaults(Set<Context> contexts, Map<String, Tristate> defaultFlags) {
-        Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
-        if (defaultPermissions.isEmpty()) {
-            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
-                GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), mapEntry.getValue());
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                }
-            }
-        } else {
-            // remove invalid flag entries
-            for (String flagPermission : defaultPermissions.keySet()) {
-                String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
-                if (!defaultFlags.containsKey(flag)) {
-                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }
-
-            // make sure all defaults are available
-            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
-                String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
-                if (!defaultPermissions.keySet().contains(flagPermission)) {
-                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, mapEntry.getValue());
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }
-        }
-    }
-
-    public void setOptionDefaults(Set<Context> contexts) {
-        final OptionSubjectData globalSubjectData = ((OptionSubjectData) GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData());
-        for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
-            globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
-        }
+        this.setupDefaultPermissions(world);
     }
 
     public void unloadWorldData(WorldProperties worldProperties) {

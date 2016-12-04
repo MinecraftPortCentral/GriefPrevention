@@ -180,6 +180,14 @@ public class BlockEventHandler {
             return;
         }
 
+        if (user != null) {
+            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(sourceClaim.world, user.getUniqueId());
+            if (playerData.checkLastInteraction(sourceClaim, user)) {
+                GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
+                return;
+            }
+        }
+
         Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
         while (iterator.hasNext()) {
             Direction direction = iterator.next();
@@ -261,6 +269,9 @@ public class BlockEventHandler {
                GriefPrevention.addEventLogEntry(event, targetClaim, event.getTargetLocation(), user, denyReason);
             }
             event.setCancelled(true);
+        }
+        if (playerData != null) {
+            playerData.setLastInteractData(targetClaim);
         }
         GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
     }
@@ -408,6 +419,11 @@ public class BlockEventHandler {
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(world.getProperties());
         Claim sourceClaim = this.getSourceClaim(event.getCause());
         if (sourceClaim == null) {
+            GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+            return;
+        }
+
+        if (playerData != null && playerData.checkLastInteraction(sourceClaim, user)) {
             GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
             return;
         }
