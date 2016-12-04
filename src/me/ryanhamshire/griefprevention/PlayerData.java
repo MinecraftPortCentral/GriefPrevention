@@ -31,6 +31,7 @@ import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
+import net.minecraft.server.MinecraftServer;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -324,11 +325,11 @@ public class PlayerData {
     public void setLastInteractData(Claim claim) {
         this.lastInteractResult = true;
         this.lastInteractClaim = claim.getID();
-        this.lastTickCounter = SpongeImpl.getServer().getTickCounter();
+        this.lastTickCounter = MinecraftServer.getServer().getTickCounter();
     }
 
     public boolean checkLastInteraction(Claim claim, User user) {
-        if (this.lastInteractResult && ((SpongeImpl.getServer().getTickCounter() - this.lastTickCounter) <= 2)) {
+        if (this.lastInteractResult && ((MinecraftServer.getServer().getTickCounter() - this.lastTickCounter) <= 2)) {
             if (user != null && user.getUniqueId().equals(this.playerID) && (claim.getID().equals(this.lastInteractClaim) || claim.isWildernessClaim())) {
                 return true;
             }

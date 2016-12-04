@@ -1329,7 +1329,7 @@ public class PlayerEventHandler {
                 // TODO
                 // if locked, don't allow pickup
                 if (player != null && playerData.dropsAreUnlocked == false) {
-                    GriefPrevention.addEventLogEntry(event, "Drops are locked.");
+                    GriefPrevention.addEventLogEntry(event, null, player.getLocation(), player, "Drops are locked.");
                     event.setCancelled(true);
 
                     // if hasn't been instructed how to unlock, send explanatory messages

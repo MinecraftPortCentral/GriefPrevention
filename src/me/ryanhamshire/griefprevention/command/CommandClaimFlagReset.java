@@ -36,6 +36,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.permission.option.OptionSubjectData;
 import org.spongepowered.api.text.Text;
 
 import java.util.Set;
@@ -75,7 +76,7 @@ public class CommandClaimFlagReset implements CommandExecutor {
                 GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
             }
         }
-        for (Set<Context> contextSet : GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getAllOptions().keySet()) {
+        for (Set<Context> contextSet : ((OptionSubjectData) GriefPrevention.GLOBAL_SUBJECT.getSubjectData()).getAllOptions().keySet()) {
             if (contextSet.contains(claim.getContext())) {
                 GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
             }
