@@ -41,6 +41,7 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.SpongeImpl;
 
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
@@ -172,6 +173,10 @@ public class PlayerData {
 
     // profanity warning, once per play session
     public boolean profanityWarned = false;
+
+    public boolean lastInteractResult = false;
+    public int lastTickCounter = 0;
+    public UUID lastInteractClaim = GriefPrevention.PUBLIC_UUID;
 
     // cached option values
     public double optionAbandonReturnRatio = 1.0;
@@ -314,5 +319,21 @@ public class PlayerData {
 
     public List<Claim> getClaims() {
         return this.claimList;
+    }
+
+    public void setLastInteractData(Claim claim) {
+        this.lastInteractResult = true;
+        this.lastInteractClaim = claim.getID();
+        this.lastTickCounter = SpongeImpl.getServer().getTickCounter();
+    }
+
+    public boolean checkLastInteraction(Claim claim, User user) {
+        if (this.lastInteractResult && ((SpongeImpl.getServer().getTickCounter() - this.lastTickCounter) <= 2)) {
+            if (user != null && user.getUniqueId().equals(this.playerID) && (claim.getID().equals(this.lastInteractClaim) || claim.isWildernessClaim())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

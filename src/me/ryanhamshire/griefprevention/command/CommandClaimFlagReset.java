@@ -24,7 +24,6 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.PlayerData;
@@ -36,7 +35,10 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.text.Text;
+
+import java.util.Set;
 
 public class CommandClaimFlagReset implements CommandExecutor {
 
@@ -67,7 +69,23 @@ public class CommandClaimFlagReset implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+        // Remove persisted data
+        for (Set<Context> contextSet : GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getAllPermissions().keySet()) {
+            if (contextSet.contains(claim.getContext())) {
+                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
+            }
+        }
+        for (Set<Context> contextSet : GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getAllOptions().keySet()) {
+            if (contextSet.contains(claim.getContext())) {
+                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
+            }
+        }
+        for (Set<Context> contextSet : GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getAllParents().keySet()) {
+            if (contextSet.contains(claim.getContext())) {
+                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
+            }
+        }
+
         GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Claim flags reset to defaults successfully."));
         return CommandResult.success();
     }

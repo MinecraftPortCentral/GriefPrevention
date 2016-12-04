@@ -30,6 +30,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemBlock;
+import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.entity.Entity;
@@ -301,10 +302,16 @@ public class GPPermissionHandler {
                 }
 
                 return targetId;
+            } else if (obj instanceof BlockSnapshot) {
+                BlockSnapshot blockSnapshot = (BlockSnapshot) obj;
+                BlockState targetBlock = blockSnapshot.getState();
+                Block mcBlock = (net.minecraft.block.Block) targetBlock.getType();
+                String targetId = targetBlock.getType().getId() + "." + mcBlock.getMetaFromState((IBlockState) targetBlock);
+                return targetId.toLowerCase();
             } else if (obj instanceof BlockState) {
                 BlockState targetBlock = (BlockState) obj;
                 Block mcBlock = (net.minecraft.block.Block) targetBlock.getType();
-                String targetId = targetBlock.getType().getId() + "." + mcBlock.getMetaFromState((IBlockState) targetBlock);//.replace("[", ".[");
+                String targetId = targetBlock.getType().getId() + "." + mcBlock.getMetaFromState((IBlockState) targetBlock);
                 return targetId.toLowerCase();
             } else if (obj instanceof ItemStack) {
                 ItemStack itemstack = (ItemStack) obj;
