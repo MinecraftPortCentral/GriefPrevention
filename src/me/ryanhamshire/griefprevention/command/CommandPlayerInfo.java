@@ -25,7 +25,6 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.Lists;
-import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.PlayerData;
@@ -55,34 +54,11 @@ public class CommandPlayerInfo implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
+        List<User> userValues = new ArrayList<>(ctx.getAll("user"));
+        WorldProperties worldProperties = ctx.<WorldProperties>getOne("world").orElse(Sponge.getServer().getDefaultWorld().orElse(null));
         User user = null;
-        WorldProperties worldProperties = null;
-        String target1 = ctx.<String>getOne("player").orElse(null);
-        String target2 = ctx.<String>getOne("world").orElse(null);
-        // Handle single argument
-        if (target1 != null) {
-            // check if player
-            user = Sponge.getServer().getPlayer(target1).orElse(null);
-            if (user == null && target2 == null) {
-                // check for world
-                worldProperties = Sponge.getServer().getWorldProperties(target1).orElse(Sponge.getServer().getDefaultWorld().orElse(null));
-                if (worldProperties == null) {
-                    src.sendMessage(
-                            Text.of(TextColors.RED, "Could not locate a valid player or world from value ", 
-                            TextColors.GREEN, target1, 
-                            TextColors.RED, "."));
-                    return CommandResult.success();
-                }
-            } else if (worldProperties == null && target2 != null) {
-                worldProperties = Sponge.getServer().getWorldProperties(target2).orElse(null);
-                if (worldProperties == null) {
-                    src.sendMessage(
-                            Text.of(TextColors.RED, "Could not locate world with name ", 
-                            TextColors.GREEN, target2, 
-                            TextColors.RED, "."));
-                    return CommandResult.success();
-                }
-            }
+        if (userValues.size() > 0) {
+            user = userValues.get(0);
         }
 
         if (user == null) {
@@ -105,33 +81,18 @@ public class CommandPlayerInfo implements CommandExecutor {
             }
         }
 
-        boolean allWorlds = worldProperties == null;
-        if (!DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            if (worldProperties == null) {
-                if (!(src instanceof Player)) {
-                    GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No world specified."));
-                    return CommandResult.success();
-                } else {
-                    worldProperties = ((Player) src).getWorld().getProperties();
-                }
-            }
-        }
 
         PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         List<Claim> claimList = new ArrayList<>();
-        if (!allWorlds) {
-            for (Claim claim : playerData.getClaims()) {
-                if (claim.world.getProperties().equals(worldProperties)) {
-                    claimList.add(claim);
-                }
+        for (Claim claim : playerData.getClaims()) {
+            if (claim.world.getProperties().equals(worldProperties)) {
+                claimList.add(claim);
             }
-        } else {
-            claimList = playerData.getClaims();
         }
         List<Text> claimsTextList = Lists.newArrayList();
         claimsTextList.add(Text.of(
                 TextColors.YELLOW, "UUID", TextColors.WHITE, " : ", TextColors.GRAY, user.getUniqueId(), "\n",
-                TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, allWorlds ? "All" : worldProperties.getWorldName(), "\n",
+                TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, worldProperties.getWorldName(), "\n",
                 TextColors.YELLOW, "Initial Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
                 TextColors.YELLOW, "Accrued Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
                 TextColors.YELLOW, "Bonus Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getBonusClaimBlocks(), "\n",
