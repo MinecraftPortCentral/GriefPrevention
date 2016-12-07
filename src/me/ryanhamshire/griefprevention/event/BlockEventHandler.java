@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.event;
 
+import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.GPPermissions;
@@ -230,9 +231,17 @@ public class BlockEventHandler {
 
         Claim targetClaim = null;
         PlayerData playerData = null;
+        Vector3i collidePos = event.getTargetLocation().getBlockPosition();
         if (user instanceof Player) {
             Player player = (Player) user;
             playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            if (playerData.lastCollidePos != null && playerData.lastCollidePos.equals(collidePos)) {
+                if (!playerData.lastCollideResult) {
+                    event.setCancelled(true);
+                }
+                GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+                return;
+            }
             targetClaim = this.dataStore.getClaimAtPlayer(playerData, event.getTargetLocation(), false);
         } else {
             targetClaim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
@@ -244,10 +253,18 @@ public class BlockEventHandler {
                     .contains(event
                             .getTargetBlock().getType().getId())) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+                if (playerData != null) {
+                    playerData.setLastInteractData(targetClaim);
+                    playerData.setLastCollideBlockData(collidePos, true);
+                }
                 return; // allow siege mode
             }
             if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), user) == Tristate.TRUE) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+                if (playerData != null) {
+                    playerData.setLastInteractData(targetClaim);
+                    playerData.setLastCollideBlockData(collidePos, true);
+                }
                 return;
             }
         }
@@ -263,6 +280,9 @@ public class BlockEventHandler {
                     GriefPrevention.addEventLogEntry(event, targetClaim, event.getTargetLocation(), user, GriefPrevention.getMessage(Messages.NoPortalFromProtectedClaim, user.getName()).toPlain());
                     event.setCancelled(true);
                     GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+                    if (playerData != null) {
+                        playerData.setLastCollideBlockData(collidePos, false);
+                    }
                     return;
                 }
             }
@@ -274,9 +294,16 @@ public class BlockEventHandler {
                GriefPrevention.addEventLogEntry(event, targetClaim, event.getTargetLocation(), user, denyReason);
             }
             event.setCancelled(true);
+            GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+            if (playerData != null) {
+                playerData.setLastCollideBlockData(collidePos, false);
+            }
+            return;
         }
+
         if (playerData != null) {
             playerData.setLastInteractData(targetClaim);
+            playerData.setLastCollideBlockData(collidePos, true);
         }
         GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
     }
