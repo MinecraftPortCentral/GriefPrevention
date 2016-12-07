@@ -53,6 +53,7 @@ import org.spongepowered.api.event.block.CollideBlockEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.cause.entity.teleport.PortalTeleportCause;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
@@ -89,6 +90,12 @@ public class BlockEventHandler {
     public void onBlockPre(ChangeBlockEvent.Pre event) {
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
         User user = event.getCause().first(User.class).orElse(null);
+        if (user != null) {
+            if (event.getCause().containsNamed(NamedCause.PLAYER_BREAK) && !event.getCause().containsNamed(NamedCause.FAKE_PLAYER)) {
+                return;
+            }
+        }
+
         Optional<BlockSnapshot> blockSourceOpt = event.getCause().first(BlockSnapshot.class);
         Optional<TileEntity> tileEntityOpt = event.getCause().first(TileEntity.class);
         Object rootCause = event.getCause().root();
