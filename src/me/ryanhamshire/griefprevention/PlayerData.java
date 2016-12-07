@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
@@ -178,6 +179,13 @@ public class PlayerData {
     public int lastTickCounter = 0;
     public UUID lastInteractClaim = GriefPrevention.PUBLIC_UUID;
 
+    // collide event cache
+    public int lastCollideEntityId = 0;
+    public boolean lastCollideEntityResult = false;
+
+    public Vector3i lastCollidePos;
+    public boolean lastCollideResult = false;
+
     // cached option values
     public double optionAbandonReturnRatio = 1.0;
     public int optionBlocksAccruedPerHour = 120;
@@ -319,6 +327,16 @@ public class PlayerData {
 
     public List<Claim> getClaims() {
         return this.claimList;
+    }
+
+    public void setLastCollideEntityData(int entityId, boolean result) {
+        this.lastCollideEntityId = entityId;
+        this.lastCollideEntityResult = result;
+    }
+
+    public void setLastCollideBlockData(Vector3i pos, boolean result) {
+        this.lastCollidePos = pos;
+        this.lastCollideResult = result;
     }
 
     public void setLastInteractData(Claim claim) {

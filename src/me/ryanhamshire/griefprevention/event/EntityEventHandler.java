@@ -574,6 +574,11 @@ public class EntityEventHandler {
     public void onEntityMove(MoveEntityEvent event){
         GPTimings.ENTITY_MOVE_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
+        if (event.getFromTransform().getLocation().getBlockPosition().equals(event.getToTransform().getLocation().getBlockPosition())) {
+            GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
+            return;
+        }
+
         World world = event.getTargetEntity().getWorld();
         if (!GriefPrevention.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
@@ -851,6 +856,10 @@ public class EntityEventHandler {
         event.filterEntities(new Predicate<Entity>() {
             @Override
             public boolean test(Entity entity) {
+                if (rootCause == entity) {
+                    return true;
+                }
+
                 // Avoid living entities breaking itemframes
                 if (rootCause instanceof EntityItemFrame && entity instanceof EntityLiving) {
                     return false;
@@ -862,29 +871,41 @@ public class EntityEventHandler {
                 }
 
                 User owner = null;
+                int entityId = ((net.minecraft.entity.Entity) entity).getEntityId();
+                PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(entity.getWorld(), user.getUniqueId());
                 Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
+                if (playerData.lastCollideEntityId == entityId && playerData.lastClaim != null && playerData.lastClaim.get() != null) {
+                    if (claim.id.equals(playerData.lastClaim.get().id)) {
+                        return playerData.lastCollideEntityResult;
+                    }
+                }
                 if (claim != null) {
                     // check owner
                     owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
                     if (owner == null) {
+                        playerData.setLastCollideEntityData(entityId, true);
                         return true;
                     }
 
                     // check if user owns entity
                     if (owner.getUniqueId().equals(user.getUniqueId())) {
+                        playerData.setLastCollideEntityData(entityId, true);
                         return true;
                     }
 
                     if (claim.allowAccess(user) != null) {
                         if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, user) == Tristate.FALSE) {
+                            playerData.setLastCollideEntityData(entityId, false);
                             return false;
                         }
                     } else if (claim.allowAccess(owner) != null) {
                         if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, owner) == Tristate.FALSE) {
+                            playerData.setLastCollideEntityData(entityId, false);
                             return false;
                         }
                     }
                 }
+                playerData.setLastCollideEntityData(entityId, true);
                 return true;
             }
         });
