@@ -525,7 +525,9 @@ public class Claim implements ContextSource {
         return reason;
     }
 
-    public String allowBreak(Object source, Location<World> location, User user) {
+    // A blocksnapshot must be passed here instead of location as the block in world represents the "final" block
+    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
+        Location<World> location = blockSnapshot.getLocation().orElse(null);
         if (location == null) {
             return null;
         }
@@ -575,7 +577,7 @@ public class Claim implements ContextSource {
             // Flag order matters
             // interact should always be checked before break
             // pass the blocksnapshot here as the live location represents the final transaction which would be AIR at this point
-            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, blockSnapshot, user) == Tristate.TRUE) {
                 return null;
             }
         }
