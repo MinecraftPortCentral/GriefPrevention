@@ -374,7 +374,7 @@ public class BlockEventHandler {
                 continue;
             }
 
-            String denyReason = claim.allowBreak(source, location, creator);
+            String denyReason = claim.allowBreak(source, blockSnapshot, creator);
             if (denyReason != null) {
                 // Avoid lagging server from large explosions.
                 if (event.getTransactions().size() > 100) {
@@ -422,8 +422,8 @@ public class BlockEventHandler {
                 return;
             }
 
-            // make sure the player is allowed to break at the location
-            String denyReason = GriefPrevention.instance.allowBreak(source, location, user);
+            // Pass original snapshot as it represents the block that was broken
+            String denyReason = GriefPrevention.instance.allowBreak(source, transaction.getOriginal(), user);
             if (denyReason != null) {
                 if (event.getCause().root() instanceof Player) {
                     GriefPrevention.sendMessage((Player) event.getCause().root(), Text.of(TextMode.Err, denyReason));

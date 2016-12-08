@@ -581,7 +581,7 @@ public class GriefPrevention {
                                             .put("0", Tristate.UNDEFINED)
                                             .put("1", Tristate.TRUE)
                                             .put("false", Tristate.FALSE)
-                                            .put("default", Tristate.UNDEFINED)
+                                            .put("undefined", Tristate.UNDEFINED)
                                             .put("true", Tristate.TRUE)
                                             .build())),
                                     optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
@@ -592,7 +592,7 @@ public class GriefPrevention {
                                             .put("0", Tristate.UNDEFINED)
                                             .put("1", Tristate.TRUE)
                                             .put("false", Tristate.FALSE)
-                                            .put("default", Tristate.UNDEFINED)
+                                            .put("undefined", Tristate.UNDEFINED)
                                             .put("true", Tristate.TRUE)
                                             .build())),
                                     optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))))),
@@ -618,7 +618,7 @@ public class GriefPrevention {
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
-                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("undefined", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
                                                         .build()))),
                                             GenericArguments.seq(
@@ -628,7 +628,7 @@ public class GriefPrevention {
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
-                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("undefined", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
                                                         .build()))))),
                                     optional(onlyOne(string(Text.of("source"))))))))
@@ -653,7 +653,7 @@ public class GriefPrevention {
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
-                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("undefined", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
                                                         .build()))),
                                             GenericArguments.seq(
@@ -663,7 +663,7 @@ public class GriefPrevention {
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
-                                                        .put("default", Tristate.UNDEFINED)
+                                                        .put("undefined", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
                                                         .build()))))),
                                     optional(onlyOne(string(Text.of("source"))))))))
@@ -723,7 +723,7 @@ public class GriefPrevention {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Converts an administrative claim to a private claim"))
-                .arguments(player(Text.of("player")))
+                .arguments(user(Text.of("user")))
                 .permission(GPPermissions.COMMAND_TRANSFER_CLAIM)
                 .executor(new CommandClaimTransfer())
                 .build(), "claimtransfer", "transferclaim");
@@ -1233,7 +1233,9 @@ public class GriefPrevention {
         return claim.allowBuild(source, targetLocation, user);
     }
 
-    public String allowBreak(Object source, Location<World> location, User user) {
+    // A blocksnapshot must be passed here instead of location as the block in world represents the "final" block
+    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
+        Location<World> location = blockSnapshot.getLocation().orElse(null);
         if (location == null) {
             return null;
         }
@@ -1252,7 +1254,7 @@ public class GriefPrevention {
         }
 
         // if not in the wilderness, then apply claim rules (permissions, etc)
-        return claim.allowBreak(source, location, user);
+        return claim.allowBreak(source, blockSnapshot, user);
     }
 
     // restores nature in multiple chunks, as described by a claim instance
