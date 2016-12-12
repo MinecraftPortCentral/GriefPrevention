@@ -116,7 +116,6 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
-import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.entity.SpongeEntitySnapshot;
 import org.spongepowered.common.entity.SpongeEntityType;
@@ -1471,26 +1470,24 @@ public class PlayerEventHandler {
             return;
         }
 
-        BlockSnapshot clickedBlock = event.getTargetBlock();
-        if (!clickedBlock.getLocation().isPresent()) {
+        final BlockSnapshot clickedBlock = event.getTargetBlock();
+        final Location<World> location = clickedBlock.getLocation().orElse(null);
+        if (location == null) {
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
 
-        Location<World> location = clickedBlock.getLocation().get();
-        PlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        final PlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
+        final Claim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
 
         String denyReason = claim.allowAccess(player, location);
         if (denyReason != null) {
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
+                playerData.setLastInteractData(claim);
                 return;
             }
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player) == Tristate.TRUE) {
-                GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
-                return;
-            }
+
             GriefPrevention.addEventLogEntry(event, claim, location, player, denyReason);
             GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
             event.setCancelled(true);
@@ -1510,20 +1507,20 @@ public class PlayerEventHandler {
         }
 
         BlockSnapshot clickedBlock = event.getTargetBlock();
-        Optional<ItemStack> itemInHand = player.getItemInHand();
+        ItemStack itemInHand = player.getItemInHand().orElse(null);
 
         // Check if item is banned
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
         boolean investigateResult = investigateClaim(player, clickedBlock, itemInHand);
         PlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        Location<World> location = clickedBlock.getLocation().orElse(null);
 
-        if (!clickedBlock.getLocation().isPresent()) {
+        if (location == null) {
             onPlayerHandleShovelAction(event, player, playerData);
             GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
             return;
         }
 
-        Location<World> location = clickedBlock.getLocation().get();
         Claim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location, false);
         if (playerData != null && !playerData.ignoreClaims) {
             // following a siege where the defender lost, the claim will allow everyone access for a time
@@ -1587,7 +1584,7 @@ public class PlayerEventHandler {
             }
         }
         // otherwise handle right click (shovel, string, bonemeal)
-        else if (itemInHand.isPresent() && itemInHand.get().getItem() == GriefPrevention.instance.modificationTool) {
+        else if (itemInHand != null && itemInHand.getItem() == GriefPrevention.instance.modificationTool) {
             // disable golden shovel while under siege
             if (playerData == null)
                 playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -2266,12 +2263,12 @@ public class PlayerEventHandler {
     }
 
     // helper methods for player events
-    private boolean investigateClaim(Player player, BlockSnapshot clickedBlock, Optional<ItemStack> itemInHand) {
+    private boolean investigateClaim(Player player, BlockSnapshot clickedBlock, ItemStack itemInHand) {
         GPTimings.PLAYER_INVESTIGATE_CLAIM.startTimingIfSync();
         GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
 
         // if he's investigating a claim
-        if (!itemInHand.isPresent() || !itemInHand.get().getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
+        if (itemInHand == null || !itemInHand.getItem().getId().equals(activeConfig.getConfig().claim.investigationTool)) {
             GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
             return false;
         }
