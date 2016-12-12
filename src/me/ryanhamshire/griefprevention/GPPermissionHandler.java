@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -45,11 +46,13 @@ import org.spongepowered.api.util.Tristate;
 import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class GPPermissionHandler {
 
     private static final String UNKNOWN_CONTEXT = "unknown:unknown";
+    private static final Map<BlockState, Integer> BLOCKSTATE_META_CACHE = Maps.newHashMap();
 
     public static Tristate getClaimPermission(Claim claim, String flagPermission, Object source, Object target, User user) {
         if (claim == null) {
@@ -304,14 +307,12 @@ public class GPPermissionHandler {
                 return targetId;
             } else if (obj instanceof BlockSnapshot) {
                 BlockSnapshot blockSnapshot = (BlockSnapshot) obj;
-                BlockState targetBlock = blockSnapshot.getState();
-                Block mcBlock = (net.minecraft.block.Block) targetBlock.getType();
-                String targetId = targetBlock.getType().getId() + "." + mcBlock.getMetaFromState((IBlockState) targetBlock);
+                BlockState blockstate = blockSnapshot.getState();
+                String targetId = blockstate.getType().getId() + "." + getBlockStateMeta(blockstate);
                 return targetId.toLowerCase();
             } else if (obj instanceof BlockState) {
-                BlockState targetBlock = (BlockState) obj;
-                Block mcBlock = (net.minecraft.block.Block) targetBlock.getType();
-                String targetId = targetBlock.getType().getId() + "." + mcBlock.getMetaFromState((IBlockState) targetBlock);
+                BlockState blockstate = (BlockState) obj;
+                String targetId = blockstate.getType().getId() + "." + getBlockStateMeta(blockstate);
                 return targetId.toLowerCase();
             } else if (obj instanceof ItemStack) {
                 ItemStack itemstack = (ItemStack) obj;
@@ -345,5 +346,15 @@ public class GPPermissionHandler {
         }
 
         return "";
+    }
+
+    private static int getBlockStateMeta(BlockState state) {
+        Integer meta = BLOCKSTATE_META_CACHE.get(state);
+        if (meta == null) {
+            Block mcBlock = (net.minecraft.block.Block) state.getType();
+            meta = mcBlock.getMetaFromState((IBlockState) state);
+            BLOCKSTATE_META_CACHE.put(state, meta);
+        }
+        return meta;
     }
 }
