@@ -121,12 +121,14 @@ import net.minecraft.item.ItemStack;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.Platform.Component;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
+import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityType;
@@ -187,6 +189,9 @@ public class GriefPrevention {
     public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
+    @Inject @ConfigDir(sharedRoot = false)
+    private Path configPath;
+
     public static final String CONFIG_HEADER = "2.2.0\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us at the IRC or drop by our forums and leave a post.\n"
@@ -237,6 +242,10 @@ public class GriefPrevention {
 
     // how long to wait before deciding a player is staying online or staying offline, for notication messages
     public static final int NOTIFICATION_SECONDS = 20;
+
+    public Path getConfigPath() {
+        return this.configPath;
+    }
 
     public Logger getLogger() {
         return this.logger;
@@ -304,11 +313,11 @@ public class GriefPrevention {
     }
 
     private boolean validateSpongeVersion() {
-        if (Sponge.getPlatform().getImplementation().getName().equals("SpongeForge")) {
-            if (Sponge.getPlatform().getImplementation().getVersion().isPresent()) {
+        if (Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getName().equals("SpongeForge")) {
+            if (Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().isPresent()) {
                 int spongeVersion = 0;
                 try {
-                    String version = Sponge.getPlatform().getImplementation().getVersion().get();
+                    String version = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
                     if (spongeVersion < 1971) {

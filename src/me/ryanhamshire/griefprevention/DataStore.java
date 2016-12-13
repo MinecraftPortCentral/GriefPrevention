@@ -77,7 +77,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.EnumMap;
@@ -117,7 +116,7 @@ public abstract class DataStore {
     protected final static Pattern uuidpattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
     // path information, for where stuff stored on disk is well... stored
-    protected final static Path dataLayerFolderPath = Paths.get("config").resolve("GriefPrevention");
+    protected final static Path dataLayerFolderPath = GriefPrevention.instance.getConfigPath();
     public final static Path globalPlayerDataPath = dataLayerFolderPath.resolve("GlobalPlayerData");
     final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
