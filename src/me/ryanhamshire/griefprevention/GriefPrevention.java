@@ -946,7 +946,9 @@ public class GriefPrevention {
 
     public void loadConfig() {
         try {
-            Files.createDirectories(DataStore.dataLayerFolderPath);
+            if (Files.notExists(DataStore.dataLayerFolderPath)) {
+                Files.createDirectories(DataStore.dataLayerFolderPath);
+            }
             if (Files.notExists(DataStore.messagesFilePath)) {
                 Files.createFile(DataStore.messagesFilePath);
             }
