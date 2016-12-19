@@ -284,9 +284,9 @@ public class FlatFileDataStore extends DataStore {
                     continue;
                 }
 
-                /*if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
+                if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
                     return;
-                }*/
+                }
 
                 try {
                     this.getOrCreatePlayerData(worldProperties, playerUUID);
