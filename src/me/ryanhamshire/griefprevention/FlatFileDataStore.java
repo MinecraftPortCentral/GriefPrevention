@@ -353,10 +353,11 @@ public class FlatFileDataStore extends DataStore {
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
         claim.context = new Context("gp_claim", claim.id.toString());
+        // TODO: cache this data to PlayerData as players login
         // Initialize owner's player data for any tasks that may need to check player options such as CleanupUnusedClaimsTask
-        if (claim.isBasicClaim()) {
-            claim.ownerPlayerData = this.claimWorldManagers.get(claim.world.getUniqueId()).getOrCreatePlayerData(claim.ownerID);
-        }
+        //if (claim.isBasicClaim()) {
+        //    claim.ownerPlayerData = this.claimWorldManagers.get(claim.world.getUniqueId()).getOrCreatePlayerData(claim.ownerID);
+        //}
 
         // add parent claim first
         this.addClaim(claim, false);
