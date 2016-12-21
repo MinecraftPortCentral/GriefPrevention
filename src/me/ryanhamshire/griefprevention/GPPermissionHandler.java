@@ -116,10 +116,10 @@ public class GPPermissionHandler {
             String modId = sourceContext.getValue().split(":")[0];
             Context modContext = GriefPrevention.CUSTOM_CONTEXTS.get(modId);
             contexts = new HashSet<>();
+            contexts.add(claim.getContext());
             if (modContext != null) {
                 contexts.add(modContext);
             }
-            contexts.add(claim.getContext());
             Tristate value2 = user.getPermissionValue(contexts, permission);
             if (value2 == Tristate.UNDEFINED && claim.parent != null && claim.inheritParent) {
                 // check subdivision's parent

@@ -39,6 +39,7 @@ import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.entity.IProjectile;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.item.EntityXPOrb;
@@ -574,6 +575,10 @@ public class EntityEventHandler {
     public void onEntityMove(MoveEntityEvent event){
         GPTimings.ENTITY_MOVE_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
+        if (entity instanceof IProjectile || entity instanceof EntityItem) {
+            GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
+            return;
+        }
         if (event.getFromTransform().getLocation().getBlockPosition().equals(event.getToTransform().getLocation().getBlockPosition())) {
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
             return;

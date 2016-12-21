@@ -95,6 +95,7 @@ public class CommandPlayerInfo implements CommandExecutor {
                 TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, worldProperties.getWorldName(), "\n",
                 TextColors.YELLOW, "Initial Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
                 TextColors.YELLOW, "Accrued Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
+                TextColors.YELLOW, "Max Accrued Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionMaxAccruedBlocks, "\n",
                 TextColors.YELLOW, "Bonus Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getBonusClaimBlocks(), "\n",
                 TextColors.YELLOW, "Remaining Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getRemainingClaimBlocks(), "\n", 
                 TextColors.YELLOW, "Abandoned Return Ratio", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getAbandonedReturnRatio(), "\n",

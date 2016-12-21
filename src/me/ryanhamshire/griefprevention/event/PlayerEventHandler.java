@@ -1489,6 +1489,12 @@ public class PlayerEventHandler {
 
         String denyReason = claim.allowAccess(player, location);
         if (denyReason != null) {
+            // check if player is allowed to break target
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player) == Tristate.TRUE) {
+                GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
+                playerData.setLastInteractData(claim);
+                return;
+            }
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 playerData.setLastInteractData(claim);
@@ -1547,6 +1553,14 @@ public class PlayerEventHandler {
             }
 
             if(denyReason != null) {
+                // if player is holding an item, check if it can be placed
+                if (itemInHand != null) {
+                    if (GPPermissionHandler.getClaimPermission(playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player) == Tristate.TRUE) {
+                        GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
+                        playerData.setLastInteractData(playerClaim);
+                        return;
+                    }
+                }
                 // Don't send a deny message if the player is holding an investigation tool
                 if (!PlayerUtils.hasItemInOneHand(player, GriefPrevention.instance.investigationTool)) {
                     GriefPrevention.sendMessage(player, Text.of(TextMode.Err, denyReason));
