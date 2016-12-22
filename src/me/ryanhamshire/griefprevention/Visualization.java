@@ -232,6 +232,10 @@ public class Visualization {
         return this.type;
     }
 
+    public void setType(VisualizationType type) {
+        this.type = type;
+    }
+
     // adds a claim's visualization to the current visualization
     // handy for combining several visualizations together, as when
     // visualization a top level claim with several subdivisions inside

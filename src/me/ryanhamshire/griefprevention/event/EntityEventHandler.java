@@ -617,7 +617,7 @@ public class EntityEventHandler {
         User user = player != null ? player : owner;
         // enter
         if (fromClaim != toClaim && toClaim != null) {
-            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, user, entity, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, entity, entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoEnterClaim);
                 }
@@ -639,7 +639,7 @@ public class EntityEventHandler {
 
         // exit
         if (fromClaim != toClaim) {
-            if (GPPermissionHandler.getClaimPermission(fromClaim, GPPermissions.EXIT_CLAIM, user, entity, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(fromClaim, GPPermissions.EXIT_CLAIM, entity, entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoExitClaim);
                 }
