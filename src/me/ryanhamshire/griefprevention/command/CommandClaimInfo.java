@@ -27,9 +27,12 @@ package me.ryanhamshire.griefprevention.command;
 import com.flowpowered.math.vector.Vector3d;
 import me.ryanhamshire.griefprevention.GPPermissions;
 import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.PlayerData;
 import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.VisualizationType;
 import me.ryanhamshire.griefprevention.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
+import me.ryanhamshire.griefprevention.claim.Claim.Type;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -48,8 +51,11 @@ import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class CommandClaimInfo implements CommandExecutor {
 
@@ -68,6 +74,7 @@ public class CommandClaimInfo implements CommandExecutor {
             return CommandResult.success();
         }
 
+        boolean isAdmin = src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
         Claim claim = null;
         if (player != null && claimIdentifier == null) {
             claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), false, null);
@@ -165,6 +172,9 @@ public class CommandClaimInfo implements CommandExecutor {
             managers += user.getName() + " ";
         }
 
+        System.out.println("claim type = " + claim.type);
+        final Text adminClaimText = Text.of(TextColors.RED, "ADMIN");
+        final Text basicClaimText = Text.of(TextColors.GREEN, "BASIC");
         TextColor claimTypeColor = TextColors.GREEN;
         if (claim.isAdminClaim()) {
             if (claim.isSubdivision()) {
@@ -179,9 +189,14 @@ public class CommandClaimInfo implements CommandExecutor {
                 Text.builder()
                         .append(Text.of(TextColors.GRAY, claim.id.toString()))
                         .onShiftClick(TextActions.insertText(claim.id.toString())).build()));
-        Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null ? owner.getName() : "administrator");
-        Text claimType = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", 
-                TextColors.GREEN, claim.cuboid ? "3D " : "2D ", claimTypeColor, claim.type.name(),
+        Text ownerLine = Text.of(TextColors.YELLOW, claim.isAdminClaim() ? "Creator" : "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null ? owner.getName() : "administrator");
+        Text claimType = Text.builder()
+                .append(Text.of(claimTypeColor, claim.type.name()))
+                .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, isAdmin)))
+                .onHover(TextActions.showText(Text.of("Click here to switch claim type to ", claim.type == Type.ADMIN ? basicClaimText : adminClaimText)))
+                .build();
+        Text claimTypeInfo = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", 
+                TextColors.GREEN, claim.cuboid ? "3D " : "2D ", claimType,
                 TextColors.WHITE, " (", TextColors.GRAY, claim.getArea(), " blocks",
                 TextColors.WHITE, " )");
         Text claimInherit = Text.of(TextColors.YELLOW, "InheritParent", TextColors.WHITE, " : ", claim.inheritParent ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
@@ -231,7 +246,7 @@ public class CommandClaimInfo implements CommandExecutor {
                     Text.of(footer, "\n",
                             claimName, "\n",
                             ownerLine, "\n",
-                            claimType, "\n",
+                            claimTypeInfo, "\n",
                             claimInherit, "\n",
                             claimAccessors, "\n",
                             claimBuilders, "\n",
@@ -252,7 +267,7 @@ public class CommandClaimInfo implements CommandExecutor {
                     Text.of(footer, "\n",
                             claimName, "\n",
                             ownerLine, "\n",
-                            claimType, "\n",
+                            claimTypeInfo, "\n",
                             claimAccessors, "\n",
                             claimBuilders, "\n",
                             claimContainers, "\n",
@@ -272,7 +287,7 @@ public class CommandClaimInfo implements CommandExecutor {
                     Text.of(footer, "\n",
                             claimName, "\n",
                             ownerLine, "\n",
-                            claimType, "\n",
+                            claimTypeInfo, "\n",
                             claimGreeting, "\n",
                             claimFarewell, "\n",
                             pvp, "\n",
@@ -283,5 +298,53 @@ public class CommandClaimInfo implements CommandExecutor {
         }
 
         return CommandResult.success();
+    }
+
+    private static Consumer<CommandSource> createClaimTypeConsumer(CommandSource src, Claim claim, boolean isAdmin) {
+        return type -> {
+            if (!(src instanceof Player)) {
+                // ignore
+                return;
+            }
+            if (!isAdmin) {
+                src.sendMessage(Text.of(TextColors.RED, "You do not have permission to change the type of this claim."));
+                return;
+            }
+            if (claim.parent != null) {
+                src.sendMessage(Text.of(TextColors.RED, "Subdivisions cannot be changed."));
+                return;
+            }
+
+            Player player = (Player) src;
+            UUID ownerUniqueId = claim.ownerID;
+            if (claim.isBasicClaim()) {
+                ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
+                claimWorldManager.getPlayerClaims(ownerUniqueId).remove(claim);
+                claim.ownerID = player.getUniqueId();
+                claim.type = Type.ADMIN;
+                claim.getVisualizer().setType(VisualizationType.AdminClaim);
+                claim.getClaimData().setClaimType(Type.ADMIN);
+                src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", TextColors.RED, "ADMIN", TextColors.GREEN, "." ));
+            } else {
+                claim.type = Type.BASIC;
+                claim.ownerID = player.getUniqueId();
+                claim.getClaimData().setClaimOwnerUniqueId(player.getUniqueId());
+                claim.getVisualizer().setType(VisualizationType.Claim);
+                claim.getClaimData().setClaimType(Type.BASIC);
+                ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
+                claimWorldManager.getPlayerClaims(player.getUniqueId()).add(claim);
+                src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", TextColors.AQUA, "BASIC", TextColors.GREEN, "." ));
+            }
+            // revert visuals for all players watching this claim
+            List<UUID> playersWatching = new ArrayList<>(claim.playersWatching);
+            for (UUID playerUniqueId : playersWatching) {
+                player = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
+                if (player != null) {
+                    PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(claim.world, playerUniqueId);
+                    playerData.revertActiveVisual(player);
+                }
+            }
+            claim.getClaimStorage().save();
+        };
     }
 }

@@ -70,9 +70,9 @@ public class FlatFileDataStore extends DataStore {
     public final static Path claimTemplatePath = claimDataPath.resolve("Templates");
     public final static Path worldClaimDataPath = Paths.get("GriefPreventionData", "WorldClaim");
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
-    public final static Path redProtectDataPath = Paths.get("config", "RedProtect", "data");
+    public final static Path redProtectDataPath = GriefPrevention.instance.getConfigPath().getParent().resolve("RedProtect").resolve("data");
     public final static Map<UUID, Task> cleanupClaimTasks = Maps.newHashMap();
-    private final Path rootConfigPath = Sponge.getGame().getSavesDirectory().resolve("config").resolve("GriefPrevention").resolve("worlds");
+    private final Path rootConfigPath = GriefPrevention.instance.getConfigPath().resolve("worlds");
     public static Path rootWorldSavePath;
 
     public FlatFileDataStore() {
@@ -284,9 +284,9 @@ public class FlatFileDataStore extends DataStore {
                     continue;
                 }
 
-                /*if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
+                if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
                     return;
-                }*/
+                }
 
                 try {
                     this.getOrCreatePlayerData(worldProperties, playerUUID);
@@ -353,10 +353,11 @@ public class FlatFileDataStore extends DataStore {
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
         claim.context = new Context("gp_claim", claim.id.toString());
+        // TODO: cache this data to PlayerData as players login
         // Initialize owner's player data for any tasks that may need to check player options such as CleanupUnusedClaimsTask
-        if (claim.isBasicClaim()) {
-            claim.ownerPlayerData = this.claimWorldManagers.get(claim.world.getUniqueId()).getOrCreatePlayerData(claim.ownerID);
-        }
+        //if (claim.isBasicClaim()) {
+        //    claim.ownerPlayerData = this.claimWorldManagers.get(claim.world.getUniqueId()).getOrCreatePlayerData(claim.ownerID);
+        //}
 
         // add parent claim first
         this.addClaim(claim, false);

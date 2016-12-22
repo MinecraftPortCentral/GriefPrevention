@@ -17,8 +17,6 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 
-import java.util.UUID;
-
 public class CommandClaimTransfer implements CommandExecutor {
 
     @Override
@@ -30,6 +28,13 @@ public class CommandClaimTransfer implements CommandExecutor {
             src.sendMessage(e1.getText());
             return CommandResult.success();
         }
+
+        User targetPlayer = args.<User>getOne("user").orElse(null);
+        if (targetPlayer == null) {
+            GriefPrevention.sendMessage(player, TextMode.Err, "No user found.");
+            return CommandResult.success();
+        }
+
         // which claim is the user in?
         PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
@@ -39,26 +44,21 @@ public class CommandClaimTransfer implements CommandExecutor {
         }
 
         // check additional permission for admin claims
-        if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-            try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.TransferClaimPermission));
-            } catch (CommandException e1) {
-                src.sendMessage(e1.getText());
-                return CommandResult.success();
+        if (claim.isAdminClaim()) {
+            if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+                try {
+                    throw new CommandException(GriefPrevention.getMessage(Messages.TransferClaimPermission));
+                } catch (CommandException e1) {
+                    src.sendMessage(e1.getText());
+                    return CommandResult.success();
+                }
             }
         }
 
-        UUID newOwnerID = null; // no argument = make an admin claim
-        String ownerName = "admin";
-
-        User targetPlayer = args.<User>getOne("user").get();
-        newOwnerID = targetPlayer.getUniqueId();
-        ownerName = targetPlayer.getName();
-
-        // change ownerhsip
+        // change ownership
         try {
             ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-            claimWorldManager.transferClaimOwner(claim, newOwnerID);
+            claimWorldManager.transferClaimOwner(claim, targetPlayer.getUniqueId());
         } catch (NoTransferException e) {
             GriefPrevention.sendMessage(player, TextMode.Instr, Messages.TransferTopLevel);
             return CommandResult.empty();
@@ -67,7 +67,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         // confirm
         GriefPrevention.sendMessage(player, TextMode.Success, Messages.TransferSuccess);
         GriefPrevention.addLogEntry(player.getName() + " transferred a claim at "
-                        + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + ownerName + ".",
+                        + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + targetPlayer.getName() + ".",
                 CustomLogEntryTypes.AdminActivity);
 
         return CommandResult.success();

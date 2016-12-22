@@ -28,6 +28,8 @@ import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.VisualizationType;
+import me.ryanhamshire.griefprevention.claim.Claim.Type;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import org.spongepowered.api.Sponge;
@@ -40,6 +42,7 @@ import org.spongepowered.api.world.storage.WorldProperties;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -103,6 +106,9 @@ public class ClaimWorldManager {
         PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath);
         List<Claim> claimList = new ArrayList<>();
         for (Claim claim : this.worldClaims) {
+            if (claim.isAdminClaim()) {
+                continue;
+            }
             if (claim.parent != null) {
                if (claim.parent.ownerID.equals(playerUniqueId)) {
                    claimList.add(claim);
@@ -145,9 +151,8 @@ public class ClaimWorldManager {
             if (!this.worldClaims.contains(claim)) {
                 this.worldClaims.add(claim);
             }
-            if (!this.claimUniqueIdMap.containsKey(claim.id)) {
-                this.claimUniqueIdMap.put(claim.id, claim);
-            }
+
+            this.claimUniqueIdMap.put(claim.id, claim);
 
             PlayerData playerData = null;
             if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
@@ -237,14 +242,15 @@ public class ClaimWorldManager {
     }
 
     public void transferClaimOwner(Claim claim, UUID newOwnerID) throws NoTransferException {
-        // if it's a subdivision, throw an exception
-        if (claim.parent != null) {
-            throw new NoTransferException("Subdivisions can't be transferred.  Only top-level claims may change owners.");
-        }
-
         // determine current claim owner
-        if (claim.isAdminClaim() || claim.isWildernessClaim()) {
+        if (claim.isWildernessClaim()) {
             return;
+        }
+        if (claim.isAdminClaim()) {
+            // convert to basic
+            claim.type = Type.BASIC;
+            claim.getVisualizer().setType(VisualizationType.Claim);
+            claim.getClaimData().setClaimType(Type.BASIC);
         }
 
         PlayerData ownerData = this.getOrCreatePlayerData(claim.ownerID);
@@ -258,11 +264,12 @@ public class ClaimWorldManager {
         claim.ownerID = newOwnerID;
         claim.getClaimData().setClaimOwnerUniqueId(newOwnerID);
 
-        // adjust blocks and other records
-        if (ownerData != null) {
-              ownerData.getClaims().remove(claim);
+        if (claim.parent == null) {
+            if (ownerData != null) {
+                  ownerData.getClaims().remove(claim);
+            }
+            newOwnerData.getClaims().add(claim);
         }
-        newOwnerData.getClaims().add(claim);
         claim.getClaimStorage().save();
     }
 
