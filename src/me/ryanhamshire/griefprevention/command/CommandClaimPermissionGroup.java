@@ -25,11 +25,11 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.Lists;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -57,40 +57,40 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
         String permission = args.<String>getOne("permission").orElse(null);
-        if (permission == null || !player.hasPermission(permission)) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign a permission that you do not have."));
+        if (permission != null && !player.hasPermission(permission)) {
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign a permission that you do not have."));
             return CommandResult.success();
         }
         String group = args.<String>getOne("group").orElse(null);
         String value = args.<String>getOne("value").orElse(null);
 
-        Subject subj = GriefPrevention.instance.permissionService.getGroupSubjects().get(group);
+        Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
         if (subj == null) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim.isWildernessClaim() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim permissions here."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim permissions here."));
             return CommandResult.success();
         } else if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim permissions."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim permissions."));
             return CommandResult.success();
         }
 
         Set<Context> contexts = new HashSet<>();
+        contexts.add(claim.getContext());
         if (permission == null || value == null) {
             List<Object[]> permList = Lists.newArrayList();
-            contexts.add(claim.getContext());
             Map<String, Boolean> permissions = subj.getSubjectData().getPermissions(contexts);
             for (Map.Entry<String, Boolean> permissionEntry : permissions.entrySet()) {
                 Boolean permValue = permissionEntry.getValue();
@@ -110,12 +110,12 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
 
         Tristate tristateValue = PlayerUtils.getTristateFromString(value);
         if (tristateValue == null) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid value entered. '" + value + "' is not a valid value. Valid values are : true, false, undefined, 1, -1, or 0."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Invalid value entered. '" + value + "' is not a valid value. Valid values are : true, false, undefined, 1, -1, or 0."));
             return CommandResult.success();
         }
 
         subj.getSubjectData().setPermission(contexts, permission, tristateValue);
-        GriefPrevention.sendMessage(src, Text.of("Set permission ", TextColors.AQUA, permission, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, subj.getIdentifier(), TextColors.WHITE, "."));
+        GriefPreventionPlugin.sendMessage(src, Text.of("Set permission ", TextColors.AQUA, permission, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, subj.getIdentifier(), TextColors.WHITE, "."));
         return CommandResult.success();
     }
 

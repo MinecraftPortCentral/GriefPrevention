@@ -24,7 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -44,7 +44,7 @@ public class PlayerStorageData {
 
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(GriefPrevention.CONFIG_HEADER));
+            .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
     private ObjectMapper<PlayerDataConfig>.BoundInstance configMapper;
     private PlayerDataConfig configBase;
 
@@ -74,7 +74,7 @@ public class PlayerStorageData {
     public void save() {
         try {
             if (this.configBase.requiresSave()) {
-                this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
+                this.configMapper.serialize(this.root.getNode(GriefPreventionPlugin.MOD_ID));
                 this.loader.save(this.root);
                 this.configBase.setRequiresSave(false);
             }
@@ -86,8 +86,8 @@ public class PlayerStorageData {
     public void reload() {
         try {
             this.root = this.loader.load(ConfigurationOptions.defaults()
-                    .setHeader(GriefPrevention.CONFIG_HEADER));
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+                    .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
         }
@@ -97,14 +97,14 @@ public class PlayerStorageData {
         return Functional.asyncFailableFuture(() -> {
             CommentedConfigurationNode upd = getSetting(key);
             upd.setValue(value);
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             this.loader.save(this.root);
             return upd;
         }, ForkJoinPool.commonPool());
     }
 
     public CommentedConfigurationNode getRootNode() {
-        return this.root.getNode(GriefPrevention.MOD_ID);
+        return this.root.getNode(GriefPreventionPlugin.MOD_ID);
     }
 
     public CommentedConfigurationNode getSetting(String key) {

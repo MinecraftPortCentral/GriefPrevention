@@ -24,12 +24,12 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -51,7 +51,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -61,7 +60,7 @@ public class CommandClaimFlagGroup implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
@@ -75,31 +74,24 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         String target = null;
         if (!targetValues.isEmpty()) {
             if (targetValues.size() > 1) {
-                source = "any";
+                //source = "any";
                 target = targetValues.get(1);
             } else {
                 target = targetValues.get(0);
             }
         }
         Tristate value = ctx.<Tristate>getOne("value").orElse(null);
-        Optional<String> context = ctx.<String>getOne("context");
+        String context = ctx.<String>getOne("context").orElse(null);
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim == null) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found."));
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "No claim found."));
             return CommandResult.success();
         } else if (flag == null && value == null) {
             Set<Context> contexts = new HashSet<>();
             contexts.add(claim.getContext());
-            if (source != null) {
-                Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
-                if (sourceContext != null) {
-                    contexts.add(sourceContext);
-                }
-            } else {
-                source = "any";
-            }
+
             PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
             Subject subj = service.getGroupSubjects().get(group);
             if (subj != null) {
@@ -127,9 +119,9 @@ public class CommandClaimFlagGroup implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Subject subj = GriefPrevention.instance.permissionService.getGroupSubjects().get(group);
+        Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
         if (subj == null) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
             return CommandResult.success();
         }
         return CommandHelper.addFlagPermission(src, subj, group, claim, flag, source, target, value, context);

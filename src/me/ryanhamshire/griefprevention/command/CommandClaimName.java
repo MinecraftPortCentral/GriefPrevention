@@ -24,11 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -45,30 +45,30 @@ public class CommandClaimName implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim != null) {
             if (claim.allowEdit(player) != null) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
                 return CommandResult.success();
             }
 
             Text name = TextSerializers.FORMATTING_CODE.deserialize(ctx.<String>getOne("name").get());
             if (name.isEmpty()) {
-                claim.getClaimData().setClaimName(null);
+                claim.getInternalClaimData().setName(null);
             } else {
-                claim.getClaimData().setClaimName(name);
+                claim.getInternalClaimData().setName(name);
             }
-            claim.getClaimData().setRequiresSave(true);
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Set claim name to ", TextColors.AQUA, name));
+            claim.getInternalClaimData().setRequiresSave(true);
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success, "Set claim name to ", TextColors.AQUA, name));
         } else {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
         }
 
         return CommandResult.success();

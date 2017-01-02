@@ -26,23 +26,28 @@
 package me.ryanhamshire.griefprevention;
 
 import com.flowpowered.math.vector.Vector3d;
+import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
-import me.ryanhamshire.griefprevention.claim.CreateClaimResult;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.configuration.ClaimTemplateStorage;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
-import me.ryanhamshire.griefprevention.configuration.types.DimensionConfig;
-import me.ryanhamshire.griefprevention.configuration.types.GlobalConfig;
-import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
-import me.ryanhamshire.griefprevention.event.ClaimDeletedEvent;
+import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
+import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
+import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
+import me.ryanhamshire.griefprevention.message.CustomizableMessage;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.task.SecureClaimTask;
 import me.ryanhamshire.griefprevention.task.SiegeCheckupTask;
-import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.WordFinder;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.ChunkPos;
@@ -52,6 +57,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.SubjectData;
@@ -93,20 +99,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 //singleton class which manages all GriefPrevention data (except for config options)
 public abstract class DataStore {
 
     // World UUID -> PlayerDataWorldManager
-    protected final Map<UUID, ClaimWorldManager> claimWorldManagers = Maps.newHashMap();
+    protected final Map<UUID, GPClaimManager> claimWorldManagers = Maps.newHashMap();
 
     // in-memory cache for claim data
     public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
     public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
     public static Map<String, ClaimTemplateStorage> globalTemplates = new HashMap<>();
     public static GriefPreventionConfig<GlobalConfig> globalConfig;
-    public static Map<UUID, PlayerData> GLOBAL_PLAYER_DATA = Maps.newHashMap();
+    public static Map<UUID, GPPlayerData> GLOBAL_PLAYER_DATA = Maps.newHashMap();
     public static boolean USE_GLOBAL_PLAYER_STORAGE = true;
 
     // in-memory cache for messages
@@ -116,7 +120,7 @@ public abstract class DataStore {
     protected final static Pattern uuidpattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
     // path information, for where stuff stored on disk is well... stored
-    protected final static Path dataLayerFolderPath = GriefPrevention.instance.getConfigPath();
+    public final static Path dataLayerFolderPath = GriefPreventionPlugin.instance.getConfigPath();
     public final static Path globalPlayerDataPath = dataLayerFolderPath.resolve("GlobalPlayerData");
     final static Path messagesFilePath = dataLayerFolderPath.resolve("messages.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
@@ -141,7 +145,6 @@ public abstract class DataStore {
     public static boolean generateMessages = true;
     // matcher for banned words
     public WordFinder bannedWordFinder;
-    private boolean deletingSubdivisions = false;
 
     // list of UUIDs which are soft-muted
     ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
@@ -163,7 +166,7 @@ public abstract class DataStore {
     // initialization!
     void initialize() throws Exception {
         // ensure global player data folder exists
-        USE_GLOBAL_PLAYER_STORAGE = GriefPrevention.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage;
+        USE_GLOBAL_PLAYER_STORAGE = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage;
         if (USE_GLOBAL_PLAYER_STORAGE) {
             File globalPlayerDataFolder = globalPlayerDataPath.toFile();
             if (!globalPlayerDataFolder.exists()) {
@@ -174,7 +177,7 @@ public abstract class DataStore {
         // load up all the messages from messages.hocon
         this.loadMessages();
         this.loadBannedWords();
-        GriefPrevention.addLogEntry("Customizable messages loaded.");
+        GriefPreventionPlugin.addLogEntry("Customizable messages loaded.");
 
         // load list of soft mutes
         this.loadSoftMutes();
@@ -200,7 +203,7 @@ public abstract class DataStore {
                         playerID = UUID.fromString(nextID);
                     } catch (Exception e) {
                         playerID = null;
-                        GriefPrevention.addLogEntry("Failed to parse soft mute entry as a UUID: " + nextID);
+                        GriefPreventionPlugin.addLogEntry("Failed to parse soft mute entry as a UUID: " + nextID);
                     }
 
                     // push it into the map
@@ -212,7 +215,7 @@ public abstract class DataStore {
                     nextID = inStream.readLine();
                 }
             } catch (Exception e) {
-                GriefPrevention.addLogEntry("Failed to read from the soft mute data file: " + e.toString());
+                GriefPreventionPlugin.addLogEntry("Failed to read from the soft mute data file: " + e.toString());
                 e.printStackTrace();
             }
 
@@ -244,7 +247,7 @@ public abstract class DataStore {
             }
             this.bannedWordFinder = new WordFinder(Files.readLines(bannedWordsFile, Charset.forName("UTF-8")));
         } catch (Exception e) {
-            GriefPrevention.addLogEntry("Failed to read from the banned words data file: " + e.toString());
+            GriefPreventionPlugin.addLogEntry("Failed to read from the banned words data file: " + e.toString());
             e.printStackTrace();
             this.bannedWordFinder = new WordFinder(new ArrayList<String>());
         }
@@ -289,7 +292,7 @@ public abstract class DataStore {
 
         // if any problem, log it
         catch (Exception e) {
-            GriefPrevention.addLogEntry("Unexpected exception saving soft mute data: " + e.getMessage());
+            GriefPreventionPlugin.addLogEntry("Unexpected exception saving soft mute data: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -307,265 +310,16 @@ public abstract class DataStore {
         this.getClaimWorldManager(worldProperties).removePlayer(playerUniqueId);
     }
 
-    // adds a claim to the datastore, making it an effective claim
-    void addClaim(Claim newClaim, boolean writeToStorage) {
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(newClaim.world.getProperties());
-        claimWorldManager.addWorldClaim(newClaim);
+    public abstract void writeClaimToStorage(GPClaim claim);
 
-        // make sure the claim is saved to disk
-        if (writeToStorage) {
-            this.writeClaimToStorage(newClaim);
-        }
-    }
-
-    public abstract void writeClaimToStorage(Claim claim);
-
-    // deletes a claim or subdivision
-    public void deleteClaim(Claim claim) {
-        this.deleteClaim(claim, true);
-    }
-
-    public void deleteClaim(Claim claim, boolean fireEvent) {
-        // delete any children
-        for (int j = 0; j < claim.children.size(); j++) {
-            Claim subdivision = claim.children.get(j);
-            this.deletingSubdivisions = true;
-            this.deleteClaim(subdivision, true);
-            this.deletingSubdivisions = false;
-        }
-        claim.children.clear();
-
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(claim.world.getProperties());
-        // subdivisions must also be removed from the parent claim child list
-        if (claim.parent != null) {
-            Claim parentClaim = claim.parent;
-            parentClaim.getClaimStorage().getConfig().getSubdivisions().remove(claim.id);
-            // force a save for subdivision deletes
-            if (!this.deletingSubdivisions) {
-                parentClaim.children.remove(claim);
-                parentClaim.getClaimStorage().save();
-            }
-        } else {
-            claimWorldManager.removePlayerClaim(claim);
-            this.deleteClaimFromSecondaryStorage(claim);
-        }
-
-        if (claim.parent == null || claim.cuboid) {
-            Set<Long> chunkHashes = claim.getChunkHashes();
-            for (Long chunkHash : chunkHashes) {
-                Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
-                if (claimsInChunk != null && claimsInChunk.size() > 0) {
-                    Iterator<Claim> iterator = claimsInChunk.iterator();
-                    while (iterator.hasNext()) {
-                        Claim claimInChunk = iterator.next();
-                        if (claimInChunk.id.equals(claim.id)) {
-                            iterator.remove();
-                        }
-                    }
-                }
-            }
-        }
-        // revert visuals for all players watching this claim
-        List<UUID> playersWatching = new ArrayList<>(claim.playersWatching);
-        for (UUID playerUniqueId : playersWatching) {
-            Player player = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
-            if (player != null) {
-                PlayerData playerData = this.getPlayerData(claim.world, playerUniqueId);
-                playerData.revertActiveVisual(player);
-            }
-        }
-
-        if (fireEvent) {
-            ClaimDeletedEvent ev = new ClaimDeletedEvent(claim);
-            Sponge.getGame().getEventManager().post(ev);
-        }
-    }
-
-    abstract void deleteClaimFromSecondaryStorage(Claim claim);
-
-    public Claim getClaimAtPlayer(PlayerData playerData, Location<World> location, boolean ignoreHeight) {
-        return this.getClaimAt(location, ignoreHeight, playerData.lastClaim);
-    }
-
-    // gets the claim at a specific location
-    // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
-    public Claim getClaimAt(Location<World> location, boolean ignoreHeight, WeakReference<Claim> cachedClaimRef) {
-        GPTimings.CLAIM_GETCLAIM.startTimingIfSync();
-        // check cachedClaim guess first. if it's in the datastore and the location is inside it, we're done
-        /*if (cachedClaim != null && !cachedClaim.isWildernessClaim() && cachedClaim.inDataStore && cachedClaim.contains(location, ignoreHeight, true)) {
-            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
-            return cachedClaim;
-        }*/
-
-        // find a top level claim
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        if (claimWorldManager == null) {
-            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
-            return null;
-        }
-
-        Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.chunkXZ2Int(location.getBlockX() >> 4, location.getBlockZ() >> 4));
-        if (claimsInChunk == null) {
-            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
-            return claimWorldManager.getWildernessClaim();
-        }
-
-        for (Claim claim : claimsInChunk) {
-            if (claim.contains(location, claim.cuboid ? false : ignoreHeight, false)) {
-                // when we find a top level claim, if the location is in one of its subdivisions,
-                // return the SUBDIVISION, not the top level claim
-                for (int j = 0; j < claim.children.size(); j++) {
-                    Claim subdivision = claim.children.get(j);
-                    if (subdivision.contains(location, subdivision.cuboid ? false : ignoreHeight, false)) {
-                        GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
-                        return subdivision;
-                    }
-                }
-
-                GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
-                return claim;
-            }
-        }
-
-        GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
-        // if no claim found, return the world claim
-        return claimWorldManager.getWildernessClaim();
-    }
+    public abstract void deleteClaimFromSecondaryStorage(GPClaim claim);
 
     // finds a claim by ID
     public Claim getClaim(WorldProperties worldProperties, UUID id) {
-        return this.getClaimWorldManager(worldProperties).getClaimByUUID(id);
+        return this.getClaimWorldManager(worldProperties).getClaimByUUID(id).orElse(null);
     }
 
-    // creates a claim.
-    // if the new claim would overlap an existing claim, returns a failure along
-    // with a reference to the existing claim
-    // if the new claim would overlap a WorldGuard region where the player
-    // doesn't have permission to build, returns a failure with NULL for claim
-    // otherwise, returns a success along with a reference to the new claim
-    // use ownerName == "" for administrative claims for top level claims, pass parent == NULL
-    // DOES adjust claim blocks available on success (players can go into negative quantity available)
-    // DOES check for world guard regions where the player doesn't have permission
-    // does NOT check a player has permission to create a claim, or enough claim blocks.
-    // does NOT check minimum claim size constraints
-    // does NOT visualize the new claim for any players
-    public CreateClaimResult createClaim(World world, int x1, int x2, int y1, int y2, int z1, int z2, UUID claimId, Claim parent, Claim.Type claimType, boolean cuboid, Player player) {
-        CreateClaimResult result = new CreateClaimResult();
-
-        int smallx, bigx, smally, bigy, smallz, bigz;
-        // determine small versus big inputs
-        if (x1 < x2) {
-            smallx = x1;
-            bigx = x2;
-        } else {
-            smallx = x2;
-            bigx = x1;
-        }
-
-        if (y1 < y2) {
-            smally = y1;
-            bigy = y2;
-        } else {
-            smally = y2;
-            bigy = y1;
-        }
-
-        if (z1 < z2) {
-            smallz = z1;
-            bigz = z2;
-        } else {
-            smallz = z2;
-            bigz = z1;
-        }
-
-        // creative mode claims always go to bedrock
-        if (GriefPrevention.instance.claimModeIsActive(world.getProperties(), ClaimsMode.Creative)) {
-            smally = 2;
-        }
-
-        // create a new claim instance (but don't save it, yet)
-        Claim newClaim = new Claim(
-                new Location<World>(world, smallx, smally, smallz),
-                new Location<World>(world, bigx, bigy, bigz),
-                claimId, claimType, player);
-
-        newClaim.parent = parent;
-        newClaim.cuboid = cuboid;
-        if (newClaim.parent != null) {
-            newClaim.type = Claim.Type.SUBDIVISION;
-        }
-
-        // ensure this new claim won't overlap any existing claims
-        Claim overlapClaim = this.doesClaimOverlap(newClaim);
-        if (overlapClaim != null) {
-            result.succeeded = false;
-            result.claim = overlapClaim;
-            return result;
-        }
-
-        if (newClaim.parent != null) {
-            newClaim.setClaimStorage(newClaim.parent.getClaimStorage());
-            SubDivisionDataConfig subData = new SubDivisionDataConfig(newClaim);
-            newClaim.setClaimData(subData);
-            newClaim.getClaimStorage().getConfig().getSubdivisions().put(claimId, subData);
-            newClaim.parent.children.add(newClaim);
-            newClaim.parent.getClaimStorage().getConfig().setRequiresSave(true);
-            newClaim.parent.getClaimStorage().save();
-        } else {
-            if (claimType != null) {
-                newClaim.type = claimType;
-            }
-            newClaim.ownerID = player.getUniqueId();
-        }
-
-        // otherwise add this new claim to the data store to make it effective
-        if (newClaim.parent == null) {
-            this.addClaim(newClaim, true);
-        }
-
-        newClaim.context = new Context("gp_claim", newClaim.id.toString());
-        // return success along with reference to new claim
-        result.succeeded = true;
-        result.claim = newClaim;
-        return result;
-    }
-
-    public Claim doesClaimOverlap(Claim claim) {
-        if (claim.isSubdivision() && !claim.cuboid) {
-            return null;
-        }
-
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(claim.world.getProperties());
-        Set<Long> chunkHashes = claim.getChunkHashes();
-        for (Long chunkHash : chunkHashes) {
-            Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
-            if (claimsInChunk == null || claimsInChunk.size() == 0) {
-                continue;
-            }
-
-            for (Claim otherClaim : claimsInChunk) {
-                // if we find an existing claim which will be overlapped
-                if (claim.parent != null && otherClaim.id == claim.parent.id) {
-                    // check children
-                    for (Claim subdivision : otherClaim.children) {
-                        if (claim.overlaps(subdivision) || subdivision.overlaps(claim)) {
-                            // result = fail, return conflicting claim
-                            return subdivision;
-                        }
-                    }
-                }
-
-                if ((claim.parent == null || (claim.parent != null && otherClaim.id != claim.parent.id)) && (claim.overlaps(otherClaim) || otherClaim.overlaps(claim))) {
-                    // result = fail, return conflicting claim
-                    return otherClaim;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public void asyncSaveGlobalPlayerData(UUID playerID, PlayerData playerData) {
+    public void asyncSaveGlobalPlayerData(UUID playerID, GPPlayerData playerData) {
         // save everything except the ignore list
         this.overrideSavePlayerData(playerID, playerData);
 
@@ -595,20 +349,20 @@ public abstract class DataStore {
 
             // if any problem, log it
             catch (Exception e) {
-                GriefPrevention.addLogEntry(
+                GriefPreventionPlugin.addLogEntry(
                         "GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
                 e.printStackTrace();
             }
         }
     }
 
-    abstract void overrideSavePlayerData(UUID playerID, PlayerData playerData);
+    abstract void overrideSavePlayerData(UUID playerID, GPPlayerData playerData);
 
     // extends a claim to a new depth
     // respects the max depth config variable
-    public void extendClaim(Claim claim, int newDepth) {
-        if (newDepth < GriefPrevention.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth) {
-            newDepth = GriefPrevention.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth;
+    public void extendClaim(GPClaim claim, int newDepth) {
+        if (newDepth < GriefPreventionPlugin.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth) {
+            newDepth = GriefPreventionPlugin.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth;
         }
 
         if (claim.parent != null) {
@@ -621,7 +375,8 @@ public abstract class DataStore {
         Vector3d newGreaterPosition = new Vector3d(claim.greaterBoundaryCorner.getX(), newDepth, claim.greaterBoundaryCorner.getZ());
         claim.greaterBoundaryCorner = claim.greaterBoundaryCorner.setPosition(newGreaterPosition);
 
-        for (Claim subdivision : claim.children) {
+        for (Claim subClaim : claim.children) {
+            GPClaim subdivision = (GPClaim) subClaim;
             newLesserPosition = new Vector3d(subdivision.lesserBoundaryCorner.getX(), newDepth, subdivision.lesserBoundaryCorner.getZ());
             subdivision.lesserBoundaryCorner = subdivision.lesserBoundaryCorner.setPosition(newLesserPosition);
             newGreaterPosition = new Vector3d(subdivision.greaterBoundaryCorner.getX(), newDepth, subdivision.greaterBoundaryCorner.getZ());
@@ -633,11 +388,11 @@ public abstract class DataStore {
 
     // starts a siege on a claim
     // does NOT check siege cooldowns, see onCooldown() below
-    public void startSiege(Player attacker, Player defender, Claim defenderClaim) {
+    public void startSiege(Player attacker, Player defender, GPClaim defenderClaim) {
         // fill-in the necessary SiegeData instance
         SiegeData siegeData = new SiegeData(attacker, defender, defenderClaim);
-        PlayerData attackerData = this.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
-        PlayerData defenderData = this.getPlayerData(defender.getWorld(), defender.getUniqueId());
+        GPPlayerData attackerData = this.getPlayerData(attacker.getWorld(), attacker.getUniqueId());
+        GPPlayerData defenderData = this.getPlayerData(defender.getWorld(), defender.getUniqueId());
         attackerData.siegeData = siegeData;
         defenderData.siegeData = siegeData;
         defenderClaim.siegeData = siegeData;
@@ -648,7 +403,7 @@ public abstract class DataStore {
         // runs, there may or may not be a reason to run the task again
         SiegeCheckupTask siegeTask = new SiegeCheckupTask(siegeData);
         Task task =
-                Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(siegeTask).submit(GriefPrevention.instance);
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(siegeTask).submit(GriefPreventionPlugin.instance);
         siegeData.checkupTaskID = task.getUniqueId();
     }
 
@@ -677,10 +432,10 @@ public abstract class DataStore {
             grantAccess = true;
         }
 
-        PlayerData attackerData = this.getPlayerData(siegeData.attacker.getWorld(), siegeData.attacker.getUniqueId());
+        GPPlayerData attackerData = this.getPlayerData(siegeData.attacker.getWorld(), siegeData.attacker.getUniqueId());
         attackerData.siegeData = null;
 
-        PlayerData defenderData = this.getPlayerData(siegeData.defender.getWorld(), siegeData.defender.getUniqueId());
+        GPPlayerData defenderData = this.getPlayerData(siegeData.defender.getWorld(), siegeData.defender.getUniqueId());
         defenderData.siegeData = null;
         defenderData.lastSiegeEndTimeStamp = System.currentTimeMillis();
 
@@ -691,7 +446,7 @@ public abstract class DataStore {
 
         // start cooldowns for every attacker/involved claim pair
         for (int i = 0; i < siegeData.claims.size(); i++) {
-            Claim claim = siegeData.claims.get(i);
+            GPClaim claim = siegeData.claims.get(i);
             claim.siegeData = null;
             this.siegeCooldownRemaining.put(siegeData.attacker.getName() + "_" + claim.getOwnerName(), cooldownEnd);
 
@@ -714,11 +469,11 @@ public abstract class DataStore {
             Optional<Player> winner = Sponge.getGame().getServer().getPlayer(winnerName);
             if (winner.isPresent()) {
                 // notify the winner
-                GriefPrevention.sendMessage(winner.get(), TextMode.Success, Messages.SiegeWinDoorsOpen);
+                GriefPreventionPlugin.sendMessage(winner.get(), TextMode.Success, Messages.SiegeWinDoorsOpen);
 
                 // schedule a task to secure the claims in about 5 minutes
                 SecureClaimTask task = new SecureClaimTask(siegeData);
-                Sponge.getGame().getScheduler().createTaskBuilder().delay(5, TimeUnit.MINUTES).execute(task).submit(GriefPrevention.instance);
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(5, TimeUnit.MINUTES).execute(task).submit(GriefPreventionPlugin.instance);
             }
         }
 
@@ -767,7 +522,7 @@ public abstract class DataStore {
 
     // whether or not a sieger can siege a particular victim or claim,
     // considering only cooldowns
-    public boolean onCooldown(Player attacker, Player defender, Claim defenderClaim) {
+    public boolean onCooldown(Player attacker, Player defender, GPClaim defenderClaim) {
         Long cooldownEnd = null;
 
         // look for an attacker/defender cooldown
@@ -783,7 +538,7 @@ public abstract class DataStore {
         }
 
         // look for genderal defender cooldown
-        PlayerData defenderData = this.getPlayerData(defender.getWorld(), defender.getUniqueId());
+        GPPlayerData defenderData = this.getPlayerData(defender.getWorld(), defender.getUniqueId());
         if (defenderData.lastSiegeEndTimeStamp > 0) {
             long now = System.currentTimeMillis();
             if (now - defenderData.lastSiegeEndTimeStamp > 1000 * 60 * 15) // 15 minutes in milliseconds
@@ -808,8 +563,8 @@ public abstract class DataStore {
     }
 
     // extend a siege, if it's possible to do so
-    public void tryExtendSiege(Player player, Claim claim) {
-        PlayerData playerData = this.getPlayerData(player.getWorld(), player.getUniqueId());
+    public void tryExtendSiege(Player player, GPClaim claim) {
+        GPPlayerData playerData = this.getPlayerData(player.getWorld(), player.getUniqueId());
 
         // player must be sieged
         if (playerData.siegeData == null) {
@@ -836,8 +591,24 @@ public abstract class DataStore {
         claim.siegeData = playerData.siegeData;
     }
 
-    public boolean deleteAllAdminClaims(World world) {
-        ClaimWorldManager claimWorldManager = this.claimWorldManagers.get(world.getProperties().getUniqueId());
+    public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid) {
+        GPClaimManager claimManager = this.getClaimWorldManager(world.getProperties());
+        ClaimResult claimResult = Claim.builder()
+                .bounds(point1, point2)
+                .world(world)
+                .type(claimType)
+                .owner(ownerUniqueId)
+                .cuboid(cuboid)
+                .cause(GriefPreventionPlugin.pluginCause)
+                .build();
+        if(claimResult.successful()) {
+            claimManager.addClaim(claimResult.getClaim().get(), GriefPreventionPlugin.pluginCause);
+        }
+        return claimResult;
+    }
+
+    public boolean deleteAllAdminClaims(World world, Cause cause) {
+        GPClaimManager claimWorldManager = this.claimWorldManagers.get(world.getProperties().getUniqueId());
         if (claimWorldManager == null) {
             return false;
         }
@@ -852,27 +623,33 @@ public abstract class DataStore {
         }
 
         for (Claim claim : claimsToDelete) {
-            claim.removeSurfaceFluids(null);
+            GPClaim gpClaim = (GPClaim) claim;
+            gpClaim.removeSurfaceFluids(null);
 
-            GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-            this.deleteClaim(claim, true);
+            GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+            claimWorldManager.deleteClaim(claim, cause);
 
             // if in a creative mode world, delete the claim
-            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                GriefPrevention.instance.restoreClaim(claim, 0);
+            if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                GriefPreventionPlugin.instance.restoreClaim((GPClaim) claim, 0);
             }
         }
 
         return adminClaimDeleted;
     }
 
+    public void deleteClaim(Claim claim, Cause cause) {
+        GPClaimManager claimManager = this.getClaimWorldManager(claim.getWorld().getProperties());
+        claimManager.deleteClaim(claim, cause);
+    }
+
     // deletes all claims owned by a player
-    public void deleteClaimsForPlayer(UUID playerID) {
+    public void deleteClaimsForPlayer(UUID playerID, Cause cause) {
         // make a list of the player's claims
-        List<ClaimWorldManager> claimWorldManagers = new ArrayList<>();
+        List<GPClaimManager> claimWorldManagers = new ArrayList<>();
         claimWorldManagers.addAll(this.claimWorldManagers.values());
 
-        for (ClaimWorldManager claimWorldManager : claimWorldManagers) {
+        for (GPClaimManager claimWorldManager : claimWorldManagers) {
             List<Claim> claims = claimWorldManager.getPlayerClaims(playerID);
             if (playerID == null) {
                 claims = claimWorldManager.getWorldClaims();
@@ -889,160 +666,17 @@ public abstract class DataStore {
             }
  
             for (Claim claim : claimsToDelete) {
-                claim.removeSurfaceFluids(null);
+                ((GPClaim) claim).removeSurfaceFluids(null);
 
-                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-                this.deleteClaim(claim, true);
+                GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+                claimWorldManager.deleteClaim(claim, cause);
 
                 // if in a creative mode world, delete the claim
-                if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                    GriefPrevention.instance.restoreClaim(claim, 0);
+                if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                    GriefPreventionPlugin.instance.restoreClaim((GPClaim) claim, 0);
                 }
             }
         }
-    }
-
-    public Claim resizeCuboidClaim(Claim claim, int smallX, int smallY, int smallZ, int bigX, int bigY, int bigZ) {
-        Location<World> lesserBoundaryCorner = claim.getLesserBoundaryCorner();
-        Location<World> greaterBoundaryCorner = claim.getGreaterBoundaryCorner();
-        // make sure resize doesn't cross paths
-        if (smallX >= bigX || smallY >= bigY || smallZ >= bigZ) {
-            return null;
-        }
-        // check if subdivision extends past parent limits
-        if (claim.isSubdivision()) {
-            if (smallX < claim.parent.getLesserBoundaryCorner().getBlockX() ||
-                smallY < claim.parent.getLesserBoundaryCorner().getBlockY() ||
-                smallZ < claim.parent.getLesserBoundaryCorner().getBlockZ()) {
-                return claim.parent;
-            }
-            if (bigX > claim.parent.getGreaterBoundaryCorner().getBlockX() ||
-                bigY > claim.parent.getGreaterBoundaryCorner().getBlockY() ||
-                bigZ > claim.parent.getGreaterBoundaryCorner().getBlockZ()) {
-                return claim.parent;
-            }
-        }
-
-        Set<Long> currentChunkHashes = claim.getChunkHashes();
-        claim.lesserBoundaryCorner = new Location<World>(claim.world, smallX, smallY, smallZ);
-        claim.greaterBoundaryCorner = new Location<World>(claim.world, bigX, bigY, bigZ);
-        Claim overlapClaim = this.doesClaimOverlap(claim);
-        if (overlapClaim != null) {
-            claim.lesserBoundaryCorner = lesserBoundaryCorner;
-            claim.greaterBoundaryCorner = greaterBoundaryCorner;
-            return overlapClaim;
-        }
-
-        // resize validated, remove invalid chunkHashes
-        Set<Long> newChunkHashes = claim.getChunkHashes();
-        ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-        if (claim.parent == null) {
-            currentChunkHashes.removeAll(newChunkHashes);
-            for (Long chunkHash : currentChunkHashes) {
-                Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
-                if (claimsInChunk != null && claimsInChunk.size() > 0) {
-                    claimsInChunk.remove(claim);
-                }
-            }
-            // add new chunk hashes
-            for (Long chunkHash : newChunkHashes) {
-                Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
-                if (claimsInChunk == null) {
-                    claimsInChunk = new HashSet<>();
-                    claimWorldManager.getChunksToClaimsMap().put(chunkHash, claimsInChunk);
-                }
-
-                claimsInChunk.add(claim);
-            }
-        }
-
-        claim.getClaimData().setLesserBoundaryCorner(BlockUtils.positionToString(claim.lesserBoundaryCorner));
-        claim.getClaimData().setGreaterBoundaryCorner(BlockUtils.positionToString(claim.greaterBoundaryCorner));
-        claim.getClaimData().setRequiresSave(true);
-        claim.getClaimStorage().save();
-
-        return claim;
-    }
-
-    public Claim resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2,
-            Player player) {
-
-        int smallx, bigx, smally, bigy, smallz, bigz;
-
-        // determine small versus big inputs
-        if (newx1 < newx2) {
-            smallx = newx1;
-            bigx = newx2;
-        } else {
-            smallx = newx2;
-            bigx = newx1;
-        }
-
-        if (newy1 < newy2) {
-            smally = newy1;
-            bigy = newy2;
-        } else {
-            smally = newy2;
-            bigy = newy1;
-        }
-
-        if (newz1 < newz2) {
-            smallz = newz1;
-            bigz = newz2;
-        } else {
-            smallz = newz2;
-            bigz = newz1;
-        }
-
-        // creative mode claims always go to bedrock
-        if (GriefPrevention.instance.claimModeIsActive(claim.world.getProperties(), ClaimsMode.Creative)) {
-            smally = 2;
-        }
-
-        Location<World> currentLesserCorner = claim.getLesserBoundaryCorner();
-        Location<World> currentGreaterCorner = claim.getGreaterBoundaryCorner();
-        // This needs to be adjusted before we check for overlaps
-        claim.lesserBoundaryCorner = new Location<World>(claim.world, smallx, smally, smallz);
-        claim.greaterBoundaryCorner = new Location<World>(claim.world, bigx, bigy, bigz);
-        ArrayList<Claim> claimsToCheck = null;
-        if (!claim.isSubdivision()) {
-            claimsToCheck = (ArrayList<Claim>) this.getClaimWorldManager(claim.world.getProperties()).getWorldClaims();
-        }
-        if (claimsToCheck != null) {
-            for (int i = 0; i < claimsToCheck.size(); i++) {
-                Claim otherClaim = claimsToCheck.get(i);
-
-                // if we find an existing claim which will be overlapped
-                if (otherClaim.id != claim.id && otherClaim.overlaps(claim)) {
-                    // revert boundary locations
-                    claim.lesserBoundaryCorner = currentLesserCorner;
-                    claim.greaterBoundaryCorner = currentGreaterCorner;
-                    // result = fail, return conflicting claim
-                    return otherClaim;
-                }
-            }
-        }
-
-        if (claim.parent == null) {
-            Set<Long> chunkHashes = claim.getChunkHashes();
-            ClaimWorldManager claimWorldManager = GriefPrevention.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-            for (Long chunkHash : chunkHashes) {
-                Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
-                if (claimsInChunk == null) {
-                    claimsInChunk = new HashSet<Claim>();
-                    claimWorldManager.getChunksToClaimsMap().put(chunkHash, claimsInChunk);
-                }
-    
-                claimsInChunk.add(claim);
-            }
-        }
-
-        claim.getClaimData().setLesserBoundaryCorner(BlockUtils.positionToString(claim.lesserBoundaryCorner));
-        claim.getClaimData().setGreaterBoundaryCorner(BlockUtils.positionToString(claim.greaterBoundaryCorner));
-        claim.getClaimData().setRequiresSave(true);
-        claim.getClaimStorage().save();
-
-        return claim;
     }
 
     public void loadMessages() {
@@ -1089,6 +723,7 @@ public abstract class DataStore {
         this.addDefault(Messages.BuildingOutsideClaims, "Other players can build here, too.  Consider creating a land claim to protect your work!");
         this.addDefault(Messages.BuySellNotConfigured, "Sorry, buying and selling claim blocks is disabled.");
         this.addDefault(Messages.CantDeleteAdminClaim, "You don't have permission to delete administrative claims.");
+        this.addDefault(Messages.CantDeleteBasicClaim, "You don't have permission to delete basic claims.");
         this.addDefault(Messages.CantFightWhileImmune, "You can't fight someone while you're protected from PvP.");
         this.addDefault(Messages.CantGrantThatPermission, "You can't grant a permission you don't have yourself.");
         this.addDefault(Messages.ChestClaimConfirmation, "This chest is protected.");
@@ -1308,7 +943,7 @@ public abstract class DataStore {
 
         } catch (Exception e) {
             e.printStackTrace();
-            GriefPrevention.addLogEntry("Unable to write to the configuration file at \"" + DataStore.messagesFilePath + "\"");
+            GriefPreventionPlugin.addLogEntry("Unable to write to the configuration file at \"" + DataStore.messagesFilePath + "\"");
         }
     }
 
@@ -1341,7 +976,7 @@ public abstract class DataStore {
     }
 
     public Text parseMessage(Messages messageID, TextColor color, String... args) {
-        String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
+        String message = GriefPreventionPlugin.instance.dataStore.getMessage(messageID, args);
         Text textMessage = Text.of(color, message);
         List<String> urls = extractUrls(message);
         if (urls.isEmpty()) {
@@ -1430,9 +1065,9 @@ public abstract class DataStore {
     }
 
     // gets all the claims "near" a location
-    public Set<Claim> getNearbyClaims(Location<World> location) {
-        Set<Claim> claims = new HashSet<>();
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(location.getExtent().getProperties());
+    public Set<GPClaim> getNearbyClaims(Location<World> location) {
+        Set<GPClaim> claims = new HashSet<>();
+        GPClaimManager claimWorldManager = this.getClaimWorldManager(location.getExtent().getProperties());
         if (claimWorldManager == null) {
             return claims;
         }
@@ -1445,7 +1080,7 @@ public abstract class DataStore {
                 for (int chunkZ = lesserChunk.get().getPosition().getZ(); chunkZ <= greaterChunk.get().getPosition().getZ(); chunkZ++) {
                     Optional<Chunk> chunk = location.getExtent().getChunk(chunkX, 0, chunkZ);
                     if (chunk.isPresent()) {
-                        Set<Claim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.chunkXZ2Int(chunkX, chunkZ));
+                        Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(ChunkPos.chunkXZ2Int(chunkX, chunkZ));
                         if (claimsInChunk != null) {
                             claims.addAll(claimsInChunk);
                         }
@@ -1457,9 +1092,36 @@ public abstract class DataStore {
         return claims;
     }
 
-    public PlayerData getPlayerData(World world, UUID playerUniqueId) {
-        PlayerData playerData = null;
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(world.getProperties());
+    public GPClaim getClaimAtPlayer(GPPlayerData playerData, Location<World> location) {
+        return this.getClaimAtPlayer(playerData, location, false);
+    }
+
+    public GPClaim getClaimAtPlayer(GPPlayerData playerData, Location<World> location, boolean ignoreHeight) {
+        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
+        return (GPClaim) claimManager.getClaimAtPlayer(playerData, location, ignoreHeight);
+    }
+
+    public GPClaim getClaimAt(Location<World> location) {
+        return this.getClaimAt(location, false);
+    }
+
+    public GPClaim getClaimAt(Location<World> location, boolean ignoreHeight) {
+        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
+        return (GPClaim) claimManager.getClaimAt(location, ignoreHeight);
+    }
+
+    public GPClaim getClaimAt(Location<World> location, boolean ignoreHeight, WeakReference<Claim> cachedClaim) {
+        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
+        return (GPClaim) claimManager.getClaimAt(location, ignoreHeight, cachedClaim);
+    }
+
+    public GPPlayerData getPlayerData(World world, UUID playerUniqueId) {
+        return this.getPlayerData(world.getProperties(), playerUniqueId);
+    }
+
+    public GPPlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+        GPPlayerData playerData = null;
+        GPClaimManager claimWorldManager = this.getClaimWorldManager(worldProperties);
         playerData = claimWorldManager.getPlayerDataList().get(playerUniqueId);
         return playerData;
     }
@@ -1467,23 +1129,22 @@ public abstract class DataStore {
     // retrieves player data from memory or secondary storage, as necessary
     // if the player has never been on the server before, this will return a
     // fresh player data with default values
-    public PlayerData getOrCreatePlayerData(World world, UUID playerUniqueId) {
+    public GPPlayerData getOrCreatePlayerData(World world, UUID playerUniqueId) {
         return getOrCreatePlayerData(world.getProperties(), playerUniqueId);
     }
 
-    public PlayerData getOrCreatePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(worldProperties);
+    public GPPlayerData getOrCreatePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+        GPClaimManager claimWorldManager = this.getClaimWorldManager(worldProperties);
         return claimWorldManager.getOrCreatePlayerData(playerUniqueId);
     }
 
     public void removePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
-        ClaimWorldManager claimWorldManager = this.getClaimWorldManager(worldProperties);
+        GPClaimManager claimWorldManager = this.getClaimWorldManager(worldProperties);
         claimWorldManager.removePlayer(playerUniqueId);
     }
 
-    @Nullable
-    public ClaimWorldManager getClaimWorldManager(WorldProperties worldProperties) {
-        ClaimWorldManager claimWorldManager = null;
+    public GPClaimManager getClaimWorldManager(WorldProperties worldProperties) {
+        GPClaimManager claimWorldManager = null;
         if (worldProperties == null) {
             claimWorldManager = this.claimWorldManagers.get(Sponge.getServer().getDefaultWorld().get().getUniqueId());
         } else {
@@ -1491,7 +1152,7 @@ public abstract class DataStore {
         }
 
         if (claimWorldManager == null) {
-            claimWorldManager = new ClaimWorldManager(worldProperties);
+            claimWorldManager = new GPClaimManager(worldProperties);
             this.claimWorldManagers.put(worldProperties.getUniqueId(), claimWorldManager);
         }
         return claimWorldManager;
@@ -1506,55 +1167,55 @@ public abstract class DataStore {
 
     public void setupDefaultPermissions(World world) {
         Set<Context> contexts = new HashSet<>();
-        contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        this.setFlagDefaultPermissions(contexts, GPFlags.DEFAULT_FLAGS);
+        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getGlobalConfig().getConfig().flags.getAdminDefaults());
         this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
-        contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(GriefPreventionPlugin.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        this.setFlagDefaultPermissions(contexts, GPFlags.DEFAULT_FLAGS);
+        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getGlobalConfig().getConfig().flags.getBasicDefaults());
         this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
-        contexts.add(GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
+        contexts.add(GriefPreventionPlugin.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        this.setFlagDefaultPermissions(contexts, GPFlags.DEFAULT_WILDERNESS_FLAGS);
+        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getGlobalConfig().getConfig().flags.getWildernessDefaults());
         this.setOptionDefaultPermissions(contexts);
     }
 
-    private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Tristate> defaultFlags) {
-        Map<String, Boolean> defaultPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
+    private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Boolean> defaultFlags) {
+        Map<String, Boolean> defaultPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
         if (defaultPermissions.isEmpty()) {
-            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
-                GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), mapEntry.getValue());
+            for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
+                GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), Tristate.fromBoolean(mapEntry.getValue()));
             }
         } else {
             // remove invalid flag entries
             for (String flagPermission : defaultPermissions.keySet()) {
                 String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
                 if (!defaultFlags.containsKey(flag)) {
-                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
                 }
             }
 
             // make sure all defaults are available
-            for (Map.Entry<String, Tristate> mapEntry : defaultFlags.entrySet()) {
+            for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
                 String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
                 if (!defaultPermissions.keySet().contains(flagPermission)) {
-                    GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, mapEntry.getValue());
+                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.fromBoolean(mapEntry.getValue()));
                 }
             }
         }
     }
 
     private void setOptionDefaultPermissions(Set<Context> contexts) {
-        final SubjectData globalSubjectData = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData();
+        final SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
         for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
             globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
         }
     }
 
-    abstract PlayerData getPlayerDataFromStorage(UUID playerID);
+    abstract GPPlayerData getPlayerDataFromStorage(UUID playerID);
 
     public abstract void loadWorldData(World world);
 

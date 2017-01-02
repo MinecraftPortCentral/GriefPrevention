@@ -24,31 +24,50 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.claim.Claim.Type;
+import com.flowpowered.math.vector.Vector3i;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import me.ryanhamshire.griefprevention.api.data.ClaimData;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.configuration.category.ConfigCategory;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.util.Tristate;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @ConfigSerializable
-public class SubDivisionDataConfig extends ConfigCategory implements IClaimData {
+public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, IClaimData {
 
     private IClaimData parent;
+    private ClaimStorageData parentStorage;
+    private Vector3i lesserPos;
+    private Vector3i greaterPos;
 
+    @Setting(value = ClaimStorageData.MAIN_OWNER_UUID)//, comment = "The owner uuid assocated with claim.")
+    private UUID ownerUniqueId;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_NAME)//, comment = "The name associated with subdivision.")
     public Text claimName;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_TYPE)//, comment = "The type of claim.")
-    public Claim.Type claimType = Claim.Type.SUBDIVISION;
+    public ClaimType claimType = ClaimType.SUBDIVISION;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_CUBOID)
     private boolean isCuboid = false;
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_RESIZABLE)
+    private boolean isResizable = true;
+    @Setting(value = ClaimStorageData.MAIN_ALLOW_DENY_MESSAGES)
+    private boolean allowDenyMessages = true;
+    @Setting(value = ClaimStorageData.MAIN_ALLOW_CLAIM_EXPIRATION)
+    private boolean allowClaimExpiration = false;
+    @Setting(value = ClaimStorageData.MAIN_ALLOW_FLAG_OVERRIDES)
+    private boolean allowFlagOverrides = false;
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_PVP)
+    private Tristate pvpOverride = Tristate.UNDEFINED;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED)//, comment = "The date and time this subdivision was created.")
     public String dateCreated = Instant.now().toString();
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE)//, comment = "The last date and time this subdivision was used.")
@@ -74,72 +93,130 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
 
     public SubDivisionDataConfig() {}
 
-    public SubDivisionDataConfig(Claim claim) {
+    public SubDivisionDataConfig(GPClaim claim) {
         this.lesserBoundaryCornerPos = BlockUtils.positionToString(claim.lesserBoundaryCorner);
         this.greaterBoundaryCornerPos = BlockUtils.positionToString(claim.greaterBoundaryCorner);
         this.isCuboid = claim.cuboid;
-        this.parent = claim.parent.getClaimData();
+        this.parent = claim.parent.getInternalClaimData();
+        this.parentStorage = claim.parent.getClaimStorage();
+    }
+
+    @Override
+    public boolean doesInheritParent() {
+        return this.inheritParent;
     }
 
     @Override
     public UUID getWorldUniqueId() {
-        return GriefPrevention.PUBLIC_UUID; // return dummy uuid
+        return GriefPreventionPlugin.PUBLIC_UUID; // return dummy uuid
     }
+
     @Override
     public UUID getOwnerUniqueId() {
-        return GriefPrevention.PUBLIC_UUID; // return dummy uuid
+        return GriefPreventionPlugin.PUBLIC_UUID; // return dummy uuid
     }
+
     @Override
-    public void setClaimOwnerUniqueId(UUID newClaimOwner) {
+    public boolean allowClaimExpiration() {
+        return this.allowClaimExpiration;
     }
+
+    @Override
+    public boolean allowDenyMessages() {
+        return this.allowDenyMessages;
+    }
+
+    @Override
+    public boolean allowFlagOverrides() {
+        return this.allowFlagOverrides;
+    }
+
     @Override
     public boolean isCuboid() {
         return this.isCuboid;
     }
+
     @Override
-    public Type getClaimType() {
+    public Tristate getPvpOverride() {
+        return this.pvpOverride;
+    }
+
+    @Override
+    public boolean isResizable() {
+        return this.isResizable;
+    }
+
+    @Override
+    public ClaimType getType() {
         return this.claimType;
     }
+
     @Override
-    public String getDateCreated() {
-        return this.dateCreated;
+    public Instant getDateCreated() {
+        return Instant.parse(this.dateCreated);
     }
+
     @Override
-    public String getDateLastActive() {
-        return this.dateLastActive;
+    public Instant getDateLastActive() {
+        return Instant.parse(this.dateLastActive);
     }
+
     @Override
-    public Text getClaimName() {
-        return this.claimName;
+    public Optional<Text> getName() {
+        return Optional.ofNullable(this.claimName);
     }
+
     @Override
-    public Text getGreetingMessage() {
-        return this.claimGreetingMessage;
+    public Optional<Text> getGreeting() {
+        return Optional.ofNullable(this.claimGreetingMessage);
     }
+
     @Override
-    public Text getFarewellMessage() {
-        return this.claimFarewellMessage;
+    public Optional<Text> getFarewell() {
+        return Optional.ofNullable(this.claimFarewellMessage);
     }
+
     @Override
-    public String getLesserBoundaryCorner() {
-        return this.lesserBoundaryCornerPos;
+    public Vector3i getLesserBoundaryCornerPos() {
+        if (this.lesserPos == null) {
+            try {
+                return BlockUtils.positionFromString(this.lesserBoundaryCornerPos);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return this.lesserPos;
     }
+
     @Override
-    public String getGreaterBoundaryCorner() {
-        return this.greaterBoundaryCornerPos;
+    public Vector3i getGreaterBoundaryCornerPos() {
+        if (this.greaterPos == null) {
+            try {
+                return BlockUtils.positionFromString(this.greaterBoundaryCornerPos);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return this.greaterPos;
     }
+
     @Override
     public List<UUID> getAccessors() {
         return this.accessors;
     }
+
     @Override
     public List<UUID> getBuilders() {
         return this.builders;
     }
+
     @Override
     public List<UUID> getContainers() {
         return this.containers;
     }
+
     @Override
     public List<UUID> getManagers() {
         return this.managers;
@@ -150,36 +227,71 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     }
 
     @Override
+    public void setOwnerUniqueId(UUID newClaimOwner) {
+        this.ownerUniqueId = newClaimOwner;
+    }
+
+    @Override
+    public void setDenyMessages(boolean flag) {
+        this.allowDenyMessages = flag;
+    }
+
+    @Override
+    public void setClaimExpiration(boolean flag) {
+        this.parent.setRequiresSave(true);
+        this.allowClaimExpiration = flag;
+    }
+
+    @Override
+    public void setFlagOverrides(boolean flag) {
+        this.parent.setRequiresSave(true);
+        this.allowFlagOverrides = flag;
+    }
+
+    @Override
     public void setCuboid(boolean cuboid) {
+        this.parent.setRequiresSave(true);
         this.isCuboid = cuboid;
     }
 
     @Override
-    public void setClaimType(Type type) {
+    public void setPvpOverride(Tristate pvp) {
+        this.parent.setRequiresSave(true);
+        this.pvpOverride = pvp;
+    }
+
+    @Override
+    public void setResizable(boolean resizable) {
+        this.parent.setRequiresSave(true);
+        this.isResizable = resizable;
+    }
+
+    @Override
+    public void setType(ClaimType type) {
         this.parent.setRequiresSave(true);
         this.claimType = type;
     }
 
     @Override
-    public void setDateLastActive(String date) {
+    public void setDateLastActive(Instant date) {
         this.parent.setRequiresSave(true);
-        this.dateLastActive = date;
+        this.dateLastActive = date.toString();
     }
 
     @Override
-    public void setClaimName(Text name) {
+    public void setName(Text name) {
         this.parent.setRequiresSave(true);
         this.claimName = name;
     }
 
     @Override
-    public void setGreetingMessage(Text message) {
+    public void setGreeting(Text message) {
         this.parent.setRequiresSave(true);
         this.claimGreetingMessage = message;
     }
 
     @Override
-    public void setFarewellMessage(Text message) {
+    public void setFarewell(Text message) {
         this.parent.setRequiresSave(true);
         this.claimFarewellMessage = message;
     }
@@ -196,30 +308,36 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
         this.greaterBoundaryCornerPos = location;
     }
 
+    @Override
     public void setAccessors(List<UUID> accessors) {
         this.parent.setRequiresSave(true);
         this.accessors = accessors;
     }
 
+    @Override
     public void setBuilders(List<UUID> builders) {
         this.parent.setRequiresSave(true);
         this.builders = builders;
     }
 
+    @Override
     public void setContainers(List<UUID> containers) {
         this.parent.setRequiresSave(true);
         this.containers = containers;
     }
 
+    @Override
     public void setManagers(List<UUID> coowners) {
         this.parent.setRequiresSave(true);
         this.managers = coowners;
     }
 
+    @Override
     public boolean requiresSave() {
         return this.parent.requiresSave();
     }
 
+    @Override
     public void setRequiresSave(boolean flag) {
         if (flag) {
             this.parent.setRequiresSave(true);
@@ -231,12 +349,13 @@ public class SubDivisionDataConfig extends ConfigCategory implements IClaimData 
     }
 
     @Override
-    public boolean inheritParent() {
-        return this.inheritParent;
+    public void setInheritParent(boolean flag) {
+        this.parent.setRequiresSave(true);
+        this.inheritParent = flag;
     }
 
     @Override
-    public void setInheritParent(boolean flag) {
-        this.inheritParent = flag;
+    public void save() {
+        this.parentStorage.save();
     }
 }

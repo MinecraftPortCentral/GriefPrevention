@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.SiegeData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 
@@ -49,15 +49,15 @@ public class SecureClaimTask implements Runnable {
         // for each claim involved in this siege
         for (int i = 0; i < this.siegeData.claims.size(); i++) {
             // lock the doors
-            Claim claim = this.siegeData.claims.get(i);
+            GPClaim claim = this.siegeData.claims.get(i);
             claim.doorsOpen = false;
 
             // eject bad guys
             Collection<Player> onlinePlayers = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
             for (Player player : onlinePlayers) {
                 if (claim.contains(player.getLocation(), false, false) && claim.allowAccess(player) != null) {
-                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeDoorsLockedEjection);
-                    GriefPrevention.instance.ejectPlayer(player);
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.SiegeDoorsLockedEjection);
+                    GriefPreventionPlugin.instance.ejectPlayer(player);
                 }
             }
         }

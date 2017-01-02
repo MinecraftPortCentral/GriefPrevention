@@ -25,7 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -167,7 +167,7 @@ public class RestoreNatureProcessingTask implements Runnable {
         // schedule main thread task to apply the result to the world
         RestoreNatureExecutionTask task =
                 new RestoreNatureExecutionTask(this.snapshots, this.miny, this.lesserBoundaryCorner, this.greaterBoundaryCorner, this.player);
-        Sponge.getGame().getScheduler().createTaskBuilder().execute(task).submit(GriefPrevention.instance);
+        Sponge.getGame().getScheduler().createTaskBuilder().execute(task).submit(GriefPreventionPlugin.instance);
     }
 
     private void removePlayerLeaves() {

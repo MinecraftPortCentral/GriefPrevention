@@ -26,17 +26,19 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableSet;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 
 public class CommandClaimAbandonAll implements CommandExecutor {
 
@@ -44,19 +46,19 @@ public class CommandClaimAbandonAll implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
         // count claims
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         int originalClaimCount = playerData.getClaims().size();
 
         // check count
         if (originalClaimCount == 0) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.YouHaveNoClaims));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.YouHaveNoClaims));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -67,18 +69,18 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         for (Claim claim : playerData.getClaims()) {
             // remove all context permissions
             player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-            if (claim.isSubdivision() || claim.isAdminClaim() || claim.isWildernessClaim()) {
+            if (claim.isSubdivision() || claim.isAdminClaim() || claim.isWilderness()) {
                 continue;
             }
             playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatio))));
         }
 
         // delete them
-        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId());
+        GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId(), Cause.of(NamedCause.source(src)));
 
         // inform the player
         int remainingBlocks = playerData.getRemainingClaimBlocks();
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.SuccessfulAbandon, String.valueOf(remainingBlocks));
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.SuccessfulAbandon, String.valueOf(remainingBlocks));
 
         // revert any current visualization
         playerData.revertActiveVisual(player);

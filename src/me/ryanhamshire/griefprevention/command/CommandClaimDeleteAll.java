@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -37,6 +37,8 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 
 public class CommandClaimDeleteAll implements CommandExecutor {
 
@@ -44,7 +46,7 @@ public class CommandClaimDeleteAll implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
@@ -54,15 +56,15 @@ public class CommandClaimDeleteAll implements CommandExecutor {
         User otherPlayer = ctx.<User>getOne("player").get();
 
         // delete all that player's claims
-        GriefPrevention.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId());
+        GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId(), Cause.of(NamedCause.source(src)));
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
         if (player != null) {
-            GriefPrevention.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
+            GriefPreventionPlugin.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
                     CustomLogEntryTypes.AdminActivity);
 
             // revert any current visualization
-            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             playerData.revertActiveVisual(player);
         }
 

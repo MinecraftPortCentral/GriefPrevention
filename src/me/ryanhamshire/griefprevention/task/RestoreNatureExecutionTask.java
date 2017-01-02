@@ -25,9 +25,8 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
@@ -84,7 +83,7 @@ class RestoreNatureExecutionTask implements Runnable {
                     BlockSnapshot blockUpdate = this.snapshots[x][y][z];
                     BlockState currentBlock = blockUpdate.getLocation().get().getBlock();
                     if (blockUpdate.getState() != currentBlock) {
-                        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(blockUpdate.getLocation().get(), false, cachedClaim);
+                        Claim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(blockUpdate.getLocation().get(), false, cachedClaim);
                         if (claim != null) {
                             cachedClaim = new WeakReference<>(claim);
                             break;
@@ -102,7 +101,7 @@ class RestoreNatureExecutionTask implements Runnable {
             for (Entity entity : chunk.get().getEntities()) {
                 if (!(entity instanceof Player || entity instanceof Animal)) {
                     // hanging entities (paintings, item frames) are protected when they're in land claims
-                    if (!(entity instanceof Hanging) || GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, null) == null) {
+                    if (!(entity instanceof Hanging) || GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, null) == null) {
                         // everything else is removed
                         entity.remove();
                     }
@@ -110,21 +109,21 @@ class RestoreNatureExecutionTask implements Runnable {
 
                 // for players, always ensure there's air where the player is standing
                 else {
-                    entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState(), GriefPrevention.pluginCause);
-                    entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState(), GriefPrevention.pluginCause);
+                    entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState(), GriefPreventionPlugin.pluginCause);
+                    entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState(), GriefPreventionPlugin.pluginCause);
                 }
             }
         }
 
         // show visualization to player who started the restoration
-        if (player != null) {
-            Claim claim = new Claim(lesserCorner, greaterCorner, Claim.Type.BASIC);
-            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(claim.world, player.getUniqueId());
+        //if (player != null) {
+            //GPClaim claim = new GPClaim(this.lesserCorner, this.greaterCorner, ClaimType.BASIC);
+            //GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, player.getUniqueId());
             // TODO
             /*claim.getVisualizer().createClaimBlockVisuals(height, locality, playerData);
             Visualization visualization =
                     Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation(), playerData);
             Visualization.Apply(player, visualization);*/
-        }
+        //}
     }
 }

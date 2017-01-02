@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
@@ -60,7 +60,7 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
         User user = args.<User>getOne("user").get();
 
         // set player's blocks
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         if (!playerData.setAccruedClaimBlocks(newAmount)) {
             if (player != null) {
                 player.sendMessage(Text.of(TextColors.RED, "User " + user.getName() + " has a total of " + playerData.getAccruedClaimBlocks() + " and will exceed the maximum allowed accrued claim blocks if granted an additional " + newAmount + " blocks. ",
@@ -70,8 +70,8 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
         }
         playerData.getStorageData().save();
 
-        GriefPrevention.sendMessage(src, TextMode.Success, Messages.SetClaimBlocksSuccess);
-        GriefPrevention.addLogEntry(src.getName() + " set " + user.getName() + "'s accrued claim blocks to " + newAmount + ".",
+        GriefPreventionPlugin.sendMessage(src, TextMode.Success, Messages.SetClaimBlocksSuccess);
+        GriefPreventionPlugin.addLogEntry(src.getName() + " set " + user.getName() + "'s accrued claim blocks to " + newAmount + ".",
                 CustomLogEntryTypes.AdminActivity);
 
         return CommandResult.success();

@@ -24,9 +24,9 @@
  */
 package me.ryanhamshire.griefprevention.util;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.ShovelMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
@@ -67,14 +67,14 @@ public class PlayerUtils {
         return false;
     }
 
-    public static Claim.Type getClaimTypeFromShovel(ShovelMode shovelMode) {
+    public static ClaimType getClaimTypeFromShovel(ShovelMode shovelMode) {
         if (shovelMode == ShovelMode.Admin) {
-            return Claim.Type.ADMIN;
+            return ClaimType.ADMIN;
         }
         if (shovelMode == ShovelMode.Subdivide) {
-            return Claim.Type.SUBDIVISION;
+            return ClaimType.SUBDIVISION;
         }
-        return Claim.Type.BASIC;
+        return ClaimType.BASIC;
     }
 
     public static Tristate getTristateFromString(String value) {
@@ -127,7 +127,7 @@ public class PlayerUtils {
             }
         }
         // Set default option
-        GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setOption(new HashSet<>(), key, String.valueOf(defaultValue));
+        GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setOption(new HashSet<>(), key, String.valueOf(defaultValue));
 
         return defaultValue;
     }
@@ -142,7 +142,7 @@ public class PlayerUtils {
             }
         }
         // Set default option
-        GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().setOption(new HashSet<>(), key, String.valueOf(defaultValue));
+        GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setOption(new HashSet<>(), key, String.valueOf(defaultValue));
 
         return defaultValue;
     }
@@ -164,12 +164,12 @@ public class PlayerUtils {
 
     // string overload for above helper
     public static String lookupPlayerName(String uuid) {
-        if (uuid.equals(GriefPrevention.WORLD_USER_UUID.toString())) {
+        if (uuid.equals(GriefPreventionPlugin.WORLD_USER_UUID.toString())) {
             return "administrator";
         }
         Optional<User> user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(UUID.fromString(uuid));
         if (!user.isPresent()) {
-            GriefPrevention.addLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
+            GriefPreventionPlugin.addLogEntry("Error: Tried to look up a local player name for invalid UUID: " + uuid);
             return "someone";
         }
 

@@ -25,18 +25,20 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.text.Text;
 
 public class CommandClaimDeleteAllAdmin implements CommandExecutor {
@@ -51,24 +53,24 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
         }
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
         // delete all admin claims
-        if (!GriefPrevention.instance.dataStore.deleteAllAdminClaims(player.getWorld())) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No admin claims found."));
+        if (!GriefPreventionPlugin.instance.dataStore.deleteAllAdminClaims(player.getWorld(), Cause.of(NamedCause.source(src)))) {
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No admin claims found."));
             return CommandResult.success();
         }
         // id indicates an administrative claim
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
-        GriefPrevention.addLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
+        GriefPreventionPlugin.addLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
 
         // revert any current visualization
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.revertActiveVisual(player);
 
         return CommandResult.success();

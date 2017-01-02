@@ -26,10 +26,10 @@
 package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.DataStore;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.SiegeData;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
@@ -49,13 +49,13 @@ public class SiegeCheckupTask implements Runnable {
 
     @Override
     public void run() {
-        DataStore dataStore = GriefPrevention.instance.dataStore;
+        DataStore dataStore = GriefPreventionPlugin.instance.dataStore;
         Player defender = this.siegeData.defender;
         Player attacker = this.siegeData.attacker;
 
         // where is the defender?
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
-        Claim defenderClaim = dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
+        GPClaim defenderClaim = dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
 
         // if this is a new claim and he has some permission there, extend the siege to include it
         if (defenderClaim != null) {
@@ -102,7 +102,7 @@ public class SiegeCheckupTask implements Runnable {
     // considered still in the fight
     private boolean playerRemains(Player player) {
         for (int i = 0; i < this.siegeData.claims.size(); i++) {
-            Claim claim = this.siegeData.claims.get(i);
+            GPClaim claim = this.siegeData.claims.get(i);
             if (BlockUtils.isLocationNearClaim(claim, player.getLocation(), 25)) {
                 return true;
             }
@@ -114,7 +114,7 @@ public class SiegeCheckupTask implements Runnable {
     // schedules another checkup later
     private void scheduleAnotherCheck() {
         Task task =
-                Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(this).submit(GriefPrevention.instance);
+                Sponge.getGame().getScheduler().createTaskBuilder().delay(30, TimeUnit.SECONDS).execute(this).submit(GriefPreventionPlugin.instance);
         this.siegeData.checkupTaskID = task.getUniqueId();
     }
 }

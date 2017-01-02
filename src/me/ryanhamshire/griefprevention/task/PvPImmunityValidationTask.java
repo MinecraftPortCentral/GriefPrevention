@@ -25,10 +25,10 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 
@@ -50,19 +50,19 @@ public class PvPImmunityValidationTask implements Runnable {
             return;
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         if (!playerData.pvpImmune) {
             return;
         }
 
         // check the player's inventory for anything
-        if (!GriefPrevention.isInventoryEmpty(player)) {
+        if (!GriefPreventionPlugin.isInventoryEmpty(player)) {
             // if found, cancel invulnerability and notify
             playerData.pvpImmune = false;
-            GriefPrevention.sendMessage(player, TextMode.Warn, Messages.PvPImmunityEnd);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Warn, Messages.PvPImmunityEnd);
         } else {
             // otherwise check again in one minute
-            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(this).submit(GriefPrevention.instance);
+            Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(this).submit(GriefPreventionPlugin.instance);
         }
     }
 }

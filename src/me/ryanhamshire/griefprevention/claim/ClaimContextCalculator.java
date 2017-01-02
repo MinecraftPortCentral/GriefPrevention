@@ -24,8 +24,8 @@
  */
 package me.ryanhamshire.griefprevention.claim;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextCalculator;
@@ -40,19 +40,19 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
     public void accumulateContexts(Subject calculable, Set<Context> accumulator) {
         if (calculable.getCommandSource().isPresent() && calculable.getCommandSource().get() instanceof Player) {
             Player player = (Player) calculable.getCommandSource().get();
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
             if (playerData == null) {
                 return;
             }
 
-            Claim sourceClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+            GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
             if (sourceClaim != null) {
-                if (playerData == null || playerData.ignoreClaims) {
+                if (playerData == null || playerData.canIgnoreClaim(sourceClaim)) {
                     return;
                 }
 
                 accumulator.add(sourceClaim.getContext());
-                if (sourceClaim.parent != null && sourceClaim.inheritParent) {
+                if (sourceClaim.parent != null && sourceClaim.getClaimData().doesInheritParent()) {
                     accumulator.add(sourceClaim.parent.getContext());
                 }
             }
@@ -65,12 +65,12 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
         if (context.equals("gp_claim")) {
             if (subject.getCommandSource().isPresent() && subject.getCommandSource().get() instanceof Player) {
                 Player player = (Player) subject.getCommandSource().get();
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
+                GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
                 if (playerData == null) {
                     return false;
                 }
 
-                Claim playerClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+                GPClaim playerClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
                 if (playerClaim != null && playerClaim.id.equals(UUID.fromString(context.getValue()))) {
                     return true;
                 }

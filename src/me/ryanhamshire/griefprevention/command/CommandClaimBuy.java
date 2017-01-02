@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -50,67 +50,67 @@ public class CommandClaimBuy implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
         // if economy is disabled, don't do anything
-        if (!GriefPrevention.instance.economyService.isPresent()) {
-            GriefPrevention.sendMessage(player, TextMode.Err, "Economy plugin not installed!");
+        if (!GriefPreventionPlugin.instance.economyService.isPresent()) {
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Economy plugin not installed!");
             return CommandResult.success();
         }
 
-        if (!GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
-            GriefPrevention.sendMessage(player, TextMode.Err, "No economy account found for user " + player.getName() + "!");
+        if (!GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "No economy account found for user " + player.getName() + "!");
             return CommandResult.success();
         }
 
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
+        GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties());
         if (activeConfig.getConfig().economy.economyClaimBlockCost == 0 && activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
             return CommandResult.success();
         }
 
         // if purchase disabled, send error message
         if (activeConfig.getConfig().economy.economyClaimBlockCost == 0) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.OnlySellBlocks);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.OnlySellBlocks);
             return CommandResult.success();
         }
 
         Optional<Integer> blockCountOpt = ctx.getOne("numberOfBlocks");
         double balance = 0;
-        if (GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
-            balance = GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().getBalance(GriefPrevention.instance
+        if (GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
+            balance = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().getBalance(GriefPreventionPlugin.instance
                     .economyService.get().getDefaultCurrency()).doubleValue();
         }
 
         // if no parameter, just tell player cost per block and balance
         if (!blockCountOpt.isPresent()) {
-            GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockPurchaseCost,
+            GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.BlockPurchaseCost,
                     String.valueOf(activeConfig.getConfig().economy.economyClaimBlockCost),
                     String.valueOf(balance));
             return CommandResult.success();
         } else {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
             // try to parse number of blocks
             int blockCount = blockCountOpt.get();
 
             if (blockCount <= 0) {
-                GriefPrevention.sendMessage(player, TextMode.Err, "Invalid block count of lte 0");
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Invalid block count of lte 0");
                 return CommandResult.success();
             }
 
             double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
             // attempt to withdraw cost
-            TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().withdraw
-                    (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalCost),
-                            Cause.of(NamedCause.of(GriefPrevention.MOD_ID, GriefPrevention.instance)));
+            TransactionResult transactionResult = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().withdraw
+                    (GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalCost),
+                            Cause.of(NamedCause.of(GriefPreventionPlugin.MOD_ID, GriefPreventionPlugin.instance)));
 
             if (transactionResult.getResult() != ResultType.SUCCESS) {
-                GriefPrevention.sendMessage(player, TextMode.Err, "Could not withdraw funds. Reason: " + transactionResult.getResult().name() +
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Could not withdraw funds. Reason: " + transactionResult.getResult().name() +
                         ".");
                 return CommandResult.success();
             }
@@ -119,7 +119,7 @@ public class CommandClaimBuy implements CommandExecutor {
             playerData.getStorageData().save();
 
             // inform player
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.PurchaseConfirmation, String.valueOf(totalCost),
+            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.PurchaseConfirmation, String.valueOf(totalCost),
                     String.valueOf(playerData.getRemainingClaimBlocks()));
         }
         return CommandResult.success();

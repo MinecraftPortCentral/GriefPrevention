@@ -25,10 +25,10 @@
 package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPFlags;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import net.minecraft.item.ItemBlock;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.command.CommandException;
@@ -50,7 +50,7 @@ public class CommandClaimBanItem implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
@@ -60,7 +60,7 @@ public class CommandClaimBanItem implements CommandExecutor {
         Optional<ItemType> item = ctx.<ItemType>getOne("item");
         Optional<ItemStack> itemInHand = player.getItemInHand(HandTypes.MAIN_HAND);
         if (!item.isPresent() && !itemInHand.isPresent()) {
-            GriefPrevention.sendMessage(player, TextMode.Err, "No item id was specified and player is not holding an item.");
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "No item id was specified and player is not holding an item.");
             return CommandResult.success();
         } else if (!item.isPresent()) {
             ItemStack itemstack = itemInHand.get();
@@ -76,10 +76,10 @@ public class CommandClaimBanItem implements CommandExecutor {
             itemToBan = item.get().getId();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
-        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_PRIMARY, "any", itemToBan, Tristate.FALSE, null);
-        CommandHelper.addFlagPermission(player, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_SECONDARY, "any", itemToBan, Tristate.FALSE, null);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        CommandHelper.addFlagPermission(player, GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_PRIMARY, null, itemToBan, Tristate.FALSE, null);
+        CommandHelper.addFlagPermission(player, GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", claim, GPFlags.INTERACT_ITEM_SECONDARY, null, itemToBan, Tristate.FALSE, null);
 
         return CommandResult.success();
     }

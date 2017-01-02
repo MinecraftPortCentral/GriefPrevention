@@ -26,11 +26,11 @@ package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPFlags;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandMessageFormatting;
@@ -51,7 +51,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -75,25 +74,25 @@ public class CommandClaimFlag implements CommandExecutor {
         String target = null;
         if (!targetValues.isEmpty()) {
             if (targetValues.size() > 1) {
-                source = "any";
+                source = null;
                 target = targetValues.get(1);
             } else {
                 target = targetValues.get(0);
             }
         }
         Tristate value = ctx.<Tristate>getOne("value").orElse(null);
-        Optional<String> context = ctx.<String>getOne("context");
+        String context = ctx.<String>getOne("context").orElse(null);
         Player player;
 
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
 
         if (claim != null) {
             if (flag == null && value == null && src.hasPermission(GPPermissions.COMMAND_LIST_CLAIM_FLAGS)) {
@@ -101,30 +100,23 @@ public class CommandClaimFlag implements CommandExecutor {
                 Set<Context> contexts = new HashSet<>();
                 Set<Context> overrideContexts = new HashSet<>();
                 if (claim.isAdminClaim()) {
-                    contexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
-                    overrideContexts.add(GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
+                    contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
+                    overrideContexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
                 } else if (claim.isBasicClaim() || claim.isSubdivision()) {
-                    contexts.add(GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
-                    overrideContexts.add(GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
+                    contexts.add(GriefPreventionPlugin.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
+                    overrideContexts.add(GriefPreventionPlugin.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
                 } else {
-                    contexts.add(GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
+                    contexts.add(GriefPreventionPlugin.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
                 }
                 contexts.add(claim.world.getContext());
                 if (!overrideContexts.isEmpty()) {
                     overrideContexts.add(claim.world.getContext());
                 }
-                if (source != null) {
-                    Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
-                    if (sourceContext != null) {
-                        contexts.add(sourceContext);
-                    }
-                } else {
-                    source = "any";
-                }
-                Map<String, Boolean> defaultTransientPermissions = GriefPrevention.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
-                Map<String, Boolean> defaultTransientOverridePermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
-                Map<String, Boolean> overridePermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(overrideContexts);
-                Map<String, Boolean> claimPermissions = GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getPermissions(ImmutableSet.of(claim.context));
+
+                Map<String, Boolean> defaultTransientPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
+                Map<String, Boolean> defaultTransientOverridePermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
+                Map<String, Boolean> overridePermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getPermissions(overrideContexts);
+                Map<String, Boolean> claimPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getPermissions(ImmutableSet.of(claim.context));
                 for (Map.Entry<String, Boolean> defaultPermissionEntry : defaultTransientPermissions.entrySet()) {
                     Text flagText = null;
                     String flagPermission = defaultPermissionEntry.getKey();
@@ -205,22 +197,22 @@ public class CommandClaimFlag implements CommandExecutor {
                 paginationBuilder.sendTo(src);
                 return CommandResult.success();
             } else if (flag != null && value != null) {
-                if (GPFlags.DEFAULT_FLAGS.containsKey(flag)) {
-                    CommandHelper.addFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flag, source, target, value, context);
+                if (GPFlags.FLAG_LIST.contains(flag)) {
+                    CommandHelper.addFlagPermission(src, GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", claim, flag, source, target, value, context);
                 } else {
-                    GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid flag entered."));
+                    GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Invalid flag entered."));
                 }
                 return CommandResult.success();
             }
 
-            GriefPrevention.sendMessage(src, CommandMessageFormatting.error(Text.of("Usage: /cf [<flag> <target> <value> [subject|context]]")));
+            GriefPreventionPlugin.sendMessage(src, CommandMessageFormatting.error(Text.of("Usage: /cf [<flag> <target> <value> [subject|context]]")));
         } else {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No claim found."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim found."));
         }
         return CommandResult.success();
     }
 
-    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Claim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
+    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, GPClaim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
         return consumer -> {
             // Toggle DEFAULT type
             if (type == FlagType.DEFAULT) {
@@ -230,7 +222,7 @@ public class CommandClaimFlag implements CommandExecutor {
                 } else if (flagValue == Tristate.UNDEFINED) {
                     newValue = Tristate.TRUE;
                 }
-                CommandHelper.applyFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, Optional.of("default"), type);
+                CommandHelper.applyFlagPermission(src, GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, "default", type);
             // Toggle CLAIM type
             } else if (type == FlagType.CLAIM) {
                 Tristate newValue = Tristate.UNDEFINED;
@@ -239,7 +231,7 @@ public class CommandClaimFlag implements CommandExecutor {
                 } else if (flagValue == Tristate.UNDEFINED) {
                     newValue = Tristate.TRUE;
                 }
-                CommandHelper.applyFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, Optional.empty(), type);
+                CommandHelper.applyFlagPermission(src, GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, null, type);
             // Toggle OVERRIDE type
             } else if (type == FlagType.OVERRIDE) {
                 Tristate newValue = Tristate.UNDEFINED;
@@ -248,12 +240,12 @@ public class CommandClaimFlag implements CommandExecutor {
                 } else if (flagValue == Tristate.UNDEFINED) {
                     newValue = Tristate.TRUE;
                 }
-                CommandHelper.applyFlagPermission(src, GriefPrevention.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, Optional.of("forced"), type);
+                CommandHelper.applyFlagPermission(src, GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", claim, flagPermission, source, "any", newValue, "override", type);
             }
         };
     }
 
-    public static Text getClickableText(CommandSource src, Claim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
+    public static Text getClickableText(CommandSource src, GPClaim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
         String onClickText = "Click here to toggle " + type.name().toLowerCase() + " value.";
         boolean hasPermission = true;
         if (type == FlagType.DEFAULT && !src.hasPermission(GPPermissions.MANAGE_FLAG_DEFAULTS)) {

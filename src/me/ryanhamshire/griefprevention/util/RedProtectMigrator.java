@@ -25,8 +25,8 @@
 package me.ryanhamshire.griefprevention.util;
 
 import com.google.common.reflect.TypeToken;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.claim.Claim.Type;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.configuration.ClaimDataConfig;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -49,16 +49,16 @@ import java.util.UUID;
 public class RedProtectMigrator {
 
     public static void migrate(World world, Path redProtectFilePath, Path gpClaimDataPath) throws FileNotFoundException, ClassNotFoundException {
-        if (!GriefPrevention.getGlobalConfig().getConfig().migrator.redProtectMigrator) {
+        if (!GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.redProtectMigrator) {
             return;
         }
 
         int count = 0;
         try {
-            GriefPrevention.instance.getLogger().info("Starting RedProtect region data migration for world " + world.getProperties().getWorldName() + "...");
+            GriefPreventionPlugin.instance.getLogger().info("Starting RedProtect region data migration for world " + world.getProperties().getWorldName() + "...");
             ConfigurationLoader<CommentedConfigurationNode> regionManager = HoconConfigurationLoader.builder().setPath(redProtectFilePath).build();
             CommentedConfigurationNode region = regionManager.load();
-            GriefPrevention.instance.getLogger().info("Scanning RedProtect regions in world data file '" + redProtectFilePath + "'...");
+            GriefPreventionPlugin.instance.getLogger().info("Scanning RedProtect regions in world data file '" + redProtectFilePath + "'...");
             for (Object key:region.getChildrenMap().keySet()){
                 String rname = key.toString();
                 if (!region.getNode(rname).hasMapChildren()){
@@ -80,12 +80,12 @@ public class RedProtectMigrator {
                 String welcome = region.getNode(rname,"welcome").getString();                 
 
                 // create GP claim data file
-                GriefPrevention.instance.getLogger().info("Migrating RedProtect region data '" + rname + "'...");
+                GriefPreventionPlugin.instance.getLogger().info("Migrating RedProtect region data '" + rname + "'...");
                 UUID ownerUniqueId = null;
                 try {
                     ownerUniqueId = UUID.fromString(creator);
                 } catch (IllegalArgumentException e) {
-                    GriefPrevention.instance.getLogger().error("Could not migrate RedProtect region data '" + rname + 
+                    GriefPreventionPlugin.instance.getLogger().error("Could not migrate RedProtect region data '" + rname + 
                             "', creator UUID '" + creator + "' is invalid. Skipping...");
                     continue;
                 }
@@ -100,15 +100,15 @@ public class RedProtectMigrator {
 
                 ClaimStorageData claimStorage = new ClaimStorageData(claimFilePath);
                 ClaimDataConfig claimDataConfig = claimStorage.getConfig();
-                claimDataConfig.setClaimName(Text.of(rname));
+                claimDataConfig.setName(Text.of(rname));
                 claimDataConfig.setWorldUniqueId(world.getUniqueId());
-                claimDataConfig.setClaimOwnerUniqueId(ownerUniqueId);
+                claimDataConfig.setOwnerUniqueId(ownerUniqueId);
                 claimDataConfig.setLesserBoundaryCorner(BlockUtils.positionToString(lesserBoundaryCorner));
                 claimDataConfig.setGreaterBoundaryCorner(BlockUtils.positionToString(greaterBoundaryCorner));
-                claimDataConfig.setDateLastActive(Instant.now().toString());
-                claimDataConfig.setClaimType(Type.BASIC);
+                claimDataConfig.setDateLastActive(Instant.now());
+                claimDataConfig.setType(ClaimType.BASIC);
                 if (!welcome.equals("")) {
-                    claimDataConfig.setGreetingMessage(Text.of(welcome));
+                    claimDataConfig.setGreeting(Text.of(welcome));
                 }
                 List<String> rpUsers = new ArrayList<>(owners);
                 rpUsers.addAll(members);
@@ -128,10 +128,10 @@ public class RedProtectMigrator {
 
                 claimDataConfig.setRequiresSave(true);
                 claimStorage.save();
-                GriefPrevention.instance.getLogger().info("Successfully migrated RedProtect region data '" + rname + "' to '" + claimFilePath + "'");
+                GriefPreventionPlugin.instance.getLogger().info("Successfully migrated RedProtect region data '" + rname + "' to '" + claimFilePath + "'");
                 count++;
             }
-            GriefPrevention.instance.getLogger().info("Finished RedProtect region data migration for world '" + world.getProperties().getWorldName() + "'."
+            GriefPreventionPlugin.instance.getLogger().info("Finished RedProtect region data migration for world '" + world.getProperties().getWorldName() + "'."
                     + " Migrated a total of " + count + " regions.");
         } catch (IOException e) {
             e.printStackTrace();

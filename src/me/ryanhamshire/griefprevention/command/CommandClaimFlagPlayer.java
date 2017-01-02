@@ -24,12 +24,12 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -62,7 +62,7 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
@@ -76,31 +76,24 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         String target = null;
         if (!targetValues.isEmpty()) {
             if (targetValues.size() > 1) {
-                source = "any";
+                //source = "any";
                 target = targetValues.get(1);
             } else {
                 target = targetValues.get(0);
             }
         }
         Tristate value = ctx.<Tristate>getOne("value").orElse(null);
-        Optional<String> context = ctx.<String>getOne("context");
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        String context = ctx.<String>getOne("context").orElse(null);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         Optional<User> targetUser = PlayerUtils.resolvePlayerByName(name);
         if (!targetUser.isPresent()) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "The playername " + name + " was not found."));
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "The playername " + name + " was not found."));
             return CommandResult.empty();
         } else if (flag == null && value == null) {
             Set<Context> contexts = new HashSet<>();
             contexts.add(claim.getContext());
-            if (source != null) {
-                Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
-                if (sourceContext != null) {
-                    contexts.add(sourceContext);
-                }
-            } else {
-                source = "any";
-            }
+
             Subject subject = targetUser.get();
             Map<String, Text> flagList = new TreeMap<>();
             Map<String, Boolean> permissions = subject.getSubjectData().getPermissions(contexts);
@@ -127,7 +120,7 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
 
         User user = targetUser.get();
         if (user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS) && !src.hasPermission(GPPermissions.SET_ADMIN_FLAGS)) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change flags on an admin player."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change flags on an admin player."));
             return CommandResult.success();
         }
 

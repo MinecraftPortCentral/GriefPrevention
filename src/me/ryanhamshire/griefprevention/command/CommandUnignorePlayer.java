@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.GriefPrevention.IgnoreMode;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin.IgnoreMode;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -44,7 +44,7 @@ public class CommandUnignorePlayer implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext args) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
@@ -53,20 +53,20 @@ public class CommandUnignorePlayer implements CommandExecutor {
         // validate target player
         User targetPlayer = args.<User>getOne("player").get();
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
         if (ignoreStatus == null || ignoreStatus == true) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.NotIgnoringPlayer));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.NotIgnoringPlayer));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
             }
         }
 
-        GriefPrevention.instance.setIgnoreStatus(player.getWorld(), player, targetPlayer, IgnoreMode.None);
+        GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), player, targetPlayer, IgnoreMode.None);
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnIgnoreConfirmation);
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.UnIgnoreConfirmation);
 
         return CommandResult.success();
     }

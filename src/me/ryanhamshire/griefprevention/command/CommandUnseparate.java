@@ -25,10 +25,10 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.GriefPrevention.IgnoreMode;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin.IgnoreMode;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -43,7 +43,7 @@ public class CommandUnseparate implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext args) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
@@ -52,10 +52,10 @@ public class CommandUnseparate implements CommandExecutor {
         User targetPlayer = args.<User>getOne("player1").get();
         User targetPlayer2 = args.<User>getOne("player2").get();
 
-        GriefPrevention.instance.setIgnoreStatus(player.getWorld(), targetPlayer, targetPlayer2, IgnoreMode.None);
-        GriefPrevention.instance.setIgnoreStatus(player.getWorld(), targetPlayer2, targetPlayer, IgnoreMode.None);
+        GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), targetPlayer, targetPlayer2, IgnoreMode.None);
+        GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), targetPlayer2, targetPlayer, IgnoreMode.None);
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.UnSeparateConfirmation);
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.UnSeparateConfirmation);
         return CommandResult.success();
     }
 }

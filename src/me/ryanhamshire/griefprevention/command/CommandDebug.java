@@ -24,8 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
@@ -42,23 +41,23 @@ public class CommandDebug implements CommandExecutor {
         boolean verbose = ctx.<Boolean>getOne("verbose").orElse(false);
 
         final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
-        if (GriefPrevention.debugLogging) {
+        if (GriefPreventionPlugin.debugLogging) {
             src.sendMessage(Text.of(
                     GP_TEXT, TextColors.GRAY, "Debug ", TextColors.RED, "OFF", TextColors.WHITE, " | ", 
                     TextColors.GRAY, "Verbose ", TextColors.RED, "OFF"));
-            GriefPrevention.debugLogging = false;
-            GriefPrevention.debugVerbose = false;
-            GriefPrevention.debugUser = null;
-            GriefPrevention.debugSource = null;
+            GriefPreventionPlugin.debugLogging = false;
+            GriefPreventionPlugin.debugVerbose = false;
+            GriefPreventionPlugin.debugUser = null;
+            GriefPreventionPlugin.debugSource = null;
         } else {
             
             src.sendMessage(Text.of(
                     GP_TEXT, TextColors.GRAY, "Debug ", TextColors.GREEN, "ON", TextColors.WHITE, " | ", 
                     TextColors.GRAY, "Verbose ", verbose ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")));
-            GriefPrevention.debugLogging = true;
-            GriefPrevention.debugVerbose = verbose;
-            GriefPrevention.debugUser = user;
-            GriefPrevention.debugSource = src;
+            GriefPreventionPlugin.debugLogging = true;
+            GriefPreventionPlugin.debugVerbose = verbose;
+            GriefPreventionPlugin.debugUser = user;
+            GriefPreventionPlugin.debugSource = src;
         }
 
         return CommandResult.success();

@@ -26,20 +26,19 @@ package me.ryanhamshire.griefprevention;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.Maps;
 import net.minecraft.entity.EnumCreatureType;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.EntityType;
-import org.spongepowered.api.util.Tristate;
 import org.spongepowered.common.entity.SpongeEntityType;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class GPFlags {
 
-    public static final Map<String, Tristate> DEFAULT_FLAGS = Maps.newHashMap();
-    public static final Map<String, Tristate> DEFAULT_WILDERNESS_FLAGS = Maps.newHashMap();
+    public static final List<String> FLAG_LIST = new ArrayList<>();
+
     public static final BiMap<String, EnumCreatureType> SPAWN_TYPES = HashBiMap.create();
 
     // Names
@@ -51,6 +50,7 @@ public class GPFlags {
     public static final String ENTITY_COLLIDE_BLOCK = "collide-block";
     public static final String ENTITY_COLLIDE_ENTITY = "collide-entity";
     public static final String ENTITY_DAMAGE = "entity-damage";
+    public static final String ENTITY_FALL = "entity-fall";
     public static final String ENTITY_RIDING = "entity-riding";
     public static final String ENTITY_SPAWN = "entity-spawn";
     public static final String ENTITY_TELEPORT_FROM = "entity-teleport-from";
@@ -74,72 +74,40 @@ public class GPFlags {
     public static final String PORTAL_USE = "portal-use";
     public static final String PROJECTILE_IMPACT_BLOCK = "projectile-impact-block";
     public static final String PROJECTILE_IMPACT_ENTITY = "projectile-impact-entity";
-    public static final String PVP = "pvp";
 
     static {
-        DEFAULT_FLAGS.put(GPFlags.BLOCK_BREAK, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.BLOCK_PLACE, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.COMMAND_EXECUTE, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.COMMAND_EXECUTE_PVP, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ENTER_CLAIM, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_COLLIDE_BLOCK, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_COLLIDE_ENTITY, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_DAMAGE, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_RIDING, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_SPAWN, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_TELEPORT_FROM, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ENTITY_TELEPORT_TO, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.EXIT_CLAIM, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.EXPLOSION, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.EXPLOSION_SURFACE, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.FIRE_SPREAD, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.INTERACT_BLOCK_PRIMARY, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.INTERACT_BLOCK_SECONDARY, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.INTERACT_ENTITY_PRIMARY, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.INTERACT_ENTITY_SECONDARY, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.INTERACT_INVENTORY, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.INTERACT_ITEM_PRIMARY, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.INTERACT_ITEM_SECONDARY, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.ITEM_SPAWN, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.ITEM_USE, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);
-        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.PROJECTILE_IMPACT_ENTITY, Tristate.FALSE);
-        DEFAULT_FLAGS.put(GPFlags.PVP, Tristate.FALSE);
-
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.BLOCK_BREAK, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.BLOCK_PLACE, Tristate.TRUE);;
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.COMMAND_EXECUTE, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.COMMAND_EXECUTE_PVP, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_COLLIDE_BLOCK, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_COLLIDE_ENTITY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_DAMAGE, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_RIDING, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_SPAWN, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_TELEPORT_FROM, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ENTITY_TELEPORT_TO, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.EXPLOSION, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.EXPLOSION_SURFACE, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.FIRE_SPREAD, Tristate.FALSE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_BLOCK_PRIMARY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_BLOCK_SECONDARY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ENTITY_PRIMARY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ENTITY_SECONDARY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_INVENTORY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ITEM_PRIMARY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.INTERACT_ITEM_SECONDARY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_DROP, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_PICKUP, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_SPAWN, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.ITEM_USE, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.LIQUID_FLOW, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PORTAL_USE, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PROJECTILE_IMPACT_BLOCK, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PROJECTILE_IMPACT_ENTITY, Tristate.TRUE);
-        DEFAULT_WILDERNESS_FLAGS.put(GPFlags.PVP, Tristate.TRUE);
+        FLAG_LIST.add(GPFlags.BLOCK_BREAK);
+        FLAG_LIST.add(GPFlags.BLOCK_PLACE);
+        FLAG_LIST.add(GPFlags.COMMAND_EXECUTE);
+        FLAG_LIST.add(GPFlags.COMMAND_EXECUTE_PVP);
+        FLAG_LIST.add(GPFlags.ENTER_CLAIM);
+        FLAG_LIST.add(GPFlags.ENTITY_COLLIDE_BLOCK);
+        FLAG_LIST.add(GPFlags.ENTITY_COLLIDE_ENTITY);
+        FLAG_LIST.add(GPFlags.ENTITY_DAMAGE);
+        FLAG_LIST.add(GPFlags.ENTITY_FALL);
+        FLAG_LIST.add(GPFlags.ENTITY_RIDING);
+        FLAG_LIST.add(GPFlags.ENTITY_SPAWN);
+        FLAG_LIST.add(GPFlags.ENTITY_TELEPORT_FROM);
+        FLAG_LIST.add(GPFlags.ENTITY_TELEPORT_TO);
+        FLAG_LIST.add(GPFlags.EXIT_CLAIM);
+        FLAG_LIST.add(GPFlags.EXPLOSION);
+        FLAG_LIST.add(GPFlags.EXPLOSION_SURFACE);
+        FLAG_LIST.add(GPFlags.FIRE_SPREAD);
+        FLAG_LIST.add(GPFlags.INTERACT_BLOCK_PRIMARY);
+        FLAG_LIST.add(GPFlags.INTERACT_BLOCK_SECONDARY);
+        FLAG_LIST.add(GPFlags.INTERACT_ENTITY_PRIMARY);
+        FLAG_LIST.add(GPFlags.INTERACT_ENTITY_SECONDARY);
+        FLAG_LIST.add(GPFlags.INTERACT_INVENTORY);
+        FLAG_LIST.add(GPFlags.INTERACT_ITEM_PRIMARY);
+        FLAG_LIST.add(GPFlags.INTERACT_ITEM_SECONDARY);
+        FLAG_LIST.add(GPFlags.ITEM_DROP);
+        FLAG_LIST.add(GPFlags.ITEM_PICKUP);
+        FLAG_LIST.add(GPFlags.ITEM_SPAWN);
+        FLAG_LIST.add(GPFlags.ITEM_USE);
+        FLAG_LIST.add(GPFlags.LIQUID_FLOW);
+        FLAG_LIST.add(GPFlags.PORTAL_USE);
+        FLAG_LIST.add(GPFlags.PROJECTILE_IMPACT_BLOCK);
+        FLAG_LIST.add(GPFlags.PROJECTILE_IMPACT_ENTITY);
 
         SPAWN_TYPES.put("ambient", EnumCreatureType.AMBIENT);
         SPAWN_TYPES.put("animal", EnumCreatureType.CREATURE);
@@ -152,6 +120,7 @@ public class GPFlags {
             case GPFlags.ENTER_CLAIM:
             case GPFlags.ENTITY_COLLIDE_ENTITY:
             case GPFlags.ENTITY_DAMAGE:
+            case GPFlags.ENTITY_FALL:
             case GPFlags.ENTITY_RIDING:
             case GPFlags.ENTITY_SPAWN:
             case GPFlags.ENTITY_TELEPORT_FROM:

@@ -25,10 +25,10 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -42,20 +42,25 @@ public class CommandClaimIgnore implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        /*if (!playerData.canManageAdminClaims && !playerData.canManageBasicClaims && !playerData.canManageWilderness) {
+            GriefPrevention.sendMessage(player, TextMode.Err, "You do not have permission to ignore any claim types.");
+            return CommandResult.success();
+        }*/
+
         playerData.ignoreClaims = !playerData.ignoreClaims;
 
         // toggle ignore claims mode on or off
         if (!playerData.ignoreClaims) {
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.RespectingClaims);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.RespectingClaims);
         } else {
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.IgnoringClaims);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.IgnoringClaims);
         }
 
         return CommandResult.success();

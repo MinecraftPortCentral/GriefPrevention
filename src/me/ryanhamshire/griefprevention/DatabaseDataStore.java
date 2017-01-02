@@ -25,13 +25,7 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import com.flowpowered.math.vector.Vector3i;
-import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.util.BlockUtils;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.service.user.UserStorageService;
-import org.spongepowered.api.world.Location;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
@@ -40,11 +34,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -68,18 +57,18 @@ public class DatabaseDataStore extends DataStore {
     @SuppressWarnings({"unused", "null"})
     @Override
     void initialize() throws Exception {
-        try {
+        /*try {
             // load the java driver for mySQL
             Class.forName("com.mysql.jdbc.Driver");
         } catch (Exception e) {
-            GriefPrevention.addLogEntry("ERROR: Unable to load Java's mySQL database driver.  Check to make sure you've installed it properly.");
+            GriefPreventionPlugin.addLogEntry("ERROR: Unable to load Java's mySQL database driver.  Check to make sure you've installed it properly.");
             throw e;
         }
 
         try {
             this.refreshDataConnection();
         } catch (Exception e2) {
-            GriefPrevention.addLogEntry("ERROR: Unable to connect to database.  Check your config file settings.");
+            GriefPreventionPlugin.addLogEntry("ERROR: Unable to connect to database.  Check your config file settings.");
             throw e2;
         }
 
@@ -109,8 +98,8 @@ public class DatabaseDataStore extends DataStore {
                 this.setSchemaVersion(latestSchemaVersion);
             }
         } catch (Exception e3) {
-            GriefPrevention.addLogEntry("ERROR: Unable to create the necessary database table.  Details:");
-            GriefPrevention.addLogEntry(e3.getMessage());
+            GriefPreventionPlugin.addLogEntry("ERROR: Unable to create the necessary database table.  Details:");
+            GriefPreventionPlugin.addLogEntry(e3.getMessage());
             e3.printStackTrace();
             throw e3;
         }
@@ -178,13 +167,13 @@ public class DatabaseDataStore extends DataStore {
                         statement.execute(
                                 "UPDATE griefprevention_playerdata SET name = '" + changes.get(name).toString() + "' WHERE name = '" + name + "';");
                     } catch (SQLException e) {
-                        GriefPrevention.addLogEntry("Unable to convert player data for " + name + ".  Skipping.");
-                        GriefPrevention.addLogEntry(e.getMessage());
+                        GriefPreventionPlugin.addLogEntry("Unable to convert player data for " + name + ".  Skipping.");
+                        GriefPreventionPlugin.addLogEntry(e.getMessage());
                     }
                 }
             } catch (SQLException e) {
-                GriefPrevention.addLogEntry("Unable to convert player data.  Details:");
-                GriefPrevention.addLogEntry(e.getMessage());
+                GriefPreventionPlugin.addLogEntry("Unable to convert player data.  Details:");
+                GriefPreventionPlugin.addLogEntry(e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -192,8 +181,8 @@ public class DatabaseDataStore extends DataStore {
         // load claims data into memory
         results = statement.executeQuery("SELECT * FROM griefprevention_claimdata;");
 
-        ArrayList<Claim> claimsToRemove = new ArrayList<Claim>();
-        ArrayList<Claim> subdivisionsToLoad = new ArrayList<Claim>();
+        ArrayList<GPClaim> claimsToRemove = new ArrayList<GPClaim>();
+        ArrayList<GPClaim> subdivisionsToLoad = new ArrayList<GPClaim>();
         List<World> validWorlds = (List<World>) Sponge.getGame().getServer().getWorlds();
 
         while (results.next()) {
@@ -218,7 +207,7 @@ public class DatabaseDataStore extends DataStore {
                 } catch (Exception e) {
                     if (e.getMessage().contains("World not found")) {
                         removeClaim = true;
-                        GriefPrevention.addLogEntry("Removing a claim in a world which does not exist: " + lesserCornerString);
+                        GriefPreventionPlugin.addLogEntry("Removing a claim in a world which does not exist: " + lesserCornerString);
                         continue;
                     } else {
                         throw e;
@@ -233,8 +222,8 @@ public class DatabaseDataStore extends DataStore {
                     try {
                         owner = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(ownerName);
                     } catch (Exception ex) {
-                        GriefPrevention.addLogEntry("This owner name did not convert to a UUID: " + ownerName + ".");
-                        GriefPrevention.addLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                        GriefPreventionPlugin.addLogEntry("This owner name did not convert to a UUID: " + ownerName + ".");
+                        GriefPreventionPlugin.addLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                     }
                 }
 
@@ -242,7 +231,7 @@ public class DatabaseDataStore extends DataStore {
                 List<String> managerNames = Arrays.asList(managersString.split(";"));
                 managerNames = this.convertNameListToUUIDList(managerNames);
 
-                Claim claim = new Claim(lesserBoundaryCorner, greaterBoundaryCorner, Claim.Type.BASIC);
+                GPClaim claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, ClaimType.BASIC);
                 claim.ownerID = owner.get().getUniqueId();
 
                 if (removeClaim) {
@@ -255,7 +244,7 @@ public class DatabaseDataStore extends DataStore {
                     subdivisionsToLoad.add(claim);
                 }
             } catch (SQLException e) {
-                GriefPrevention.addLogEntry("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
+                GriefPreventionPlugin.addLogEntry("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
                 e.printStackTrace();
             }
         }
@@ -267,7 +256,7 @@ public class DatabaseDataStore extends DataStore {
 
             if (topLevelClaim == null) {
                 claimsToRemove.add(childClaim);
-                GriefPrevention.addLogEntry("Removing orphaned claim subdivision: " + childClaim.getLesserBoundaryCorner().toString());
+                GriefPreventionPlugin.addLogEntry("Removing orphaned claim subdivision: " + childClaim.getLesserBoundaryCorner().toString());
                 continue;
             }
 
@@ -285,14 +274,14 @@ public class DatabaseDataStore extends DataStore {
             this.refreshDataConnection();
             statement = this.databaseConnection.createStatement();
             statement.execute("DELETE FROM griefprevention_claimdata WHERE id='-1';");
-        }
+        }*/
 
         super.initialize();
     }
 
     // see datastore.cs. this will ALWAYS be a top level claim
     @Override
-    public void writeClaimToStorage(Claim claim) {
+    public void writeClaimToStorage(GPClaim claim) {
         try {
             this.refreshDataConnection();
 
@@ -303,12 +292,12 @@ public class DatabaseDataStore extends DataStore {
             this.writeClaimData(claim);
         } catch (SQLException e) {
             //GriefPrevention.AddLogEntry("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
-            GriefPrevention.addLogEntry(e.getMessage());
+            GriefPreventionPlugin.addLogEntry(e.getMessage());
         }
     }
 
     // actually writes claim data to the database
-    private void writeClaimData(Claim claim) throws SQLException {
+    private void writeClaimData(GPClaim claim) throws SQLException {
         /*String lesserCornerString = this.locationToString(claim.getLesserBoundaryCorner());
         String greaterCornerString = this.locationToString(claim.getGreaterBoundaryCorner());
         String owner = "";
@@ -375,15 +364,15 @@ public class DatabaseDataStore extends DataStore {
 
     // deletes a claim from the database
     @Override
-    void deleteClaimFromSecondaryStorage(Claim claim) {
+    public void deleteClaimFromSecondaryStorage(GPClaim claim) {
         try {
             this.refreshDataConnection();
 
             Statement statement = this.databaseConnection.createStatement();
             statement.execute("DELETE FROM griefprevention_claimdata WHERE id='" + claim.id + "';");
         } catch (SQLException e) {
-            GriefPrevention.addLogEntry("Unable to delete data for claim " + claim.id + ".  Details:");
-            GriefPrevention.addLogEntry(e.getMessage());
+            GriefPreventionPlugin.addLogEntry("Unable to delete data for claim " + claim.id + ".  Details:");
+            GriefPreventionPlugin.addLogEntry(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -417,7 +406,7 @@ public class DatabaseDataStore extends DataStore {
     // saves changes to player data. MUST be called after you're done making
     // changes, otherwise a reload will lose them
     @Override
-    public void overrideSavePlayerData(UUID playerID, PlayerData playerData) {
+    public void overrideSavePlayerData(UUID playerID, GPPlayerData playerData) {
         // never save data for the "administrative" account. an empty string for
         // player name indicates administrative account
         if (playerID == null) {
@@ -494,8 +483,8 @@ public class DatabaseDataStore extends DataStore {
             }
 
         } catch (SQLException e) {
-            GriefPrevention.addLogEntry("Unable to retrieve schema version from database.  Details:");
-            GriefPrevention.addLogEntry(e.getMessage());
+            GriefPreventionPlugin.addLogEntry("Unable to retrieve schema version from database.  Details:");
+            GriefPreventionPlugin.addLogEntry(e.getMessage());
             e.printStackTrace();
             return 0;
         }
@@ -510,18 +499,18 @@ public class DatabaseDataStore extends DataStore {
             statement.execute("DELETE FROM griefprevention_schemaversion;");
             statement.execute("INSERT INTO griefprevention_schemaversion VALUES (" + versionToSet + ");");
         } catch (SQLException e) {
-            GriefPrevention.addLogEntry("Unable to set next schema version to " + versionToSet + ".  Details:");
-            GriefPrevention.addLogEntry(e.getMessage());
+            GriefPreventionPlugin.addLogEntry("Unable to set next schema version to " + versionToSet + ".  Details:");
+            GriefPreventionPlugin.addLogEntry(e.getMessage());
         }
     }
 
     @Override
-    PlayerData getPlayerDataFromStorage(UUID playerID) {
+    GPPlayerData getPlayerDataFromStorage(UUID playerID) {
         return null;
     }
 
     @Override
-    public PlayerData getOrCreatePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
+    public GPPlayerData getOrCreatePlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         return null;
     }
 

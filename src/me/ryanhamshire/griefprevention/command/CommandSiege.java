@@ -25,12 +25,12 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -49,16 +49,16 @@ public class CommandSiege implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext args) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
         // error message for when siege mode is disabled
-        if (!GriefPrevention.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.siegeEnabled) {
+        if (!GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.siegeEnabled) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.NonSiegeWorld));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.NonSiegeWorld));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -67,10 +67,10 @@ public class CommandSiege implements CommandExecutor {
 
         // can't start a siege when you're already involved in one
         Player attacker = player;
-        PlayerData attackerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
+        GPPlayerData attackerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
         if (attackerData.siegeData != null) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.AlreadySieging));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.AlreadySieging));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -80,7 +80,7 @@ public class CommandSiege implements CommandExecutor {
         // can't start a siege when you're protected from pvp combat
         if (attackerData.pvpImmune) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.CantFightWhileImmune));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.CantFightWhileImmune));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -104,7 +104,7 @@ public class CommandSiege implements CommandExecutor {
         // victim must not have the permission which makes him immune to siege
         if (defender.hasPermission(GPPermissions.SIEGE_IMMUNE)) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.SiegeImmune));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.SiegeImmune));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -112,10 +112,10 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // victim must not be under siege already
-        PlayerData defenderData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
+        GPPlayerData defenderData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
         if (defenderData.siegeData != null) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.AlreadyUnderSiegePlayer));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.AlreadyUnderSiegePlayer));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -125,20 +125,20 @@ public class CommandSiege implements CommandExecutor {
         // victim must not be pvp immune
         if (defenderData.pvpImmune) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.NoSiegeDefenseless));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.NoSiegeDefenseless));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
             }
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
-        Claim defenderClaim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
+        GPClaim defenderClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
 
         // defender must have some level of permission there to be protected
         if (defenderClaim == null || defenderClaim.allowAccess(defender) != null) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.NotSiegableThere, defender.getName()));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.NotSiegableThere, defender.getName()));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -148,7 +148,7 @@ public class CommandSiege implements CommandExecutor {
         // attacker must be close to the claim he wants to siege
         if (!BlockUtils.isLocationNearClaim(defenderClaim, attacker.getLocation(), 25)) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.SiegeTooFarAway));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.SiegeTooFarAway));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -158,7 +158,7 @@ public class CommandSiege implements CommandExecutor {
         // claim can't be under siege already
         if (defenderClaim.siegeData != null) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.AlreadyUnderSiegeArea));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.AlreadyUnderSiegeArea));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -168,7 +168,7 @@ public class CommandSiege implements CommandExecutor {
         // can't siege admin claims
         if (defenderClaim.isAdminClaim()) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.NoSiegeAdminClaim));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.NoSiegeAdminClaim));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -176,9 +176,9 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // can't be on cooldown
-        if (GriefPrevention.instance.dataStore.onCooldown(attacker, defender, defenderClaim)) {
+        if (GriefPreventionPlugin.instance.dataStore.onCooldown(attacker, defender, defenderClaim)) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.SiegeOnCooldown));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.SiegeOnCooldown));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -186,11 +186,11 @@ public class CommandSiege implements CommandExecutor {
         }
 
         // start the siege
-        GriefPrevention.instance.dataStore.startSiege(attacker, defender, defenderClaim);
+        GriefPreventionPlugin.instance.dataStore.startSiege(attacker, defender, defenderClaim);
 
         // confirmation message for attacker, warning message for defender
-        GriefPrevention.sendMessage(defender, TextMode.Warn, Messages.SiegeAlert, attacker.getName());
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.SiegeConfirmed, defender.getName());
+        GriefPreventionPlugin.sendMessage(defender, TextMode.Warn, Messages.SiegeAlert, attacker.getName());
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.SiegeConfirmed, defender.getName());
 
         return CommandResult.success();
     }

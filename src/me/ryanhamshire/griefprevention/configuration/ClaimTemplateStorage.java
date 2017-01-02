@@ -26,7 +26,7 @@ package me.ryanhamshire.griefprevention.configuration;
 
 import com.google.common.reflect.TypeToken;
 import me.ryanhamshire.griefprevention.FlatFileDataStore;
-import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -48,7 +48,7 @@ public class ClaimTemplateStorage {
 
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(GriefPrevention.CONFIG_HEADER));
+            .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
     private ObjectMapper<ClaimTemplateConfig>.BoundInstance configMapper;
     private ClaimTemplateConfig configBase;
     public Path filePath;
@@ -107,7 +107,7 @@ public class ClaimTemplateStorage {
 
     public void save() {
         try {
-            this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
+            this.configMapper.serialize(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             this.loader.save(this.root);
         } catch (IOException | ObjectMappingException e) {
             SpongeImpl.getLogger().error("Failed to save configuration", e);
@@ -119,14 +119,14 @@ public class ClaimTemplateStorage {
             this.root = this.loader.load(ConfigurationOptions.defaults()
                     .setSerializers(
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
-                    .setHeader(GriefPrevention.CONFIG_HEADER));
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+                    .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
         }
     }
 
     public CommentedConfigurationNode getRootNode() {
-        return this.root.getNode(GriefPrevention.MOD_ID);
+        return this.root.getNode(GriefPreventionPlugin.MOD_ID);
     }
 }
