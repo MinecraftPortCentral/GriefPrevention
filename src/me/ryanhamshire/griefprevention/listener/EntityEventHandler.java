@@ -136,7 +136,7 @@ public class EntityEventHandler {
                 }
             }
             // check overrides
-            if (GPPermissionHandler.getFlagOverride(claim, GPPermissions.ENTITY_EXPLOSION) == Tristate.FALSE) {
+            if (GPPermissionHandler.getFlagOverride(claim, GPPermissions.ENTITY_EXPLOSION, null) == Tristate.FALSE) {
                 event.setCancelled(true);
                 GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
                 return;

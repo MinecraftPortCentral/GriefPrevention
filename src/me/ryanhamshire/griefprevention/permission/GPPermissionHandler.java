@@ -74,9 +74,11 @@ public class GPPermissionHandler {
         String sourceId = getPermissionIdentifier(source, true);
         String targetPermission = flagPermission;
         String targetId = getPermissionIdentifier(target);
+        String targetModPermission = null;
         if (!targetId.isEmpty()) {
             if (!sourceId.isEmpty()) {
-                //boolean hasMeta = targetId.matches("\\.[\\d+]*$");
+                String[] parts = targetId.split(":");
+                String targetMod = parts[0];
                 // move target meta to end of permission
                 Pattern p = Pattern.compile("\\.[\\d+]*$");
                 Matcher m = p.matcher(targetId);
@@ -85,6 +87,8 @@ public class GPPermissionHandler {
                     targetMeta = m.group(0);
                     targetId = targetId.replace(targetMeta, "");
                 }
+                targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId + targetMeta;
+                targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
                 targetPermission += "." + targetId + ".source." + sourceId + targetMeta;
             } else {
                 targetPermission += "." + targetId;
@@ -94,28 +98,24 @@ public class GPPermissionHandler {
 
         if (checkOverride) {
             // First check for claim flag overrides
-            Tristate override = getFlagOverride(claim, targetPermission);
+            Tristate override = getFlagOverride(claim, targetPermission, targetModPermission);
             if (override != Tristate.UNDEFINED) {
                 return override;
             }
         }
 
         if (user != null) {
-            // check if user has permission override
-            if (user.hasPermission(targetPermission)) {
-                
-            }
             if (claim.hasFullAccess(user)) {
                 return Tristate.TRUE;
             }
 
-            return getUserPermission(user, claim, targetPermission);
+            return getUserPermission(user, claim, targetPermission, targetModPermission);
         }
 
-        return getClaimFlagPermission(claim, targetPermission);
+        return getClaimFlagPermission(claim, targetPermission, targetModPermission);
     }
 
-    public static Tristate getUserPermission(User user, GPClaim claim, String permission) {
+    public static Tristate getUserPermission(User user, GPClaim claim, String permission, String targetModPermission) {
         Set<Context> contexts = new HashSet<>();
         if (claim.parent != null && claim.getClaimData().doesInheritParent()) {
             // check subdivision's parent
@@ -128,40 +128,52 @@ public class GPPermissionHandler {
         if (value != Tristate.UNDEFINED) {
             return value;
         }
-
-        value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
-        if (value != Tristate.UNDEFINED) {
-            return value;
+        if (targetModPermission != null) {
+            value = user.getPermissionValue(contexts, targetModPermission);
+            if (value != Tristate.UNDEFINED) {
+                return value;
+            }
         }
 
-        return getFlagDefaultPermission(claim, permission);
+        return getClaimFlagPermission(claim, permission, targetModPermission, contexts);
     }
 
     // helper method for boolean flags that have no targets
     public static Tristate getClaimBooleanFlagPermission(GPClaim claim, String permission) {
         // First check for claim flag overrides
-        Tristate value = getFlagOverride(claim, permission);
+        Tristate value = getFlagOverride(claim, permission, null);
         if (value != Tristate.UNDEFINED) {
             return value;
         }
 
-        return getClaimFlagPermission(claim, permission);
+        return getClaimFlagPermission(claim, permission, null);
     }
 
-    public static Tristate getClaimFlagPermission(GPClaim claim, String permission) {
+    public static Tristate getClaimFlagPermission(GPClaim claim, String permission, String targetModPermission) {
+        return getClaimFlagPermission(claim, permission, targetModPermission, null);
+    }
+
+    public static Tristate getClaimFlagPermission(GPClaim claim, String permission, String targetModPermission, Set<Context> contexts) {
         Tristate value = Tristate.UNDEFINED;
-        // Strip base permission node to keep it simpler locally
-        Set<Context> contexts = new HashSet<>();
-        if (claim.parent != null && claim.getClaimData().doesInheritParent()) {
-            // check subdivision's parent
-            contexts.add(claim.parent.getContext());
-        } else {
-            contexts.add(claim.getContext());
+        if (contexts == null) {
+            contexts = new HashSet<>();
+            if (claim.parent != null && claim.getClaimData().doesInheritParent()) {
+                // check subdivision's parent
+                contexts.add(claim.parent.getContext());
+            } else {
+                contexts.add(claim.getContext());
+            }
         }
 
         value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
         if (value != Tristate.UNDEFINED) {
             return value;
+        }
+        if (targetModPermission != null) {
+            value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
+            if (value != Tristate.UNDEFINED) {
+                return value;
+            }
         }
 
         return getFlagDefaultPermission(claim, permission);
@@ -189,8 +201,26 @@ public class GPPermissionHandler {
         return Tristate.UNDEFINED;
     }
 
-    public static Tristate getFlagOverride(GPClaim claim, String flagPermission) {
-        return getFlagOverride(claim, flagPermission, null, null);
+    public static Tristate getFlagOverride(GPClaim claim, String flagPermission, String targetModPermission) {
+        Set<Context> contexts = new LinkedHashSet<>();
+        if (claim.isAdminClaim()) {
+            contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
+        } else {
+            contexts.add(GriefPreventionPlugin.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
+        }
+        contexts.add(claim.world.getContext());
+        Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
+        if (value != Tristate.UNDEFINED) {
+            return value;
+        }
+        if (targetModPermission != null) {
+            value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
+            if (value != Tristate.UNDEFINED) {
+                return value;
+            }
+        }
+
+        return Tristate.UNDEFINED;
     }
 
     public static Tristate getFlagOverride(GPClaim claim, String flagPermission, Object source, Object target) {
@@ -199,6 +229,8 @@ public class GPPermissionHandler {
             if (!claim.getInternalClaimData().allowFlagOverrides()) {
                 return Tristate.UNDEFINED;
             }
+
+            String targetModPermission = null;
             if (target != null && source == null) {
                 String targetId = getPermissionIdentifier(target);
                 flagPermission += "." + targetId;
@@ -206,8 +238,9 @@ public class GPPermissionHandler {
                 String sourceId = getPermissionIdentifier(source, true);
                 String targetId = getPermissionIdentifier(target);
                 if (!targetId.isEmpty()) {
+                    String[] parts = targetId.split(":");
+                    String targetMod = parts[0];
                     if (!sourceId.isEmpty()) {
-                        //boolean hasMeta = targetId.matches("\\.[\\d+]*$");
                         // move target meta to end of permission
                         Pattern p = Pattern.compile("\\.[\\d+]*$");
                         Matcher m = p.matcher(targetId);
@@ -216,6 +249,8 @@ public class GPPermissionHandler {
                             targetMeta = m.group(0);
                             targetId = targetId.replace(targetMeta, "");
                         }
+                        targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId + targetMeta;
+                        targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
                         flagPermission += "." + targetId + ".source." + sourceId + targetMeta;
                     } else {
                         flagPermission += "." + targetId;
@@ -234,6 +269,13 @@ public class GPPermissionHandler {
             Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
             if (value != Tristate.UNDEFINED) {
                 return value;
+            }
+            // check target modid
+            if (targetModPermission != null) {
+                value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
+                if (value != Tristate.UNDEFINED) {
+                    return value;
+                }
             }
         }
 

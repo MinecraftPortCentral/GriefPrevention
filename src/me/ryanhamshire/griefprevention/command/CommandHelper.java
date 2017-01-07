@@ -331,6 +331,18 @@ public class CommandHelper {
     }
 
     public static CommandResult applyFlagPermission(CommandSource src, Subject subject, String subjectName, GPClaim claim, String flagPermission, String source, String target, Tristate value, String context, FlagType flagType) {
+        // Remove "any" in source
+        if (source != null) {
+            if (source.equalsIgnoreCase("any")) {
+                source = "";
+            } else {
+                String[] parts = source.split(":");
+                if (parts[1].equalsIgnoreCase("any")) {
+                    source = parts[0];
+                }
+            }
+        }
+
         String basePermission = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
         int endIndex = basePermission.indexOf(".");
         if (endIndex != -1) {
