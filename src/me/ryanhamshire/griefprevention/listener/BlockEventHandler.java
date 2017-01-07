@@ -116,21 +116,20 @@ public class BlockEventHandler {
             for (Location<World> location : event.getLocations()) {
                 GPClaim targetClaim = this.dataStore.getClaimAt(location, true, null);
 
+                if (user != null && targetClaim.hasFullTrust(user)) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                } else if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
+
                 if (event.getCause().containsNamed(NamedCause.FIRE_SPREAD)) {
                     if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
-                } else if (GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock()) == Tristate.FALSE) {
-                    event.setCancelled(true);
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
-                }
-
-                if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
                 }
 
                 String denyReason= GriefPreventionPlugin.instance.allowBuild(rootCause, location, user);
@@ -151,14 +150,7 @@ public class BlockEventHandler {
             for (Location<World> location : event.getLocations()) {
                 GPClaim targetClaim = this.dataStore.getClaimAt(location, true, null);
 
-                if (event.getCause().containsNamed(NamedCause.FIRE_SPREAD)) {
-                    if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
-                        event.setCancelled(true);
-                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                        return;
-                    }
-                } else if (GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock()) == Tristate.FALSE) {
-                    event.setCancelled(true);
+                if (targetClaim.hasFullTrust(user)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     return;
                 }
@@ -166,6 +158,14 @@ public class BlockEventHandler {
                 if (playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     return;
+                }
+
+                if (event.getCause().containsNamed(NamedCause.FIRE_SPREAD)) {
+                    if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
+                        event.setCancelled(true);
+                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                        return;
+                    }
                 }
 
                 String denyReason= GriefPreventionPlugin.instance.allowBuild(rootCause, location, user);
