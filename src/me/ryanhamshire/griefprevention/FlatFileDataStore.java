@@ -375,10 +375,9 @@ public class FlatFileDataStore extends DataStore {
                     GriefPreventionPlugin.instance.getLogger().error("Claim file '" + claimFile.getName() + "' has corrupted data and cannot be loaded. Skipping...");
                     continue;
                 }
-                Vector3i subLesserBoundaryCornerPos = subLesserCorner;
-                Vector3i subGreaterBoundaryCornerPos = subGreaterCorner;
-                Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserBoundaryCornerPos);
-                Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterBoundaryCornerPos);
+
+                Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserCorner);
+                Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterCorner);
     
                 GPClaim subDivision = new GPClaim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey(), ClaimType.SUBDIVISION);
                 subDivision.id = mapEntry.getKey();

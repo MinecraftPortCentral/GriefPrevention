@@ -352,7 +352,7 @@ public class CommandHelper {
 
         Set<Context> contexts = new HashSet<>();
         Context customContext = null;
-        if (context != null && context != null) {
+        if (context != null) {
             String targetContext = context;
             customContext = CommandHelper.validateCustomContext(src, claim, targetContext);
             if (customContext == null) {
@@ -404,7 +404,7 @@ public class CommandHelper {
                             TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
                         .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflag", ""))).build(),
                     TextColors.GREEN, "Set permission of ", 
-                    TextColors.AQUA, basePermission, 
+                    TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
                     TextColors.GREEN, " to ", 
                     flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  GriefPreventionPlugin.GLOBAL_SUBJECT, subjectName, contexts, flagPermission, value, flagType)), 
                     TextColors.GREEN, " for ", 
@@ -420,7 +420,7 @@ public class CommandHelper {
                             TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
                         .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflaggroup", subjectName))).build(),
                     TextColors.GREEN, "Set permission of ", 
-                    TextColors.AQUA, basePermission, 
+                    TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
                     TextColors.GREEN, " to ", 
                     flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  subject, subjectName, contexts, flagPermission, value, flagType)), 
                     TextColors.GREEN, " for ", 

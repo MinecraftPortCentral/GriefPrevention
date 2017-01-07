@@ -117,26 +117,51 @@ public class CommandClaimFlag implements CommandExecutor {
                 Map<String, Boolean> defaultTransientOverridePermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getPermissions(contexts);
                 Map<String, Boolean> overridePermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getPermissions(overrideContexts);
                 Map<String, Boolean> claimPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getPermissions(ImmutableSet.of(claim.context));
-                for (Map.Entry<String, Boolean> defaultPermissionEntry : defaultTransientPermissions.entrySet()) {
+                for (Map.Entry<String, Boolean> permissionEntry : defaultTransientPermissions.entrySet()) {
                     Text flagText = null;
-                    String flagPermission = defaultPermissionEntry.getKey();
+                    String flagPermission = permissionEntry.getKey();
                     String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
-                    Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
-                            .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
                     // check if transient default has been overridden and if so display that value instead
                     Boolean defaultTransientOverrideValue = defaultTransientOverridePermissions.get(flagPermission);
                     if (defaultTransientOverrideValue != null) {
-                        flagText = Text.of(
-                                baseFlagText, "  ",
-                                TextColors.WHITE, "[",
-                                TextColors.LIGHT_PURPLE, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(defaultTransientOverrideValue), source, FlagType.DEFAULT));
+                        continue;
                     } else {
+                        Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
+                                .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
                         flagText = Text.of(
                                 baseFlagText, "  ",
                                 TextColors.WHITE, "[",
-                                TextColors.LIGHT_PURPLE, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(defaultPermissionEntry.getValue()), source, FlagType.DEFAULT));
+                                TextColors.LIGHT_PURPLE, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.DEFAULT));
                     }
-                    if (claimPermissions.get(defaultPermissionEntry.getKey()) == null) {
+                    if (claimPermissions.get(permissionEntry.getKey()) == null) {
+                        flagText = Text.join(flagText, 
+                                Text.of(
+                                TextColors.WHITE, ", ",
+                                TextColors.GOLD, getClickableText(src, claim, flagPermission, Tristate.UNDEFINED, source, FlagType.CLAIM)));
+                        if (overridePermissions.get(flagPermission) == null) {
+                            flagText = Text.join(flagText, Text.of(TextColors.WHITE, "]"));
+                        }
+                    }
+                    flagList.put(flagPermission, flagText);
+                }
+
+                for (Map.Entry<String, Boolean> permissionEntry : defaultTransientOverridePermissions.entrySet()) {
+                    Text flagText = null;
+                    String flagPermission = permissionEntry.getKey();
+                    String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                    Text baseFlagText = null;
+                    if (GPFlags.FLAG_LIST.contains(baseFlagPerm)) {
+                        baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
+                                .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
+                    }
+
+                    baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                    flagText = Text.of(
+                            TextColors.GREEN, baseFlagText != null ? baseFlagText : baseFlagPerm, "  ",
+                            TextColors.WHITE, "[",
+                            TextColors.LIGHT_PURPLE, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.DEFAULT));
+
+                    if (claimPermissions.get(permissionEntry.getKey()) == null) {
                         flagText = Text.join(flagText, 
                                 Text.of(
                                 TextColors.WHITE, ", ",
@@ -171,9 +196,9 @@ public class CommandClaimFlag implements CommandExecutor {
                     }
                 }
 
-                for (Map.Entry<String, Boolean> overridePermissionEntry : overridePermissions.entrySet()) {
-                    String flagPermission = overridePermissionEntry.getKey();
-                    Boolean flagValue = overridePermissionEntry.getValue();
+                for (Map.Entry<String, Boolean> permissionEntry : overridePermissions.entrySet()) {
+                    String flagPermission = permissionEntry.getKey();
+                    Boolean flagValue = permissionEntry.getValue();
                     Text flagText = Text.of(TextColors.RED, getClickableText(src, claim, flagPermission, Tristate.fromBoolean(flagValue), source, FlagType.OVERRIDE));
                     Text currentText = flagList.get(flagPermission);
                     boolean customFlag = false;
