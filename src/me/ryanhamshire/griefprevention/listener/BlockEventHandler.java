@@ -271,8 +271,18 @@ public class BlockEventHandler {
         }
 
         // check overrides
-        if (GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock()) == Tristate.FALSE) {
+        Tristate override = GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock());
+        if (override != Tristate.UNDEFINED) {
+            if (override == Tristate.TRUE) {
+                GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+                return;
+            }
+
             event.setCancelled(true);
+            // log once a second to avoid spam
+            if (GriefPreventionPlugin.debugLogging && event.getTargetLocation().getExtent().getProperties().getTotalTime() % 100 == 0L) {
+                GriefPreventionPlugin.addEventLogEntry(event, targetClaim, event.getTargetLocation(), source, event.getTargetBlock(), user, "");
+            }
             GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
             return;
         }
@@ -358,8 +368,15 @@ public class BlockEventHandler {
         }
 
         // check overrides
-        if (GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, source, event.getTargetBlock()) == Tristate.FALSE) {
+        Tristate override = GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, source, event.getTargetBlock());
+        if (override != Tristate.UNDEFINED) {
+            if (override == Tristate.TRUE) {
+                GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
+                return;
+            }
+
             event.setCancelled(true);
+            GriefPreventionPlugin.addEventLogEntry(event, targetClaim, impactPoint, source, event.getTargetBlock(), user, null);
             GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
             return;
         }
@@ -456,8 +473,15 @@ public class BlockEventHandler {
             }
 
             // check overrides
-            if (GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.BLOCK_BREAK, source, transaction.getOriginal()) == Tristate.FALSE) {
+            Tristate override = GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.BLOCK_BREAK, source, transaction.getOriginal());
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
+                    return;
+                }
+
                 event.setCancelled(true);
+                GriefPreventionPlugin.addEventLogEntry(event, targetClaim, location, source, transaction.getOriginal(), user, null);
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
             }
@@ -530,14 +554,22 @@ public class BlockEventHandler {
             if (locatable != null /*&& !((IMixinBlock) locatable.getBlockState().getType()).requiresBlockCapture()*/ && targetClaim.isWildernessClaim()) {
                 continue;
             }
-            if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
+
+            // check overrides
+            Tristate override = GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.BLOCK_PLACE, source, block);
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                    return;
+                }
+
+                event.setCancelled(true);
+                GriefPreventionPlugin.addEventLogEntry(event, targetClaim, location, source, block, user, null);
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             }
 
-            // check overrides
-            if (GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.BLOCK_PLACE, source, block) == Tristate.FALSE) {
-                event.setCancelled(true);
+            if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             }

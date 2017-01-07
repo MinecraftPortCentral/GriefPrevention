@@ -1109,10 +1109,16 @@ public class PlayerEventHandler {
             Location<World> location = entityItem.getLocation();
             GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
             if (claim != null) {
-                if (GPPermissionHandler.getFlagOverride(claim, GPPermissions.ITEM_DROP,  user, entityItem) == Tristate.FALSE) {
+                Tristate override = GPPermissionHandler.getFlagOverride(claim, GPPermissions.ITEM_DROP,  user, entityItem);
+                if (override != Tristate.UNDEFINED) {
+                    if (override == Tristate.TRUE) {
+                        GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
+                        return;
+                    }
+
                     event.setCancelled(true);
-                    GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
                     GriefPreventionPlugin.addEventLogEntry(event, claim, location, GPPermissions.ITEM_DROP, user, entityItem, user, this.dataStore.getMessage(Messages.NoDropsAllowed));
+                    GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
                     return;
                 }
 
@@ -1463,10 +1469,16 @@ public class PlayerEventHandler {
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
 
-        if (GPPermissionHandler.getFlagOverride(claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType()) == Tristate.FALSE) {
+        Tristate override = GPPermissionHandler.getFlagOverride(claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType());
+        if (override != Tristate.UNDEFINED) {
+            if (override == Tristate.TRUE) {
+                GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
+                return;
+            }
+
             event.setCancelled(true);
-            GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
             GriefPreventionPlugin.addEventLogEntry(event, claim, location, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType(), player, "");
+            GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -1514,10 +1526,16 @@ public class PlayerEventHandler {
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
         final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
 
-        if (GPPermissionHandler.getFlagOverride(claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState()) == Tristate.FALSE) {
+        Tristate override = GPPermissionHandler.getFlagOverride(claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState());
+        if (override != Tristate.UNDEFINED) {
+            if (override == Tristate.TRUE) {
+                GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
+                return;
+            }
+
             event.setCancelled(true);
-            GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
             GriefPreventionPlugin.addEventLogEntry(event, claim, location, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, "");
+            GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -1579,10 +1597,16 @@ public class PlayerEventHandler {
                 return;
             }
 
-            if (GPPermissionHandler.getFlagOverride(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock()) == Tristate.FALSE) {
+            Tristate override = GPPermissionHandler.getFlagOverride(playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock());
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
+                    return;
+                }
+
                 event.setCancelled(true);
-                GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                 GriefPreventionPlugin.addEventLogEntry(event, playerClaim, location, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock(), player, "");
+                GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                 return;
             }
 

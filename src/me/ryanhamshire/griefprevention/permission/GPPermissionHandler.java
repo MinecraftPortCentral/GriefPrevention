@@ -154,7 +154,6 @@ public class GPPermissionHandler {
     }
 
     public static Tristate getClaimFlagPermission(GPClaim claim, String permission, String targetModPermission, Set<Context> contexts) {
-        Tristate value = Tristate.UNDEFINED;
         if (contexts == null) {
             contexts = new HashSet<>();
             if (claim.parent != null && claim.getClaimData().doesInheritParent()) {
@@ -165,7 +164,7 @@ public class GPPermissionHandler {
             }
         }
 
-        value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
+        Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
         if (value != Tristate.UNDEFINED) {
             return value;
         }
