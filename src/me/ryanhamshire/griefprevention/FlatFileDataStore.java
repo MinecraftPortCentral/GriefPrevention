@@ -370,7 +370,7 @@ public class FlatFileDataStore extends DataStore {
                 SubDivisionDataConfig subDivisionData = mapEntry.getValue();
                 subDivisionData.setParentData(claim.getInternalClaimData());
                 Vector3i subLesserCorner = subDivisionData.getLesserBoundaryCornerPos();
-                Vector3i subGreaterCorner = claimStorage.getConfig().getGreaterBoundaryCornerPos();
+                Vector3i subGreaterCorner = subDivisionData.getGreaterBoundaryCornerPos();
                 if (subLesserCorner == null || subGreaterCorner == null) {
                     GriefPreventionPlugin.instance.getLogger().error("Claim file '" + claimFile.getName() + "' has corrupted data and cannot be loaded. Skipping...");
                     continue;

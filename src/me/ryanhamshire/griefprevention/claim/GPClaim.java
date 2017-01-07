@@ -28,6 +28,7 @@ package me.ryanhamshire.griefprevention.claim;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
@@ -1623,6 +1624,29 @@ public class GPClaim implements Claim {
         }
 
         return new GPClaimResult(null, ClaimResultType.CLAIM_NOT_FOUND);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || !(o instanceof GPClaim)) {
+            return false;
+        }
+        GPClaim that = (GPClaim) o;
+        return this.type == that.type &&
+               Objects.equal(this.id, that.id) &&
+               Objects.equal(this.lesserBoundaryCorner.getBlockPosition(), that.greaterBoundaryCorner.getBlockPosition());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects
+            .hashCode(this.type,
+                this.id,
+                this.lesserBoundaryCorner.getBlockPosition(),
+                this.greaterBoundaryCorner.getBlockPosition());
     }
 
     @Override
