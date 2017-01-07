@@ -928,6 +928,7 @@ public class EntityEventHandler {
                     return false;
                 }
 
+                /* Is this still needed ?
                 // always allow collisions with players
                 if (entity instanceof Player || entity instanceof EntityItem) {
                     return true;
@@ -968,7 +969,7 @@ public class EntityEventHandler {
                         }
                     }
                 }
-                playerData.setLastCollideEntityData(entityId, true);
+                playerData.setLastCollideEntityData(entityId, true); */
                 return true;
             }
         });

@@ -1236,9 +1236,6 @@ public class PlayerEventHandler {
                 // otherwise disallow
                 String message = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NotYourPet, owner.get().getName());
                 if (event.getCause().root() instanceof Player) {
-                    if (player.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
-                        message += "  " + GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-                    }
                     GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, message));
                 }
                 GriefPreventionPlugin.addEventLogEntry(event, claim, location, player, event.getTargetEntity(), player, message);

@@ -119,7 +119,7 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         }
 
         User user = targetUser.get();
-        if (user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS) && !src.hasPermission(GPPermissions.SET_ADMIN_FLAGS)) {
+        if (!src.hasPermission(GPPermissions.SET_ADMIN_FLAGS)) {
             GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change flags on an admin player."));
             return CommandResult.success();
         }

@@ -79,10 +79,10 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
-        if (claim.isWildernessClaim() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
+        if (claim.isWildernessClaim() && !playerData.canManageWilderness) {
             GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim permissions here."));
             return CommandResult.success();
-        } else if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+        } else if (claim.isAdminClaim() && !playerData.canManageAdminClaims) {
             GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim permissions."));
             return CommandResult.success();
         }

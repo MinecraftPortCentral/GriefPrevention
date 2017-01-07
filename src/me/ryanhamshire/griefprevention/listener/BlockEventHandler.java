@@ -39,6 +39,8 @@ import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import me.ryanhamshire.griefprevention.visual.VisualizationType;
+import net.minecraft.block.BlockBasePressurePlate;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.tileentity.TileEntityChest;
 import org.spongepowered.api.Sponge;
@@ -248,6 +250,11 @@ public class BlockEventHandler {
     public void onBlockCollide(CollideBlockEvent event, @Root Entity source, @First User user) {
         GPTimings.BLOCK_COLLIDE_EVENT.startTimingIfSync();
         if (event.getTargetSide().equals(Direction.UP) || event.getTargetBlock().getType().equals(BlockTypes.AIR) || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
+            GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+            return;
+        }
+
+        if (source instanceof EntityItem && (event.getTargetBlock().getType() != BlockTypes.PORTAL && !(event.getTargetBlock().getType() instanceof BlockBasePressurePlate))) {
             GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
             return;
         }

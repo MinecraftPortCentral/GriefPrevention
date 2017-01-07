@@ -415,12 +415,18 @@ public class GPClaim implements Claim {
     }
 
     public boolean hasFullAccess(User user) {
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
+        return this.hasFullAccess(user, null);
+    }
+
+    public boolean hasFullAccess(User user, GPPlayerData playerData) {
+        if (playerData == null) {
+            playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
+        }
         if (playerData != null && playerData.canIgnoreClaim(this)) {
             return true;
         }
 
-        if (this.isAdminClaim() && user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+        if (this.isAdminClaim() && playerData.canManageAdminClaims) {
             if (playerData.debugClaimPermissions) {
                 return false;
             }
@@ -438,7 +444,7 @@ public class GPClaim implements Claim {
             return true;
         }
 
-        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
+        if (this.isWildernessClaim() && playerData.canManageWilderness) {
             if (playerData.debugClaimPermissions) {
                 return false;
             }
@@ -461,7 +467,7 @@ public class GPClaim implements Claim {
             return true;
         }
 
-        if (this.isAdminClaim() && user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+        if (this.isAdminClaim() && playerData.canManageAdminClaims) {
             if (playerData.debugClaimPermissions) {
                 return false;
             }
@@ -479,7 +485,7 @@ public class GPClaim implements Claim {
             return true;
         }
 
-        if (this.isWildernessClaim() && user.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
+        if (this.isWildernessClaim() && playerData.canManageWilderness) {
             if (playerData.debugClaimPermissions) {
                 return false;
             }
@@ -508,16 +514,9 @@ public class GPClaim implements Claim {
     // all of these return NULL when a player has permission, or a String error
     // message when the player doesn't have permission
     public String allowEdit(Player player) {
-        if (this.hasFullAccess(player)) {
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, player.getUniqueId());
+        if (this.hasFullAccess(player, playerData)) {
             return null;
-        }
-
-        // special cases...
-        // admin claims need adminclaims permission only.
-        if (this.isAdminClaim()) {
-            if (player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-                return null;
-            }
         }
 
         // anyone with deleteclaims permission can modify non-admin claims at any time
@@ -538,7 +537,7 @@ public class GPClaim implements Claim {
             return null;
         }
 
-        if (this.isWildernessClaim() && player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
+        if (this.isWildernessClaim() && playerData.canManageWilderness) {
             return null;
         }
 
@@ -563,9 +562,10 @@ public class GPClaim implements Claim {
             GriefPreventionPlugin.instance.dataStore.tryExtendSiege((Player) user, this);
         }
 
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId());
         // admin claims can always be modified by admins, no exceptions
         if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+            if (playerData.canManageAdminClaims) {
                 return null;
             }
         }
@@ -576,7 +576,6 @@ public class GPClaim implements Claim {
         }
 
         // no building while in pvp combat
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId());
         if (playerData.inPvpCombat(location.getExtent())) {
             return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoBuildPvP);
         }
@@ -628,13 +627,6 @@ public class GPClaim implements Claim {
         if (location.getBlock().getType() != BlockTypes.FLOWING_WATER && location.getBlock().getType() != BlockTypes.FLOWING_LAVA) {
             reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
         }
-        if (user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
-            if (!reason.equals("")) {
-                reason += "  " + GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-            } else {
-                reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-            }
-        }
 
         return reason;
     }
@@ -677,11 +669,6 @@ public class GPClaim implements Claim {
             if (hasFullAccess(user)) {
                 return null;
             }
-    
-            //failure message for all other cases
-            if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
-                reason += "  " + GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-            }
 
             // Builders can break blocks
             if (this.getInternalClaimData().getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.getInternalClaimData().getBuilders().contains(user.getUniqueId())) {
@@ -709,13 +696,6 @@ public class GPClaim implements Claim {
 
     // access permission check
     public String allowAccess(User user, Location<World> location, boolean interact) {
-        // admin claims need adminclaims permission only.
-        if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-                return null;
-            }
-        }
-
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;
@@ -748,20 +728,10 @@ public class GPClaim implements Claim {
 
         //catch-all error message for all other cases
         String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
-        if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
-            reason += "  " + GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-        }
         return reason;
     }
 
     public String allowItemDrop(User user, Location<World> location) {
-        // admin claims need adminclaims permission only.
-        if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-                return null;
-            }
-        }
-
         // claim owner and admins in ignoreclaims mode have access
         if (hasFullAccess(user)) {
             return null;
@@ -783,9 +753,6 @@ public class GPClaim implements Claim {
 
         //catch-all error message for all other cases
         String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoDropsAllowed, this.getOwnerName());
-        if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
-            reason += "  " + GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-        }
         return reason;
     }
 
@@ -803,13 +770,6 @@ public class GPClaim implements Claim {
         // claim owner and admins in ignoreclaims mode have access
         if (hasFullAccess(user)) {
             return null;
-        }
-
-        // admin claims need adminclaims permission only.
-        if (this.isAdminClaim()) {
-            if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-                return null;
-            }
         }
 
         if (this.getInternalClaimData().getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
@@ -830,9 +790,6 @@ public class GPClaim implements Claim {
 
         //error message for all other cases
         String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
-        if(user.hasPermission(GPPermissions.COMMAND_IGNORE_CLAIMS)) {
-            reason += "  " + GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-        }
         return reason;
     }
 
@@ -858,9 +815,6 @@ public class GPClaim implements Claim {
         
         //generic error message
         String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoPermissionTrust, this.getOwnerName());
-        if(player.hasPermission("griefprevention.ignoreclaims")) {
-            reason += "  " + GriefPreventionPlugin.instance.dataStore.getMessage(Messages.IgnoreClaimsAdvertisement);
-        }
 
         return reason;
     }

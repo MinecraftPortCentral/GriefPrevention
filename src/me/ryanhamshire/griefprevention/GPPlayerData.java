@@ -202,6 +202,8 @@ public class GPPlayerData implements PlayerData {
     public int optionPlayerClaimExpiration = 14;
 
     // cached permission values
+    public boolean canManageAdminClaims = false;
+    public boolean canManageWilderness = false;
     public boolean ignoreAdminClaims = false;
     public boolean ignoreWilderness = false;
     public boolean ignoreBasicClaims = false;
@@ -236,6 +238,8 @@ public class GPPlayerData implements PlayerData {
             this.ignoreAdminClaims = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_ADMIN);
             this.ignoreWilderness = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_WILDERNESS);
             this.ignoreBasicClaims = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_BASIC);
+            this.canManageAdminClaims = this.playerSubject.get().hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
+            this.canManageWilderness = this.playerSubject.get().hasPermission(GPPermissions.MANAGE_WILDERNESS);
             this.dataInitialized = true;
         });
     }
