@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
@@ -49,10 +50,11 @@ public class CommandClaimIgnore implements CommandExecutor {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        /*if (!playerData.canManageAdminClaims && !playerData.canManageBasicClaims && !playerData.canManageWilderness) {
-            GriefPrevention.sendMessage(player, TextMode.Err, "You do not have permission to ignore any claim types.");
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+        if (claim.isBasicClaim() && !playerData.ignoreBasicClaims || claim.isWilderness() && !playerData.ignoreWilderness || claim.isAdminClaim() && !playerData.ignoreAdminClaims) {
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You do not have permission to ignore " + claim.getType().name().toLowerCase() + " claims.");
             return CommandResult.success();
-        }*/
+        }
 
         playerData.ignoreClaims = !playerData.ignoreClaims;
 

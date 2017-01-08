@@ -30,6 +30,6 @@ import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 @ConfigSerializable
 public class PlayerDataCategory extends ConfigCategory {
 
-    @Setting(value = "use-global-storage", comment = "Whether player data should be stored per world. True will store all data in the default world.")
-    public boolean useGlobalPlayerDataStorage = false;
+    @Setting(value = "use-global-storage", comment = "Whether player data should be stored globally. False will store all data per world.")
+    public boolean useGlobalPlayerDataStorage = true;
 }
