@@ -211,11 +211,13 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
 
     @Override
     public void setDenyMessages(boolean flag) {
+        this.requiresSave = true;
         this.allowDenyMessages = flag;
     }
 
     @Override
     public void setClaimExpiration(boolean flag) {
+        this.requiresSave = true;
         this.allowClaimExpiration = flag;
     }
 
@@ -231,11 +233,13 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
 
     @Override
     public void setPvpOverride(Tristate pvp) {
+        this.requiresSave = true;
         this.pvpOverride = pvp;
     }
 
     @Override
     public void setResizable(boolean resizable) {
+        this.requiresSave = true;
         this.isResizable = resizable;
     }
 

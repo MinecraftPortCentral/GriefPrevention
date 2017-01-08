@@ -209,7 +209,7 @@ public class GPClaimManager implements ClaimManager {
             this.createPlayerData(ownerId);
         }
 
-        Set<Long> chunkHashes = claim.getChunkHashes();
+        Set<Long> chunkHashes = claim.getChunkHashes(true);
         for (Long chunkHash : chunkHashes) {
             Set<GPClaim> claimsInChunk = this.getChunksToClaimsMap().get(chunkHash);
             if (claimsInChunk == null) {
@@ -235,7 +235,7 @@ public class GPClaimManager implements ClaimManager {
         if (claim.isSubdivision()) {
             Claim parent = claim.getParent().get();
             parent.deleteSubdivision(claim, cause);
-            parent.getClaimData().save();
+            ((GPClaim) parent).getClaimStorage().save();
             if (cause != null) {
                 GPDeleteClaimEvent ev = new GPDeleteClaimEvent(claim, cause);
                 Sponge.getGame().getEventManager().post(ev);
@@ -248,7 +248,7 @@ public class GPClaimManager implements ClaimManager {
         for (Claim subdivision : subClaims) {
             claim.deleteSubdivision(subdivision, cause);
         }
-        claim.getClaimData().save();
+        ((GPClaim) claim).getClaimStorage().save();
 
         // player may be offline so check is needed
         if (this.playerClaimList.get(claim.getOwnerUniqueId()) != null) {
@@ -275,17 +275,11 @@ public class GPClaimManager implements ClaimManager {
     }
 
     private void updateChunkHashes(GPClaim claim) {
-        Set<Long> chunkHashes = claim.getChunkHashes();
+        Set<Long> chunkHashes = claim.getChunkHashes(false);
         for (Long chunkHash : chunkHashes) {
             Set<GPClaim> claimsInChunk = this.getChunksToClaimsMap().get(chunkHash);
-            if (claimsInChunk != null && claimsInChunk.size() > 0) {
-                Iterator<GPClaim> iterator = claimsInChunk.iterator();
-                while (iterator.hasNext()) {
-                    GPClaim claimInChunk = iterator.next();
-                    if (claimInChunk.id.equals(claim.id)) {
-                        iterator.remove();
-                    }
-                }
+            if (claimsInChunk != null) {
+                claimsInChunk.remove(claim);
             }
         }
     }

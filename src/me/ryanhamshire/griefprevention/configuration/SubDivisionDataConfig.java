@@ -233,6 +233,7 @@ public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, 
 
     @Override
     public void setDenyMessages(boolean flag) {
+        this.parent.setRequiresSave(true);
         this.allowDenyMessages = flag;
     }
 

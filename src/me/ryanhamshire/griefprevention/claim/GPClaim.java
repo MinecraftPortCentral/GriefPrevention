@@ -98,6 +98,7 @@ public class GPClaim implements Claim {
     public Location<World> greaterBoundaryCorner;
     public World world;
     public ClaimType type = ClaimType.BASIC;
+    private Set<Long> chunkHashes;
 
     // Permission Context
     public Context context;
@@ -1056,17 +1057,17 @@ public class GPClaim implements Claim {
         ArrayList<Chunk> chunks = new ArrayList<Chunk>();
 
         World world = this.getLesserBoundaryCorner().getExtent();
-        Optional<Chunk> lesserChunk = this.getLesserBoundaryCorner().getExtent()
-                .getChunk(this.getLesserBoundaryCorner().getBlockX() >> 4, 0, this.getLesserBoundaryCorner().getBlockZ() >> 4);
-        Optional<Chunk> greaterChunk = this.getGreaterBoundaryCorner().getExtent()
-                .getChunk(this.getGreaterBoundaryCorner().getBlockX() >> 4, 0, this.getGreaterBoundaryCorner().getBlockZ() >> 4);
+        Chunk lesserChunk = this.getLesserBoundaryCorner().getExtent()
+                .getChunk(this.getLesserBoundaryCorner().getBlockX() >> 4, 0, this.getLesserBoundaryCorner().getBlockZ() >> 4).orElse(null);
+        Chunk greaterChunk = this.getGreaterBoundaryCorner().getExtent()
+                .getChunk(this.getGreaterBoundaryCorner().getBlockX() >> 4, 0, this.getGreaterBoundaryCorner().getBlockZ() >> 4).orElse(null);
 
-        if (lesserChunk.isPresent() && greaterChunk.isPresent()) {
-            for (int x = lesserChunk.get().getPosition().getX(); x <= greaterChunk.get().getPosition().getX(); x++) {
-                for (int z = lesserChunk.get().getPosition().getZ(); z <= greaterChunk.get().getPosition().getZ(); z++) {
-                    Optional<Chunk> chunk = world.loadChunk(x, 0, z, true);
-                    if (chunk.isPresent()) {
-                        chunks.add(chunk.get());
+        if (lesserChunk != null && greaterChunk != null) {
+            for (int x = lesserChunk.getPosition().getX(); x <= greaterChunk.getPosition().getX(); x++) {
+                for (int z = lesserChunk.getPosition().getZ(); z <= greaterChunk.getPosition().getZ(); z++) {
+                    Chunk chunk = world.loadChunk(x, 0, z, true).orElse(null);
+                    if (chunk != null) {
+                        chunks.add(chunk);
                     }
                 }
             }
@@ -1075,20 +1076,22 @@ public class GPClaim implements Claim {
         return chunks;
     }
 
-    public Set<Long> getChunkHashes() {
-        Set<Long> chunkHashes = new HashSet<Long>();
-        int smallX = this.getLesserBoundaryCorner().getBlockX() >> 4;
-        int smallZ = this.getLesserBoundaryCorner().getBlockZ() >> 4;
-        int largeX = this.getGreaterBoundaryCorner().getBlockX() >> 4;
-        int largeZ = this.getGreaterBoundaryCorner().getBlockZ() >> 4;
-
-        for (int x = smallX; x <= largeX; x++) {
-            for (int z = smallZ; z <= largeZ; z++) {
-                chunkHashes.add(ChunkPos.chunkXZ2Int(x, z));
+    public Set<Long> getChunkHashes(boolean refresh) {
+        if (this.chunkHashes == null || refresh) {
+            this.chunkHashes = new HashSet<Long>();
+            int smallX = this.lesserBoundaryCorner.getBlockX() >> 4;
+            int smallZ = this.lesserBoundaryCorner.getBlockZ() >> 4;
+            int largeX = this.greaterBoundaryCorner.getBlockX() >> 4;
+            int largeZ = this.greaterBoundaryCorner.getBlockZ() >> 4;
+    
+            for (int x = smallX; x <= largeX; x++) {
+                for (int z = smallZ; z <= largeZ; z++) {
+                    this.chunkHashes.add(ChunkPos.chunkXZ2Int(x, z));
+                }
             }
         }
 
-        return chunkHashes;
+        return this.chunkHashes;
     }
 
     @Override
@@ -1256,7 +1259,7 @@ public class GPClaim implements Claim {
 
         subdivision.initializeClaimData(this);
         this.children.add(subdivision);
-        //this.getClaimStorage().save();
+        this.getClaimStorage().save();
 
         return new GPClaimResult(subdivision, ClaimResultType.SUCCESS);
     }
@@ -1268,7 +1271,7 @@ public class GPClaim implements Claim {
 
         Claim parent = this.getParent().orElse(null);
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-        Set<Long> chunkHashes = ((GPClaim) this).getChunkHashes();
+        Set<Long> chunkHashes = ((GPClaim) this).getChunkHashes(false);
         for (Long chunkHash : chunkHashes) {
             Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
             if (claimsInChunk == null || claimsInChunk.size() == 0) {
@@ -1358,12 +1361,14 @@ public class GPClaim implements Claim {
             return new GPClaimResult(null, ClaimResultType.EVENT_CANCELLED);
         }
 
+        Set<Long> currentChunkHashes = this.getChunkHashes(false);
         // This needs to be adjusted before we check for overlaps
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
         ArrayList<Claim> claimsToCheck = null;
+        GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
         if (this.parent == null) {
-            claimsToCheck = (ArrayList<Claim>) GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties()).getWorldClaims();
+            claimsToCheck = (ArrayList<Claim>) claimWorldManager.getWorldClaims();
         }
         if (claimsToCheck != null) {
             for (int i = 0; i < claimsToCheck.size(); i++) {
@@ -1380,13 +1385,21 @@ public class GPClaim implements Claim {
             }
         }
 
+        // resize validated, remove invalid chunkHashes
+        Set<Long> newChunkHashes = this.getChunkHashes(true);
         if (this.parent == null) {
-            Set<Long> chunkHashes = this.getChunkHashes();
-            GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-            for (Long chunkHash : chunkHashes) {
+            currentChunkHashes.removeAll(newChunkHashes);
+            for (Long chunkHash : currentChunkHashes) {
+                Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
+                if (claimsInChunk != null && claimsInChunk.size() > 0) {
+                    claimsInChunk.remove(this);
+                }
+            }
+            // add new chunk hashes
+            for (Long chunkHash : newChunkHashes) {
                 Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk == null) {
-                    claimsInChunk = new HashSet<GPClaim>();
+                    claimsInChunk = new HashSet<>();
                     claimWorldManager.getChunksToClaimsMap().put(chunkHash, claimsInChunk);
                 }
     
@@ -1464,7 +1477,7 @@ public class GPClaim implements Claim {
             }
         }
 
-        Set<Long> currentChunkHashes = this.getChunkHashes();
+        Set<Long> currentChunkHashes = this.getChunkHashes(false);
         Location<World> newLesserBoundaryCorner = new Location<World>(this.world, smallX, smallY, smallZ);
         Location<World> newGreaterBoundaryCorner = new Location<World>(this.world, bigX, bigY, bigZ);
         Claim overlapClaim = this.doesClaimOverlap();
@@ -1482,7 +1495,7 @@ public class GPClaim implements Claim {
         this.lesserBoundaryCorner = newLesserBoundaryCorner;
         this.greaterBoundaryCorner = newGreaterBoundaryCorner;
         // resize validated, remove invalid chunkHashes
-        Set<Long> newChunkHashes = this.getChunkHashes();
+        Set<Long> newChunkHashes = this.getChunkHashes(true);
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
         if (this.parent == null) {
             currentChunkHashes.removeAll(newChunkHashes);
@@ -1596,11 +1609,7 @@ public class GPClaim implements Claim {
 
     @Override
     public int hashCode() {
-        return Objects
-            .hashCode(this.type,
-                this.id,
-                this.lesserBoundaryCorner.getBlockPosition(),
-                this.greaterBoundaryCorner.getBlockPosition());
+        return this.id.hashCode();
     }
 
     @Override
