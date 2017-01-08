@@ -208,9 +208,9 @@ public class Visualization {
         this.newElements.clear();
     }
 
-    public void createClaimBlockVisualWithType(int height, Location<World> locality, GPPlayerData playerData, VisualizationType visualType) {
-        VisualizationType currentType = this.type;
+    public void createClaimBlockVisualWithType(GPClaim claim, int height, Location<World> locality, GPPlayerData playerData, VisualizationType visualType) {
         this.type = visualType;
+        this.claim = claim;
         this.addClaimElements(height, locality, playerData);
     }
 
@@ -480,17 +480,21 @@ public class Visualization {
         return !iblockstate.isOpaqueCube();
     }
 
-    public static Visualization fromClaims(Iterable<GPClaim> claims) {
+    public static Visualization fromClaims(Iterable<GPClaim> claims, int height, Location<World> locality, GPPlayerData playerData) {
         Visualization visualization = new Visualization(VisualizationType.Claim);
 
         for (GPClaim claim : claims) {
             if (claim.visualization != null) {
-                visualization.elements.addAll(claim.visualization.elements);
+                visualization.elements.addAll(claim.getVisualizer().elements);
+            } else {
+                visualization.createClaimBlockVisualWithType(claim, height, locality, playerData, Visualization.getVisualizationType(claim));
             }
             for (Claim child : claim.children) {
                 GPClaim subdivision = (GPClaim) child;
                 if (subdivision.visualization != null) {
-                    visualization.elements.addAll(subdivision.visualization.elements);
+                    visualization.elements.addAll(subdivision.getVisualizer().elements);
+                } else {
+                    visualization.createClaimBlockVisualWithType(subdivision, height, locality, playerData, VisualizationType.Subdivision);
                 }
             }
         }

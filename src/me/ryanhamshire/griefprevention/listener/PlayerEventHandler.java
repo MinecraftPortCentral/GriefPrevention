@@ -2408,7 +2408,8 @@ public class PlayerEventHandler {
                 // find nearby claims
                 Location<World> nearbyLocation = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation : player.getLocation();
                 Set<GPClaim> claims = this.dataStore.getNearbyClaims(nearbyLocation);
-                Visualization visualization = Visualization.fromClaims(claims);
+                int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY();
+                Visualization visualization = Visualization.fromClaims(claims, playerData.getCuboidMode() ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData);
                 visualization.apply(player);
 
                 GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.ShowNearbyClaims, String.valueOf(claims.size()));
