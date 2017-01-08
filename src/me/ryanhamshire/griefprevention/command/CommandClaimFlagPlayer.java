@@ -71,17 +71,11 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         String name = ctx.<String>getOne("player").get();
         String flag = ctx.<String>getOne("flag").orElse(null);
         String source = ctx.<String>getOne("source").orElse(null);
-        // Workaround command API issue not handling onlyOne arguments with sequences properly
-        List<String> targetValues = new ArrayList<>(ctx.<String>getAll("target"));
-        String target = null;
-        if (!targetValues.isEmpty()) {
-            if (targetValues.size() > 1) {
-                //source = "any";
-                target = targetValues.get(1);
-            } else {
-                target = targetValues.get(0);
-            }
+        String target = ctx.<String>getOne("target").orElse(null);
+        if (source != null && source.equalsIgnoreCase(target)) {
+            source = null;
         }
+
         Tristate value = ctx.<Tristate>getOne("value").orElse(null);
         String context = ctx.<String>getOne("context").orElse(null);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
