@@ -69,8 +69,16 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         String group = ctx.<String>getOne("group").get();
         String flag = ctx.<String>getOne("flag").orElse(null);
         String source = ctx.<String>getOne("source").orElse(null);
-        String target = ctx.<String>getOne("target").orElse(null);
-        if (source != null && source.equalsIgnoreCase(target)) {
+        String target = null;
+        // Workaround command API issue not handling onlyOne arguments with sequences properly
+        List<String> targetValues = new ArrayList<>(ctx.<String>getAll("target"));
+        if (targetValues.size() > 1) {
+            target = targetValues.get(1);
+        } else {
+            target = targetValues.get(0);
+        }
+
+        if (source != null && source.equalsIgnoreCase("any")) {
             source = null;
         }
 

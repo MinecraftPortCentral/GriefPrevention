@@ -965,8 +965,7 @@ public class GriefPreventionPlugin {
                             choices(Text.of("flag"), flagChoices),
                             GenericArguments.firstParsing(
                                 GenericArguments.seq(
-                                    GenericArguments.onlyOne(choices(Text.of("source"), catalogChoices)),
-                                    GenericArguments.onlyOne(choices(Text.of("target"), catalogChoices)),
+                                    choices(Text.of("target"), catalogChoices),
                                     onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                             .put("-1", Tristate.FALSE)
                                             .put("0", Tristate.UNDEFINED)
@@ -977,7 +976,8 @@ public class GriefPreventionPlugin {
                                             .build())),
                                     optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
                                 GenericArguments.seq(
-                                    GenericArguments.onlyOne(choices(Text.of("target"), catalogChoices)),
+                                    onlyOne(choices(Text.of("source"), catalogChoices)),
+                                    choices(Text.of("target"), catalogChoices),
                                     onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                             .put("-1", Tristate.FALSE)
                                             .put("0", Tristate.UNDEFINED)
@@ -1001,8 +1001,7 @@ public class GriefPreventionPlugin {
                                     choices(Text.of("flag"), flagChoices),
                                     GenericArguments.firstParsing(
                                             GenericArguments.seq(
-                                                GenericArguments.onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                GenericArguments.onlyOne(choices(Text.of("target"), catalogChoices)),
+                                                choices(Text.of("target"), catalogChoices),
                                                 onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                         .put("-1", Tristate.FALSE)
                                                         .put("0", Tristate.UNDEFINED)
@@ -1012,7 +1011,8 @@ public class GriefPreventionPlugin {
                                                         .put("true", Tristate.TRUE)
                                                         .build()))),
                                             GenericArguments.seq(
-                                                GenericArguments.onlyOne(choices(Text.of("target"), catalogChoices)),
+                                                onlyOne(choices(Text.of("source"), catalogChoices)),
+                                                choices(Text.of("target"), catalogChoices),
                                                 onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                         .put("-1", Tristate.FALSE)
                                                         .put("0", Tristate.UNDEFINED)
@@ -1035,8 +1035,7 @@ public class GriefPreventionPlugin {
                                     choices(Text.of("flag"), flagChoices),
                                     GenericArguments.firstParsing(
                                             GenericArguments.seq(
-                                                GenericArguments.onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                GenericArguments.onlyOne(choices(Text.of("target"), catalogChoices)),
+                                                choices(Text.of("target"), catalogChoices),
                                                 onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                         .put("-1", Tristate.FALSE)
                                                         .put("0", Tristate.UNDEFINED)
@@ -1046,7 +1045,8 @@ public class GriefPreventionPlugin {
                                                         .put("true", Tristate.TRUE)
                                                         .build()))),
                                             GenericArguments.seq(
-                                                GenericArguments.onlyOne(choices(Text.of("target"), catalogChoices)),
+                                                onlyOne(choices(Text.of("source"), catalogChoices)),
+                                                choices(Text.of("target"), catalogChoices),
                                                 onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                         .put("-1", Tristate.FALSE)
                                                         .put("0", Tristate.UNDEFINED)
