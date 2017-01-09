@@ -72,10 +72,12 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         String target = null;
         // Workaround command API issue not handling onlyOne arguments with sequences properly
         List<String> targetValues = new ArrayList<>(ctx.<String>getAll("target"));
-        if (targetValues.size() > 1) {
-            target = targetValues.get(1);
-        } else {
-            target = targetValues.get(0);
+        if (targetValues.size() > 0) {
+            if (targetValues.size() > 1) {
+                target = targetValues.get(1);
+            } else {
+                target = targetValues.get(0);
+            }
         }
 
         if (source != null && source.equalsIgnoreCase("any")) {
