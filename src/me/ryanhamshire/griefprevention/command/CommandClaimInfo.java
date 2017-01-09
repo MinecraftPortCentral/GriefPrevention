@@ -50,6 +50,7 @@ import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -70,7 +71,7 @@ public class CommandClaimInfo implements CommandExecutor {
     private static final String DENY_MESSAGES = "DenyMessages";
     private static final String FLAG_OVERRIDES = "FlagOverrides";
     private static final String INHERIT_PARENT = "InheritParent";
-    private static final String PVP = "PvP";
+    private static final String PVP_OVERRIDE = "PvPOverride";
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -206,12 +207,12 @@ public class CommandClaimInfo implements CommandExecutor {
             Text claimDenyMessages = Text.of(TextColors.YELLOW, DENY_MESSAGES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, DENY_MESSAGES, gpClaim.getInternalClaimData().allowDenyMessages() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
             Text claimExpiration = Text.of(TextColors.YELLOW, CLAIM_EXPIRATION, TextColors.WHITE, " : ", getClickableInfoText(src, claim, CLAIM_EXPIRATION, gpClaim.getInternalClaimData().allowClaimExpiration() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
             Text claimFlagOverrides = Text.of(TextColors.YELLOW, FLAG_OVERRIDES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, FLAG_OVERRIDES, gpClaim.getInternalClaimData().allowFlagOverrides() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
-            //Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", TextColors.RESET, claim.isPvpEnabled() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
+            Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", getClickableInfoText(src, claim, PVP_OVERRIDE, gpClaim.getInternalClaimData().getPvpOverride() == Tristate.TRUE ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, gpClaim.getInternalClaimData().getPvpOverride().name())), TextColors.RESET);
             adminTextList.add(returnToClaimInfo);
             adminTextList.add(claimDenyMessages);
             adminTextList.add(claimExpiration);
             adminTextList.add(claimFlagOverrides);
-            //adminTextList.add(pvp);
+            adminTextList.add(pvp);
             Text adminSettings = Text.builder()
                     .append(Text.of(TextStyles.ITALIC, TextColors.RED, ADMIN_SETTINGS))
                     .onClick(TextActions.executeCallback(createAdminSettingsConsumer(src, claim, adminTextList)))
@@ -236,7 +237,6 @@ public class CommandClaimInfo implements CommandExecutor {
                 TextColors.WHITE, " )");
 
         Text claimInherit = Text.of(TextColors.YELLOW, INHERIT_PARENT, TextColors.WHITE, " : ", getClickableInfoText(src, claim, INHERIT_PARENT, claim.getClaimData().doesInheritParent() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
-        //Text claimInherit = Text.of(TextColors.YELLOW, "InheritParent", TextColors.WHITE, " : ", claim.inheritParent ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"));
         Text claimFarewell = Text.of(TextColors.YELLOW, "Farewell", TextColors.WHITE, " : ", TextColors.RESET,
                 farewell == null ? NONE : farewell);
         Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
@@ -392,15 +392,28 @@ public class CommandClaimInfo implements CommandExecutor {
                     gpClaim.getClaimStorage().save();
 
                     if (!gpClaim.getInternalClaimData().allowFlagOverrides()) {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "IgnoreOverride ", TextColors.RED, "OFF"));
+                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "FlagOverride ", TextColors.RED, "OFF"));
                     } else {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "IgnoreOverride ", TextColors.GREEN, "ON"));
+                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "FlagOverride ", TextColors.GREEN, "ON"));
                     }
                     break;
-                case PVP :
-                    gpClaim.getInternalClaimData().setPvpOverride(gpClaim.getInternalClaimData().getPvpOverride());
+                case PVP_OVERRIDE :
+                    Tristate value = gpClaim.getInternalClaimData().getPvpOverride();
+                    Text newValue = Text.of();
+                    if (value == Tristate.UNDEFINED) {
+                        newValue = Text.of(TextColors.GREEN, Tristate.TRUE);
+                        gpClaim.getInternalClaimData().setPvpOverride(Tristate.TRUE);
+                    } else if (value == Tristate.TRUE) {
+                        newValue = Text.of(TextColors.RED, Tristate.FALSE);
+                        gpClaim.getInternalClaimData().setPvpOverride(Tristate.FALSE);
+                    } else {
+                        newValue = Text.of(TextColors.GRAY, Tristate.UNDEFINED);
+                        gpClaim.getInternalClaimData().setPvpOverride(Tristate.UNDEFINED);
+                    }
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
+
+                    GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "PvPOverride ", newValue));
                 default:
             }
         };
