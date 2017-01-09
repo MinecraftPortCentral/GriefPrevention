@@ -430,6 +430,10 @@ public class CommandClaimInfo implements CommandExecutor {
                 src.sendMessage(Text.of(TextColors.RED, "You do not have permission to change the type of this claim."));
                 return;
             }
+            if (claim.isWilderness()) {
+                src.sendMessage(Text.of(TextColors.RED, "The wilderness cannot be changed."));
+                return;
+            }
             if (claim.parent != null) {
                 src.sendMessage(Text.of(TextColors.RED, "Subdivisions cannot be changed."));
                 return;
