@@ -56,7 +56,7 @@ public class CommandClaimDelete implements CommandExecutor {
         }
         // determine which claim the player is standing in
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), true);
 
         if (claim.isWildernessClaim()) {
             GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);

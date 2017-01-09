@@ -49,7 +49,6 @@ import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -205,7 +204,7 @@ public class GPClaimManager implements ClaimManager {
             if (!playerClaims.contains(claim)) {
                 playerClaims.add(claim);
             }
-        } else {
+        } else if (!claim.isAdminClaim()) {
             this.createPlayerData(ownerId);
         }
 
@@ -287,6 +286,10 @@ public class GPClaimManager implements ClaimManager {
     @Nullable
     public Optional<Claim> getClaimByUUID(UUID claimUniqueId) {
         return Optional.ofNullable(this.claimUniqueIdMap.get(claimUniqueId));
+    }
+
+    public List<Claim> getInternalPlayerClaims(UUID playerUniqueId) {
+        return this.playerClaimList.get(playerUniqueId);
     }
 
     @Nullable

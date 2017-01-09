@@ -99,6 +99,7 @@ public class GPClaim implements Claim {
     public World world;
     public ClaimType type = ClaimType.BASIC;
     private Set<Long> chunkHashes;
+    private final int hashCode;
 
     // Permission Context
     public Context context;
@@ -187,6 +188,7 @@ public class GPClaim implements Claim {
         this.trustManager = new GPTrustManager(this);
         this.cuboid = cuboid;
         this.parent = parent;
+        this.hashCode = this.id.hashCode();
     }
 
     // Used for visualizations
@@ -215,6 +217,7 @@ public class GPClaim implements Claim {
         this.type = type;
         this.context = new Context("gp_claim", this.id.toString());
         this.trustManager = new GPTrustManager(this);
+        this.hashCode = this.id.hashCode();
     }
 
     public void initializeClaimData(GPClaim parent) {
@@ -1609,7 +1612,7 @@ public class GPClaim implements Claim {
 
     @Override
     public int hashCode() {
-        return this.id.hashCode();
+        return this.hashCode;
     }
 
     @Override

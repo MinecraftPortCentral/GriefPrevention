@@ -425,20 +425,31 @@ public class CommandClaimInfo implements CommandExecutor {
             Player player = (Player) src;
             if (claim.isBasicClaim()) {
                 GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-                claimWorldManager.deleteClaim(claim, Cause.of(NamedCause.source(src)));
-                claim.ownerID = player.getUniqueId();
+                List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(player.getUniqueId());
+                if (playerClaims != null) {
+                    playerClaims.remove(claim);
+                }
+
+                GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(player.getUniqueId());
+                playerData.revertActiveVisual(player);
+                claim.visualization = null;
+                claim.ownerID = null;
                 claim.type = ClaimType.ADMIN;
-                claim.getVisualizer().setType(VisualizationType.AdminClaim);
                 claim.getInternalClaimData().setType(ClaimType.ADMIN);
                 src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", TextColors.RED, "ADMIN", TextColors.GREEN, "." ));
             } else {
+                GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
+                List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(player.getUniqueId());
+                if (playerClaims != null && !playerClaims.contains(claim)) {
+                    playerClaims.add(claim);
+                }
+                GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(player.getUniqueId());
+                playerData.revertActiveVisual(player);
                 claim.type = ClaimType.BASIC;
                 claim.ownerID = player.getUniqueId();
+                claim.visualization = null;
                 claim.getInternalClaimData().setOwnerUniqueId(player.getUniqueId());
-                claim.getVisualizer().setType(VisualizationType.Claim);
                 claim.getInternalClaimData().setType(ClaimType.BASIC);
-                GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-                claimWorldManager.addClaim(claim, false);
                 src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", TextColors.AQUA, "BASIC", TextColors.GREEN, "." ));
             }
             // revert visuals for all players watching this claim
