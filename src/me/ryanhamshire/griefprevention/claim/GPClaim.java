@@ -1480,7 +1480,7 @@ public class GPClaim implements Claim {
                 return new GPClaimResult(this.parent, ClaimResultType.OVERLAPPING_CLAIM);
             }
             if (bigX > this.parent.getGreaterBoundaryCorner().getBlockX() ||
-                bigY > this.parent.getGreaterBoundaryCorner().getBlockY() ||
+                (this.parent.isCuboid() && bigY > this.parent.getGreaterBoundaryCorner().getBlockY()) ||
                 bigZ > this.parent.getGreaterBoundaryCorner().getBlockZ()) {
                 return new GPClaimResult(this.parent, ClaimResultType.OVERLAPPING_CLAIM);
             }

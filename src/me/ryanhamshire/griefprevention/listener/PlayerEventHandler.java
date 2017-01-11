@@ -2051,7 +2051,7 @@ public class PlayerEventHandler {
             ClaimResult claimResult = null;
             if (playerData.claimResizing.isCuboid()) {
                 // 3D resize
-                claimResult = playerData.claimResizing.resizeClaim(newx1, newy1, newz1, newx2, newy2, newz2, Cause.of(NamedCause.source(player)));
+                claimResult = playerData.claimResizing.resizeCuboidClaim(newx1, newy1, newz1, newx2, newy2, newz2, Cause.of(NamedCause.source(player)));
             } else {
                 // 2D resize
                 claimResult = playerData.claimResizing.resizeClaim(newx1, newx2, newy1, newy2, newz1, newz2, Cause.of(NamedCause.source(player)));
