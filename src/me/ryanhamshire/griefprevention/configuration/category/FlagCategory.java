@@ -149,7 +149,6 @@ public class FlagCategory extends ConfigCategory {
 
         userClaimFlags.add(GPFlags.BLOCK_BREAK);
         userClaimFlags.add(GPFlags.BLOCK_PLACE);
-        userClaimFlags.add(GPFlags.ENTER_CLAIM);
         userClaimFlags.add(GPFlags.ENTITY_COLLIDE_BLOCK);
         userClaimFlags.add(GPFlags.ENTITY_RIDING);
         userClaimFlags.add(GPFlags.EXPLOSION);

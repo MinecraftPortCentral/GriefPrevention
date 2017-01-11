@@ -207,23 +207,30 @@ public class BlockEventHandler {
         LocatableBlock locatableBlock = event.getCause().first(LocatableBlock.class).orElse(null);
         TileEntity tileEntity = event.getCause().first(TileEntity.class).orElse(null);
         Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
+        GPClaim sourceClaim = null;
+        if (sourceLocation == null) {
+            Player player = event.getCause().first(Player.class).orElse(null);
+            if (player == null) {
+                GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
+                return;
+            }
+
+            sourceLocation = player.getLocation();
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        } else {
+            sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
+        }
+
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
             GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
             return;
         }
 
-        GPClaim sourceClaim = this.getSourceClaim(event.getCause());
-        if (sourceClaim == null) {
-            GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        //PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(sourceClaim.world, user.getUniqueId());
-
         Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
         while (iterator.hasNext()) {
             Direction direction = iterator.next();
-            Location<World> location = sourceLocation.getRelative(direction);
+            Location<World> location = sourceLocation.getBlockRelative(direction);
             GPClaim targetClaim = this.dataStore.getClaimAt(location, false, null);
             if (sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 continue;
