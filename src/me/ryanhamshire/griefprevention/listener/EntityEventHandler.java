@@ -306,7 +306,7 @@ public class EntityEventHandler {
                         if (creator.isPresent() && !creator.get().getUniqueId().equals(sourceUser.getUniqueId())) {
                             return true;
                         }
-                    } else if (sourceUser.getUniqueId().equals(claim.ownerID)) {
+                    } else if (sourceUser.getUniqueId().equals(claim.getOwnerUniqueId())) {
                         return true;
                     }
     
@@ -323,7 +323,7 @@ public class EntityEventHandler {
                             }
                         }
                     } else if (targetEntity instanceof EntityLivingBase && !SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER)) {
-                        if (user != null && !user.getUniqueId().equals(claim.ownerID) && perm != Tristate.TRUE) {
+                        if (user != null && !user.getUniqueId().equals(claim.getOwnerUniqueId()) && perm != Tristate.TRUE) {
                             GriefPreventionPlugin.addEventLogEntry(event, claim, targetEntity.getLocation(), entityDamageSource.getSource(), targetEntity, user, "Untrusted player attempting to attack entity in claim.");
                             return true;
                         }

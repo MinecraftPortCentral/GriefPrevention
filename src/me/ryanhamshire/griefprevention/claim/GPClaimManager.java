@@ -117,11 +117,11 @@ public class GPClaimManager implements ClaimManager {
                 continue;
             }
             if (gpClaim.parent != null) {
-               if (gpClaim.parent.ownerID.equals(playerUniqueId)) {
+               if (gpClaim.parent.getOwnerUniqueId().equals(playerUniqueId)) {
                    claimList.add(claim);
                }
             } else {
-                if (gpClaim.ownerID.equals(playerUniqueId)) {
+                if (gpClaim.getOwnerUniqueId().equals(playerUniqueId)) {
                     claimList.add(claim);
                 }
             }
@@ -186,7 +186,7 @@ public class GPClaimManager implements ClaimManager {
             return;
         }
 
-        UUID ownerId = claim.ownerID;
+        UUID ownerId = claim.getOwnerUniqueId();
         if (!this.worldClaims.contains(claim)) {
             this.worldClaims.add(claim);
         }
@@ -305,7 +305,7 @@ public class GPClaimManager implements ClaimManager {
         Location<World> lesserCorner = new Location<World>(world, -30000000, 0, -30000000);
         Location<World> greaterCorner = new Location<World>(world, 29999999, 255, 29999999);
         GPClaim worldClaim = new GPClaim(lesserCorner, greaterCorner, UUID.randomUUID(), ClaimType.WILDERNESS, null);
-        worldClaim.ownerID = GriefPreventionPlugin.WORLD_USER_UUID;
+        worldClaim.setOwnerUniqueId(GriefPreventionPlugin.WORLD_USER_UUID);
         worldClaim.initializeClaimData(null);
         DATASTORE.writeClaimToStorage(worldClaim);
         this.theWildernessClaim = worldClaim;

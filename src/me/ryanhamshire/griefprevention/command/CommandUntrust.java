@@ -79,9 +79,9 @@ public class CommandUntrust implements CommandExecutor {
         }
 
         // verify player has full perms
-        UUID ownerID = claim.ownerID;
+        UUID ownerID = claim.getOwnerUniqueId();
         if (ownerID == null && claim.parent != null) {
-            ownerID = claim.parent.ownerID;
+            ownerID = claim.parent.getOwnerUniqueId();
         }
         if (user.getUniqueId().equals(ownerID)) {
             GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, user.getName() + " is owner of claim and cannot be untrusted."));

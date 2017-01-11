@@ -212,6 +212,7 @@ public class GriefPreventionPlugin {
     // GP Public user info
     public static final UUID PUBLIC_UUID = UUID.fromString("41C82C87-7AfB-4024-BA57-13D2C99CAE77");
     public static final UUID WORLD_USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    public static final UUID ADMIN_USER_UUID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     public static User PUBLIC_USER;
     public static User WORLD_USER;
     public static final String PUBLIC_NAME = "[GPPublic]";

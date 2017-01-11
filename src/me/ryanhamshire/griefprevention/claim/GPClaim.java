@@ -107,9 +107,7 @@ public class GPClaim implements Claim {
     // id number. unique to this claim, never changes.
     public UUID id = null;
 
-    // ownerID. for admin claims, this is NULL
-    // use getOwnerName() to get a friendly name (will be "an administrator" for admin claims)
-    public UUID ownerID;
+    private UUID ownerUniqueId;
 
     public boolean cuboid = false;
 
@@ -181,7 +179,7 @@ public class GPClaim implements Claim {
         this.world = world;
         this.lesserBoundaryCorner = new Location<World>(world, smallx, smally, smallz);
         this.greaterBoundaryCorner = new Location<World>(world, bigx, bigy, bigz);
-        this.ownerID = ownerUniqueId;
+        this.ownerUniqueId = ownerUniqueId;
         this.type = type;
         this.id = UUID.randomUUID();
         this.context = new Context("gp_claim", this.id.toString());
@@ -211,8 +209,8 @@ public class GPClaim implements Claim {
         this.greaterBoundaryCorner = greaterBoundaryCorner;
         this.world = lesserBoundaryCorner.getExtent();
         if (player != null) {
-            this.ownerID = player.getUniqueId();
-            this.ownerPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerID);
+            this.ownerUniqueId = player.getUniqueId();
+            this.ownerPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
         }
         this.type = type;
         this.context = new Context("gp_claim", this.id.toString());
@@ -231,7 +229,7 @@ public class GPClaim implements Claim {
             // check if main world
             claimDataFolderPath = DataStore.worldConfigMap.get(this.world.getUniqueId()).getPath().getParent().resolve("ClaimData");
             File claimFile = new File(claimDataFolderPath + File.separator + this.id);
-            this.claimStorage = new ClaimStorageData(claimFile.toPath(), this.id, this.ownerID, this.type, cuboid);
+            this.claimStorage = new ClaimStorageData(claimFile.toPath(), this.id, this.ownerUniqueId, this.type, cuboid);
             this.claimData = this.claimStorage.getConfig();
         }
 
@@ -251,10 +249,17 @@ public class GPClaim implements Claim {
 
     public UUID getOwnerUniqueId() {
         if (this.isSubdivision()) {
-            return this.parent.ownerID;
+            return this.parent.getOwnerUniqueId();
+        }
+        if (this.isAdminClaim()) {
+            return GriefPreventionPlugin.ADMIN_USER_UUID;
         }
 
-        return this.ownerID;
+        return this.ownerUniqueId;
+    }
+
+    public void setOwnerUniqueId(UUID uniqueId) {
+        this.ownerUniqueId = uniqueId;
     }
 
     // whether or not this is an administrative claim
@@ -439,7 +444,7 @@ public class GPClaim implements Claim {
         }
 
         // owner
-        if (!this.isAdminClaim() && user.getUniqueId().equals(this.ownerID)) {
+        if (!this.isAdminClaim() && user.getUniqueId().equals(this.getOwnerUniqueId())) {
             // only check debug claim permissions if owner
             if (playerData.debugClaimPermissions) {
                 return false;
@@ -480,7 +485,7 @@ public class GPClaim implements Claim {
         }
 
         // owner
-        if (!this.isAdminClaim() && user.getUniqueId().equals(this.ownerID)) {
+        if (!this.isAdminClaim() && user.getUniqueId().equals(this.getOwnerUniqueId())) {
             // only check debug claim permissions if owner
             if (playerData.debugClaimPermissions) {
                 return false;
@@ -532,7 +537,7 @@ public class GPClaim implements Claim {
 
         // no resizing, deleting, and so forth while under siege
         // don't use isManager here as only owners may edit claims
-        if (player.getUniqueId().equals(this.ownerID)) {
+        if (player.getUniqueId().equals(this.getOwnerUniqueId())) {
             if (this.siegeData != null) {
                 return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoModifyDuringSiege);
             }
@@ -858,7 +863,7 @@ public class GPClaim implements Claim {
             return this.parent.getOwnerName();
         }
 
-        String name = CommandHelper.lookupPlayerName(this.ownerID);
+        String name = CommandHelper.lookupPlayerName(this.getOwnerUniqueId());
         if (name == null) {
             return "unknown";
         }
@@ -1120,17 +1125,18 @@ public class GPClaim implements Claim {
 
     public void updateClaimStorageData() {
         // owner
-        if (this.isWildernessClaim()) {
+        if (!this.isSubdivision()) {
             this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
-        } else if (this.isSubdivision()) {
+        } else {
             if (this.getInternalClaimData() == null) {
                 this.setClaimData(new SubDivisionDataConfig(this));
             }
 
             this.claimStorage.getConfig().getSubdivisions().put(this.id, (SubDivisionDataConfig) this.getInternalClaimData());
-        } else if (this.isBasicClaim() || this.isAdminClaim()) {
-            this.claimStorage.getConfig().setOwnerUniqueId(this.ownerID);
-            this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
+        }
+
+        if (this.isBasicClaim()) {
+            this.claimStorage.getConfig().setOwnerUniqueId(this.getOwnerUniqueId());
         }
 
         this.claimData.setCuboid(this.cuboid);
@@ -1206,7 +1212,7 @@ public class GPClaim implements Claim {
             return new GPClaimResult(null, ClaimResultType.WRONG_CLAIM_TYPE);
         }
 
-        GPPlayerData ownerData = DATASTORE.getOrCreatePlayerData(this.world, this.ownerID);
+        GPPlayerData ownerData = DATASTORE.getOrCreatePlayerData(this.world, this.getOwnerUniqueId());
         // determine new owner
         GPPlayerData newOwnerData = DATASTORE.getOrCreatePlayerData(this.world, newOwnerID);
 
@@ -1225,15 +1231,15 @@ public class GPClaim implements Claim {
         }
 
         // transfer
-        GPTransferClaimEvent event = new GPTransferClaimEvent(this, GriefPreventionPlugin.pluginCause, this.ownerID, newOwnerID);
+        GPTransferClaimEvent event = new GPTransferClaimEvent(this, GriefPreventionPlugin.pluginCause, this.getOwnerUniqueId(), newOwnerID);
         Sponge.getGame().getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(null, ClaimResultType.EVENT_CANCELLED);
         }
 
-        this.ownerID = event.getNewOwner();
-        if (!this.ownerID.equals(newOwnerID)) {
-            newOwnerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerID);
+        this.ownerUniqueId = event.getNewOwner();
+        if (!this.getOwnerUniqueId().equals(newOwnerID)) {
+            newOwnerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.getOwnerUniqueId());
         }
 
         this.getInternalClaimData().setOwnerUniqueId(newOwnerID);

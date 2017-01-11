@@ -33,7 +33,6 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
-import me.ryanhamshire.griefprevention.visual.VisualizationType;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -41,8 +40,6 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
@@ -225,7 +222,7 @@ public class CommandClaimInfo implements CommandExecutor {
                 Text.builder()
                         .append(Text.of(TextColors.GRAY, claim.getUniqueId().toString()))
                         .onShiftClick(TextActions.insertText(claim.getUniqueId().toString())).build()));
-        Text ownerLine = Text.of(TextColors.YELLOW, claim.isAdminClaim() ? "Creator" : "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null ? owner.getName() : "administrator");
+        Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null && !claim.isAdminClaim() ? owner.getName() : "administrator");
         Text claimType = Text.builder()
                 .append(Text.of(claimTypeColor, claim.getType().name()))
                 .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, isAdmin)))
@@ -450,7 +447,7 @@ public class CommandClaimInfo implements CommandExecutor {
                 GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(player.getUniqueId());
                 playerData.revertActiveVisual(player);
                 claim.visualization = null;
-                claim.ownerID = null;
+                claim.setOwnerUniqueId(null);
                 claim.type = ClaimType.ADMIN;
                 claim.getInternalClaimData().setType(ClaimType.ADMIN);
                 src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", TextColors.RED, "ADMIN", TextColors.GREEN, "." ));
@@ -463,7 +460,7 @@ public class CommandClaimInfo implements CommandExecutor {
                 GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(player.getUniqueId());
                 playerData.revertActiveVisual(player);
                 claim.type = ClaimType.BASIC;
-                claim.ownerID = player.getUniqueId();
+                claim.setOwnerUniqueId(player.getUniqueId());
                 claim.visualization = null;
                 claim.getInternalClaimData().setOwnerUniqueId(player.getUniqueId());
                 claim.getInternalClaimData().setType(ClaimType.BASIC);

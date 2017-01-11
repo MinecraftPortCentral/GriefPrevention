@@ -2061,9 +2061,9 @@ public class PlayerEventHandler {
                 // decide how many claim blocks are available for more resizing
                 int claimBlocksRemaining = 0;
                 if (!playerData.claimResizing.isAdminClaim()) {
-                    UUID ownerID = playerData.claimResizing.ownerID;
+                    UUID ownerID = playerData.claimResizing.getOwnerUniqueId();
                     if (playerData.claimResizing.parent != null) {
-                        ownerID = playerData.claimResizing.parent.ownerID;
+                        ownerID = playerData.claimResizing.parent.getOwnerUniqueId();
                     }
 
                     if (ownerID.equals(player.getUniqueId())) {
@@ -2458,8 +2458,8 @@ public class PlayerEventHandler {
             GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.ClaimLastActive, lastActive != null ? lastActive.toString() : "Unknown");
 
             // drop the data we just loaded, if the player isn't online
-            if (!Sponge.getGame().getServer().getPlayer(claim.ownerID).isPresent()) {
-                this.dataStore.clearCachedPlayerData(claim.world.getProperties(), claim.ownerID);
+            if (!Sponge.getGame().getServer().getPlayer(claim.getOwnerUniqueId()).isPresent()) {
+                this.dataStore.clearCachedPlayerData(claim.world.getProperties(), claim.getOwnerUniqueId());
             }
         }
         GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();

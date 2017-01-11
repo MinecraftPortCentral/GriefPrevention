@@ -348,7 +348,7 @@ public class FlatFileDataStore extends DataStore {
 
         // instantiate
         claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType());
-        claim.ownerID = ownerID;
+        claim.setOwnerUniqueId(ownerID);
         claim.world = lesserBoundaryCorner.getExtent();
         claim.type = claimStorage.getConfig().getType();
         claim.cuboid = claimStorage.getConfig().isCuboid();
