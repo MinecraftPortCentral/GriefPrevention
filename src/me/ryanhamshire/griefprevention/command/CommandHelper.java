@@ -352,11 +352,14 @@ public class CommandHelper {
         // Check if player can manage flag
         if (src instanceof Player) {
             Player player = (Player) src;
-            if (GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission) 
-                    && !src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission)) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
-                return CommandResult.success();
-            } else if (!src.hasPermission(GPPermissions.ADMIN_CLAIM_FLAGS + "." + basePermission)) {
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            Tristate result = Tristate.UNDEFINED;
+            if (!playerData.canManageAdminClaims && GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission)) {
+                result = Tristate.fromBoolean(src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission));
+            } else if (result != Tristate.TRUE && playerData.canManageAdminClaims) {
+                result = Tristate.fromBoolean(src.hasPermission(GPPermissions.ADMIN_CLAIM_FLAGS + "." + basePermission));
+            }
+            if (result != Tristate.TRUE) {
                 GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
                 return CommandResult.success();
             }
