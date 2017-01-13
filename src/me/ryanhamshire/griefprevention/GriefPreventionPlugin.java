@@ -699,7 +699,6 @@ public class GriefPreventionPlugin {
         this.getLogger().info("Grief Prevention boot start.");
         this.getLogger().info("Finished loading configuration.");
 
-        this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
         GLOBAL_SUBJECT = GriefPreventionPlugin.instance.permissionService.getDefaults();
         // register with the LP API
         this.getLogger().info("Registering GriefPrevention API...");
@@ -716,6 +715,7 @@ public class GriefPreventionPlugin {
 
         this.loadConfig();
         this.customLogger = new CustomLogger();
+        this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
 
         if (this.dataStore == null) {
             try {

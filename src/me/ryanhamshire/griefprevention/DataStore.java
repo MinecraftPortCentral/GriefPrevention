@@ -1169,17 +1169,17 @@ public abstract class DataStore {
         Set<Context> contexts = new HashSet<>();
         contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getGlobalConfig().getConfig().flags.getAdminDefaults());
+        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().flags.getAdminDefaults());
         this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(GriefPreventionPlugin.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getGlobalConfig().getConfig().flags.getBasicDefaults());
+        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().flags.getBasicDefaults());
         this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(GriefPreventionPlugin.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getGlobalConfig().getConfig().flags.getWildernessDefaults());
+        this.setFlagDefaultPermissions(contexts, GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().flags.getWildernessDefaults());
         this.setOptionDefaultPermissions(contexts);
     }
 
