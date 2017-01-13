@@ -25,8 +25,8 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.world.Chunk;
@@ -39,11 +39,11 @@ import java.util.ArrayList;
 //automatically extends a claim downward based on block types detected
 public class AutoExtendClaimTask implements Runnable {
 
-    private Claim claim;
+    private GPClaim claim;
     private ArrayList<Location<Chunk>> chunks;
     private DimensionType worldType;
 
-    public AutoExtendClaimTask(Claim claim, ArrayList<Location<Chunk>> chunks, DimensionType worldType) {
+    public AutoExtendClaimTask(GPClaim claim, ArrayList<Location<Chunk>> chunks, DimensionType worldType) {
         this.claim = claim;
         this.chunks = chunks;
         this.worldType = worldType;
@@ -54,7 +54,7 @@ public class AutoExtendClaimTask implements Runnable {
         int newY = this.getLowestBuiltY();
         if (newY < this.claim.getLesserBoundaryCorner().getBlockY()) {
             Sponge.getGame().getScheduler().createTaskBuilder().execute(new ExecuteExtendClaimTask(claim, newY))
-                    .submit(GriefPrevention.instance);
+                    .submit(GriefPreventionPlugin.instance);
         }
     }
 
@@ -96,24 +96,24 @@ public class AutoExtendClaimTask implements Runnable {
     }
 
     private boolean yTooSmall(int y) {
-        return y == 0 || y <= GriefPrevention.getActiveConfig(this.claim.world.getProperties()).getConfig().claim.maxClaimDepth;
+        return y == 0 || y <= GriefPreventionPlugin.getActiveConfig(this.claim.world.getProperties()).getConfig().claim.maxClaimDepth;
     }
 
     // runs in the main execution thread, where it can safely change claims and
     // save those changes
     private class ExecuteExtendClaimTask implements Runnable {
 
-        private Claim claim;
+        private GPClaim claim;
         private int newY;
 
-        public ExecuteExtendClaimTask(Claim claim, int newY) {
+        public ExecuteExtendClaimTask(GPClaim claim, int newY) {
             this.claim = claim;
             this.newY = newY;
         }
 
         @Override
         public void run() {
-            GriefPrevention.instance.dataStore.extendClaim(claim, newY);
+            GriefPreventionPlugin.instance.dataStore.extendClaim(claim, newY);
         }
     }
 

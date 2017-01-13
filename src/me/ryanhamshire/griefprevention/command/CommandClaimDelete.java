@@ -26,20 +26,22 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableSet;
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 
 public class CommandClaimDelete implements CommandExecutor {
 
@@ -47,48 +49,52 @@ public class CommandClaimDelete implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
         // determine which claim the player is standing in
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), true);
 
         if (claim.isWildernessClaim()) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
         } else {
-            // deleting an admin claim additionally requires the adminclaims permission
-            if (!claim.isAdminClaim() || (player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) || player.hasPermission(GPPermissions.COMMAND_DELETE_ADMIN_CLAIMS))) {
-                if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
-                    GriefPrevention.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);
-                    playerData.warnedAboutMajorDeletion = true;
-                } else {
-                    claim.removeSurfaceFluids(null);
-                    // clear permissions
-                    GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-                    GriefPrevention.instance.dataStore.deleteClaim(claim, true);
+            if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_ADMIN)) {
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CantDeleteAdminClaim);
+                return CommandResult.success();
+            }
+            if (claim.isBasicClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_BASIC)) {
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CantDeleteBasicClaim);
+                return CommandResult.success();
+            }
 
-                    // if in a creative mode world, /restorenature the claim
-                    if (GriefPrevention.instance
-                            .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                        GriefPrevention.instance.restoreClaim(claim, 0);
-                    }
-
-                    GriefPrevention.sendMessage(player, TextMode.Success, Messages.DeleteSuccess);
-                    GriefPrevention.addLogEntry(
-                            player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
-                                    + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
-                            CustomLogEntryTypes.AdminActivity);
-
-                    // revert any current visualization
-                    playerData.revertActiveVisual(player);
-
-                    playerData.warnedAboutMajorDeletion = false;
-                }
+            if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
+                GriefPreventionPlugin.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);
+                playerData.warnedAboutMajorDeletion = true;
             } else {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.CantDeleteAdminClaim);
+                claim.removeSurfaceFluids(null);
+                // clear permissions
+                GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+                GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(src)));
+
+                // if in a creative mode world, /restorenature the claim
+                if (GriefPreventionPlugin.instance
+                        .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                    GriefPreventionPlugin.instance.restoreClaim(claim, 0);
+                }
+
+                GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.DeleteSuccess);
+                GriefPreventionPlugin.addLogEntry(
+                        player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
+                                + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
+                        CustomLogEntryTypes.AdminActivity);
+
+                // revert any current visualization
+                playerData.revertActiveVisual(player);
+
+                playerData.warnedAboutMajorDeletion = false;
             }
         }
 

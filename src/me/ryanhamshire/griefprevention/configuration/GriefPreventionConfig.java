@@ -25,11 +25,11 @@
 package me.ryanhamshire.griefprevention.configuration;
 
 import com.google.common.reflect.TypeToken;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.configuration.types.ConfigBase;
-import me.ryanhamshire.griefprevention.configuration.types.DimensionConfig;
-import me.ryanhamshire.griefprevention.configuration.types.GlobalConfig;
-import me.ryanhamshire.griefprevention.configuration.types.WorldConfig;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.configuration.type.ConfigBase;
+import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
+import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
+import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -64,7 +64,7 @@ public class GriefPreventionConfig<T extends ConfigBase> {
     private Type type;
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(GriefPrevention.CONFIG_HEADER));
+            .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
     private ObjectMapper<T>.BoundInstance configMapper;
     private T configBase;
     private Path path;
@@ -97,7 +97,7 @@ public class GriefPreventionConfig<T extends ConfigBase> {
 
     public void save() {
         try {
-            this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
+            this.configMapper.serialize(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             this.loader.save(this.root);
         } catch (IOException | ObjectMappingException e) {
             SpongeImpl.getLogger().error("Failed to save configuration", e);
@@ -109,8 +109,8 @@ public class GriefPreventionConfig<T extends ConfigBase> {
             this.root = this.loader.load(ConfigurationOptions.defaults()
                     .setSerializers(
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
-                    .setHeader(GriefPrevention.CONFIG_HEADER));
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+                    .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
         }
@@ -120,14 +120,14 @@ public class GriefPreventionConfig<T extends ConfigBase> {
         return Functional.asyncFailableFuture(() -> {
             CommentedConfigurationNode upd = getSetting(key);
             upd.setValue(value);
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             this.loader.save(this.root);
             return upd;
         }, ForkJoinPool.commonPool());
     }
 
     public CommentedConfigurationNode getRootNode() {
-        return this.root.getNode(GriefPrevention.MOD_ID);
+        return this.root.getNode(GriefPreventionPlugin.MOD_ID);
     }
 
     public CommentedConfigurationNode getSetting(String key) {

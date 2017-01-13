@@ -27,16 +27,17 @@ package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.GPFlags;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
-import me.ryanhamshire.griefprevention.util.PlayerUtils;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
@@ -47,6 +48,8 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
@@ -84,34 +87,34 @@ public class CommandHelper {
     }
 
     public static CommandResult abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         // which claim is being abandoned?
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), true, null);
         if (claim.isWildernessClaim()) {
-            GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
         }
 
         // verify ownership
         else if (claim.allowEdit(player) != null) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
         }
 
         // warn if has children and we're not explicitly deleting a top level claim
         else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
-            GriefPrevention.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
             return CommandResult.empty();
         } else {
             // delete it
             claim.removeSurfaceFluids(null);
-            GriefPrevention.instance.dataStore.deleteClaim(claim, true);
+            GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(player)));
 
             // if in a creative mode world, restore the claim area
-            if (GriefPrevention.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                GriefPrevention.addLogEntry(
-                        player.getName() + " abandoned a claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
-                GriefPrevention.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
-                GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
+            if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                GriefPreventionPlugin.addLogEntry(
+                        player.getName() + " abandoned a claim @ " + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+                GriefPreventionPlugin.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
+                GriefPreventionPlugin.instance.restoreClaim(claim, 20L * 60 * 2);
             }
 
             // adjust claim blocks when abandoning a top level claim
@@ -122,7 +125,7 @@ public class CommandHelper {
 
                 // tell the player how many claim blocks he has left
                 int remainingBlocks = playerData.getRemainingClaimBlocks();
-                GriefPrevention.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
+                GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
             }
 
             // revert any current visualization
@@ -169,6 +172,7 @@ public class CommandHelper {
             case GPFlags.ENTER_CLAIM :
             case GPFlags.EXIT_CLAIM :
             case GPFlags.ENTITY_RIDING :
+            case GPFlags.ENTITY_FALL :
                 return validateEntityTarget(target);
             case GPFlags.ENTITY_DAMAGE :
                 if (validateEntityTarget(target) ||
@@ -235,41 +239,40 @@ public class CommandHelper {
         return false;
     }
 
-    public static Context validateCustomContext(CommandSource src, Claim claim, String context) {
+    public static Context validateCustomContext(CommandSource src, GPClaim claim, String context) {
         if (context.equalsIgnoreCase("default") || context.equalsIgnoreCase("defaults")) {
             if (claim.isAdminClaim()) {
-                return GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT;
+                return GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT;
             } else if (claim.isBasicClaim() || claim.isSubdivision()) {
-                return GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT;
+                return GriefPreventionPlugin.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT;
             } else {
-                src.sendMessage(Text.of(TextMode.Err, "Claim type " + claim.type.name() + " does not support flag defaults."));
-                return null;
+                return GriefPreventionPlugin.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT;
             }
         } else if (context.equalsIgnoreCase("override") || context.equalsIgnoreCase("overrides") || context.equalsIgnoreCase("force") || context.equalsIgnoreCase("forced")) {
             if (claim.isAdminClaim()) {
-                return GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT;
+                return GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT;
             } else if (claim.isBasicClaim() || claim.isSubdivision()) {
-                return GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT;
+                return GriefPreventionPlugin.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT;
             } else {
                 src.sendMessage(Text.of(TextMode.Err, "Claim type " + claim.type.name() + " does not support flag overrides."));
                 return null;
             }
         } else {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Context '" + context + "' was not found."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Context '" + context + "' was not found."));
             return null;
         }
     }
 
-    public static CommandResult addFlagPermission(CommandSource src, Subject subject, String subjectName, Claim claim, String baseFlag, String source, String target, Tristate value, Optional<String> context) {
+    public static CommandResult addFlagPermission(CommandSource src, Subject subject, String subjectName, GPClaim claim, String baseFlag, String source, String target, Tristate value, String context) {
         if (src instanceof Player) {
             String denyReason = claim.allowEdit((Player) src);
             if (denyReason != null) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, denyReason));
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, denyReason));
                 return CommandResult.success();
             }
         }
 
-        if (GPFlags.DEFAULT_FLAGS.get(baseFlag) == null) {
+        if (!GPFlags.FLAG_LIST.contains(baseFlag)) {
             src.sendMessage(Text.of(TextColors.RED, "Flag not found."));
             return CommandResult.success();
         }
@@ -301,13 +304,13 @@ public class CommandHelper {
                         try {
                             Integer.parseInt(parts[1]);
                         } catch (NumberFormatException e) {
-                            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target meta '" + parts[1] + "' entered for flag " + baseFlag + "."));
+                            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Invalid target meta '" + parts[1] + "' entered for flag " + baseFlag + "."));
                             return CommandResult.success();
                         }
                     }
                     String entitySpawnFlag = GPFlags.getEntitySpawnFlag(baseFlag, targetFlag);
                     if (entitySpawnFlag == null && !CommandHelper.validateFlagTarget(baseFlag, targetFlag)) {
-                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + targetFlag + "' entered for flag " + baseFlag + "."));
+                        GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Invalid target id '" + targetFlag + "' entered for flag " + baseFlag + "."));
                         return CommandResult.success();
                     }
         
@@ -327,40 +330,59 @@ public class CommandHelper {
         return applyFlagPermission(src, subject, subjectName, claim, flagPermission, source, target, value, context, null);
     }
 
-    public static CommandResult applyFlagPermission(CommandSource src, Subject subject, String subjectName, Claim claim, String flagPermission, String source, String target, Tristate value, Optional<String> context, FlagType flagType) {
-        String baseFlag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
-        String targetFlag = baseFlag;
-        int endIndex = baseFlag.indexOf(".");
-        if (endIndex != -1) {
-            baseFlag = baseFlag.substring(0, endIndex);
+    public static CommandResult applyFlagPermission(CommandSource src, Subject subject, String subjectName, GPClaim claim, String flagPermission, String source, String target, Tristate value, String context, FlagType flagType) {
+        // Remove "any" in source
+        if (source != null) {
+            if (source.equalsIgnoreCase("any")) {
+                source = "";
+            } else {
+                String[] parts = source.split(":");
+                if (parts[1].equalsIgnoreCase("any")) {
+                    source = parts[0];
+                }
+            }
         }
 
-        if (!src.hasPermission(GPPermissions.MANAGE_FLAGS + "." + baseFlag) || (target.equals("") && !src.hasPermission(GPPermissions.MANAGE_FLAGS + "." + baseFlag))) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
-            return CommandResult.success();
+        String basePermission = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+        int endIndex = basePermission.indexOf(".");
+        if (endIndex != -1) {
+            basePermission = basePermission.substring(0, endIndex);
+        }
+
+        // Check if player can manage flag
+        if (src instanceof Player) {
+            Player player = (Player) src;
+            if (GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission) 
+                    && !src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission)) {
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
+                return CommandResult.success();
+            } else if (!src.hasPermission(GPPermissions.ADMIN_CLAIM_FLAGS + "." + basePermission)) {
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
+                return CommandResult.success();
+            }
         }
 
         Set<Context> contexts = new HashSet<>();
         Context customContext = null;
-        if (context != null && context.isPresent()) {
-            String targetContext = context.get();
+        if (context != null) {
+            String targetContext = context;
             customContext = CommandHelper.validateCustomContext(src, claim, targetContext);
             if (customContext == null) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "Context '" + targetContext + "' is invalid."));
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Context '" + targetContext + "' is invalid."));
                 return CommandResult.success();
             } else {
                 // validate perms
-                if (customContext == GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT || 
-                        customContext == GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT || 
-                        customContext == GriefPrevention.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT) {
+                if (customContext == GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT || 
+                        customContext == GriefPreventionPlugin.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT || 
+                        customContext == GriefPreventionPlugin.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT) {
                     if (!src.hasPermission(GPPermissions.MANAGE_FLAG_DEFAULTS)) {
-                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag defaults."));
+                        GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag defaults."));
                         return CommandResult.success();
                     }
-                } else if (customContext == GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT || 
-                        customContext == GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT) {
+                } else if (customContext == GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT || 
+                        customContext == GriefPreventionPlugin.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT) {
                     if (!src.hasPermission(GPPermissions.MANAGE_FLAG_OVERRIDES)) {
-                        GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag overrides."));
+                        GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to manage flag overrides."));
                         return CommandResult.success();
                     }
                 }
@@ -368,29 +390,35 @@ public class CommandHelper {
             contexts.add(customContext);
         }
 
-        // check source context
-        Context sourceContext = GriefPrevention.CUSTOM_CONTEXTS.get(source);
-        if (sourceContext != null) {
-            contexts.add(sourceContext);
+        if (source != null) {
+            Pattern p = Pattern.compile("\\.[\\d+]*$");
+            Matcher m = p.matcher(flagPermission);
+            String targetMeta = "";
+            if (m.find()) {
+                targetMeta = m.group(0);
+                flagPermission = flagPermission.replace(targetMeta, "");
+            }
+            flagPermission += ".source." + source + targetMeta;
+            flagPermission = StringUtils.replace(flagPermission, ":", ".");
         }
 
-        if (subject == GriefPrevention.GLOBAL_SUBJECT) {
-            if (customContext == null || (customContext != GriefPrevention.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPrevention.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT
-                    && customContext != GriefPrevention.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPrevention.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT)) {
+        if (subject == GriefPreventionPlugin.GLOBAL_SUBJECT) {
+            if (customContext == null || (customContext != GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT
+                    && customContext != GriefPreventionPlugin.BASIC_CLAIM_FLAG_DEFAULT_CONTEXT && customContext != GriefPreventionPlugin.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT && customContext != GriefPreventionPlugin.WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT)) {
                 contexts.add(claim.getContext());
             } else {
                 contexts.add(claim.world.getContext());
             }
 
-            GriefPrevention.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, value);
+            GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, value);
             src.sendMessage(Text.of(
                     Text.builder().append(Text.of(
                             TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
                         .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflag", ""))).build(),
                     TextColors.GREEN, "Set permission of ", 
-                    TextColors.AQUA, targetFlag, 
+                    TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
                     TextColors.GREEN, " to ", 
-                    flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  GriefPrevention.GLOBAL_SUBJECT, subjectName, contexts, flagPermission, targetFlag, value, flagType)), 
+                    flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  GriefPreventionPlugin.GLOBAL_SUBJECT, subjectName, contexts, flagPermission, value, flagType)), 
                     TextColors.GREEN, " for ", 
                     TextColors.GOLD, "ALL."));
         } else {
@@ -404,9 +432,9 @@ public class CommandHelper {
                             TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
                         .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflaggroup", subjectName))).build(),
                     TextColors.GREEN, "Set permission of ", 
-                    TextColors.AQUA, targetFlag, 
+                    TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
                     TextColors.GREEN, " to ", 
-                    flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  subject, subjectName, contexts, flagPermission, targetFlag, value, flagType)), 
+                    flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  subject, subjectName, contexts, flagPermission, value, flagType)), 
                     TextColors.GREEN, " for ", 
                     TextColors.GOLD, subjectName));
         }
@@ -425,7 +453,7 @@ public class CommandHelper {
         return color;
     }
 
-    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, String targetFlag, Tristate flagValue, FlagType type) {
+    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, Tristate flagValue, FlagType type) {
         return consumer -> {
             Tristate newValue = Tristate.UNDEFINED;
             if (flagValue == Tristate.TRUE) {
@@ -434,13 +462,14 @@ public class CommandHelper {
                 newValue = Tristate.TRUE;
             }
 
+            String target = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
             Set<Context> newContexts = new HashSet<>(contexts);
             subject.getSubjectData().setPermission(newContexts, flagPermission, newValue);
             src.sendMessage(Text.of(
                     TextColors.GREEN, "Set permission of ", 
-                    TextColors.AQUA, targetFlag, 
+                    TextColors.AQUA, target, 
                     TextColors.GREEN, " to ", 
-                    getFlagTypeColor(type), getClickableText(src, subject, subjectName, newContexts, flagPermission, targetFlag, newValue, type), 
+                    getFlagTypeColor(type), getClickableText(src, subject, subjectName, newContexts, flagPermission, newValue, type), 
                     TextColors.GREEN, " for ", 
                     TextColors.GOLD, subjectName, "."));
         };
@@ -463,7 +492,7 @@ public class CommandHelper {
         };
     }
 
-    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, Claim claim, String flagPermission, Tristate flagValue, String source) {
+    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, GPClaim claim, String flagPermission, Tristate flagValue, String source) {
         return consumer -> {
             String target = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
             if (target.isEmpty()) {
@@ -476,20 +505,20 @@ public class CommandHelper {
                 newValue = Tristate.TRUE;
             }
 
-            CommandHelper.applyFlagPermission(src, subject, subjectName, claim, flagPermission, source, target, newValue, Optional.empty(), FlagType.GROUP);
+            CommandHelper.applyFlagPermission(src, subject, subjectName, claim, flagPermission, source, target, newValue, null, FlagType.GROUP);
         };
     }
 
-    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, String targetFlag, Tristate flagValue, FlagType type) {
+    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, Tristate flagValue, FlagType type) {
         String onClickText = "Click here to toggle " + type.name().toLowerCase() + " value.";
         Text.Builder textBuilder = Text.builder()
         .append(Text.of(flagValue.toString().toLowerCase()))
         .onHover(TextActions.showText(Text.of(onClickText, "\n", getFlagTypeHoverText(type))))
-        .onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, flagPermission, targetFlag, flagValue, type)));
+        .onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, flagPermission, flagValue, type)));
         return textBuilder.build();
     }
 
-    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, Claim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
+    public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, GPClaim claim, String flagPermission, Tristate flagValue, String source, FlagType type) {
         String onClickText = "Click here to toggle flag value.";
         boolean hasPermission = true;
         if (src instanceof Player) {
@@ -586,34 +615,30 @@ public class CommandHelper {
         return true;
     }
 
-    public static void handleTrustCommand(Player player, ClaimPermission claimPermission, String target) {
-
-        User user = null;
-        if (!target.equalsIgnoreCase("all") && !target.equalsIgnoreCase("public")) {
-            user = PlayerUtils.resolvePlayerByName(target).orElse(null);
-        } else {
-            user = GriefPrevention.PUBLIC_USER;
-        }
-
+    public static void handleTrustCommand(Player player, ClaimPermission claimPermission, User user) {
         if (user == null) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+            return;
+        }
+        if (user.getUniqueId().equals(player.getUniqueId())) {
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You cannot not trust yourself."));
             return;
         }
 
         // determine which claim the player is standing in
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
-        ArrayList<Claim> targetClaims = new ArrayList<>();
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
+        ArrayList<GPClaim> targetClaims = new ArrayList<>();
         if (claim == null) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to trust all claims, use /trustall instead."));
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to trust all claims, use /trustall instead."));
             return;
         } else if (claim.getOwnerUniqueId().equals(user.getUniqueId())) {
-            GriefPrevention.sendMessage(player, Text.of(TextMode.Err, "You are already the claim owner."));
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You are already the claim owner."));
             return;
         } else {
             //check permission here
             if(claim.allowGrantPermission(player) != null) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NoPermissionTrust, claim.getOwnerName());
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoPermissionTrust, claim.getOwnerName());
                 return;
             }
             
@@ -625,7 +650,7 @@ public class CommandHelper {
                 if(errorMessage != null) {
                     //error message for trying to grant a permission the player doesn't have
                     errorMessage = "Only " + claim.getOwnerName() + " can grant /PermissionTrust here.";
-                    GriefPrevention.sendMessage(player, TextMode.Err, Messages.CantGrantThatPermission);
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CantGrantThatPermission);
                     return;
                 }
             }
@@ -633,50 +658,50 @@ public class CommandHelper {
             targetClaims.add(claim);
         }
 
-        String location = GriefPrevention.instance.dataStore.getMessage(Messages.LocationCurrentClaim);
-        for (Claim currentClaim : targetClaims) {
+        String location = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.LocationCurrentClaim);
+        for (GPClaim currentClaim : targetClaims) {
             ArrayList<UUID> memberList = null;
             if (claimPermission == ClaimPermission.ACCESS) {
-                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getAccessors();
+                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getAccessors();
             } else if (claimPermission == ClaimPermission.INVENTORY) {
-                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getContainers();
+                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getContainers();
             } else if (claimPermission == ClaimPermission.BUILD) {
-                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getBuilders();
+                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getBuilders();
             } else if (claimPermission == ClaimPermission.PERMISSION) {
-                memberList = (ArrayList<UUID>) currentClaim.getClaimData().getManagers();
+                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getManagers();
             }
 
             if (memberList.contains(user.getUniqueId())) {
-                String message = "Player " + target + " already has " + claimPermission + " permission.";
-                if (user == GriefPrevention.PUBLIC_USER) {
+                String message = "Player " + user.getName() + " already has " + claimPermission + " permission.";
+                if (user == GriefPreventionPlugin.PUBLIC_USER) {
                     message = "Public already has " + claimPermission + " permission.";
                 }
-                GriefPrevention.sendMessage(player, Text.of(TextMode.Info, message));
+                GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Info, message));
                 return;
             } else {
                 memberList.add(user.getUniqueId());
             }
 
-            currentClaim.getClaimData().setRequiresSave(true);
+            currentClaim.getInternalClaimData().setRequiresSave(true);
         }
 
         //notify player
         String recipientName = user.getName();
         if(user.getName().equalsIgnoreCase("public") || user.getName().equalsIgnoreCase("all")) {
-            recipientName = GriefPrevention.instance.dataStore.getMessage(Messages.CollectivePublic);
+            recipientName = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.CollectivePublic);
         }
         String permissionDescription;
         if(claimPermission == ClaimPermission.PERMISSION) {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.PermissionsPermission);
+            permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.PermissionsPermission);
         } else if(claimPermission == ClaimPermission.BUILD) {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.BuildPermission);
+            permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.BuildPermission);
         } else if(claimPermission == ClaimPermission.ACCESS) {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.AccessPermission);
+            permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.AccessPermission);
         } else {
-            permissionDescription = GriefPrevention.instance.dataStore.getMessage(Messages.ContainersPermission);
+            permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.ContainersPermission);
         }
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.GrantPermissionConfirmation, recipientName, permissionDescription, location);
     }
 
     public static Consumer<CommandSource> createTeleportConsumer(CommandSource src, Location<World> location, Claim claim) {
@@ -688,9 +713,9 @@ public class CommandHelper {
             Player player = (Player) src;
             // if not owner of claim, validate perms
             if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-                if (!claim.getClaimData().getContainers().contains(player.getUniqueId()) 
-                        && !claim.getClaimData().getBuilders().contains(player.getUniqueId())
-                        && !claim.getClaimData().getManagers().contains(player.getUniqueId())
+                if (!claim.getTrustManager().getContainers().contains(player.getUniqueId()) 
+                        && !claim.getTrustManager().getBuilders().contains(player.getUniqueId())
+                        && !claim.getTrustManager().getManagers().contains(player.getUniqueId())
                         && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS)) {
                     player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
                     return;
@@ -805,6 +830,12 @@ public class CommandHelper {
                         TextColors.GREEN, "/cf entity-damage minecraft:horse false\n",
                         TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent all animals from being damaged, enter\n",
                         TextColors.GREEN, "/cf entity-damage minecraft:animals false");
+            case GPFlags.ENTITY_FALL :
+                return Text.of("Controls whether an entity can receive fall damage.\n",
+                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent players from taking fall damage, enter\n",
+                        TextColors.GREEN, "/cf entity-fall minecraft:player false\n",
+                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent horses from taking fall damage, enter\n",
+                        TextColors.GREEN, "/cf entity-fall minecraft:horse false");
             case GPFlags.ENTITY_RIDING :
                 return Text.of("Controls whether an entity can be mounted.\n",
                         TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent horses from being mounted enter\n",
@@ -911,12 +942,6 @@ public class CommandHelper {
                         TextColors.GREEN, "/cf projectile-impact-entity any false\n",
                         TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To allow arrows to impact entities, enter\n",
                         TextColors.GREEN, "/cf projectile-impact-entity minecraft:arrow any true");
-            case GPFlags.PVP :
-                return Text.of("Controls whether PvP is allowed.\n",
-                        TextColors.LIGHT_PURPLE, "Example 1", TextColors.WHITE, " : To prevent PvP in claim, enter\n",
-                        TextColors.GREEN, "/cf pvp any false\n",
-                        TextColors.LIGHT_PURPLE, "Example 2", TextColors.WHITE, " : To prevent PvP in all claims, enter\n",
-                        TextColors.GREEN, "/cf pvp any false override");
                 default :
                     return Text.of("Not defined.");
         }

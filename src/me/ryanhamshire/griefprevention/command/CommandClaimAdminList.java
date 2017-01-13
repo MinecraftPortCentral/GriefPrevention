@@ -27,10 +27,11 @@ package me.ryanhamshire.griefprevention.command;
 
 import com.flowpowered.math.vector.Vector3d;
 import com.google.common.collect.Lists;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.claim.Claim;
-import me.ryanhamshire.griefprevention.claim.ClaimWorldManager;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.claim.GPClaimManager;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandPermissionException;
 import org.spongepowered.api.command.CommandResult;
@@ -72,16 +73,17 @@ public class CommandClaimAdminList implements CommandExecutor {
             }
         }
 
-        ClaimWorldManager claimWorldManager =  GriefPrevention.instance.dataStore.getClaimWorldManager(worldProperties);
+        GPClaimManager claimWorldManager =  GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(worldProperties);
         List<Claim> claimList = claimWorldManager.getWorldClaims();
         List<Text> claimsTextList = Lists.newArrayList();
         if (claimList.size() > 0) {
-            for (Claim claim : claimList) {
+            for (Claim worldClaim : claimList) {
+                GPClaim claim = (GPClaim) worldClaim;
                 if (!claim.isAdminClaim()) {
                     continue;
                 }
                 Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
-                Text claimName = claim.getClaimData().getClaimName();
+                Text claimName = claim.getClaimData().getName().orElse(null);
                 if (claimName == null) {
                     claimName = Text.of(TextColors.GREEN, "Claim");
                 }

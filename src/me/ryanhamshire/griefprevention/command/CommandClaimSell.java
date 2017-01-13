@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -50,59 +50,59 @@ public class CommandClaimSell implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
         // if economy is disabled, don't do anything
-        if (!GriefPrevention.instance.economyService.isPresent()) {
-            GriefPrevention.sendMessage(player, TextMode.Err, "Economy plugin not installed!");
+        if (!GriefPreventionPlugin.instance.economyService.isPresent()) {
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Economy plugin not installed!");
             return CommandResult.success();
         }
 
-        GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId());
+        GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId());
 
-        GriefPreventionConfig<?> activeConfig = GriefPrevention.getActiveConfig(player.getWorld().getProperties());
+        GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties());
         if (activeConfig.getConfig().economy.economyClaimBlockCost == 0 && activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
             return CommandResult.success();
         }
 
         // if selling disabled, send error message
         if (activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
-            GriefPrevention.sendMessage(player, TextMode.Err, Messages.OnlyPurchaseBlocks);
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.OnlyPurchaseBlocks);
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         int availableBlocks = playerData.getRemainingClaimBlocks();
         Optional<Integer> blockCountOpt = ctx.getOne("numberOfBlocks");
         if (!blockCountOpt.isPresent()) {
-            GriefPrevention.sendMessage(player, TextMode.Info, Messages.BlockSaleValue,
+            GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.BlockSaleValue,
                     String.valueOf(activeConfig.getConfig().economy.economyClaimBlockSell), String.valueOf(availableBlocks));
             return CommandResult.success();
         } else {
             int blockCount = blockCountOpt.get();
             // try to parse number of blocks
             if (blockCount <= 0) {
-                GriefPrevention.sendMessage(player, TextMode.Err, "Invalid block count '" + blockCount + "', you must enter a value > 0.");
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Invalid block count '" + blockCount + "', you must enter a value > 0.");
                 return CommandResult.success();
             } else if (blockCount > availableBlocks) {
-                GriefPrevention.sendMessage(player, TextMode.Err, Messages.NotEnoughBlocksForSale);
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NotEnoughBlocksForSale);
                 return CommandResult.success();
             }
 
             // attempt to compute value and deposit it
             double totalValue = blockCount * activeConfig.getConfig().economy.economyClaimBlockSell;
-            TransactionResult transactionResult = GriefPrevention.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().deposit
-                    (GriefPrevention.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalValue),
-                            Cause.of(NamedCause.of(GriefPrevention.MOD_ID, GriefPrevention.instance)));
+            TransactionResult transactionResult = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().deposit
+                    (GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalValue),
+                            Cause.of(NamedCause.of(GriefPreventionPlugin.MOD_ID, GriefPreventionPlugin.instance)));
 
 
             if (transactionResult.getResult() != ResultType.SUCCESS) {
-                GriefPrevention.sendMessage(player, TextMode.Err, "Could not sell blocks. Reason: " + transactionResult.getResult().name() + ".");
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Could not sell blocks. Reason: " + transactionResult.getResult().name() + ".");
                 return CommandResult.success();
             }
             // subtract blocks
@@ -110,7 +110,7 @@ public class CommandClaimSell implements CommandExecutor {
             playerData.getStorageData().save();
 
             // inform player
-            GriefPrevention.sendMessage(player, TextMode.Success, Messages.BlockSaleConfirmation, String.valueOf(totalValue),
+            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.BlockSaleConfirmation, String.valueOf(totalValue),
                     String.valueOf(playerData.getRemainingClaimBlocks()));
         }
         return CommandResult.success();

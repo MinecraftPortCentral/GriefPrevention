@@ -25,8 +25,8 @@
 package me.ryanhamshire.griefprevention.configuration;
 
 import com.google.common.reflect.TypeToken;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 
@@ -49,7 +50,7 @@ public class ClaimStorageData {
 
     private HoconConfigurationLoader loader;
     private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(GriefPrevention.CONFIG_HEADER));
+            .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
     private ObjectMapper<ClaimDataConfig>.BoundInstance configMapper;
     private ClaimDataConfig configBase;
     public Path filePath;
@@ -62,6 +63,8 @@ public class ClaimStorageData {
     public static final String MAIN_CLAIM_FAREWELL = "claim-farewell";
     public static final String MAIN_CLAIM_TYPE = "claim-type";
     public static final String MAIN_CLAIM_CUBOID = "cuboid";
+    public static final String MAIN_CLAIM_RESIZABLE = "resizable";
+    public static final String MAIN_CLAIM_PVP = "pvp";
     public static final String MAIN_CLAIM_DATE_CREATED = "date-created";
     public static final String MAIN_CLAIM_DATE_LAST_ACTIVE = "date-last-active";
     public static final String MAIN_SUBDIVISION_UUID = "uuid";
@@ -73,11 +76,15 @@ public class ClaimStorageData {
     public static final String MAIN_CONTAINERS = "managers";
     public static final String MAIN_MANAGERS = "coowners";
     public static final String MAIN_SUBDIVISIONS = "sub-divisions";
+    public static final String MAIN_ALLOW_DENY_MESSAGES = "deny-messages";
+    public static final String MAIN_ALLOW_FLAG_OVERRIDES = "flag-overrides";
+    public static final String MAIN_ALLOW_CLAIM_EXPIRATION = "claim-expiration";
     // SUB
     public static final String SUB_INHERIT_PARENT = "inherit-parent";
 
+    // Used for new claims after server startup
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public ClaimStorageData(Claim claim, Path path) {
+    public ClaimStorageData(Path path, UUID claimUniqueId, UUID ownerUniqueId, ClaimType type, boolean cuboid) {
         this.filePath = path;
         try {
             Files.createDirectories(path.getParent());
@@ -87,15 +94,18 @@ public class ClaimStorageData {
 
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bindToNew();
-            this.configMapper.getInstance().setWorldUniqueId(claim.id);
-            this.configMapper.getInstance().setClaimOwnerUniqueId(claim.ownerID);
-            this.configMapper.getInstance().setClaimType(claim.type);
+            this.configMapper.getInstance().setWorldUniqueId(claimUniqueId);
+            this.configMapper.getInstance().setOwnerUniqueId(ownerUniqueId);
+            this.configMapper.getInstance().setType(type);
+            this.configMapper.getInstance().setCuboid(cuboid);
+            this.configMapper.getInstance().setClaimStorageData(this);
             reload();
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
         }
     }
 
+    // Used during server load
     @SuppressWarnings({"unchecked", "rawtypes"})
     public ClaimStorageData(Path path) {
         this.filePath = path;
@@ -107,7 +117,7 @@ public class ClaimStorageData {
 
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bindToNew();
-
+            this.configMapper.getInstance().setClaimStorageData(this);
             reload();
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
@@ -120,7 +130,7 @@ public class ClaimStorageData {
 
     public void save() {
         try {
-            this.configMapper.serialize(this.root.getNode(GriefPrevention.MOD_ID));
+            this.configMapper.serialize(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             this.loader.save(this.root);
             this.configBase.setRequiresSave(false);
         } catch (IOException | ObjectMappingException e) {
@@ -133,20 +143,20 @@ public class ClaimStorageData {
             this.root = this.loader.load(ConfigurationOptions.defaults()
                     .setSerializers(
                             TypeSerializers.getDefaultSerializers().newChild().registerType(TypeToken.of(IpSet.class), new IpSet.IpSetSerializer()))
-                    .setHeader(GriefPrevention.CONFIG_HEADER));
+                    .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
             // Remove empty strings as they are no longer serializable in 1.9+
             boolean requiresSave = false;
-            for (Map.Entry<Object, ? extends CommentedConfigurationNode> mapEntry : this.root.getNode(GriefPrevention.MOD_ID).getChildrenMap().entrySet()) {
+            for (Map.Entry<Object, ? extends CommentedConfigurationNode> mapEntry : this.root.getNode(GriefPreventionPlugin.MOD_ID).getChildrenMap().entrySet()) {
                 CommentedConfigurationNode node = (CommentedConfigurationNode) mapEntry.getValue();
                 if (node.getValue() instanceof String) {
                     String value = (String) node.getValue();
                     if (value.isEmpty()) {
-                        this.root.getNode(GriefPrevention.MOD_ID).removeChild(mapEntry.getKey());
+                        this.root.getNode(GriefPreventionPlugin.MOD_ID).removeChild(mapEntry.getKey());
                         requiresSave = true;
                     }
                 }
             }
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             if (requiresSave) {
                 this.save();
             }
@@ -159,14 +169,14 @@ public class ClaimStorageData {
         return Functional.asyncFailableFuture(() -> {
             CommentedConfigurationNode upd = getSetting(key);
             upd.setValue(value);
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPrevention.MOD_ID));
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             this.loader.save(this.root);
             return upd;
         }, ForkJoinPool.commonPool());
     }
 
     public CommentedConfigurationNode getRootNode() {
-        return this.root.getNode(GriefPrevention.MOD_ID);
+        return this.root.getNode(GriefPreventionPlugin.MOD_ID);
     }
 
     public CommentedConfigurationNode getSetting(String key) {

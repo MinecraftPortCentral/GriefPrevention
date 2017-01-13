@@ -24,7 +24,7 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.ArrayList;
@@ -35,13 +35,13 @@ public class SiegeData {
 
     public Player defender;
     public Player attacker;
-    public ArrayList<Claim> claims;
+    public ArrayList<GPClaim> claims;
     public UUID checkupTaskID;
 
-    public SiegeData(Player attacker, Player defender, Claim claim) {
+    public SiegeData(Player attacker, Player defender, GPClaim claim) {
         this.defender = defender;
         this.attacker = attacker;
-        this.claims = new ArrayList<Claim>();
+        this.claims = new ArrayList<GPClaim>();
         this.claims.add(claim);
     }
 }

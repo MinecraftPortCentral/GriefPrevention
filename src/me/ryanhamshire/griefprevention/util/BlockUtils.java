@@ -26,12 +26,19 @@
 package me.ryanhamshire.griefprevention.util;
 
 import com.flowpowered.math.vector.Vector3i;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import com.google.common.collect.Maps;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
+import java.util.Map;
+
 public class BlockUtils {
 
+    private static final Map<BlockState, Integer> BLOCKSTATE_META_CACHE = Maps.newHashMap();
     private static final String locationStringDelimiter = ";";
 
     public static String positionToString(Location<World> location) {
@@ -69,7 +76,7 @@ public class BlockUtils {
 
     // distance check for claims, distance in this case is a band around the
     // outside of the claim rather then euclidean distance
-    public static boolean isLocationNearClaim(Claim claim, Location<World> location, int howNear) {
+    public static boolean isLocationNearClaim(GPClaim claim, Location<World> location, int howNear) {
         Location<World> lesserBoundaryCorner = new Location<World>(claim.lesserBoundaryCorner.getExtent(), claim.lesserBoundaryCorner.getBlockX() - howNear,
                 claim.lesserBoundaryCorner.getBlockY(), claim.lesserBoundaryCorner.getBlockZ() - howNear);
         Location<World> greaterBoundaryCorner = new Location<World>(claim.greaterBoundaryCorner.getExtent(), claim.greaterBoundaryCorner.getBlockX() + howNear,
@@ -85,7 +92,7 @@ public class BlockUtils {
 
         // main check
         boolean inClaim = false;
-        if (claim.cuboid) {
+        if (claim.isCuboid()) {
             inClaim = (
                     x >= lesserBoundaryCorner.getX() &&
                     x <= greaterBoundaryCorner.getX() &&
@@ -108,7 +115,7 @@ public class BlockUtils {
         return true;
     }
 
-    public static boolean clickedClaimCorner(Claim claim, Vector3i clickedPos) {
+    public static boolean clickedClaimCorner(GPClaim claim, Vector3i clickedPos) {
         int clickedX = clickedPos.getX();
         int clickedY = clickedPos.getY();
         int clickedZ = clickedPos.getZ();
@@ -119,10 +126,20 @@ public class BlockUtils {
         int greaterY = claim.getGreaterBoundaryCorner().getBlockY();
         int greaterZ = claim.getGreaterBoundaryCorner().getBlockZ();
         if ((clickedX == lesserX || clickedX == greaterX) && (clickedZ == lesserZ || clickedZ == greaterZ)
-                && (!claim.cuboid || (clickedY == lesserY || clickedY == greaterY))) {
+                && (!claim.isCuboid() || (clickedY == lesserY || clickedY == greaterY))) {
             return true;
         }
 
         return false;
+    }
+
+    public static int getBlockStateMeta(BlockState state) {
+        Integer meta = BLOCKSTATE_META_CACHE.get(state);
+        if (meta == null) {
+            Block mcBlock = (net.minecraft.block.Block) state.getType();
+            meta = mcBlock.getMetaFromState((IBlockState) state);
+            BLOCKSTATE_META_CACHE.put(state, meta);
+        }
+        return meta;
     }
 }

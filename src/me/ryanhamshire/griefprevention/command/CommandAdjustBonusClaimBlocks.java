@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -58,14 +58,14 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
         User user = args.<User>getOne("user").get();
 
         // give blocks to player
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
         playerData.getStorageData().save();
 
-        GriefPrevention
+        GriefPreventionPlugin
                 .sendMessage(src, TextMode.Success, Messages.AdjustBlocksSuccess, user.getName(), String.valueOf(adjustment),
                         String.valueOf(playerData.getBonusClaimBlocks()));
-        GriefPrevention.addLogEntry(
+        GriefPreventionPlugin.addLogEntry(
                 src.getName() + " adjusted " + user.getName() + "'s bonus claim blocks by " + adjustment + ".",
                 CustomLogEntryTypes.AdminActivity);
 

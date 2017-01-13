@@ -25,11 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.GriefPrevention.IgnoreMode;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.TextMode;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin.IgnoreMode;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -43,7 +43,7 @@ public class CommandIgnorePlayer implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext args) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
@@ -53,16 +53,16 @@ public class CommandIgnorePlayer implements CommandExecutor {
         Player targetPlayer = args.<Player>getOne("player").get();
         if (targetPlayer.hasPermission(GPPermissions.NOT_IGNORABLE)) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.PlayerNotIgnorable));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.PlayerNotIgnorable));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
             }
         }
 
-        GriefPrevention.instance.setIgnoreStatus(player.getWorld(), player, targetPlayer, IgnoreMode.StandardIgnore);
+        GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), player, targetPlayer, IgnoreMode.StandardIgnore);
 
-        GriefPrevention.sendMessage(player, TextMode.Success, Messages.IgnoreConfirmation);
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.IgnoreConfirmation);
 
         return CommandResult.success();
     }

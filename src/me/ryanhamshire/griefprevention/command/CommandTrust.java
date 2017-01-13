@@ -25,20 +25,28 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.entity.living.player.User;
 
 public class CommandTrust implements CommandExecutor {
 
     @Override
-    public CommandResult execute(CommandSource src, CommandContext args) {
+    public CommandResult execute(CommandSource src, CommandContext ctx) {
         try {
-            CommandHelper.handleTrustCommand(GriefPrevention.checkPlayer(src), ClaimPermission.BUILD, args.<String>getOne("subject").get());
+            User user = ctx.<User>getOne("user").orElse(null);
+            if (user == null) {
+                String group = ctx.<String>getOne("group").orElse(null);
+                if (group.equalsIgnoreCase("public") || group.equalsIgnoreCase("all")) {
+                    user = GriefPreventionPlugin.PUBLIC_USER;
+                }
+            }
+            CommandHelper.handleTrustCommand(GriefPreventionPlugin.checkPlayer(src), ClaimPermission.BUILD, user);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
         }

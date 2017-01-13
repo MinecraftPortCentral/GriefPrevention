@@ -35,7 +35,7 @@ public class ClaimCategory extends ConfigCategory {
 
     @Setting(value = "accesstrust-commands", comment = "The list of slashcommands requiring access trust when in a claim.")
     public List<String> accessTrustCommands = new ArrayList<>();
-    @Setting(value = "auto-claim-radius", comment = "Radius used for auto-created claims")
+    @Setting(value = "auto-claim-radius", comment = "Radius used for auto-created claims. Set to -1 to disable.")
     public int claimRadius = 4;
     @Setting(value = "banned-item-ids", comment = "Contains list of banned item ids on server.")
     public List<String> bannedItemIds = new ArrayList<>();

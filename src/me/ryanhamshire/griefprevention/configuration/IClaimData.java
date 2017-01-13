@@ -24,39 +24,53 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
-import me.ryanhamshire.griefprevention.claim.Claim;
+import com.flowpowered.math.vector.Vector3i;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.util.Tristate;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface IClaimData {
 
     boolean requiresSave();
 
+    boolean allowClaimExpiration();
+
+    boolean allowDenyMessages();
+
+    boolean allowFlagOverrides();
+
     boolean isCuboid();
 
-    boolean inheritParent();
+    boolean isResizable();
+
+    boolean doesInheritParent();
+
+    Tristate getPvpOverride();
 
     UUID getWorldUniqueId();
 
     UUID getOwnerUniqueId();
 
-    Claim.Type getClaimType();
+    ClaimType getType();
 
-    String getDateCreated();
+    Instant getDateCreated();
 
-    String getDateLastActive();
+    Instant getDateLastActive();
 
-    Text getClaimName();
+    Optional<Text> getName();
 
-    Text getGreetingMessage();
+    Optional<Text> getGreeting();
 
-    Text getFarewellMessage();
+    Optional<Text> getFarewell();
 
-    String getLesserBoundaryCorner();
+    Vector3i getLesserBoundaryCornerPos();
 
-    String getGreaterBoundaryCorner();
+    Vector3i getGreaterBoundaryCornerPos();
 
     List<UUID> getAccessors();
 
@@ -66,21 +80,23 @@ public interface IClaimData {
 
     List<UUID> getManagers();
 
-    void setClaimOwnerUniqueId(UUID newClaimOwner);
+    void setOwnerUniqueId(UUID newClaimOwner);
 
     void setWorldUniqueId(UUID uuid);
 
-    void setClaimType(Claim.Type type);
+    void setType(ClaimType type);
 
     void setCuboid(boolean cuboid);
 
-    void setDateLastActive(String date);
+    void setResizable(boolean resizable);
 
-    void setClaimName(Text name);
+    void setDateLastActive(Instant date);
 
-    void setGreetingMessage(Text message);
+    void setName(Text name);
 
-    void setFarewellMessage(Text message);
+    void setGreeting(Text message);
+
+    void setFarewell(Text message);
 
     void setLesserBoundaryCorner(String location);
 
@@ -97,4 +113,12 @@ public interface IClaimData {
     void setRequiresSave(boolean flag);
 
     void setInheritParent(boolean flag);
+
+    void setClaimExpiration(boolean flag);
+
+    void setFlagOverrides(boolean flag);
+
+    void setDenyMessages(boolean flag);
+
+    void setPvpOverride(Tristate value);
 }

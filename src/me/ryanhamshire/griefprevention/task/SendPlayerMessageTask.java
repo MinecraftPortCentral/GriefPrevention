@@ -25,8 +25,8 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Text;
 
@@ -45,19 +45,19 @@ public class SendPlayerMessageTask implements Runnable {
     @Override
     public void run() {
         if (player == null) {
-            GriefPrevention.addLogEntry(Text.of(message).toPlain());
+            GriefPreventionPlugin.addLogEntry(Text.of(message).toPlain());
             return;
         }
 
         // if the player is dead, save it for after his respawn
         if (((net.minecraft.entity.player.EntityPlayerMP) this.player).isDead) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(this.player.getWorld(), this.player.getUniqueId());
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.player.getWorld(), this.player.getUniqueId());
             playerData.messageOnRespawn = this.message;
         }
 
         // otherwise send it immediately
         else {
-            GriefPrevention.sendMessage(this.player, Text.of(this.message));
+            GriefPreventionPlugin.sendMessage(this.player, Text.of(this.message));
         }
     }
 }

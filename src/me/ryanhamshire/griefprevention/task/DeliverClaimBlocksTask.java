@@ -25,12 +25,12 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.DataStore;
-import me.ryanhamshire.griefprevention.GPOptions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
+import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
@@ -70,7 +70,7 @@ public class DeliverClaimBlocksTask implements Runnable {
                     if (accrualPerHour > 0) {
                         DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(player);
                         Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(i++).execute(newTask)
-                                .submit(GriefPrevention.instance);
+                                .submit(GriefPreventionPlugin.instance);
                     }
                 }
             }
@@ -78,8 +78,8 @@ public class DeliverClaimBlocksTask implements Runnable {
 
         // otherwise, deliver claim blocks to the specified player
         else {
-            DataStore dataStore = GriefPrevention.instance.dataStore;
-            PlayerData playerData = dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            DataStore dataStore = GriefPreventionPlugin.instance.dataStore;
+            GPPlayerData playerData = dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             Location<World> lastLocation = playerData.lastAfkCheckLocation;
             // if he's not in a vehicle and has moved at least three blocks since the last check and he's not being pushed around by fluids
             Optional<MatterProperty> matterProperty = player.getLocation().getBlock().getProperty(MatterProperty.class);
@@ -100,11 +100,11 @@ public class DeliverClaimBlocksTask implements Runnable {
                     return;
                 }
 
-                GriefPrevention.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, false);
+                GriefPreventionPlugin.addLogEntry("Delivering " + accruedBlocks + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, false);
                 PlayerStorageData playerStorage = playerData.getStorageData();
                 playerStorage.getConfig().setAccruedClaimBlocks(playerStorage.getConfig().getAccruedClaimBlocks() + accruedBlocks);
             } else {
-                GriefPrevention.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, false);
+                GriefPreventionPlugin.addLogEntry(player.getName() + " isn't active enough.", CustomLogEntryTypes.Debug, false);
             }
 
             // remember current location for next time

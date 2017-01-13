@@ -25,11 +25,11 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.Lists;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandPermissionException;
 import org.spongepowered.api.command.CommandResult;
@@ -63,7 +63,7 @@ public class CommandPlayerInfo implements CommandExecutor {
 
         if (user == null) {
             if (!(src instanceof Player)) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No player specified."));
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No player specified."));
                 return CommandResult.success();
             }
 
@@ -82,10 +82,10 @@ public class CommandPlayerInfo implements CommandExecutor {
         }
 
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         List<Claim> claimList = new ArrayList<>();
         for (Claim claim : playerData.getClaims()) {
-            if (claim.world.getProperties().equals(worldProperties)) {
+            if (claim.getWorld().getProperties().equals(worldProperties)) {
                 claimList.add(claim);
             }
         }

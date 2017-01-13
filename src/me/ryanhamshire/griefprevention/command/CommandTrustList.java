@@ -27,11 +27,11 @@ package me.ryanhamshire.griefprevention.command;
 
 import static org.spongepowered.api.command.CommandMessageFormatting.SPACE_TEXT;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.Messages;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -51,63 +51,63 @@ public class CommandTrustList implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
 
         // if no claim here, error message
         if (claim == null) {
             try {
-                throw new CommandException(GriefPrevention.getMessage(Messages.TrustListNoClaim));
+                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.TrustListNoClaim));
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
             }
         }
 
-        GriefPrevention.sendMessage(player, TextMode.Info, Messages.TrustListHeader);
+        GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.TrustListHeader);
         Builder permissions = Text.builder(">").color(TextColors.GOLD);
 
-        for (UUID uuid : claim.getClaimData().getManagers()) {
-            User user = GriefPrevention.getOrCreateUser(uuid);
+        for (UUID uuid : claim.getInternalClaimData().getManagers()) {
+            User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             permissions.append(SPACE_TEXT, Text.of(user.getName()));
         }
 
         player.sendMessage(permissions.build());
         permissions = Text.builder(">").color(TextColors.YELLOW);
 
-        for (UUID uuid : claim.getClaimData().getBuilders()) {
-            User user = GriefPrevention.getOrCreateUser(uuid);
+        for (UUID uuid : claim.getInternalClaimData().getBuilders()) {
+            User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             permissions.append(SPACE_TEXT, Text.of(user.getName()));
         }
 
         player.sendMessage(permissions.build());
         permissions = Text.builder(">").color(TextColors.GREEN);
 
-        for (UUID uuid : claim.getClaimData().getContainers()) {
-            User user = GriefPrevention.getOrCreateUser(uuid);
+        for (UUID uuid : claim.getInternalClaimData().getContainers()) {
+            User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             permissions.append(SPACE_TEXT, Text.of(user.getName()));
         }
 
         player.sendMessage(permissions.build());
         permissions = Text.builder(">").color(TextColors.BLUE);
 
-        for (UUID uuid : claim.getClaimData().getAccessors()) {
-            User user = GriefPrevention.getOrCreateUser(uuid);
+        for (UUID uuid : claim.getInternalClaimData().getAccessors()) {
+            User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             permissions.append(SPACE_TEXT, Text.of(user.getName()));
         }
 
         player.sendMessage(permissions.build());
         player.sendMessage(Text.of(
-                Text.of(TextColors.BLUE, GriefPrevention.instance.dataStore.getMessage(Messages.Access)), SPACE_TEXT,
-                Text.of(TextColors.YELLOW, GriefPrevention.instance.dataStore.getMessage(Messages.Build)), SPACE_TEXT,
-                Text.of(TextColors.GREEN, GriefPrevention.instance.dataStore.getMessage(Messages.Containers)), SPACE_TEXT,
-                Text.of(TextColors.GOLD, GriefPrevention.instance.dataStore.getMessage(Messages.Manage))));
+                Text.of(TextColors.BLUE, GriefPreventionPlugin.instance.dataStore.getMessage(Messages.Access)), SPACE_TEXT,
+                Text.of(TextColors.YELLOW, GriefPreventionPlugin.instance.dataStore.getMessage(Messages.Build)), SPACE_TEXT,
+                Text.of(TextColors.GREEN, GriefPreventionPlugin.instance.dataStore.getMessage(Messages.Containers)), SPACE_TEXT,
+                Text.of(TextColors.GOLD, GriefPreventionPlugin.instance.dataStore.getMessage(Messages.Manage))));
         return CommandResult.success();
 
     }

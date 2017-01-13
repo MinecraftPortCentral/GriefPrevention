@@ -24,11 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -46,47 +46,47 @@ public class CommandClaimFlagReset implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
         try {
-            player = GriefPrevention.checkPlayer(src);
+            player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
 
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim.isWildernessClaim()) {
             if (!src.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset the Wilderness Claim to flag defaults."));
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset the Wilderness Claim to flag defaults."));
                 return CommandResult.success();
             }
         } else if (claim.isAdminClaim()) {
             if (!player.getUniqueId().equals(claim.getOwnerUniqueId()) && !src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset an Admin Claim to flag defaults."));
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset an Admin Claim to flag defaults."));
                 return CommandResult.success();
             }
-        } else if ((claim.isBasicClaim() || claim.isSubdivision()) && !player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-            GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset your claim to flag defaults."));
+        } else if (!src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && (claim.isBasicClaim() || claim.isSubdivision()) && !player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset your claim to flag defaults."));
             return CommandResult.success();
         }
 
         // Remove persisted data
-        for (Set<Context> contextSet : GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getAllPermissions().keySet()) {
+        for (Set<Context> contextSet : GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getAllPermissions().keySet()) {
             if (contextSet.contains(claim.getContext())) {
-                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
+                GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
             }
         }
-        for (Set<Context> contextSet : GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getAllOptions().keySet()) {
+        for (Set<Context> contextSet : GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getAllOptions().keySet()) {
             if (contextSet.contains(claim.getContext())) {
-                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
+                GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
             }
         }
-        for (Set<Context> contextSet : GriefPrevention.GLOBAL_SUBJECT.getSubjectData().getAllParents().keySet()) {
+        for (Set<Context> contextSet : GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getAllParents().keySet()) {
             if (contextSet.contains(claim.getContext())) {
-                GriefPrevention.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
+                GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(contextSet);
             }
         }
 
-        GriefPrevention.sendMessage(src, Text.of(TextMode.Success, "Claim flags reset to defaults successfully."));
+        GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success, "Claim flags reset to defaults successfully."));
         return CommandResult.success();
     }
 }

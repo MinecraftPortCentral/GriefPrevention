@@ -24,16 +24,16 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.PlayerData;
+import me.ryanhamshire.griefprevention.GPPlayerData;
 import org.spongepowered.api.entity.living.player.Player;
 
 //applies a visualization for a player by sending him block change packets
 class VisualizationReversionTask implements Runnable {
 
     private Player player;
-    private PlayerData playerData;
+    private GPPlayerData playerData;
 
-    public VisualizationReversionTask(Player player, PlayerData playerData) {
+    public VisualizationReversionTask(Player player, GPPlayerData playerData) {
         this.playerData = playerData;
         this.player = player;
     }

@@ -25,7 +25,7 @@
 package me.ryanhamshire.griefprevention.task;
 
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,7 +48,7 @@ public class IgnoreLoaderThread extends Thread {
 
     @Override
     public void run() {
-        Path ignorePath = GriefPrevention.instance.dataStore.globalPlayerDataPath.resolve(this.playerToLoad + ".ignore");
+        Path ignorePath = GriefPreventionPlugin.instance.dataStore.globalPlayerDataPath.resolve(this.playerToLoad + ".ignore");
         if (!Files.exists(ignorePath)) {
             try {
                 Files.createFile(ignorePath);
@@ -103,7 +103,7 @@ public class IgnoreLoaderThread extends Thread {
 
         // if last attempt failed, log information about the problem
         if (needRetry) {
-            GriefPrevention.addLogEntry("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": "
+            GriefPreventionPlugin.addLogEntry("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": "
                     + latestException.toString());
             latestException.printStackTrace();
         }

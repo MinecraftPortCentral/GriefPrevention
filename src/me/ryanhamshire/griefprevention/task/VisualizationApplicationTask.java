@@ -25,9 +25,9 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.Visualization;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.visual.Visualization;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.entity.living.player.Player;
@@ -40,9 +40,9 @@ public class VisualizationApplicationTask implements Runnable {
 
     private Visualization visualization;
     private Player player;
-    private PlayerData playerData;
+    private GPPlayerData playerData;
 
-    public VisualizationApplicationTask(Player player, PlayerData playerData, Visualization visualization) {
+    public VisualizationApplicationTask(Player player, GPPlayerData playerData, Visualization visualization) {
         this.visualization = visualization;
         this.playerData = playerData;
         this.player = player;
@@ -69,6 +69,6 @@ public class VisualizationApplicationTask implements Runnable {
 
         // schedule automatic visualization reversion in 60 seconds.
         this.playerData.visualRevertTask = Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES)
-                .execute(new VisualizationReversionTask(this.player, this.playerData)).submit(GriefPrevention.instance);
+                .execute(new VisualizationReversionTask(this.player, this.playerData)).submit(GriefPreventionPlugin.instance);
     }
 }

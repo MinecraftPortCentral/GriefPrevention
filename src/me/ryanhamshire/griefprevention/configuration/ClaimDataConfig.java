@@ -24,32 +24,50 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
+import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import me.ryanhamshire.griefprevention.api.data.ClaimData;
 import me.ryanhamshire.griefprevention.configuration.category.ConfigCategory;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.util.Tristate;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @ConfigSerializable
-public class ClaimDataConfig extends ConfigCategory implements IClaimData {
+public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaimData {
 
     private boolean requiresSave = false;
+    private Vector3i lesserPos;
+    private Vector3i greaterPos;
+    private ClaimStorageData claimStorage;
 
     @Setting(value = ClaimStorageData.MAIN_WORLD_UUID)//, comment = "The world uuid associated with claim.")
     private UUID worldUniqueId;
     @Setting(value = ClaimStorageData.MAIN_OWNER_UUID)//, comment = "The owner uuid assocated with claim.")
     private UUID ownerUniqueId;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_TYPE)//, comment = "The type of claim.")
-    private Claim.Type claimType = Claim.Type.BASIC;
+    private ClaimType claimType = ClaimType.BASIC;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_CUBOID)
     private boolean isCuboid = false;
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_RESIZABLE)
+    private boolean isResizable = true;
+    @Setting(value = ClaimStorageData.MAIN_ALLOW_DENY_MESSAGES)
+    private boolean allowDenyMessages = true;
+    @Setting(value = ClaimStorageData.MAIN_ALLOW_CLAIM_EXPIRATION)
+    private boolean allowClaimExpiration = true;
+    @Setting(value = ClaimStorageData.MAIN_ALLOW_FLAG_OVERRIDES)
+    private boolean allowFlagOverrides = true;
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_PVP)
+    private Tristate pvpOverride = Tristate.UNDEFINED;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED)//, comment = "The date and time this claim was created.")
     private String dateCreated = Instant.now().toString();
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_LAST_ACTIVE)//, comment = "The last date and time this claim was active.")
@@ -79,56 +97,100 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
 
     }
 
+    @Override
     public UUID getWorldUniqueId() {
         return this.worldUniqueId;
     }
 
+    @Override
     public UUID getOwnerUniqueId() {
         return this.ownerUniqueId;
     }
 
-    public void setClaimOwnerUniqueId(UUID newClaimOwner) {
-        this.ownerUniqueId = newClaimOwner;
+    @Override
+    public boolean allowClaimExpiration() {
+        return this.allowClaimExpiration;
     }
 
-    public void setWorldUniqueId(UUID uuid) {
-        this.worldUniqueId = uuid;
+    @Override
+    public boolean allowFlagOverrides() {
+        return this.allowFlagOverrides;
     }
 
+    @Override
     public boolean isCuboid() {
         return this.isCuboid;
     }
 
-    public Claim.Type getClaimType() {
+    @Override
+    public boolean allowDenyMessages() {
+        return this.allowDenyMessages;
+    }
+
+    @Override
+    public Tristate getPvpOverride() {
+        return this.pvpOverride;
+    }
+
+    @Override
+    public boolean isResizable() {
+        return this.isResizable;
+    }
+
+    @Override
+    public ClaimType getType() {
         return this.claimType;
     }
 
-    public String getDateCreated() {
-        return this.dateCreated;
+    @Override
+    public Instant getDateCreated() {
+        return Instant.parse(this.dateCreated);
     }
 
-    public String getDateLastActive() {
-        return this.dateLastActive;
+    @Override
+    public Instant getDateLastActive() {
+        return Instant.parse(this.dateLastActive);
     }
 
-    public Text getClaimName() {
-        return this.claimName;
+    @Override
+    public Optional<Text> getName() {
+        return Optional.ofNullable(this.claimName);
     }
 
-    public Text getGreetingMessage() {
-        return this.claimGreetingMessage;
+    @Override
+    public Optional<Text> getGreeting() {
+        return Optional.ofNullable(this.claimGreetingMessage);
     }
 
-    public Text getFarewellMessage() {
-        return this.claimFarewellMessage;
+    @Override
+    public Optional<Text> getFarewell() {
+        return Optional.ofNullable(this.claimFarewellMessage);
     }
 
-    public String getLesserBoundaryCorner() {
-        return this.lesserBoundaryCornerPos;
+    @Override
+    public Vector3i getLesserBoundaryCornerPos() {
+        if (this.lesserPos == null) {
+            try {
+                return BlockUtils.positionFromString(this.lesserBoundaryCornerPos);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return this.lesserPos;
     }
 
-    public String getGreaterBoundaryCorner() {
-        return this.greaterBoundaryCornerPos;
+    @Override
+    public Vector3i getGreaterBoundaryCornerPos() {
+        if (this.greaterPos == null) {
+            try {
+                return BlockUtils.positionFromString(this.greaterBoundaryCornerPos);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return this.greaterPos;
     }
 
     public List<UUID> getAccessors() {
@@ -147,31 +209,66 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
         return this.managers;
     }
 
+    @Override
+    public void setDenyMessages(boolean flag) {
+        this.requiresSave = true;
+        this.allowDenyMessages = flag;
+    }
+
+    @Override
+    public void setClaimExpiration(boolean flag) {
+        this.requiresSave = true;
+        this.allowClaimExpiration = flag;
+    }
+
+    @Override
+    public void setFlagOverrides(boolean flag) {
+        this.allowFlagOverrides = flag;
+    }
+
+    @Override
     public void setCuboid(boolean cuboid) {
         this.isCuboid = cuboid;
     }
 
-    public void setClaimType(Claim.Type type) {
+    @Override
+    public void setPvpOverride(Tristate pvp) {
+        this.requiresSave = true;
+        this.pvpOverride = pvp;
+    }
+
+    @Override
+    public void setResizable(boolean resizable) {
+        this.requiresSave = true;
+        this.isResizable = resizable;
+    }
+
+    @Override
+    public void setType(ClaimType type) {
         this.requiresSave = true;
         this.claimType = type;
     }
 
-    public void setDateLastActive(String date) {
+    @Override
+    public void setDateLastActive(Instant date) {
         this.requiresSave = true;
-        this.dateLastActive = date;
+        this.dateLastActive = date.toString();
     }
 
-    public void setClaimName(Text name) {
+    @Override
+    public void setName(Text name) {
         this.requiresSave = true;
         this.claimName = name;
     }
 
-    public void setGreetingMessage(Text message) {
+    @Override
+    public void setGreeting(Text message) {
         this.requiresSave = true;
         this.claimGreetingMessage = message;
     }
 
-    public void setFarewellMessage(Text message) {
+    @Override
+    public void setFarewell(Text message) {
         this.requiresSave = true;
         this.claimFarewellMessage = message;
     }
@@ -186,21 +283,25 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
         this.greaterBoundaryCornerPos = location;
     }
 
+    @Override
     public void setAccessors(List<UUID> accessors) {
         this.requiresSave = true;
         this.accessors = accessors;
     }
 
+    @Override
     public void setBuilders(List<UUID> builders) {
         this.requiresSave = true;
         this.builders = builders;
     }
 
+    @Override
     public void setContainers(List<UUID> containers) {
         this.requiresSave = true;
         this.containers = containers;
     }
 
+    @Override
     public void setManagers(List<UUID> coowners) {
         this.requiresSave = true;
         this.managers = coowners;
@@ -214,17 +315,37 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
         return this.requiresSave;
     }
 
+    @Override
     public void setRequiresSave(boolean flag) {
         this.requiresSave = flag;
     }
 
     @Override
-    public boolean inheritParent() {
-        return true;
+    public boolean doesInheritParent() {
+        return false;
     }
 
     @Override
     public void setInheritParent(boolean flag) {
-        // only used by subdivisions
+        // do nothing
+    }
+
+    @Override
+    public void setOwnerUniqueId(UUID newClaimOwner) {
+        this.ownerUniqueId = newClaimOwner;
+    }
+
+    @Override
+    public void setWorldUniqueId(UUID uuid) {
+        this.worldUniqueId = uuid;
+    }
+
+    public void setClaimStorageData(ClaimStorageData claimStorage) {
+        this.claimStorage = claimStorage;
+    }
+
+    @Override
+    public void save() {
+        this.claimStorage.save();
     }
 }

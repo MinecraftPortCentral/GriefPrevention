@@ -27,11 +27,12 @@ package me.ryanhamshire.griefprevention.command;
 
 import com.flowpowered.math.vector.Vector3d;
 import com.google.common.collect.Lists;
-import me.ryanhamshire.griefprevention.GPPermissions;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.PlayerData;
-import me.ryanhamshire.griefprevention.TextMode;
-import me.ryanhamshire.griefprevention.claim.Claim;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandPermissionException;
 import org.spongepowered.api.command.CommandResult;
@@ -66,7 +67,7 @@ public class CommandClaimList implements CommandExecutor {
 
         if (user == null) {
             if (!(src instanceof Player)) {
-                GriefPrevention.sendMessage(src, Text.of(TextMode.Err, "No player specified."));
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No player specified."));
                 return CommandResult.success();
             }
 
@@ -75,7 +76,7 @@ public class CommandClaimList implements CommandExecutor {
 
         boolean canListOthers = src.hasPermission(GPPermissions.LIST_BASIC_CLAIMS);
         // otherwise if no permission to delve into another player's claims data or self
-        if (!src.hasPermission(GPPermissions.COMMAND_LIST_CLAIMS_BASE)) {
+        if (!src.hasPermission(GPPermissions.COMMAND_LIST_CLAIMS)) {
             try {
                 throw new CommandPermissionException();
             } catch (CommandPermissionException e) {
@@ -85,11 +86,12 @@ public class CommandClaimList implements CommandExecutor {
         }
 
         // load the target player's data
-        PlayerData playerData = GriefPrevention.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
+        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         List<Claim> claimList = playerData.getClaims();
         List<Text> claimsTextList = Lists.newArrayList();
         if (claimList.size() > 0) {
-            for (Claim claim : claimList) {
+            for (Claim playerClaim : claimList) {
+                GPClaim claim = (GPClaim) playerClaim;
                 if (claim.isAdminClaim() || !claim.world.getProperties().getUniqueId().equals(worldProperties.getUniqueId())) {
                     continue;
                 }
@@ -98,7 +100,7 @@ public class CommandClaimList implements CommandExecutor {
                     continue;
                 }
                 Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
-                Text claimName = claim.getClaimData().getClaimName();
+                Text claimName = claim.getClaimData().getName().orElse(null);
                 if (claimName == null) {
                     claimName = Text.of(TextColors.GREEN, "Claim");
                 }
@@ -146,7 +148,7 @@ public class CommandClaimList implements CommandExecutor {
 
         // drop the data we just loaded, if the player isn't online
         if (!user.isOnline()) {
-            GriefPrevention.instance.dataStore.clearCachedPlayerData(worldProperties, user.getUniqueId());
+            GriefPreventionPlugin.instance.dataStore.clearCachedPlayerData(worldProperties, user.getUniqueId());
         }
 
         return CommandResult.success();
