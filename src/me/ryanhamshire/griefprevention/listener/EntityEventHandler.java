@@ -650,7 +650,7 @@ public class EntityEventHandler {
         GPClaim toClaim = this.dataStore.getClaimAt(toLocation, false, null);
 
         User user = player != null ? player : owner;
-        if (user != null && toClaim.hasFullTrust(user)) {
+        if (user != null && toClaim.allowAccess(user) == null) {
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
             return;
         }
