@@ -132,6 +132,7 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.command.CommandException;
+import org.spongepowered.api.command.CommandMapping;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
@@ -185,6 +186,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -785,52 +787,6 @@ public class GriefPreventionPlugin {
     // handles sub commands
     public void registerBaseCommands() {
 
-        Map<String, String> catalogMap = Maps.newHashMap();
-        for (BlockType blockType : Sponge.getRegistry().getAllOf(BlockType.class)) {
-            String modId = blockType.getId().split(":")[0].toLowerCase();
-            if (modId.equals("none")) {
-                continue;
-            }
-            if (!catalogMap.containsKey(modId + ":any")) {
-                catalogMap.put(modId + ":any", modId + ":any");
-            }
-            catalogMap.put(blockType.getId(), blockType.getId());
-        }
-
-        for (EntityType entityType : Sponge.getRegistry().getAllOf(EntityType.class)) {
-            String modId = entityType.getId().split(":")[0].toLowerCase();
-            if (modId.equals("none")) {
-                continue;
-            }
-            if (!catalogMap.containsKey(modId + ":any")) {
-                catalogMap.put(modId + ":any", modId + ":any");
-            }
-            if (!catalogMap.containsKey(entityType.getId())) {
-                catalogMap.put(entityType.getId(), entityType.getId());
-            }
-            if (!catalogMap.containsKey(modId + ":animal") && Living.class.isAssignableFrom(entityType.getEntityClass())) {
-                catalogMap.put(modId + ":ambient", modId + ":ambient");
-                catalogMap.put(modId + ":animal", modId + ":animal");
-                catalogMap.put(modId + ":aquatic", modId + ":aquatic");
-                catalogMap.put(modId + ":monster", modId + ":monster");
-            }
-        }
-
-        for (ItemType itemType : Sponge.getRegistry().getAllOf(ItemType.class)) {
-            String modId = itemType.getId().split(":")[0].toLowerCase();
-            if (modId.equals("none")) {
-                continue;
-            }
-            if (!catalogMap.containsKey(modId + ":any")) {
-                catalogMap.put(modId + ":any", modId + ":any");
-            }
-            if (!catalogMap.containsKey(itemType.getId())) {
-                catalogMap.put(itemType.getId(), itemType.getId());
-            }
-        }
-        catalogMap.put("any", "any");
-        ImmutableMap<String, String> catalogChoices = ImmutableMap.copyOf(catalogMap);
-
         ImmutableMap.Builder<String, String> flagChoicesBuilder = ImmutableMap.builder();
         for (String flag: GPFlags.FLAG_LIST) {
             flagChoicesBuilder.put(flag, flag);
@@ -957,107 +913,6 @@ public class GriefPreventionPlugin {
                 .permission(GPPermissions.COMMAND_FLAGS_DEBUG)
                 .executor(new CommandClaimFlagDebug())
                 .build(), "claimflagdebug", "cfd");
-
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Gets/Sets claim flags in the claim you are standing in"))
-                .permission(GPPermissions.COMMAND_FLAGS_CLAIM)
-                .arguments(GenericArguments.firstParsing(
-                        optional(GenericArguments.seq(
-                            choices(Text.of("flag"), flagChoices),
-                            GenericArguments.firstParsing(
-                                GenericArguments.seq(
-                                    choices(Text.of("target"), catalogChoices),
-                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                            .put("-1", Tristate.FALSE)
-                                            .put("0", Tristate.UNDEFINED)
-                                            .put("1", Tristate.TRUE)
-                                            .put("false", Tristate.FALSE)
-                                            .put("undefined", Tristate.UNDEFINED)
-                                            .put("true", Tristate.TRUE)
-                                            .build())),
-                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
-                                GenericArguments.seq(
-                                    onlyOne(choices(Text.of("source"), catalogChoices)),
-                                    choices(Text.of("target"), catalogChoices),
-                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                            .put("-1", Tristate.FALSE)
-                                            .put("0", Tristate.UNDEFINED)
-                                            .put("1", Tristate.TRUE)
-                                            .put("false", Tristate.FALSE)
-                                            .put("undefined", Tristate.UNDEFINED)
-                                            .put("true", Tristate.TRUE)
-                                            .build())),
-                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))))))))
-                .executor(new CommandClaimFlag())
-                .build(), "claimflag", "cf");
-
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Gets/Sets flag permission for a group in claim you are standing in."))
-                .permission(GPPermissions.COMMAND_FLAGS_GROUP)
-                .arguments(GenericArguments.firstParsing(
-                        GenericArguments.seq(
-                            onlyOne(string(Text.of("group"))),
-                            GenericArguments.firstParsing(
-                                GenericArguments.seq(
-                                    choices(Text.of("flag"), flagChoices),
-                                    GenericArguments.firstParsing(
-                                            GenericArguments.seq(
-                                                choices(Text.of("target"), catalogChoices),
-                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                        .put("-1", Tristate.FALSE)
-                                                        .put("0", Tristate.UNDEFINED)
-                                                        .put("1", Tristate.TRUE)
-                                                        .put("false", Tristate.FALSE)
-                                                        .put("undefined", Tristate.UNDEFINED)
-                                                        .put("true", Tristate.TRUE)
-                                                        .build()))),
-                                            GenericArguments.seq(
-                                                onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                choices(Text.of("target"), catalogChoices),
-                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                        .put("-1", Tristate.FALSE)
-                                                        .put("0", Tristate.UNDEFINED)
-                                                        .put("1", Tristate.TRUE)
-                                                        .put("false", Tristate.FALSE)
-                                                        .put("undefined", Tristate.UNDEFINED)
-                                                        .put("true", Tristate.TRUE)
-                                                        .build())))))))))
-                .executor(new CommandClaimFlagGroup())
-                .build(), "claimflaggroup", "cfg");
-
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Adds flag permission to player."))
-                .permission(GPPermissions.COMMAND_FLAGS_PLAYER)
-                .arguments(GenericArguments.firstParsing(
-                        GenericArguments.seq(
-                            onlyOne(string(Text.of("player"))),
-                            GenericArguments.firstParsing(
-                                GenericArguments.seq(
-                                    choices(Text.of("flag"), flagChoices),
-                                    GenericArguments.firstParsing(
-                                            GenericArguments.seq(
-                                                choices(Text.of("target"), catalogChoices),
-                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                        .put("-1", Tristate.FALSE)
-                                                        .put("0", Tristate.UNDEFINED)
-                                                        .put("1", Tristate.TRUE)
-                                                        .put("false", Tristate.FALSE)
-                                                        .put("undefined", Tristate.UNDEFINED)
-                                                        .put("true", Tristate.TRUE)
-                                                        .build()))),
-                                            GenericArguments.seq(
-                                                onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                choices(Text.of("target"), catalogChoices),
-                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                        .put("-1", Tristate.FALSE)
-                                                        .put("0", Tristate.UNDEFINED)
-                                                        .put("1", Tristate.TRUE)
-                                                        .put("false", Tristate.FALSE)
-                                                        .put("undefined", Tristate.UNDEFINED)
-                                                        .put("true", Tristate.TRUE)
-                                                        .build())))))))))
-                .executor(new CommandClaimFlagPlayer())
-                .build(), "claimflagplayer", "cfp");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Resets a claim to flag defaults"))
@@ -1339,6 +1194,239 @@ public class GriefPreventionPlugin {
                         user(Text.of("user")),
                         string(Text.of("group"))))
                 .executor(new CommandUntrustAll()).build(), Arrays.asList("untrustall", "uta"));
+
+        Map<String, String> catalogMap = Maps.newHashMap();
+        for (BlockType blockType : Sponge.getRegistry().getAllOf(BlockType.class)) {
+            String modId = blockType.getId().split(":")[0].toLowerCase();
+            if (modId.equals("none")) {
+                continue;
+            }
+            if (!catalogMap.containsKey(modId + ":any")) {
+                catalogMap.put(modId + ":any", modId + ":any");
+            }
+            catalogMap.put(blockType.getId(), blockType.getId());
+        }
+
+        for (EntityType entityType : Sponge.getRegistry().getAllOf(EntityType.class)) {
+            String modId = entityType.getId().split(":")[0].toLowerCase();
+            if (modId.equals("none")) {
+                continue;
+            }
+            if (!catalogMap.containsKey(modId + ":any")) {
+                catalogMap.put(modId + ":any", modId + ":any");
+            }
+            if (!catalogMap.containsKey(entityType.getId())) {
+                catalogMap.put(entityType.getId(), entityType.getId());
+            }
+            if (!catalogMap.containsKey(modId + ":animal") && Living.class.isAssignableFrom(entityType.getEntityClass())) {
+                catalogMap.put(modId + ":ambient", modId + ":ambient");
+                catalogMap.put(modId + ":animal", modId + ":animal");
+                catalogMap.put(modId + ":aquatic", modId + ":aquatic");
+                catalogMap.put(modId + ":monster", modId + ":monster");
+            }
+        }
+
+        for (ItemType itemType : Sponge.getRegistry().getAllOf(ItemType.class)) {
+            String modId = itemType.getId().split(":")[0].toLowerCase();
+            if (modId.equals("none")) {
+                continue;
+            }
+            if (!catalogMap.containsKey(modId + ":any")) {
+                catalogMap.put(modId + ":any", modId + ":any");
+            }
+            if (!catalogMap.containsKey(itemType.getId())) {
+                catalogMap.put(itemType.getId(), itemType.getId());
+            }
+        }
+        // commands
+        Set<? extends CommandMapping> commandList = Sponge.getCommandManager().getCommands();
+        for (CommandMapping command : commandList) {
+            PluginContainer pluginContainer = Sponge.getCommandManager().getOwner(command).orElse(null);
+            if (pluginContainer != null) {
+                for (String alias : command.getAllAliases()) {
+                    String[] parts = alias.split(":");
+                    if (parts.length > 1) {
+                        catalogMap.put(alias, alias);
+                    }
+                }
+            }
+        }
+        catalogMap.put("griefprevention:cf", "griefprevention:cf");
+        catalogMap.put("griefprevention:cfg", "griefprevention:cfg");
+        catalogMap.put("griefprevention:cfp", "griefprevention:cfp");
+        catalogMap.put("griefprevention:cpg", "griefprevention:cpg");
+        catalogMap.put("griefprevention:cpp", "griefprevention:cpp");
+        catalogMap.put("griefprevention:claimflag", "griefprevention:claimflag");
+        catalogMap.put("griefprevention:claimflaggroup", "griefprevention:claimflaggroup");
+        catalogMap.put("griefprevention:claimflagplayer", "griefprevention:claimflagplayer");
+        catalogMap.put("any", "any");
+        ImmutableMap<String, String> catalogChoices = ImmutableMap.copyOf(catalogMap);
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gets/Sets claim flags in the claim you are standing in"))
+                .permission(GPPermissions.COMMAND_FLAGS_CLAIM)
+                .arguments(GenericArguments.firstParsing(
+                        optional(GenericArguments.seq(
+                            choices(Text.of("flag"), flagChoices),
+                            GenericArguments.firstParsing(
+                                GenericArguments.seq(
+                                    choices(Text.of("target"), catalogChoices),
+                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                            .put("-1", Tristate.FALSE)
+                                            .put("0", Tristate.UNDEFINED)
+                                            .put("1", Tristate.TRUE)
+                                            .put("false", Tristate.FALSE)
+                                            .put("undefined", Tristate.UNDEFINED)
+                                            .put("true", Tristate.TRUE)
+                                            .build())),
+                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
+                                GenericArguments.seq(
+                                    onlyOne(choices(Text.of("source"), catalogChoices)),
+                                    choices(Text.of("target"), catalogChoices),
+                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                            .put("-1", Tristate.FALSE)
+                                            .put("0", Tristate.UNDEFINED)
+                                            .put("1", Tristate.TRUE)
+                                            .put("false", Tristate.FALSE)
+                                            .put("undefined", Tristate.UNDEFINED)
+                                            .put("true", Tristate.TRUE)
+                                            .build())),
+                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
+                                GenericArguments.seq(
+                                        string(Text.of("target")),
+                                        onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                .put("-1", Tristate.FALSE)
+                                                .put("0", Tristate.UNDEFINED)
+                                                .put("1", Tristate.TRUE)
+                                                .put("false", Tristate.FALSE)
+                                                .put("undefined", Tristate.UNDEFINED)
+                                                .put("true", Tristate.TRUE)
+                                                .build())),
+                                        optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
+                                GenericArguments.seq(
+                                        onlyOne(choices(Text.of("source"), catalogChoices)),
+                                        string(Text.of("target")),
+                                        onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                .put("-1", Tristate.FALSE)
+                                                .put("0", Tristate.UNDEFINED)
+                                                .put("1", Tristate.TRUE)
+                                                .put("false", Tristate.FALSE)
+                                                .put("undefined", Tristate.UNDEFINED)
+                                                .put("true", Tristate.TRUE)
+                                                .build())),
+                                        optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))))))))
+                .executor(new CommandClaimFlag())
+                .build(), "claimflag", "cf");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gets/Sets flag permission for a group in claim you are standing in."))
+                .permission(GPPermissions.COMMAND_FLAGS_GROUP)
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(
+                            onlyOne(string(Text.of("group"))),
+                            GenericArguments.firstParsing(
+                                GenericArguments.seq(
+                                    choices(Text.of("flag"), flagChoices),
+                                    GenericArguments.firstParsing(
+                                            GenericArguments.seq(
+                                                choices(Text.of("target"), catalogChoices),
+                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("undefined", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build()))),
+                                            GenericArguments.seq(
+                                                onlyOne(choices(Text.of("source"), catalogChoices)),
+                                                choices(Text.of("target"), catalogChoices),
+                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("undefined", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build()))),
+                                            GenericArguments.seq(
+                                                    string(Text.of("target")),
+                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                            .put("-1", Tristate.FALSE)
+                                                            .put("0", Tristate.UNDEFINED)
+                                                            .put("1", Tristate.TRUE)
+                                                            .put("false", Tristate.FALSE)
+                                                            .put("undefined", Tristate.UNDEFINED)
+                                                            .put("true", Tristate.TRUE)
+                                                            .build()))),
+                                            GenericArguments.seq(
+                                                    onlyOne(choices(Text.of("source"), catalogChoices)),
+                                                    string(Text.of("target")),
+                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                            .put("-1", Tristate.FALSE)
+                                                            .put("0", Tristate.UNDEFINED)
+                                                            .put("1", Tristate.TRUE)
+                                                            .put("false", Tristate.FALSE)
+                                                            .put("undefined", Tristate.UNDEFINED)
+                                                            .put("true", Tristate.TRUE)
+                                                            .build())))))))))
+                .executor(new CommandClaimFlagGroup())
+                .build(), "claimflaggroup", "cfg");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Adds flag permission to player."))
+                .permission(GPPermissions.COMMAND_FLAGS_PLAYER)
+                .arguments(GenericArguments.firstParsing(
+                        GenericArguments.seq(
+                            onlyOne(string(Text.of("player"))),
+                            GenericArguments.firstParsing(
+                                GenericArguments.seq(
+                                    choices(Text.of("flag"), flagChoices),
+                                    GenericArguments.firstParsing(
+                                            GenericArguments.seq(
+                                                choices(Text.of("target"), catalogChoices),
+                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("undefined", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build()))),
+                                            GenericArguments.seq(
+                                                    onlyOne(choices(Text.of("source"), catalogChoices)),
+                                                    choices(Text.of("target"), catalogChoices),
+                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                            .put("-1", Tristate.FALSE)
+                                                            .put("0", Tristate.UNDEFINED)
+                                                            .put("1", Tristate.TRUE)
+                                                            .put("false", Tristate.FALSE)
+                                                            .put("undefined", Tristate.UNDEFINED)
+                                                            .put("true", Tristate.TRUE)
+                                                            .build()))),
+                                            GenericArguments.seq(
+                                                    string(Text.of("target")),
+                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                            .put("-1", Tristate.FALSE)
+                                                            .put("0", Tristate.UNDEFINED)
+                                                            .put("1", Tristate.TRUE)
+                                                            .put("false", Tristate.FALSE)
+                                                            .put("undefined", Tristate.UNDEFINED)
+                                                            .put("true", Tristate.TRUE)
+                                                            .build()))),
+                                            GenericArguments.seq(
+                                                    onlyOne(choices(Text.of("source"), catalogChoices)),
+                                                    string(Text.of("target")),
+                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                            .put("-1", Tristate.FALSE)
+                                                            .put("0", Tristate.UNDEFINED)
+                                                            .put("1", Tristate.TRUE)
+                                                            .put("false", Tristate.FALSE)
+                                                            .put("undefined", Tristate.UNDEFINED)
+                                                            .put("true", Tristate.TRUE)
+                                                            .build())))))))))
+                .executor(new CommandClaimFlagPlayer())
+                .build(), "claimflagplayer", "cfp");
     }
 
     public void loadConfig() {

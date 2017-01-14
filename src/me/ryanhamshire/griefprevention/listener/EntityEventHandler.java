@@ -65,6 +65,7 @@ import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
+import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
 import org.spongepowered.api.event.cause.entity.teleport.EntityTeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportType;
@@ -214,6 +215,13 @@ public class EntityEventHandler {
                             return false;
                         }
                         permission = GPPermissions.ITEM_SPAWN;
+                    }
+                    // Remove when pixelmon stops sending client packets to spawn on server
+                    if (entity.getType().getId().equals("pixelmon:pixelmon") && spawnCause.getType() == SpawnTypes.CUSTOM) {
+                        User owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
+                        if (owner != null) {
+                            return true;
+                        }
                     }
                     String entityType = entity.getType() == null ? "unknown" : entity.getType().getId();
                     if (GPPermissionHandler.getClaimPermission(claim, permission, spawnCause, entity, user, true) == Tristate.FALSE) {

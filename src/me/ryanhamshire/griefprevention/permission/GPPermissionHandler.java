@@ -41,6 +41,9 @@ import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.Item;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.cause.entity.spawn.BlockSpawnCause;
+import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
+import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.plugin.PluginContainer;
@@ -326,6 +329,15 @@ public class GPPermissionHandler {
                 return targetId.toLowerCase();
             } else if (obj instanceof EntityType) {
                 return ((EntityType) obj).getId();
+            } else if (obj instanceof SpawnCause) {
+                SpawnCause spawnCause = (SpawnCause) obj;
+                if (spawnCause instanceof EntitySpawnCause) {
+                    EntitySpawnCause entitySpawnCause = (EntitySpawnCause) spawnCause;
+                    return getPermissionIdentifier(entitySpawnCause.getEntity(), true);
+                } else if (spawnCause instanceof BlockSpawnCause) {
+                    BlockSpawnCause blockSpawnCause = (BlockSpawnCause) spawnCause;
+                    return getPermissionIdentifier(blockSpawnCause.getBlockSnapshot(), true);
+                }
             } else if (obj instanceof BlockType) {
                 String targetId = ((BlockType) obj).getId();
                 return targetId;
