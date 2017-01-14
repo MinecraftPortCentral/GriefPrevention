@@ -88,7 +88,7 @@ public class CommandUntrust implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (claim.allowEdit(player) != null && !(playerData != null && playerData.canIgnoreClaim(claim))) {
+        if (claim.allowGrantPermission(player) != null && !(playerData != null && playerData.canIgnoreClaim(claim))) {
             GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You do not have permission to edit this claim."));
             return CommandResult.success();
         }
