@@ -75,6 +75,7 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.common.SpongeImpl;
+import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -1185,7 +1186,8 @@ public class GPClaim implements Claim {
         if (value != Tristate.UNDEFINED) {
             return value.asBoolean();
         }
-        return this.world.getProperties().isPVPEnabled();
+
+        return ((IMixinWorldServer) this.world).getActiveConfig().getConfig().getWorld().getPVPEnabled();
     }
 
     public void setPvpOverride(Tristate value) {
