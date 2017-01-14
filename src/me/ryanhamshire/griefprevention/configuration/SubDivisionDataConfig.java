@@ -228,7 +228,7 @@ public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, 
 
     @Override
     public void setOwnerUniqueId(UUID newClaimOwner) {
-        this.ownerUniqueId = newClaimOwner;
+        //this.ownerUniqueId = newClaimOwner;
     }
 
     @Override

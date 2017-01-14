@@ -41,6 +41,7 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
+import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.message.Messages;
@@ -138,6 +139,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -2110,14 +2112,15 @@ public class PlayerEventHandler {
                             + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 }
             } else {
-                if (!claimResult.successful()) {
-                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You are not allowed to resize passed boundaries.");
-                } else {
-                    // inform player
+                if (claimResult.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
+                    GPClaim overlapClaim = (GPClaim) claimResult.getClaim().get();
                     GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.ResizeFailOverlap);
-                    ((GPClaim) claimResult.getClaim().get()).getVisualizer().createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
+                    overlapClaim.getVisualizer().createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
                     // show the player the conflicting claim
-                    ((GPClaim) claimResult.getClaim().get()).getVisualizer().apply(player);
+                    overlapClaim.getVisualizer().apply(player);
+                    List<Claim> claims = new ArrayList<>();
+                    claims.add(overlapClaim);
+                    CommandHelper.showOverlapClaims(player, claims);
                 }
             }
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();

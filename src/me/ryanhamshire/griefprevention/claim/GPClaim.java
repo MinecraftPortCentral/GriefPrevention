@@ -40,7 +40,6 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.claim.TrustManager;
 import me.ryanhamshire.griefprevention.api.data.ClaimData;
-import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.IClaimData;
@@ -192,16 +191,12 @@ public class GPClaim implements Claim {
 
     // Used for visualizations
     public GPClaim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, ClaimType type, boolean cuboid) {
-        this(lesserBoundaryCorner, greaterBoundaryCorner, UUID.randomUUID(), type);
+        this(lesserBoundaryCorner, greaterBoundaryCorner, UUID.randomUUID(), type, null);
         this.cuboid = cuboid;
     }
 
     // Used at server startup
-    public GPClaim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, ClaimType type) {
-        this(lesserBoundaryCorner, greaterBoundaryCorner, claimId, null, null);
-    }
-
-    public GPClaim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, ClaimType type, Player player) {
+    public GPClaim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, ClaimType type, UUID ownerUniqueId) {
         // id
         this.id = claimId;
 
@@ -209,8 +204,8 @@ public class GPClaim implements Claim {
         this.lesserBoundaryCorner = lesserBoundaryCorner;
         this.greaterBoundaryCorner = greaterBoundaryCorner;
         this.world = lesserBoundaryCorner.getExtent();
-        if (player != null) {
-            this.ownerUniqueId = player.getUniqueId();
+        if (ownerUniqueId != null) {
+            this.ownerUniqueId = ownerUniqueId;
             this.ownerPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
         }
         this.type = type;
@@ -864,12 +859,11 @@ public class GPClaim implements Claim {
             return this.parent.getOwnerName();
         }
 
-        String name = CommandHelper.lookupPlayerName(this.getOwnerUniqueId());
-        if (name == null) {
-            return "unknown";
+        if (this.ownerPlayerData == null) {
+            return "[unknown]";
         }
 
-        return name;
+        return this.ownerPlayerData.getPlayerName();
     }
 
     // whether or not a location is in a claim
@@ -1250,6 +1244,7 @@ public class GPClaim implements Claim {
             newOwnerData.getClaims().add(this);
         }
 
+        this.ownerPlayerData = newOwnerData;
         this.getClaimStorage().save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
