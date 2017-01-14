@@ -650,6 +650,11 @@ public class EntityEventHandler {
         GPClaim toClaim = this.dataStore.getClaimAt(toLocation, false, null);
 
         User user = player != null ? player : owner;
+        if (user != null && toClaim.hasFullTrust(user)) {
+            GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
+            return;
+        }
+
         // enter
         if (fromClaim != toClaim && toClaim != null) {
             Tristate value = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, entity, entity, user);
