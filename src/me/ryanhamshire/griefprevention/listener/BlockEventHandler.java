@@ -98,6 +98,11 @@ public class BlockEventHandler {
         User user = event.getCause().first(User.class).orElse(null);
         if (user != null) {
             if (event.getCause().containsNamed(NamedCause.PLAYER_BREAK) && !event.getCause().containsNamed(NamedCause.FAKE_PLAYER)) {
+                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                return;
+            }
+            if (event.getCause().containsNamed(NamedCause.PISTON_RETRACT)) {
+                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
         }
@@ -342,7 +347,6 @@ public class BlockEventHandler {
         }
 
         String denyReason = targetClaim.allowAccess(user, event.getTargetLocation());
-        System.out.println("denyReason = " + denyReason);
         //DataStore.generateMessages = true;
         if (denyReason != null) {
             if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), user) == Tristate.TRUE) {
