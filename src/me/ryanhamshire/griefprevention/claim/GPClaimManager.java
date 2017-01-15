@@ -333,14 +333,12 @@ public class GPClaimManager implements ClaimManager {
     }
 
     public void save() {
-        for (List<Claim> claimList : this.playerClaimList.values()) {
-            for (Claim claim : claimList) {
-                GPClaim gpClaim = (GPClaim) claim;
-                if (gpClaim.getInternalClaimData().requiresSave()) {
-                    gpClaim.updateClaimStorageData();
-                    gpClaim.getClaimStorage().save();
-                    gpClaim.getInternalClaimData().setRequiresSave(false);
-                }
+        for (Claim claim : this.worldClaims) {
+            GPClaim gpClaim = (GPClaim) claim;
+            if (gpClaim.getInternalClaimData().requiresSave()) {
+                gpClaim.updateClaimStorageData();
+                gpClaim.getClaimStorage().save();
+                gpClaim.getInternalClaimData().setRequiresSave(false);
             }
         }
 
