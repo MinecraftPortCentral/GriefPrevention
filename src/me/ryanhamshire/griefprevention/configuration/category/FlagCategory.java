@@ -120,6 +120,7 @@ public class FlagCategory extends ConfigCategory {
         defaultWildernessFlags.put(GPFlags.BLOCK_PLACE, true);;
         defaultWildernessFlags.put(GPFlags.COMMAND_EXECUTE, true);
         defaultWildernessFlags.put(GPFlags.COMMAND_EXECUTE_PVP, true);
+        defaultWildernessFlags.put(GPFlags.ENTER_CLAIM, true);
         defaultWildernessFlags.put(GPFlags.ENTITY_COLLIDE_BLOCK, true);
         defaultWildernessFlags.put(GPFlags.ENTITY_COLLIDE_ENTITY, true);
         defaultWildernessFlags.put(GPFlags.ENTITY_DAMAGE, true);
@@ -128,6 +129,7 @@ public class FlagCategory extends ConfigCategory {
         defaultWildernessFlags.put(GPFlags.ENTITY_SPAWN, true);
         defaultWildernessFlags.put(GPFlags.ENTITY_TELEPORT_FROM, true);
         defaultWildernessFlags.put(GPFlags.ENTITY_TELEPORT_TO, true);
+        defaultWildernessFlags.put(GPFlags.EXIT_CLAIM, true);
         defaultWildernessFlags.put(GPFlags.EXPLOSION, true);
         defaultWildernessFlags.put(GPFlags.EXPLOSION_SURFACE, true);
         defaultWildernessFlags.put(GPFlags.FIRE_SPREAD, false);

@@ -347,10 +347,8 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // instantiate
-        claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType());
-        claim.setOwnerUniqueId(ownerID);
+        claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType(), ownerID);
         claim.world = lesserBoundaryCorner.getExtent();
-        claim.type = claimStorage.getConfig().getType();
         claim.cuboid = claimStorage.getConfig().isCuboid();
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
@@ -379,7 +377,7 @@ public class FlatFileDataStore extends DataStore {
                 Location<World> subLesserBoundaryCorner = new Location<World>(world, subLesserCorner);
                 Location<World> subGreaterBoundaryCorner = new Location<World>(world, subGreaterCorner);
     
-                GPClaim subDivision = new GPClaim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey(), ClaimType.SUBDIVISION);
+                GPClaim subDivision = new GPClaim(subLesserBoundaryCorner, subGreaterBoundaryCorner, mapEntry.getKey(), ClaimType.SUBDIVISION, null);
                 subDivision.id = mapEntry.getKey();
                 subDivision.world = subLesserBoundaryCorner.getExtent();
                 subDivision.setClaimStorage(claimStorage);

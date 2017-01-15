@@ -31,6 +31,7 @@ import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
 import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
@@ -192,6 +193,8 @@ public class GPPlayerData implements PlayerData {
     public Vector3i lastCollidePos;
     public boolean lastCollideResult = false;
 
+    private String playerName;
+
     // cached option values
     public double optionAbandonReturnRatio = 1.0;
     public int optionBlocksAccruedPerHour = 120;
@@ -240,8 +243,17 @@ public class GPPlayerData implements PlayerData {
             this.ignoreBasicClaims = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_BASIC);
             this.canManageAdminClaims = this.playerSubject.get().hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
             this.canManageWilderness = this.playerSubject.get().hasPermission(GPPermissions.MANAGE_WILDERNESS);
+            this.playerName = CommandHelper.lookupPlayerName(this.playerID);
             this.dataInitialized = true;
         });
+    }
+
+    public String getPlayerName() {
+        if (this.playerName == null) {
+            return "[unknown]";
+        }
+
+        return this.playerName;
     }
 
     public void revertActiveVisual(Player player) {

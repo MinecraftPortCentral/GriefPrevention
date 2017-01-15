@@ -25,7 +25,9 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.flowpowered.math.vector.Vector3d;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
@@ -53,6 +55,8 @@ import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.pagination.PaginationList;
+import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
@@ -352,11 +356,14 @@ public class CommandHelper {
         // Check if player can manage flag
         if (src instanceof Player) {
             Player player = (Player) src;
-            if (GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission) 
-                    && !src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission)) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
-                return CommandResult.success();
-            } else if (!src.hasPermission(GPPermissions.ADMIN_CLAIM_FLAGS + "." + basePermission)) {
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            Tristate result = Tristate.UNDEFINED;
+            if (!playerData.canManageAdminClaims && GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission)) {
+                result = Tristate.fromBoolean(src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission));
+            } else if (result != Tristate.TRUE && playerData.canManageAdminClaims) {
+                result = Tristate.fromBoolean(src.hasPermission(GPPermissions.ADMIN_CLAIM_FLAGS + "." + basePermission));
+            }
+            if (result != Tristate.TRUE) {
                 GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No permission to use this flag."));
                 return CommandResult.success();
             }
@@ -489,6 +496,52 @@ public class CommandHelper {
             if (postConsumerTask != null) {
                 postConsumerTask.accept(src);
             }
+        };
+    }
+
+    public static void showOverlapClaims(CommandSource src, List<Claim> overlappingClaims) {
+        List<Text> claimsTextList = Lists.newArrayList();
+        for (Claim claim : overlappingClaims) {
+            Location<World> southWest = claim.getLesserBoundaryCorner().setPosition(new Vector3d(claim.getLesserBoundaryCorner().getPosition().getX(), 65.0D, claim.getGreaterBoundaryCorner().getPosition().getZ()));
+            // inform player
+            Text claimInfoCommandClick = Text.builder().append(Text.of(
+                    TextColors.GREEN, claim.getName().orElse(Text.of("Claim"))))
+            .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claiminfo", claim.getUniqueId().toString(), CommandHelper.createReturnOverlapConsumer(src, overlappingClaims))))
+            .onHover(TextActions.showText(Text.of("Click here to check claim info.")))
+            .build();
+
+            Text claimCoordsTPClick = Text.builder().append(Text.of(
+                    TextColors.GRAY, southWest.getBlockPosition()))
+            .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(src, southWest, claim)))
+            .onHover(TextActions.showText(Text.of("Click here to teleport to ", claim.getName().orElse(Text.of("none")), ".")))
+            .build();
+
+            claimsTextList.add(Text.builder()
+                    .append(Text.of(
+                            claimInfoCommandClick, TextColors.WHITE, " : ", 
+                            claimCoordsTPClick, " ", 
+                            TextColors.YELLOW, "(Area : " + claim.getArea() + " blocks)"))
+                    .build());
+        }
+
+        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
+        PaginationList.Builder paginationBuilder = paginationService.builder()
+                .title(Text.of(TextColors.RED,"Overlapping Claims")).padding(Text.of("-")).contents(claimsTextList);
+        paginationBuilder.sendTo(src);
+    }
+
+    private static Consumer<CommandSource> createReturnOverlapConsumer(CommandSource src, List<Claim> overlappingClaims) {
+        return consumer -> {
+            Text overlapClaimsReturnCommand = Text.builder().append(Text.of(
+                    TextColors.WHITE, "\n[", TextColors.AQUA, "Return to overlapping claims", TextColors.WHITE, "]\n"))
+                .onClick(TextActions.executeCallback(CommandHelper.createOverlapConsumer(src, overlappingClaims))).build();
+            src.sendMessage(overlapClaimsReturnCommand);
+        };
+    }
+
+    private static Consumer<CommandSource> createOverlapConsumer(CommandSource src, List<Claim> overlappingClaims) {
+        return consumer -> {
+            showOverlapClaims(src, overlappingClaims);
         };
     }
 
