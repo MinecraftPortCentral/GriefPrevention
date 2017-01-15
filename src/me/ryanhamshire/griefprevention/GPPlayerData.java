@@ -396,6 +396,7 @@ public class GPPlayerData implements PlayerData {
     public void setLastCollideBlockData(Vector3i pos, boolean result) {
         this.lastCollidePos = pos;
         this.lastCollideResult = result;
+        this.lastTickCounter = SpongeImpl.getServer().getTickCounter();
     }
 
     public void setLastInteractData(GPClaim claim) {

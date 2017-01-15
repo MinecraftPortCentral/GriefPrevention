@@ -132,7 +132,7 @@ public class GPClaim implements Claim {
     public Visualization visualization;
     public List<UUID> playersWatching = new ArrayList<>();
 
-    public GPPlayerData ownerPlayerData;
+    private GPPlayerData ownerPlayerData;
 
     public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, boolean cuboid) {
         this(world, point1, point2, type, ownerUniqueId, cuboid, null);
@@ -180,7 +180,6 @@ public class GPClaim implements Claim {
         this.lesserBoundaryCorner = new Location<World>(world, smallx, smally, smallz);
         this.greaterBoundaryCorner = new Location<World>(world, bigx, bigy, bigz);
         this.ownerUniqueId = ownerUniqueId;
-        this.ownerPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
         this.type = type;
         this.id = UUID.randomUUID();
         this.context = new Context("gp_claim", this.id.toString());
@@ -242,6 +241,14 @@ public class GPClaim implements Claim {
             this.visualization = new Visualization(this, Visualization.getVisualizationType(this));
         }
         return this.visualization;
+    }
+
+    public GPPlayerData getOwnerPlayerData() {
+        if (this.ownerPlayerData == null && this.ownerUniqueId != null) {
+            this.ownerPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
+        }
+
+        return this.ownerPlayerData;
     }
 
     public UUID getOwnerUniqueId() {
@@ -860,11 +867,11 @@ public class GPClaim implements Claim {
             return this.parent.getOwnerName();
         }
 
-        if (this.ownerPlayerData == null) {
+        if (this.getOwnerPlayerData() == null) {
             return "[unknown]";
         }
 
-        return this.ownerPlayerData.getPlayerName();
+        return this.getOwnerPlayerData().getPlayerName();
     }
 
     // whether or not a location is in a claim

@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.claim;
 
+import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -150,9 +151,6 @@ public class GPClaimManager implements ClaimManager {
 
     @Override
     public void addClaim(Claim claim, Cause cause) {
-        // create a new claim instance (but don't save it, yet)
-        //GPClaim newClaim = new GPClaim(world, lesserBoundary, greaterBoundary, claimType, ownerUniqueId, cuboid);
-
         GPClaim newClaim = (GPClaim) claim;
         // ensure this new claim won't overlap any existing claims
         GPClaim overlapClaim = (GPClaim) newClaim.doesClaimOverlap();
@@ -160,6 +158,15 @@ public class GPClaimManager implements ClaimManager {
             return;
         }
 
+        // validate world
+        if (!this.worldProperties.getUniqueId().equals(newClaim.getWorld().getProperties().getUniqueId())) {
+            World world = Sponge.getServer().getWorld(this.worldProperties.getUniqueId()).get();
+            Vector3i lesserPos = newClaim.getLesserBoundaryCorner().getBlockPosition();
+            Vector3i greaterPos = newClaim.getGreaterBoundaryCorner().getBlockPosition();
+            newClaim.world = world;
+            newClaim.lesserBoundaryCorner = new Location<World>(world, lesserPos);
+            newClaim.greaterBoundaryCorner = new Location<World>(world, greaterPos);
+        }
         // otherwise add this new claim to the data store to make it effective
         this.addClaim(newClaim, true);
     }

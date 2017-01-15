@@ -71,6 +71,7 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 
@@ -208,6 +209,7 @@ public class BlockEventHandler {
         TileEntity tileEntity = event.getCause().first(TileEntity.class).orElse(null);
         Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
         GPClaim sourceClaim = null;
+        GPPlayerData playerData = null;
         if (sourceLocation == null) {
             Player player = event.getCause().first(Player.class).orElse(null);
             if (player == null) {
@@ -216,9 +218,10 @@ public class BlockEventHandler {
             }
 
             sourceLocation = player.getLocation();
-            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         } else {
+            playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(sourceLocation.getExtent(), user.getUniqueId());
             sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
         }
 
@@ -232,16 +235,31 @@ public class BlockEventHandler {
             Direction direction = iterator.next();
             Location<World> location = sourceLocation.getBlockRelative(direction);
             GPClaim targetClaim = this.dataStore.getClaimAt(location, false, null);
+            if (playerData.checkLastInteraction(targetClaim, user)) {
+                continue;
+            }
             if (sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                if (playerData != null) {
+                    playerData.setLastInteractData(targetClaim);
+                }
                 continue;
             } else if (!sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
+                if (playerData != null) {
+                    playerData.setLastInteractData(targetClaim);
+                }
                 continue;
             } else if (sourceClaim.id.equals(targetClaim.id)) {
+                if (playerData != null) {
+                    playerData.setLastInteractData(targetClaim);
+                }
                 continue;
             } else {
                 // Needed to handle levers notifying doors to open etc.
                 String denyReason = targetClaim.allowAccess(user, location);
                 if (denyReason == null) {
+                    if (playerData != null) {
+                        playerData.setLastInteractData(targetClaim);
+                    }
                     continue;
                 }
             }
@@ -272,10 +290,11 @@ public class BlockEventHandler {
         if (user instanceof Player) {
             Player player = (Player) user;
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-            if (playerData.lastCollidePos != null && playerData.lastCollidePos.equals(collidePos)) {
+            if (playerData.lastCollidePos != null && playerData.lastCollidePos.equals(collidePos) && ((SpongeImpl.getServer().getTickCounter() - playerData.lastTickCounter) <= 100)) {
                 if (!playerData.lastCollideResult) {
                     event.setCancelled(true);
                 }
+                playerData.lastTickCounter = SpongeImpl.getServer().getTickCounter();
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             }
@@ -288,10 +307,17 @@ public class BlockEventHandler {
         Tristate override = GPPermissionHandler.getFlagOverride(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock());
         if (override != Tristate.UNDEFINED) {
             if (override == Tristate.TRUE) {
+                if (playerData != null) {
+                    playerData.setLastInteractData(targetClaim);
+                    playerData.setLastCollideBlockData(collidePos, true);
+                }
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             }
 
+            if (playerData != null) {
+                playerData.setLastCollideBlockData(collidePos, false);
+            }
             event.setCancelled(true);
             // log once a second to avoid spam
             if (GriefPreventionPlugin.debugLogging && event.getTargetLocation().getExtent().getProperties().getTotalTime() % 100 == 0L) {
@@ -313,37 +339,39 @@ public class BlockEventHandler {
                 }
                 return; // allow siege mode
             }
+        }
+
+        String denyReason = targetClaim.allowAccess(user, event.getTargetLocation());
+        System.out.println("denyReason = " + denyReason);
+        //DataStore.generateMessages = true;
+        if (denyReason != null) {
             if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), user) == Tristate.TRUE) {
-                GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 if (playerData != null) {
                     playerData.setLastInteractData(targetClaim);
                     playerData.setLastCollideBlockData(collidePos, true);
                 }
-                return;
-            }
-        }
-
-        if (event.getTargetBlock().getType() == BlockTypes.PORTAL) {
-            if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), user) == Tristate.TRUE) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
-            } else if (event.getCause().root() instanceof Player){
-                if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
-                    // Disable message temporarily
-                    //GriefPrevention.sendMessage((Player) user, TextMode.Err, Messages.NoPortalFromProtectedClaim, claim.getOwnerName());
-                    GriefPreventionPlugin.addEventLogEntry(event, targetClaim, event.getTargetLocation(), GPPermissions.PORTAL_USE, source, event.getTargetBlock(), user, GriefPreventionPlugin.getMessage(Messages.NoPortalFromProtectedClaim, user.getName()).toPlain());
-                    event.setCancelled(true);
+            }
+            if (event.getTargetBlock().getType() == BlockTypes.PORTAL) {
+                if (GPPermissionHandler.getClaimPermission(targetClaim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), user) == Tristate.TRUE) {
                     GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
-                    if (playerData != null) {
-                        playerData.setLastCollideBlockData(collidePos, false);
-                    }
                     return;
+                } else if (event.getCause().root() instanceof Player){
+                    if (event.getTargetLocation().getExtent().getProperties().getTotalTime() % 20 == 0L) { // log once a second to avoid spam
+                        // Disable message temporarily
+                        //GriefPrevention.sendMessage((Player) user, TextMode.Err, Messages.NoPortalFromProtectedClaim, claim.getOwnerName());
+                        GriefPreventionPlugin.addEventLogEntry(event, targetClaim, event.getTargetLocation(), GPPermissions.PORTAL_USE, source, event.getTargetBlock(), user, GriefPreventionPlugin.getMessage(Messages.NoPortalFromProtectedClaim, user.getName()).toPlain());
+                        event.setCancelled(true);
+                        GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
+                        if (playerData != null) {
+                            playerData.setLastCollideBlockData(collidePos, false);
+                        }
+                        return;
+                    }
                 }
             }
-        }
-        String denyReason = targetClaim.allowAccess(user, event.getTargetLocation());
-        //DataStore.generateMessages = true;
-        if (denyReason != null) {
+
             if (GriefPreventionPlugin.debugLogging && event.getTargetLocation().getExtent().getProperties().getTotalTime() % 100 == 0L) { // log once a second to avoid spam
                GriefPreventionPlugin.addEventLogEntry(event, targetClaim, event.getTargetLocation(), source, event.getTargetBlock(), user, denyReason);
             }

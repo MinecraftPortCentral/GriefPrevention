@@ -62,11 +62,11 @@ public class CleanupUnusedClaimsTask implements Runnable {
             while (iterator.hasNext()) {
                 GPClaim claim = iterator.next();
                 // skip administrative claims
-                if (claim.isAdminClaim() || claim.getInternalClaimData().allowClaimExpiration() || claim.ownerPlayerData == null) {
+                if (claim.isAdminClaim() || claim.getInternalClaimData().allowClaimExpiration() || claim.getOwnerPlayerData() == null) {
                     continue;
                 }
 
-                if (!claim.ownerPlayerData.dataInitialized) {
+                if (!claim.getOwnerPlayerData().dataInitialized) {
                     continue;
                 }
 
@@ -80,8 +80,8 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 Instant claimLastActive = claim.getInternalClaimData().getDateLastActive();
     
                 // if this claim is a chest claim and those are set to expire
-                if (claim.getArea() <= areaOfDefaultClaim && claim.ownerPlayerData.optionChestClaimExpiration > 0) {
-                    if (claimLastActive.plus(Duration.ofDays(claim.ownerPlayerData.optionChestClaimExpiration))
+                if (claim.getArea() <= areaOfDefaultClaim && claim.getOwnerPlayerData().optionChestClaimExpiration > 0) {
+                    if (claimLastActive.plus(Duration.ofDays(claim.getOwnerPlayerData().optionChestClaimExpiration))
                             .isBefore(Instant.now())) {
                         claim.removeSurfaceFluids(null);
                         claimManager.deleteClaim(claim, Cause.of(NamedCause.of(GPNamedCause.CHEST_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer)));
@@ -96,8 +96,8 @@ public class CleanupUnusedClaimsTask implements Runnable {
                     }
                 }
     
-                if (claim.ownerPlayerData.optionPlayerClaimExpiration > 0) {
-                    if (claimLastActive.plus(Duration.ofDays(claim.ownerPlayerData.optionPlayerClaimExpiration))
+                if (claim.getOwnerPlayerData().optionPlayerClaimExpiration > 0) {
+                    if (claimLastActive.plus(Duration.ofDays(claim.getOwnerPlayerData().optionPlayerClaimExpiration))
                             .isBefore(Instant.now())) {
                         claimManager.deleteClaim(claim, Cause.of(NamedCause.of(GPNamedCause.PLAYER_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer)));
                         GriefPreventionPlugin.addLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "
