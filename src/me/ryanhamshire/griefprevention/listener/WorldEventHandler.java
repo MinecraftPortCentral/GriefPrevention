@@ -40,6 +40,8 @@ public class WorldEventHandler {
     public void onWorldLoad(LoadWorldEvent event) {
         GPTimings.WORLD_LOAD_EVENT.startTimingIfSync();
         GriefPreventionPlugin.instance.dataStore.loadWorldData(event.getTargetWorld());
+        net.minecraft.world.World world = (net.minecraft.world.World) event.getTargetWorld();
+        world.addEventListener(new EntityRemovalListener());
         GPTimings.WORLD_LOAD_EVENT.stopTimingIfSync();
     }
 

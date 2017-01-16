@@ -27,9 +27,12 @@ package me.ryanhamshire.griefprevention.util;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import me.ryanhamshire.griefprevention.BlockPosCache;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.util.math.BlockPos;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -38,6 +41,12 @@ import java.util.Map;
 
 public class BlockUtils {
 
+    private static final int NUM_XZ_BITS = 4;
+    private static final int NUM_SHORT_Y_BITS = 8;
+    private static final short XZ_MASK = 0xF;
+    private static final short Y_SHORT_MASK = 0xFF;
+
+    public static final Map<Integer, BlockPosCache> ENTITY_BLOCK_CACHE = new Int2ObjectArrayMap<>();
     private static final Map<BlockState, Integer> BLOCKSTATE_META_CACHE = Maps.newHashMap();
     private static final String locationStringDelimiter = ";";
 
@@ -141,5 +150,19 @@ public class BlockUtils {
             BLOCKSTATE_META_CACHE.put(state, meta);
         }
         return meta;
+    }
+
+    /**
+     * Serialize this BlockPos into a short value
+     */
+    public static short blockPosToShort(BlockPos pos) {
+        short serialized = (short) setNibble(0, pos.getX() & XZ_MASK, 0, NUM_XZ_BITS);
+        serialized = (short) setNibble(serialized, pos.getY() & Y_SHORT_MASK, 1, NUM_SHORT_Y_BITS);
+        serialized = (short) setNibble(serialized, pos.getZ() & XZ_MASK, 3, NUM_XZ_BITS);
+        return serialized;
+    }
+
+    private static int setNibble(int num, int data, int which, int bitsToReplace) {
+        return (num & ~(bitsToReplace << (which * 4)) | (data << (which * 4)));
     }
 }

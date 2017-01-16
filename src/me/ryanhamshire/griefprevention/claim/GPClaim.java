@@ -709,6 +709,9 @@ public class GPClaim implements Claim {
 
     // access permission check
     public String allowAccess(User user, Location<World> location, boolean interact) {
+        if (user == null) {
+            return "";
+        }
         // following a siege where the defender lost, the claim will allow everyone access for a time
         if (this.doorsOpen) {
             return null;

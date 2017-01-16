@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
@@ -189,9 +188,6 @@ public class GPPlayerData implements PlayerData {
     // collide event cache
     public int lastCollideEntityId = 0;
     public boolean lastCollideEntityResult = false;
-
-    public Vector3i lastCollidePos;
-    public boolean lastCollideResult = false;
 
     private String playerName;
 
@@ -393,12 +389,6 @@ public class GPPlayerData implements PlayerData {
         this.lastCollideEntityResult = result;
     }
 
-    public void setLastCollideBlockData(Vector3i pos, boolean result) {
-        this.lastCollidePos = pos;
-        this.lastCollideResult = result;
-        this.lastTickCounter = SpongeImpl.getServer().getTickCounter();
-    }
-
     public void setLastInteractData(GPClaim claim) {
         this.lastInteractResult = true;
         this.lastInteractClaim = claim.getUniqueId();
@@ -406,8 +396,8 @@ public class GPPlayerData implements PlayerData {
     }
 
     public boolean checkLastInteraction(GPClaim claim, User user) {
-        if (this.lastInteractResult && ((SpongeImpl.getServer().getTickCounter() - this.lastTickCounter) <= 2)) {
-            if (user != null && user.getUniqueId().equals(this.playerID) && (claim.getUniqueId().equals(this.lastInteractClaim) || claim.isWildernessClaim())) {
+        if (this.lastInteractResult && user != null && ((SpongeImpl.getServer().getTickCounter() - this.lastTickCounter) <= 2)) {
+            if (claim.getUniqueId().equals(this.lastInteractClaim) || claim.isWildernessClaim()) {
                 return true;
             }
         }
