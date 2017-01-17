@@ -1211,10 +1211,12 @@ public abstract class DataStore {
     }
 
     private void setOptionDefaultPermissions(Set<Context> contexts) {
-        final SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
-        for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
-            globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
-        }
+        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+            final SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
+            for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
+                globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
+            }
+        });
     }
 
     abstract GPPlayerData getPlayerDataFromStorage(UUID playerID);
