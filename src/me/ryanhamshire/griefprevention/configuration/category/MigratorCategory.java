@@ -30,6 +30,10 @@ import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 @ConfigSerializable
 public class MigratorCategory extends ConfigCategory {
 
+    @Setting(value = "polis", comment = "Set to true to enable Polis data migrator." +
+            "\nNote: All Polis data will be converted into basic claim data. Town balance will transfer to leaders.")
+    public boolean polisMigrator = false;
+
     @Setting(value = "red-protect", comment = 
             "Set to true to enable RedProtect data migrator." +
             "\nNote: All RedProtect data will be converted into basic claim data.")

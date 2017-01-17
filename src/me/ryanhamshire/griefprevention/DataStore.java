@@ -602,7 +602,7 @@ public abstract class DataStore {
                 .cause(GriefPreventionPlugin.pluginCause)
                 .build();
         if(claimResult.successful()) {
-            claimManager.addClaim(claimResult.getClaim().get(), GriefPreventionPlugin.pluginCause);
+            claimManager.addClaim(claimResult.getClaim().get(), true);
         }
         return claimResult;
     }

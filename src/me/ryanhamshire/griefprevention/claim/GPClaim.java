@@ -1296,6 +1296,9 @@ public class GPClaim implements Claim {
             }
 
             for (GPClaim otherClaim : claimsInChunk) {
+                if (otherClaim.getUniqueId().equals(this.getUniqueId())) {
+                    continue;
+                }
                 // if we find an existing claim which will be overlapped
                 if (parent != null && otherClaim.getUniqueId() == parent.getUniqueId()) {
                     // check children
