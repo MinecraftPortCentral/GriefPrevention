@@ -1184,28 +1184,30 @@ public abstract class DataStore {
     }
 
     private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Boolean> defaultFlags) {
-        Map<String, Boolean> defaultPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
-        if (defaultPermissions.isEmpty()) {
-            for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
-                GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), Tristate.fromBoolean(mapEntry.getValue()));
-            }
-        } else {
-            // remove invalid flag entries
-            for (String flagPermission : defaultPermissions.keySet()) {
-                String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
-                if (!defaultFlags.containsKey(flag)) {
-                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+            Map<String, Boolean> defaultPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
+            if (defaultPermissions.isEmpty()) {
+                for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
+                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), Tristate.fromBoolean(mapEntry.getValue()));
+                }
+            } else {
+                // remove invalid flag entries
+                for (String flagPermission : defaultPermissions.keySet()) {
+                    String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+                    if (!defaultFlags.containsKey(flag)) {
+                        GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+                    }
+                }
+    
+                // make sure all defaults are available
+                for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
+                    String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
+                    if (!defaultPermissions.keySet().contains(flagPermission)) {
+                        GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.fromBoolean(mapEntry.getValue()));
+                    }
                 }
             }
-
-            // make sure all defaults are available
-            for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
-                String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
-                if (!defaultPermissions.keySet().contains(flagPermission)) {
-                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.fromBoolean(mapEntry.getValue()));
-                }
-            }
-        }
+        });
     }
 
     private void setOptionDefaultPermissions(Set<Context> contexts) {
