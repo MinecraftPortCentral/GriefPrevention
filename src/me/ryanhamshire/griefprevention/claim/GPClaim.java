@@ -1620,8 +1620,7 @@ public class GPClaim implements Claim {
         }
         GPClaim that = (GPClaim) o;
         return this.type == that.type &&
-               Objects.equal(this.id, that.id) &&
-               Objects.equal(this.lesserBoundaryCorner.getBlockPosition(), that.greaterBoundaryCorner.getBlockPosition());
+               Objects.equal(this.id, that.id);
     }
 
     @Override
