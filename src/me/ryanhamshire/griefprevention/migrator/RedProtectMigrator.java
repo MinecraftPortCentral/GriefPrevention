@@ -30,24 +30,34 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.configuration.ClaimDataConfig;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class RedProtectMigrator {
+
+    private static final String USERNAME_PATTERN = "[a-zA-Z0-9_]+";
 
     public static void migrate(World world, Path redProtectFilePath, Path gpClaimDataPath) throws FileNotFoundException, ClassNotFoundException {
         if (!GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.redProtectMigrator) {
@@ -83,12 +93,16 @@ public class RedProtectMigrator {
                 // create GP claim data file
                 GriefPreventionPlugin.instance.getLogger().info("Migrating RedProtect region data '" + rname + "'...");
                 UUID ownerUniqueId = null;
-                try {
-                    ownerUniqueId = UUID.fromString(creator);
-                } catch (IllegalArgumentException e) {
-                    GriefPreventionPlugin.instance.getLogger().error("Could not migrate RedProtect region data '" + rname + 
-                            "', creator UUID '" + creator + "' is invalid. Skipping...");
-                    continue;
+                if (validate(creator)) {
+                    try {
+                        // check cache first
+                        ownerUniqueId = PlayerUtils.getUUIDByName(creator);
+                        if (ownerUniqueId == null) {
+                            ownerUniqueId = UUID.fromString(getUUID(creator));
+                        }
+                    } catch (Throwable e) {
+                        // assume admin claim
+                    }
                 }
 
                 UUID claimUniqueId = UUID.randomUUID();
@@ -107,7 +121,7 @@ public class RedProtectMigrator {
                 claimDataConfig.setLesserBoundaryCorner(BlockUtils.positionToString(lesserBoundaryCorner));
                 claimDataConfig.setGreaterBoundaryCorner(BlockUtils.positionToString(greaterBoundaryCorner));
                 claimDataConfig.setDateLastActive(Instant.now());
-                claimDataConfig.setType(ClaimType.BASIC);
+                claimDataConfig.setType(ownerUniqueId == null ? ClaimType.ADMIN : ClaimType.BASIC);
                 if (!welcome.equals("")) {
                     claimDataConfig.setGreeting(Text.of(welcome));
                 }
@@ -115,14 +129,22 @@ public class RedProtectMigrator {
                 rpUsers.addAll(members);
                 List<UUID> builders = claimDataConfig.getBuilders();
                 for (String builder : rpUsers) {
-                    UUID builderUniqueId = null;
-                    try {
-                        builderUniqueId = UUID.fromString(builder);
-                    } catch (IllegalArgumentException e) {
-                        // ignore
+                    if (!validate(builder)) {
                         continue;
                     }
-                    if (!builders.contains(builderUniqueId) && !builderUniqueId.equals(ownerUniqueId)) {
+
+                    UUID builderUniqueId = null;
+                    try {
+                        builderUniqueId = PlayerUtils.getUUIDByName(builder);
+                        if (builderUniqueId == null) {
+                            builderUniqueId = UUID.fromString(getUUID(builder));
+                        }
+                    } catch (Throwable e) {
+                        GriefPreventionPlugin.instance.getLogger().error("Could not locate a valid UUID for user '" + builder + "' in region '" + rname + 
+                                "'. Skipping...");
+                        continue;
+                    }
+                    if (!builders.contains(builderUniqueId) && ownerUniqueId != null && !builderUniqueId.equals(ownerUniqueId)) {
                         builders.add(builderUniqueId);
                     }
                 }
@@ -139,5 +161,34 @@ public class RedProtectMigrator {
         } catch (ObjectMappingException e) {
             e.printStackTrace();
         } 
+    }
+
+    private static boolean validate(final String username){
+        Matcher matcher = Pattern.compile(USERNAME_PATTERN).matcher(username);
+        return matcher.matches();
+    }
+
+    // Below taken from https://github.com/FabioZumbi12/Sponge-Redprotect-19/blob/master/src/main/java/br/net/fabiozumbi12/redprotect/MojangUUIDs.java
+    public static String getUUID(String player) {
+        try {
+          URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + player);
+          BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+          String line = in.readLine();
+          if (line == null){
+             return null;
+          }
+          JSONObject jsonProfile = (JSONObject) new JSONParser().parse(line);
+          String name = (String) jsonProfile.get("id");
+          return toUUID(name);
+        } catch (Exception ex) {
+           ex.printStackTrace();
+        }
+        return null;
+    }
+    
+    private static String toUUID(String uuid){
+        return uuid.substring(0, 8) + "-" + uuid.substring(8, 12) + "-"
+                   + uuid.substring(12, 16) + "-" + uuid.substring(16, 20)
+                   + "-" + uuid.substring(20, 32);
     }
 }

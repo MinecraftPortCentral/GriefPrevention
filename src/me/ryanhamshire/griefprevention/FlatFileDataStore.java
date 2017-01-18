@@ -187,7 +187,7 @@ public class FlatFileDataStore extends DataStore {
                 Path redProtectFilePath = redProtectDataPath.resolve("data_" + worldProperties.getWorldName() + ".conf");
                 Path gpMigratedPath = redProtectDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
                 if (Files.exists(redProtectFilePath) && !Files.exists(gpMigratedPath)) {
-                    RedProtectMigrator.migrate(world, redProtectFilePath, newWorldDataPath);
+                    RedProtectMigrator.migrate(world, redProtectFilePath, newWorldDataPath.resolve("ClaimData"));
                     Files.createFile(gpMigratedPath);
                 }
             }
@@ -197,7 +197,7 @@ public class FlatFileDataStore extends DataStore {
                 Path teamsFilePath = polisDataPath.resolve("teams.conf");
                 Path gpMigratedPath = polisDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
                 if (Files.exists(claimsFilePath) && Files.exists(teamsFilePath) && !Files.exists(gpMigratedPath)) {
-                    PolisMigrator.migrate(world, claimsFilePath, teamsFilePath, newWorldDataPath);
+                    PolisMigrator.migrate(world, claimsFilePath, teamsFilePath, newWorldDataPath.resolve("ClaimData"));
                     Files.createFile(gpMigratedPath);
                 }
             }
