@@ -1331,7 +1331,7 @@ public class PlayerEventHandler {
     @Listener(order = Order.FIRST)
     public void onPlayerInteractItem(InteractItemEvent.Secondary event, @Root Player player) {
         World world = player.getWorld();
-        if (event.getItemStack().getType() instanceof ItemFood || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
+        if (event.getItemStack().getType() == ItemTypes.NONE || event.getItemStack().getType() instanceof ItemFood || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
