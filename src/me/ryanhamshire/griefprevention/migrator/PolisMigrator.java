@@ -30,6 +30,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
 import net.minecraft.util.math.ChunkPos;
@@ -241,7 +242,7 @@ public class PolisMigrator {
             GriefPreventionPlugin.instance.getLogger().info(padding);
             return;
         }
-        claim.getClaimData().setName(townTextName);
+        claim.getData().setName(townTextName);
         GriefPreventionPlugin.instance.getLogger().info("Created claim " + claim.getUniqueId() + " with name " + townTextName.toPlain());
 
         // migrate members and executives
@@ -251,7 +252,7 @@ public class PolisMigrator {
                 continue;
             }
             UUID memberUniqueId = UUID.fromString(member);
-            claim.getTrustManager().addBuilder(memberUniqueId, GriefPreventionPlugin.pluginCause);
+            claim.addTrust(memberUniqueId, TrustType.BUILDER, GriefPreventionPlugin.pluginCause);
         }
         List<String> executives = getExecutives(teamsRoot, townName);
         for (String executive : executives) {
@@ -259,7 +260,7 @@ public class PolisMigrator {
                 continue;
             }
             UUID executiveUniqueId = UUID.fromString(executive);
-            claim.getTrustManager().addBuilder(executiveUniqueId, GriefPreventionPlugin.pluginCause);
+            claim.addTrust(executiveUniqueId, TrustType.BUILDER, GriefPreventionPlugin.pluginCause);
         }
 
         // migrate balances
@@ -275,7 +276,7 @@ public class PolisMigrator {
             }
             ECONOMY_TRANSFERS.add(townLeader);
         }
-        claim.getClaimData().setDateLastActive(Instant.now());
+        claim.getData().setDateLastActive(Instant.now());
         GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
         claimManager.addClaim(claim, true);
         GriefPreventionPlugin.instance.getLogger().info("Successfully migrated " + townTextName.toPlain() + "'s chunk group " + currentChunkGroup);

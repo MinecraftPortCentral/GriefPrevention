@@ -74,6 +74,8 @@ import me.ryanhamshire.griefprevention.command.CommandClaimName;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimSell;
+import me.ryanhamshire.griefprevention.command.CommandClaimSetSpawn;
+import me.ryanhamshire.griefprevention.command.CommandClaimSpawn;
 import me.ryanhamshire.griefprevention.command.CommandClaimSubdivide;
 import me.ryanhamshire.griefprevention.command.CommandClaimTransfer;
 import me.ryanhamshire.griefprevention.command.CommandClaimUnbanItem;
@@ -93,6 +95,7 @@ import me.ryanhamshire.griefprevention.command.CommandSetAccruedClaimBlocks;
 import me.ryanhamshire.griefprevention.command.CommandSiege;
 import me.ryanhamshire.griefprevention.command.CommandSoftMute;
 import me.ryanhamshire.griefprevention.command.CommandTrust;
+import me.ryanhamshire.griefprevention.command.CommandTrustAll;
 import me.ryanhamshire.griefprevention.command.CommandTrustList;
 import me.ryanhamshire.griefprevention.command.CommandUnignorePlayer;
 import me.ryanhamshire.griefprevention.command.CommandUnlockDrops;
@@ -192,7 +195,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.3.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "2.3.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPreventionPlugin {
 
     // for convenience, a reference to the instance of this plugin
@@ -205,7 +208,7 @@ public class GriefPreventionPlugin {
     private Path configPath;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
-    public static final String CONFIG_HEADER = "2.3.0\n"
+    public static final String CONFIG_HEADER = "2.3.1\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us at the IRC or drop by our forums and leave a post.\n"
             + "# IRC: #griefprevention @ irc.esper.net ( http://webchat.esper.net/?channel=griefprevention )\n"
@@ -382,8 +385,8 @@ public class GriefPreventionPlugin {
                     String version = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 2022) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 2022+.");
+                    if (spongeVersion < 2096) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 2096+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -876,6 +879,18 @@ public class GriefPreventionPlugin {
                 .build(), "claimgreeting");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Teleports you to claim spawn if available."))
+                .permission(GPPermissions.COMMAND_CLAIM_SPAWN)
+                .executor(new CommandClaimSpawn())
+                .build(), "claimspawn");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Sets the spawn of claim."))
+                .permission(GPPermissions.COMMAND_CLAIM_SET_SPAWN)
+                .executor(new CommandClaimSetSpawn())
+                .build(), "claimsetspawn");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Purchases additional claim blocks with server money. Doesn't work on servers without a vault-compatible "
                         + "economy plugin"))
                 .permission(GPPermissions.COMMAND_BUY_CLAIM_BLOCKS)
@@ -1138,6 +1153,14 @@ public class GriefPreventionPlugin {
                         string(Text.of("group"))))
                 .executor(new CommandTrust())
                 .build(), "trust", "t");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gives a player or group access to all your claims"))
+                .permission(GPPermissions.COMMAND_TRUST_ALL)
+                .arguments(GenericArguments.firstParsing(
+                        user(Text.of("user")),
+                        string(Text.of("group"))))
+                .executor(new CommandTrustAll()).build(), Arrays.asList("trustall", "ta"));
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Lists permissions for the claim you're standing in"))
@@ -1610,7 +1633,7 @@ public class GriefPreventionPlugin {
     }
 
     public static void sendClaimDenyMessage(GPClaim claim, CommandSource player, TextColor color, Messages messageID, String... args) {
-        if (claim.getClaimData() != null && !claim.getClaimData().allowDenyMessages()) {
+        if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
             return;
         }
 
@@ -1618,7 +1641,7 @@ public class GriefPreventionPlugin {
     }
 
     public static void sendClaimDenyMessage(GPClaim claim, CommandSource player, TextColor color, String message) {
-        if (claim.getClaimData() != null && !claim.getClaimData().allowDenyMessages()) {
+        if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
             return;
         }
 
@@ -1626,7 +1649,7 @@ public class GriefPreventionPlugin {
     }
 
     public static void sendClaimDenyMessage(GPClaim claim, CommandSource source, Text message) {
-        if (claim.getClaimData() != null && !claim.getClaimData().allowDenyMessages()) {
+        if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
             return;
         }
 

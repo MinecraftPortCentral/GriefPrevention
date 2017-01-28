@@ -52,7 +52,7 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
                 }
 
                 accumulator.add(sourceClaim.getContext());
-                if (sourceClaim.parent != null && sourceClaim.getClaimData().doesInheritParent()) {
+                if (sourceClaim.parent != null && sourceClaim.getData().doesInheritParent()) {
                     accumulator.add(sourceClaim.parent.getContext());
                 }
             }

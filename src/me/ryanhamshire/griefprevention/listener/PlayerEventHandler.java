@@ -757,10 +757,10 @@ public class PlayerEventHandler {
         for (Claim claim : claimWorldManager.getWorldClaims()) {
             if (claim.getType() != ClaimType.ADMIN && claim.getOwnerUniqueId().equals(playerUniqueId)) {
                 // update lastActive timestamp for claim
-                claim.getClaimData().setDateLastActive(dateNow);
+                claim.getData().setDateLastActive(dateNow);
                 // update timestamps for subdivisions
                 for (Claim subdivision : ((GPClaim) claim).children) {
-                    subdivision.getClaimData().setDateLastActive(dateNow);
+                    subdivision.getData().setDateLastActive(dateNow);
                 }
                 ((GPClaim) claim).getInternalClaimData().setRequiresSave(true);
                 claimWorldManager.addClaim(claim, GriefPreventionPlugin.pluginCause);
@@ -1235,15 +1235,18 @@ public class PlayerEventHandler {
 
         if (owner.isPresent()) {
             if (!claim.pvpRulesApply()) {
-                // otherwise disallow
-                String message = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NotYourPet, owner.get().getName());
-                if (event.getCause().root() instanceof Player) {
-                    GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, message));
+                String denyMessage = claim.allowAccess(player);
+                if (denyMessage != null) {
+                    // otherwise disallow
+                    String message = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NotYourPet, owner.get().getName());
+                    if (event.getCause().root() instanceof Player) {
+                        GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, message));
+                    }
+                    GriefPreventionPlugin.addEventLogEntry(event, claim, location, player, event.getTargetEntity(), player, message);
+                    event.setCancelled(true);
+                    GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
+                    return;
                 }
-                GriefPreventionPlugin.addEventLogEntry(event, claim, location, player, event.getTargetEntity(), player, message);
-                event.setCancelled(true);
-                GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
-                return;
             }
         }
 
@@ -1316,12 +1319,39 @@ public class PlayerEventHandler {
             return;
         }
 
+        BlockSnapshot blockSnapshot = event.getCause().get(NamedCause.HIT_TARGET, BlockSnapshot.class).orElse(BlockSnapshot.NONE);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         Vector3d interactPoint = event.getInteractionPoint().orElse(null);
-        Location<World> location = interactPoint == null ? player.getLocation() : new Location<World>(world, interactPoint);
+        Entity entity = event.getCause().get(NamedCause.HIT_TARGET, Entity.class).orElse(null);
+        Location<World> location = entity != null ? entity.getLocation() : interactPoint != null ? new Location<World>(world, interactPoint) : player.getLocation();
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+
+        if (event.getItemStack().getType() != ItemTypes.NONE) {
+            Tristate override = GPPermissionHandler.getFlagOverride(claim, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack());
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    return;
+                }
+    
+                event.setCancelled(true);
+                GriefPreventionPlugin.sendClaimDenyMessage(claim, player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
+                GriefPreventionPlugin.addEventLogEntry(event, claim, location, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack().getType(), player, null);
+                return;
+            }
+        } else if (blockSnapshot == null && entity == null) {
+            return;
+        }
+
         String denyReason = claim.allowAccess(player, location);
-        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack().getType(), player) == Tristate.FALSE) {
+        if (denyReason != null) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack(), player) == Tristate.TRUE) {
+                return;
+            }
+            // check entity interact
+            if (entity != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, player, entity, player) == Tristate.TRUE) {
+                return;
+            }
+
             GriefPreventionPlugin.sendClaimDenyMessage(claim, player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
             GriefPreventionPlugin.addEventLogEntry(event, claim, location, GPPermissions.INTERACT_ITEM_PRIMARY, player, event.getItemStack(), player, denyReason);
             event.setCancelled(true);
@@ -1331,7 +1361,7 @@ public class PlayerEventHandler {
     @Listener(order = Order.FIRST)
     public void onPlayerInteractItem(InteractItemEvent.Secondary event, @Root Player player) {
         World world = player.getWorld();
-        if (event.getItemStack().getType() == ItemTypes.NONE || event.getItemStack().getType() instanceof ItemFood || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
+        if (event.getItemStack().getType() instanceof ItemFood || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
@@ -1346,10 +1376,30 @@ public class PlayerEventHandler {
         Entity entity = event.getCause().get(NamedCause.HIT_TARGET, Entity.class).orElse(null);
         Location<World> location = entity != null ? entity.getLocation() : interactPoint != null ? new Location<World>(world, interactPoint) : player.getLocation();
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+
+        if (event.getItemStack().getType() != ItemTypes.NONE) {
+            Tristate override = GPPermissionHandler.getFlagOverride(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType());
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    return;
+                }
+    
+                event.setCancelled(true);
+                GriefPreventionPlugin.sendClaimDenyMessage(claim, player, TextMode.Err, Messages.NoInteractItemPermission, claim.getOwnerName(), event.getItemStack().getType().getId());
+                GriefPreventionPlugin.addEventLogEntry(event, claim, location, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType(), player, null);
+                return;
+            }
+        } else if (blockSnapshot == null && entity == null) {
+            return;
+        }
+
         String denyReason = claim.allowAccess(player, location);
-        if (denyReason != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType(), player, true) == Tristate.FALSE) {
+        if (denyReason != null) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ITEM_SECONDARY, player, event.getItemStack().getType(), player) == Tristate.TRUE) {
+                return;
+            }
             // check entity interact
-            if (entity != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, entity, player, true) == Tristate.TRUE) {
+            if (entity != null && GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, entity, player) == Tristate.TRUE) {
                 return;
             }
             if (blockSnapshot != BlockSnapshot.NONE) {
@@ -1888,11 +1938,13 @@ public class PlayerEventHandler {
             playerData.setCuboidMode(false);
             GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You do not have permission to create/resize basic claims in 3D mode.");
             GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.CuboidClaimDisabled);
+            GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
         } else if (playerData.shovelMode == ShovelMode.Subdivide && playerData.getCuboidMode() && !player.hasPermission(GPPermissions.CLAIM_CUBOID_SUBDIVISION)) {
             playerData.setCuboidMode(false);
             GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You do not have permission to create/resize subdivisions in 3D mode.");
             GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.CuboidClaimDisabled);
+            GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
         }
 
@@ -1985,6 +2037,27 @@ public class PlayerEventHandler {
                 newWidth = (Math.abs(newx1 - newx2) + 1);
                 newHeight = (Math.abs(newz1 - newz2) + 1);
             }
+            int maxClaimX = playerData.getMaxClaimX(playerData.claimResizing.getType());
+            int maxClaimY = playerData.getMaxClaimY(playerData.claimResizing.getType());
+            int maxClaimZ = playerData.getMaxClaimZ(playerData.claimResizing.getType());
+            if (maxClaimX > 0 && newWidth > maxClaimX) {
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You cannot resize passed the max claim x of " + maxClaimX + ".");
+                event.setCancelled(true);
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
+            if (playerData.claimResizing.isCuboid() && maxClaimY > 0 && newWidth > maxClaimY) {
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You cannot resize passed the max claim y of " + maxClaimY + ".");
+                event.setCancelled(true);
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
+            if (maxClaimZ > 0 && newWidth > maxClaimZ) {
+                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You cannot resize passed the max claim z of " + maxClaimZ + ".");
+                event.setCancelled(true);
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
 
             // for top level claims, apply size rules and claim blocks requirement
             if (playerData.claimResizing.parent == null) {
@@ -2053,10 +2126,10 @@ public class PlayerEventHandler {
             ClaimResult claimResult = null;
             if (playerData.claimResizing.isCuboid()) {
                 // 3D resize
-                claimResult = playerData.claimResizing.resizeCuboidClaim(newx1, newy1, newz1, newx2, newy2, newz2, Cause.of(NamedCause.source(player)));
+                claimResult = playerData.claimResizing.resizeCuboid(newx1, newy1, newz1, newx2, newy2, newz2, Cause.of(NamedCause.source(player)));
             } else {
                 // 2D resize
-                claimResult = playerData.claimResizing.resizeClaim(newx1, newx2, newy1, newy2, newz1, newz2, Cause.of(NamedCause.source(player)));
+                claimResult = playerData.claimResizing.resize(newx1, newx2, newy1, newy2, newz1, newz2, Cause.of(NamedCause.source(player)));
             }
             if (claimResult.successful()) {
                 Claim claim = (GPClaim) claimResult.getClaim().get();
@@ -2343,10 +2416,18 @@ public class PlayerEventHandler {
 
             GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
             // if it didn't succeed, tell the player why
-            if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
-                GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapShort);
-                gpClaim.getVisualizer().createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
-                gpClaim.getVisualizer().apply(player);
+            if (!result.successful()) {
+                if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapShort);
+                    gpClaim.getVisualizer().createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
+                    gpClaim.getVisualizer().apply(player);
+                } else if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_X) {
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Claim exceeds your size X limit of " + playerData.optionMaxClaimSizeX + " blocks.");
+                } else if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_Y) {
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Claim exceeds your size Y limit of " + playerData.optionMaxClaimSizeY + " blocks.");
+                } else if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_Z) {
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Claim exceeds your size Z limit of " + playerData.optionMaxClaimSizeZ + " blocks.");
+                }
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;
             }

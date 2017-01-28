@@ -53,10 +53,10 @@ public class CommandClaimInherit implements CommandExecutor {
             GriefPreventionPlugin.sendMessage(player, TextMode.Err, "This command can only be used in subdivisions.");
             return CommandResult.success();
         }
-        claim.getClaimData().setInheritParent(!claim.getClaimData().doesInheritParent());
+        claim.getData().setInheritParent(!claim.getData().doesInheritParent());
         claim.getInternalClaimData().setRequiresSave(true);
 
-        if (!claim.getClaimData().doesInheritParent()) {
+        if (!claim.getData().doesInheritParent()) {
             GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.WHITE, "Subdivision inheritance ", TextColors.RED, "OFF"));
         } else {
             GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.WHITE, "Subdivision inheritance ", TextColors.GREEN, "ON"));

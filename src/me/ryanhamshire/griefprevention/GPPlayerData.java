@@ -27,8 +27,8 @@ package me.ryanhamshire.griefprevention;
 
 import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
-import me.ryanhamshire.griefprevention.claim.ClaimPermission;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
@@ -54,7 +54,6 @@ import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -66,8 +65,6 @@ public class GPPlayerData implements PlayerData {
     public WorldProperties worldProperties;
     private WeakReference<Subject> playerSubject;
     private GriefPreventionConfig<?> activeConfig;
-    // permission level
-    public Map<UUID, ClaimPermission> permissionLevelMap = Maps.newHashMap();
 
     // the player's claims
     private List<Claim> claimList;
@@ -197,6 +194,9 @@ public class GPPlayerData implements PlayerData {
     public int optionCreateClaimLimit = 0;
     public int optionInitialClaimBlocks = 100;
     public int optionMaxAccruedBlocks = 80000;
+    public int optionMaxClaimSizeX = 0;
+    public int optionMaxClaimSizeY = 0;
+    public int optionMaxClaimSizeZ = 0;
     public int optionChestClaimExpiration = 7;
     public int optionPlayerClaimExpiration = 14;
 
@@ -232,6 +232,9 @@ public class GPPlayerData implements PlayerData {
             this.optionCreateClaimLimit = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.CREATE_CLAIM_LIMIT, 0);
             this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.INITIAL_CLAIM_BLOCKS, 100);
             this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_ACCRUED_BLOCKS, 80000);
+            this.optionMaxClaimSizeX= PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_CLAIM_SIZE_X, 0);
+            this.optionMaxClaimSizeY= PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_CLAIM_SIZE_Y, 0);
+            this.optionMaxClaimSizeZ = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_CLAIM_SIZE_Z, 0);
             this.optionPlayerClaimExpiration = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.PLAYER_CLAIM_EXPIRATION, 14);
             // permissions
             this.ignoreAdminClaims = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_ADMIN);
@@ -318,7 +321,7 @@ public class GPPlayerData implements PlayerData {
     public int getRemainingClaimBlocks() {
         int remainingBlocks = this.optionInitialClaimBlocks + this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
         for (Claim claim : this.claimList) {
-            if (!claim.isAdminClaim() && !claim.isSubdivision()) {
+            if (!claim.isAdminClaim() && !claim.isSubdivision() && claim.getData().requiresClaimBlocks()) {
                 remainingBlocks -= claim.getArea();
             }
         }
@@ -420,5 +423,25 @@ public class GPPlayerData implements PlayerData {
             return this.ignoreWilderness;
         }
         return this.ignoreBasicClaims;
+    }
+
+    @Override
+    public int getMaxAccruedClaimBlocks() {
+        return this.optionMaxAccruedBlocks;
+    }
+
+    @Override
+    public int getMaxClaimX(ClaimType type) {
+        return this.optionMaxClaimSizeX;
+    }
+
+    @Override
+    public int getMaxClaimY(ClaimType type) {
+        return this.optionMaxClaimSizeY;
+    }
+
+    @Override
+    public int getMaxClaimZ(ClaimType type) {
+        return this.optionMaxClaimSizeZ;
     }
 }

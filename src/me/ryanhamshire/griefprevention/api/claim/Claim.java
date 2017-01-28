@@ -125,14 +125,42 @@ public interface Claim extends ContextSource {
     World getWorld();
 
     /**
+     * Transfers claim to new owner.
+     * 
+     * Note: Both {@link ClaimType#WILDERNESS} and {@link ClaimType#ADMIN} cannot be transferred.
+     * This validates if the new owner has enough claim blocks to support this claim.
+     * 
+     * @param ownerUniqueId
+     * @return The claim result
+     */
+    ClaimResult transferOwner(UUID ownerUniqueId);
+
+    default ClaimResult convertToType(ClaimType type) {
+        return convertToType(type, Optional.empty());
+    }
+
+    /**
+     * Attempts to convert claim to {@link ClaimType#ADMIN} type.
+     * 
+     * Note: Both {@link ClaimType#WILDERNESS} and {@link ClaimType#SUBDIVISION} cannot be converted
+     * to {@link ClaimType#ADMIN}.
+     * If changing a {@link ClaimType#ADMIN} to {@link ClaimType#BASIC}, owner is required.
+     * 
+     * @param type The new claim type
+     * @param owner The owner to set
+     * @return The claim result
+     */
+    ClaimResult convertToType(ClaimType type, Optional<UUID> owner);
+
+    /**
      * Resizes a claim.
      * 
      * @param startCornerLoc The start corner location
      * @param endCornerLoc The end corner location
      * @return
      */
-    default ClaimResult resizeClaim(Location<World> startCornerLoc, Location<World> endCornerLoc, Cause cause) {
-        return this.resizeClaim(startCornerLoc.getBlockPosition(), endCornerLoc.getBlockPosition(), cause);
+    default ClaimResult resize(Location<World> startCornerLoc, Location<World> endCornerLoc, Cause cause) {
+        return this.resize(startCornerLoc.getBlockPosition(), endCornerLoc.getBlockPosition(), cause);
     }
 
     /**
@@ -142,8 +170,8 @@ public interface Claim extends ContextSource {
      * @param endCornerPos The end corner block position
      * @return
      */
-    default ClaimResult resizeClaim(Vector3i startCornerPos, Vector3i endCornerPos, Cause cause) {
-        return this.resizeClaim(startCornerPos.getX(), endCornerPos.getX(), startCornerPos.getY(), endCornerPos.getY(), startCornerPos.getZ(), endCornerPos.getZ(), cause);
+    default ClaimResult resize(Vector3i startCornerPos, Vector3i endCornerPos, Cause cause) {
+        return this.resize(startCornerPos.getX(), endCornerPos.getX(), startCornerPos.getY(), endCornerPos.getY(), startCornerPos.getZ(), endCornerPos.getZ(), cause);
     }
 
     /**
@@ -158,7 +186,7 @@ public interface Claim extends ContextSource {
      * @param cause The cause of resize
      * @return The claim result
      */
-    ClaimResult resizeClaim(int x1, int x2, int y1, int y2, int z1, int z2, Cause cause);
+    ClaimResult resize(int x1, int x2, int y1, int y2, int z1, int z2, Cause cause);
 
     /**
      * Creates a subdivision.
@@ -182,11 +210,66 @@ public interface Claim extends ContextSource {
     List<Claim> getSubdivisions();
 
     /**
-     * Gets the {@link TrustManager} of this claim.
+     * Gets an immutable list of all trusted users.
      * 
-     * @return The trust manager
+     * @return An immutable list of all trusted users
      */
-    TrustManager getTrustManager();
+    List<UUID> getAllTrusts();
+
+    /**
+     * Gets an immutable list of trusted users for {@link TrustType}.
+     * 
+     * @return An immutable list of trusted users
+     */
+    List<UUID> getTrusts(TrustType type);
+
+    /**
+     * Grants claim trust to the UUID for given {@link TrustType}.
+     * 
+     * @param uuid The UUID of user
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult addTrust(UUID uuid, TrustType type, Cause cause);
+
+    /**
+     * Grants claim trust to the list of UUID's for given {@link TrustType}.
+     * 
+     * @param uuid The list of user UUID's
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult addTrusts(List<UUID> uuid, TrustType type, Cause cause);
+
+    /**
+     * Removes UUID from claim trust for given {@link TrustType}.
+     * 
+     * @param uuid The UUID of user
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeTrust(UUID uuid, TrustType type, Cause cause);
+
+    /**
+     * Removes the list of UUID's from claim trust for given {@link TrustType}.
+     * 
+     * @param uuid The list of user UUID's
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeTrusts(List<UUID> uuid, TrustType type, Cause cause);
+
+    /**
+     * Clears all trusts for claim.
+     * 
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeAllTrusts(Cause cause);
 
     default boolean isAdminClaim() {
         return this.getType() == ClaimType.ADMIN;
@@ -235,7 +318,7 @@ public interface Claim extends ContextSource {
      * @param newDepth The new depth
      * @return Whether the extension was successful
      */
-    boolean extendClaim(int newDepth);
+    boolean extend(int newDepth);
 
     /**
      * Deletes the subdivision.
@@ -250,7 +333,7 @@ public interface Claim extends ContextSource {
      * 
      * @return The claim's persisted data
      */
-    ClaimData getClaimData();
+    ClaimData getData();
 
     /**
      * Gets the {@link Type} of claim.
@@ -258,7 +341,7 @@ public interface Claim extends ContextSource {
      * @return The claim type
      */
     default ClaimType getType() {
-        return this.getClaimData().getType();
+        return this.getData().getType();
     }
 
     /** Gets the claim's world {@link UUID}.
@@ -266,7 +349,7 @@ public interface Claim extends ContextSource {
      * @return The world UUID
      */
     default UUID getWorldUniqueId() {
-        return this.getClaimData().getWorldUniqueId();
+        return this.getData().getWorldUniqueId();
     }
 
     /**
@@ -278,7 +361,7 @@ public interface Claim extends ContextSource {
      * @return The UUID of this claim
      */
     default UUID getOwnerUniqueId() {
-        return this.getClaimData().getOwnerUniqueId();
+        return this.getData().getOwnerUniqueId();
     }
 
     /**
@@ -287,7 +370,7 @@ public interface Claim extends ContextSource {
      * @return The name of claim, if available
      */
     default Optional<Text> getName() {
-        return this.getClaimData().getName();
+        return this.getData().getName();
     }
 
     /**
@@ -300,6 +383,8 @@ public interface Claim extends ContextSource {
     }
 
     public interface Builder {
+
+        Builder cause(Cause cause);
 
         Builder cuboid(boolean cuboid);
 
@@ -317,9 +402,11 @@ public interface Claim extends ContextSource {
 
         Builder world(World world);
 
-        Builder reset();
+        Builder sizeRestrictions(boolean sizeRestrictions);
 
-        Builder cause(Cause cause);
+        Builder requiresClaimBlocks(boolean requiresClaimBlocks);
+
+        Builder reset();
 
         ClaimResult build();
     }

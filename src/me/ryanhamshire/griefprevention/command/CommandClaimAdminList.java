@@ -83,7 +83,7 @@ public class CommandClaimAdminList implements CommandExecutor {
                     continue;
                 }
                 Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
-                Text claimName = claim.getClaimData().getName().orElse(null);
+                Text claimName = claim.getData().getName().orElse(null);
                 if (claimName == null) {
                     claimName = Text.of(TextColors.GREEN, "Claim");
                 }

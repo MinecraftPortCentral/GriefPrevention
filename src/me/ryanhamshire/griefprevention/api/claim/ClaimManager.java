@@ -100,8 +100,9 @@ public interface ClaimManager {
      * 
      * @param claim The claim to delete
      * @param cause The cause of deletion
+     * @return The claim result
      */
-    void deleteClaim(Claim claim, Cause cause);
+    ClaimResult deleteClaim(Claim claim, Cause cause);
 
     /**
      * Gets the managed {@link WorldProperties}.

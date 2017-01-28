@@ -39,6 +39,8 @@ public class GPPermissions {
     public static final String COMMAND_CLAIM_INFO_BASE = "griefprevention.user.claim.command.info.base";
     public static final String COMMAND_CLAIM_INFO_TELEPORT_OTHERS = "griefprevention.user.claim.command.info.teleport.others";
     public static final String COMMAND_CLAIM_INFO_TELEPORT_BASE = "griefprevention.user.claim.command.info.teleport.base";
+    public static final String COMMAND_CLAIM_SPAWN = "griefprevention.user.claim.command.spawn";
+    public static final String COMMAND_CLAIM_SET_SPAWN = "griefprevention.user.claim.command.set-spawn";
     public static final String COMMAND_SET_CLAIM_NAME = "griefprevention.user.claim.command.name";
     public static final String COMMAND_SET_CLAIM_FAREWELL = "griefprevention.user.claim.command.farewell";
     public static final String COMMAND_SET_CLAIM_GREETING = "griefprevention.user.claim.command.greeting";
@@ -130,6 +132,7 @@ public class GPPermissions {
     public static final String COMMAND_GIVE_PERMISSION_TRUST = "griefprevention.user.claim.command.trust.permission";
     public static final String COMMAND_LIST_TRUST = "griefprevention.user.claim.command.trust.list";
     public static final String COMMAND_REMOVE_TRUST = "griefprevention.user.claim.command.trust.remove";
+    public static final String COMMAND_TRUST_ALL = "griefprevention.user.claim.command.trust.all";
 
     // Flags
     public static final String BLOCK_BREAK = "griefprevention.flag.block-break";

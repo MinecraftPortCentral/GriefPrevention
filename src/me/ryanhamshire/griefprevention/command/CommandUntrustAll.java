@@ -25,12 +25,16 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.event.GPTrustClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -38,7 +42,10 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 import java.util.List;
 import java.util.UUID;
@@ -84,9 +91,15 @@ public class CommandUntrustAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        UUID playerUniqueId = user.getUniqueId();
+        GPTrustClaimEvent.Remove event = new GPTrustClaimEvent.Remove(claimList, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not remove trust from user '" + user.getName() + "'. A plugin has denied it."))));
+            return CommandResult.success();
+        }
+
         for (Claim claim : claimList) {
-            this.removeAllTrust(claim, playerUniqueId);
+            this.removeAllTrust(claim, user.getUniqueId());
         }
 
         GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.UntrustIndividualAllClaims, user.getName());
@@ -95,11 +108,10 @@ public class CommandUntrustAll implements CommandExecutor {
 
     private void removeAllTrust(Claim claim, UUID playerUniqueId) {
         GPClaim gpClaim = (GPClaim) claim;
-        gpClaim.getInternalClaimData().getAccessors().remove(playerUniqueId);
-        gpClaim.getInternalClaimData().getBuilders().remove(playerUniqueId);
-        gpClaim.getInternalClaimData().getContainers().remove(playerUniqueId);
-        gpClaim.getInternalClaimData().getManagers().remove(playerUniqueId);
-        gpClaim.getInternalClaimData().setRequiresSave(true);
+        for (TrustType type : TrustType.values()) {
+            gpClaim.getTrustList(type).remove(playerUniqueId);
+        }
+
         for (Claim subdivision : gpClaim.children) {
             this.removeAllTrust(subdivision, playerUniqueId);
         }

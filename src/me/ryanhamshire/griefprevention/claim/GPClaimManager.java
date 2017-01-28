@@ -34,6 +34,8 @@ import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
@@ -232,27 +234,31 @@ public class GPClaimManager implements ClaimManager {
         return;
     }
 
-    // deletes a claim or subdivision
-    public void deleteClaim(Claim claim) {
-        this.deleteClaim(claim, null);
+    public ClaimResult deleteClaim(Claim claim, Cause cause) {
+        if (cause != null) {
+            GPDeleteClaimEvent event = new GPDeleteClaimEvent(claim, cause);
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+            }
+        }
+
+        this.deleteClaim(claim);
+        return new GPClaimResult(claim, ClaimResultType.SUCCESS);
     }
 
-    public void deleteClaim(Claim claim, Cause cause) {
+    public void deleteClaim(Claim claim) {
         if (claim.isSubdivision()) {
-            Claim parent = claim.getParent().get();
-            parent.deleteSubdivision(claim, cause);
-            ((GPClaim) parent).getClaimStorage().save();
-            if (cause != null) {
-                GPDeleteClaimEvent ev = new GPDeleteClaimEvent(claim, cause);
-                Sponge.getGame().getEventManager().post(ev);
-            }
+            GPClaim parent = (GPClaim) claim.getParent().get();
+            parent.deleteSubdivision(claim, true);
             return;
         }
 
         // delete any subdivisions
         List<Claim> subClaims = claim.getSubdivisions();
         for (Claim subdivision : subClaims) {
-            claim.deleteSubdivision(subdivision, cause);
+            GPClaim gpClaim = (GPClaim) subdivision;
+            gpClaim.deleteSubdivision(subdivision, false);
         }
         ((GPClaim) claim).getClaimStorage().save();
 
@@ -274,10 +280,6 @@ public class GPClaimManager implements ClaimManager {
         }
 
         DATASTORE.deleteClaimFromSecondaryStorage((GPClaim) claim);
-        if (cause != null) {
-            GPDeleteClaimEvent ev = new GPDeleteClaimEvent(claim, cause);
-            Sponge.getGame().getEventManager().post(ev);
-        }
     }
 
     private void updateChunkHashes(GPClaim claim) {

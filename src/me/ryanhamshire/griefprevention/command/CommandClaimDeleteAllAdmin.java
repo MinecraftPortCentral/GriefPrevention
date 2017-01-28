@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
@@ -37,8 +38,6 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.text.Text;
 
 public class CommandClaimDeleteAllAdmin implements CommandExecutor {
@@ -60,8 +59,9 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
         }
 
         // delete all admin claims
-        if (!GriefPreventionPlugin.instance.dataStore.deleteAllAdminClaims(player.getWorld(), Cause.of(NamedCause.source(src)))) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No admin claims found."));
+        ClaimResult claimResult = GriefPreventionPlugin.instance.dataStore.deleteAllAdminClaims(src, player.getWorld());
+        if (!claimResult.successful()) {
+            GriefPreventionPlugin.sendMessage(src, claimResult.getMessage().orElse(Text.of(TextMode.Err, "No admin claims found.")));
             return CommandResult.success();
         }
         // id indicates an administrative claim

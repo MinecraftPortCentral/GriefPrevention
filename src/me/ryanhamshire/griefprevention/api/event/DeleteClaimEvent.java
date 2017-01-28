@@ -26,4 +26,5 @@ package me.ryanhamshire.griefprevention.api.event;
 
 public interface DeleteClaimEvent extends ClaimEvent {
 
+    interface Abandon extends DeleteClaimEvent { }
 }

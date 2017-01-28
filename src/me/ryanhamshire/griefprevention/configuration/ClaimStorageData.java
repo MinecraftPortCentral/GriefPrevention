@@ -61,12 +61,15 @@ public class ClaimStorageData {
     public static final String MAIN_CLAIM_NAME = "claim-name";
     public static final String MAIN_CLAIM_GREETING = "claim-greeting";
     public static final String MAIN_CLAIM_FAREWELL = "claim-farewell";
+    public static final String MAIN_CLAIM_SPAWN = "claim-spawn";
     public static final String MAIN_CLAIM_TYPE = "claim-type";
     public static final String MAIN_CLAIM_CUBOID = "cuboid";
     public static final String MAIN_CLAIM_RESIZABLE = "resizable";
     public static final String MAIN_CLAIM_PVP = "pvp";
     public static final String MAIN_CLAIM_DATE_CREATED = "date-created";
     public static final String MAIN_CLAIM_DATE_LAST_ACTIVE = "date-last-active";
+    public static final String MAIN_CLAIM_MAX_WIDTH = "max-width";
+    public static final String MAIN_REQUIRES_CLAIM_BLOCKS = "requires-claim-blocks";
     public static final String MAIN_SUBDIVISION_UUID = "uuid";
     public static final String MAIN_PARENT_CLAIM_UUID = "parent-claim-uuid";
     public static final String MAIN_LESSER_BOUNDARY_CORNER = "lesser-boundary-corner";

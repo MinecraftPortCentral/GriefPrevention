@@ -38,8 +38,8 @@ minecraft {
 version = "$minecraft.version-$project.version.$buildNumber"
 
 dependencies {
-    compile("org.spongepowered:spongeforge:1.10.2-2202-5.1.0-BETA-2022:dev")
-	compile("com.googlecode.json-simple:json-simple:1.1")
+    compile("org.spongepowered:spongeforge:1.10.2-2202-5.1.0-BETA-2096:dev")
+    compile("com.googlecode.json-simple:json-simple:1.1")
 }
 
 sourceSets {

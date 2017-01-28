@@ -13,6 +13,9 @@ public class GPOptions {
     public static final String CREATE_CLAIM_LIMIT = "griefprevention.create-claim-limit";
     public static final String INITIAL_CLAIM_BLOCKS = "griefprevention.initial-claim-blocks";
     public static final String MAX_ACCRUED_BLOCKS = "griefprevention.max-accrued-claim-blocks";
+    public static final String MAX_CLAIM_SIZE_X = "griefprevention.max-claim-size-x";
+    public static final String MAX_CLAIM_SIZE_Y = "griefprevention.max-claim-size-y";
+    public static final String MAX_CLAIM_SIZE_Z = "griefprevention.max-claim-size-z";
     public static final String CHEST_CLAIM_EXPIRATION = "griefprevention.chest-claim-expiration";
     public static final String PLAYER_CLAIM_EXPIRATION = "griefprevention.player-claim-expiration";
 
@@ -27,6 +30,12 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(INITIAL_CLAIM_BLOCKS, "100");
         // The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.
         DEFAULT_OPTIONS.put(MAX_ACCRUED_BLOCKS, "80000");
+        // The max size of x, in blocks, that a claim can be, unlimited by default.
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_X, "0");
+        // The max size of y, in blocks, that a claim can be, unlimited by default.
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_Y, "0");
+        // The max size of z, in blocks, that a claim can be, unlimited by default.
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_Z, "0");
         // Number of days of inactivity before an automatic chest claim will be deleted.
         DEFAULT_OPTIONS.put(CHEST_CLAIM_EXPIRATION, "7");
         // Number of days of inactivity before an unused claim will be deleted.

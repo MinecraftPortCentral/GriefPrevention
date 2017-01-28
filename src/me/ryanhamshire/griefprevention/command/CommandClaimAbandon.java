@@ -30,8 +30,11 @@ import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.claim.GPClaimManager;
+import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -40,6 +43,8 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 import java.util.UUID;
 
@@ -81,12 +86,20 @@ public class CommandClaimAbandon implements CommandExecutor {
             GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
             return CommandResult.empty();
         } else {
+            GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(claim, Cause.of(NamedCause.source(src)));
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not abandon claim. A plugin has denied it."))));
+                return CommandResult.success();
+            }
+
             // delete it
+            GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
+            claimManager.deleteClaim(claim);
             claim.removeSurfaceFluids(null);
             // remove all context permissions
             player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
             GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-            GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(src)));
 
             // if in a creative mode world, restore the claim area
             if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {

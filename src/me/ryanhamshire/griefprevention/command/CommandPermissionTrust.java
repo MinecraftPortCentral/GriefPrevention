@@ -26,7 +26,7 @@
 package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.claim.ClaimPermission;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -46,7 +46,7 @@ public class CommandPermissionTrust implements CommandExecutor {
                     user = GriefPreventionPlugin.PUBLIC_USER;
                 }
             }
-            CommandHelper.handleTrustCommand(GriefPreventionPlugin.checkPlayer(src), ClaimPermission.PERMISSION, user);
+            CommandHelper.handleTrustCommand(GriefPreventionPlugin.checkPlayer(src), TrustType.MANAGER, user);
         } catch (CommandException e) {
             src.sendMessage(e.getText());
         }

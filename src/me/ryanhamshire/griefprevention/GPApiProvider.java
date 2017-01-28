@@ -12,12 +12,14 @@ import java.util.UUID;
 
 public class GPApiProvider implements GriefPreventionApi {
 
+    public static final double API_VERSION = 0.2;
+
     public GPApiProvider() {
     }
 
     @Override
     public double getApiVersion() {
-        return 0.1;
+        return API_VERSION;
     }
 
     @Override

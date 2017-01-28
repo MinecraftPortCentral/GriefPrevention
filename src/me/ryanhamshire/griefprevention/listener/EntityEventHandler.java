@@ -265,9 +265,25 @@ public class EntityEventHandler {
     }
 
     public boolean protectEntity(Event event, Entity targetEntity, Cause cause, DamageSource damageSource) {
-        // monsters are never protected
         User user = cause.first(User.class).orElse(null);
         Player player = cause.first(Player.class).orElse(null);
+        Entity sourceEntity = null;
+        if (damageSource instanceof EntityDamageSource) {
+            EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
+            sourceEntity = entityDamageSource.getSource();
+            if (entityDamageSource instanceof IndirectEntityDamageSource) {
+                sourceEntity = ((IndirectEntityDamageSource) entityDamageSource).getIndirectSource();
+            }
+            if (sourceEntity instanceof Player) {
+                if (user == null) {
+                    user = (User) sourceEntity;
+                }
+                if (player == null) {
+                    player = (Player) sourceEntity;
+                }
+            }
+        }
+
         if (player != null) {
             GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(targetEntity.getWorld(), player.getUniqueId());
             if (playerData.canIgnoreClaim(GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false))) {
@@ -279,6 +295,11 @@ public class EntityEventHandler {
         }
 
         GPClaim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), false, null);
+        String denyMessage = claim.allowAccess(player);
+        // allow trusted users to attack entities within claim
+        if (!(targetEntity instanceof Player) && denyMessage == null) {
+            return false;
+        }
         // check fall
         if (damageSource.getType() == DamageTypes.FALL) {
             if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_FALL, cause.root(), targetEntity, user) == Tristate.FALSE) {
@@ -286,13 +307,7 @@ public class EntityEventHandler {
             }
         }
         // Protect owned entities anywhere in world
-        if (damageSource instanceof EntityDamageSource && !(SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER))) {
-            EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
-            Entity sourceEntity = entityDamageSource.getSource();
-            if (entityDamageSource instanceof IndirectEntityDamageSource) {
-                sourceEntity = ((IndirectEntityDamageSource) entityDamageSource).getIndirectSource();
-            }
-
+        if (sourceEntity != null && !(SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER))) {
             Tristate perm = Tristate.UNDEFINED;
             // Ignore PvP checks for owned entities
             if (!(sourceEntity instanceof Player) && !(targetEntity instanceof Player)) {
@@ -321,18 +336,18 @@ public class EntityEventHandler {
                     return false;
                 } else {
                     if (targetEntity instanceof Player) {
-                        if (SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) entityDamageSource.getSource(), EnumCreatureType.MONSTER)) {
+                        if (SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) sourceEntity, EnumCreatureType.MONSTER)) {
                             if (user == null) {
-                                user = ((IMixinEntity) entityDamageSource.getSource()).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
+                                user = ((IMixinEntity) sourceEntity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
                             }
-                            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, entityDamageSource.getSource(), targetEntity, user) != Tristate.TRUE) {
-                                GriefPreventionPlugin.addEventLogEntry(event, claim, targetEntity.getLocation(), GPPermissions.ENTITY_DAMAGE, entityDamageSource.getSource(), targetEntity, user, "Monsters not allowed to attack players within claim.");
+                            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, user) != Tristate.TRUE) {
+                                GriefPreventionPlugin.addEventLogEntry(event, claim, targetEntity.getLocation(), GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, user, "Monsters not allowed to attack players within claim.");
                                 return true;
                             }
                         }
                     } else if (targetEntity instanceof EntityLivingBase && !SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER)) {
                         if (user != null && !user.getUniqueId().equals(claim.getOwnerUniqueId()) && perm != Tristate.TRUE) {
-                            GriefPreventionPlugin.addEventLogEntry(event, claim, targetEntity.getLocation(), entityDamageSource.getSource(), targetEntity, user, "Untrusted player attempting to attack entity in claim.");
+                            GriefPreventionPlugin.addEventLogEntry(event, claim, targetEntity.getLocation(), sourceEntity, targetEntity, user, "Untrusted player attempting to attack entity in claim.");
                             return true;
                         }
                     }
@@ -349,7 +364,6 @@ public class EntityEventHandler {
         // determine which player is attacking, if any
         Player attacker = null;
         Projectile arrow = null;
-        Entity sourceEntity = entityDamageSource.getSource();
 
         if (sourceEntity != null) {
             if (sourceEntity instanceof Player) {
@@ -391,9 +405,9 @@ public class EntityEventHandler {
                     if (attackerClaim != null && !attackerData.inPvpCombat(defender.getWorld()) && attackerClaim.protectPlayersInClaim()) {
                         attackerData.lastClaim = new WeakReference<>(attackerClaim);
                         GPAttackPlayerEvent pvpEvent = new GPAttackPlayerEvent(attackerClaim, Cause.of(NamedCause.source(entityDamageSource)), defender);
-                        Sponge.getGame().getEventManager().post(pvpEvent);
+                        Sponge.getEventManager().post(pvpEvent);
                         if (!pvpEvent.isCancelled()) {
-                            GriefPreventionPlugin.addEventLogEntry(event, attackerClaim, attacker.getLocation(), attacker, targetEntity, user, this.dataStore.getMessage(Messages.PlayerInPvPSafeZone));
+                            GriefPreventionPlugin.addEventLogEntry(pvpEvent, attackerClaim, attacker.getLocation(), attacker, targetEntity, user, this.dataStore.getMessage(Messages.PlayerInPvPSafeZone));
                             pvpEvent.setCancelled(true);
                             GriefPreventionPlugin.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
                             return true;
@@ -404,9 +418,9 @@ public class EntityEventHandler {
                     if (defenderClaim != null && !defenderData.inPvpCombat(defender.getWorld()) && defenderClaim.protectPlayersInClaim()) {
                         defenderData.lastClaim = new WeakReference<>(defenderClaim);
                         GPAttackPlayerEvent pvpEvent = new GPAttackPlayerEvent(defenderClaim, Cause.of(NamedCause.source(entityDamageSource)), defender);
-                        Sponge.getGame().getEventManager().post(pvpEvent);
+                        Sponge.getEventManager().post(pvpEvent);
                         if (!pvpEvent.isCancelled()) {
-                            GriefPreventionPlugin.addEventLogEntry(event, attackerClaim, attacker.getLocation(), attacker, targetEntity, user, this.dataStore.getMessage(Messages.PlayerInPvPSafeZone));
+                            GriefPreventionPlugin.addEventLogEntry(pvpEvent, attackerClaim, attacker.getLocation(), attacker, targetEntity, user, this.dataStore.getMessage(Messages.PlayerInPvPSafeZone));
                             pvpEvent.setCancelled(true);
                             GriefPreventionPlugin.sendMessage(attacker, TextMode.Err, Messages.PlayerInPvPSafeZone);
                             return true;
@@ -901,11 +915,11 @@ public class EntityEventHandler {
             for (Claim claim : this.dataStore.getClaimWorldManager(worldProperties).getWorldClaims()) {
                 if (claim.getOwnerUniqueId().equals(playerUniqueId)) {
                     // update lastActive timestamp for claim
-                    claim.getClaimData().setDateLastActive(Instant.now());
+                    claim.getData().setDateLastActive(Instant.now());
                     claimWorldManager.addClaim(claim, GriefPreventionPlugin.pluginCause);
                 } else if (claim.getParent().isPresent() && claim.getParent().get().getOwnerUniqueId().equals(playerUniqueId)) {
                     // update lastActive timestamp for subdivisions if parent owner logs on
-                    claim.getClaimData().setDateLastActive(Instant.now());
+                    claim.getData().setDateLastActive(Instant.now());
                     claimWorldManager.addClaim(claim, GriefPreventionPlugin.pluginCause);
                 }
             }
