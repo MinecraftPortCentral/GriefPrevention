@@ -345,6 +345,10 @@ public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, 
         }
     }
 
+    public void setParentStorage(ClaimStorageData storage) {
+        this.parentStorage = storage;
+    }
+
     public void setParentData(IClaimData parentData) {
         this.parent = parentData;
     }

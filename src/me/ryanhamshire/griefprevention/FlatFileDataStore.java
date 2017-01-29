@@ -379,6 +379,7 @@ public class FlatFileDataStore extends DataStore {
             for(Map.Entry<UUID, SubDivisionDataConfig> mapEntry : claimStorage.getConfig().getSubdivisions().entrySet()) {
                 SubDivisionDataConfig subDivisionData = mapEntry.getValue();
                 subDivisionData.setParentData(claim.getInternalClaimData());
+                subDivisionData.setParentStorage(claim.getClaimStorage());
                 Vector3i subLesserCorner = subDivisionData.getLesserBoundaryCornerPos();
                 Vector3i subGreaterCorner = subDivisionData.getGreaterBoundaryCornerPos();
                 if (subLesserCorner == null || subGreaterCorner == null) {
