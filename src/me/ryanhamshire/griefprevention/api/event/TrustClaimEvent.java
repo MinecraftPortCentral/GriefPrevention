@@ -22,38 +22,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.api.claim;
+package me.ryanhamshire.griefprevention.api.event;
 
-import org.spongepowered.api.event.cause.Cause;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface TrustManager {
+public interface TrustClaimEvent extends ClaimEvent {
 
-    List<UUID> getContainers();
+    /**
+     * Gets the list of {@link User}'s requesting trust.
+     * 
+     * @return The list of users requesting trust
+     */
+    List<UUID> getUsers();
 
-    List<UUID> getAccessors();
+    /**
+     * The {@link TrustType} to grant user.
+     * 
+     * @return The trust type
+     */
+    TrustType getTrustType();
 
-    List<UUID> getBuilders();
+    /**
+     * Fired when a user is added to claim trust.
+     */
+    interface Add extends TrustClaimEvent {};
 
-    List<UUID> getManagers();
-
-    void addAccessor(UUID uuid, Cause cause);
-
-    void addContainer(UUID uuid, Cause cause);
-
-    void addBuilder(UUID uuid, Cause cause);
-
-    void addManager(UUID uuid, Cause cause);
-
-    void removeAccessor(UUID uuid, Cause cause);
-
-    void removeContainer(UUID uuid, Cause cause);
-
-    void removeBuilder(UUID uuid, Cause cause);
-
-    void removeManager(UUID uuid, Cause cause);
-
-    void save();
+    /**
+     * Fired when a user is removed from claim trust.
+     */
+    interface Remove extends TrustClaimEvent {};
 }

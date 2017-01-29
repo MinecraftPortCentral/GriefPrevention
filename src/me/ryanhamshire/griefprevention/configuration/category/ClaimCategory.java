@@ -58,7 +58,7 @@ public class ClaimCategory extends ConfigCategory {
     @Setting(value = "modification-tool", comment = "The item used to create/resize claims with a right click.")
     public String modificationTool = "minecraft:golden_shovel";
     @Setting(value = "claims-mode",
-            comment = "The mode used when creating claims. (0 = Disabled, 1 = Survival, 2 = SurvivalRequiringClaims, 3 = Creative)")
+            comment = "The mode used when creating claims. (0 = Disabled, 1 = Survival, 2 = Creative)")
     public int claimMode = 1;
 
     public ClaimCategory() {

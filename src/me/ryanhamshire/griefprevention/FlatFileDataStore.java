@@ -38,7 +38,8 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.util.RedProtectMigrator;
+import me.ryanhamshire.griefprevention.migrator.PolisMigrator;
+import me.ryanhamshire.griefprevention.migrator.RedProtectMigrator;
 import org.apache.commons.io.FileUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.scheduler.Task;
@@ -72,6 +73,7 @@ public class FlatFileDataStore extends DataStore {
     public final static Path claimTemplatePath = claimDataPath.resolve("Templates");
     public final static Path worldClaimDataPath = Paths.get("GriefPreventionData", "WorldClaim");
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
+    public final static Path polisDataPath = GriefPreventionPlugin.instance.getConfigPath().getParent().resolve("polis").resolve("data");
     public final static Path redProtectDataPath = GriefPreventionPlugin.instance.getConfigPath().getParent().resolve("RedProtect").resolve("data");
     public final static Map<UUID, Task> cleanupClaimTasks = Maps.newHashMap();
     private final Path rootConfigPath = GriefPreventionPlugin.instance.getConfigPath().resolve("worlds");
@@ -185,7 +187,17 @@ public class FlatFileDataStore extends DataStore {
                 Path redProtectFilePath = redProtectDataPath.resolve("data_" + worldProperties.getWorldName() + ".conf");
                 Path gpMigratedPath = redProtectDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
                 if (Files.exists(redProtectFilePath) && !Files.exists(gpMigratedPath)) {
-                    RedProtectMigrator.migrate(world, redProtectFilePath, newWorldDataPath);
+                    RedProtectMigrator.migrate(world, redProtectFilePath, newWorldDataPath.resolve("ClaimData"));
+                    Files.createFile(gpMigratedPath);
+                }
+            }
+            // Migrate Polis data if enabled
+            if (GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.polisMigrator) {
+                Path claimsFilePath = polisDataPath.resolve("claims.conf");
+                Path teamsFilePath = polisDataPath.resolve("teams.conf");
+                Path gpMigratedPath = polisDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
+                if (Files.exists(claimsFilePath) && Files.exists(teamsFilePath) && !Files.exists(gpMigratedPath)) {
+                    PolisMigrator.migrate(world, claimsFilePath, teamsFilePath, newWorldDataPath.resolve("ClaimData"));
                     Files.createFile(gpMigratedPath);
                 }
             }
@@ -367,6 +379,7 @@ public class FlatFileDataStore extends DataStore {
             for(Map.Entry<UUID, SubDivisionDataConfig> mapEntry : claimStorage.getConfig().getSubdivisions().entrySet()) {
                 SubDivisionDataConfig subDivisionData = mapEntry.getValue();
                 subDivisionData.setParentData(claim.getInternalClaimData());
+                subDivisionData.setParentStorage(claim.getClaimStorage());
                 Vector3i subLesserCorner = subDivisionData.getLesserBoundaryCornerPos();
                 Vector3i subGreaterCorner = subDivisionData.getGreaterBoundaryCornerPos();
                 if (subLesserCorner == null || subGreaterCorner == null) {

@@ -24,6 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.api.event;
 
+/**
+ * An event that is fired before a claim is created.
+ * 
+ * Note: Canceling this event will prevent claim creation.
+ */
 public interface CreateClaimEvent extends ClaimEvent {
 
 }

@@ -48,6 +48,7 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
     private boolean requiresSave = false;
     private Vector3i lesserPos;
     private Vector3i greaterPos;
+    private Vector3i spawnPos;
     private ClaimStorageData claimStorage;
 
     @Setting(value = ClaimStorageData.MAIN_WORLD_UUID)//, comment = "The world uuid associated with claim.")
@@ -66,6 +67,8 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
     private boolean allowClaimExpiration = true;
     @Setting(value = ClaimStorageData.MAIN_ALLOW_FLAG_OVERRIDES)
     private boolean allowFlagOverrides = true;
+    @Setting(value = ClaimStorageData.MAIN_REQUIRES_CLAIM_BLOCKS)
+    private boolean requiresClaimBlocks = true;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_PVP)
     private Tristate pvpOverride = Tristate.UNDEFINED;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_DATE_CREATED)//, comment = "The date and time this claim was created.")
@@ -78,6 +81,8 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
     private Text claimGreetingMessage;
     @Setting(value = ClaimStorageData.MAIN_CLAIM_FAREWELL)//, comment = "The farewell message players will receive when leaving claim area.")
     private Text claimFarewellMessage;
+    @Setting(value = ClaimStorageData.MAIN_CLAIM_SPAWN)
+    private String claimSpawn;
     @Setting(value = ClaimStorageData.MAIN_LESSER_BOUNDARY_CORNER)//, comment = "The lesser boundary corner location of claim.")
     private String lesserBoundaryCornerPos;
     @Setting(value = ClaimStorageData.MAIN_GREATER_BOUNDARY_CORNER)//, comment = "The greater boundary corner location of claim.")
@@ -168,10 +173,23 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
     }
 
     @Override
+    public Optional<Vector3i> getSpawnPos() {
+        if (this.spawnPos == null && this.claimSpawn != null) {
+            try {
+                this.spawnPos = BlockUtils.positionFromString(this.claimSpawn);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return Optional.ofNullable(this.spawnPos);
+    }
+
+    @Override
     public Vector3i getLesserBoundaryCornerPos() {
         if (this.lesserPos == null) {
             try {
-                return BlockUtils.positionFromString(this.lesserBoundaryCornerPos);
+                this.lesserPos = BlockUtils.positionFromString(this.lesserBoundaryCornerPos);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -184,7 +202,7 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
     public Vector3i getGreaterBoundaryCornerPos() {
         if (this.greaterPos == null) {
             try {
-                return BlockUtils.positionFromString(this.greaterBoundaryCornerPos);
+                this.greaterPos = BlockUtils.positionFromString(this.greaterBoundaryCornerPos);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -273,11 +291,13 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
         this.claimFarewellMessage = message;
     }
 
+    @Override
     public void setLesserBoundaryCorner(String location) {
         this.requiresSave = true;
         this.lesserBoundaryCornerPos = location;
     }
 
+    @Override
     public void setGreaterBoundaryCorner(String location) {
         this.requiresSave = true;
         this.greaterBoundaryCornerPos = location;
@@ -347,5 +367,21 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
     @Override
     public void save() {
         this.claimStorage.save();
+    }
+
+    @Override
+    public void setSpawnPos(Vector3i spawnPos) {
+        this.spawnPos = spawnPos;
+        this.claimSpawn = BlockUtils.positionToString(spawnPos);
+    }
+
+    @Override
+    public boolean requiresClaimBlocks() {
+        return this.requiresClaimBlocks;
+    }
+
+    @Override
+    public void setRequiresClaimBlocks(boolean requiresClaimBlocks) {
+        this.requiresClaimBlocks = requiresClaimBlocks;
     }
 }

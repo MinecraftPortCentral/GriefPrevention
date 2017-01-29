@@ -24,7 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.api.claim;
 
+import java.util.List;
 import java.util.Optional;
+
+import me.ryanhamshire.griefprevention.api.event.CreateClaimEvent;
+import org.spongepowered.api.text.Text;
 
 public interface ClaimResult {
 
@@ -37,11 +41,47 @@ public interface ClaimResult {
     ClaimResultType getResultType();
 
     /**
-     * Gets the result claim.
+     * Gets the result message.
+     * 
+     * Note: normally this is set during event cancellations.
+     * 
+     * @return The result message, if available
+     */
+    Optional<Text> getMessage();
+
+    /**
+     * Gets an immutable list of resulting claims.
+     * 
+     * <p>Examples of list contents:</p>
+     *
+     * <ul>
+     *     <li>Is empty for when an event such as {@link CreateClaimEvent} is cancelled</li>
+     *     <li>Contains a single claim if {@link ClaimResultType#SUCCESS} is returned</li>
+     *     <li>Contains one or more claims if {@link ClaimResultType#OVERLAPPING_CLAIM} is returned</li>
+     * </ul>
+     * 
+     * Refer to {@link ClaimResultType} for complete list of return results.
+     * 
+     * @return The immutable list of resulting claims if available, otherwise an empty list
+     */
+    List<Claim> getClaims();
+
+    /**
+     * Gets the first resulting claim.
+     * 
+     * Note: This is a helper method for results that will usually always
+     * contain one claim instead of calling {@link #getClaims}.
      * 
      * @return The result claim, if available
      */
-    Optional<Claim> getClaim();
+    default Optional<Claim> getClaim() {
+        List<Claim> claimList = this.getClaims();
+        if (claimList.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(claimList.get(0));
+    }
 
     /**
      * A simple helper method to determine if the {@link ClaimResult}

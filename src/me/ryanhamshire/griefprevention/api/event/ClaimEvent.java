@@ -27,8 +27,47 @@ package me.ryanhamshire.griefprevention.api.event;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import org.spongepowered.api.event.Cancellable;
 import org.spongepowered.api.event.Event;
+import org.spongepowered.api.text.Text;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface ClaimEvent extends Cancellable, Event {
 
-    Claim getClaim();
+    /**
+     * Gets the immutable list of claims.
+     * 
+     * @return The immutable list of claims
+     */
+    List<Claim> getClaims();
+
+    /**
+     * Gets the first claim.
+     * 
+     * Note: This is a helper method for events that will usually always
+     * contain one claim instead of calling {@link #getClaims}.
+     * 
+     * @return The first claim
+     */
+    default Claim getClaim() {
+        return this.getClaims().get(0);
+    }
+
+    /**
+     * Sets the claim message to be presented to {@link CommandSource}
+     * if applicable.
+     * 
+     * @param message The message
+     * @return The claim message to send to {@link CommandSource}
+     */
+    void setMessage(Text message);
+
+    /**
+     * Gets the claim message.
+     * 
+     * Note: This is only available if event was cancelled.
+     * 
+     * @return The claim message, if available
+     */
+    Optional<Text> getMessage();
 }

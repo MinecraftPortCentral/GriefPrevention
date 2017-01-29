@@ -93,6 +93,7 @@ public class CommandPlayerInfo implements CommandExecutor {
         claimsTextList.add(Text.of(
                 TextColors.YELLOW, "UUID", TextColors.WHITE, " : ", TextColors.GRAY, user.getUniqueId(), "\n",
                 TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, worldProperties.getWorldName(), "\n",
+                TextColors.YELLOW, "Claim Size Limits", TextColors.WHITE, " : ", TextColors.GRAY, playerData.optionMaxClaimSizeX + "," + playerData.optionMaxClaimSizeY + ", " + playerData.optionMaxClaimSizeZ, "\n",
                 TextColors.YELLOW, "Initial Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
                 TextColors.YELLOW, "Accrued Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
                 TextColors.YELLOW, "Max Accrued Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionMaxAccruedBlocks, "\n",

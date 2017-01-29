@@ -29,9 +29,26 @@ import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.DeleteClaimEvent;
 import org.spongepowered.api.event.cause.Cause;
 
+import java.util.List;
+
 public class GPDeleteClaimEvent extends GPClaimEvent implements DeleteClaimEvent {
 
     public GPDeleteClaimEvent(Claim claim, Cause cause) {
         super(claim, cause);
+    }
+
+    public GPDeleteClaimEvent(List<Claim> claims, Cause cause) {
+        super(claims, cause);
+    }
+
+    public static class Abandon extends GPDeleteClaimEvent implements DeleteClaimEvent.Abandon {
+
+        public Abandon(Claim claim, Cause cause) {
+            super(claim, cause);
+        }
+
+        public Abandon(List<Claim> claims, Cause cause) {
+            super(claims, cause);
+        }
     }
 }

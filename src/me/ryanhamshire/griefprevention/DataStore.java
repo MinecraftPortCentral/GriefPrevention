@@ -27,20 +27,24 @@ package me.ryanhamshire.griefprevention;
 
 import com.flowpowered.math.vector.Vector3d;
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
+import me.ryanhamshire.griefprevention.claim.GPClaimResult;
 import me.ryanhamshire.griefprevention.configuration.ClaimTemplateStorage;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
 import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
 import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
+import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.message.CustomizableMessage;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
@@ -55,9 +59,11 @@ import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.SubjectData;
@@ -602,24 +608,34 @@ public abstract class DataStore {
                 .cause(GriefPreventionPlugin.pluginCause)
                 .build();
         if(claimResult.successful()) {
-            claimManager.addClaim(claimResult.getClaim().get(), GriefPreventionPlugin.pluginCause);
+            claimManager.addClaim(claimResult.getClaim().get(), true);
         }
         return claimResult;
     }
 
-    public boolean deleteAllAdminClaims(World world, Cause cause) {
+    public ClaimResult deleteAllAdminClaims(CommandSource src, World world) {
         GPClaimManager claimWorldManager = this.claimWorldManagers.get(world.getProperties().getUniqueId());
         if (claimWorldManager == null) {
-            return false;
+            return new GPClaimResult(ClaimResultType.CLAIMS_DISABLED);
         }
 
         List<Claim> claimsToDelete = new ArrayList<Claim>();
-        boolean adminClaimDeleted = false;
+        boolean adminClaimFound = false;
         for (Claim claim : claimWorldManager.getWorldClaims()) {
             if (claim.isAdminClaim()) {
                 claimsToDelete.add(claim);
-                adminClaimDeleted = true;
+                adminClaimFound = true;
             }
+        }
+
+        if (!adminClaimFound) {
+            return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND);
+        }
+
+        GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(claimsToDelete), Cause.of(NamedCause.source(src)));
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(Text.of("Could not delete all admin claims. A plugin has denied it.")));
         }
 
         for (Claim claim : claimsToDelete) {
@@ -627,7 +643,7 @@ public abstract class DataStore {
             gpClaim.removeSurfaceFluids(null);
 
             GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-            claimWorldManager.deleteClaim(claim, cause);
+            claimWorldManager.deleteClaim(claim);
 
             // if in a creative mode world, delete the claim
             if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
@@ -635,16 +651,16 @@ public abstract class DataStore {
             }
         }
 
-        return adminClaimDeleted;
+        return new GPClaimResult(claimsToDelete, ClaimResultType.SUCCESS);
     }
 
-    public void deleteClaim(Claim claim, Cause cause) {
+    public ClaimResult deleteClaim(Claim claim, Cause cause) {
         GPClaimManager claimManager = this.getClaimWorldManager(claim.getWorld().getProperties());
-        claimManager.deleteClaim(claim, cause);
+        return claimManager.deleteClaim(claim, cause);
     }
 
     // deletes all claims owned by a player
-    public void deleteClaimsForPlayer(UUID playerID, Cause cause) {
+    public void deleteClaimsForPlayer(UUID playerID) {
         // make a list of the player's claims
         List<GPClaimManager> claimWorldManagers = new ArrayList<>();
         claimWorldManagers.addAll(this.claimWorldManagers.values());
@@ -667,9 +683,8 @@ public abstract class DataStore {
  
             for (Claim claim : claimsToDelete) {
                 ((GPClaim) claim).removeSurfaceFluids(null);
-
                 GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-                claimWorldManager.deleteClaim(claim, cause);
+                claimWorldManager.deleteClaim(claim);
 
                 // if in a creative mode world, delete the claim
                 if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
@@ -807,6 +822,7 @@ public abstract class DataStore {
         this.addDefault(Messages.NoInteractBlockPermission, "You don't have {0}'s permission to interact with the block {1}.", "0: owner name; 1: block id");
         this.addDefault(Messages.NoInteractEntityPermission, "You don't have {0}'s permission to interact with the entity {1}.", "0: owner name; 1: entity id");
         this.addDefault(Messages.NoInteractItemPermission, "You don't have {0}'s permission to interact with the item {1}.", "0: owner name; 1: item id");
+        this.addDefault(Messages.NoInteractItemPermissionSelf, "You don't have permission to interact with the item {0}.", "0: item id");
         this.addDefault(Messages.NoLavaNearOtherPlayer, "You can't place lava this close to {0}.", "0: nearby player");
         this.addDefault(Messages.NoModifyDuringSiege, "Claims can't be modified while under siege.");
         this.addDefault(Messages.NoOwnerBuildUnderSiege, "You can't make changes while under siege.");
@@ -902,6 +918,7 @@ public abstract class DataStore {
         this.addDefault(Messages.TransferSuccess, "Claim transferred.");
         this.addDefault(Messages.TransferTopLevel, "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.");
         this.addDefault(Messages.TrappedWontWorkHere, "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.");
+        this.addDefault(Messages.TrustIndividualAllClaims, "Granted {0}'s full trust to all your claims.  To unset permissions for ALL your claims, use /untrustall.", "0: untrusted player");
         this.addDefault(Messages.TrustListHeader, "Explicit permissions here:");
         this.addDefault(Messages.TrustListNoClaim, "Stand inside the claim you're curious about.");
         this.addDefault(Messages.UnIgnoreConfirmation, "You're no longer ignoring chat messages from that player.");
@@ -1184,35 +1201,39 @@ public abstract class DataStore {
     }
 
     private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Boolean> defaultFlags) {
-        Map<String, Boolean> defaultPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
-        if (defaultPermissions.isEmpty()) {
-            for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
-                GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), Tristate.fromBoolean(mapEntry.getValue()));
-            }
-        } else {
-            // remove invalid flag entries
-            for (String flagPermission : defaultPermissions.keySet()) {
-                String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
-                if (!defaultFlags.containsKey(flag)) {
-                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+            Map<String, Boolean> defaultPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
+            if (defaultPermissions.isEmpty()) {
+                for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
+                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, GPPermissions.FLAG_BASE + "." + mapEntry.getKey(), Tristate.fromBoolean(mapEntry.getValue()));
+                }
+            } else {
+                // remove invalid flag entries
+                for (String flagPermission : defaultPermissions.keySet()) {
+                    String flag = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+                    if (!defaultFlags.containsKey(flag)) {
+                        GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.UNDEFINED);
+                    }
+                }
+    
+                // make sure all defaults are available
+                for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
+                    String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
+                    if (!defaultPermissions.keySet().contains(flagPermission)) {
+                        GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.fromBoolean(mapEntry.getValue()));
+                    }
                 }
             }
-
-            // make sure all defaults are available
-            for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
-                String flagPermission = GPPermissions.FLAG_BASE + "." + mapEntry.getKey();
-                if (!defaultPermissions.keySet().contains(flagPermission)) {
-                    GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().setPermission(contexts, flagPermission, Tristate.fromBoolean(mapEntry.getValue()));
-                }
-            }
-        }
+        });
     }
 
     private void setOptionDefaultPermissions(Set<Context> contexts) {
-        final SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
-        for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
-            globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
-        }
+        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+            final SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
+            for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
+                globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
+            }
+        });
     }
 
     abstract GPPlayerData getPlayerDataFromStorage(UUID playerID);

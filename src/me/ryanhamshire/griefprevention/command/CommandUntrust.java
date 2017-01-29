@@ -25,11 +25,16 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.event.GPTrustClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -37,7 +42,10 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 import java.util.UUID;
 
@@ -93,12 +101,18 @@ public class CommandUntrust implements CommandExecutor {
             return CommandResult.success();
         }
 
-        claim.getInternalClaimData().getAccessors().remove(user.getUniqueId());
-        claim.getInternalClaimData().getBuilders().remove(user.getUniqueId());
-        claim.getInternalClaimData().getContainers().remove(user.getUniqueId());
-        claim.getInternalClaimData().getManagers().remove(user.getUniqueId());
-        claim.getInternalClaimData().setRequiresSave(true);
+        GPTrustClaimEvent.Remove event = new GPTrustClaimEvent.Remove(claim, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not remove trust from user '" + user.getName() + "'. A plugin has denied it."))));
+            return CommandResult.success();
+        }
 
+        for (TrustType trustType : TrustType.values()) {
+            claim.getTrustList(trustType).remove(user.getUniqueId());
+        }
+
+        claim.getInternalClaimData().setRequiresSave(true);
         GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.UntrustIndividualSingleClaim, user.getName());
         return CommandResult.success();
     }

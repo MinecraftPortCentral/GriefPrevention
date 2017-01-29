@@ -51,12 +51,20 @@ public class BlockUtils {
     private static final String locationStringDelimiter = ";";
 
     public static String positionToString(Location<World> location) {
+        return positionToString(location.getBlockPosition());
+    }
+
+    public static String positionToString(Vector3i pos) {
+        return positionToString(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    public static String positionToString(int x, int y, int z) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(location.getBlockX());
+        stringBuilder.append(x);
         stringBuilder.append(locationStringDelimiter);
-        stringBuilder.append(location.getBlockY());
+        stringBuilder.append(y);
         stringBuilder.append(locationStringDelimiter);
-        stringBuilder.append(location.getBlockZ());
+        stringBuilder.append(z);
 
         return stringBuilder.toString();
     }

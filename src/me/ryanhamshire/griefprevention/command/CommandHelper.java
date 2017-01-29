@@ -32,10 +32,13 @@ import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
-import me.ryanhamshire.griefprevention.claim.ClaimPermission;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.claim.GPClaimResult;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
+import me.ryanhamshire.griefprevention.event.GPTrustClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
@@ -668,20 +671,21 @@ public class CommandHelper {
         return true;
     }
 
-    public static void handleTrustCommand(Player player, ClaimPermission claimPermission, User user) {
+    public static void handleTrustCommand(Player player, TrustType trustType, User user) {
         if (user == null) {
             GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
-            return;
-        }
-        if (user.getUniqueId().equals(player.getUniqueId())) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You cannot not trust yourself."));
             return;
         }
 
         // determine which claim the player is standing in
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
-        ArrayList<GPClaim> targetClaims = new ArrayList<>();
+        if (user.getUniqueId().equals(player.getUniqueId()) && !playerData.canIgnoreClaim(claim)) {
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You cannot trust yourself."));
+            return;
+        }
+
+        ArrayList<Claim> targetClaims = new ArrayList<>();
         if (claim == null) {
             GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to trust all claims, use /trustall instead."));
             return;
@@ -698,7 +702,7 @@ public class CommandHelper {
             //see if the player has the level of permission he's trying to grant
             String errorMessage = null;
             //permission level null indicates granting permission trust
-            if(claimPermission == ClaimPermission.PERMISSION) {
+            if(trustType == TrustType.MANAGER) {
                 errorMessage = claim.allowEdit(player);
                 if(errorMessage != null) {
                     //error message for trying to grant a permission the player doesn't have
@@ -711,23 +715,31 @@ public class CommandHelper {
             targetClaims.add(claim);
         }
 
+        GPTrustClaimEvent.Add event = new GPTrustClaimEvent.Add(targetClaims, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), trustType);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not trust user '" + user.getName() + "'. A plugin has denied it."))));
+            return;
+        }
+
         String location = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.LocationCurrentClaim);
-        for (GPClaim currentClaim : targetClaims) {
+        for (Claim currentClaim : targetClaims) {
             ArrayList<UUID> memberList = null;
-            if (claimPermission == ClaimPermission.ACCESS) {
-                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getAccessors();
-            } else if (claimPermission == ClaimPermission.INVENTORY) {
-                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getContainers();
-            } else if (claimPermission == ClaimPermission.BUILD) {
-                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getBuilders();
-            } else if (claimPermission == ClaimPermission.PERMISSION) {
-                memberList = (ArrayList<UUID>) currentClaim.getInternalClaimData().getManagers();
+            GPClaim gpClaim = (GPClaim) currentClaim;
+            if (trustType == TrustType.ACCESSOR) {
+                memberList = (ArrayList<UUID>) gpClaim.getInternalClaimData().getAccessors();
+            } else if (trustType == TrustType.CONTAINER) {
+                memberList = (ArrayList<UUID>) gpClaim.getInternalClaimData().getContainers();
+            } else if (trustType == TrustType.BUILDER) {
+                memberList = (ArrayList<UUID>) gpClaim.getInternalClaimData().getBuilders();
+            } else if (trustType == TrustType.MANAGER) {
+                memberList = (ArrayList<UUID>) gpClaim.getInternalClaimData().getManagers();
             }
 
             if (memberList.contains(user.getUniqueId())) {
-                String message = "Player " + user.getName() + " already has " + claimPermission + " permission.";
+                String message = "Player " + user.getName() + " already has " + trustType.name() + " permission.";
                 if (user == GriefPreventionPlugin.PUBLIC_USER) {
-                    message = "Public already has " + claimPermission + " permission.";
+                    message = "Public already has " + trustType.name() + " permission.";
                 }
                 GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Info, message));
                 return;
@@ -735,7 +747,7 @@ public class CommandHelper {
                 memberList.add(user.getUniqueId());
             }
 
-            currentClaim.getInternalClaimData().setRequiresSave(true);
+            gpClaim.getInternalClaimData().setRequiresSave(true);
         }
 
         //notify player
@@ -744,11 +756,11 @@ public class CommandHelper {
             recipientName = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.CollectivePublic);
         }
         String permissionDescription;
-        if(claimPermission == ClaimPermission.PERMISSION) {
+        if(trustType == TrustType.MANAGER) {
             permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.PermissionsPermission);
-        } else if(claimPermission == ClaimPermission.BUILD) {
+        } else if(trustType == TrustType.BUILDER) {
             permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.BuildPermission);
-        } else if(claimPermission == ClaimPermission.ACCESS) {
+        } else if(trustType == TrustType.ACCESSOR) {
             permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.AccessPermission);
         } else {
             permissionDescription = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.ContainersPermission);
@@ -764,11 +776,12 @@ public class CommandHelper {
                 return;
             }
             Player player = (Player) src;
+            GPClaim gpClaim = (GPClaim) claim;
             // if not owner of claim, validate perms
             if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-                if (!claim.getTrustManager().getContainers().contains(player.getUniqueId()) 
-                        && !claim.getTrustManager().getBuilders().contains(player.getUniqueId())
-                        && !claim.getTrustManager().getManagers().contains(player.getUniqueId())
+                if (!gpClaim.getInternalClaimData().getContainers().contains(player.getUniqueId()) 
+                        && !gpClaim.getInternalClaimData().getBuilders().contains(player.getUniqueId())
+                        && !gpClaim.getInternalClaimData().getManagers().contains(player.getUniqueId())
                         && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS)) {
                     player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
                     return;
@@ -778,7 +791,7 @@ public class CommandHelper {
                 return;
             }
 
-            Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location).orElse(null);
+            Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location, 9, 9).orElse(null);
             if (safeLocation == null) {
                 player.sendMessage(
                         Text.builder().append(Text.of(TextColors.RED, "Location is not safe. "), 
@@ -966,7 +979,7 @@ public class CommandHelper {
             case GPFlags.ITEM_SPAWN :
                 return Text.of("Controls whether an item can be spawned into the world up.\n",
                         TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent feather's from dropping in the world, enter\n",
-                        TextColors.GREEN, "/cf item-drop minecraft:tnt false");
+                        TextColors.GREEN, "/cf item-drop minecraft:feather false");
             case GPFlags.ITEM_USE :
                 return Text.of("Controls whether an item can be used.\n",
                         TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent usage of diamond swords, enter\n",

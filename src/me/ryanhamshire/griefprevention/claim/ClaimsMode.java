@@ -27,6 +27,5 @@ package me.ryanhamshire.griefprevention.claim;
 public enum ClaimsMode {
     Disabled,
     Survival,
-    SurvivalRequiringClaims,
     Creative
 }

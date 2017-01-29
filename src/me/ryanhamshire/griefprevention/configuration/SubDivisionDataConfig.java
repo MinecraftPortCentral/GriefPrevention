@@ -180,7 +180,7 @@ public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, 
     public Vector3i getLesserBoundaryCornerPos() {
         if (this.lesserPos == null) {
             try {
-                return BlockUtils.positionFromString(this.lesserBoundaryCornerPos);
+                this.lesserPos = BlockUtils.positionFromString(this.lesserBoundaryCornerPos);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -193,7 +193,7 @@ public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, 
     public Vector3i getGreaterBoundaryCornerPos() {
         if (this.greaterPos == null) {
             try {
-                return BlockUtils.positionFromString(this.greaterBoundaryCornerPos);
+                this.greaterPos = BlockUtils.positionFromString(this.greaterBoundaryCornerPos);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -345,6 +345,10 @@ public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, 
         }
     }
 
+    public void setParentStorage(ClaimStorageData storage) {
+        this.parentStorage = storage;
+    }
+
     public void setParentData(IClaimData parentData) {
         this.parent = parentData;
     }
@@ -358,5 +362,23 @@ public class SubDivisionDataConfig extends ConfigCategory implements ClaimData, 
     @Override
     public void save() {
         this.parentStorage.save();
+    }
+
+    @Override
+    public Optional<Vector3i> getSpawnPos() {
+        return Optional.empty();
+    }
+
+    @Override
+    public void setSpawnPos(Vector3i spawnPos) {
+    }
+
+    @Override
+    public boolean requiresClaimBlocks() {
+        return false;
+    }
+
+    @Override
+    public void setRequiresClaimBlocks(boolean requiresClaimBlocks) {
     }
 }

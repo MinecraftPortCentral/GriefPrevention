@@ -59,7 +59,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         }
 
         // change ownership
-        ClaimResult claimResult = claim.transferClaimOwner(targetPlayer.getUniqueId());
+        ClaimResult claimResult = claim.transferOwner(targetPlayer.getUniqueId());
         if (!claimResult.successful()) {
             PlayerData targetPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), targetPlayer.getUniqueId());
             if (claimResult.getResultType() == ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS) {
@@ -68,7 +68,7 @@ public class CommandClaimTransfer implements CommandExecutor {
                     + " The claim requires a total of " + claim.getArea() + " claim blocks to own."));
             } else if (claimResult.getResultType() == ClaimResultType.WRONG_CLAIM_TYPE) {
                 src.sendMessage(Text.of(TextColors.RED, "The wilderness claim cannot be transferred."));
-            } else if (claimResult.getResultType() == ClaimResultType.EVENT_CANCELLED) {
+            } else if (claimResult.getResultType() == ClaimResultType.CLAIM_EVENT_CANCELLED) {
                 src.sendMessage(Text.of(TextColors.RED, "Could not transfer the claim. A plugin has cancelled the TransferClaimEvent."));
             }
             return CommandResult.success();

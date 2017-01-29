@@ -1,7 +1,7 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
+ * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,11 +22,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.claim;
+package me.ryanhamshire.griefprevention.api.claim;
 
-public enum ClaimPermission {
-    ACCESS,
-    BUILD,
-    INVENTORY,
-    PERMISSION
+/**
+ * Represents a type of claim trust.
+ */
+public enum TrustType {
+
+    /**
+     * Represents no specific trust.
+     * Note: This is usually passed when a plugin wants to remove all trusts.
+     */
+    NONE,
+    /**
+     * Allows access to interact with all blocks except inventory.
+     */
+    ACCESSOR,
+    /**
+     * Allows access to interact with all blocks including inventory.
+     */
+    CONTAINER,
+    /**
+     * Inherits trust from both {@link #ACCESSOR} and {@link #CONTAINER}
+     * as well as adds ability to place and break blocks.
+     */
+    BUILDER,
+    /**
+     * Allows a user to give the same level of trust to others.
+     */
+    MANAGER
 }

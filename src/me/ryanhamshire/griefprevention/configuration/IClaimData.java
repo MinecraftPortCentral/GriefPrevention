@@ -50,6 +50,8 @@ public interface IClaimData {
 
     boolean doesInheritParent();
 
+    boolean requiresClaimBlocks();
+
     Tristate getPvpOverride();
 
     UUID getWorldUniqueId();
@@ -71,6 +73,8 @@ public interface IClaimData {
     Vector3i getLesserBoundaryCornerPos();
 
     Vector3i getGreaterBoundaryCornerPos();
+
+    Optional<Vector3i> getSpawnPos();
 
     List<UUID> getAccessors();
 
@@ -121,4 +125,8 @@ public interface IClaimData {
     void setDenyMessages(boolean flag);
 
     void setPvpOverride(Tristate value);
+
+    void setSpawnPos(Vector3i spawnPos);
+
+    void setRequiresClaimBlocks(boolean requiresClaimBlocks);
 }

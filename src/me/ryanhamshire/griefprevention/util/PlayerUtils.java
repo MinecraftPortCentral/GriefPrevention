@@ -45,6 +45,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 public class PlayerUtils {
 
     public static boolean hasItemInOneHand(Player player, ItemType itemType) {
@@ -160,6 +162,22 @@ public class PlayerUtils {
         }
 
         return Optional.empty();
+    }
+
+    @Nullable
+    public static UUID getUUIDByName(String name) {
+        // try online players first
+        Player targetPlayer = Sponge.getGame().getServer().getPlayer(name).orElse(null);
+        if (targetPlayer != null) {
+            return targetPlayer.getUniqueId();
+        }
+
+        User user = Sponge.getGame().getServiceManager().provide(UserStorageService.class).get().get(name).orElse(null);
+        if (user != null) {
+            return user.getUniqueId();
+        }
+
+        return null;
     }
 
     // string overload for above helper

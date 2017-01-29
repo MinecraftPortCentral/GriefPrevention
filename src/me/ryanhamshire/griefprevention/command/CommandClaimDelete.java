@@ -28,6 +28,7 @@ package me.ryanhamshire.griefprevention.command;
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
@@ -42,6 +43,8 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 public class CommandClaimDelete implements CommandExecutor {
 
@@ -74,11 +77,16 @@ public class CommandClaimDelete implements CommandExecutor {
                 GriefPreventionPlugin.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);
                 playerData.warnedAboutMajorDeletion = true;
             } else {
+
+                ClaimResult claimResult = GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(src)));
+                if (!claimResult.successful()) {
+                    player.sendMessage(Text.of(TextColors.RED, claimResult.getMessage().orElse(Text.of("Could not delete claim. A plugin has denied it."))));
+                    return CommandResult.success();
+                }
+
                 claim.removeSurfaceFluids(null);
                 // clear permissions
                 GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-                GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(src)));
-
                 // if in a creative mode world, /restorenature the claim
                 if (GriefPreventionPlugin.instance
                         .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {

@@ -1,7 +1,6 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
  * Copyright (c) bloodmc
  * Copyright (c) contributors
  *
@@ -25,27 +24,25 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import com.google.common.collect.ImmutableList;
+import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
-import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
-import org.spongepowered.api.Sponge;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
-public class CommandClaimDeleteAll implements CommandExecutor {
+public class CommandClaimSpawn implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -57,35 +54,24 @@ public class CommandClaimDeleteAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        // try to find that player
-        User otherPlayer = ctx.<User>getOne("player").get();
-        // count claims
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        int originalClaimCount = playerData.getClaims().size();
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        if (player.hasPermission(GPPermissions.COMMAND_CLAIM_SPAWN) && claim != null || playerData.canIgnoreClaim(claim)) {
+            if (claim.allowAccess(player) != null) {
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, Messages.NoAccessPermission));
+                return CommandResult.success();
+            }
 
-        // check count
-        if (originalClaimCount == 0) {
-            src.sendMessage(Text.of(TextColors.RED, "Player " + otherPlayer.getName() + " has no claims to delete."));
-            return CommandResult.success();
-        }
-
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getClaims()), Cause.of(NamedCause.source(src)));
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not delete all claims. A plugin has denied it."))));
-            return CommandResult.success();
-        }
-
-        // delete all that player's claims
-        GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId());
-
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
-        if (player != null) {
-            GriefPreventionPlugin.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
-                    CustomLogEntryTypes.AdminActivity);
-
-            // revert any current visualization
-            playerData.revertActiveVisual(player);
+            Vector3i spawnPos = claim.getData().getSpawnPos().orElse(null);
+            if (spawnPos == null) {
+                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim spawn has been set."));
+                return CommandResult.success();
+            }
+            Location<World> spawnLocation = new Location<World>(claim.getWorld(), spawnPos);
+            player.setLocation(spawnLocation);
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success, "Teleported to claim spawn at ", TextColors.AQUA, spawnPos));
+        } else {
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
         }
 
         return CommandResult.success();

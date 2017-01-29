@@ -24,15 +24,56 @@
  */
 package me.ryanhamshire.griefprevention.api.claim;
 
+/**
+ * 
+ */
 public enum ClaimResultType {
 
+    /**
+     * Returns no claim in result.
+     */
     CLAIM_ALREADY_EXISTS,
     CLAIM_NOT_FOUND,
     CLAIMS_DISABLED,
-    EVENT_CANCELLED,
+    EXCEEDS_MAX_SIZE_X,
+    EXCEEDS_MAX_SIZE_Y,
+    EXCEEDS_MAX_SIZE_Z,
     INSUFFICIENT_CLAIM_BLOCKS,
-    OVERLAPPING_CLAIM,
-    PARENT_CLAIM_MISMATCH,
+    REQUIRES_OWNER,
     WRONG_CLAIM_TYPE,
+
+    /**
+     * Returns a list of overlapping claims.
+     * 
+     * See {@link ClaimResult#getClaims()}
+     */
+    OVERLAPPING_CLAIM,
+
+    /**
+     * Returns parent claim in result.
+     */
+    PARENT_CLAIM_MISMATCH,
+
+    /**
+     * Returns one or more claims that were cancelled.
+     * 
+     * Note: If deleting a claim with subdivisions, this may
+     * return a list of one or more subdivisions in result that
+     * could not be deleted due to event cancellations.
+     */
+    CLAIM_EVENT_CANCELLED,
+
+    /**
+     * Returns successful claim in result.
+     * 
+     * <p>Examples of results:</p>
+     *
+     * <ul>
+     *     <li>Created claim</li>
+     *     <li>Deleted claim</li>
+     *     <li>Resized claim</li>
+     *     <li>Transferred claim</li>
+     * </ul>
+     */
     SUCCESS
 }

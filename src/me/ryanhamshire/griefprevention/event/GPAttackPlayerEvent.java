@@ -1,7 +1,6 @@
 /*
  * This file is part of GriefPrevention, licensed under the MIT License (MIT).
  *
- * Copyright (c) Ryan Hamshire
  * Copyright (c) bloodmc
  * Copyright (c) contributors
  *

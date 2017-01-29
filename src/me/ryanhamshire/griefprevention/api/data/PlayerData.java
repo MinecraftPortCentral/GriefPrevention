@@ -24,6 +24,8 @@
  */
 package me.ryanhamshire.griefprevention.api.data;
 
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+
 public interface PlayerData {
 
     /**
@@ -48,6 +50,43 @@ public interface PlayerData {
      * @return The blocks accrued per hour
      */
     int getBlocksAccruedPerHour();
+
+    /**
+     * Gets the maximum amount of claim blocks a player
+     * can hold.
+     * 
+     * @return The maximum amount of claim blocks
+     */
+    int getMaxAccruedClaimBlocks();
+
+    /**
+     * Gets the max size limit of x, in blocks, for claim
+     * creation.
+     * 
+     * @param The claim type to check
+     * @return The maximum size of x for claim creation
+     */
+    int getMaxClaimX(ClaimType type);
+
+    /**
+     * Gets the max size limit of y, in blocks, for claim
+     * creation.
+     * 
+     * Note: This option is ignored for 2D claims (non-cuboids).
+     * 
+     * @param The claim type to check
+     * @return The maximum size of y for claim creation
+     */
+    int getMaxClaimY(ClaimType type);
+
+    /**
+     * Gets the max size limit of z, in blocks, for claim
+     * creation.
+     * 
+     * @param The claim type to check
+     * @return The maximum size of z for claim creation
+     */
+    int getMaxClaimZ(ClaimType type);
 
     /**
      * Gets the total bonus claim blocks.

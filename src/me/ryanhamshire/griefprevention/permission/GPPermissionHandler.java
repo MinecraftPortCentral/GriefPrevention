@@ -120,7 +120,7 @@ public class GPPermissionHandler {
 
     public static Tristate getUserPermission(User user, GPClaim claim, String permission, String targetModPermission) {
         Set<Context> contexts = new HashSet<>();
-        if (claim.parent != null && claim.getClaimData().doesInheritParent()) {
+        if (claim.parent != null && claim.getData().doesInheritParent()) {
             // check subdivision's parent
             contexts.add(claim.parent.getContext());
         } else {
@@ -159,7 +159,7 @@ public class GPPermissionHandler {
     public static Tristate getClaimFlagPermission(GPClaim claim, String permission, String targetModPermission, Set<Context> contexts) {
         if (contexts == null) {
             contexts = new HashSet<>();
-            if (claim.parent != null && claim.getClaimData().doesInheritParent()) {
+            if (claim.parent != null && claim.getData().doesInheritParent()) {
                 // check subdivision's parent
                 contexts.add(claim.parent.getContext());
             } else {

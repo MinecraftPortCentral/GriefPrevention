@@ -28,6 +28,8 @@ import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -65,6 +67,13 @@ public interface ClaimData {
      * @return The greater boundary corner position.
      */
     Vector3i getGreaterBoundaryCornerPos();
+
+    /**
+     * Gets the spawn position of claim.
+     * 
+     * @return The spawn position, if available
+     */
+    Optional<Vector3i> getSpawnPos();
 
     /** Gets the claim's world {@link UUID}.
      * 
@@ -158,6 +167,13 @@ public interface ClaimData {
     boolean isResizable();
 
     /**
+     * Gets whether this claim requires claim blocks.
+     * 
+     * @return Whether claim requires claim blocks
+     */
+    boolean requiresClaimBlocks();
+
+    /**
      * Sets the name of claim.
      * 
      * @param name The claim name
@@ -226,7 +242,45 @@ public interface ClaimData {
      */
     void setFlagOverrides(boolean allow);
 
+    /**
+     * Overrides the world PvP setting.
+     * 
+     * Possible values are :
+     * <ul>
+     *     <li>{@link Tristate#UNDEFINED} will use world PvP setting</li>
+     *     <li>{@link Tristate#TRUE} will force PvP in claim</li>
+     *     <li>{@link Tristate#FALSE} will force disable PvP in claim</li>
+     * </ul>
+     * 
+     * @param value The new 
+     */
     void setPvpOverride(Tristate value);
+
+    /**
+     * Sets if this claim requires claim blocks from players. This is true by default.
+     * 
+     * Note: If set to false, it is recommended to use {@link #setMaxWidth}
+     * in order to prevent claim from being expanded indefinitely.
+     * 
+     * @param requiresClaimBlocks Whether this claim requires claim blocks
+     */
+    void setRequiresClaimBlocks(boolean requiresClaimBlocks);
+
+    /**
+     * Sets the spawn position of claim.
+     * 
+     * @param spawnPos The new spawn position
+     */
+    default void setSpawnPos(Location<World> location) {
+        setSpawnPos(location.getBlockPosition());
+    }
+
+    /**
+     * Sets the spawn position of claim.
+     * 
+     * @param spawnPos The new spawn position
+     */
+    void setSpawnPos(Vector3i spawnPos);
 
     /**
      * Saves all changes to storage.

@@ -28,8 +28,10 @@ package me.ryanhamshire.griefprevention.command;
 import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
-import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.event.GPTrustClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
@@ -45,7 +47,10 @@ import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
-public class CommandClaimDeleteAll implements CommandExecutor {
+import java.util.List;
+import java.util.UUID;
+
+public class CommandTrustAll implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -53,41 +58,66 @@ public class CommandClaimDeleteAll implements CommandExecutor {
         try {
             player = GriefPreventionPlugin.checkPlayer(src);
         } catch (CommandException e) {
-            src.sendMessage(e.getText());
+            src.sendMessage(Text.of("An error occurred while executing this command."));
             return CommandResult.success();
         }
 
-        // try to find that player
-        User otherPlayer = ctx.<User>getOne("player").get();
-        // count claims
+        User user = ctx.<User>getOne("user").orElse(null);
+        if (user == null) {
+            String group = ctx.<String>getOne("group").orElse(null);
+            if (group.equalsIgnoreCase("public") || group.equalsIgnoreCase("all")) {
+                user = GriefPreventionPlugin.PUBLIC_USER;
+            }
+        }
+
+        // validate player argument
+        if (user == null) {
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "Not a valid player."));
+            return CommandResult.success();
+        }
+        if (user.getUniqueId().equals(player.getUniqueId())) {
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You cannot not trust yourself."));
+            return CommandResult.success();
+        }
+
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        int originalClaimCount = playerData.getClaims().size();
+        List<Claim> claimList = null;
+        if (playerData != null) {
+            claimList = playerData.getClaims();
+        }
 
-        // check count
-        if (originalClaimCount == 0) {
-            src.sendMessage(Text.of(TextColors.RED, "Player " + otherPlayer.getName() + " has no claims to delete."));
+        if (playerData == null || claimList == null || claimList.size() == 0) {
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You have no claims to trust."));
             return CommandResult.success();
         }
 
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getClaims()), Cause.of(NamedCause.source(src)));
+        GPTrustClaimEvent.Add event = new GPTrustClaimEvent.Add(claimList, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
-            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not delete all claims. A plugin has denied it."))));
+            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not add trust for user '" + user.getName() + "'. A plugin has denied it."))));
             return CommandResult.success();
         }
 
-        // delete all that player's claims
-        GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId());
-
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
-        if (player != null) {
-            GriefPreventionPlugin.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
-                    CustomLogEntryTypes.AdminActivity);
-
-            // revert any current visualization
-            playerData.revertActiveVisual(player);
+        for (Claim claim : claimList) {
+            this.addAllTrust(claim, user.getUniqueId());
         }
 
+        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.TrustIndividualAllClaims, user.getName());
         return CommandResult.success();
+    }
+
+    private void addAllTrust(Claim claim, UUID playerUniqueId) {
+        GPClaim gpClaim = (GPClaim) claim;
+        for (TrustType type : TrustType.values()) {
+            List<UUID> trustList = gpClaim.getTrustList(type);
+            if (!trustList.contains(playerUniqueId)) {
+                trustList.add(playerUniqueId);
+            }
+        }
+
+        gpClaim.getInternalClaimData().setRequiresSave(true);
+        for (Claim subdivision : gpClaim.children) {
+            this.addAllTrust(subdivision, playerUniqueId);
+        }
     }
 }

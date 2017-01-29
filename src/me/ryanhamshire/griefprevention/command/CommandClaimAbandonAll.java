@@ -25,12 +25,15 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -39,6 +42,8 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 public class CommandClaimAbandonAll implements CommandExecutor {
 
@@ -65,6 +70,13 @@ public class CommandClaimAbandonAll implements CommandExecutor {
             }
         }
 
+        GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(ImmutableList.copyOf(playerData.getClaims()), Cause.of(NamedCause.source(src)));
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not abandon claim. A plugin has denied it."))));
+            return CommandResult.success();
+        }
+
         // adjust claim blocks
         for (Claim claim : playerData.getClaims()) {
             // remove all context permissions
@@ -76,7 +88,7 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         }
 
         // delete them
-        GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId(), Cause.of(NamedCause.source(src)));
+        GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId());
 
         // inform the player
         int remainingBlocks = playerData.getRemainingClaimBlocks();
