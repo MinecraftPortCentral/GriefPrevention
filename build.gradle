@@ -39,6 +39,7 @@ version = "$minecraft.version-$project.version.$buildNumber"
 
 dependencies {
     compile("org.spongepowered:spongeforge:1.11.2-2201-6.0.0-BETA-2097:dev")
+    compile("com.googlecode.json-simple:json-simple:1.1")
 }
 
 sourceSets {
