@@ -268,8 +268,9 @@ public class EntityEventHandler {
         User user = cause.first(User.class).orElse(null);
         Player player = cause.first(Player.class).orElse(null);
         Entity sourceEntity = null;
+        EntityDamageSource entityDamageSource = null;
         if (damageSource instanceof EntityDamageSource) {
-            EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
+            entityDamageSource = (EntityDamageSource) damageSource;
             sourceEntity = entityDamageSource.getSource();
             if (entityDamageSource instanceof IndirectEntityDamageSource) {
                 sourceEntity = ((IndirectEntityDamageSource) entityDamageSource).getIndirectSource();
@@ -295,6 +296,16 @@ public class EntityEventHandler {
         }
 
         GPClaim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), false, null);
+        Tristate override = GPPermissionHandler.getFlagOverride(claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity);
+        if (override != Tristate.UNDEFINED) {
+            if (override == Tristate.TRUE) {
+                return false;
+            }
+
+            GriefPreventionPlugin.addEventLogEntry(event, claim, targetEntity.getLocation(), sourceEntity, targetEntity, user, "override");
+            return true;
+        }
+
         String denyMessage = claim.allowAccess(player);
         // allow trusted users to attack entities within claim
         if (!(targetEntity instanceof Player) && denyMessage == null) {
@@ -360,7 +371,6 @@ public class EntityEventHandler {
             return false;
         }
 
-        EntityDamageSource entityDamageSource = (EntityDamageSource) damageSource;
         // determine which player is attacking, if any
         Player attacker = null;
         Projectile arrow = null;
@@ -440,25 +450,10 @@ public class EntityEventHandler {
                     return true;
                 }
             }
+        }
 
-            // check perms
-            User sourceUser = null;
-            if (player != null) {
-                sourceUser = player;
-            } else if (attacker instanceof User) {
-                sourceUser = attacker;
-            }
-
-            // only players can interact
-            if (attacker instanceof Player) {
-                if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, attacker, targetEntity, sourceUser) == Tristate.FALSE) {
-                    return true;
-                }
-            }
-
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, sourceUser) == Tristate.FALSE) {
-                return true;
-            }
+        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, user) == Tristate.FALSE) {
+            return true;
         }
 
         return false;
