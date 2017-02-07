@@ -963,6 +963,16 @@ public class GPClaim implements Claim {
         int bigY = otherClaim.getGreaterBoundaryCorner().getBlockY();
         int bigZ = otherClaim.getGreaterBoundaryCorner().getBlockZ();
 
+        //first, check the corners of this claim aren't inside any existing claims
+        boolean ignoreHeight = otherClaim.isCuboid() ? false : true;
+        if(otherClaim.contains(this.lesserBoundaryCorner, ignoreHeight, false)) return true;
+        if(otherClaim.contains(this.greaterBoundaryCorner, ignoreHeight, false)) return true;
+        if(otherClaim.contains(new Location<World>(this.world, this.lesserBoundaryCorner.getBlockX(), 0, this.greaterBoundaryCorner.getBlockZ()), true, false)) return true;
+        if(otherClaim.contains(new Location<World>(this.world, this.greaterBoundaryCorner.getBlockX(), 0, this.lesserBoundaryCorner.getBlockZ()), true, false)) return true;
+
+        //verify that no claim's lesser boundary point is inside this new claim, to cover the "existing claim is entirely inside new claim" case
+        if(this.contains(otherClaim.getLesserBoundaryCorner(), true, false)) return true;
+
         //verify this claim doesn't band across an existing claim, either horizontally or vertically
         boolean inArea = false;
         if(this.getLesserBoundaryCorner().getBlockZ() <= bigZ &&
