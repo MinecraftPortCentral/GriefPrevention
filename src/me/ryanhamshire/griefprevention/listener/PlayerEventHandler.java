@@ -1158,10 +1158,6 @@ public class PlayerEventHandler {
     public void onPlayerInteractEntity(InteractEntityEvent event, @First Player player) {
         GPTimings.PLAYER_INTERACT_ENTITY_EVENT.startTimingIfSync();
         Entity targetEntity = event.getTargetEntity();
-        if (targetEntity instanceof Player || !GriefPreventionPlugin.isEntityProtected(targetEntity)) {
-            GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
-            return;
-        }
 
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
@@ -1213,21 +1209,34 @@ public class PlayerEventHandler {
             return;
         }
 
+        String permission = GPPermissions.INTERACT_ENTITY_PRIMARY;
         if (event instanceof InteractEntityEvent.Secondary) {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_SECONDARY, player, targetEntity, player, true) == Tristate.TRUE) {
-                GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
-                return;
-            }
-        } else {
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.INTERACT_ENTITY_PRIMARY, player, targetEntity, player, true) == Tristate.TRUE) {
-                GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
-                return;
-            }
+            permission = GPPermissions.INTERACT_ENTITY_SECONDARY;
         }
+
+        Tristate override = GPPermissionHandler.getFlagOverride(claim, permission, player, targetEntity);
+        if (override != Tristate.UNDEFINED) {
+            GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
+            if (override == Tristate.TRUE) {
+                return;
+            }
+
+            GriefPreventionPlugin.addEventLogEntry(event, claim, location, player, event.getTargetEntity(), player, "override");
+            event.setCancelled(true);
+            return;
+        }
+
         String denyReason = claim.allowAccess(player, location);
         if (denyReason != null) {
+            if (GPPermissionHandler.getClaimPermission(claim, permission, player, targetEntity, player) == Tristate.TRUE) {
+                GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
+                return;
+            }
+
             GriefPreventionPlugin.addEventLogEntry(event, claim, location, player, event.getTargetEntity(), player, denyReason);
-            GriefPreventionPlugin.sendClaimDenyMessage(claim, player, Text.of(TextMode.Err, denyReason));
+            if (!(targetEntity instanceof Player)) {
+                GriefPreventionPlugin.sendClaimDenyMessage(claim, player, Text.of(TextMode.Err, denyReason));
+            }
             event.setCancelled(true);
             GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
             return;
@@ -1239,9 +1248,7 @@ public class PlayerEventHandler {
                 if (denyMessage != null) {
                     // otherwise disallow
                     String message = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NotYourPet, owner.get().getName());
-                    if (event.getCause().root() instanceof Player) {
-                        GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, message));
-                    }
+                    GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, message));
                     GriefPreventionPlugin.addEventLogEntry(event, claim, location, player, event.getTargetEntity(), player, message);
                     event.setCancelled(true);
                     GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();

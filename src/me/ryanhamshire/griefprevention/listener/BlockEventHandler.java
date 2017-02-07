@@ -66,6 +66,7 @@ import org.spongepowered.api.event.cause.entity.teleport.PortalTeleportCause;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.world.ExplosionEvent;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Direction;
@@ -83,16 +84,19 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 //event handlers related to blocks
 public class BlockEventHandler {
 
     // convenience reference to singleton datastore
-    private DataStore dataStore;
+    private final DataStore dataStore;
+    private final UserStorageService userStorageService;
 
     // constructor
     public BlockEventHandler(DataStore dataStore) {
         this.dataStore = dataStore;
+        this.userStorageService = Sponge.getServiceManager().provide(UserStorageService.class).get();
     }
 
     @Listener(order = Order.FIRST)
@@ -242,10 +246,8 @@ public class BlockEventHandler {
         while (iterator.hasNext()) {
             Direction direction = iterator.next();
             Location<World> location = sourceLocation.getBlockRelative(direction);
+            Vector3i pos = location.getBlockPosition();
             GPClaim targetClaim = this.dataStore.getClaimAt(location, false, null);
-            if (playerData.checkLastInteraction(targetClaim, user)) {
-                continue;
-            }
             if (sourceClaim.isWildernessClaim() && targetClaim.isWildernessClaim()) {
                 if (playerData != null) {
                     playerData.setLastInteractData(targetClaim);
@@ -255,6 +257,19 @@ public class BlockEventHandler {
                 if (playerData != null) {
                     playerData.setLastInteractData(targetClaim);
                 }
+
+                UUID creator = location.getExtent().getCreator(pos).orElse(null);
+                if (creator == null) {
+                    // check notifier
+                    creator = location.getExtent().getNotifier(pos).orElse(null);
+                }
+
+                if (creator != null) {
+                    User creatorUser = this.userStorageService.get(creator).orElse(null);
+                    if (sourceClaim.allowAccess(creatorUser, location) != null) {
+                        iterator.remove();
+                    }
+                }
                 continue;
             } else if (sourceClaim.id.equals(targetClaim.id)) {
                 if (playerData != null) {
@@ -262,6 +277,9 @@ public class BlockEventHandler {
                 }
                 continue;
             } else {
+                if (playerData.checkLastInteraction(targetClaim, user)) {
+                    continue;
+                }
                 // Needed to handle levers notifying doors to open etc.
                 String denyReason = targetClaim.allowAccess(user, location);
                 if (denyReason == null) {
