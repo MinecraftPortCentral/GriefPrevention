@@ -99,7 +99,7 @@ public class GPPermissionHandler {
         }
         targetPermission = StringUtils.replace(targetPermission, ":", ".");
 
-        if (checkOverride) {
+        if (checkOverride && !claim.isWildernessClaim()) {
             // First check for claim flag overrides
             Tristate override = getFlagOverride(claim, targetPermission, targetModPermission);
             if (override != Tristate.UNDEFINED) {
@@ -204,6 +204,10 @@ public class GPPermissionHandler {
     }
 
     public static Tristate getFlagOverride(GPClaim claim, String flagPermission, String targetModPermission) {
+        if (claim.isWildernessClaim() || !claim.getInternalClaimData().allowFlagOverrides()) {
+            return Tristate.UNDEFINED;
+        }
+
         Set<Context> contexts = new LinkedHashSet<>();
         if (claim.isAdminClaim()) {
             contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
@@ -226,58 +230,55 @@ public class GPPermissionHandler {
     }
 
     public static Tristate getFlagOverride(GPClaim claim, String flagPermission, Object source, Object target) {
-        // First check for claim flag overrides
-        if (!claim.isWildernessClaim()) {
-            if (!claim.getInternalClaimData().allowFlagOverrides()) {
-                return Tristate.UNDEFINED;
-            }
+        if (claim.isWildernessClaim() || !claim.getInternalClaimData().allowFlagOverrides()) {
+            return Tristate.UNDEFINED;
+        }
 
-            String targetModPermission = null;
-            if (target != null && source == null) {
-                String targetId = getPermissionIdentifier(target);
-                flagPermission += "." + targetId;
-            } else if (target != null && source != null) {
-                String sourceId = getPermissionIdentifier(source, true);
-                String targetId = getPermissionIdentifier(target);
-                if (!targetId.isEmpty()) {
-                    String[] parts = targetId.split(":");
-                    String targetMod = parts[0];
-                    if (!sourceId.isEmpty()) {
-                        // move target meta to end of permission
-                        Pattern p = Pattern.compile("\\.[\\d+]*$");
-                        Matcher m = p.matcher(targetId);
-                        String targetMeta = "";
-                        if (m.find()) {
-                            targetMeta = m.group(0);
-                            targetId = targetId.replace(targetMeta, "");
-                        }
-                        targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId + targetMeta;
-                        targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
-                        flagPermission += "." + targetId + ".source." + sourceId + targetMeta;
-                    } else {
-                        flagPermission += "." + targetId;
+        String targetModPermission = null;
+        if (target != null && source == null) {
+            String targetId = getPermissionIdentifier(target);
+            flagPermission += "." + targetId;
+        } else if (target != null && source != null) {
+            String sourceId = getPermissionIdentifier(source, true);
+            String targetId = getPermissionIdentifier(target);
+            if (!targetId.isEmpty()) {
+                String[] parts = targetId.split(":");
+                String targetMod = parts[0];
+                if (!sourceId.isEmpty()) {
+                    // move target meta to end of permission
+                    Pattern p = Pattern.compile("\\.[\\d+]*$");
+                    Matcher m = p.matcher(targetId);
+                    String targetMeta = "";
+                    if (m.find()) {
+                        targetMeta = m.group(0);
+                        targetId = targetId.replace(targetMeta, "");
                     }
+                    targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId + targetMeta;
+                    targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
+                    flagPermission += "." + targetId + ".source." + sourceId + targetMeta;
+                } else {
+                    flagPermission += "." + targetId;
                 }
             }
+        }
 
-            flagPermission = StringUtils.replace(flagPermission, ":", ".");
-            Set<Context> contexts = new LinkedHashSet<>();
-            if (claim.isAdminClaim()) {
-                contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
-            } else {
-                contexts.add(GriefPreventionPlugin.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
-            }
-            contexts.add(claim.world.getContext());
-            Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
+        flagPermission = StringUtils.replace(flagPermission, ":", ".");
+        Set<Context> contexts = new LinkedHashSet<>();
+        if (claim.isAdminClaim()) {
+            contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
+        } else {
+            contexts.add(GriefPreventionPlugin.BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT);
+        }
+        contexts.add(claim.world.getContext());
+        Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
+        if (value != Tristate.UNDEFINED) {
+            return value;
+        }
+        // check target modid
+        if (targetModPermission != null) {
+            value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
             if (value != Tristate.UNDEFINED) {
                 return value;
-            }
-            // check target modid
-            if (targetModPermission != null) {
-                value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
-                if (value != Tristate.UNDEFINED) {
-                    return value;
-                }
             }
         }
 
