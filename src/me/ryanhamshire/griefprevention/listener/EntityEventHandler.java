@@ -66,7 +66,6 @@ import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
-import org.spongepowered.api.event.cause.entity.teleport.EntityTeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportType;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportTypes;
@@ -713,7 +712,7 @@ public class EntityEventHandler {
 
     // when a player teleports
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onEntityTeleport(MoveEntityEvent.Teleport event) {
+    public void onEntityTeleport(MoveEntityEvent.Teleport event, @First TeleportCause teleportCause) {
         GPTimings.ENTITY_TELEPORT_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
         Player player = null;
@@ -730,14 +729,7 @@ public class EntityEventHandler {
             return;
         }
 
-        TeleportType type = event.getCause().first(TeleportCause.class).get().getTeleportType();
-        EntityTeleportCause entityTeleportCause = null;
-        if (type == TeleportTypes.ENTITY_TELEPORT) {
-            entityTeleportCause = (EntityTeleportCause) event.getCause().first(EntityTeleportCause.class).get();
-        }
-
-        // FEATURE: prevent teleport abuse to win sieges
-
+        TeleportType type = teleportCause.getTeleportType();
         Location<World> sourceLocation = event.getFromTransform().getLocation();
         GPClaim sourceClaim = null;
         GPPlayerData playerData = null;
@@ -749,7 +741,7 @@ public class EntityEventHandler {
         }
 
         if (sourceClaim != null) {
-            Tristate override = GPPermissionHandler.getFlagOverride(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, entityTeleportCause == null ? null : entityTeleportCause.getTeleportType().getId(), entity);
+            Tristate override = GPPermissionHandler.getFlagOverride(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -757,7 +749,7 @@ public class EntityEventHandler {
                 }
 
                 event.setCancelled(true);
-                GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, entityTeleportCause == null ? null : entityTeleportCause.getTeleportType().getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
+                GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
             }
@@ -769,21 +761,16 @@ public class EntityEventHandler {
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
             }
-            if (entityTeleportCause != null) {
-                Tristate result = GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, entityTeleportCause.getTeleportType().getId(), entity, user);
-                if (result == Tristate.TRUE) {
-                    GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
-                    return;
-                } else if (result == Tristate.FALSE) {
-                    if (player != null) {
-                        GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoTeleportFromProtectedClaim, sourceClaim.getOwnerName());
-                    }
 
-                    GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, entityTeleportCause.getTeleportType().getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
-                    event.setCancelled(true);
-                    GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
-                    return;
+            if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity, user) == Tristate.FALSE) {
+                if (player != null) {
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoTeleportFromProtectedClaim, sourceClaim.getOwnerName());
                 }
+
+                GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
+                event.setCancelled(true);
+                GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
+                return;
             } else if (type.equals(TeleportTypes.PORTAL)) {
                 Tristate result = GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.PORTAL_USE, type.getId(), entity, user);
                 if (result == Tristate.TRUE) {
@@ -820,7 +807,7 @@ public class EntityEventHandler {
         Location<World> destination = event.getToTransform().getLocation();
         GPClaim toClaim = this.dataStore.getClaimAt(destination, false, null);
         if (toClaim != null) {
-            Tristate override = GPPermissionHandler.getFlagOverride(toClaim, GPPermissions.ENTITY_TELEPORT_TO, entityTeleportCause == null ? null : entityTeleportCause.getTeleportType().getId(), entity);
+            Tristate override = GPPermissionHandler.getFlagOverride(toClaim, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -828,7 +815,7 @@ public class EntityEventHandler {
                 }
 
                 event.setCancelled(true);
-                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, entityTeleportCause == null ? null : entityTeleportCause.getTeleportType().getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
+                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
             }
@@ -842,37 +829,37 @@ public class EntityEventHandler {
             }
 
             // FEATURE: prevent players from using entities to gain access to secured claims
-            if (entityTeleportCause != null) {
-                Tristate result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTITY_TELEPORT_TO, entityTeleportCause.getTeleportType().getId(), entity, user);
-                if (result == Tristate.TRUE) {
-                    GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
-                    return;
-                } else if (result == Tristate.FALSE) {
-                    if (player != null) {
-                        GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoTeleportToProtectedClaim, toClaim.getOwnerName());
-                    }
+            Tristate result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity, user);
+            if (result == Tristate.TRUE) {
+                GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
+                return;
+            }
 
-                    GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, entityTeleportCause.getTeleportType().getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
-                    event.setCancelled(true);
-                    GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
-                    return;
+            if (result == Tristate.FALSE) {
+                if (player != null) {
+                    GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoTeleportToProtectedClaim, toClaim.getOwnerName());
                 }
-                String denyReason = toClaim.allowAccess(user);
-                if (denyReason != null) {
-                    if (player != null) {
-                        GriefPreventionPlugin.sendClaimDenyMessage(toClaim, player, Text.of(TextMode.Err, denyReason));
-                    }
 
-                    GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, user, denyReason);
-                    event.setCancelled(true);
-                    if (entityTeleportCause != null && entityTeleportCause.getTeleporter().getType().equals(EntityTypes.ENDER_PEARL)) {
-                        ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ENDER_PEARL));
-                    }
-                    GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
-                    return;
+                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
+                event.setCancelled(true);
+                GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
+                return;
+            }
+            String denyReason = toClaim.allowAccess(user);
+            if (denyReason != null) {
+                if (player != null) {
+                    GriefPreventionPlugin.sendClaimDenyMessage(toClaim, player, Text.of(TextMode.Err, denyReason));
                 }
+
+                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, user, denyReason);
+                event.setCancelled(true);
+                if (type.equals(EntityTypes.ENDER_PEARL)) {
+                    ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ENDER_PEARL));
+                }
+                GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
+                return;
             } else if (type.equals(TeleportTypes.PORTAL)) {
-                Tristate result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.PORTAL_USE, null, entity, user);
+                result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.PORTAL_USE, null, entity, user);
                 if (result == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
@@ -880,7 +867,7 @@ public class EntityEventHandler {
                     if (player != null) {
                         GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoPortalToProtectedClaim, toClaim.getOwnerName());
                     }
-
+    
                     GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.PORTAL_USE, null, entity, user, this.dataStore.getMessage(Messages.NoPortalToProtectedClaim));
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -889,14 +876,12 @@ public class EntityEventHandler {
                     if (player != null) {
                         GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoBuildPortalPermission, toClaim.getOwnerName());
                     }
-
+    
                     GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.BLOCK_PLACE, user, this.dataStore.getMessage(Messages.NoBuildPortalPermission));
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
                 }*/
-            } else if (type.equals(TeleportTypes.COMMAND)) {
-                // TODO
             }
         }
 
