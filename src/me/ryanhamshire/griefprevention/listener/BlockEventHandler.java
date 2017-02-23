@@ -101,7 +101,7 @@ public class BlockEventHandler {
         this.userStorageService = Sponge.getServiceManager().provide(UserStorageService.class).get();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPre(ChangeBlockEvent.Pre event) {
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
         User user = event.getCause().first(User.class).orElse(null);
@@ -215,7 +215,7 @@ public class BlockEventHandler {
     }
 
     // Handle fluids flowing into claims
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockNotify(NotifyNeighborBlockEvent event, @First User user) {
         GPTimings.BLOCK_NOTIFY_EVENT.startTimingIfSync();
 
@@ -299,7 +299,7 @@ public class BlockEventHandler {
         GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockCollide(CollideBlockEvent event, @Root Entity source, @First User user) {
         // ignore falling blocks
         if (source instanceof EntityFallingBlock) {
@@ -424,7 +424,7 @@ public class BlockEventHandler {
         GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onProjectileImpactBlock(CollideBlockEvent.Impact event, @First User user) {
         GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
@@ -470,7 +470,7 @@ public class BlockEventHandler {
         GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onExplosion(ExplosionEvent.Post event) {
         GPTimings.EXPLOSION_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
@@ -515,7 +515,7 @@ public class BlockEventHandler {
         GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockBreak(ChangeBlockEvent.Break event) {
         GPTimings.BLOCK_BREAK_EVENT.startTimingIfSync();
         if (event instanceof ExplosionEvent) {
@@ -586,7 +586,7 @@ public class BlockEventHandler {
         GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
         GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
@@ -784,7 +784,7 @@ public class BlockEventHandler {
         GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onSignChanged(ChangeSignEvent event, @First User user) {
         GPTimings.SIGN_CHANGE_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetTile().getLocation().getExtent().getProperties())) {
@@ -851,14 +851,21 @@ public class BlockEventHandler {
     }
 
     public GPClaim getSourceClaim(Cause cause) {
-        Optional<Entity> entitySource = cause.first(Entity.class);
-        Optional<BlockSnapshot> blockSource = cause.first(BlockSnapshot.class);
+        BlockSnapshot blockSource = cause.first(BlockSnapshot.class).orElse(null);
+        LocatableBlock locatableBlock = null;
+        Entity entitySource = null;
+        if (blockSource == null) {
+            locatableBlock = cause.first(LocatableBlock.class).orElse(null);
+            if (locatableBlock == null) {
+                entitySource = cause.first(Entity.class).orElse(null);
+            }
+        }
 
         GPClaim sourceClaim = null;
-        if (blockSource.isPresent()) {
-            sourceClaim = this.dataStore.getClaimAt(blockSource.get().getLocation().get(), false, null);
-        } else if (entitySource.isPresent()) {
-            Entity entity = entitySource.get();
+        if (blockSource != null) {
+            sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get(), false, null);
+        } else if (entitySource != null) {
+            Entity entity = entitySource;
             if (entity instanceof Player) {
                 Player player = (Player) entity;
                 GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -866,6 +873,8 @@ public class BlockEventHandler {
             } else {
                 sourceClaim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
             }
+        } else if (locatableBlock != null) {
+            sourceClaim = this.dataStore.getClaimAt(locatableBlock.getLocation(), false, null);
         }
 
         return sourceClaim;
