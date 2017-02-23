@@ -42,12 +42,14 @@ import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import me.ryanhamshire.griefprevention.visual.VisualizationType;
 import net.minecraft.block.BlockBasePressurePlate;
+import net.minecraft.entity.item.EntityFallingBlock;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.data.Transaction;
@@ -299,13 +301,19 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST)
     public void onBlockCollide(CollideBlockEvent event, @Root Entity source, @First User user) {
+        // ignore falling blocks
+        if (source instanceof EntityFallingBlock) {
+            return;
+        }
         GPTimings.BLOCK_COLLIDE_EVENT.startTimingIfSync();
-        if (event.getTargetSide().equals(Direction.UP) || event.getTargetBlock().getType().equals(BlockTypes.AIR) || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
+        final BlockType blockType = event.getTargetBlock().getType();
+        if (event.getTargetSide().equals(Direction.UP) || blockType.equals(BlockTypes.AIR) 
+                || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
             GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
             return;
         }
 
-        if (source instanceof EntityItem && (event.getTargetBlock().getType() != BlockTypes.PORTAL && !(event.getTargetBlock().getType() instanceof BlockBasePressurePlate))) {
+        if (source instanceof EntityItem && (blockType != BlockTypes.PORTAL && !(blockType instanceof BlockBasePressurePlate))) {
             GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
             return;
         }
@@ -362,8 +370,7 @@ public class BlockEventHandler {
         if (user instanceof Player) {
             Player player = (Player) user;
             if (targetClaim.doorsOpen && GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().siege.winnerAccessibleBlocks
-                    .contains(event
-                            .getTargetBlock().getType().getId())) {
+                    .contains(blockType.getId())) {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 if (playerData != null) {
                     playerData.setLastInteractData(targetClaim);
