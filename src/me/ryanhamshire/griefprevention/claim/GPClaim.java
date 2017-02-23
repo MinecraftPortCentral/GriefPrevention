@@ -1252,7 +1252,7 @@ public class GPClaim implements Claim {
         // determine new owner
         GPPlayerData newOwnerData = DATASTORE.getOrCreatePlayerData(this.world, newOwnerID);
 
-        if (this.isBasicClaim()) {
+        if (this.isBasicClaim() && this.getInternalClaimData().requiresClaimBlocks()) {
             int remainingClaimBlocks = newOwnerData.getRemainingClaimBlocks();
             if (remainingClaimBlocks < 0 || (this.getArea() > remainingClaimBlocks)) {
                 return new GPClaimResult(ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS);

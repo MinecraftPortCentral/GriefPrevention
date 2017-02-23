@@ -43,12 +43,14 @@ import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.cause.entity.spawn.BlockSpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
+import org.spongepowered.api.event.cause.entity.spawn.LocatableBlockSpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.HashSet;
@@ -338,6 +340,9 @@ public class GPPermissionHandler {
                 } else if (spawnCause instanceof BlockSpawnCause) {
                     BlockSpawnCause blockSpawnCause = (BlockSpawnCause) spawnCause;
                     return getPermissionIdentifier(blockSpawnCause.getBlockSnapshot(), true);
+                } else if (spawnCause instanceof LocatableBlockSpawnCause) {
+                    LocatableBlockSpawnCause locatableSpawnCause = (LocatableBlockSpawnCause) spawnCause;
+                    return getPermissionIdentifier(locatableSpawnCause.getLocatableBlock(), true);
                 }
             } else if (obj instanceof BlockType) {
                 String targetId = ((BlockType) obj).getId();
@@ -349,6 +354,11 @@ public class GPPermissionHandler {
                 return targetId.toLowerCase();
             } else if (obj instanceof BlockState) {
                 BlockState blockstate = (BlockState) obj;
+                String targetId = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                return targetId.toLowerCase();
+            } else if (obj instanceof LocatableBlock) {
+                LocatableBlock locatableBlock = (LocatableBlock) obj;
+                BlockState blockstate = locatableBlock.getBlockState();
                 String targetId = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
                 return targetId.toLowerCase();
             } else if (obj instanceof ItemStack) {

@@ -169,7 +169,7 @@ public class PlayerEventHandler {
     }
 
     // when a player chats, monitor for spam
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerChat(MessageChannelEvent.Chat event, @First Player player) {
         GPTimings.PLAYER_CHAT_EVENT.startTimingIfSync();
         GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties());
@@ -512,7 +512,7 @@ public class PlayerEventHandler {
 
 
     // when a player uses a slash command...
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerCommand(SendCommandEvent event, @First Player player) {
         GPTimings.PLAYER_COMMAND_EVENT.startTimingIfSync();
         String command = event.getCommand();
@@ -705,7 +705,7 @@ public class PlayerEventHandler {
     private ConcurrentHashMap<String, Integer> ipCountHash = new ConcurrentHashMap<String, Integer>();
 
     // when a player attempts to join the server...
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerLogin(ClientConnectionEvent.Login event) {
         GPTimings.PLAYER_LOGIN_EVENT.startTimingIfSync();
         User player = event.getTargetUser();
@@ -1052,7 +1052,7 @@ public class PlayerEventHandler {
     }
 
     // when a player drops an item
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerDispenseItem(DropItemEvent.Dispense event, @Root EntitySpawnCause spawncause) {
         GPTimings.PLAYER_DISPENSE_ITEM_EVENT.startTimingIfSync();
         if (event.getCause().containsNamed("InventoryClose")) {
@@ -1154,7 +1154,7 @@ public class PlayerEventHandler {
     }
 
     // when a player interacts with an entity...
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractEntity(InteractEntityEvent event, @First Player player) {
         GPTimings.PLAYER_INTERACT_ENTITY_EVENT.startTimingIfSync();
         Entity targetEntity = event.getTargetEntity();
@@ -1319,7 +1319,7 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_INTERACT_ENTITY_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractItem(InteractItemEvent.Primary event, @Root Player player) {
         World world = player.getWorld();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
@@ -1365,7 +1365,7 @@ public class PlayerEventHandler {
         }
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractItem(InteractItemEvent.Secondary event, @Root Player player) {
         World world = player.getWorld();
         if (event.getItemStack().getType() instanceof ItemFood || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
@@ -1422,7 +1422,7 @@ public class PlayerEventHandler {
     }
 
     // when a player picks up an item...
-    @Listener(order = Order.LAST)
+    @Listener(order = Order.LAST, beforeModifications = true)
     public void onPlayerPickupItem(ChangeInventoryEvent.Pickup event, @Root Player player) {
         GPTimings.PLAYER_PICKUP_ITEM_EVENT.startTimingIfSync();
         World world = player.getWorld();
@@ -1513,7 +1513,7 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_CHANGE_HELD_ITEM_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerUseItem(UseItemStackEvent.Start event, @First Player player) {
         GPTimings.PLAYER_USE_ITEM_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
@@ -1564,7 +1564,7 @@ public class PlayerEventHandler {
         }
     }
 
-    @Listener
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractBlockPrimary(InteractBlockEvent.Primary.MainHand event, @First Player player) {
         GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
@@ -1619,7 +1619,7 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
     }
 
-    @Listener
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event, @First Player player) {
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {

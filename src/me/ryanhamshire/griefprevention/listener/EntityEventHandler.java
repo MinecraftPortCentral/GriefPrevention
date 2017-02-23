@@ -109,7 +109,7 @@ public class EntityEventHandler {
         this.dataStore = dataStore;
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityExplosionPre(ExplosionEvent.Pre event) {
         GPTimings.ENTITY_EXPLOSION_PRE_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
@@ -165,7 +165,7 @@ public class EntityEventHandler {
         GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityExplosionDetonate(ExplosionEvent.Detonate event) {
         GPTimings.ENTITY_EXPLOSION_DETONATE_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
@@ -187,7 +187,7 @@ public class EntityEventHandler {
     }
 
     // when a creature spawns...
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntitySpawn(SpawnEntityEvent event, @First SpawnCause spawnCause) {
         if (event instanceof DropItemEvent) {
             return;
@@ -236,7 +236,7 @@ public class EntityEventHandler {
         GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityAttack(AttackEntityEvent event, @First DamageSource damageSource) {
         GPTimings.ENTITY_ATTACK_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
@@ -250,7 +250,7 @@ public class EntityEventHandler {
         GPTimings.ENTITY_ATTACK_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityDamage(DamageEntityEvent event, @First DamageSource damageSource) {
         GPTimings.ENTITY_DAMAGE_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
@@ -544,7 +544,7 @@ public class EntityEventHandler {
     }
 
     // when an entity drops items on death
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityDropItemDeath(DropItemEvent.Destruct event, @Root Living livingEntity) {
         GPTimings.ENTITY_DROP_ITEM_DEATH_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
@@ -612,7 +612,7 @@ public class EntityEventHandler {
         GPTimings.ENTITY_DEATH_EVENT.stopTimingIfSync();
     }
 
-    @Listener
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityMove(MoveEntityEvent event){
         GPTimings.ENTITY_MOVE_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
@@ -712,7 +712,7 @@ public class EntityEventHandler {
     }
 
     // when a player teleports
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityTeleport(MoveEntityEvent.Teleport event) {
         GPTimings.ENTITY_TELEPORT_EVENT.startTimingIfSync();
         Entity entity = event.getTargetEntity();
@@ -929,7 +929,7 @@ public class EntityEventHandler {
         GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityCollideEntity(CollideEntityEvent event, @First User user) {
         GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
@@ -998,7 +998,7 @@ public class EntityEventHandler {
         GPTimings.ENTITY_COLLIDE_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onProjectileImpactEntity(CollideEntityEvent.Impact event, @First User user) {
         GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
