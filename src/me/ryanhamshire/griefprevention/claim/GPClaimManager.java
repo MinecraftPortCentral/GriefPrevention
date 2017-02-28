@@ -114,18 +114,39 @@ public class GPClaimManager implements ClaimManager {
 
         PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath);
         List<Claim> claimList = new ArrayList<>();
-        for (Claim claim : this.worldClaims) {
-            GPClaim gpClaim = (GPClaim) claim;
-            if (gpClaim.isAdminClaim()) {
-                continue;
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            for (World world : Sponge.getServer().getWorlds()) {
+                GPClaimManager claimmanager = DATASTORE.getClaimWorldManager(world.getProperties());
+                for (Claim claim : claimmanager.worldClaims) {
+                    GPClaim gpClaim = (GPClaim) claim;
+                    if (gpClaim.isAdminClaim()) {
+                        continue;
+                    }
+                    if (gpClaim.parent != null) {
+                       if (gpClaim.parent.getOwnerUniqueId().equals(playerUniqueId)) {
+                           claimList.add(claim);
+                       }
+                    } else {
+                        if (gpClaim.getOwnerUniqueId().equals(playerUniqueId)) {
+                            claimList.add(claim);
+                        }
+                    }
+                }
             }
-            if (gpClaim.parent != null) {
-               if (gpClaim.parent.getOwnerUniqueId().equals(playerUniqueId)) {
-                   claimList.add(claim);
-               }
-            } else {
-                if (gpClaim.getOwnerUniqueId().equals(playerUniqueId)) {
-                    claimList.add(claim);
+        } else {
+            for (Claim claim : this.worldClaims) {
+                GPClaim gpClaim = (GPClaim) claim;
+                if (gpClaim.isAdminClaim()) {
+                    continue;
+                }
+                if (gpClaim.parent != null) {
+                   if (gpClaim.parent.getOwnerUniqueId().equals(playerUniqueId)) {
+                       claimList.add(claim);
+                   }
+                } else {
+                    if (gpClaim.getOwnerUniqueId().equals(playerUniqueId)) {
+                        claimList.add(claim);
+                    }
                 }
             }
         }
