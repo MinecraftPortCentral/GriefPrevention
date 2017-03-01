@@ -1492,7 +1492,7 @@ public class GriefPreventionPlugin {
 
                 // refresh player data
                 for (GPClaimManager claimWorldManager : GriefPreventionPlugin.instance.dataStore.claimWorldManagers.values()) {
-                    for (GPPlayerData playerData : claimWorldManager.getPlayerDataList().values()) {
+                    for (GPPlayerData playerData : claimWorldManager.getPlayerDataMap().values()) {
                         playerData.refreshPlayerOptions();
                     }
                 }

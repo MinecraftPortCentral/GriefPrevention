@@ -1612,6 +1612,9 @@ public class GPClaim implements Claim {
     public void unload() {
         // clear any references
         this.world = null;
+        if (this.ownerPlayerData != null) {
+            this.ownerPlayerData.getClaims().remove(this);
+        }
     }
 
     @Override

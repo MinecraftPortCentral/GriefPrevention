@@ -530,21 +530,20 @@ public class BlockEventHandler {
 
         Object source = event.getCause().root();
         User user = event.getCause().first(User.class).orElse(null);
+        GPClaim sourceClaim = null;
         LocatableBlock locatable = null;
         if (source instanceof LocatableBlock) {
             locatable = (LocatableBlock) source;
-        }
-        GPClaim sourceClaim = this.getSourceClaim(event.getCause());
-        if (sourceClaim == null) {
-            GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
-            return;
+            sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), false, null);
+        } else {
+            sourceClaim = this.getSourceClaim(event.getCause());
         }
 
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         for (Transaction<BlockSnapshot> transaction : transactions) {
             Location<World> location = transaction.getOriginal().getLocation().orElse(null);
             GPClaim targetClaim = this.dataStore.getClaimAt(location, false, null);
-            if (locatable != null /*&& !((IMixinBlock) locatable.getBlockState().getType()).requiresBlockCapture()*/ && targetClaim.isWildernessClaim()) {
+            if (locatable != null && targetClaim.isWildernessClaim()) {
                 continue;
             }
 
@@ -565,7 +564,7 @@ public class BlockEventHandler {
             if (user != null && targetClaim.hasFullTrust(user)) {
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
-            } else if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
+            } else if (user == null && sourceClaim != null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                 return;
             }
@@ -596,9 +595,13 @@ public class BlockEventHandler {
 
         World world = event.getTargetWorld();
         Object source = event.getCause().root();
+        GPClaim sourceClaim = null;
         LocatableBlock locatable = null;
         if (source instanceof LocatableBlock) {
             locatable = (LocatableBlock) source;
+            sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), false, null);
+        } else {
+            sourceClaim = this.getSourceClaim(event.getCause());
         }
         User user = event.getCause().first(User.class).orElse(null);
         Player player = user != null && user instanceof Player ? (Player) user : null;
@@ -608,13 +611,7 @@ public class BlockEventHandler {
         }
 
         GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(world.getProperties());
-        GPClaim sourceClaim = this.getSourceClaim(event.getCause());
-        if (sourceClaim == null) {
-            GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-            return;
-        }
-
-        if (!(source instanceof User) && playerData != null && playerData.checkLastInteraction(sourceClaim, user)) {
+        if (sourceClaim != null && !(source instanceof User) && playerData != null && playerData.checkLastInteraction(sourceClaim, user)) {
             GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
             return;
         }
@@ -627,7 +624,7 @@ public class BlockEventHandler {
             }
 
             GPClaim targetClaim = this.dataStore.getClaimAt(location, true, null);
-            if (locatable != null /*&& !((IMixinBlock) locatable.getBlockState().getType()).requiresBlockCapture()*/ && targetClaim.isWildernessClaim()) {
+            if (locatable != null && targetClaim.isWildernessClaim()) {
                 continue;
             }
 
@@ -645,7 +642,7 @@ public class BlockEventHandler {
                 return;
             }
 
-            if (user == null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
+            if (user == null && sourceClaim != null && sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId())) {
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
             }

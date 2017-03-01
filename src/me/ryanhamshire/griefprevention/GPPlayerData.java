@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;

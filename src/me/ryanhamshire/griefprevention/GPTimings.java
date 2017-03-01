@@ -56,7 +56,8 @@ public class GPTimings {
     public static final Timing PLAYER_HANDLE_SHOVEL_ACTION = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerHandleShovelAction");
     public static final Timing PLAYER_INTERACT_BLOCK_PRIMARY_EVENT = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerInteractBlockPrimary");
     public static final Timing PLAYER_INTERACT_BLOCK_SECONDARY_EVENT = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerInteractBlockSecondary");
-    public static final Timing PLAYER_INTERACT_ENTITY_EVENT = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerInteractEntity");
+    public static final Timing PLAYER_INTERACT_ENTITY_PRIMARY_EVENT = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerInteractEntityPrimary");
+    public static final Timing PLAYER_INTERACT_ENTITY_SECONDARY_EVENT = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerInteractEntitySecondary");
     public static final Timing PLAYER_INVESTIGATE_CLAIM = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerInvestigateClaim");
     public static final Timing PLAYER_JOIN_EVENT = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerJoin");
     public static final Timing PLAYER_KICK_EVENT = Timings.of(GriefPreventionPlugin.instance.pluginContainer, "onPlayerKick");

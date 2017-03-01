@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.Lists;
+import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
@@ -83,10 +84,15 @@ public class CommandPlayerInfo implements CommandExecutor {
 
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
+        boolean useGlobalData = DataStore.USE_GLOBAL_PLAYER_STORAGE;
         List<Claim> claimList = new ArrayList<>();
         for (Claim claim : playerData.getClaims()) {
-            if (claim.getWorld().getProperties().equals(worldProperties)) {
+            if (useGlobalData) {
                 claimList.add(claim);
+            } else {
+                if (claim.getWorld().getProperties().equals(worldProperties)) {
+                    claimList.add(claim);
+                }
             }
         }
         List<Text> claimsTextList = Lists.newArrayList();

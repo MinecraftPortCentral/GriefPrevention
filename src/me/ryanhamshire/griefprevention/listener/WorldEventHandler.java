@@ -24,10 +24,12 @@
  */
 package me.ryanhamshire.griefprevention.listener;
 
+import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.event.world.UnloadWorldEvent;
@@ -45,11 +47,16 @@ public class WorldEventHandler {
         GPTimings.WORLD_LOAD_EVENT.stopTimingIfSync();
     }
 
-    @Listener
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onWorldUnload(UnloadWorldEvent event) {
-        GPTimings.WORLD_UNLOAD_EVENT.startTimingIfSync();
-        GriefPreventionPlugin.instance.dataStore.unloadWorldData(event.getTargetWorld().getProperties());
-        GPTimings.WORLD_UNLOAD_EVENT.stopTimingIfSync();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
+        GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
+        if (!claimWorldManager.getWorldClaims().isEmpty()) {
+            event.setCancelled(true);
+        }
     }
 
     @Listener

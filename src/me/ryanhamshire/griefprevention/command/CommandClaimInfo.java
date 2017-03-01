@@ -250,7 +250,7 @@ public class CommandClaimInfo implements CommandExecutor {
         Text claimSpawn = null;
         if (claim.getData().getSpawnPos().isPresent()) {
             Vector3i spawnPos = claim.getData().getSpawnPos().get();
-            Location<World> spawnLoc = new Location<>(player.getWorld(), spawnPos);
+            Location<World> spawnLoc = new Location<>(claim.getWorld(), spawnPos);
             claimSpawn = Text.builder().append(Text.of(TextColors.GREEN, "Spawn", TextColors.WHITE, " : ", TextColors.GRAY, spawnPos))
                     .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(player, spawnLoc, claim)))
                     .onHover(TextActions.showText(Text.of("Click here to teleport to claim spawn.")))
