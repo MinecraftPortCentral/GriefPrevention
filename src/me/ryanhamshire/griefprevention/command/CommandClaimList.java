@@ -27,10 +27,12 @@ package me.ryanhamshire.griefprevention.command;
 
 import com.flowpowered.math.vector.Vector3d;
 import com.google.common.collect.Lists;
+import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
@@ -59,7 +61,7 @@ public class CommandClaimList implements CommandExecutor {
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         List<User> userValues = new ArrayList<>(ctx.getAll("user"));
-        WorldProperties worldProperties = ctx.<WorldProperties>getOne("world").orElse(Sponge.getServer().getDefaultWorld().orElse(null));
+        WorldProperties worldProperties = ctx.<WorldProperties>getOne("world").orElse(null);
         User user = null;
         if (userValues.size() > 0) {
             user = userValues.get(0);
@@ -73,6 +75,11 @@ public class CommandClaimList implements CommandExecutor {
 
             user = (User) src;
         }
+        if (worldProperties == null) {
+            if (src != null && !(src instanceof Player)) {
+                worldProperties = Sponge.getServer().getDefaultWorld().get();
+            }
+        }
 
         boolean canListOthers = src.hasPermission(GPPermissions.LIST_BASIC_CLAIMS);
         // otherwise if no permission to delve into another player's claims data or self
@@ -85,14 +92,46 @@ public class CommandClaimList implements CommandExecutor {
             }
         }
 
+        List<Text> claimsTextList = new ArrayList<>();
         // load the target player's data
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
-        List<Claim> claimList = playerData.getClaims();
-        List<Text> claimsTextList = Lists.newArrayList();
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            GPPlayerData playerData = DataStore.GLOBAL_PLAYER_DATA.get(user.getUniqueId());
+            claimsTextList = generateClaimTextList(claimsTextList, playerData.getClaims(), worldProperties, user, src, canListOthers);
+        } else {
+            for (World world : Sponge.getServer().getWorlds()) {
+                GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
+                claimsTextList = generateClaimTextList(claimsTextList, claimWorldManager.getPlayerClaims(user.getUniqueId()), worldProperties, user, src, canListOthers);
+            }
+        }
+
+
+        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
+        PaginationList.Builder paginationBuilder = paginationService.builder()
+                .title(Text.of(TextColors.GOLD, user.getName(), TextColors.AQUA," Claims")).padding(Text.of("-")).contents(claimsTextList);
+        paginationBuilder.sendTo(src);
+
+        // drop the data we just loaded, if the player isn't online
+        if (!user.isOnline()) {
+            GriefPreventionPlugin.instance.dataStore.clearCachedPlayerData(worldProperties, user.getUniqueId());
+        }
+
+        return CommandResult.success();
+    }
+
+    private Consumer<CommandSource> createReturnClaimListConsumer(CommandSource src, String arguments) {
+        return consumer -> {
+            Text claimListReturnCommand = Text.builder().append(Text.of(
+                    TextColors.WHITE, "\n[", TextColors.AQUA, "Return to claimslist", TextColors.WHITE, "]\n"))
+                .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claimslist", arguments))).build();
+            src.sendMessage(claimListReturnCommand);
+        };
+    }
+
+    private List<Text> generateClaimTextList(List<Text> claimsTextList, List<Claim> claimList, WorldProperties worldProperties, User user, CommandSource src, boolean canListOthers) {
         if (claimList.size() > 0) {
             for (Claim playerClaim : claimList) {
                 GPClaim claim = (GPClaim) playerClaim;
-                if (claim.isAdminClaim() || !claim.world.getProperties().getUniqueId().equals(worldProperties.getUniqueId())) {
+                if (claim.isAdminClaim() || (worldProperties != null && !claim.world.getProperties().getUniqueId().equals(worldProperties.getUniqueId()))) {
                     continue;
                 }
                 // Only list claims trusted
@@ -126,7 +165,7 @@ public class CommandClaimList implements CommandExecutor {
                 Text claimCoordsTPClick = Text.builder().append(Text.of(
                         TextColors.GRAY, southWest.getBlockPosition()))
                 .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(src, southWest, claim)))
-                .onHover(TextActions.showText(Text.of("Click here to teleport to ", claimName, ".")))
+                .onHover(TextActions.showText(Text.of("Click here to teleport to ", claimName, " in world ", TextColors.GOLD, claim.getWorld().getProperties().getWorldName(), TextColors.WHITE, ".")))
                 .build();
 
                 claimsTextList.add(Text.builder()
@@ -140,26 +179,6 @@ public class CommandClaimList implements CommandExecutor {
                 claimsTextList.add(Text.of(TextColors.RED, "No claims found in world."));
             }
         }
-
-        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
-        PaginationList.Builder paginationBuilder = paginationService.builder()
-                .title(Text.of(TextColors.GOLD, user.getName(), TextColors.AQUA," Claims")).padding(Text.of("-")).contents(claimsTextList);
-        paginationBuilder.sendTo(src);
-
-        // drop the data we just loaded, if the player isn't online
-        if (!user.isOnline()) {
-            GriefPreventionPlugin.instance.dataStore.clearCachedPlayerData(worldProperties, user.getUniqueId());
-        }
-
-        return CommandResult.success();
-    }
-
-    private Consumer<CommandSource> createReturnClaimListConsumer(CommandSource src, String arguments) {
-        return consumer -> {
-            Text claimListReturnCommand = Text.builder().append(Text.of(
-                    TextColors.WHITE, "\n[", TextColors.AQUA, "Return to claimslist", TextColors.WHITE, "]\n"))
-                .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claimslist", arguments))).build();
-            src.sendMessage(claimListReturnCommand);
-        };
+        return claimsTextList;
     }
 }

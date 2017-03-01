@@ -260,7 +260,13 @@ public class FlatFileDataStore extends DataStore {
                 UUID claimId;
 
                 try {
-                    claimId = UUID.fromString(files[i].getName());
+                    final String fileName = files[i].getName();
+                    // UUID's should always be 36 in length
+                    if (fileName.length() != 36) {
+                        continue;
+                    }
+
+                    claimId = UUID.fromString(fileName);
                 } catch (Exception e) {
                     GriefPreventionPlugin.instance.getLogger().error("Could not read claim file " + files[i].getAbsolutePath());
                     continue;

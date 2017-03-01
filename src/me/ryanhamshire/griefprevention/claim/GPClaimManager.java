@@ -68,10 +68,6 @@ public class GPClaimManager implements ClaimManager {
 
     // Player UUID -> player data
     private Map<UUID, GPPlayerData> playerDataList = Maps.newHashMap();
-    // Player UUID -> storage
-    private Map<UUID, PlayerStorageData> playerStorageList = Maps.newHashMap();
-    // Player UUID -> claims
-    private Map<UUID, List<Claim>> playerClaimList = Maps.newHashMap();
     // World claim list
     private List<Claim> worldClaims = new ArrayList<>();
     // Claim UUID -> Claim
@@ -91,12 +87,7 @@ public class GPClaimManager implements ClaimManager {
     }
 
     public GPPlayerData getOrCreatePlayerData(UUID playerUniqueId) {
-        GPPlayerData playerData = null;
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            playerData = DataStore.GLOBAL_PLAYER_DATA.get(playerUniqueId);
-        } else {
-            playerData = this.playerDataList.get(playerUniqueId);
-        }
+        GPPlayerData playerData = this.getPlayerDataMap().get(playerUniqueId);
         if (playerData == null) {
             return createPlayerData(playerUniqueId);
         } else {
@@ -113,42 +104,60 @@ public class GPClaimManager implements ClaimManager {
         }
 
         PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath);
+        List<Claim> claimList = this.createPlayerClaimList(playerUniqueId);
+        GPPlayerData playerData = new GPPlayerData(this.worldProperties, playerUniqueId, playerStorage, this.activeConfig, claimList);
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            DataStore.GLOBAL_PLAYER_DATA.put(playerUniqueId, playerData);
+        }
+        // Always store player data locally to keep track of loaded world claims for player
+        this.playerDataList.put(playerUniqueId, playerData);
+        return playerData;
+    }
+
+    private List<Claim> createPlayerClaimList(UUID playerUniqueId) {
         List<Claim> claimList = new ArrayList<>();
-        for (Claim claim : this.worldClaims) {
-            GPClaim gpClaim = (GPClaim) claim;
-            if (gpClaim.isAdminClaim()) {
-                continue;
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+            for (World world : Sponge.getServer().getWorlds()) {
+                GPClaimManager claimmanager = DATASTORE.getClaimWorldManager(world.getProperties());
+                for (Claim claim : claimmanager.worldClaims) {
+                    GPClaim gpClaim = (GPClaim) claim;
+                    if (gpClaim.isAdminClaim()) {
+                        continue;
+                    }
+                    if (gpClaim.parent != null) {
+                       if (gpClaim.parent.getOwnerUniqueId().equals(playerUniqueId)) {
+                           claimList.add(claim);
+                       }
+                    } else {
+                        if (gpClaim.getOwnerUniqueId().equals(playerUniqueId)) {
+                            claimList.add(claim);
+                        }
+                    }
+                }
             }
-            if (gpClaim.parent != null) {
-               if (gpClaim.parent.getOwnerUniqueId().equals(playerUniqueId)) {
-                   claimList.add(claim);
-               }
-            } else {
-                if (gpClaim.getOwnerUniqueId().equals(playerUniqueId)) {
-                    claimList.add(claim);
+        } else {
+            for (Claim claim : this.worldClaims) {
+                GPClaim gpClaim = (GPClaim) claim;
+                if (gpClaim.isAdminClaim()) {
+                    continue;
+                }
+                if (gpClaim.parent != null) {
+                   if (gpClaim.parent.getOwnerUniqueId().equals(playerUniqueId)) {
+                       claimList.add(claim);
+                   }
+                } else {
+                    if (gpClaim.getOwnerUniqueId().equals(playerUniqueId)) {
+                        claimList.add(claim);
+                    }
                 }
             }
         }
 
-        GPPlayerData playerData = new GPPlayerData(this.worldProperties, playerUniqueId, playerStorage, this.activeConfig, claimList);
-        this.playerClaimList.put(playerUniqueId, claimList);
-        this.playerStorageList.put(playerUniqueId, playerStorage);
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            DataStore.GLOBAL_PLAYER_DATA.put(playerUniqueId, playerData);
-        } else {
-            this.playerDataList.put(playerUniqueId, playerData);
-        }
-        return playerData;
+        return claimList;
     }
 
     public void removePlayer(UUID playerUniqueId) {
-        this.playerClaimList.remove(playerUniqueId);
-        this.playerStorageList.remove(playerUniqueId);
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            DataStore.GLOBAL_PLAYER_DATA.remove(playerUniqueId);
-        } else {
-            this.playerDataList.remove(playerUniqueId);
-        }
+        this.getPlayerDataMap().remove(playerUniqueId);
     }
 
     @Override
@@ -172,10 +181,6 @@ public class GPClaimManager implements ClaimManager {
         // otherwise add this new claim to the data store to make it effective
         this.addClaim(newClaim, true);
     }
-
-    /*public void addClaim(Claim claimToAdd) {
-        this.addClaim(claimToAdd, false);
-    }*/
 
     public void addClaim(Claim claimToAdd, boolean writeToStorage) {
         GPClaim claim = (GPClaim) claimToAdd;
@@ -202,12 +207,7 @@ public class GPClaimManager implements ClaimManager {
 
         this.claimUniqueIdMap.put(claim.id, claim);
 
-        GPPlayerData playerData = null;
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            playerData = DataStore.GLOBAL_PLAYER_DATA.get(ownerId);
-        } else {
-            playerData = this.playerDataList.get(ownerId);
-        }
+        GPPlayerData playerData = this.getPlayerDataMap().get(ownerId);
         if (claim.parent == null && playerData != null) {
             List<Claim> playerClaims = playerData.getClaims();
             if (!playerClaims.contains(claim)) {
@@ -263,12 +263,12 @@ public class GPClaimManager implements ClaimManager {
         ((GPClaim) claim).getClaimStorage().save();
 
         // player may be offline so check is needed
-        if (this.playerClaimList.get(claim.getOwnerUniqueId()) != null) {
-            this.playerClaimList.get(claim.getOwnerUniqueId()).remove(claim);
+        if (this.getPlayerDataMap().get(claim.getOwnerUniqueId()) != null) {
+            this.getPlayerDataMap().get(claim.getOwnerUniqueId()).getClaims().remove(claim);
         }
         this.worldClaims.remove(claim);
         this.claimUniqueIdMap.remove(claim.getUniqueId());
-        this.updateChunkHashes((GPClaim) claim);
+        this.deleteChunkHashes((GPClaim) claim);
         // revert visuals for all players watching this claim
         List<UUID> playersWatching = new ArrayList<>(((GPClaim) claim).playersWatching);
         for (UUID playerUniqueId : playersWatching) {
@@ -282,8 +282,12 @@ public class GPClaimManager implements ClaimManager {
         DATASTORE.deleteClaimFromSecondaryStorage((GPClaim) claim);
     }
 
-    private void updateChunkHashes(GPClaim claim) {
+    private void deleteChunkHashes(GPClaim claim) {
         Set<Long> chunkHashes = claim.getChunkHashes(false);
+        if (chunkHashes == null) {
+            return;
+        }
+
         for (Long chunkHash : chunkHashes) {
             Set<GPClaim> claimsInChunk = this.getChunksToClaimsMap().get(chunkHash);
             if (claimsInChunk != null) {
@@ -298,15 +302,15 @@ public class GPClaimManager implements ClaimManager {
     }
 
     public List<Claim> getInternalPlayerClaims(UUID playerUniqueId) {
-        return this.playerClaimList.get(playerUniqueId);
+        return this.getPlayerDataMap().get(playerUniqueId).getClaims();
     }
 
     @Nullable
     public List<Claim> getPlayerClaims(UUID playerUniqueId) {
-        if (this.playerClaimList.get(playerUniqueId) == null) {
+        if (this.getPlayerDataMap().get(playerUniqueId) == null) {
             return ImmutableList.of();
         }
-        return ImmutableList.copyOf(this.playerClaimList.get(playerUniqueId));
+        return ImmutableList.copyOf(this.getPlayerDataMap().get(playerUniqueId).getClaims());
     }
 
     public void createWildernessClaim(WorldProperties worldProperties) {
@@ -330,7 +334,7 @@ public class GPClaimManager implements ClaimManager {
         return this.worldClaims;
     }
 
-    public Map<UUID, GPPlayerData> getPlayerDataList() {
+    public Map<UUID, GPPlayerData> getPlayerDataMap() {
         if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
             return DataStore.GLOBAL_PLAYER_DATA;
         }
@@ -351,17 +355,13 @@ public class GPClaimManager implements ClaimManager {
             }
         }
 
-        for (PlayerStorageData storageData : this.playerStorageList.values()) {
-            if (storageData != null) {
-                storageData.save();
-            }
+        for (GPPlayerData playerData : this.getPlayerDataMap().values()) {
+            playerData.getStorageData().save();
         }
     }
 
     public void unload() {
-        this.playerClaimList.clear();
         this.playerDataList.clear();
-        this.playerStorageList.clear();
         this.worldClaims.clear();
         this.claimUniqueIdMap.clear();
         this.chunksToClaimsMap.clear();

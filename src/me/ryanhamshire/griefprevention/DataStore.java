@@ -661,12 +661,24 @@ public abstract class DataStore {
 
     // deletes all claims owned by a player
     public void deleteClaimsForPlayer(UUID playerID) {
-        // make a list of the player's claims
-        List<GPClaimManager> claimWorldManagers = new ArrayList<>();
-        claimWorldManagers.addAll(this.claimWorldManagers.values());
+        if (DataStore.USE_GLOBAL_PLAYER_STORAGE && playerID != null) {
+            List<Claim> claimsToDelete = new ArrayList<>(DataStore.GLOBAL_PLAYER_DATA.get(playerID).getClaims());
+            for (Claim claim : claimsToDelete) {
+                ((GPClaim) claim).removeSurfaceFluids(null);
+                GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+                GPClaimManager claimWorldManager = this.claimWorldManagers.get(claim.getWorld().getProperties().getUniqueId());
+                claimWorldManager.deleteClaim(claim);
 
-        for (GPClaimManager claimWorldManager : claimWorldManagers) {
-            List<Claim> claims = claimWorldManager.getPlayerClaims(playerID);
+                // if in a creative mode world, delete the claim
+                if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                    GriefPreventionPlugin.instance.restoreClaim((GPClaim) claim, 0);
+                }
+            }
+            return;
+        }
+
+        for (GPClaimManager claimWorldManager : this.claimWorldManagers.values()) {
+            List<Claim> claims = claimWorldManager.getInternalPlayerClaims(playerID);
             if (playerID == null) {
                 claims = claimWorldManager.getWorldClaims();
             }
@@ -1139,7 +1151,7 @@ public abstract class DataStore {
     public GPPlayerData getPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
         GPPlayerData playerData = null;
         GPClaimManager claimWorldManager = this.getClaimWorldManager(worldProperties);
-        playerData = claimWorldManager.getPlayerDataList().get(playerUniqueId);
+        playerData = claimWorldManager.getPlayerDataMap().get(playerUniqueId);
         return playerData;
     }
 
