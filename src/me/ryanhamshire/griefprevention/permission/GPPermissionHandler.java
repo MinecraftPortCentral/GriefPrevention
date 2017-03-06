@@ -121,7 +121,7 @@ public class GPPermissionHandler {
     }
 
     public static Tristate getUserPermission(User user, GPClaim claim, String permission, String targetModPermission) {
-        Set<Context> contexts = new HashSet<>();
+        Set<Context> contexts = new HashSet<>(user.getActiveContexts());
         if (claim.parent != null && claim.getData().doesInheritParent()) {
             // check subdivision's parent
             contexts.add(claim.parent.getContext());
@@ -160,7 +160,7 @@ public class GPPermissionHandler {
 
     public static Tristate getClaimFlagPermission(GPClaim claim, String permission, String targetModPermission, Set<Context> contexts) {
         if (contexts == null) {
-            contexts = new HashSet<>();
+            contexts = new HashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
             if (claim.parent != null && claim.getData().doesInheritParent()) {
                 // check subdivision's parent
                 contexts.add(claim.parent.getContext());
@@ -186,7 +186,7 @@ public class GPPermissionHandler {
     // Only uses world and claim type contexts
     private static Tristate getFlagDefaultPermission(GPClaim claim, String permission) {
         // Fallback to defaults
-        Set<Context> contexts = new HashSet<>();
+        Set<Context> contexts = new HashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
         if (claim.isAdminClaim()) {
             contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
         } else if (claim.isBasicClaim() || claim.isSubdivision()) {
@@ -210,7 +210,7 @@ public class GPPermissionHandler {
             return Tristate.UNDEFINED;
         }
 
-        Set<Context> contexts = new LinkedHashSet<>();
+        Set<Context> contexts = new LinkedHashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
         if (claim.isAdminClaim()) {
             contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
         } else {
@@ -265,7 +265,7 @@ public class GPPermissionHandler {
         }
 
         flagPermission = StringUtils.replace(flagPermission, ":", ".");
-        Set<Context> contexts = new LinkedHashSet<>();
+        Set<Context> contexts = new LinkedHashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
         if (claim.isAdminClaim()) {
             contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
         } else {
@@ -319,8 +319,10 @@ public class GPPermissionHandler {
                     for (EnumCreatureType type : EnumCreatureType.values()) {
                         if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
                             String[] parts = targetId.split(":");
-                            targetId =  parts[0] + ":" + GPFlags.SPAWN_TYPES.inverse().get(type) + ":" + parts[1];
-                            break;
+                            if (parts.length > 0) {
+                                targetId =  parts[0] + ":" + GPFlags.SPAWN_TYPES.inverse().get(type) + ":" + parts[1];
+                                break;
+                            }
                         }
                     }
                 }

@@ -453,25 +453,27 @@ public class Visualization {
         }
     }
 
-    // finds a block the player can probably see. this is how visualizations
-    // "cling" to the ground or ceiling
+    // finds a block the player can probably see. this is how visualizations "cling" to the ground or ceiling
     private static Location<World> getVisibleLocation(World world, int x, int y, int z, boolean waterIsTransparent) {
-        BlockSnapshot block = world.createSnapshot(x, y, z);
-        Direction direction = (isTransparent(block.getState(), waterIsTransparent)) ? Direction.DOWN : Direction.UP;
+        Location<World> location = world.getLocation(x, y, z);
+        Direction direction = (isTransparent(location.getBlock(), waterIsTransparent)) ? Direction.DOWN : Direction.UP;
 
-        while (block.getPosition().getY() >= 1 &&
-                block.getPosition().getY() < world.getDimension().getBuildHeight() - 1 &&
-                (!isTransparent(block.getLocation().get().getRelative(Direction.UP).getBlock(), waterIsTransparent)
-                        || isTransparent(block.getState(), waterIsTransparent))) {
-            block = block.getLocation().get().getRelative(direction).createSnapshot();
+        while (location.getPosition().getY() >= 1 &&
+                location.getPosition().getY() < world.getDimension().getBuildHeight() - 1 &&
+                (!isTransparent(location.getRelative(Direction.UP).getBlock(), waterIsTransparent)
+                        || isTransparent(location.getBlock(), waterIsTransparent))) {
+            location = location.getRelative(direction);
         }
 
-        return block.getLocation().get();
+        return location;
     }
 
-    // helper method for above. allows visualization blocks to sit underneath
-    // partly transparent blocks like grass and fence
+    // helper method for above. allows visualization blocks to sit underneath partly transparent blocks like grass and fence
     private static boolean isTransparent(BlockState blockstate, boolean waterIsTransparent) {
+        if (blockstate.getType() == BlockTypes.SNOW_LAYER) {
+            return false;
+        }
+
         IBlockState iblockstate = (IBlockState)(Object) blockstate;
         Optional<MatterProperty> matterProperty = blockstate.getProperty(MatterProperty.class);
         if (!waterIsTransparent && matterProperty.isPresent() && matterProperty.get().getValue() == MatterProperty.Matter.LIQUID) {

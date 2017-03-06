@@ -538,6 +538,10 @@ public class BlockEventHandler {
         } else {
             sourceClaim = this.getSourceClaim(event.getCause());
         }
+        if (sourceClaim == null) {
+            GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
+            return;
+        }
 
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         for (Transaction<BlockSnapshot> transaction : transactions) {
@@ -603,6 +607,11 @@ public class BlockEventHandler {
         } else {
             sourceClaim = this.getSourceClaim(event.getCause());
         }
+        if (sourceClaim == null) {
+            GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+            return;
+        }
+
         User user = event.getCause().first(User.class).orElse(null);
         Player player = user != null && user instanceof Player ? (Player) user : null;
         GPPlayerData playerData = null;
