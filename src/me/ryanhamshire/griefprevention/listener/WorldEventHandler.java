@@ -35,6 +35,7 @@ import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.event.world.UnloadWorldEvent;
 import org.spongepowered.api.event.world.chunk.LoadChunkEvent;
 import org.spongepowered.api.event.world.chunk.UnloadChunkEvent;
+import org.spongepowered.common.SpongeImpl;
 
 public class WorldEventHandler {
 
@@ -49,7 +50,7 @@ public class WorldEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onWorldUnload(UnloadWorldEvent event) {
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+        if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
 

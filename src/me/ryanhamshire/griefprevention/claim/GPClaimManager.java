@@ -106,11 +106,7 @@ public class GPClaimManager implements ClaimManager {
         PlayerStorageData playerStorage = new PlayerStorageData(playerFilePath);
         List<Claim> claimList = this.createPlayerClaimList(playerUniqueId);
         GPPlayerData playerData = new GPPlayerData(this.worldProperties, playerUniqueId, playerStorage, this.activeConfig, claimList);
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            DataStore.GLOBAL_PLAYER_DATA.put(playerUniqueId, playerData);
-        }
-        // Always store player data locally to keep track of loaded world claims for player
-        this.playerDataList.put(playerUniqueId, playerData);
+        this.getPlayerDataMap().put(playerUniqueId, playerData);
         return playerData;
     }
 
