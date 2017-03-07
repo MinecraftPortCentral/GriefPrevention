@@ -319,7 +319,7 @@ public class GPPermissionHandler {
                     for (EnumCreatureType type : EnumCreatureType.values()) {
                         if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
                             String[] parts = targetId.split(":");
-                            if (parts.length > 0) {
+                            if (parts.length > 1) {
                                 targetId =  parts[0] + ":" + GPFlags.SPAWN_TYPES.inverse().get(type) + ":" + parts[1];
                                 break;
                             }
