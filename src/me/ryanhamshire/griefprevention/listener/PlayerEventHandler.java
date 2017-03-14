@@ -2264,7 +2264,11 @@ public class PlayerEventHandler {
                 else {
                     GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlap);
                     claim.getVisualizer().createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
+                    // show the player the conflicting claim
                     claim.getVisualizer().apply(player);
+                    List<Claim> claims = new ArrayList<>();
+                    claims.add(claim);
+                    CommandHelper.showOverlapClaims(player, claims);
                 }
             }
 
@@ -2275,6 +2279,9 @@ public class PlayerEventHandler {
                 Visualization visualization = new Visualization(claim, VisualizationType.ErrorClaim);
                 visualization.createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
                 visualization.apply(player);
+                List<Claim> claims = new ArrayList<>();
+                claims.add(claim);
+                CommandHelper.showOverlapClaims(player, claims);
             }
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
@@ -2380,9 +2387,14 @@ public class PlayerEventHandler {
             // if it didn't succeed, tell the player why
             if (!result.successful()) {
                 if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
+                    GPClaim overlapClaim = (GPClaim) result.getClaim().get();
                     GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CreateClaimFailOverlapShort);
-                    gpClaim.getVisualizer().createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
-                    gpClaim.getVisualizer().apply(player);
+                    overlapClaim.getVisualizer().createClaimBlockVisuals(clickedBlock.getPosition().getY(), player.getLocation(), playerData);
+                    // show the player the conflicting claim
+                    overlapClaim.getVisualizer().apply(player);
+                    List<Claim> claims = new ArrayList<>();
+                    claims.add(overlapClaim);
+                    CommandHelper.showOverlapClaims(player, claims);
                 } else if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_X) {
                     GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Claim exceeds your size X limit of " + playerData.optionMaxClaimSizeX + " blocks.");
                 } else if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_Y) {
