@@ -215,8 +215,8 @@ public class EntityEventHandler {
                         }
                         permission = GPPermissions.ITEM_SPAWN;
                     }
-                    // Remove when pixelmon stops sending client packets to spawn on server
-                    if (entity.getType().getId().equals("pixelmon:pixelmon") && spawnCause.getType() == SpawnTypes.CUSTOM) {
+                    if (entity.getType().getId().equals("pixelmon:occupiedpokeball") || entity.getType().getId().equals("pixelmon:pokeball") || 
+                            (spawnCause.getType() == SpawnTypes.CUSTOM && entity.getType().getId().equals("pixelmon:pixelmon"))) {
                         User owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
                         if (owner != null) {
                             return true;
