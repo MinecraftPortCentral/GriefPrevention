@@ -49,9 +49,9 @@ repositories {
 }
 
 dependencies {
-    compile("org.spongepowered:spongeforge:1.10.2-2221-5.1.0-BETA-2185:dev")
+    compile("com.googlecode.json-simple:json-simple:1.1")
     compile("io.github.nucleuspowered:nucleus-api:0.26.2-S5.1")
-	compile("com.googlecode.json-simple:json-simple:1.1")
+    compile("org.spongepowered:spongeforge:1.10.2-2221-5.1.0-BETA-2185:dev")
 }
 
 sourceSets {

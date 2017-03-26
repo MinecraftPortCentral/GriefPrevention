@@ -47,7 +47,7 @@ public class NucleusEventHandler {
         }
 
         GPClaim claim = DATASTORE.getClaimAt(location);
-        if (claim != null && claim.isBasicClaim()) {
+        if (claim != null && !claim.isWilderness() && !claim.isAdminClaim()) {
             if (claim.allowAccess(event.getUser()) != null) {
                 event.setCancelled(true);
                 event.setCancelMessage(Text.of(TextColors.RED, DATASTORE.getMessage(Messages.NucleusNoSetHome)));
