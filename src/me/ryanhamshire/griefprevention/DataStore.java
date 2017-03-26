@@ -861,6 +861,7 @@ public abstract class DataStore {
         this.addDefault(Messages.NotTrappedHere, "You can build here.  Save yourself.");
         this.addDefault(Messages.NotYourClaim, "This isn't your claim.");
         this.addDefault(Messages.NotYourPet, "That belongs to {0} until it's given to you with /GivePet.", "0: owner name");
+        this.addDefault(Messages.NucleusNoSetHome, "You must be trusted in order to use /sethome here.");
         this.addDefault(Messages.OnlyOwnersModifyClaims, "Only {0} can modify this claim.", "0: owner name");
         this.addDefault(Messages.OnlyPurchaseBlocks, "Claim blocks may only be purchased, not sold.");
         this.addDefault(Messages.OnlySellBlocks, "Claim blocks may only be sold, not purchased.");

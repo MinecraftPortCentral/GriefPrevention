@@ -5,6 +5,10 @@ buildscript {
             name = 'forge'
             url = 'http://files.minecraftforge.net/maven'
         }
+        maven {
+            name = 'nucleus'
+            url = 'http://repo.drnaylor.co.uk/artifactory/list/minecraft'
+        }
     }
 
     dependencies {
@@ -37,9 +41,17 @@ minecraft {
 
 version = "$minecraft.version-$project.version.$buildNumber"
 
+repositories {
+    maven {
+        name = 'nucleus'
+        url = 'http://repo.drnaylor.co.uk/artifactory/list/minecraft'
+    }
+}
+
 dependencies {
-    compile("org.spongepowered:spongeforge:1.11.2-2227-6.0.0-BETA-2186:dev")
     compile("com.googlecode.json-simple:json-simple:1.1")
+    compile("io.github.nucleuspowered:nucleus-api:0.26.2-S6.0")
+    compile("org.spongepowered:spongeforge:1.11.2-2227-6.0.0-BETA-2186:dev")
 }
 
 sourceSets {
