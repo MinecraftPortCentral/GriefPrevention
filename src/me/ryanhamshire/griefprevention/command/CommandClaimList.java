@@ -95,7 +95,7 @@ public class CommandClaimList implements CommandExecutor {
         List<Text> claimsTextList = new ArrayList<>();
         // load the target player's data
         if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            GPPlayerData playerData = DataStore.GLOBAL_PLAYER_DATA.get(user.getUniqueId());
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
             claimsTextList = generateClaimTextList(claimsTextList, playerData.getClaims(), worldProperties, user, src, canListOthers);
         } else {
             for (World world : Sponge.getServer().getWorlds()) {

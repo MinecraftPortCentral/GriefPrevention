@@ -109,6 +109,7 @@ import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
 import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
 import me.ryanhamshire.griefprevention.listener.BlockEventHandler;
 import me.ryanhamshire.griefprevention.listener.EntityEventHandler;
+import me.ryanhamshire.griefprevention.listener.NucleusEventHandler;
 import me.ryanhamshire.griefprevention.listener.PlayerEventHandler;
 import me.ryanhamshire.griefprevention.listener.WorldEventHandler;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
@@ -731,10 +732,13 @@ public class GriefPreventionPlugin {
         }
 
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
-        Sponge.getGame().getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
-        Sponge.getGame().getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
-        Sponge.getGame().getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
-        Sponge.getGame().getEventManager().registerListeners(this, new WorldEventHandler());
+        Sponge.getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
+        Sponge.getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
+        Sponge.getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
+        Sponge.getEventManager().registerListeners(this, new WorldEventHandler());
+        if (Sponge.getPluginManager().getPlugin("nucleus").isPresent()) {
+            Sponge.getEventManager().registerListeners(this, new NucleusEventHandler());
+        }
         addLogEntry("Finished loading data " + dataMode + ".");
         if (Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase("sponge")) {
             this.logger.error("Unable to initialize plugin. GriefPrevention requires one of the following permission plugins : LuckPerms, PEX, or PermissionsManager.");

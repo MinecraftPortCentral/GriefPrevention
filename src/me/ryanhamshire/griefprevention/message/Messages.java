@@ -180,6 +180,7 @@ public enum Messages {
     NotTrappedHere,
     NotYourClaim,
     NotYourPet,
+    NucleusNoSetHome,
     OnlyOwnersModifyClaims,
     OnlyPurchaseBlocks,
     OnlySellBlocks,
