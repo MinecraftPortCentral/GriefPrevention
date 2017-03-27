@@ -64,6 +64,7 @@ import org.spongepowered.api.event.cause.entity.damage.DamageTypes;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
+import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
@@ -215,7 +216,17 @@ public class EntityEventHandler {
                         }
                         permission = GPPermissions.ITEM_SPAWN;
                     }
-                    if (entity.getType().getId().equals("pixelmon:occupiedpokeball") || entity.getType().getId().equals("pixelmon:pokeball") || 
+                    // Always allow pixelmon spawns from pokeballs
+                    if (spawnCause instanceof EntitySpawnCause) {
+                        final EntitySpawnCause entitySpawnCause = (EntitySpawnCause) spawnCause;
+                        final String entityId = entitySpawnCause.getEntity().getType().getId();
+                        if (entityId.equals("pixelmon:occupiedpokeball") || entityId.equals("pixelmon:pokeball")) {
+                            User owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
+                            if (owner != null) {
+                                return true;
+                            }
+                        }
+                    } else if (entity.getType().getId().equals("pixelmon:occupiedpokeball") || entity.getType().getId().equals("pixelmon:pokeball") || 
                             (spawnCause.getType() == SpawnTypes.CUSTOM && entity.getType().getId().equals("pixelmon:pixelmon"))) {
                         User owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
                         if (owner != null) {
