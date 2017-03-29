@@ -193,7 +193,8 @@ public class EntityEventHandler {
         }
 
         GPTimings.ENTITY_SPAWN_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+        final World world = event.getEntities().get(0).getWorld();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
             return;
         }
@@ -546,7 +547,8 @@ public class EntityEventHandler {
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityDropItemDeath(DropItemEvent.Destruct event, @Root Living livingEntity) {
         GPTimings.ENTITY_DROP_ITEM_DEATH_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+        final World world = event.getEntities().get(0).getWorld();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.ENTITY_DROP_ITEM_DEATH_EVENT.stopTimingIfSync();
             return;
         }
@@ -917,7 +919,8 @@ public class EntityEventHandler {
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityCollideEntity(CollideEntityEvent event, @First User user) {
         GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+        final World world = event.getEntities().get(0).getWorld();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.ENTITY_COLLIDE_EVENT.stopTimingIfSync();
             return;
         }

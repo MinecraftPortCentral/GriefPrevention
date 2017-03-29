@@ -163,7 +163,7 @@ public class BlockEventHandler {
                 }
             }
         } else if (user != null) {
-            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(event.getTargetWorld(), user.getUniqueId());
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(event.getLocations().get(0).getExtent(), user.getUniqueId());
             for (Location<World> location : event.getLocations()) {
                 GPClaim targetClaim = this.dataStore.getClaimAt(location, true, null);
 
@@ -473,7 +473,8 @@ public class BlockEventHandler {
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onExplosion(ExplosionEvent.Post event) {
         GPTimings.EXPLOSION_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+        final World world = event.getExplosion().getWorld();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
             return;
         }
@@ -493,7 +494,7 @@ public class BlockEventHandler {
             }
 
             GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), false, null);
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot.getLocation(), creator, true) == Tristate.FALSE && location.getPosition().getY() > ((net.minecraft.world.World) event.getTargetWorld()).getSeaLevel()) {
+            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot.getLocation(), creator, true) == Tristate.FALSE && location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel()) {
                 event.setCancelled(true);
                 GriefPreventionPlugin.addEventLogEntry(event, claim, location, source, blockSnapshot.getLocation(), creator, null);
                 GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
@@ -523,7 +524,8 @@ public class BlockEventHandler {
             return;
         }
 
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+        final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
             return;
         }
@@ -592,12 +594,12 @@ public class BlockEventHandler {
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
         GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+        final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
             return;
         }
 
-        World world = event.getTargetWorld();
         Object source = event.getCause().root();
         GPClaim sourceClaim = null;
         LocatableBlock locatable = null;
