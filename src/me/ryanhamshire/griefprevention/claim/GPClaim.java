@@ -302,7 +302,7 @@ public class GPClaim implements Claim {
     }
 
     public Optional<Text> getName() {
-        return this.getInternalClaimData().getName();
+        return this.claimData.getName();
     }
 
     // players may only siege someone when he's not in an admin claim
@@ -683,7 +683,7 @@ public class GPClaim implements Claim {
             }
 
             // Builders can break blocks
-            if (this.getInternalClaimData().getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.getInternalClaimData().getBuilders().contains(user.getUniqueId())) {
+            if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.claimData.getBuilders().contains(user.getUniqueId())) {
                 return null;
             }
 
@@ -721,12 +721,7 @@ public class GPClaim implements Claim {
             return null;
         }
 
-        if (this.getInternalClaimData().getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID)
-                || this.getInternalClaimData().getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.getInternalClaimData().getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.getInternalClaimData().getBuilders().contains(user.getUniqueId()) 
-                || this.getInternalClaimData().getContainers().contains(user.getUniqueId())
-                || this.getInternalClaimData().getAccessors().contains(user.getUniqueId())) {
+        if (this.isTrusted(user.getUniqueId())) {
             return null;
         }
 
@@ -752,8 +747,8 @@ public class GPClaim implements Claim {
             return null;
         }
 
-        if (this.getInternalClaimData().getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.getInternalClaimData().getBuilders().contains(user.getUniqueId())) {
+        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
+                || this.claimData.getBuilders().contains(user.getUniqueId())) {
             return null;
         }
 
@@ -787,10 +782,10 @@ public class GPClaim implements Claim {
             return null;
         }
 
-        if (this.getInternalClaimData().getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.getInternalClaimData().getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.getInternalClaimData().getBuilders().contains(user.getUniqueId()) 
-                || this.getInternalClaimData().getContainers().contains(user.getUniqueId())) {
+        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
+                || this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID) 
+                || this.claimData.getBuilders().contains(user.getUniqueId()) 
+                || this.claimData.getContainers().contains(user.getUniqueId())) {
             return null;
         }
 
@@ -816,8 +811,8 @@ public class GPClaim implements Claim {
         }
         
         //anyone who's in the managers (/PermissionTrust) list can do this
-        for(int i = 0; i < this.getInternalClaimData().getManagers().size(); i++) {
-            UUID managerID = this.getInternalClaimData().getManagers().get(i);
+        for(int i = 0; i < this.claimData.getManagers().size(); i++) {
+            UUID managerID = this.claimData.getManagers().get(i);
             if(player.getUniqueId().equals(managerID)) {
                 return null;
             }
@@ -836,7 +831,7 @@ public class GPClaim implements Claim {
 
     //clears all permissions (except owner of course)
     public void clearPermissions() {
-        this.getInternalClaimData().getManagers().clear();
+        this.claimData.getManagers().clear();
         
         for(Claim child : this.children) {
             ((GPClaim) child).clearPermissions();
@@ -1159,11 +1154,11 @@ public class GPClaim implements Claim {
         if (!this.isSubdivision()) {
             this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
         } else {
-            if (this.getInternalClaimData() == null) {
+            if (this.claimData == null) {
                 this.setClaimData(new SubDivisionDataConfig(this));
             }
 
-            this.claimStorage.getConfig().getSubdivisions().put(this.id, (SubDivisionDataConfig) this.getInternalClaimData());
+            this.claimStorage.getConfig().getSubdivisions().put(this.id, (SubDivisionDataConfig) this.claimData);
         }
 
         if (this.isBasicClaim()) {
@@ -1175,7 +1170,7 @@ public class GPClaim implements Claim {
         this.claimData.setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
         this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
         // Will save next world save
-        this.getInternalClaimData().setRequiresSave(true);
+        this.claimData.setRequiresSave(true);
         // Update SubdivisionData
         for (Claim subdivision : this.children) {
             ((GPClaim) subdivision).updateClaimStorageData();
@@ -1212,7 +1207,7 @@ public class GPClaim implements Claim {
     }
 
     public boolean isPvpEnabled() {
-        Tristate value = this.getInternalClaimData().getPvpOverride();
+        Tristate value = this.claimData.getPvpOverride();
         if (value != Tristate.UNDEFINED) {
             return value.asBoolean();
         }
@@ -1221,7 +1216,7 @@ public class GPClaim implements Claim {
     }
 
     public void setPvpOverride(Tristate value) {
-        this.getInternalClaimData().setPvpOverride(value);
+        this.claimData.setPvpOverride(value);
         this.getClaimStorage().save();
     }
 
@@ -1252,7 +1247,7 @@ public class GPClaim implements Claim {
         // determine new owner
         GPPlayerData newOwnerData = DATASTORE.getOrCreatePlayerData(this.world, newOwnerID);
 
-        if (this.isBasicClaim() && this.getInternalClaimData().requiresClaimBlocks()) {
+        if (this.isBasicClaim() && this.claimData.requiresClaimBlocks()) {
             int remainingClaimBlocks = newOwnerData.getRemainingClaimBlocks();
             if (remainingClaimBlocks < 0 || (this.getArea() > remainingClaimBlocks)) {
                 return new GPClaimResult(ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS);
@@ -1270,7 +1265,7 @@ public class GPClaim implements Claim {
             // convert to basic
             this.type = ClaimType.BASIC;
             this.getVisualizer().setType(VisualizationType.Claim);
-            this.getInternalClaimData().setType(ClaimType.BASIC);
+            this.claimData.setType(ClaimType.BASIC);
         }
 
         this.ownerUniqueId = event.getNewOwner();
@@ -1278,7 +1273,7 @@ public class GPClaim implements Claim {
             newOwnerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.getOwnerUniqueId());
         }
 
-        this.getInternalClaimData().setOwnerUniqueId(newOwnerID);
+        this.claimData.setOwnerUniqueId(newOwnerID);
         if (this.isBasicClaim()) {
             ownerData.getClaims().remove(this);
             newOwnerData.getClaims().add(this);
@@ -1462,9 +1457,9 @@ public class GPClaim implements Claim {
             }
         }
 
-        this.getInternalClaimData().setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
-        this.getInternalClaimData().setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
-        this.getInternalClaimData().setRequiresSave(true);
+        this.claimData.setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
+        this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
+        this.claimData.setRequiresSave(true);
         this.getClaimStorage().save();
 
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
@@ -1578,9 +1573,9 @@ public class GPClaim implements Claim {
             }
         }
 
-        this.getInternalClaimData().setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
-        this.getInternalClaimData().setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
-        this.getInternalClaimData().setRequiresSave(true);
+        this.claimData.setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
+        this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
+        this.claimData.setRequiresSave(true);
         this.getClaimStorage().save();
 
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
@@ -1718,8 +1713,8 @@ public class GPClaim implements Claim {
             this.type = ClaimType.BASIC;
             this.setOwnerUniqueId(newOwnerUniqueId);
             this.visualization = null;
-            this.getInternalClaimData().setOwnerUniqueId(newOwnerUniqueId);
-            this.getInternalClaimData().setType(ClaimType.BASIC);
+            this.claimData.setOwnerUniqueId(newOwnerUniqueId);
+            this.claimData.setType(ClaimType.BASIC);
         }
         if (isBasicClaim()) {
             if (type == ClaimType.BASIC) {
@@ -1735,7 +1730,7 @@ public class GPClaim implements Claim {
             this.visualization = null;
             this.setOwnerUniqueId(null);
             this.type = ClaimType.ADMIN;
-            this.getInternalClaimData().setType(ClaimType.ADMIN);
+            this.claimData.setType(ClaimType.ADMIN);
         }
         // revert visuals for all players watching this claim
         List<UUID> playersWatching = new ArrayList<>(this.playersWatching);
@@ -1771,26 +1766,46 @@ public class GPClaim implements Claim {
     @Override
     public List<UUID> getAllTrusts() {
         List<UUID> trustList = new ArrayList<>();
-        trustList.addAll(this.getInternalClaimData().getAccessors());
-        trustList.addAll(this.getInternalClaimData().getContainers());
-        trustList.addAll(this.getInternalClaimData().getBuilders());
-        trustList.addAll(this.getInternalClaimData().getManagers());
+        trustList.addAll(this.claimData.getAccessors());
+        trustList.addAll(this.claimData.getContainers());
+        trustList.addAll(this.claimData.getBuilders());
+        trustList.addAll(this.claimData.getManagers());
         return ImmutableList.copyOf(trustList);
     }
 
     @Override
     public List<UUID> getTrusts(TrustType type) {
         if (type == TrustType.ACCESSOR) {
-            return ImmutableList.copyOf(this.getInternalClaimData().getAccessors());
+            return ImmutableList.copyOf(this.claimData.getAccessors());
         }
         if (type == TrustType.CONTAINER) {
-            return ImmutableList.copyOf(this.getInternalClaimData().getContainers());
+            return ImmutableList.copyOf(this.claimData.getContainers());
         }
         if (type == TrustType.BUILDER) {
-            return ImmutableList.copyOf(this.getInternalClaimData().getBuilders());
+            return ImmutableList.copyOf(this.claimData.getBuilders());
         }
 
-        return ImmutableList.copyOf(this.getInternalClaimData().getManagers());
+        return ImmutableList.copyOf(this.claimData.getManagers());
+    }
+
+    public boolean isTrusted(UUID uniqueId) {
+        if (uniqueId == null) {
+            return false;
+        }
+
+        // check user access
+        if (uniqueId.equals(this.ownerUniqueId) || this.claimData.getAccessors().contains(uniqueId) || this.claimData.getBuilders().contains(uniqueId)
+                || this.claimData.getContainers().contains(uniqueId) || this.claimData.getManagers().contains(uniqueId)) {
+            return true;
+        }
+
+        // check public access
+        if (this.claimData.getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)
+                || this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -1875,15 +1890,15 @@ public class GPClaim implements Claim {
 
     public List<UUID> getTrustList(TrustType type) {
         if (type == TrustType.ACCESSOR) {
-            return this.getInternalClaimData().getAccessors();
+            return this.claimData.getAccessors();
         }
         if (type == TrustType.CONTAINER) {
-            return this.getInternalClaimData().getContainers();
+            return this.claimData.getContainers();
         }
         if (type == TrustType.BUILDER) {
-            return this.getInternalClaimData().getBuilders();
+            return this.claimData.getBuilders();
         }
-        return this.getInternalClaimData().getManagers();
+        return this.claimData.getManagers();
     }
 
     public static class ClaimBuilder implements Builder {
