@@ -188,7 +188,7 @@ public class EntityEventHandler {
     // when a creature spawns...
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntitySpawn(SpawnEntityEvent event, @First SpawnCause spawnCause) {
-        if (event instanceof DropItemEvent) {
+        if (event instanceof DropItemEvent || event.getEntities().isEmpty()) {
             return;
         }
 
@@ -546,6 +546,10 @@ public class EntityEventHandler {
     // when an entity drops items on death
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityDropItemDeath(DropItemEvent.Destruct event, @Root Living livingEntity) {
+        if (event.getEntities().isEmpty()) {
+            return;
+        }
+
         GPTimings.ENTITY_DROP_ITEM_DEATH_EVENT.startTimingIfSync();
         final World world = event.getEntities().get(0).getWorld();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
@@ -918,6 +922,10 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityCollideEntity(CollideEntityEvent event, @First User user) {
+        if (event.getEntities().isEmpty()) {
+            return;
+        }
+
         GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
         final World world = event.getEntities().get(0).getWorld();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
