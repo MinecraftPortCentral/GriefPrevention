@@ -1,13 +1,8 @@
 buildscript {
     repositories {
-        jcenter()
         maven {
             name = 'forge'
             url = 'http://files.minecraftforge.net/maven'
-        }
-        maven {
-            name = 'nucleus'
-            url = 'http://repo.drnaylor.co.uk/artifactory/list/minecraft'
         }
     }
 
@@ -17,11 +12,10 @@ buildscript {
 }
 
 plugins {
-    id 'org.spongepowered.plugin' version '0.6'
+    id 'org.spongepowered.plugin' version '0.8.1'
+    id 'net.minecrell.vanillagradle.server' version '2.2-4'
     id 'maven'
 }
-
-apply plugin: 'net.minecraftforge.gradle.forge'
 
 // Environment variables for the build set by the build server
 ext.buildNumber = System.env.BUILD_NUMBER ?: '0'
@@ -34,12 +28,11 @@ targetCompatibility = '1.8'
 archivesBaseName = project.name.toLowerCase()
 
 minecraft {
-    forgeVersion = project.forgeVersion
+    version = project.minecraftVersion
     mappings = project.mcpMappings
-    runDir = "run"
 }
 
-version = "$minecraft.version-$project.version.$buildNumber"
+version = "$minecraft.version-$version.$buildNumber"
 
 repositories {
     maven {
@@ -48,18 +41,35 @@ repositories {
     }
 }
 
-dependencies {
-    compile("com.googlecode.json-simple:json-simple:1.1")
-    compile("io.github.nucleuspowered:nucleus-api:0.26.2-S5.1")
-    compile("org.spongepowered:spongeforge:1.10.2-2221-5.1.0-BETA-2185:dev")
+sourceSets {
+    api
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'src'
-        }
-    }
+dependencies {
+    apiCompile "org.spongepowered:spongeapi:$apiVersion"
+
+    compile sourceSets.api.output
+    compileOnly "org.spongepowered:spongecommon:$apiVersion:dev"
+
+    compileOnly "com.googlecode.json-simple:json-simple:1.1"
+    compileOnly "io.github.nucleuspowered:nucleus-api:0.26.2-S5.1"
+}
+
+jar {
+    from sourceSets.api.output
+}
+
+task apiJar(type: Jar) {
+    classifier = 'api'
+    from sourceSets.api.output
+}
+
+sourceJar {
+    from sourceSets.api.allSource
+}
+
+javadoc {
+    source = sourceSets.api.java
 }
 
 if (JavaVersion.current().isJava8Compatible()) {
@@ -68,20 +78,19 @@ if (JavaVersion.current().isJava8Compatible()) {
     }
 }
 
-// Support uploading with FTP
-configurations {
-    deployerJars // Deployment dependency
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
 }
 
-dependencies {
-    deployerJars 'org.apache.maven.wagon:wagon-ftp:2.10'
+artifacts {
+    archives apiJar
+    archives javadocJar
 }
 
 uploadArchives {
     repositories {
         mavenDeployer {
-            configuration = configurations.deployerJars
-
             // This is set by the build server when deploying to the repo
             if (project.hasProperty('spongeRepo')) {
                 repository(url: project.spongeRepo) {
@@ -107,8 +116,8 @@ uploadArchives {
                     }
 
                     issueManagement {
-                        system = 'github'
-                        url = 'https://github.com/MinecraftPortCentral/GriefPrevention/issues'
+                        system = 'GitHub Issues'
+                        url = "https://github.com/$project.organization/$project.name/issues"
                     }
 
                     licenses {
@@ -143,3 +152,4 @@ if (project.hasProperty('forgeJenkinsPass')) {
 
     uploadArchives.dependsOn 'changelog'
 }
+
