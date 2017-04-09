@@ -27,6 +27,8 @@ package me.ryanhamshire.griefprevention.api.claim;
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.data.ClaimData;
+import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.ContextSource;
 import org.spongepowered.api.text.Text;
@@ -117,6 +119,20 @@ public interface Claim extends ContextSource {
      * @return The list of claim chunks used.
      */
     List<Chunk> getChunks();
+
+    /**
+     * Gets the list of entities currently in claim.
+     * 
+     * @return The list of entities in claim.
+     */
+    List<Entity> getEntities();
+
+    /**
+     * Gets the list of players currently in claim.
+     * 
+     * @return The list of players in claim.
+     */
+    List<Player> getPlayers();
 
     /** Gets the claim world.
      * 
@@ -270,6 +286,14 @@ public interface Claim extends ContextSource {
      * @return The claim result
      */
     ClaimResult removeAllTrusts(Cause cause);
+
+    /**
+     * Checks if the {@link UUID} is trusted in claim.
+     * 
+     * @param uuid The uuid to check
+     * @return Whether the uuid is trusted
+     */
+    boolean isTrusted(UUID uuid);
 
     default boolean isAdminClaim() {
         return this.getType() == ClaimType.ADMIN;

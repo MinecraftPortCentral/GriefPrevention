@@ -129,6 +129,7 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
+import nl.riebie.mcclans.api.ClanService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform.Component;
@@ -237,6 +238,7 @@ public class GriefPreventionPlugin {
     // this handles data storage, like player and region data
     public DataStore dataStore;
 
+    public ClanService clanService;
     public PermissionService permissionService;
     public PermissionDescription.Builder permissionDescriptionBuilder;
     private GriefPreventionApi api;
@@ -718,6 +720,7 @@ public class GriefPreventionPlugin {
         this.loadConfig();
         this.customLogger = new CustomLogger();
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
+        this.clanService = Sponge.getServiceManager().provide(ClanService.class).orElse(null);
 
         if (this.dataStore == null) {
             try {

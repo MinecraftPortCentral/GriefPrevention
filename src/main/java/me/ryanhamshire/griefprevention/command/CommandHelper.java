@@ -32,11 +32,9 @@ import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
-import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.claim.GPClaimResult;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
 import me.ryanhamshire.griefprevention.event.GPTrustClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
@@ -779,10 +777,7 @@ public class CommandHelper {
             GPClaim gpClaim = (GPClaim) claim;
             // if not owner of claim, validate perms
             if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-                if (!gpClaim.getInternalClaimData().getContainers().contains(player.getUniqueId()) 
-                        && !gpClaim.getInternalClaimData().getBuilders().contains(player.getUniqueId())
-                        && !gpClaim.getInternalClaimData().getManagers().contains(player.getUniqueId())
-                        && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS)) {
+                if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS) || !gpClaim.isTrusted(player.getUniqueId())) {
                     player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
                     return;
                 }
