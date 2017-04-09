@@ -81,6 +81,7 @@ import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -1634,6 +1635,32 @@ public class GPClaim implements Claim {
     }
 
     @Override
+    public List<Entity> getEntities() {
+        Collection<Entity> worldEntityList = Sponge.getServer().getWorld(this.world.getUniqueId()).get().getEntities();
+        List<Entity> entityList = new ArrayList<>();
+        for (Entity entity : worldEntityList) {
+            if (!((net.minecraft.entity.Entity) entity).isDead && this.contains(entity.getLocation())) {
+                entityList.add(entity);
+            }
+        }
+
+        return entityList;
+    }
+
+    @Override
+    public List<Player> getPlayers() {
+        Collection<Player> worldPlayerList = Sponge.getServer().getWorld(this.world.getUniqueId()).get().getPlayers();
+        List<Player> playerList = new ArrayList<>();
+        for (Player player : worldPlayerList) {
+            if (!((net.minecraft.entity.Entity) player).isDead && this.contains(player.getLocation())) {
+                playerList.add(player);
+            }
+        }
+
+        return playerList;
+    }
+
+    @Override
     public List<Claim> getSubdivisions() {
         return ImmutableList.copyOf(this.children);
     }
@@ -1788,6 +1815,7 @@ public class GPClaim implements Claim {
         return ImmutableList.copyOf(this.claimData.getManagers());
     }
 
+    @Override
     public boolean isTrusted(UUID uniqueId) {
         if (uniqueId == null) {
             return false;

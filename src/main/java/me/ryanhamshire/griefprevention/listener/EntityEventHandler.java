@@ -34,6 +34,7 @@ import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.event.GPAttackPlayerEvent;
+import me.ryanhamshire.griefprevention.event.GPBorderClaimEvent;
 import me.ryanhamshire.griefprevention.message.Messages;
 import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
@@ -47,6 +48,7 @@ import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import nl.riebie.mcclans.api.ClanPlayer;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
@@ -655,56 +657,116 @@ public class EntityEventHandler {
             owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
         }
 
+        final Location<World> fromLocation = event.getFromTransform().getLocation();
+        final Location<World> toLocation = event.getToTransform().getLocation();
+
         if (player == null && owner == null) {
+            // Handle border event without player
+            GPClaim fromClaim = this.dataStore.getClaimAt(fromLocation, false, null);
+            GPClaim toClaim = this.dataStore.getClaimAt(toLocation, false, null);
+            if (fromClaim != toClaim) {
+                GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim, event.getCause());
+                Sponge.getEventManager().post(gpEvent);
+                if (gpEvent.isCancelled()) {
+                    event.setCancelled(true);
+                }
+            }
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
             return;
         }
 
-        Location<World> fromLocation = event.getFromTransform().getLocation();
-        Location<World> toLocation = event.getToTransform().getLocation();
         GPClaim fromClaim = null;
         if (playerData != null) {
             fromClaim = this.dataStore.getClaimAtPlayer(playerData, fromLocation);
+        } else {
+            fromClaim = this.dataStore.getClaimAt(fromLocation);
         }
-        GPClaim toClaim = this.dataStore.getClaimAt(toLocation, false, null);
+        GPClaim toClaim = this.dataStore.getClaimAt(toLocation);
+        if (fromClaim == toClaim) {
+            GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
+            return;
+        }
+        // MCClans tag support
+        Text enterClanTag = null;
+        Text exitClanTag = null;
+        if (GriefPreventionPlugin.instance.clanService != null) {
+            if ((fromClaim.isBasicClaim() || (fromClaim.isSubdivision() && !fromClaim.isAdminClaim()))) {
+                ClanPlayer clanPlayer = GriefPreventionPlugin.instance.clanService.getClanPlayer(fromClaim.getOwnerUniqueId());
+                if (clanPlayer != null) {
+                    exitClanTag = Text.of(clanPlayer.getClan().getTagColored(), " ");
+                }
+            }
+            if ((toClaim.isBasicClaim() || (toClaim.isSubdivision() && !toClaim.isAdminClaim()))) {
+                ClanPlayer clanPlayer = GriefPreventionPlugin.instance.clanService.getClanPlayer(toClaim.getOwnerUniqueId());
+                if (clanPlayer != null) {
+                    enterClanTag = Text.of(clanPlayer.getClan().getTagColored(), " ");
+                }
+            }
+        }
 
         User user = player != null ? player : owner;
+        GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim, event.getCause());
         if (user != null && toClaim.allowAccess(user) == null) {
+            Sponge.getEventManager().post(gpEvent);
+            if (gpEvent.isCancelled()) {
+                event.setCancelled(true);
+                final Text cancelMessage = gpEvent.getMessage().orElse(null);
+                if (player != null && cancelMessage != null) {
+                    player.sendMessage(cancelMessage);
+                }
+            } else {
+                if (playerData != null) {
+                    playerData.lastClaim = new WeakReference<>(toClaim);
+                    Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
+                    if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
+                        player.sendMessage(Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                    }
+                    Text farewellMessage = gpEvent.getExitMessage().orElse(null);
+                    if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
+                        player.sendMessage(Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                    }
+                }
+            }
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
             return;
         }
 
-        // enter
-        if (fromClaim != toClaim && toClaim != null) {
-            Tristate value = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, entity, entity, user);
-            if (value == Tristate.FALSE) {
-                if (player != null) {
-                    GriefPreventionPlugin.sendClaimDenyMessage(toClaim, player, TextMode.Err, Messages.NoEnterClaim);
-                }
-
-                GriefPreventionPlugin.addEventLogEntry(event, toClaim, toLocation, GPPermissions.ENTER_CLAIM, null, entity, user, this.dataStore.getMessage(Messages.NoEnterClaim));
-                event.setCancelled(true);
-                GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
-                return;
-            }
-
-            if (playerData != null) {
-                playerData.lastClaim = new WeakReference<>(toClaim);
-                Text welcomeMessage = toClaim.getInternalClaimData().getGreeting().orElse(null);
-                if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
-                    player.sendMessage(Text.of(GriefPreventionPlugin.GP_TEXT, welcomeMessage));
-                }
-            }
-        }
-
-        // exit
         if (fromClaim != toClaim) {
+            boolean enterCancelled = false;
+            boolean exitCancelled = false;
+            // enter
+            if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, entity, entity, user) == Tristate.FALSE) {
+                event.setCancelled(true);
+                enterCancelled = true;
+            }
+
+            // exit
             if (GPPermissionHandler.getClaimPermission(fromClaim, GPPermissions.EXIT_CLAIM, entity, entity, user) == Tristate.FALSE) {
-                if (player != null) {
-                    GriefPreventionPlugin.sendClaimDenyMessage(fromClaim, player, TextMode.Err, Messages.NoExitClaim);
+                event.setCancelled(true);
+                exitCancelled = true;
+            }
+
+            if (enterCancelled || exitCancelled) {
+                gpEvent.setCancelled(true);
+            }
+            Sponge.getEventManager().post(gpEvent);
+            if (gpEvent.isCancelled()) {
+                final Text cancelMessage = gpEvent.getMessage().orElse(null);
+                if (exitCancelled) {
+                    if (player != null && cancelMessage != null) {
+                        GriefPreventionPlugin.sendClaimDenyMessage(fromClaim, player, TextMode.Err, Messages.NoExitClaim);
+                    }
+                    GriefPreventionPlugin.addEventLogEntry(event, fromClaim, toLocation, GPPermissions.EXIT_CLAIM, null, entity, user, this.dataStore.getMessage(Messages.NoExitClaim));
+                } else if (enterCancelled) {
+                    if (player != null && cancelMessage != null) {
+                        GriefPreventionPlugin.sendClaimDenyMessage(toClaim, player, TextMode.Err, Messages.NoEnterClaim);
+                    }
+                    GriefPreventionPlugin.addEventLogEntry(event, toClaim, toLocation, GPPermissions.ENTER_CLAIM, null, entity, user, this.dataStore.getMessage(Messages.NoEnterClaim));
                 }
 
-                GriefPreventionPlugin.addEventLogEntry(event, fromClaim, fromLocation, GPPermissions.EXIT_CLAIM, null, entity, user, this.dataStore.getMessage(Messages.NoExitClaim));
+                if (player != null && cancelMessage != null) {
+                    player.sendMessage(cancelMessage);
+                }
                 event.setCancelled(true);
                 GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
                 return;
@@ -712,12 +774,21 @@ public class EntityEventHandler {
 
             if (playerData != null) {
                 playerData.lastClaim = new WeakReference<>(toClaim);
-                Text farewellMessage = fromClaim.getInternalClaimData().getFarewell().orElse(null);
+                Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
+                if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
+                    player.sendMessage(Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                }
+            }
+
+            if (playerData != null) {
+                playerData.lastClaim = new WeakReference<>(toClaim);
+                Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                 if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
-                    player.sendMessage(Text.of(GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                    player.sendMessage(Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
                 }
             }
         }
+
         GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
     }
 
