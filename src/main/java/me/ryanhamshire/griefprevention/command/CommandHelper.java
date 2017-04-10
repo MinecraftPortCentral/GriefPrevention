@@ -328,7 +328,11 @@ public class CommandHelper {
 
                 flagPermission = GPPermissions.FLAG_BASE + "." + target;
             } else {
-                target = "";
+                if (source != null) {
+                    flagPermission+= ".minecraft";
+                } else {
+                    target = "";
+                }
             }
         }
 

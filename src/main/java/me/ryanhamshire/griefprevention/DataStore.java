@@ -371,7 +371,7 @@ public abstract class DataStore {
             newDepth = GriefPreventionPlugin.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth;
         }
 
-        if (claim.parent != null) {
+        if (claim.isSubdivision()) {
             claim = claim.parent;
         }
 
@@ -753,6 +753,7 @@ public abstract class DataStore {
         this.addDefault(Messages.CantDeleteBasicClaim, "You don't have permission to delete basic claims.");
         this.addDefault(Messages.CantFightWhileImmune, "You can't fight someone while you're protected from PvP.");
         this.addDefault(Messages.CantGrantThatPermission, "You can't grant a permission you don't have yourself.");
+        this.addDefault(Messages.CantTransferAdminClaim, "You don't have permission to transfer administrative claims.");
         this.addDefault(Messages.ChestClaimConfirmation, "This chest is protected.");
         this.addDefault(Messages.ChestFull, "This chest is full.");
         this.addDefault(Messages.ClaimBlockLimit, "You've reached your claim block limit.  You can't purchase more.");
@@ -927,7 +928,6 @@ public abstract class DataStore {
         this.addDefault(Messages.TooManyEntitiesInClaim, "This claim has too many entities already.  Try enlarging the claim or removing some animals, monsters, paintings, or minecarts.");
         this.addDefault(Messages.TransferClaimAdminOnly, "Only administrative claims may be transferred to a player.");
         this.addDefault(Messages.TransferClaimMissing, "There's no claim here.  Stand in the administrative claim you want to transfer.", null);
-        this.addDefault(Messages.TransferClaimPermission, "That command requires the administrative claims permission.");
         this.addDefault(Messages.TransferSuccess, "Claim transferred.");
         this.addDefault(Messages.TransferTopLevel, "Only top level claims (not subdivisions) may be transferred.  Stand outside of the subdivision and try again.");
         this.addDefault(Messages.TrappedWontWorkHere, "Sorry, unable to find a safe location to teleport you to.  Contact an admin, or consider /kill if you don't want to wait.");

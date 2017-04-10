@@ -70,6 +70,7 @@ public enum Messages {
     CantDeleteBasicClaim,
     CantFightWhileImmune,
     CantGrantThatPermission,
+    CantTransferAdminClaim,
     ChestClaimConfirmation,
     ChestFull,
     ClaimBlockLimit,
