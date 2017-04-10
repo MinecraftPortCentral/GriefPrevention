@@ -121,8 +121,13 @@ public class CommandClaimInfo implements CommandExecutor {
         if (claim.getParent().isPresent()) {
             ownerUniqueId = claim.getParent().get().getOwnerUniqueId();
         }
+
+        if (!isAdmin) {
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            isAdmin = playerData.canIgnoreClaim(gpClaim);
+        }
         // if not owner of claim, validate perms
-        if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+        if (!isAdmin && !player.getUniqueId().equals(claim.getOwnerUniqueId())) {
             if (!gpClaim.getInternalClaimData().getContainers().contains(player.getUniqueId()) 
                     && !gpClaim.getInternalClaimData().getBuilders().contains(player.getUniqueId())
                     && !gpClaim.getInternalClaimData().getManagers().contains(player.getUniqueId())
@@ -463,7 +468,7 @@ public class CommandClaimInfo implements CommandExecutor {
                 src.sendMessage(Text.of(TextColors.RED, "The wilderness cannot be changed."));
                 return;
             }
-            if (claim.parent != null) {
+            if (claim.isSubdivision()) {
                 src.sendMessage(Text.of(TextColors.RED, "Subdivisions cannot be changed."));
                 return;
             }

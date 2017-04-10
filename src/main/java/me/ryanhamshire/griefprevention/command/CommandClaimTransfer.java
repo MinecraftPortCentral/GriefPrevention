@@ -20,6 +20,8 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
+import java.util.UUID;
+
 public class CommandClaimTransfer implements CommandExecutor {
 
     @Override
@@ -41,21 +43,24 @@ public class CommandClaimTransfer implements CommandExecutor {
         // which claim is the user in?
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
-        if (claim == null || claim.isWildernessClaim()) {
+        UUID ownerId = claim.getOwnerUniqueId();
+        if (claim.isSubdivision()) {
+            ownerId = claim.parent.getOwnerUniqueId();
+        }
+        if (claim == null || claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.TransferClaimMissing);
             return CommandResult.empty();
         }
 
-        // check additional permission for admin claims
-        if (claim.isAdminClaim()) {
-            if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-                try {
-                    throw new CommandException(GriefPreventionPlugin.getMessage(Messages.TransferClaimPermission));
-                } catch (CommandException e1) {
-                    src.sendMessage(e1.getText());
-                    return CommandResult.success();
-                }
-            }
+        boolean isAdmin = playerData.canIgnoreClaim(claim);
+        // check permission
+        if (!isAdmin && claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CantTransferAdminClaim);
+            return CommandResult.empty();
+        } else if (!isAdmin && (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)))) {
+            // verify ownership
+            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
+            return CommandResult.success();
         }
 
         // change ownership
