@@ -692,13 +692,13 @@ public class EntityEventHandler {
         if (GriefPreventionPlugin.instance.clanService != null) {
             if ((fromClaim.isBasicClaim() || (fromClaim.isSubdivision() && !fromClaim.isAdminClaim()))) {
                 ClanPlayer clanPlayer = GriefPreventionPlugin.instance.clanService.getClanPlayer(fromClaim.getOwnerUniqueId());
-                if (clanPlayer != null) {
+                if (clanPlayer != null && clanPlayer.getClan() != null) {
                     exitClanTag = Text.of(clanPlayer.getClan().getTagColored(), " ");
                 }
             }
             if ((toClaim.isBasicClaim() || (toClaim.isSubdivision() && !toClaim.isAdminClaim()))) {
                 ClanPlayer clanPlayer = GriefPreventionPlugin.instance.clanService.getClanPlayer(toClaim.getOwnerUniqueId());
-                if (clanPlayer != null) {
+                if (clanPlayer != null && clanPlayer.getClan() != null) {
                     enterClanTag = Text.of(clanPlayer.getClan().getTagColored(), " ");
                 }
             }
