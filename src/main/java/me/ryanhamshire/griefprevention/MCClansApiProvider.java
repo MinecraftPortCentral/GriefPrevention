@@ -24,22 +24,18 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
+import nl.riebie.mcclans.api.ClanService;
+import org.spongepowered.api.Sponge;
 
-public final class GriefPrevention {
+public class MCClansApiProvider {
 
-    private static final GriefPreventionApi api = null;
+    private final ClanService clanService;
 
-    /**
-     * Gets the API instance of {@link GriefPreventionAPI}
-     *
-     * @return The API instance, if available
-     * @throws IllegalStateException if the API is not loaded
-     */
-    public static GriefPreventionApi getApi() {
-        if (api == null) {
-            throw new IllegalStateException("The GriefPrevention API is not loaded.");
-        }
-        return api;
+    public MCClansApiProvider() {
+        this.clanService = Sponge.getServiceManager().provide(ClanService.class).orElse(null);
+    }
+
+    public ClanService getClanService() {
+        return this.clanService;
     }
 }
