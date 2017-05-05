@@ -22,38 +22,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.event;
+package me.ryanhamshire.griefprevention;
 
-import me.ryanhamshire.griefprevention.api.claim.Claim;
-import me.ryanhamshire.griefprevention.api.event.ResizeClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
+import nl.riebie.mcclans.api.ClanService;
+import org.spongepowered.api.Sponge;
 
-public class GPResizeClaimEvent extends GPClaimEvent implements ResizeClaimEvent {
+public class MCClansApiProvider {
 
-    private Claim resizedClaim;
-    private Location<World> startCorner;
-    private Location<World> endCorner;
+    private final ClanService clanService;
 
-    public GPResizeClaimEvent(Claim claim, Cause cause, Location<World> startCorner, Location<World> endCorner, Claim resizedClaim) {
-        super(claim, cause);
-        this.resizedClaim = resizedClaim;
+    public MCClansApiProvider() {
+        this.clanService = Sponge.getServiceManager().provide(ClanService.class).orElse(null);
     }
 
-    @Override
-    public Location<World> getStartCorner() {
-        return this.startCorner;
+    public ClanService getClanService() {
+        return this.clanService;
     }
-
-    @Override
-    public Location<World> getEndCorner() {
-        return this.endCorner;
-    }
-
-    @Override
-    public Claim getResizedClaim() {
-        return this.resizedClaim;
-    }
-
 }

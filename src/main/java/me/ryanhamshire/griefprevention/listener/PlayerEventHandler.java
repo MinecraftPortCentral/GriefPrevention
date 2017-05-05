@@ -2415,21 +2415,23 @@ public class PlayerEventHandler {
                     GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.SubdivisionVideo2, 201L);
                 }
 
-                // auto-extend it downward to cover anything already built underground
-                Location<World> lesserCorner = gpClaim.getLesserBoundaryCorner();
-                Location<World> greaterCorner = gpClaim.getGreaterBoundaryCorner();
-                World world = lesserCorner.getExtent();
-                ArrayList<Location<Chunk>> snapshots = new ArrayList<>();
-                for (int chunkx = lesserCorner.getBlockX() >> 4; chunkx <= greaterCorner.getBlockX() >> 4; chunkx++) {
-                    for (int chunkz = lesserCorner.getBlockZ() >> 4; chunkz <= greaterCorner.getBlockZ() >> 4; chunkz++) {
-                        Optional<Chunk> chunk = world.getChunk(chunkx, 0, chunkz);
-                        if (chunk.isPresent()) {
-                            snapshots.add(new Location<Chunk>(chunk.get(), chunkx << 4, 0, chunkz << 4)); // need to use block coords for Location
+                if (!gpClaim.isCuboid()) {
+                    // auto-extend it downward to cover anything already built underground
+                    Location<World> lesserCorner = gpClaim.getLesserBoundaryCorner();
+                    Location<World> greaterCorner = gpClaim.getGreaterBoundaryCorner();
+                    World world = lesserCorner.getExtent();
+                    ArrayList<Location<Chunk>> snapshots = new ArrayList<>();
+                    for (int chunkx = lesserCorner.getBlockX() >> 4; chunkx <= greaterCorner.getBlockX() >> 4; chunkx++) {
+                        for (int chunkz = lesserCorner.getBlockZ() >> 4; chunkz <= greaterCorner.getBlockZ() >> 4; chunkz++) {
+                            Optional<Chunk> chunk = world.getChunk(chunkx, 0, chunkz);
+                            if (chunk.isPresent()) {
+                                snapshots.add(new Location<Chunk>(chunk.get(), chunkx << 4, 0, chunkz << 4)); // need to use block coords for Location
+                            }
                         }
                     }
+    
+                    Sponge.getGame().getScheduler().createTaskBuilder().async().execute(new AutoExtendClaimTask(gpClaim, snapshots, world.getDimension().getType())).submit(GriefPreventionPlugin.instance);
                 }
-
-                Sponge.getGame().getScheduler().createTaskBuilder().async().execute(new AutoExtendClaimTask(gpClaim, snapshots, world.getDimension().getType())).submit(GriefPreventionPlugin.instance);
             }
         }
         GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();

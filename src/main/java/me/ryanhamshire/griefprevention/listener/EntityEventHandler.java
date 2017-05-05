@@ -29,6 +29,7 @@ import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.MCClansApiProvider;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
@@ -695,16 +696,17 @@ public class EntityEventHandler {
         // MCClans tag support
         Text enterClanTag = null;
         Text exitClanTag = null;
-        if (GriefPreventionPlugin.instance.clanService != null) {
+        MCClansApiProvider clanApiProvider = GriefPreventionPlugin.instance.clanApiProvider;
+        if (clanApiProvider != null) {
             if ((fromClaim.isBasicClaim() || (fromClaim.isSubdivision() && !fromClaim.isAdminClaim()))) {
-                ClanPlayer clanPlayer = GriefPreventionPlugin.instance.clanService.getClanPlayer(fromClaim.getOwnerUniqueId());
-                if (clanPlayer != null) {
+                ClanPlayer clanPlayer = clanApiProvider.getClanService().getClanPlayer(fromClaim.getOwnerUniqueId());
+                if (clanPlayer != null && clanPlayer.getClan() != null) {
                     exitClanTag = Text.of(clanPlayer.getClan().getTagColored(), " ");
                 }
             }
             if ((toClaim.isBasicClaim() || (toClaim.isSubdivision() && !toClaim.isAdminClaim()))) {
-                ClanPlayer clanPlayer = GriefPreventionPlugin.instance.clanService.getClanPlayer(toClaim.getOwnerUniqueId());
-                if (clanPlayer != null) {
+                ClanPlayer clanPlayer = clanApiProvider.getClanService().getClanPlayer(toClaim.getOwnerUniqueId());
+                if (clanPlayer != null && clanPlayer.getClan() != null) {
                     enterClanTag = Text.of(clanPlayer.getClan().getTagColored(), " ");
                 }
             }
