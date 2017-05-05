@@ -38,6 +38,7 @@ public class GPResizeClaimEvent extends GPClaimEvent implements ResizeClaimEvent
 
     public GPResizeClaimEvent(Claim claim, Cause cause, Location<World> startCorner, Location<World> endCorner, Claim resizedClaim) {
         super(claim, cause);
+        this.resizedClaim = resizedClaim;
     }
 
     @Override
