@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.listener;
 
+import com.flowpowered.math.vector.Vector3d;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
@@ -677,12 +678,23 @@ public class EntityEventHandler {
         }
 
         GPClaim fromClaim = null;
+        GPClaim toClaim = this.dataStore.getClaimAt(toLocation);
         if (playerData != null) {
             fromClaim = this.dataStore.getClaimAtPlayer(playerData, fromLocation);
         } else {
             fromClaim = this.dataStore.getClaimAt(fromLocation);
         }
-        GPClaim toClaim = this.dataStore.getClaimAt(toLocation);
+
+        if (playerData != null && playerData.lastClaim != null) {
+            final GPClaim lastClaim = (GPClaim) playerData.lastClaim.get();
+            if (lastClaim != null && lastClaim != fromClaim) {
+                if (GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTER_CLAIM, entity, entity, player) == Tristate.FALSE) {
+                    Location<World> claimCorner = lastClaim.lesserBoundaryCorner.setPosition(new Vector3d(toClaim.lesserBoundaryCorner.getX(), player.getLocation().getY(), toClaim.greaterBoundaryCorner.getZ()));
+                    Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(claimCorner, 9, 9).orElse(player.getWorld().getSpawnLocation());
+                    event.setToTransform(player.getTransform().setLocation(safeLocation));
+                }
+            }
+        }
         if (fromClaim == toClaim) {
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
             return;
@@ -723,12 +735,14 @@ public class EntityEventHandler {
                     if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
                         player.sendMessage(Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
                     }
+
                     Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                     if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
                         player.sendMessage(Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
                     }
                 }
             }
+
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
             return;
         }
@@ -780,10 +794,7 @@ public class EntityEventHandler {
                 if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
                     player.sendMessage(Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
                 }
-            }
 
-            if (playerData != null) {
-                playerData.lastClaim = new WeakReference<>(toClaim);
                 Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                 if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
                     player.sendMessage(Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
