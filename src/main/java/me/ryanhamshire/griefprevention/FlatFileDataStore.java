@@ -38,7 +38,6 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
 import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.migrator.PolisMigrator;
 import me.ryanhamshire.griefprevention.migrator.RedProtectMigrator;
 import org.apache.commons.io.FileUtils;
 import org.spongepowered.api.Sponge;
@@ -188,16 +187,6 @@ public class FlatFileDataStore extends DataStore {
                 Path gpMigratedPath = redProtectDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
                 if (Files.exists(redProtectFilePath) && !Files.exists(gpMigratedPath)) {
                     RedProtectMigrator.migrate(world, redProtectFilePath, newWorldDataPath.resolve("ClaimData"));
-                    Files.createFile(gpMigratedPath);
-                }
-            }
-            // Migrate Polis data if enabled
-            if (GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.polisMigrator) {
-                Path claimsFilePath = polisDataPath.resolve("claims.conf");
-                Path teamsFilePath = polisDataPath.resolve("teams.conf");
-                Path gpMigratedPath = polisDataPath.resolve("gp_migrated_" + worldProperties.getWorldName());
-                if (Files.exists(claimsFilePath) && Files.exists(teamsFilePath) && !Files.exists(gpMigratedPath)) {
-                    PolisMigrator.migrate(world, claimsFilePath, teamsFilePath, newWorldDataPath.resolve("ClaimData"));
                     Files.createFile(gpMigratedPath);
                 }
             }

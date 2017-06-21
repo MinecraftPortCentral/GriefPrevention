@@ -300,7 +300,7 @@ public class GPPermissionHandler {
                 String targetId = "";
                 if (mcEntity instanceof EntityItem) {
                     EntityItem mcItem = (EntityItem) mcEntity;
-                    net.minecraft.item.ItemStack itemStack = (net.minecraft.item.ItemStack) mcItem.getEntityItem();
+                    net.minecraft.item.ItemStack itemStack = mcItem.getItem();
                     if (itemStack != null && itemStack.getItem() != null) {
                         ItemType itemType = (ItemType) itemStack.getItem();
                         targetId = itemType.getId() + "." + itemStack.getItemDamage();

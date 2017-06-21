@@ -196,7 +196,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "3.1.1", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "3.2.0", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPreventionPlugin {
 
     // for convenience, a reference to the instance of this plugin
@@ -209,7 +209,7 @@ public class GriefPreventionPlugin {
     private Path configPath;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
-    public static final String CONFIG_HEADER = "3.1.1\n"
+    public static final String CONFIG_HEADER = "3.2.0\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us on Discord or drop by our forums and leave a post.\n"
             + "# Discord: https://discord.gg/jy4FQDz\n"
@@ -383,8 +383,8 @@ public class GriefPreventionPlugin {
                     String version = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     version = version.substring(Math.max(version.length() - 4, 0));
                     spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 2260) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 2260+.");
+                    if (spongeVersion < 2403) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 2403+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {

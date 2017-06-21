@@ -69,7 +69,6 @@ import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.command.CommandMapping;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.data.key.Keys;
-import org.spongepowered.api.data.manipulator.mutable.entity.AchievementData;
 import org.spongepowered.api.data.manipulator.mutable.entity.JoinData;
 import org.spongepowered.api.data.property.entity.EyeLocationProperty;
 import org.spongepowered.api.data.type.HandType;
@@ -107,7 +106,6 @@ import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.user.UserStorageService;
-import org.spongepowered.api.statistic.achievement.Achievements;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.channel.MessageReceiver;
 import org.spongepowered.api.text.channel.type.FixedMessageChannel;
@@ -215,7 +213,7 @@ public class PlayerEventHandler {
             event.setChannel(player.getMessageChannel());
 
             // if player not new warn for the first infraction per play session.
-            Optional<AchievementData> data = player.get(AchievementData.class);
+            /*Optional<AchievementData> data = player.get(AchievementData.class);
             if (data.isPresent() && player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
                 GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
                 if (!playerData.profanityWarned) {
@@ -226,7 +224,7 @@ public class PlayerEventHandler {
                     GPTimings.PLAYER_CHAT_EVENT.stopTimingIfSync();
                     return;
                 }
-            }
+            }*/
 
             // otherwise assume chat troll and mute all chat from this sender
             // until an admin says otherwise

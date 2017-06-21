@@ -7,12 +7,12 @@ buildscript {
     }
 
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
     }
 }
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'com.github.johnrengelman.shadow' version '1.2.4'
     id 'org.spongepowered.plugin' version '0.8.1'
     id 'net.minecrell.vanillagradle.server' version '2.2-4'
     id 'maven'
@@ -57,7 +57,7 @@ dependencies {
     compileOnly "org.spongepowered:spongecommon:$apiVersion:dev"
 
     compileOnly "com.googlecode.json-simple:json-simple:1.1"
-    compileOnly "io.github.nucleuspowered:nucleus-api:0.26.2-S5.1"
+    compileOnly "io.github.nucleuspowered:nucleus-api:0.29.0-S6.0"
     compileOnly "nl.riebie:mcclans-api:1.3"
 }
 

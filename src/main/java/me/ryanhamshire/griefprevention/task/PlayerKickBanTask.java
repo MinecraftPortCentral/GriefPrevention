@@ -31,6 +31,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.UserListBansEntry;
+import net.minecraft.util.text.TextComponentTranslation;
+
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.common.SpongeImpl;
 
@@ -71,7 +73,7 @@ public class PlayerKickBanTask implements Runnable {
             EntityPlayerMP entityplayermp = minecraftserver.getPlayerList().getPlayerByUsername(this.player.getName());
 
             if (entityplayermp != null) {
-                entityplayermp.connection.disconnect("You are banned from this server.");
+                entityplayermp.connection.disconnect(new TextComponentTranslation("You are banned from this server.", new Object[0]));
             }
         }
     }
