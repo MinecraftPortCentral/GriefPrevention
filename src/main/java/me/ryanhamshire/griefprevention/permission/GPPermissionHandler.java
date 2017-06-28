@@ -49,11 +49,13 @@ import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -121,7 +123,7 @@ public class GPPermissionHandler {
     }
 
     public static Tristate getUserPermission(User user, GPClaim claim, String permission, String targetModPermission) {
-        Set<Context> contexts = new HashSet<>(user.getActiveContexts());
+        Set<Context> contexts = getActiveContexts(user);
         if (claim.parent != null && claim.getData().doesInheritParent()) {
             // check subdivision's parent
             contexts.add(claim.parent.getContext());
@@ -160,7 +162,7 @@ public class GPPermissionHandler {
 
     public static Tristate getClaimFlagPermission(GPClaim claim, String permission, String targetModPermission, Set<Context> contexts) {
         if (contexts == null) {
-            contexts = new HashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
+            contexts = getActiveContexts(GriefPreventionPlugin.GLOBAL_SUBJECT);
             if (claim.parent != null && claim.getData().doesInheritParent()) {
                 // check subdivision's parent
                 contexts.add(claim.parent.getContext());
@@ -186,7 +188,7 @@ public class GPPermissionHandler {
     // Only uses world and claim type contexts
     private static Tristate getFlagDefaultPermission(GPClaim claim, String permission) {
         // Fallback to defaults
-        Set<Context> contexts = new HashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
+        Set<Context> contexts = getActiveContexts(GriefPreventionPlugin.GLOBAL_SUBJECT);
         if (claim.isAdminClaim()) {
             contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT);
         } else if (claim.isBasicClaim() || claim.isSubdivision()) {
@@ -210,7 +212,7 @@ public class GPPermissionHandler {
             return Tristate.UNDEFINED;
         }
 
-        Set<Context> contexts = new LinkedHashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
+        Set<Context> contexts = getActiveContextsLinked(GriefPreventionPlugin.GLOBAL_SUBJECT);
         if (claim.isAdminClaim()) {
             contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
         } else {
@@ -265,7 +267,7 @@ public class GPPermissionHandler {
         }
 
         flagPermission = StringUtils.replace(flagPermission, ":", ".");
-        Set<Context> contexts = new LinkedHashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
+        Set<Context> contexts = getActiveContextsLinked(GriefPreventionPlugin.GLOBAL_SUBJECT);
         if (claim.isAdminClaim()) {
             contexts.add(GriefPreventionPlugin.ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT);
         } else {
@@ -411,5 +413,29 @@ public class GPPermissionHandler {
         }
         targetPermission = StringUtils.replace(targetPermission, ":", ".");
         return targetPermission;
+    }
+
+    private static Set<Context> getActiveContexts(Subject subject) {
+        Set<Context> contexts = new HashSet<>(subject.getActiveContexts());
+        Iterator<Context> iterator = contexts.iterator();
+        while (iterator.hasNext()) {
+            final Context context = iterator.next();
+            if (context.getKey().equals("gp_claim")) {
+                iterator.remove();
+            }
+        }
+        return contexts;
+    }
+
+    private static Set<Context> getActiveContextsLinked(Subject subject) {
+        Set<Context> contexts = new LinkedHashSet<>(subject.getActiveContexts());
+        Iterator<Context> iterator = contexts.iterator();
+        while (iterator.hasNext()) {
+            final Context context = iterator.next();
+            if (context.getKey().equals("gp_claim")) {
+                iterator.remove();
+            }
+        }
+        return contexts;
     }
 }
