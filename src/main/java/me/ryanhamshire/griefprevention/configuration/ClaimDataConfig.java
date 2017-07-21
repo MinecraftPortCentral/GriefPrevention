@@ -295,12 +295,14 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
     public void setLesserBoundaryCorner(String location) {
         this.requiresSave = true;
         this.lesserBoundaryCornerPos = location;
+        this.lesserPos = null;
     }
 
     @Override
     public void setGreaterBoundaryCorner(String location) {
         this.requiresSave = true;
         this.greaterBoundaryCornerPos = location;
+        this.greaterPos = null;
     }
 
     @Override
@@ -352,11 +354,13 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
 
     @Override
     public void setOwnerUniqueId(UUID newClaimOwner) {
+        this.requiresSave = true;
         this.ownerUniqueId = newClaimOwner;
     }
 
     @Override
     public void setWorldUniqueId(UUID uuid) {
+        this.requiresSave = true;
         this.worldUniqueId = uuid;
     }
 
@@ -371,6 +375,7 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
 
     @Override
     public void setSpawnPos(Vector3i spawnPos) {
+        this.requiresSave = true;
         this.spawnPos = spawnPos;
         this.claimSpawn = BlockUtils.positionToString(spawnPos);
     }
@@ -382,6 +387,7 @@ public class ClaimDataConfig extends ConfigCategory implements ClaimData, IClaim
 
     @Override
     public void setRequiresClaimBlocks(boolean requiresClaimBlocks) {
+        this.requiresSave = true;
         this.requiresClaimBlocks = requiresClaimBlocks;
     }
 }
