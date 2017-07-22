@@ -219,7 +219,7 @@ public class GPPlayerData implements PlayerData {
 
     // Run async
     public void refreshPlayerOptions() {
-        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+        GriefPreventionPlugin.instance.executor.execute(() -> {
             if (this.playerSubject == null || this.playerSubject.get() == null) {
                 Subject subject = GriefPreventionPlugin.instance.permissionService.getUserSubjects().get(this.playerID.toString());
                 this.playerSubject = new WeakReference<>(subject);
