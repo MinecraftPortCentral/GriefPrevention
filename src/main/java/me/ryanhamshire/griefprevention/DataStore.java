@@ -1214,7 +1214,7 @@ public abstract class DataStore {
     }
 
     private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Boolean> defaultFlags) {
-        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+        GriefPreventionPlugin.instance.executor.execute(() -> {
             Map<String, Boolean> defaultPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
             if (defaultPermissions.isEmpty()) {
                 for (Map.Entry<String, Boolean> mapEntry : defaultFlags.entrySet()) {
@@ -1241,7 +1241,7 @@ public abstract class DataStore {
     }
 
     private void setOptionDefaultPermissions(Set<Context> contexts) {
-        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+        GriefPreventionPlugin.instance.executor.execute(() -> {
             final SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
             for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
                 globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());

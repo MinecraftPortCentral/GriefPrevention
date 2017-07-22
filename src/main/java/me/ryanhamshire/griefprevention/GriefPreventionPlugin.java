@@ -192,6 +192,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -243,6 +245,7 @@ public class GriefPreventionPlugin {
     private GriefPreventionApi api;
 
     public Optional<EconomyService> economyService;
+    public Executor executor;
 
     public boolean permPluginInstalled = false;
 
@@ -718,6 +721,7 @@ public class GriefPreventionPlugin {
 
         this.loadConfig();
         this.customLogger = new CustomLogger();
+        this.executor = Executors.newFixedThreadPool(GriefPreventionPlugin.getGlobalConfig().getConfig().thread.numExecutorThreads);
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
         if (Sponge.getPluginManager().getPlugin("mcclans").isPresent()) {
             this.clanApiProvider = new MCClansApiProvider();

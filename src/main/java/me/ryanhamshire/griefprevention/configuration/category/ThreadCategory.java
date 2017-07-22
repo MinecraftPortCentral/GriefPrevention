@@ -22,30 +22,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.configuration.type;
+package me.ryanhamshire.griefprevention.configuration.category;
 
-import me.ryanhamshire.griefprevention.configuration.category.DatabaseCategory;
-import me.ryanhamshire.griefprevention.configuration.category.LoggingCategory;
-import me.ryanhamshire.griefprevention.configuration.category.MigratorCategory;
-import me.ryanhamshire.griefprevention.configuration.category.PlayerDataCategory;
-import me.ryanhamshire.griefprevention.configuration.category.SpamCategory;
-import me.ryanhamshire.griefprevention.configuration.category.ThreadCategory;
 import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
-public class GlobalConfig extends ConfigBase {
+@ConfigSerializable
+public class ThreadCategory extends ConfigCategory {
 
-    @Setting
-    public DatabaseCategory database = new DatabaseCategory();
-    @Setting
-    public LoggingCategory logging = new LoggingCategory();
-    @Setting
-    public PlayerDataCategory playerdata = new PlayerDataCategory();
-    @Setting
-    public SpamCategory spam = new SpamCategory();
-    @Setting(comment = 
-            "List of migrators that convert other protection data into GP claim data." + 
-            "\nNote: These migrators will NOT change or delete your data. It simply reads and creates new data for GriefPrevention.")
-    public MigratorCategory migrator = new MigratorCategory();
-    @Setting
-    public ThreadCategory thread = new ThreadCategory();
+    @Setting(value = "executor-threads", comment = "The number of threads to use for GP's executor. (Default: 1)")
+    public int numExecutorThreads = 1;
 }
