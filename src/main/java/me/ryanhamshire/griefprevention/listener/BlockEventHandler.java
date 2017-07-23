@@ -646,6 +646,9 @@ public class BlockEventHandler {
                 }
 
                 event.setCancelled(true);
+                if (player != null) {
+                    GriefPreventionPlugin.sendClaimDenyMessage(targetClaim, player, TextMode.Err, Messages.NoBuildPermission, "administrator");
+                }
                 GriefPreventionPlugin.addEventLogEntry(event, targetClaim, location, source, block, user, null);
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;
