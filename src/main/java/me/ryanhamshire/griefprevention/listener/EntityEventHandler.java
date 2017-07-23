@@ -139,21 +139,14 @@ public class EntityEventHandler {
                     user = Sponge.getServiceManager().provide(UserStorageService.class).get().get(uuid.get()).orElse(null);
                 }
             }
-            // check overrides
-            Tristate override = GPPermissionHandler.getFlagOverride(claim, GPPermissions.ENTITY_EXPLOSION, null);
-            if (override != Tristate.UNDEFINED) {
-                if (override == Tristate.TRUE) {
+
+            final Tristate value = GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_EXPLOSION, null, null, user, true);
+            if(value != Tristate.UNDEFINED) {
+                if (value == Tristate.TRUE) {
                     GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
                     return;
                 }
 
-                event.setCancelled(true);
-                GriefPreventionPlugin.addEventLogEntry(event, claim, location, user, GPPermissions.ENTITY_EXPLOSION, null);
-                GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
-                return;
-            }
-
-            if(GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_EXPLOSION, null, null, user) == Tristate.FALSE) {
                 GriefPreventionPlugin.addEventLogEntry(event, claim, location, user, GPPermissions.ENTITY_EXPLOSION, null);
                 event.setCancelled(true);
                 GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
@@ -161,7 +154,13 @@ public class EntityEventHandler {
             }
         }
 
-        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION, null, null, user) == Tristate.FALSE) {
+        final Tristate value = GPPermissionHandler.getClaimPermission(claim, GPPermissions.EXPLOSION, null, null, user, true);
+        if(value != Tristate.UNDEFINED) {
+            if (value == Tristate.TRUE) {
+                GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
+                return;
+            }
+
             GriefPreventionPlugin.addEventLogEntry(event, claim, location, user, GPPermissions.ENTITY_EXPLOSION, null);
             event.setCancelled(true);
         }
@@ -831,7 +830,7 @@ public class EntityEventHandler {
         }
 
         if (sourceClaim != null) {
-            Tristate override = GPPermissionHandler.getFlagOverride(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity);
+            Tristate override = GPPermissionHandler.getFlagOverride(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type, entity);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -839,7 +838,7 @@ public class EntityEventHandler {
                 }
 
                 event.setCancelled(true);
-                GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
+                GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, type, entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
             }
@@ -852,17 +851,17 @@ public class EntityEventHandler {
                 return;
             }
 
-            if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type, entity, user) == Tristate.FALSE) {
                 if (player != null) {
                     GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoTeleportFromProtectedClaim, sourceClaim.getOwnerName());
                 }
 
-                GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
+                GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.ENTITY_TELEPORT_FROM, type, entity, user, this.dataStore.getMessage(Messages.NoTeleportFromProtectedClaim));
                 event.setCancelled(true);
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
             } else if (type.equals(TeleportTypes.PORTAL)) {
-                Tristate result = GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.PORTAL_USE, type.getId(), entity, user);
+                Tristate result = GPPermissionHandler.getClaimPermission(sourceClaim, GPPermissions.PORTAL_USE, type, entity, user);
                 if (result == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
@@ -871,7 +870,7 @@ public class EntityEventHandler {
                         GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoPortalToProtectedClaim, sourceClaim.getOwnerName());
                     }
 
-                    GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.PORTAL_USE, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoPortalToProtectedClaim));
+                    GriefPreventionPlugin.addEventLogEntry(event, sourceClaim, sourceLocation, GPPermissions.PORTAL_USE, type, entity, user, this.dataStore.getMessage(Messages.NoPortalToProtectedClaim));
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
@@ -897,7 +896,7 @@ public class EntityEventHandler {
         Location<World> destination = event.getToTransform().getLocation();
         GPClaim toClaim = this.dataStore.getClaimAt(destination, false, null);
         if (toClaim != null) {
-            Tristate override = GPPermissionHandler.getFlagOverride(toClaim, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity);
+            Tristate override = GPPermissionHandler.getFlagOverride(toClaim, GPPermissions.ENTITY_TELEPORT_TO, type, entity);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -905,7 +904,7 @@ public class EntityEventHandler {
                 }
 
                 event.setCancelled(true);
-                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
+                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, type, entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
             }
@@ -919,7 +918,7 @@ public class EntityEventHandler {
             }
 
             // FEATURE: prevent players from using entities to gain access to secured claims
-            Tristate result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity, user);
+            Tristate result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.ENTITY_TELEPORT_TO, type, entity, user);
             if (result == Tristate.TRUE) {
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
@@ -930,7 +929,7 @@ public class EntityEventHandler {
                     GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoTeleportToProtectedClaim, toClaim.getOwnerName());
                 }
 
-                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, type.getId(), entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
+                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.ENTITY_TELEPORT_TO, type, entity, user, this.dataStore.getMessage(Messages.NoTeleportToProtectedClaim));
                 event.setCancelled(true);
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
@@ -949,7 +948,7 @@ public class EntityEventHandler {
                 GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                 return;
             } else if (type.equals(TeleportTypes.PORTAL)) {
-                result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.PORTAL_USE, null, entity, user);
+                result = GPPermissionHandler.getClaimPermission(toClaim, GPPermissions.PORTAL_USE, type, entity, user);
                 if (result == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
@@ -958,7 +957,7 @@ public class EntityEventHandler {
                         GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NoPortalToProtectedClaim, toClaim.getOwnerName());
                     }
     
-                    GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.PORTAL_USE, null, entity, user, this.dataStore.getMessage(Messages.NoPortalToProtectedClaim));
+                    GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, GPPermissions.PORTAL_USE, type, entity, user, this.dataStore.getMessage(Messages.NoPortalToProtectedClaim));
                     event.setCancelled(true);
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
                     return;
