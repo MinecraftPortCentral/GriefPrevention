@@ -54,7 +54,9 @@ dependencies {
     apiCompile "org.spongepowered:spongeapi:$apiVersion"
 
     compile sourceSets.api.output
-    compileOnly "org.spongepowered:spongecommon:$apiVersion:dev"
+    compileOnly ("org.spongepowered:spongecommon:$apiVersion:dev") {
+        exclude module: 'testplugins'
+	}
 
     compileOnly "com.googlecode.json-simple:json-simple:1.1"
     compileOnly "io.github.nucleuspowered:nucleus-api:0.29.0-S6.0"
