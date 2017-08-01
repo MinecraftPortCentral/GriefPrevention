@@ -454,7 +454,6 @@ public class GPPermissionHandler {
             } else {
                 GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, currentLocation, user, permission);
             }
-            System.out.println("perm = " + permission);
         }
         return permissionValue;
     }
