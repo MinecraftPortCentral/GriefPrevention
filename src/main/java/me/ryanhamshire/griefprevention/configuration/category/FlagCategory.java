@@ -25,7 +25,7 @@
 package me.ryanhamshire.griefprevention.configuration.category;
 
 import com.google.common.collect.Maps;
-import me.ryanhamshire.griefprevention.GPFlags;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
@@ -42,6 +42,9 @@ public class FlagCategory extends ConfigCategory {
     @Setting(value = "default-basic", comment = "The default flag settings used when a basic claim is created.")
     private Map<String, Boolean> defaultBasicFlags = Maps.newHashMap();
 
+    @Setting(value = "default-town", comment = "The default flag settings used for towns.")
+    private Map<String, Boolean> defaultTownFlags = Maps.newHashMap();
+
     @Setting(value = "default-wilderness", comment = "The default flag settings used for wilderness.")
     private Map<String, Boolean> defaultWildernessFlags = Maps.newHashMap();
 
@@ -50,124 +53,153 @@ public class FlagCategory extends ConfigCategory {
     private List<String> userClaimFlags = new ArrayList<>();
 
     public FlagCategory() {
-        defaultAdminFlags.put(GPFlags.BLOCK_BREAK, false);
-        defaultAdminFlags.put(GPFlags.BLOCK_PLACE, false);
-        defaultAdminFlags.put(GPFlags.COMMAND_EXECUTE, true);
-        defaultAdminFlags.put(GPFlags.COMMAND_EXECUTE_PVP, true);
-        defaultAdminFlags.put(GPFlags.ENTER_CLAIM, true);
-        defaultAdminFlags.put(GPFlags.ENTITY_COLLIDE_BLOCK, false);
-        defaultAdminFlags.put(GPFlags.ENTITY_COLLIDE_ENTITY, false);
-        defaultAdminFlags.put(GPFlags.ENTITY_DAMAGE, true);
-        defaultAdminFlags.put(GPFlags.ENTITY_FALL, true);
-        defaultAdminFlags.put(GPFlags.ENTITY_RIDING, true);
-        defaultAdminFlags.put(GPFlags.ENTITY_SPAWN, true);
-        defaultAdminFlags.put(GPFlags.ENTITY_TELEPORT_FROM, true);
-        defaultAdminFlags.put(GPFlags.ENTITY_TELEPORT_TO, true);
-        defaultAdminFlags.put(GPFlags.EXIT_CLAIM, true);
-        defaultAdminFlags.put(GPFlags.EXPLOSION, false);
-        defaultAdminFlags.put(GPFlags.EXPLOSION_SURFACE, false);
-        defaultAdminFlags.put(GPFlags.FIRE_SPREAD, false);
-        defaultAdminFlags.put(GPFlags.INTERACT_BLOCK_PRIMARY, false);
-        defaultAdminFlags.put(GPFlags.INTERACT_BLOCK_SECONDARY, false);
-        defaultAdminFlags.put(GPFlags.INTERACT_ENTITY_PRIMARY, false);
-        defaultAdminFlags.put(GPFlags.INTERACT_ENTITY_SECONDARY, true);
-        defaultAdminFlags.put(GPFlags.INTERACT_INVENTORY, false);
-        defaultAdminFlags.put(GPFlags.INTERACT_ITEM_PRIMARY, true);
-        defaultAdminFlags.put(GPFlags.INTERACT_ITEM_SECONDARY, true);
-        defaultAdminFlags.put(GPFlags.ITEM_DROP, true);
-        defaultAdminFlags.put(GPFlags.ITEM_PICKUP, true);
-        defaultAdminFlags.put(GPFlags.ITEM_SPAWN, false);
-        defaultAdminFlags.put(GPFlags.ITEM_USE, true);
-        defaultAdminFlags.put(GPFlags.LIQUID_FLOW, false);
-        defaultAdminFlags.put(GPFlags.PORTAL_USE, true);
-        defaultAdminFlags.put(GPFlags.PROJECTILE_IMPACT_BLOCK, false);
-        defaultAdminFlags.put(GPFlags.PROJECTILE_IMPACT_ENTITY, false);
+        defaultAdminFlags.put(ClaimFlag.BLOCK_BREAK.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.BLOCK_PLACE.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_RIDING.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_SPAWN.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_TELEPORT_FROM.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_TELEPORT_TO.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.EXIT_CLAIM.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.EXPLOSION.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.EXPLOSION_SURFACE.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.FIRE_SPREAD.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.ITEM_USE.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.LIQUID_FLOW.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), false);
+        defaultAdminFlags.put(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString(), false);
 
-        defaultBasicFlags.put(GPFlags.BLOCK_BREAK, false);
-        defaultBasicFlags.put(GPFlags.BLOCK_PLACE, false);
-        defaultBasicFlags.put(GPFlags.COMMAND_EXECUTE, true);
-        defaultBasicFlags.put(GPFlags.COMMAND_EXECUTE_PVP, true);
-        defaultBasicFlags.put(GPFlags.ENTER_CLAIM, true);
-        defaultBasicFlags.put(GPFlags.ENTITY_COLLIDE_BLOCK, false);
-        defaultBasicFlags.put(GPFlags.ENTITY_COLLIDE_ENTITY, false);
-        defaultBasicFlags.put(GPFlags.ENTITY_DAMAGE, true);
-        defaultBasicFlags.put(GPFlags.ENTITY_FALL, true);
-        defaultBasicFlags.put(GPFlags.ENTITY_RIDING, true);
-        defaultBasicFlags.put(GPFlags.ENTITY_SPAWN, true);
-        defaultBasicFlags.put(GPFlags.ENTITY_TELEPORT_FROM, true);
-        defaultBasicFlags.put(GPFlags.ENTITY_TELEPORT_TO, true);
-        defaultBasicFlags.put(GPFlags.EXIT_CLAIM, true);
-        defaultBasicFlags.put(GPFlags.EXPLOSION, false);
-        defaultBasicFlags.put(GPFlags.EXPLOSION_SURFACE, false);
-        defaultBasicFlags.put(GPFlags.FIRE_SPREAD, false);
-        defaultBasicFlags.put(GPFlags.INTERACT_BLOCK_PRIMARY, false);
-        defaultBasicFlags.put(GPFlags.INTERACT_BLOCK_SECONDARY, false);
-        defaultBasicFlags.put(GPFlags.INTERACT_ENTITY_PRIMARY, false);
-        defaultBasicFlags.put(GPFlags.INTERACT_ENTITY_SECONDARY, true);
-        defaultBasicFlags.put(GPFlags.INTERACT_INVENTORY, false);
-        defaultBasicFlags.put(GPFlags.INTERACT_ITEM_PRIMARY, true);
-        defaultBasicFlags.put(GPFlags.INTERACT_ITEM_SECONDARY, true);
-        defaultBasicFlags.put(GPFlags.ITEM_DROP, true);
-        defaultBasicFlags.put(GPFlags.ITEM_PICKUP, true);
-        defaultBasicFlags.put(GPFlags.ITEM_SPAWN, false);
-        defaultBasicFlags.put(GPFlags.ITEM_USE, true);
-        defaultBasicFlags.put(GPFlags.LIQUID_FLOW, false);
-        defaultBasicFlags.put(GPFlags.PORTAL_USE, true);
-        defaultBasicFlags.put(GPFlags.PROJECTILE_IMPACT_BLOCK, false);
-        defaultBasicFlags.put(GPFlags.PROJECTILE_IMPACT_ENTITY, false);
+        defaultBasicFlags.put(ClaimFlag.BLOCK_BREAK.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.BLOCK_PLACE.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_RIDING.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_SPAWN.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_TELEPORT_FROM.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_TELEPORT_TO.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.EXIT_CLAIM.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.EXPLOSION.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.EXPLOSION_SURFACE.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.FIRE_SPREAD.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.ITEM_USE.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.LIQUID_FLOW.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString(), false);
 
-        defaultWildernessFlags.put(GPFlags.BLOCK_BREAK, true);
-        defaultWildernessFlags.put(GPFlags.BLOCK_PLACE, true);;
-        defaultWildernessFlags.put(GPFlags.COMMAND_EXECUTE, true);
-        defaultWildernessFlags.put(GPFlags.COMMAND_EXECUTE_PVP, true);
-        defaultWildernessFlags.put(GPFlags.ENTER_CLAIM, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_COLLIDE_BLOCK, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_COLLIDE_ENTITY, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_DAMAGE, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_FALL, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_RIDING, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_SPAWN, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_TELEPORT_FROM, true);
-        defaultWildernessFlags.put(GPFlags.ENTITY_TELEPORT_TO, true);
-        defaultWildernessFlags.put(GPFlags.EXIT_CLAIM, true);
-        defaultWildernessFlags.put(GPFlags.EXPLOSION, true);
-        defaultWildernessFlags.put(GPFlags.EXPLOSION_SURFACE, true);
-        defaultWildernessFlags.put(GPFlags.FIRE_SPREAD, false);
-        defaultWildernessFlags.put(GPFlags.INTERACT_BLOCK_PRIMARY, true);
-        defaultWildernessFlags.put(GPFlags.INTERACT_BLOCK_SECONDARY, true);
-        defaultWildernessFlags.put(GPFlags.INTERACT_ENTITY_PRIMARY, true);
-        defaultWildernessFlags.put(GPFlags.INTERACT_ENTITY_SECONDARY, true);
-        defaultWildernessFlags.put(GPFlags.INTERACT_INVENTORY, true);
-        defaultWildernessFlags.put(GPFlags.INTERACT_ITEM_PRIMARY, true);
-        defaultWildernessFlags.put(GPFlags.INTERACT_ITEM_SECONDARY, true);
-        defaultWildernessFlags.put(GPFlags.ITEM_DROP, true);
-        defaultWildernessFlags.put(GPFlags.ITEM_PICKUP, true);
-        defaultWildernessFlags.put(GPFlags.ITEM_SPAWN, true);
-        defaultWildernessFlags.put(GPFlags.ITEM_USE, true);
-        defaultWildernessFlags.put(GPFlags.LIQUID_FLOW, true);
-        defaultWildernessFlags.put(GPFlags.PORTAL_USE, true);
-        defaultWildernessFlags.put(GPFlags.PROJECTILE_IMPACT_BLOCK, true);
-        defaultWildernessFlags.put(GPFlags.PROJECTILE_IMPACT_ENTITY, true);
+        defaultTownFlags.put(ClaimFlag.BLOCK_BREAK.toString(), false);
+        defaultTownFlags.put(ClaimFlag.BLOCK_PLACE.toString(), false);
+        defaultTownFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
+        defaultTownFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), false);
+        defaultTownFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), false);
+        defaultTownFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ENTITY_RIDING.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ENTITY_SPAWN.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ENTITY_TELEPORT_FROM.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ENTITY_TELEPORT_TO.toString(), true);
+        defaultTownFlags.put(ClaimFlag.EXIT_CLAIM.toString(), true);
+        defaultTownFlags.put(ClaimFlag.EXPLOSION.toString(), false);
+        defaultTownFlags.put(ClaimFlag.EXPLOSION_SURFACE.toString(), false);
+        defaultTownFlags.put(ClaimFlag.FIRE_SPREAD.toString(), false);
+        defaultTownFlags.put(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), false);
+        defaultTownFlags.put(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), false);
+        defaultTownFlags.put(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), false);
+        defaultTownFlags.put(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), true);
+        defaultTownFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
+        defaultTownFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
+        defaultTownFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
+        defaultTownFlags.put(ClaimFlag.ITEM_USE.toString(), true);
+        defaultTownFlags.put(ClaimFlag.LIQUID_FLOW.toString(), false);
+        defaultTownFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
+        defaultTownFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), false);
+        defaultTownFlags.put(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString(), false);
 
-        userClaimFlags.add(GPFlags.BLOCK_BREAK);
-        userClaimFlags.add(GPFlags.BLOCK_PLACE);
-        userClaimFlags.add(GPFlags.ENTITY_COLLIDE_BLOCK);
-        userClaimFlags.add(GPFlags.ENTITY_RIDING);
-        userClaimFlags.add(GPFlags.EXPLOSION);
-        userClaimFlags.add(GPFlags.EXPLOSION_SURFACE);
-        userClaimFlags.add(GPFlags.FIRE_SPREAD);
-        userClaimFlags.add(GPFlags.INTERACT_BLOCK_PRIMARY);
-        userClaimFlags.add(GPFlags.INTERACT_BLOCK_SECONDARY);
-        userClaimFlags.add(GPFlags.INTERACT_ENTITY_PRIMARY);
-        userClaimFlags.add(GPFlags.INTERACT_ENTITY_SECONDARY);
-        userClaimFlags.add(GPFlags.INTERACT_ITEM_PRIMARY);
-        userClaimFlags.add(GPFlags.INTERACT_ITEM_SECONDARY);
-        userClaimFlags.add(GPFlags.ITEM_DROP);
-        userClaimFlags.add(GPFlags.ITEM_PICKUP);
-        userClaimFlags.add(GPFlags.ITEM_USE);
-        userClaimFlags.add(GPFlags.PORTAL_USE);
-        userClaimFlags.add(GPFlags.PROJECTILE_IMPACT_BLOCK);
-        userClaimFlags.add(GPFlags.PROJECTILE_IMPACT_ENTITY);
+        defaultWildernessFlags.put(ClaimFlag.BLOCK_BREAK.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.BLOCK_PLACE.toString(), true);;
+        defaultWildernessFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_RIDING.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_SPAWN.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_TELEPORT_FROM.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_TELEPORT_TO.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.EXIT_CLAIM.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.EXPLOSION.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.EXPLOSION_SURFACE.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.FIRE_SPREAD.toString(), false);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ITEM_SPAWN.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ITEM_USE.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.LIQUID_FLOW.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString(), true);
+
+        userClaimFlags.add(ClaimFlag.BLOCK_BREAK.toString());
+        userClaimFlags.add(ClaimFlag.BLOCK_PLACE.toString());
+        userClaimFlags.add(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString());
+        userClaimFlags.add(ClaimFlag.ENTITY_RIDING.toString());
+        userClaimFlags.add(ClaimFlag.EXPLOSION.toString());
+        userClaimFlags.add(ClaimFlag.EXPLOSION_SURFACE.toString());
+        userClaimFlags.add(ClaimFlag.FIRE_SPREAD.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_ITEM_PRIMARY.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_ITEM_SECONDARY.toString());
+        userClaimFlags.add(ClaimFlag.ITEM_DROP.toString());
+        userClaimFlags.add(ClaimFlag.ITEM_PICKUP.toString());
+        userClaimFlags.add(ClaimFlag.ITEM_USE.toString());
+        userClaimFlags.add(ClaimFlag.PORTAL_USE.toString());
+        userClaimFlags.add(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString());
+        userClaimFlags.add(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString());
     }
 
     public Map<String, Boolean> getAdminDefaults() {
@@ -176,6 +208,10 @@ public class FlagCategory extends ConfigCategory {
 
     public Map<String, Boolean> getBasicDefaults() {
         return this.defaultBasicFlags;
+    }
+
+    public Map<String, Boolean> getTownDefaults() {
+        return this.defaultTownFlags;
     }
 
     public Map<String, Boolean> getWildernessDefaults() {

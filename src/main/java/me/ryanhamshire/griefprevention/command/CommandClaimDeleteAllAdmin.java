@@ -25,12 +25,12 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -61,12 +61,15 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
         // delete all admin claims
         ClaimResult claimResult = GriefPreventionPlugin.instance.dataStore.deleteAllAdminClaims(src, player.getWorld());
         if (!claimResult.successful()) {
-            GriefPreventionPlugin.sendMessage(src, claimResult.getMessage().orElse(Text.of(TextMode.Err, "No admin claims found.")));
+            final Text message = GriefPreventionPlugin.instance.messageData.claimTypeNotFound
+                    .apply(ImmutableMap.of(
+                    "type", ClaimType.ADMIN.name().toLowerCase())).build();
+            GriefPreventionPlugin.sendMessage(src, claimResult.getMessage().orElse(message));
             return CommandResult.success();
         }
         // id indicates an administrative claim
 
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.AllAdminDeleted);
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDeleteAllAdminSuccess.toText());
         GriefPreventionPlugin.addLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
 
         // revert any current visualization

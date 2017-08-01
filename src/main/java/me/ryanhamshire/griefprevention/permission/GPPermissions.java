@@ -24,27 +24,44 @@
  */
 package me.ryanhamshire.griefprevention.permission;
 
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
+
 public class GPPermissions {
 
     // Claims
-    public static final String COMMAND_ABANDON_CLAIM = "griefprevention.user.claim.command.abandon";
+    public static final String COMMAND_ABANDON_BASIC = "griefprevention.user.claim.command.abandon.basic";
+    public static final String COMMAND_ABANDON_TOWN = "griefprevention.user.claim.command.abandon.town";
     public static final String COMMAND_ABANDON_ALL_CLAIMS = "griefprevention.user.claim.command.abandon-all";
     public static final String COMMAND_ABANDON_TOP_LEVEL_CLAIM = "griefprevention.user.claim.command.abandon-top-level";
     public static final String COMMAND_CUBOID_CLAIMS = "griefprevention.user.claim.command.cuboid";
-    public static final String COMMAND_LIST_CLAIMS = "griefprevention.user.claim.command.list";
+    public static final String COMMAND_CLAIM_LIST = "griefprevention.user.claim.command.list";
     public static final String COMMAND_BASIC_MODE = "griefprevention.user.claim.command.basic-mode";
     public static final String COMMAND_GIVE_BOOK = "griefprevention.user.claim.command.give.book";
     public static final String COMMAND_GIVE_PET = "griefprevention.user.claim.command.give.pet";
+    public static final String COMMAND_CLAIM_BANK = "griefprevention.user.claim.command.bank";
+    public static final String COMMAND_CLAIM_BUY = "griefprevention.user.claim.command.buy";
     public static final String COMMAND_CLAIM_INFO_OTHERS = "griefprevention.user.claim.command.info.others";
     public static final String COMMAND_CLAIM_INFO_BASE = "griefprevention.user.claim.command.info.base";
     public static final String COMMAND_CLAIM_INFO_TELEPORT_OTHERS = "griefprevention.user.claim.command.info.teleport.others";
     public static final String COMMAND_CLAIM_INFO_TELEPORT_BASE = "griefprevention.user.claim.command.info.teleport.base";
+    public static final String COMMAND_CLAIM_SELL = "griefprevention.user.claim.command.sell";
     public static final String COMMAND_CLAIM_SPAWN = "griefprevention.user.claim.command.spawn";
     public static final String COMMAND_CLAIM_SET_SPAWN = "griefprevention.user.claim.command.set-spawn";
+    public static final String COMMAND_CLAIM_TAX = "griefprevention.user.claim.command.claim.tax";
     public static final String COMMAND_SET_CLAIM_NAME = "griefprevention.user.claim.command.name";
     public static final String COMMAND_SET_CLAIM_FAREWELL = "griefprevention.user.claim.command.farewell";
     public static final String COMMAND_SET_CLAIM_GREETING = "griefprevention.user.claim.command.greeting";
     public static final String COMMAND_SUBDIVIDE_CLAIMS = "griefprevention.user.claim.command.subdivide-mode";
+    public static final String COMMAND_TOWN_BANK = "griefprevention.user.town.command.bank";
+    public static final String COMMAND_TOWN_CHAT = "griefprevention.user.town.command.chat";
+    public static final String COMMAND_TOWN_INFO_BASE = "griefprevention.user.town.command.info.base";
+    public static final String COMMAND_TOWN_INFO_OTHERS = "griefprevention.user.town.command.info.others";
+    public static final String COMMAND_TOWN_INFO_TELEPORT_OTHERS = "griefprevention.user.town.command.info.teleport.others";
+    public static final String COMMAND_TOWN_INFO_TELEPORT_BASE = "griefprevention.user.town.command.info.teleport.base";
+    public static final String COMMAND_TOWN_NAME = "griefprevention.user.town.command.name";
+    public static final String COMMAND_TOWN_TAG = "griefprevention.user.town.command.tag";
+    public static final String COMMAND_TOWN_TAX = "griefprevention.user.town.command.tax";
+    public static final String COMMAND_TOWN_MODE = "griefprevention.user.claim.command.town-mode";
     public static final String COMMAND_TRANSFER_CLAIM = "griefprevention.user.claim.command.transfer";
     public static final String COMMAND_BUY_CLAIM_BLOCKS = "griefprevention.user.claim.command.buy-blocks";
     public static final String COMMAND_SELL_CLAIM_BLOCKS = "griefprevention.user.claim.command.sell-blocks";
@@ -52,16 +69,21 @@ public class GPPermissions {
     public static final String COMMAND_BAN_ITEM = "griefprevention.user.claim.command.ban-item";
     public static final String COMMAND_UNBAN_ITEM = "griefprevention.user.claim.command.unban-item";
     public static final String COMMAND_SIEGE = "griefprevention.user.claim.command.siege";
-    public static final String COMMAND_SUBDIVISION_INHERIT = "griefprevention.user.claim.command.inherit";
-    public static final String CLAIM_CREATE = "griefprevention.user.claim.create";
+    public static final String COMMAND_CLAIM_INHERIT = "griefprevention.user.claim.command.inherit";
+    public static final String CLAIM_CREATE = "griefprevention.user.claim.create.base";
+    public static final String CLAIM_CREATE_BASIC = "griefprevention.user.claim.create.basic";
+    public static final String CLAIM_CREATE_SUBDIVISION = "griefprevention.user.claim.create.subdivision";
+    public static final String CLAIM_CREATE_TOWN = "griefprevention.user.claim.create.town";
     public static final String CLAIM_CUBOID_BASIC = "griefprevention.user.claim.cuboid.basic";
     public static final String CLAIM_CUBOID_SUBDIVISION = "griefprevention.user.claim.cuboid.subdivision";
+    public static final String CLAIM_CUBOID_TOWN = "griefprevention.user.claim.cuboid.town";
     public static final String CLAIM_RESIZE = "griefprevention.user.claim.resize";
     public static final String SIEGE_IMMUNE = "griefprevention.user.claim.siege.immune";
     public static final String VISUALIZE_CLAIMS = "griefprevention.user.claim.visualize";
     public static final String VISUALIZE_CLAIMS_NEARBY = "griefprevention.user.claim.visualize.nearby";
     public static final String COMMAND_PLAYER_INFO_BASE = "griefprevention.user.command.info.base";
     public static final String COMMAND_PLAYER_INFO_OTHERS = "griefprevention.user.command.info.others";
+    public static final String COMMAND_VERSION = "griefprevention.user.command.version";
 
     // flags
     public static final String USER_CLAIM_FLAGS = "griefprevention.user.claim.flag";
@@ -70,6 +92,20 @@ public class GPPermissions {
     public static final String COMMAND_FLAGS_PLAYER = "griefprevention.user.claim.command.flag.player";
     public static final String COMMAND_FLAGS_GROUP = "griefprevention.user.claim.command.flag.group";
     public static final String COMMAND_FLAGS_RESET = "griefprevention.user.claim.command.flag.reset";
+
+    // options
+    public static final String COMMAND_OPTIONS_BASE = "griefprevention.user.claim.command.option.base";
+    public static final String COMMAND_OPTIONS_GROUP_BASE = "griefprevention.user.claim.command.option.group.base";
+    public static final String COMMAND_OPTIONS_GROUP_ADMIN = "griefprevention.user.claim.command.option.group.admin";
+    public static final String COMMAND_OPTIONS_GROUP_BASIC = "griefprevention.user.claim.command.option.group.basic";
+    public static final String COMMAND_OPTIONS_GROUP_SUBDIVISION = "griefprevention.user.claim.command.option.group.subdivision";
+    public static final String COMMAND_OPTIONS_GROUP_TOWN = "griefprevention.user.claim.command.option.group.town";
+
+    public static final String COMMAND_OPTIONS_PLAYER_BASE = "griefprevention.user.claim.command.option.player.base";
+    public static final String COMMAND_OPTIONS_PLAYER_ADMIN = "griefprevention.user.claim.command.option.player.admin";
+    public static final String COMMAND_OPTIONS_PLAYER_BASIC = "griefprevention.user.claim.command.option.player.basic";
+    public static final String COMMAND_OPTIONS_PLAYER_SUBDIVISION = "griefprevention.user.claim.command.option.player.subdivision";
+    public static final String COMMAND_OPTIONS_PLAYER_TOWN = "griefprevention.user.claim.command.option.player.town";
 
     // Admin
     public static final String COMMAND_ADJUST_CLAIM_BLOCKS = "griefprevention.admin.claim.command.adjust-claim-blocks";
@@ -83,14 +119,14 @@ public class GPPermissions {
     public static final String DELETE_CLAIM_ADMIN = "griefprevention.admin.claim.command.delete.admin";
     public static final String COMMAND_DELETE_CLAIMS = "griefprevention.admin.claim.command.delete-claims";
     public static final String COMMAND_DELETE_ADMIN_CLAIMS = "griefprevention.admin.command.delete-admin-claims";
-    public static final String COMMAND_LIST_ADMIN_CLAIMS = "griefprevention.admin.claim.command.list.admin";
     public static final String COMMAND_SET_ACCRUED_CLAIM_BLOCKS = "griefprevention.admin.command.set-accrued-claim-blocks";
     public static final String COMMAND_RESTORE_NATURE = "griefprevention.admin.command.restore-nature.base";
     public static final String COMMAND_RESTORE_NATURE_AGGRESSIVE = "griefprevention.admin.command.restore-nature.aggressive";
     public static final String COMMAND_RESTORE_NATURE_FILL = "griefprevention.admin.command.restore-nature.fill";
     public static final String COMMAND_RELOAD = "griefprevention.admin.command.reload";
     public static final String SET_ADMIN_FLAGS = "griefprevention.admin.claim.set-admin-flags";
-    public static final String LIST_BASIC_CLAIMS = "griefprevention.admin.claim.list.basic";
+    public static final String LIST_OTHER_CLAIMS = "griefprevention.admin.claim.list.other";
+    public static final String LIST_ADMIN_CLAIMS = "griefprevention.admin.claim.list.admin";
     public static final String ADMIN_CLAIM_FLAGS = "griefprevention.admin.claim.flag";
     public static final String MANAGE_FLAG_DEFAULTS = "griefprevention.admin.flag-defaults";
     public static final String MANAGE_FLAG_OVERRIDES = "griefprevention.admin.flag-overrides";
@@ -99,12 +135,14 @@ public class GPPermissions {
     public static final String COMMAND_IGNORE_CLAIMS = "griefprevention.admin.claim.command.ignore.base";
     public static final String IGNORE_CLAIMS_BASIC = "griefprevention.admin.claim.command.ignore.basic";
     public static final String IGNORE_CLAIMS_ADMIN = "griefprevention.admin.claim.command.ignore.admin";
+    public static final String IGNORE_CLAIMS_TOWN = "griefprevention.admin.claim.command.ignore.town";
     public static final String IGNORE_CLAIMS_WILDERNESS = "griefprevention.admin.claim.command.ignore.wilderness";
     public static final String CLAIM_CUBOID_ADMIN = "griefprevention.admin.claim.cuboid";
     public static final String CLAIM_RESIZE_ADMIN = "griefprevention.admin.claim.resize.admin";
     public static final String CLAIM_RESIZE_ADMIN_SUBDIVISION = "griefprevention.admin.claim.resize.admin.subdivision";
     public static final String CLAIM_RESIZE_BASIC = "griefprevention.admin.claim.resize.basic";
     public static final String CLAIM_RESIZE_BASIC_SUBDIVISION = "griefprevention.admin.claim.resize.basic.subdivision";
+    public static final String CLAIM_RESIZE_TOWN = "griefprevention.admin.claim.resize.town";
     public static final String OVERRIDE_CLAIM_RESIZE = "griefprevention.admin.claim.override.resize";
     public static final String OVERRIDE_CLAIM_LIMIT = "griefprevention.admin.claim.override.limit";
     public static final String EAVES_DROP_SIGNS = "griefprevention.admin.eavesdrop.signs";
@@ -133,6 +171,10 @@ public class GPPermissions {
     public static final String COMMAND_LIST_TRUST = "griefprevention.user.claim.command.trust.list";
     public static final String COMMAND_REMOVE_TRUST = "griefprevention.user.claim.command.trust.remove";
     public static final String COMMAND_TRUST_ALL = "griefprevention.user.claim.command.trust.all";
+    public static final String TRUST_ACCESSOR = "griefprevention.trust.1.2.3.4";
+    public static final String TRUST_CONTAINER = "griefprevention.trust.1.2.3";
+    public static final String TRUST_BUILDER = "griefprevention.trust.1.2";
+    public static final String TRUST_MANAGER = "griefprevention.trust.1";
 
     // Flags
     public static final String BLOCK_BREAK = "griefprevention.flag.block-break";
@@ -169,4 +211,18 @@ public class GPPermissions {
     public static final String PORTAL_USE = "griefprevention.flag.portal-use";
     public static final String PROJECTILE_IMPACT_BLOCK = "griefprevention.flag.projectile-impact-block";
     public static final String PROJECTILE_IMPACT_ENTITY = "griefprevention.flag.projectile-impact-entity";
+
+    public static String getTrustPermission(TrustType type) {
+        if (type == TrustType.ACCESSOR) {
+            return GPPermissions.TRUST_ACCESSOR;
+        }
+        if (type == TrustType.BUILDER) {
+            return GPPermissions.TRUST_BUILDER;
+        }
+        if (type == TrustType.CONTAINER) {
+            return GPPermissions.TRUST_CONTAINER;
+        }
+
+        return GPPermissions.TRUST_MANAGER;
+    }
 }

@@ -24,11 +24,10 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -36,7 +35,6 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.serializer.TextSerializers;
 
 public class CommandClaimName implements CommandExecutor {
@@ -55,7 +53,7 @@ public class CommandClaimName implements CommandExecutor {
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim != null) {
             if (claim.allowEdit(player) != null) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionEditClaim.toText());
                 return CommandResult.success();
             }
 
@@ -66,9 +64,12 @@ public class CommandClaimName implements CommandExecutor {
                 claim.getInternalClaimData().setName(name);
             }
             claim.getInternalClaimData().setRequiresSave(true);
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success, "Set claim name to ", TextColors.AQUA, name));
+            final Text message = GriefPreventionPlugin.instance.messageData.commandClaimName
+                    .apply(ImmutableMap.of(
+                    "name", name)).build();
+            GriefPreventionPlugin.sendMessage(src, message);
         } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
         }
 
         return CommandResult.success();

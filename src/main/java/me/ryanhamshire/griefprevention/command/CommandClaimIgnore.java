@@ -25,17 +25,17 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.text.Text;
 
 public class CommandClaimIgnore implements CommandExecutor {
 
@@ -52,7 +52,10 @@ public class CommandClaimIgnore implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
         if (claim.isBasicClaim() && !playerData.ignoreBasicClaims || claim.isWilderness() && !playerData.ignoreWilderness || claim.isAdminClaim() && !playerData.ignoreAdminClaims) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "You do not have permission to ignore " + claim.getType().name().toLowerCase() + " claims.");
+            final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimIgnore
+                    .apply(ImmutableMap.of(
+                    "type", claim.getType().name())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
             return CommandResult.success();
         }
 
@@ -60,9 +63,9 @@ public class CommandClaimIgnore implements CommandExecutor {
 
         // toggle ignore claims mode on or off
         if (!playerData.ignoreClaims) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.RespectingClaims);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimRespecting.toText());
         } else {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.IgnoringClaims);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimIgnore.toText());
         }
 
         return CommandResult.success();

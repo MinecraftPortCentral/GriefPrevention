@@ -32,4 +32,8 @@ public class PlayerDataCategory extends ConfigCategory {
 
     @Setting(value = "use-global-storage", comment = "Whether player data should be stored globally. False will store all data per world.")
     public boolean useGlobalPlayerDataStorage = true;
+    @Setting(value = "migration-town-block-rate", comment = "The rate to multiply each accrued claim blocks total by. \n" + 
+            "Set to a value greater than -1 to enable. (If you use defaults, recommended start value 256)\n" + 
+            "Note: This is only run one time to migrate player claimblock data to new system.\nEach chunk is worth 65,536 blocks in the new system compared to 256 in old.")
+    public int migrationRate = -1;
 }

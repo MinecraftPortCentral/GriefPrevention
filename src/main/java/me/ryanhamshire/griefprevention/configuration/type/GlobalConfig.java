@@ -24,7 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.configuration.type;
 
-import me.ryanhamshire.griefprevention.configuration.category.DatabaseCategory;
+import me.ryanhamshire.griefprevention.configuration.category.BanCategory;
 import me.ryanhamshire.griefprevention.configuration.category.LoggingCategory;
 import me.ryanhamshire.griefprevention.configuration.category.MigratorCategory;
 import me.ryanhamshire.griefprevention.configuration.category.PlayerDataCategory;
@@ -35,7 +35,9 @@ import ninja.leaping.configurate.objectmapping.Setting;
 public class GlobalConfig extends ConfigBase {
 
     @Setting
-    public DatabaseCategory database = new DatabaseCategory();
+    public BanCategory bans = new BanCategory();
+    //@Setting
+    //public DatabaseCategory database = new DatabaseCategory();
     @Setting
     public LoggingCategory logging = new LoggingCategory();
     @Setting

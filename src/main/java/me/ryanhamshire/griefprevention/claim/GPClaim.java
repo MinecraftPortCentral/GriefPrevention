@@ -30,26 +30,36 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.SiegeData;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimContexts;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import me.ryanhamshire.griefprevention.api.claim.FlagResult;
+import me.ryanhamshire.griefprevention.api.claim.FlagResultType;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.api.data.ClaimData;
+import me.ryanhamshire.griefprevention.command.CommandHelper;
+import me.ryanhamshire.griefprevention.configuration.ClaimDataConfig;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.IClaimData;
-import me.ryanhamshire.griefprevention.configuration.SubDivisionDataConfig;
+import me.ryanhamshire.griefprevention.configuration.TownDataConfig;
+import me.ryanhamshire.griefprevention.configuration.TownStorageData;
 import me.ryanhamshire.griefprevention.event.GPCreateClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
+import me.ryanhamshire.griefprevention.event.GPFlagClaimEvent;
+import me.ryanhamshire.griefprevention.event.GPGroupTrustClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPResizeClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPTransferClaimEvent;
-import me.ryanhamshire.griefprevention.event.GPTrustClaimEvent;
-import me.ryanhamshire.griefprevention.message.Messages;
+import me.ryanhamshire.griefprevention.event.GPUserTrustClaimEvent;
+import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
@@ -59,14 +69,17 @@ import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.data.property.block.MatterProperty;
+import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.economy.Currency;
+import org.spongepowered.api.service.economy.EconomyService;
+import org.spongepowered.api.service.economy.account.Account;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
@@ -79,15 +92,22 @@ import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 
 import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+import javax.annotation.Nullable;
 
 //represents a player claim
 //creating an instance doesn't make an effective claim
@@ -100,9 +120,10 @@ public class GPClaim implements Claim {
     public Location<World> lesserBoundaryCorner;
     public Location<World> greaterBoundaryCorner;
     public World world;
-    public ClaimType type = ClaimType.BASIC;
+    private ClaimType type = ClaimType.BASIC;
     private Set<Long> chunkHashes;
     private final int hashCode;
+    private final GPClaimManager worldClaimManager;
 
     // Permission Context
     public Context context;
@@ -117,24 +138,13 @@ public class GPClaim implements Claim {
     private ClaimStorageData claimStorage;
     private IClaimData claimData;
 
-    // parent claim
-    // only used for claim subdivisions. top level claims have null here
     public GPClaim parent = null;
-
-    // children (subdivisions)
-    // note subdivisions themselves never have children
     public ArrayList<Claim> children = new ArrayList<>();
-
-    // information about a siege involving this claim. null means no siege is impacting this claim
-    public SiegeData siegeData = null;
-
-    // following a siege, buttons/levers are unlocked temporarily. This represents that state
-    public boolean doorsOpen = false;
-
     public Visualization visualization;
     public List<UUID> playersWatching = new ArrayList<>();
 
     private GPPlayerData ownerPlayerData;
+    private Account economyAccount;
 
     public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, boolean cuboid) {
         this(world, point1, point2, type, ownerUniqueId, cuboid, null);
@@ -188,6 +198,7 @@ public class GPClaim implements Claim {
         this.cuboid = cuboid;
         this.parent = parent;
         this.hashCode = this.id.hashCode();
+        this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
     }
 
     // Used for visualizations
@@ -212,28 +223,41 @@ public class GPClaim implements Claim {
         this.type = type;
         this.context = new Context("gp_claim", this.id.toString());
         this.hashCode = this.id.hashCode();
+        this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
     }
 
     public void initializeClaimData(GPClaim parent) {
+        Path claimDataFolderPath = null;
+        // check if main world
         if (parent != null) {
-            this.parent = parent;
-            this.claimData = new SubDivisionDataConfig(this);
-            this.claimStorage = this.parent.getClaimStorage();
-            this.claimStorage.getConfig().getSubdivisions().put(this.id, (SubDivisionDataConfig) this.claimData);
+            claimDataFolderPath = parent.getClaimStorage().filePath.getParent().resolve(this.type.name().toLowerCase());
         } else {
-            Path claimDataFolderPath = null;
-            // check if main world
-            claimDataFolderPath = DataStore.worldConfigMap.get(this.world.getUniqueId()).getPath().getParent().resolve("ClaimData");
-            File claimFile = new File(claimDataFolderPath + File.separator + this.id);
-            this.claimStorage = new ClaimStorageData(claimFile.toPath(), this.id, this.ownerUniqueId, this.type, cuboid);
-            this.claimData = this.claimStorage.getConfig();
+            claimDataFolderPath = DataStore.worldConfigMap.get(this.world.getUniqueId()).getPath().getParent().resolve("ClaimData").resolve(this.type.name().toLowerCase());
         }
+        try {
+            Files.createDirectories(claimDataFolderPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        File claimFile = new File(claimDataFolderPath + File.separator + this.id);
+        if (this.isTown()) {
+            this.claimStorage = new TownStorageData(claimFile.toPath(), this.world.getUniqueId(), this.ownerUniqueId, this.cuboid);
+        } else {
+            this.claimStorage = new ClaimStorageData(claimFile.toPath(), this.world.getUniqueId(), this.ownerUniqueId, this.type, this.cuboid);
+        }
+        this.claimData = this.claimStorage.getConfig();
+        this.parent = parent;
 
         this.updateClaimStorageData();
     }
 
     public ClaimType getType() {
         return this.type;
+    }
+
+    public void setType(ClaimType type) {
+        this.type = type;
+        this.claimData.setType(type);
     }
 
     public Visualization getVisualizer() {
@@ -253,6 +277,9 @@ public class GPClaim implements Claim {
 
     public UUID getOwnerUniqueId() {
         if (this.isSubdivision()) {
+            if (this.parent == null) {
+                return this.ownerUniqueId;
+            }
             return this.parent.getOwnerUniqueId();
         }
         if (this.isAdminClaim()) {
@@ -266,29 +293,11 @@ public class GPClaim implements Claim {
         this.ownerUniqueId = uniqueId;
     }
 
-    // whether or not this is an administrative claim
-    // administrative claims are created and maintained by players with the
-    // griefprevention.adminclaims permission.
     public boolean isAdminClaim() {
-        if (this.parent != null) {
-            return this.parent.isAdminClaim();
-        }
-
         return this.type == ClaimType.ADMIN;
     }
 
-    public boolean isBasicClaim() {
-        return this.type == ClaimType.BASIC;
-    }
-
-    public boolean isSubdivision() {
-        return this.parent != null;
-    }
-
-    public boolean isWildernessClaim() {
-        return this.type == ClaimType.WILDERNESS;
-    }
-
+    @Override
     public boolean isCuboid() {
         if (this.claimData != null) {
             return this.claimData.isCuboid();
@@ -297,27 +306,91 @@ public class GPClaim implements Claim {
         return this.cuboid;
     }
 
-    // accessor for ID
+    @Override
+    public boolean isInTown() {
+        if (this.isTown()) {
+            return true;
+        }
+
+        GPClaim parent = this.parent;
+        while (parent != null) {
+            if (parent.isTown()) {
+                return true;
+            }
+            parent = parent.parent;
+        }
+
+        return false;
+    }
+
+    @Override
+    public Optional<Claim> getTown() {
+        return Optional.ofNullable(this.getTownClaim());
+    }
+
+    @Nullable
+    public GPClaim getTownClaim() {
+        if (this.isTown()) {
+            return this;
+        }
+
+        if (this.parent == null) {
+            return null;
+        }
+
+        GPClaim parent = this.parent;
+        while (parent != null) {
+            if (parent.isTown()) {
+                return parent;
+            }
+            parent = parent.parent;
+        }
+
+        return null;
+    }
+
+    @Override
     public UUID getUniqueId() {
         return this.id;
     }
 
     public Optional<Text> getName() {
+        if (this.claimData == null) {
+            return Optional.empty();
+        }
         return this.claimData.getName();
     }
 
-    // players may only siege someone when he's not in an admin claim
-    // and when he has some level of permission in the claim
-    public boolean canSiege(Player defender) {
-        if (this.isAdminClaim()) {
-            return false;
+    public Text getFriendlyNameType() {
+        return this.getFriendlyNameType(false);
+    }
+
+    public Text getFriendlyNameType(boolean upper) {
+        if (this.type == ClaimType.ADMIN) {
+            if (upper) {
+                return Text.of(TextColors.RED, this.type.name());
+            }
+            return Text.of(TextColors.RED, "Admin");
         }
 
-        if (this.allowAccess(defender) != null) {
-            return false;
+        if (this.type == ClaimType.BASIC) {
+            if (upper) {
+                return Text.of(TextColors.YELLOW, this.type.name());
+            }
+            return Text.of(TextColors.YELLOW, "Basic");
         }
 
-        return true;
+        if (this.type == ClaimType.SUBDIVISION) {
+            if (upper) {
+                return Text.of(TextColors.AQUA, this.type.name());
+            }
+            return Text.of(TextColors.AQUA, "Subdivision");
+        }
+
+        if (upper) {
+            return Text.of(TextColors.GREEN, this.type.name());
+        }
+        return Text.of(TextColors.GREEN, "Town");
     }
 
     // removes any lava above sea level in a claim
@@ -331,7 +404,7 @@ public class GPClaim implements Claim {
         }
 
         // don't do it for very large claims
-        if (this.getArea() > 10000) {
+        if (this.getArea() > 2560000) {
             return;
         }
 
@@ -373,14 +446,13 @@ public class GPClaim implements Claim {
     }
 
     // determines whether or not a claim has surface lava
-    // used to warn players when they abandon their claims about automatic fluid
-    // cleanup
+    // used to warn players when they abandon their claims about automatic fluid cleanup
     boolean hasSurfaceFluids() {
         Location<World> lesser = this.getLesserBoundaryCorner();
         Location<World> greater = this.getGreaterBoundaryCorner();
 
         // don't bother for very large claims, too expensive
-        if (this.getArea() > 10000) {
+        if (this.getArea() > 2560000) {
             return false;
         }
 
@@ -412,9 +484,10 @@ public class GPClaim implements Claim {
     @Override
     public int getArea() {
         int claimWidth = this.greaterBoundaryCorner.getBlockX() - this.lesserBoundaryCorner.getBlockX() + 1;
-        int claimHeight = this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
+        int claimHeight = this.greaterBoundaryCorner.getBlockY() - this.lesserBoundaryCorner.getBlockY() + 1;
+        int claimLength = this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
 
-        return claimWidth * claimHeight;
+        return claimLength * claimWidth * claimHeight;
     }
 
     @Override
@@ -427,455 +500,93 @@ public class GPClaim implements Claim {
         return this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
     }
 
-    public boolean hasFullAccess(User user) {
-        return this.hasFullAccess(user, null);
-    }
-
-    public boolean hasFullAccess(User user, GPPlayerData playerData) {
-        if (playerData == null) {
-            playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
-        }
-        if (playerData != null && playerData.canIgnoreClaim(this)) {
-            return true;
-        }
-
-        if (this.isAdminClaim() && playerData.canManageAdminClaims) {
-            if (playerData.debugClaimPermissions) {
-                return false;
-            }
-
-            return true;
-        }
-
-        // owner
-        if (!this.isAdminClaim() && user.getUniqueId().equals(this.getOwnerUniqueId())) {
-            // only check debug claim permissions if owner
-            if (playerData.debugClaimPermissions) {
-                return false;
-            }
-
-            return true;
-        }
-
-        if (this.isWildernessClaim() && playerData.canManageWilderness) {
-            if (playerData.debugClaimPermissions) {
-                return false;
-            }
-
-            return true;
-        }
-
-        // if subdivision
-        if (this.parent != null) {
-            return this.parent.hasFullAccess(user);
-        }
-
-        return false;
-    }
-
-    // similar to hasFullAccess except it doesn't get checked by delete/abandon claims
-    public boolean hasFullTrust(User user) {
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
-        if (playerData != null && playerData.canIgnoreClaim(this)) {
-            return true;
-        }
-
-        if (this.isAdminClaim() && playerData.canManageAdminClaims) {
-            if (playerData.debugClaimPermissions) {
-                return false;
-            }
-
-            return true;
-        }
-
-        // owner
-        if (!this.isAdminClaim() && user.getUniqueId().equals(this.getOwnerUniqueId())) {
-            // only check debug claim permissions if owner
-            if (playerData.debugClaimPermissions) {
-                return false;
-            }
-
-            return true;
-        }
-
-        if (this.isWildernessClaim() && playerData.canManageWilderness) {
-            if (playerData.debugClaimPermissions) {
-                return false;
-            }
-
-            return true;
-        }
-
-        // Builders can place blocks in claims
-        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.claimData.getBuilders().contains(user.getUniqueId())) {
-            return true;
-        }
-
-        // if subdivision
-        if (this.parent != null) {
-            if (!this.getData().doesInheritParent()) {
-                // check if parent owner
-                return this.parent.hasFullAccess(user);
-            }
-            return this.parent.hasFullTrust(user);
-        }
-
-        return false;
-    }
-
-    // permissions. note administrative "public" claims have different rules than other claims
-    // all of these return NULL when a player has permission, or a String error
-    // message when the player doesn't have permission
-    public String allowEdit(Player player) {
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, player.getUniqueId());
-        if (this.hasFullAccess(player, playerData)) {
+    public Text allowEdit(User user) {
+        if (this.isUserTrusted(user, TrustType.BUILDER)) {
             return null;
         }
 
         // anyone with deleteclaims permission can modify non-admin claims at any time
         else {
-            if (player.hasPermission(GPPermissions.COMMAND_DELETE_CLAIMS)) {
+            if (user.hasPermission(GPPermissions.COMMAND_DELETE_CLAIMS)) {
                 return null;
             }
         }
 
-        // no resizing, deleting, and so forth while under siege
-        // don't use isManager here as only owners may edit claims
-        if (player.getUniqueId().equals(this.getOwnerUniqueId())) {
-            if (this.siegeData != null) {
-                return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoModifyDuringSiege);
-            }
-
-            // otherwise, owners can do whatever
-            return null;
-        }
-
-        if (this.isWildernessClaim() && playerData.canManageWilderness) {
-            return null;
-        }
-
-        // permission inheritance for subdivisions
         if (this.parent != null && this.getData().doesInheritParent()) {
-            return this.parent.allowEdit(player);
+            return this.parent.allowEdit(user);
         }
 
-        // error message if all else fails
-        return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.OnlyOwnersModifyClaims, this.getOwnerName());
-    }
-
-    // build permission check
-    public String allowBuild(Object source, Location<World> location, User user) {
-        if (user == null) {
-            return null;
-        }
-
-        // when a player tries to build in a claim, if he's under siege, the
-        // siege may extend to include the new claim
-        if (user instanceof Player) {
-            GriefPreventionPlugin.instance.dataStore.tryExtendSiege((Player) user, this);
-        }
-
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId());
-        // admin claims can always be modified by admins, no exceptions
-        if (this.isAdminClaim()) {
-            if (playerData.canManageAdminClaims) {
-                return null;
-            }
-        }
-
-        // no building while under siege
-        if (this.siegeData != null) {
-            return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoBuildUnderSiege, this.siegeData.attacker.getName());
-        }
-
-        // no building while in pvp combat
-        if (playerData.inPvpCombat(location.getExtent())) {
-            return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoBuildPvP);
-        }
-
-        // owners can make changes, or admins with ignore claims mode enabled
-        if (hasFullAccess(user)) {
-            return null;
-        }
-
-        if (!(source instanceof Player)) {
-            if (location.getBlock().getType() == BlockTypes.FIRE) {
-                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user);
-                if (value == Tristate.TRUE) {
-                    return null;
-                } else if (value == Tristate.FALSE) {
-                    return "You do not have permission to spread fire in this claim.";
-                }
-            }
-        }
-
-        // Builders can place blocks in claims
-        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.claimData.getBuilders().contains(user.getUniqueId())) {
-            return null;
-        }
-
-        if (!(source instanceof Player)) {
-            Optional<MatterProperty> matterProperty = location.getProperty(MatterProperty.class);
-            if (matterProperty.isPresent() && matterProperty.get().getValue() == MatterProperty.Matter.LIQUID) {
-                Tristate value = GPPermissionHandler.getClaimPermission(this, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user);
-                if (value == Tristate.TRUE) {
-                    return null;
-                } else if (value == Tristate.FALSE) {
-                    return "You do not have permission to flow liquid in this claim.";
-                }
-            }
-        }
-
-        // anyone with explicit build permission can make changes
-        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_PLACE, source, location.getBlock(),user) == Tristate.TRUE) {
-            return null;
-        }
-        // subdivision permission inheritance
-        if (this.parent != null && this.getData().doesInheritParent()) {
-            return this.parent.allowBuild(source, location, user);
-        }
-
-        // failure message for all other cases
-        String reason = "";
-        if (location.getBlock().getType() != BlockTypes.FLOWING_WATER && location.getBlock().getType() != BlockTypes.FLOWING_LAVA) {
-            reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
-        }
-
-        return reason;
-    }
-
-    // A blocksnapshot must be passed here instead of location as the block in world represents the "final" block
-    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
-        Location<World> location = blockSnapshot.getLocation().orElse(null);
-        if (location == null) {
-            return null;
-        }
-
-        // if under siege, some blocks will be breakable
-        if (this.siegeData != null || this.doorsOpen) {
-            boolean breakable = false;
-
-            // search for block type in list of breakable blocks
-            for (int i = 0; i < GriefPreventionPlugin.getActiveConfig(location.getExtent().getProperties()).getConfig().siege.breakableSiegeBlocks.size();
-                 i++) {
-                String blockTypeId =
-                        GriefPreventionPlugin.getActiveConfig(location.getExtent().getProperties()).getConfig().siege.breakableSiegeBlocks.get(i);
-                Optional<BlockType> breakableBlockType = Sponge.getGame().getRegistry().getType(BlockType.class, blockTypeId);
-                if (breakableBlockType.isPresent() && breakableBlockType.get() == location.getBlockType()) {
-                    breakable = true;
-                    break;
-                }
-            }
-
-            // custom error messages for siege mode
-            if (!breakable) {
-                return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NonSiegeMaterial);
-            } else if (user != null && hasFullAccess(user)) {
-                return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoOwnerBuildUnderSiege);
-            } else {
-                return null;
-            }
-        }
-
-        String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoBuildPermission, this.getOwnerName());
-        if (user != null) {
-            if (hasFullAccess(user)) {
-                return null;
-            }
-
-            // Builders can break blocks
-            if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.claimData.getBuilders().contains(user.getUniqueId())) {
-                return null;
-            }
-
-            // Flag order matters
-            // interact should always be checked before break
-            // pass the blocksnapshot here as the live location represents the final transaction which would be AIR at this point
-            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, source, blockSnapshot, user) == Tristate.TRUE) {
-                return null;
-            }
-        }
-
-        return reason;
-    }
-
-    public String allowAccess(User user) {
-        return allowAccess(user, null);
-    }
-
-    public String allowAccess(User user, Location<World> location) {
-        return allowAccess(user, location, false);
-    }
-
-    // access permission check
-    public String allowAccess(User user, Location<World> location, boolean interact) {
-        if (user == null) {
-            return "";
-        }
-        // following a siege where the defender lost, the claim will allow everyone access for a time
-        if (this.doorsOpen) {
-            return null;
-        }
-
-        // claim owner and admins in ignoreclaims mode have access
-        if (hasFullAccess(user)) {
-            return null;
-        }
-
-        if (this.isTrusted(user.getUniqueId())) {
-            return null;
-        }
-
-        if (interact) {
-            if (GPPermissionHandler.getClaimPermission(this, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user) == Tristate.TRUE) {
-                return null;
-            }
-        }
-
-        // permission inheritance for subdivisions
-        if (this.parent != null && this.getData().doesInheritParent()) {
-            return this.parent.allowAccess(user, location);
-        }
-
-        //catch-all error message for all other cases
-        String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoAccessPermission, this.getOwnerName());
-        return reason;
-    }
-
-    public String allowItemDrop(User user, Location<World> location) {
-        // claim owner and admins in ignoreclaims mode have access
-        if (hasFullAccess(user)) {
-            return null;
-        }
-
-        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.claimData.getBuilders().contains(user.getUniqueId())) {
-            return null;
-        }
-
-        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.BLOCK_BREAK, user, location.getBlock(), user) == Tristate.TRUE) {
-            return null;
-        }
-
-        // permission inheritance for subdivisions
-        if (this.parent != null && this.getData().doesInheritParent()) {
-            return this.parent.allowAccess(user, location);
-        }
-
-        //catch-all error message for all other cases
-        String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoDropsAllowed, this.getOwnerName());
-        return reason;
-    }
-
-    public String allowContainers(User user, Location<World> location) {
-        //trying to access inventory in a claim may extend an existing siege to include this claim
-        if (user instanceof Player) {
-            GriefPreventionPlugin.instance.dataStore.tryExtendSiege((Player) user, this);
-        }
-        
-        //if under siege, nobody accesses containers
-        if(this.siegeData != null) {
-            return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoContainersSiege, siegeData.attacker.getName());
-        }
-        
-        // claim owner and admins in ignoreclaims mode have access
-        if (hasFullAccess(user)) {
-            return null;
-        }
-
-        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID) 
-                || this.claimData.getBuilders().contains(user.getUniqueId()) 
-                || this.claimData.getContainers().contains(user.getUniqueId())) {
-            return null;
-        }
-
-        if (GPPermissionHandler.getClaimPermission(this, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user) == Tristate.TRUE) {
-            return null;
-        }
-
-        //permission inheritance for subdivisions
-        if(this.parent != null && this.getData().doesInheritParent()) {
-            return this.parent.allowContainers(user, location);
-        }
-
-        //error message for all other cases
-        String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoContainersPermission, this.getOwnerName());
-        return reason;
+        final Text message = GriefPreventionPlugin.instance.messageData.claimOwnerOnly
+                .apply(ImmutableMap.of(
+                "owner", Text.of(this.getOwnerName())
+        )).build();
+        return message;
     }
 
     //grant permission check, relatively simple
-    public String allowGrantPermission(Player player) {
+    public Text allowGrantPermission(Player player) {
         //anyone who can modify the claim can do this
         if(this.allowEdit(player) == null) {
             return null;
         }
-        
-        //anyone who's in the managers (/PermissionTrust) list can do this
+
         for(int i = 0; i < this.claimData.getManagers().size(); i++) {
             UUID managerID = this.claimData.getManagers().get(i);
             if(player.getUniqueId().equals(managerID)) {
                 return null;
             }
         }
-        
-        //permission inheritance for subdivisions
+
         if(this.parent != null && this.getData().doesInheritParent()) {
             return this.parent.allowGrantPermission(player);
         }
-        
-        //generic error message
-        String reason = GriefPreventionPlugin.instance.dataStore.getMessage(Messages.NoPermissionTrust, this.getOwnerName());
 
+        final Text reason = GriefPreventionPlugin.instance.messageData.permissionTrust
+                .apply(ImmutableMap.of(
+                "owner", Text.of(this.getOwnerName())
+        )).build();
         return reason;
     }
 
-    //clears all permissions (except owner of course)
-    public void clearPermissions() {
-        this.claimData.getManagers().clear();
-        
-        for(Claim child : this.children) {
-            ((GPClaim) child).clearPermissions();
-        }
-    }
-
     // returns a copy of the location representing lower x, y, z limits
+    @Override
     public Location<World> getLesserBoundaryCorner() {
         return (Location<World>) this.lesserBoundaryCorner.copy();
     }
 
     // returns a copy of the location representing upper x, y, z limits
-    // NOTE: remember upper Y will always be ignored, all claims always extend to the sky
+    @Override
     public Location<World> getGreaterBoundaryCorner() {
         return (Location<World>) this.greaterBoundaryCorner.copy();
     }
 
-    // returns a friendly owner name (for admin claims, returns "an
-    // administrator" as the owner)
-    public String getOwnerName() {
-        if (this.isWildernessClaim()) {
-            return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.OwnerNameForWildernessClaims);
+    // returns a friendly owner name (for admin claims, returns "an administrator" as the owner)
+    @Override
+    public Text getOwnerName() {
+        if (this.isWilderness()) {
+            return GriefPreventionPlugin.instance.messageData.ownerWilderness.toText();
         }
 
         if (this.isAdminClaim()) {
-            return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.OwnerNameForAdminClaims);
+            return GriefPreventionPlugin.instance.messageData.ownerAdmin.toText();
         }
 
-        if (this.parent != null) {
+        if (this.isSubdivision()) {
             return this.parent.getOwnerName();
         }
 
         if (this.getOwnerPlayerData() == null) {
-            return "[unknown]";
+            return Text.of("[unknown]");
         }
 
-        return this.getOwnerPlayerData().getPlayerName();
+        return Text.of(this.getOwnerPlayerData().getPlayerName());
     }
 
     // whether or not a location is in a claim
     // ignoreHeight = true means location UNDER the claim will return TRUE
-    // excludeSubdivisions = true means that locations inside subdivisions of the claim will return FALSE
-    public boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeSubdivisions) {
+    // excludeChildren = true means that locations inside subdivisions of the claim will return FALSE
+    @Override
+    public boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeChildren) {
         if (this.isCuboid()) {
             return this.contains(location);
         }
@@ -895,29 +606,30 @@ public class GPClaim implements Claim {
             return false;
         }
 
-        // additional check for subdivisions
-        // you're only in a subdivision when you're also in its parent claim
-        // NOTE: if a player creates subdivions then resizes the parent claim,
-        // it's possible that
-        // a subdivision can reach outside of its parent's boundaries. so this
-        // check is important!
-        if (this.parent != null && this.getData().doesInheritParent()) {
+        // additional check for children claims, you're only in a child claim when you're also in its parent claim
+        // NOTE: if a player creates children then resizes the parent claim,
+        // it's possible that a child can reach outside of its parent's boundaries. so this check is important!
+        if (this.parent != null && (this.getData() == null || (this.getData() != null && this.getData().doesInheritParent()))) {
             return this.parent.contains(location, ignoreHeight, false);
         }
 
-        // code to exclude subdivisions in this check
-        else if (excludeSubdivisions) {
-            // search all subdivisions to see if the location is in any of them
-            for (int i = 0; i < this.children.size(); i++) {
-                // if we find such a subdivision, return false
-                if (this.children.get(i).contains(location, ignoreHeight, true)) {
-                    return false;
-                }
-            }
+        return true;
+    }
+
+    public boolean isClaimOnBorder(GPClaim claim) {
+        if (claim.cuboid) {
+            return false;
         }
 
-        // otherwise yes
-        return true;
+        boolean result = claim.lesserBoundaryCorner.getBlockX() == this.lesserBoundaryCorner.getBlockX() ||
+               claim.greaterBoundaryCorner.getBlockX() == this.greaterBoundaryCorner.getBlockX() ||
+               claim.lesserBoundaryCorner.getBlockZ() == this.lesserBoundaryCorner.getBlockZ() ||
+               claim.greaterBoundaryCorner.getBlockZ() == this.greaterBoundaryCorner.getBlockZ();
+        if (claim.cuboid) {
+            result = claim.lesserBoundaryCorner.getBlockY() == this.lesserBoundaryCorner.getBlockY() ||
+                    claim.greaterBoundaryCorner.getBlockY() == this.greaterBoundaryCorner.getBlockY();
+        }
+        return result;
     }
 
     // 3d cuboid check
@@ -934,11 +646,7 @@ public class GPClaim implements Claim {
                 z >= this.lesserBoundaryCorner.getBlockZ() &&
                 z <= this.greaterBoundaryCorner.getBlockZ());
 
-        if (!inClaim) {
-            return false;
-        }
-
-        return true;
+        return inClaim;
     }
 
     @Override
@@ -948,28 +656,47 @@ public class GPClaim implements Claim {
             return false;
         }
 
-        if (this.parent != null && otherClaim.parent != null && this.parent.id != otherClaim.parent.id) {
+        // Handle claims entirely within a town
+        if (this.isTown() && !otherClaim.isTown() && otherClaim.isInside(this)) {
+            return false;
+        }
+
+        //verify that no claim's lesser boundary point is inside this new claim, to cover the "existing claim is entirely inside new claim" case
+        if(this.contains(otherClaim.getLesserBoundaryCorner(), true, false)) {
             return true;
         }
 
-        int smallX = otherClaim.getLesserBoundaryCorner().getBlockX();
-        int smallY = otherClaim.getLesserBoundaryCorner().getBlockY();
-        int smallZ = otherClaim.getLesserBoundaryCorner().getBlockZ();
-        int bigX = otherClaim.getGreaterBoundaryCorner().getBlockX();
-        int bigY = otherClaim.getGreaterBoundaryCorner().getBlockY();
-        int bigZ = otherClaim.getGreaterBoundaryCorner().getBlockZ();
+        return this.isBandingAcross(otherClaim);
+    }
 
-        //first, check the corners of this claim aren't inside any existing claims
-        boolean ignoreHeight = otherClaim.isCuboid() ? false : true;
-        if(otherClaim.contains(this.lesserBoundaryCorner, ignoreHeight, false)) return true;
-        if(otherClaim.contains(this.greaterBoundaryCorner, ignoreHeight, false)) return true;
-        if(otherClaim.contains(new Location<World>(this.world, this.lesserBoundaryCorner.getBlockX(), 0, this.greaterBoundaryCorner.getBlockZ()), true, false)) return true;
-        if(otherClaim.contains(new Location<World>(this.world, this.greaterBoundaryCorner.getBlockX(), 0, this.lesserBoundaryCorner.getBlockZ()), true, false)) return true;
+    //Checks if claim bands across another claim, either horizontally or vertically
+    public boolean isBandingAcross(GPClaim otherClaim) {
+        final boolean isClaimInside = otherClaim.isInside(this);
+        if (isClaimInside) {
+            return false;
+        }
 
-        //verify that no claim's lesser boundary point is inside this new claim, to cover the "existing claim is entirely inside new claim" case
-        if(this.contains(otherClaim.getLesserBoundaryCorner(), true, false)) return true;
+        final int smallX = otherClaim.getLesserBoundaryCorner().getBlockX();
+        final int smallY = otherClaim.getLesserBoundaryCorner().getBlockY();
+        final int smallZ = otherClaim.getLesserBoundaryCorner().getBlockZ();
+        final int bigX = otherClaim.getGreaterBoundaryCorner().getBlockX();
+        final int bigY = otherClaim.getGreaterBoundaryCorner().getBlockY();
+        final int bigZ = otherClaim.getGreaterBoundaryCorner().getBlockZ();
+        final boolean ignoreHeight = otherClaim.isCuboid() ? false : true;
 
-        //verify this claim doesn't band across an existing claim, either horizontally or vertically
+        if(this.contains(otherClaim.lesserBoundaryCorner, ignoreHeight, false)) {
+            return true;
+        }
+        if(this.contains(otherClaim.greaterBoundaryCorner, ignoreHeight, false)) {
+            return true;
+        }
+        if(this.contains(new Location<World>(this.world, smallX, 0, bigZ), true, false)) {
+            return true;
+        }
+        if(this.contains(new Location<World>(this.world, bigX, 0, smallZ), true, false)) {
+            return true;
+        }
+
         boolean inArea = false;
         if(this.getLesserBoundaryCorner().getBlockZ() <= bigZ &&
            this.getLesserBoundaryCorner().getBlockZ() >= smallZ &&
@@ -1013,9 +740,32 @@ public class GPClaim implements Claim {
         return false;
     }
 
+    @Override
+    public boolean isInside(Claim claim) {
+        final GPClaim otherClaim = (GPClaim) claim;
+        final boolean ignoreHeight = this.isCuboid() ? false : true;
+        if(!otherClaim.contains(this.lesserBoundaryCorner, ignoreHeight, false)) {
+            return false;
+        }
+        if(!otherClaim.contains(this.greaterBoundaryCorner, ignoreHeight, false)) {
+            return false;
+        }
+
+        final int lesserY = ignoreHeight ? 0 : this.lesserBoundaryCorner.getBlockY();
+        final int greaterY = ignoreHeight ? 0 : this.greaterBoundaryCorner.getBlockY();
+        if(!otherClaim.contains(new Location<World>(this.world, this.lesserBoundaryCorner.getBlockX(), lesserY, this.greaterBoundaryCorner.getBlockZ()), true, false)) {
+            return false;
+        }
+        if(!otherClaim.contains(new Location<World>(this.world, this.greaterBoundaryCorner.getBlockX(), greaterY, this.lesserBoundaryCorner.getBlockZ()), true, false)) {
+            return false;
+        }
+
+        return true;
+    }
+
     // whether more entities may be added to a claim
-    public String allowMoreEntities() {
-        if (this.parent != null) {
+    public Text allowMoreEntities() {
+        if (this.isSubdivision()) {
             return this.parent.allowMoreEntities();
         }
 
@@ -1030,14 +780,14 @@ public class GPClaim implements Claim {
         }
 
         // don't apply this rule to very large claims
-        if (this.getArea() > 10000) {
+        if (this.getArea() > 2560000) {
             return null;
         }
 
         // determine maximum allowable entity count, based on claim size
-        int maxEntities = this.getArea() / 50;
+        int maxEntities = this.getArea() / 12800;
         if (maxEntities == 0) {
-            return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.ClaimTooSmallForEntities);
+            return GriefPreventionPlugin.instance.messageData.claimTooSmallEntities.toText();
         }
 
         // count current entities (ignoring players)
@@ -1057,37 +807,13 @@ public class GPClaim implements Claim {
         }
 
         if (totalEntities > maxEntities) {
-            return GriefPreventionPlugin.instance.dataStore.getMessage(Messages.TooManyEntitiesInClaim);
+            return GriefPreventionPlugin.instance.messageData.claimTooManyEntities.toText();
         }
 
         return null;
     }
 
-    // implements a strict ordering of claims, used to keep the claims
-    // collection sorted for faster searching
-    boolean greaterThan(GPClaim otherClaim) {
-        Location<World> thisCorner = this.getLesserBoundaryCorner();
-        Location<World> otherCorner = otherClaim.getLesserBoundaryCorner();
-
-        if (thisCorner.getBlockX() > otherCorner.getBlockX()) {
-            return true;
-        }
-
-        if (thisCorner.getBlockX() < otherCorner.getBlockX()) {
-            return false;
-        }
-
-        if (thisCorner.getBlockZ() > otherCorner.getBlockZ()) {
-            return true;
-        }
-
-        if (thisCorner.getBlockZ() < otherCorner.getBlockZ()) {
-            return false;
-        }
-
-        return thisCorner.getExtent().getUniqueId().compareTo(otherCorner.getExtent().getUniqueId()) < 0;
-    }
-
+    @Override
     public ArrayList<Chunk> getChunks() {
         ArrayList<Chunk> chunks = new ArrayList<Chunk>();
 
@@ -1109,6 +835,11 @@ public class GPClaim implements Claim {
         }
 
         return chunks;
+    }
+
+    @Override
+    public Set<Long> getChunkHashes() {
+        return this.getChunkHashes(true);
     }
 
     public Set<Long> getChunkHashes(boolean refresh) {
@@ -1138,6 +869,15 @@ public class GPClaim implements Claim {
         return this.claimData;
     }
 
+    @Nullable
+    public TownDataConfig getTownData() {
+        if (!(this.claimData instanceof TownDataConfig)) {
+            return null;
+        }
+
+        return (TownDataConfig) this.claimData;
+    }
+
     public ClaimStorageData getClaimStorage() {
         return this.claimStorage;
     }
@@ -1151,21 +891,10 @@ public class GPClaim implements Claim {
     }
 
     public void updateClaimStorageData() {
-        // owner
-        if (!this.isSubdivision()) {
-            this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
-        } else {
-            if (this.claimData == null) {
-                this.setClaimData(new SubDivisionDataConfig(this));
-            }
-
-            this.claimStorage.getConfig().getSubdivisions().put(this.id, (SubDivisionDataConfig) this.claimData);
-        }
-
-        if (this.isBasicClaim()) {
+        if (!this.isAdminClaim()) {
             this.claimStorage.getConfig().setOwnerUniqueId(this.getOwnerUniqueId());
         }
-
+        this.claimStorage.getConfig().setWorldUniqueId(this.world.getUniqueId());
         this.claimData.setCuboid(this.cuboid);
         this.claimData.setType(this.type);
         this.claimData.setLesserBoundaryCorner(BlockUtils.positionToString(this.lesserBoundaryCorner));
@@ -1173,8 +902,8 @@ public class GPClaim implements Claim {
         // Will save next world save
         this.claimData.setRequiresSave(true);
         // Update SubdivisionData
-        for (Claim subdivision : this.children) {
-            ((GPClaim) subdivision).updateClaimStorageData();
+        for (Claim child : this.children) {
+            ((GPClaim) child).updateClaimStorageData();
         }
     }
 
@@ -1265,7 +994,7 @@ public class GPClaim implements Claim {
         if (this.isAdminClaim()) {
             // convert to basic
             this.type = ClaimType.BASIC;
-            this.getVisualizer().setType(VisualizationType.Claim);
+            this.getVisualizer().setType(VisualizationType.CLAIM);
             this.claimData.setType(ClaimType.BASIC);
         }
 
@@ -1276,8 +1005,8 @@ public class GPClaim implements Claim {
 
         this.claimData.setOwnerUniqueId(newOwnerID);
         if (this.isBasicClaim()) {
-            ownerData.getClaims().remove(this);
-            newOwnerData.getClaims().add(this);
+            ownerData.getInternalClaims().remove(this);
+            newOwnerData.getInternalClaims().add(this);
         }
 
         this.ownerPlayerData = newOwnerData;
@@ -1286,63 +1015,239 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult createSubdivision(Vector3i lesserBoundary, Vector3i greaterBoundary, UUID ownerUniqueId, boolean cuboid, Cause cause) {
-        GPClaim subdivision = new GPClaim(this.world, lesserBoundary, greaterBoundary, ClaimType.SUBDIVISION, ownerUniqueId, cuboid, this);
-        GPCreateClaimEvent event = new GPCreateClaimEvent(subdivision, cause);
+    public ClaimResult createChild(Vector3i lesserBoundary, Vector3i greaterBoundary, UUID ownerUniqueId, boolean cuboid, ClaimType type, Cause cause) {
+        GPClaim childClaim = new GPClaim(this.world, lesserBoundary, greaterBoundary, type, ownerUniqueId, cuboid, this);
+        GPCreateClaimEvent event = new GPCreateClaimEvent(childClaim, cause);
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
-            return new GPClaimResult(subdivision, ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+            return new GPClaimResult(childClaim, ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
-        Claim overlapClaim = subdivision.doesClaimOverlap();
-        if (overlapClaim != null) {
-            return new GPClaimResult(overlapClaim, ClaimResultType.OVERLAPPING_CLAIM);
+        final ClaimResult result = childClaim.checkArea(false);
+        if (!result.successful()) {
+            return result;
         }
 
-        subdivision.initializeClaimData(this);
-        this.children.add(subdivision);
-        this.getClaimStorage().save();
+        childClaim.initializeClaimData(this);
+        final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.getWorld().getProperties());
+        if (this.isTown()) {
+            childClaim.getData().setInheritParent(true);
+        }
+        childClaim.getData().setParent(this.id);
+        claimManager.addClaim(childClaim, true);
 
-        return new GPClaimResult(subdivision, ClaimResultType.SUCCESS);
+        if (result.getClaims().size() > 1) {
+            childClaim.migrateClaims(new ArrayList<>(result.getClaims()));
+        }
+
+        return new GPClaimResult(childClaim, ClaimResultType.SUCCESS);
     }
 
-    public Claim doesClaimOverlap() {
-        if (this.isSubdivision() && !this.isCuboid()) {
-            return null;
+    public ClaimResult doesClaimOverlap() {
+        if (this.parent != null) {
+            final GPClaim parentClaim = (GPClaim) this.parent;
+            // 1 - Make sure new claim is inside parent
+            if (!this.isInside(parentClaim)) {
+                return new GPClaimResult(parentClaim, ClaimResultType.OVERLAPPING_CLAIM);
+            }
+
+            // 2 - Check parent children
+            for (Claim child : parentClaim.children) {
+                final GPClaim childClaim = (GPClaim) child;
+                if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
+                    return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                }
+            }
+            return new GPClaimResult(this, ClaimResultType.SUCCESS);
         }
 
-        Claim parent = this.getParent().orElse(null);
-        GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-        Set<Long> chunkHashes = ((GPClaim) this).getChunkHashes(false);
+        final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        final Set<Long> chunkHashes = this.getChunkHashes(true);
+
+        // Since there is no parent we need to check all claims stored in chunk hashes
         for (Long chunkHash : chunkHashes) {
-            Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
+            Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
             if (claimsInChunk == null || claimsInChunk.size() == 0) {
                 continue;
             }
-
-            for (GPClaim otherClaim : claimsInChunk) {
-                if (otherClaim.getUniqueId().equals(this.getUniqueId())) {
-                    continue;
-                }
-                // if we find an existing claim which will be overlapped
-                if (parent != null && otherClaim.getUniqueId() == parent.getUniqueId()) {
-                    // check children
-                    for (Claim subdivision : otherClaim.children) {
-                        if (this.overlaps(subdivision) || subdivision.overlaps(this)) {
-                            // result = fail, return conflicting claim
-                            return subdivision;
-                        }
-                    }
-                }
-
-                if ((parent == null || (parent != null && otherClaim.id != parent.getUniqueId())) && (this.overlaps(otherClaim) || otherClaim.overlaps(this))) {
-                    // result = fail, return conflicting claim
-                    return otherClaim;
+            for (Claim child : claimsInChunk) {
+                final GPClaim gpChild = (GPClaim) child;
+                // First check if newly resized claim is crossing another
+                if (this.isBandingAcross(gpChild) || gpChild.isBandingAcross(this)) {
+                    return new GPClaimResult(child, ClaimResultType.OVERLAPPING_CLAIM);
                 }
             }
         }
 
-        return null;
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    // Scans area for any overlaps and migrates children to a newly created or resized claim
+    public ClaimResult checkArea(boolean resize) {
+        final List<Claim> claimsInArea = new ArrayList<>();
+        claimsInArea.add(this);
+
+        if (this.parent != null) {
+            if (this.isClaimOnBorder(this.parent)) {
+                return new GPClaimResult(this.parent, ClaimResultType.OVERLAPPING_CLAIM);
+            }
+            final GPClaim parentClaim = (GPClaim) this.parent;
+            // 1 - Make sure new claim is inside parent
+            if (!this.isInside(parentClaim)) {
+                return new GPClaimResult(parentClaim, ClaimResultType.OVERLAPPING_CLAIM);
+            }
+
+            // 2 - Check parent children
+            for (Claim child : parentClaim.children) {
+                final GPClaim childClaim = (GPClaim) child;
+                if (this.equals(child)) {
+                    continue;
+                }
+                if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
+                    return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                }
+                if (childClaim.isInside(this)) {
+                    if (this.type.equals(childClaim.type)) {
+                        return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    }
+                    if (!this.isSubdivision()) {
+                        claimsInArea.add(childClaim);
+                    }
+                }
+                // ignore claims not inside
+            }
+
+            if (resize) {
+                // Make sure children are still within their parent
+                final List<Claim> claimsToMigrate = new ArrayList<>();
+                for (Claim child : this.children) {
+                    GPClaim childClaim = (GPClaim) child;
+                    if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
+                        return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    }
+                    if (!childClaim.isInside(this)) {
+                        if (this.parent != null) {
+                            claimsToMigrate.add(childClaim);
+                        } else {
+                            childClaim.parent = null;
+                            this.children.remove(childClaim);
+                            final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+                            claimWorldManager.addClaim(childClaim, true);
+                        }
+                    }
+                }
+                if (!claimsToMigrate.isEmpty()) {
+                    this.parent.migrateClaims(claimsToMigrate);
+                }
+            }
+            return new GPClaimResult(claimsInArea, ClaimResultType.SUCCESS);
+        }
+
+        final List<Claim> claimsToMigrate = new ArrayList<>();
+        // First check children
+        for (Claim child : this.children) {
+            final GPClaim childClaim = (GPClaim) child;
+            if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
+                return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+            }
+            if (childClaim.isInside(this)) {
+                if (this.type.equals(childClaim.type)) {
+                    return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                }
+            } else {
+                // child is no longer within parent
+                // if resizing, migrate the child claim out
+                if (resize) {
+                    claimsToMigrate.add(childClaim);
+                } else {
+                    return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                }
+            }
+        }
+
+        if (!claimsToMigrate.isEmpty()) {
+            this.worldClaimManager.getWildernessClaim().migrateClaims(claimsToMigrate);
+        }
+
+        final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        final Set<Long> chunkHashes = this.getChunkHashes(true);
+
+        // Since there is no parent we need to check all claims stored in chunk hashes
+        for (Long chunkHash : chunkHashes) {
+            Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
+            if (claimsInChunk == null || claimsInChunk.size() == 0) {
+                continue;
+            }
+            for (Claim chunkClaim : claimsInChunk) {
+                final GPClaim gpChunkClaim = (GPClaim) chunkClaim;
+                if (gpChunkClaim.equals(this)) {
+                    continue;
+                }
+
+                // First check if newly resized claim is crossing another
+                if (this.isBandingAcross(gpChunkClaim) || gpChunkClaim.isBandingAcross(this)) {
+                    return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                }
+                if (gpChunkClaim.isInside(this)) {
+                    if (this.type.equals(gpChunkClaim.type)) {
+                        return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    }
+                    if (!this.canEnclose(gpChunkClaim)) {
+                        return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    }
+                    if (!this.isSubdivision()) {
+                        claimsInArea.add(gpChunkClaim);
+                    }
+                }
+            }
+        }
+
+        return new GPClaimResult(claimsInArea, ClaimResultType.SUCCESS);
+    }
+
+    public boolean canEnclose(Claim claim) {
+        if (claim.isWilderness()) {
+            return false;
+        }
+        if (this.isSubdivision()) {
+            return false;
+        }
+        if (this.isBasicClaim()) {
+            if (!this.isSubdivision()) {
+                return false;
+            }
+            return true;
+        }
+        if (this.isTown()) {
+            if (claim.isAdminClaim()) {
+                return false;
+            }
+            return true;
+        }
+        if (this.isAdminClaim()) {
+            if (claim.isAdminClaim()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Checks to see if the passed in claim is a parent of this claim
+    @Override
+    public boolean isParent(Claim claim) {
+        if (this.parent == null) {
+            return false;
+        }
+
+        GPClaim parent = this.parent;
+        while (parent != null) {
+            if (parent.getUniqueId().equals(claim.getUniqueId())) {
+                return true;
+            }
+            parent = parent.parent;
+        }
+
+        return false;
     }
 
     @Override
@@ -1354,11 +1259,12 @@ public class GPClaim implements Claim {
         Location<World> startCorner = null;
         Location<World> endCorner = null;
         GPPlayerData playerData = null;
+        Player player = null;
         if (!(cause.root() instanceof Player)) {
             startCorner = new Location<World>(this.world, newx1, newy1, newz1);
             endCorner = new Location<World>(this.world, newx2, newy2, newz2);
         } else {
-            Player player = (Player) cause.root();
+            player = (Player) cause.root();
             playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             startCorner = playerData.lastShovelLocation;
             endCorner = playerData.endShovelLocation;
@@ -1400,15 +1306,48 @@ public class GPClaim implements Claim {
         Location<World> currentGreaterCorner = this.getGreaterBoundaryCorner();
         Location<World> newLesserCorner = new Location<World>(this.world, smallx, smally, smallz);
         Location<World> newGreaterCorner = new Location<World>(this.world, bigx, bigy, bigz);
-        GPResizeClaimEvent event = new GPResizeClaimEvent(this, cause, startCorner, endCorner, 
-                new GPClaim(newLesserCorner.copy(), newGreaterCorner.copy(), this.type, this.cuboid));
+
+        this.lesserBoundaryCorner = newLesserCorner;
+        this.greaterBoundaryCorner = newGreaterCorner;
+        //if (!this.isSubdivision() || (this.isSubdivision() && overlapClaim.isSubdivision())) {
+        final ClaimResult result = this.checkArea(true);
+        if (!result.successful()) {
+            this.lesserBoundaryCorner = currentLesserCorner;
+            this.greaterBoundaryCorner = currentGreaterCorner;
+            return result;
+        }
+
+        // check player has enough claim blocks
+        if ((this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
+            int remainingClaimBlocks = playerData.getRemainingClaimBlocks();
+            if (remainingClaimBlocks < 0 || (this.getArea() > remainingClaimBlocks)) {
+                if (player != null) {
+                    final int neededBlocks = this.getArea() - remainingClaimBlocks;
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimResizeNeedBlocks
+                            .apply(ImmutableMap.of(
+                            "amount", neededBlocks)).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                }
+                playerData.lastShovelLocation = null;
+                playerData.claimResizing = null;
+                this.lesserBoundaryCorner = currentLesserCorner;
+                this.greaterBoundaryCorner = currentGreaterCorner;
+                return new GPClaimResult(ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS);
+            }
+        }
+
+        GPResizeClaimEvent event = new GPResizeClaimEvent(this, cause, startCorner, endCorner, this);
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
+            this.lesserBoundaryCorner = currentLesserCorner;
+            this.greaterBoundaryCorner = currentGreaterCorner;
             return new GPClaimResult(this, ClaimResultType.CLAIM_EVENT_CANCELLED);
         }
 
         ClaimResult claimResult = checkSizeLimits(playerData, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition());
         if (!claimResult.successful()) {
+            this.lesserBoundaryCorner = currentLesserCorner;
+            this.greaterBoundaryCorner = currentGreaterCorner;
             return claimResult;
         }
 
@@ -1416,42 +1355,24 @@ public class GPClaim implements Claim {
         // This needs to be adjusted before we check for overlaps
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
-        ArrayList<Claim> claimsToCheck = null;
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-        if (this.parent == null) {
-            claimsToCheck = (ArrayList<Claim>) claimWorldManager.getWorldClaims();
-        }
-        if (claimsToCheck != null) {
-            for (int i = 0; i < claimsToCheck.size(); i++) {
-                Claim otherClaim = claimsToCheck.get(i);
-
-                // if we find an existing claim which will be overlapped
-                if (otherClaim.getUniqueId() != this.id && otherClaim.overlaps(this)) {
-                    // revert boundary locations
-                    this.lesserBoundaryCorner = currentLesserCorner;
-                    this.greaterBoundaryCorner = currentGreaterCorner;
-                    // result = fail, return conflicting claim
-                    return new GPClaimResult(otherClaim, ClaimResultType.OVERLAPPING_CLAIM);
-                }
-            }
-        }
 
         // resize validated, remove invalid chunkHashes
         Set<Long> newChunkHashes = this.getChunkHashes(true);
         if (this.parent == null) {
             currentChunkHashes.removeAll(newChunkHashes);
             for (Long chunkHash : currentChunkHashes) {
-                Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
+                Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk != null && claimsInChunk.size() > 0) {
                     claimsInChunk.remove(this);
                 }
             }
             // add new chunk hashes
             for (Long chunkHash : newChunkHashes) {
-                Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
+                Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk == null) {
                     claimsInChunk = new HashSet<>();
-                    claimWorldManager.getChunksToClaimsMap().put(chunkHash, claimsInChunk);
+                    claimWorldManager.getInternalChunksToClaimsMap().put(chunkHash, claimsInChunk);
                 }
     
                 claimsInChunk.add(this);
@@ -1463,6 +1384,9 @@ public class GPClaim implements Claim {
         this.claimData.setRequiresSave(true);
         this.getClaimStorage().save();
 
+        if (result.getClaims().size() > 1) {
+            this.migrateClaims(new ArrayList<>(result.getClaims()));
+        }
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -1513,9 +1437,9 @@ public class GPClaim implements Claim {
 
         // make sure resize doesn't cross paths
         if (smallX >= bigX || smallY >= bigY || smallZ >= bigZ) {
-            return null;
+            return new GPClaimResult(this, ClaimResultType.OVERLAPPING_CLAIM);
         }
-        // check if subdivision extends past parent limits
+        // check if child extends past parent limits
         if (this.parent != null) {
             if (smallX < this.parent.getLesserBoundaryCorner().getBlockX() ||
                 smallY < this.parent.getLesserBoundaryCorner().getBlockY() ||
@@ -1529,45 +1453,55 @@ public class GPClaim implements Claim {
             }
         }
 
-        Set<Long> currentChunkHashes = this.getChunkHashes(false);
+        Location<World> currentLesserCorner = this.lesserBoundaryCorner;
+        Location<World> currentGreaterCorner = this.greaterBoundaryCorner;
         Location<World> newLesserCorner = new Location<World>(this.world, smallX, smallY, smallZ);
         Location<World> newGreaterCorner = new Location<World>(this.world, bigX, bigY, bigZ);
-        Claim overlapClaim = this.doesClaimOverlap();
-        if (overlapClaim != null) {
-            return new GPClaimResult(overlapClaim, ClaimResultType.OVERLAPPING_CLAIM);
+        this.lesserBoundaryCorner = newLesserCorner;
+        this.greaterBoundaryCorner = newGreaterCorner;
+        final ClaimResult result = this.checkArea(true);
+        if (!result.successful()) {
+            this.lesserBoundaryCorner = currentLesserCorner;
+            this.greaterBoundaryCorner = currentGreaterCorner;
+            return result;
         }
 
         GPResizeClaimEvent event = new GPResizeClaimEvent(this, cause, startCorner, endCorner, 
                 new GPClaim(newLesserCorner.copy(), newGreaterCorner.copy(), this.type, this.cuboid));
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
+            this.lesserBoundaryCorner = currentLesserCorner;
+            this.greaterBoundaryCorner = currentGreaterCorner;
             return new GPClaimResult(this, ClaimResultType.CLAIM_EVENT_CANCELLED);
         }
 
         ClaimResult claimResult = checkSizeLimits(playerData, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition());
         if (!claimResult.successful()) {
+            this.lesserBoundaryCorner = currentLesserCorner;
+            this.greaterBoundaryCorner = currentGreaterCorner;
             return claimResult;
         }
 
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
         // resize validated, remove invalid chunkHashes
+        Set<Long> currentChunkHashes = this.getChunkHashes(false);
         Set<Long> newChunkHashes = this.getChunkHashes(true);
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
         if (this.parent == null) {
             currentChunkHashes.removeAll(newChunkHashes);
             for (Long chunkHash : currentChunkHashes) {
-                Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
+                Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk != null && claimsInChunk.size() > 0) {
                     claimsInChunk.remove(this);
                 }
             }
             // add new chunk hashes
             for (Long chunkHash : newChunkHashes) {
-                Set<GPClaim> claimsInChunk = claimWorldManager.getChunksToClaimsMap().get(chunkHash);
+                Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk == null) {
                     claimsInChunk = new HashSet<>();
-                    claimWorldManager.getChunksToClaimsMap().put(chunkHash, claimsInChunk);
+                    claimWorldManager.getInternalChunksToClaimsMap().put(chunkHash, claimsInChunk);
                 }
 
                 claimsInChunk.add(this);
@@ -1578,26 +1512,56 @@ public class GPClaim implements Claim {
         this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
         this.claimData.setRequiresSave(true);
         this.getClaimStorage().save();
-
+        if (result.getClaims().size() > 1) {
+            this.migrateClaims(new ArrayList<>(result.getClaims()));
+        }
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
     private ClaimResult checkSizeLimits(GPPlayerData playerData, Vector3i lesserCorner, Vector3i greaterCorner) {
-        if (playerData != null && playerData.optionMaxClaimSizeX > 0) {
+        if (playerData == null) {
+            return new GPClaimResult(ClaimResultType.SUCCESS);
+        }
+
+        final Subject subject = playerData.getPlayerSubject();
+        Double maxClaimX = GPOptionHandler.getClaimOptionDouble(subject, this, GPOptions.Type.CLAIM_SIZE_X, playerData);
+        Double maxClaimY = GPOptionHandler.getClaimOptionDouble(subject, this, GPOptions.Type.CLAIM_SIZE_Y, playerData);
+        Double maxClaimZ = GPOptionHandler.getClaimOptionDouble(subject, this, GPOptions.Type.CLAIM_SIZE_Z, playerData);
+
+        Player player = subject instanceof Player ? (Player) subject : null;
+        if (maxClaimX > 0) {
             int claimWidth = greaterCorner.getX() - lesserCorner.getX() + 1;
-            if (claimWidth > playerData.optionMaxClaimSizeX) {
+            if (claimWidth > maxClaimX) {
+                if (player != null) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateMaxX
+                            .apply(ImmutableMap.of(
+                            "maxCoordX", maxClaimX)).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                }
                 return new GPClaimResult(ClaimResultType.EXCEEDS_MAX_SIZE_X);
             }
         }
-        if (this.cuboid && playerData != null && playerData.optionMaxClaimSizeY > 0) {
+        if (this.cuboid && maxClaimY > 0) {
             int claimWidth = greaterCorner.getY() - lesserCorner.getY() + 1;
-            if (claimWidth > playerData.optionMaxClaimSizeY) {
+            if (claimWidth > maxClaimY) {
+                if (player != null) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateMaxY
+                            .apply(ImmutableMap.of(
+                            "maxCoordY", maxClaimY)).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                }
                 return new GPClaimResult(ClaimResultType.EXCEEDS_MAX_SIZE_Y);
             }
         }
-        if (playerData != null && playerData.optionMaxClaimSizeZ > 0) {
+        if (maxClaimZ > 0) {
             int claimWidth = greaterCorner.getZ() - lesserCorner.getZ() + 1;
-            if (claimWidth > playerData.optionMaxClaimSizeZ) {
+            if (claimWidth > maxClaimZ) {
+                if (player != null) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateMaxZ
+                            .apply(ImmutableMap.of(
+                            "maxCoordZ", maxClaimZ)).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                }
                 return new GPClaimResult(ClaimResultType.EXCEEDS_MAX_SIZE_Z);
             }
         }
@@ -1609,13 +1573,33 @@ public class GPClaim implements Claim {
         // clear any references
         this.world = null;
         if (this.ownerPlayerData != null) {
-            this.ownerPlayerData.getClaims().remove(this);
+            this.ownerPlayerData.getInternalClaims().remove(this);
         }
     }
 
     @Override
     public Context getContext() {
         return this.context;
+    }
+ 
+    public Context getInheritContext() {
+        if (this.parent == null || !this.getData().doesInheritParent()) {
+            return this.context;
+        }
+
+        return this.parent.getInheritContext();
+    }
+
+    public boolean hasAdminParent() {
+        if (this.parent == null || this.isAdminClaim()) {
+            return false;
+        }
+
+        if (this.parent.isAdminClaim()) {
+            return true;
+        }
+
+        return this.parent.hasAdminParent();
     }
 
     @Override
@@ -1661,115 +1645,199 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public List<Claim> getSubdivisions() {
+    public List<Claim> getChildren(boolean recursive) {
+        if (recursive) {
+            List<Claim> claimList = new ArrayList<>(this.children);
+            List<Claim> subChildren = new ArrayList<>();
+            for (Claim child : claimList) {
+                GPClaim childClaim = (GPClaim) child;
+                if (!childClaim.children.isEmpty()) {
+                    subChildren.addAll(childClaim.getChildren(true));
+                }
+            }
+            claimList.addAll(subChildren);
+            return claimList;
+        }
         return ImmutableList.copyOf(this.children);
     }
 
     @Override
-    public ClaimResult deleteSubdivision(Claim subdivision, Cause cause) {
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(subdivision, cause);
-        SpongeImpl.postEvent(event);
-        if (event.isCancelled()) {
-            return new GPClaimResult(subdivision, ClaimResultType.CLAIM_EVENT_CANCELLED);
+    public List<Claim> getParents(boolean recursive) {
+        List<Claim> parents = new ArrayList<>();
+        GPClaim currentClaim = this;
+        while (currentClaim.parent != null) {
+            parents.add(currentClaim.parent);
+            currentClaim = currentClaim.parent;
         }
 
-        Claim parentClaim = subdivision.getParent().orElse(null);
-        if (parentClaim == null) {
-            return new GPClaimResult(subdivision, ClaimResultType.WRONG_CLAIM_TYPE);
-        }
-
-        if (parentClaim.getUniqueId() != this.id) {
-            return new GPClaimResult(parentClaim, ClaimResultType.PARENT_CLAIM_MISMATCH);
-        }
-
-        this.deleteSubdivision(subdivision, true);
-        return new GPClaimResult(subdivision, ClaimResultType.SUCCESS);
+        // Index 0 is highest parent while last index represents direct
+        Collections.reverse(parents);
+        return ImmutableList.copyOf(parents);
     }
 
-    public void deleteSubdivision(Claim subdivision, boolean save) {
-
-        Iterator<Claim> iterator = this.children.iterator();
-        while (iterator.hasNext()) {
-            Claim claim = iterator.next();
-            if (claim.getUniqueId().equals(subdivision.getUniqueId())) {
-                iterator.remove();
-                this.getClaimStorage().getConfig().getSubdivisions().remove(claim.getUniqueId());
-                if (save) {
-                    this.getClaimStorage().save();
-                }
-                return;
-            }
+    public List<Claim> getInheritedParents() {
+        List<Claim> parents = new ArrayList<>();
+        GPClaim currentClaim = this;
+        while (currentClaim.parent != null && currentClaim.getData().doesInheritParent()) {
+            parents.add(currentClaim.parent);
+            currentClaim = currentClaim.parent;
         }
 
-        return;
+        // Index 0 is highest parent while last index represents direct
+        Collections.reverse(parents);
+        return parents;
     }
 
     @Override
-    public ClaimResult convertToType(ClaimType type, Optional<UUID> owner) {
-        if (this.isWilderness()) {
-            return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, Text.of(TextColors.RED, "The wilderness cannot be converted."));
-        }
-        if (this.isSubdivision()) {
-            return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, Text.of(TextColors.RED, "Subdivisions cannot be converted."));
-        }
-        if (type == ClaimType.WILDERNESS) {
-            return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, Text.of(TextColors.RED, "Claims cannot be converted to wilderness."));
-        }
-        if (type == ClaimType.SUBDIVISION) {
-            return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, Text.of(TextColors.RED, "Claims cannot be converted to subdivisions."));
-        }
-        if (type == ClaimType.TOWN) {
-            return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, Text.of(TextColors.RED, "The town type is currently unsupported."));
+    public ClaimResult deleteSubdivision(Claim child, Cause cause) {
+        return this.deleteChild(child, cause);
+    }
+
+    @Override
+    public ClaimResult deleteChild(Claim child, Cause cause) {
+        boolean found = false;
+        for (Claim childClaim : this.children) {
+            if (childClaim.getUniqueId().equals(child.getUniqueId())) {
+                found = true;
+            }
         }
 
-        if (this.isAdminClaim()) {
-            if (type == ClaimType.ADMIN) {
-                return new GPClaimResult(ClaimResultType.CLAIM_ALREADY_EXISTS, Text.of(TextColors.RED, "Could not convert, claim is already an admin claim."));
-            }
-            if (!owner.isPresent()) {
-                return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to basic. Owner is required."));
-            }
-
-            UUID newOwnerUniqueId = owner.get();
-            GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-            List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(newOwnerUniqueId);
-            if (playerClaims != null && !playerClaims.contains(this)) {
-                playerClaims.add(this);
-            }
-
-            this.type = ClaimType.BASIC;
-            this.setOwnerUniqueId(newOwnerUniqueId);
-            this.visualization = null;
-            this.claimData.setOwnerUniqueId(newOwnerUniqueId);
-            this.claimData.setType(ClaimType.BASIC);
+        if (!found) {
+            return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND);
         }
-        if (isBasicClaim()) {
-            if (type == ClaimType.BASIC) {
-                return new GPClaimResult(ClaimResultType.CLAIM_ALREADY_EXISTS, Text.of(TextColors.RED, "Could not convert, claim is already a basic claim."));
-            }
 
-            GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-            List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(this.getOwnerUniqueId());
+        GPDeleteClaimEvent event = new GPDeleteClaimEvent(child, cause);
+        SpongeImpl.postEvent(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(child, ClaimResultType.CLAIM_EVENT_CANCELLED);
+        }
+
+        final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        claimManager.deleteClaim(child, true);
+        return new GPClaimResult(event.getClaims(), ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult deleteChildren(Cause cause) {
+        return this.deleteChildren(null, cause);
+    }
+
+    @Override
+    public ClaimResult deleteChildren(ClaimType claimType, Cause cause) {
+        List<Claim> claimList = new ArrayList<>();
+        for (Claim child : this.children) {
+            if (claimType == null || child.getType() == claimType) {
+                claimList.add(child);
+            }
+        }
+
+        if (claimList.isEmpty()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND);
+        }
+
+        GPDeleteClaimEvent event = new GPDeleteClaimEvent(claimList, cause);
+        SpongeImpl.postEvent(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(claimList, ClaimResultType.CLAIM_EVENT_CANCELLED);
+        }
+
+        final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        for (Claim child : claimList) {
+            claimManager.deleteClaim(child, true);
+        }
+
+        return new GPClaimResult(event.getClaims(), ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult changeType(ClaimType type, Optional<UUID> ownerUniqueId) {
+        if (type == this.type) {
+            return new GPClaimResult(ClaimResultType.SUCCESS);
+        }
+
+        switch (type) {
+            case ADMIN : 
+                if (this.parent != null && this.parent.isAdminClaim()) {
+                    final Text message = Text.of(TextColors.RED, "Admin claims cannot have direct admin children claims.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                break;
+            case BASIC :
+                if (this.isAdminClaim() && !ownerUniqueId.isPresent()) {
+                    return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to basic. Owner is required."));
+                }
+                if (this.parent != null && this.parent.isBasicClaim()) {
+                    final Text message = Text.of(TextColors.RED, "Basic claims cannot have direct basic children claims.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                break;
+            case SUBDIVISION :
+                if (this.parent == null) {
+                    final Text message = Text.of(TextColors.RED, "Subdivisions cannot be created in the wilderness.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                if (this.isAdminClaim() && !ownerUniqueId.isPresent()) {
+                    return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to subdivision. Owner is required."));
+                }
+                break;
+            case TOWN :
+                if (this.parent != null && this.parent.isTown()) {
+                    final Text message = Text.of(TextColors.RED, "Towns cannot contain children towns.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                break;
+            case WILDERNESS :
+                final Text message = Text.of(TextColors.RED, "You cannot change a claim to WILDERNESS.");
+                return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+        }
+
+        final String fileName = this.getClaimStorage().filePath.getFileName().toString();
+        final Path newPath = this.getClaimStorage().folderPath.getParent().resolve(type.name().toLowerCase()).resolve(fileName);
+        try {
+            Files.createDirectories(newPath.getParent());
+            Files.move(this.getClaimStorage().filePath, newPath);
+            this.setClaimStorage(new ClaimStorageData(newPath, this.getWorldUniqueId(), (ClaimDataConfig) this.getInternalClaimData()));
+            this.getClaimStorage().save();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND, Text.of(e.getMessage()));
+        }
+
+        final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        final UUID ownerUUID = ownerUniqueId.orElse(GriefPreventionPlugin.ADMIN_USER_UUID);
+        final List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(ownerUUID);
+        if (type == ClaimType.ADMIN) {
             if (playerClaims != null) {
                 playerClaims.remove(this);
             }
+        } else {
+            if (playerClaims != null && !playerClaims.contains(this)) {
+                playerClaims.add(this);
+            }
+        }
 
-            this.visualization = null;
-            this.setOwnerUniqueId(null);
-            this.type = ClaimType.ADMIN;
-            this.claimData.setType(ClaimType.ADMIN);
+        final GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(ownerUUID);
+        final Player player = Sponge.getServer().getPlayer(ownerUUID).orElse(null);
+        if (player != null) {
+            playerData.revertActiveVisual(player);
         }
         // revert visuals for all players watching this claim
         List<UUID> playersWatching = new ArrayList<>(this.playersWatching);
         for (UUID playerUniqueId : playersWatching) {
-            Player player = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
-            if (player != null) {
-                GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, playerUniqueId);
-                playerData.revertActiveVisual(player);
+            final Player spongePlayer = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
+            if (spongePlayer != null) {
+                playerData.revertActiveVisual(spongePlayer);
             }
         }
+
+        if (ownerUUID != GriefPreventionPlugin.ADMIN_USER_UUID) {
+            this.setOwnerUniqueId(ownerUUID);
+        }
+        this.setType(type);
+        this.visualization = null;
+        this.getInternalClaimData().setRequiresSave(true);
         this.getClaimStorage().save();
-        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+        return new GPClaimResult(ClaimResultType.SUCCESS);
     }
 
     @Override
@@ -1791,7 +1859,7 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public List<UUID> getAllTrusts() {
+    public List<UUID> getUserTrusts() {
         List<UUID> trustList = new ArrayList<>();
         trustList.addAll(this.claimData.getAccessors());
         trustList.addAll(this.claimData.getContainers());
@@ -1801,50 +1869,141 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public List<UUID> getTrusts(TrustType type) {
-        if (type == TrustType.ACCESSOR) {
-            return ImmutableList.copyOf(this.claimData.getAccessors());
-        }
-        if (type == TrustType.CONTAINER) {
-            return ImmutableList.copyOf(this.claimData.getContainers());
-        }
-        if (type == TrustType.BUILDER) {
-            return ImmutableList.copyOf(this.claimData.getBuilders());
-        }
-
-        return ImmutableList.copyOf(this.claimData.getManagers());
+    public List<UUID> getUserTrusts(TrustType type) {
+        return ImmutableList.copyOf(this.getUserTrustList(type));
     }
 
     @Override
-    public boolean isTrusted(UUID uniqueId) {
-        if (uniqueId == null) {
+    public boolean isUserTrusted(User user, TrustType type) {
+        return isUserTrusted(user, type, null);
+    }
+
+    @Override
+    public boolean isUserTrusted(UUID uuid, TrustType type) {
+        final User user = GriefPreventionPlugin.getOrCreateUser(uuid);
+        return isUserTrusted(user, type, null);
+    }
+
+    public boolean isUserTrusted(User user, TrustType type, Set<Context> contexts) {
+        if (user == null) {
             return false;
         }
 
-        // check user access
-        if (uniqueId.equals(this.ownerUniqueId) || this.claimData.getAccessors().contains(uniqueId) || this.claimData.getBuilders().contains(uniqueId)
-                || this.claimData.getContainers().contains(uniqueId) || this.claimData.getManagers().contains(uniqueId)) {
+        if (user.getUniqueId().equals(this.getOwnerUniqueId())) {
             return true;
         }
 
-        // check public access
-        if (this.claimData.getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID) || this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)
-                || this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
+        if (this.isAdminClaim() && playerData.canManageAdminClaims) {
+            if (playerData.debugClaimPermissions) {
+                return false;
+            }
+
             return true;
+        }
+        if (this.isWilderness() && playerData.canManageWilderness) {
+            if (playerData.debugClaimPermissions) {
+                return false;
+            }
+
+            return true;
+        }
+
+        if (playerData.canIgnoreClaim(this)) {
+            return true;
+        }
+
+        // check public
+        if (this.claimData.getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+            return true;
+        }
+        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+            return true;
+        }
+        if (this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+            return true;
+        }
+        if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+            return true;
+        }
+        if (type == TrustType.ACCESSOR) {
+            if (this.claimData.getAccessors().contains(user.getUniqueId())) {
+                return true;
+            }
+            if (this.claimData.getBuilders().contains(user.getUniqueId())) {
+                return true;
+            }
+            if (this.claimData.getContainers().contains(user.getUniqueId())) {
+                return true;
+            }
+            if (this.claimData.getManagers().contains(user.getUniqueId())) {
+                return true;
+            }
+        } else if (type == TrustType.BUILDER) {
+            if (this.claimData.getBuilders().contains(user.getUniqueId())) {
+                return true;
+            }
+            if (this.claimData.getManagers().contains(user.getUniqueId())) {
+                return true;
+            }
+        } else if (type == TrustType.CONTAINER) {
+            if (this.claimData.getContainers().contains(user.getUniqueId())) {
+                return true;
+            }
+            if (this.claimData.getBuilders().contains(user.getUniqueId())) {
+                return true;
+            }
+            if (this.claimData.getManagers().contains(user.getUniqueId())) {
+                return true;
+            }
+        } else if (type == TrustType.MANAGER) {
+            if (this.claimData.getManagers().contains(user.getUniqueId())) {
+                return true;
+            }
+        }
+
+        if (contexts == null) {
+            contexts = new HashSet<>();
+            contexts.add(this.getContext());
+        }
+
+        if (user.hasPermission(contexts, GPPermissions.getTrustPermission(type))) {
+            return true;
+        }
+
+        if (this.parent != null) {
+            return this.parent.isUserTrusted(user, type, contexts);
         }
 
         return false;
     }
 
     @Override
-    public ClaimResult addTrust(UUID uuid, TrustType type, Cause cause) {
-        GPTrustClaimEvent.Add event = new GPTrustClaimEvent.Add(this, cause, ImmutableList.of(uuid), type);
+    public boolean isGroupTrusted(String group, TrustType type) {
+        if (group == null) {
+            return false;
+        }
+
+        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+            return false;
+        }
+
+        final Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        Set<Context> contexts = new HashSet<>();
+        contexts.add(this.getContext());
+
+        return subj.hasPermission(contexts, GPPermissions.getTrustPermission(type));
+    }
+
+    @Override
+    public ClaimResult addUserTrust(UUID uuid, TrustType type, Cause cause) {
+        GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(this, cause, ImmutableList.of(uuid), type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
-        List<UUID> userList = this.getTrustList(type);
+        List<UUID> userList = this.getUserTrustList(type);
         if (!userList.contains(uuid)) {
             userList.add(uuid);
         }
@@ -1853,15 +2012,15 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult addTrusts(List<UUID> uuids, TrustType type, Cause cause) {
-        GPTrustClaimEvent.Add event = new GPTrustClaimEvent.Add(this, cause, uuids, type);
+    public ClaimResult addUserTrusts(List<UUID> uuids, TrustType type, Cause cause) {
+        GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(this, cause, uuids, type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
         for (UUID uuid : uuids) {
-            List<UUID> userList = this.getTrustList(type);
+            List<UUID> userList = this.getUserTrustList(type);
             if (!userList.contains(uuid)) {
                 userList.add(uuid);
             }
@@ -1871,42 +2030,26 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeTrust(UUID uuid, TrustType type, Cause cause) {
-        GPTrustClaimEvent.Remove event = new GPTrustClaimEvent.Remove(this, cause, ImmutableList.of(uuid), type);
+    public ClaimResult removeUserTrust(UUID uuid, TrustType type, Cause cause) {
+        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, cause, ImmutableList.of(uuid), type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
-        this.getTrustList(type).remove(uuid);
+        this.getUserTrustList(type).remove(uuid);
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
     @Override
-    public ClaimResult removeAllTrusts(Cause cause) {
-        List<UUID> trustList = this.getAllTrusts();
-        GPTrustClaimEvent.Remove event = new GPTrustClaimEvent.Remove(this, cause, trustList, TrustType.NONE);
+    public ClaimResult removeUserTrusts(List<UUID> uuids, TrustType type, Cause cause) {
+        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, cause, uuids, type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
-        for (TrustType type : TrustType.values()) {
-            this.getTrustList(type).clear();
-        }
-
-        return new GPClaimResult(this, ClaimResultType.SUCCESS);
-    }
-
-    @Override
-    public ClaimResult removeTrusts(List<UUID> uuids, TrustType type, Cause cause) {
-        GPTrustClaimEvent.Remove event = new GPTrustClaimEvent.Remove(this, cause, uuids, type);
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
-        }
-
-        List<UUID> userList = this.getTrustList(type);
+        List<UUID> userList = this.getUserTrustList(type);
         for (UUID uuid : uuids) {
             if (userList.contains(uuid)) {
                 userList.remove(uuid);
@@ -1916,7 +2059,130 @@ public class GPClaim implements Claim {
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
-    public List<UUID> getTrustList(TrustType type) {
+    @Override
+    public ClaimResult addGroupTrust(String group, TrustType type, Cause cause) {
+        GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(this, cause, ImmutableList.of(group), type);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        List<String> groupList = this.getGroupTrustList(type);
+        if (!groupList.contains(group)) {
+            groupList.add(group);
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult addGroupTrusts(List<String> groups, TrustType type, Cause cause) {
+        GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(this, cause, groups, type);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        for (String group : groups) {
+            List<String> groupList = this.getGroupTrustList(type);
+            if (!groupList.contains(group)) {
+                groupList.add(group);
+            }
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult removeGroupTrust(String group, TrustType type, Cause cause) {
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, ImmutableList.of(group), type);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        this.getGroupTrustList(type).remove(group);
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult removeGroupTrusts(List<String> groups, TrustType type, Cause cause) {
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, groups, type);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        List<String> groupList = this.getGroupTrustList(type);
+        for (String group : groups) {
+            if (groupList.contains(group)) {
+                groupList.remove(group);
+            }
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult removeAllTrusts(Cause cause) {
+        List<UUID> userTrustList = this.getUserTrusts();
+        GPUserTrustClaimEvent.Remove userEvent = new GPUserTrustClaimEvent.Remove(this, cause, userTrustList, TrustType.NONE);
+        Sponge.getEventManager().post(userEvent);
+        if (userEvent.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, userEvent.getMessage().orElse(null));
+        }
+
+        List<String> groupTrustList = this.getGroupTrusts();
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, groupTrustList, TrustType.NONE);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        for (TrustType type : TrustType.values()) {
+            this.getUserTrustList(type).clear();
+        }
+
+        for (TrustType type : TrustType.values()) {
+            this.getGroupTrustList(type).clear();
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult removeAllUserTrusts(Cause cause) {
+        List<UUID> trustList = this.getUserTrusts();
+        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, cause, trustList, TrustType.NONE);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        for (TrustType type : TrustType.values()) {
+            this.getUserTrustList(type).clear();
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    @Override
+    public ClaimResult removeAllGroupTrusts(Cause cause) {
+        List<String> trustList = this.getGroupTrusts();
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, trustList, TrustType.NONE);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        for (TrustType type : TrustType.values()) {
+            this.getGroupTrustList(type).clear();
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    public List<UUID> getUserTrustList(TrustType type) {
         if (type == TrustType.ACCESSOR) {
             return this.claimData.getAccessors();
         }
@@ -1929,13 +2195,119 @@ public class GPClaim implements Claim {
         return this.claimData.getManagers();
     }
 
+    public List<UUID> getParentUserTrustList(TrustType type) {
+        List<UUID> userList = new ArrayList<>();
+        for (Claim claim : this.getInheritedParents()) {
+            GPClaim parentClaim = (GPClaim) claim;
+            userList.addAll(parentClaim.getUserTrusts(type));
+        }
+        return userList;
+    }
+
+    public List<String> getParentGroupTrustList(TrustType type) {
+        List<String> trustList = new ArrayList<>();
+        for (Claim claim : this.getInheritedParents()) {
+            GPClaim parentClaim = (GPClaim) claim;
+            trustList.addAll(parentClaim.getGroupTrusts(type));
+        }
+        return trustList;
+    }
+
+    public List<UUID> getUserTrustList(TrustType type, boolean includeParents) {
+        List<UUID> trustList = new ArrayList<>();
+        if (type == TrustType.ACCESSOR) {
+            trustList.addAll(this.claimData.getAccessors());
+        }
+        if (type == TrustType.CONTAINER) {
+            trustList.addAll(this.claimData.getContainers());
+        }
+        if (type == TrustType.BUILDER) {
+            trustList.addAll(this.claimData.getBuilders());
+        } else {
+            trustList.addAll(this.claimData.getManagers());
+        }
+
+        if (includeParents) {
+            List<UUID> parentList = getParentUserTrustList(type);
+            for (UUID uuid : parentList) {
+                if (!trustList.contains(uuid)) {
+                    trustList.add(uuid);
+                }
+            }
+        }
+
+        return trustList;
+    }
+
+    public List<String> getGroupTrustList(TrustType type) {
+        return this.getGroupTrustList(type, false);
+    }
+
+    public List<String> getGroupTrustList(TrustType type, boolean includeParents) {
+        List<String> trustList = new ArrayList<>();
+        if (type == TrustType.ACCESSOR) {
+            trustList.addAll(this.claimData.getAccessorGroups());
+        }
+        if (type == TrustType.CONTAINER) {
+            trustList.addAll(this.claimData.getContainerGroups());
+        }
+        if (type == TrustType.BUILDER) {
+            trustList.addAll(this.claimData.getBuilderGroups());
+        } else {
+            trustList.addAll(this.claimData.getManagerGroups());
+        }
+
+        if (includeParents) {
+            List<String> parentList = getParentGroupTrustList(type);
+            for (String groupId : parentList) {
+                if (!trustList.contains(groupId)) {
+                    trustList.add(groupId);
+                }
+            }
+        }
+
+        return trustList;
+    }
+
+    @Override
+    public List<String> getGroupTrusts() {
+        List<String> groups = new ArrayList<>();
+        groups.addAll(this.getInternalClaimData().getAccessorGroups());
+        groups.addAll(this.getInternalClaimData().getBuilderGroups());
+        groups.addAll(this.getInternalClaimData().getContainerGroups());
+        groups.addAll(this.getInternalClaimData().getManagerGroups());
+        return ImmutableList.copyOf(groups);
+    }
+
+    @Override
+    public List<String> getGroupTrusts(TrustType type) {
+        return ImmutableList.copyOf(this.getGroupTrustList(type));
+    }
+
+    @Override
+    public Optional<Account> getEconomyAccount() {
+        if (this.isAdminClaim() || this.isSubdivision() || !GriefPreventionPlugin.getGlobalConfig().getConfig().claim.bankTaxSystem) {
+            return Optional.empty();
+        }
+
+        if (this.economyAccount != null) {
+            return Optional.of(this.economyAccount);
+        }
+        EconomyService economyService = GriefPreventionPlugin.instance.economyService.orElse(null);
+        if (economyService != null) {
+            this.economyAccount = economyService.getOrCreateAccount(this.claimStorage.filePath.getFileName().toString()).orElse(null);
+            return Optional.ofNullable(this.economyAccount);
+        }
+        return Optional.empty();
+    }
+
     public static class ClaimBuilder implements Builder {
 
         private UUID ownerUniqueId;
         private ClaimType type = ClaimType.BASIC;
         private boolean cuboid = false;
         private boolean requiresClaimBlocks = true;
-        private boolean sizeRestrictions = true;
+        private Boolean sizeRestrictions;
         private World world;
         private Vector3i point1;
         private Vector3i point2;
@@ -2022,21 +2394,61 @@ public class GPClaim implements Claim {
             if (this.type == ClaimType.SUBDIVISION) {
                 checkNotNull(this.parent);
             }
-
-            GPClaim claim = new GPClaim(this.world, this.point1, this.point2, this.type, this.ownerUniqueId, this.cuboid);
-            // ensure this new claim won't overlap any existing claims
-            GPClaim overlapClaim = (GPClaim) claim.doesClaimOverlap();
-            claim.parent = (GPClaim) this.parent;
-            if (overlapClaim != null) {
-                return new GPClaimResult(overlapClaim, ClaimResultType.OVERLAPPING_CLAIM);
+            if (this.sizeRestrictions == null) {
+                this.sizeRestrictions = this.type == ClaimType.ADMIN ? false : true;
             }
 
-            if (this.sizeRestrictions && this.ownerUniqueId != null) {
-                GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
-                ClaimResult claimResult = claim.checkSizeLimits(playerData, this.point1, this.point2);
-                if (!claimResult.successful()) {
-                    return claimResult;
-                }
+            GPClaim claim = new GPClaim(this.world, this.point1, this.point2, this.type, this.ownerUniqueId, this.cuboid);
+            claim.parent = (GPClaim) this.parent;
+            GPPlayerData playerData = null;
+            if (this.ownerUniqueId != null) {
+                 playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
+                 if (this.sizeRestrictions) {
+                     ClaimResult claimResult = claim.checkSizeLimits(playerData, this.point1, this.point2);
+                     if (!claimResult.successful()) {
+                         return claimResult;
+                     }
+                 }
+
+                 final User user = GriefPreventionPlugin.getOrCreateUser(this.ownerUniqueId);
+                 if (!user.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
+                     int createClaimLimit = GPOptionHandler.getClaimOptionDouble(user, playerData.claimSubdividing, GPOptions.CREATE_CLAIM_LIMIT_BASIC, playerData).intValue();
+                     if (createClaimLimit > 0 && (playerData.getInternalClaims().size() + 1) >= createClaimLimit) {
+                         return new GPClaimResult(claim, ClaimResultType.EXCEEDS_MAX_CLAIM_LIMIT);
+                     }
+                 }
+
+                 if (claim.isTown() && GriefPreventionPlugin.instance.economyService != null && this.cause.root() instanceof Player) {
+                     final Player player = (Player) this.cause.root();
+                     final double townCost = GriefPreventionPlugin.getGlobalConfig().getConfig().town.cost;
+                     if (townCost > 0) {
+                         Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
+                         if (playerAccount == null) {
+                             final Text message = GriefPreventionPlugin.instance.messageData.economyUserNotFound
+                                     .apply(ImmutableMap.of(
+                                     "user", claim.getOwnerName())).build();
+                             GriefPreventionPlugin.sendMessage(player, message);
+                             return new GPClaimResult(claim, ClaimResultType.NOT_ENOUGH_FUNDS);
+                         }
+                         final double balance = playerAccount.getBalance(GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency()).doubleValue();
+                         if (balance < townCost) {
+                             final Text message = GriefPreventionPlugin.instance.messageData.townCreateNotEnoughFunds
+                                     .apply(ImmutableMap.of(
+                                     "create_cost", townCost,
+                                     "balance", balance,
+                                     "amount_needed", townCost - balance)).build();
+                             GriefPreventionPlugin.sendMessage(player, message);
+                             return new GPClaimResult(claim, ClaimResultType.NOT_ENOUGH_FUNDS);
+                         }
+                         final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
+                         playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(townCost), Cause.source(player).build());
+                     }
+                 }
+            }
+
+            final ClaimResult result = claim.checkArea(false);
+            if (!result.successful()) {
+                return result;
             }
 
             GPCreateClaimEvent event = new GPCreateClaimEvent(claim, this.cause);
@@ -2047,7 +2459,283 @@ public class GPClaim implements Claim {
 
             claim.initializeClaimData((GPClaim) this.parent);
             claim.getData().setRequiresClaimBlocks(this.requiresClaimBlocks);
+            if (result.getClaims().size() > 1) {
+                claim.migrateClaims(new ArrayList<>(result.getClaims()));
+            }
+
             return new GPClaimResult(claim, ClaimResultType.SUCCESS);
         }
+    }
+
+    public boolean migrateClaims(List<Claim> claims) {
+        for (Claim child : claims) {
+            if (child.equals(this)) {
+                continue;
+            }
+
+            GPClaim childClaim = (GPClaim) child;
+            final String fileName = childClaim.getClaimStorage().filePath.getFileName().toString();
+            if (childClaim.parent != null) {
+                childClaim.parent.children.remove(child);
+            }
+            Path newPath = null;
+            if (this.isWilderness()) {
+                childClaim.parent = null;
+                childClaim.getClaimStorage().getConfig().setParent(null);
+                newPath = this.getClaimStorage().filePath.getParent().getParent().resolve(child.getType().name().toLowerCase()).resolve(fileName);
+            } else {
+                childClaim.parent = this;
+                childClaim.getClaimStorage().getConfig().setParent(this.getUniqueId());
+                this.children.add(child);
+                newPath = this.getClaimStorage().filePath.getParent().resolve(child.getType().name().toLowerCase()).resolve(fileName);
+            }
+
+            try {
+                Files.createDirectories(newPath.getParent());
+                Files.move(childClaim.getClaimStorage().filePath, newPath);
+                childClaim.setClaimStorage(new ClaimStorageData(newPath, this.getWorldUniqueId(), (ClaimDataConfig) childClaim.getInternalClaimData()));
+                childClaim.getClaimStorage().save();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+
+            final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+            if (!this.isWilderness()) {
+                claimWorldManager.removeClaimData(childClaim);
+            } else {
+                claimWorldManager.updateChunkHashes(childClaim);
+            }
+            // migrate admin children
+            if (!childClaim.children.isEmpty()) {
+                childClaim.migrateClaims(new ArrayList<>(childClaim.children));
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> clearPermissions(Subject subject, Cause cause) {
+        CompletableFuture<FlagResult> result = new CompletableFuture<>();
+        Set<Context> contexts = new HashSet<>();
+        for (Context context : ClaimContexts.CONTEXT_LIST) {
+            contexts.add(context);
+        }
+
+        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, GriefPreventionPlugin.GLOBAL_SUBJECT, contexts, cause);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
+            return result;
+        }
+
+        for (Context context : ClaimContexts.CONTEXT_LIST) {
+            contexts = new HashSet<>();
+            contexts.add(context);
+            contexts.add(this.world.getContext());
+            subject.getSubjectData().clearPermissions(contexts);
+        }
+
+        contexts = new HashSet<>();
+        contexts.add(this.getContext());
+        contexts.add(this.world.getContext());
+        subject.getSubjectData().clearPermissions(contexts);
+        result.complete(new GPFlagResult(FlagResultType.SUCCESS));
+        return result;
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> clearPermissions(Context context, Cause cause) {
+        return clearPermissions(GriefPreventionPlugin.GLOBAL_SUBJECT, context, cause);
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> clearPermissions(Subject subject, Context context, Cause cause) {
+        CompletableFuture<FlagResult> result = new CompletableFuture<>();
+        Set<Context> contexts = new HashSet<>();
+        contexts.add(context);
+        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, GriefPreventionPlugin.GLOBAL_SUBJECT, contexts, cause);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
+            return result;
+        }
+
+        contexts.add(this.world.getContext());
+        subject.getSubjectData().clearPermissions(contexts);
+        result.complete(new GPFlagResult(FlagResultType.SUCCESS));
+        return result;
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, Tristate value, Context context, Cause cause) {
+       return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, value, context, cause);
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, Tristate value, Context context, Cause cause) {
+        return setPermission(subject, flag, "any", value, context, cause);
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String target, Tristate value, Context context, Cause cause) {
+        return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, target, value, context, cause);
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Context context, Cause cause) {
+        if (target.equalsIgnoreCase("any:any")) {
+            target = "any";
+        }
+        CompletableFuture<FlagResult> result = new CompletableFuture<>();
+        if (target != null && !GriefPreventionPlugin.ID_MAP.containsKey(target)) {
+            result.complete(new GPFlagResult(FlagResultType.TARGET_NOT_VALID));
+            return result;
+        }
+        if (!ClaimContexts.CONTEXT_LIST.contains(context) && context != this.getContext()) {
+            result.complete(new GPFlagResult(FlagResultType.CONTEXT_NOT_VALID));
+            return result;
+        }
+
+        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, GriefPreventionPlugin.GLOBAL_SUBJECT, flag, null, target, value, context, cause);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
+            return result;
+        }
+
+        CommandSource commandSource = Sponge.getServer().getConsole();
+        Object root = cause.root();
+        if (root instanceof CommandSource) {
+            commandSource = (CommandSource) root;
+        }
+        result.complete(CommandHelper.addFlagPermission(commandSource, GriefPreventionPlugin.GLOBAL_SUBJECT, GriefPreventionPlugin.GLOBAL_SUBJECT.getIdentifier(), this, flag, null, target, value, context, null));
+        return result;
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause) {
+       return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, source, target, value, context, cause);
+    }
+
+    @Override
+    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause) {
+        return setPermission(subject, subject.getIdentifier(), flag, source, target, value, context, null, cause);
+    }
+
+    public CompletableFuture<FlagResult> setPermission(Subject subject, String friendlyName, ClaimFlag flag, String source, String target, Tristate value, Context context, Text reason, Cause cause) {
+        if (source != null && (source.equalsIgnoreCase("any:any") || source.equalsIgnoreCase("any"))) {
+            source = null;
+        }
+        if (target.equalsIgnoreCase("any:any")) {
+            target = "any";
+        }
+
+        CompletableFuture<FlagResult> result = new CompletableFuture<>();
+        if (source != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(source))) {
+            result.complete(new GPFlagResult(FlagResultType.SOURCE_NOT_VALID));
+            return result;
+        }
+        if (target != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(target))) {
+            result.complete(new GPFlagResult(FlagResultType.TARGET_NOT_VALID));
+            return result;
+        }
+        /*if (!ClaimContexts.CONTEXT_LIST.contains(context) && context != this.getContext()) {
+            result.complete(new GPFlagResult(FlagResultType.CONTEXT_NOT_VALID));
+            return result;
+        }*/
+
+        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, source, target, value, context, cause);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
+            return result;
+        }
+
+        CommandSource commandSource = Sponge.getServer().getConsole();
+        Object root = cause.root();
+        if (root instanceof CommandSource) {
+            commandSource = (CommandSource) root;
+        }
+        result.complete(CommandHelper.addFlagPermission(commandSource, subject, friendlyName, this, flag, source, target, value, context, reason));
+        return result;
+    }
+
+    @Override
+    public Tristate getPermissionValue(ClaimFlag flag, String source, String target, Context context) {
+        return getPermissionValue(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, source, target, context);
+    }
+
+    @Override
+    public Tristate getPermissionValue(Subject subject, ClaimFlag flag, String source, String target, Context context) {
+        if (source.equalsIgnoreCase("any:any") || source.equalsIgnoreCase("any")) {
+            source = null;
+        }
+        if (target.equalsIgnoreCase("any:any") || target.equalsIgnoreCase("any")) {
+            target = null;
+        }
+        if (subject != GriefPreventionPlugin.GLOBAL_SUBJECT && (context == this.getDefaultContext() || context == this.getOverrideContext())) {
+            return Tristate.UNDEFINED;
+        }
+        return GPPermissionHandler.getClaimPermission(this, flag, subject, source, target, context);
+    }
+
+    @Override
+    public Tristate getPermissionValue(ClaimFlag flag, String target, Context context) {
+        return getPermissionValue(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, target, context);
+    }
+
+    @Override
+    public Tristate getPermissionValue(Subject subject, ClaimFlag flag, String target, Context context) {
+        if (target.equalsIgnoreCase("any:any") || target.equalsIgnoreCase("any")) {
+            target = null;
+        }
+        if (subject != GriefPreventionPlugin.GLOBAL_SUBJECT && (context == this.getDefaultContext() || context == this.getOverrideContext())) {
+            return Tristate.UNDEFINED;
+        }
+        return GPPermissionHandler.getClaimPermission(this, flag, subject, null, target, context);
+    }
+
+    @Override
+    public Map<String, Boolean> getPermissions(Context context) {
+        return getPermissions(GriefPreventionPlugin.GLOBAL_SUBJECT, context);
+    }
+
+    @Override
+    public Map<String, Boolean> getPermissions(Subject subject, Context context) {
+        Set<Context> contexts = new HashSet<>();
+        contexts.add(context);
+        return subject.getSubjectData().getPermissions(contexts);
+    }
+
+    @Override
+    public Context getDefaultContext() {
+        if (this.isAdminClaim()) {
+            return ClaimContexts.ADMIN_DEFAULT_CONTEXT;
+        }
+        if (this.isBasicClaim() || this.isSubdivision()) {
+            return ClaimContexts.BASIC_DEFAULT_CONTEXT;
+        }
+        if (this.isTown()) {
+            return ClaimContexts.TOWN_DEFAULT_CONTEXT;
+        }
+
+        return ClaimContexts.WILDERNESS_DEFAULT_CONTEXT;
+    }
+
+    @Override
+    public Context getOverrideContext() {
+        if (this.isAdminClaim()) {
+            return ClaimContexts.ADMIN_OVERRIDE_CONTEXT;
+        }
+        if (this.isBasicClaim() || this.isSubdivision()) {
+            return ClaimContexts.BASIC_OVERRIDE_CONTEXT;
+        }
+        if (this.isTown()) {
+            return ClaimContexts.TOWN_OVERRIDE_CONTEXT;
+        }
+
+        return ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT;
     }
 }

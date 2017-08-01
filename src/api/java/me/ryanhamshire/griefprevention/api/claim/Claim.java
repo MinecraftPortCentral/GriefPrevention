@@ -27,18 +27,27 @@ package me.ryanhamshire.griefprevention.api.claim;
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.data.ClaimData;
+import me.ryanhamshire.griefprevention.api.data.EconomyData;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
+import org.spongepowered.api.service.economy.account.Account;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents a protected claim.
@@ -55,17 +64,15 @@ public interface Claim extends ContextSource {
     /**
      * Gets the claim owner's name.
      * 
-     * Note: {@link Type#ADMIN} and {@link Type#WILDERNESS} claims do not have
+     * Note: {@link ClaimType#ADMIN} and {@link ClaimType#WILDERNESS} claims do not have
      * owners. These claims should return a general name such as 'administrator'.
      * 
      * @return The name of claim owner, if available
      */
-    String getOwnerName();
+    Text getOwnerName();
 
     /**
      * Gets the claim's parent.
-     * 
-     * Note: Only {@link ClaimType#SUBDIVISION}'s have parent's.
      * 
      * @return The parent claim, if available
      */
@@ -91,6 +98,14 @@ public interface Claim extends ContextSource {
      * @return true if claim is cuboid
      */
     boolean isCuboid();
+
+    /**
+     * Checks if claim is parent
+     * 
+     * @param claim The claim to check
+     * @return true if claim is parent
+     */
+    boolean isParent(Claim claim);
 
     /**
      * Gets the claim's area in blocks.
@@ -151,29 +166,36 @@ public interface Claim extends ContextSource {
      */
     ClaimResult transferOwner(UUID ownerUniqueId);
 
-    default ClaimResult convertToType(ClaimType type) {
-        return convertToType(type, Optional.empty());
+    /**
+     * Attempts to change claim to another type.
+     * 
+     * Note: If changing an {@link ClaimType#ADMIN} claim, owner is required.
+     * 
+     * @param type The new claim type
+     * @return The claim result
+     */
+    default ClaimResult changeType(ClaimType type) {
+        return changeType(type, Optional.empty());
     }
 
     /**
-     * Attempts to convert claim to {@link ClaimType#ADMIN} type.
+     * Attempts to change claim to another type and owner.
      * 
-     * Note: Both {@link ClaimType#WILDERNESS} and {@link ClaimType#SUBDIVISION} cannot be converted
-     * to {@link ClaimType#ADMIN}.
-     * If changing a {@link ClaimType#ADMIN} to {@link ClaimType#BASIC}, owner is required.
+     * Note: {@link ClaimType#WILDERNESS} cannot be changed.
+     * If changing an {@link ClaimType#ADMIN} claim, owner is required.
      * 
      * @param type The new claim type
      * @param owner The owner to set
      * @return The claim result
      */
-    ClaimResult convertToType(ClaimType type, Optional<UUID> owner);
+    ClaimResult changeType(ClaimType type, Optional<UUID> owner);
 
     /**
      * Resizes a claim.
      * 
      * @param startCornerLoc The start corner location
      * @param endCornerLoc The end corner location
-     * @return
+     * @return The claim result
      */
     default ClaimResult resize(Location<World> startCornerLoc, Location<World> endCornerLoc, Cause cause) {
         return this.resize(startCornerLoc.getBlockPosition(), endCornerLoc.getBlockPosition(), cause);
@@ -184,7 +206,7 @@ public interface Claim extends ContextSource {
      * 
      * @param startCornerPos The start corner block position
      * @param endCornerPos The end corner block position
-     * @return
+     * @return The claim result
      */
     default ClaimResult resize(Vector3i startCornerPos, Vector3i endCornerPos, Cause cause) {
         return this.resize(startCornerPos.getX(), endCornerPos.getX(), startCornerPos.getY(), endCornerPos.getY(), startCornerPos.getZ(), endCornerPos.getZ(), cause);
@@ -205,7 +227,7 @@ public interface Claim extends ContextSource {
     ClaimResult resize(int x1, int x2, int y1, int y2, int z1, int z2, Cause cause);
 
     /**
-     * Creates a subdivision.
+     * Creates a child claim.
      * 
      * @param point1 The first point
      * @param point2 The second point
@@ -213,31 +235,77 @@ public interface Claim extends ContextSource {
      * @param cuboid Whether claim is 3D
      * @return The claim result
      */
-    ClaimResult createSubdivision(Vector3i point1, Vector3i point2, UUID owner, boolean cuboid, Cause cause);
+    ClaimResult createChild(Vector3i point1, Vector3i point2, UUID owner, boolean cuboid, ClaimType type, Cause cause);
 
     /**
-     * Gets an immutable list of subdivisions.
+     * Gets an immutable list of child claims.
      * 
-     * Note: This will return an empty list if no subdivisions
+     * Note: This will return an empty list if no child claims
      * are found.
      * 
-     * @return The immutable list of subdivisions
+     * @param recursive Whether to recursively scan for children
+     * @return The immutable list of child claims
      */
-    List<Claim> getSubdivisions();
+    List<Claim> getChildren(boolean recursive);
+
+    /**
+     * Gets an immutable list of parent claims.
+     * 
+     * Note: This will return an empty list if no parent claims
+     * are found.
+     * 
+     * @param recursive Whether to recursively scan for parents
+     * @return The immutable list of parent claims
+     */
+    List<Claim> getParents(boolean recursive);
 
     /**
      * Gets an immutable list of all trusted users.
      * 
      * @return An immutable list of all trusted users
      */
-    List<UUID> getAllTrusts();
+    @Deprecated
+    default List<UUID> getAllTrusts() {
+        return this.getUserTrusts();
+    }
 
     /**
      * Gets an immutable list of trusted users for {@link TrustType}.
      * 
      * @return An immutable list of trusted users
      */
-    List<UUID> getTrusts(TrustType type);
+    @Deprecated
+    default List<UUID> getTrusts(TrustType type) {
+        return this.getUserTrusts(type);
+    }
+
+    /**
+     * Gets an immutable list of all trusted users.
+     * 
+     * @return An immutable list of all trusted users
+     */
+    List<UUID> getUserTrusts();
+
+    /**
+     * Gets an immutable list of trusted users for {@link TrustType}.
+     * 
+     * @return An immutable list of trusted users
+     */
+    List<UUID> getUserTrusts(TrustType type);
+
+    /**
+     * Gets an immutable list of all trusted groups.
+     * 
+     * @return An immutable list of all trusted groups
+     */
+    List<String> getGroupTrusts();
+
+    /**
+     * Gets an immutable list of trusted groups for {@link TrustType}.
+     * 
+     * @return An immutable list of trusted groups
+     */
+    List<String> getGroupTrusts(TrustType type);
 
     /**
      * Grants claim trust to the UUID for given {@link TrustType}.
@@ -247,7 +315,10 @@ public interface Claim extends ContextSource {
      * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult addTrust(UUID uuid, TrustType type, Cause cause);
+    @Deprecated
+    default ClaimResult addTrust(UUID uuid, TrustType type, Cause cause) {
+        return this.addUserTrust(uuid, type, cause);
+    }
 
     /**
      * Grants claim trust to the list of UUID's for given {@link TrustType}.
@@ -257,7 +328,10 @@ public interface Claim extends ContextSource {
      * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult addTrusts(List<UUID> uuid, TrustType type, Cause cause);
+    @Deprecated
+    default ClaimResult addTrusts(List<UUID> uuid, TrustType type, Cause cause) {
+        return this.addUserTrusts(uuid, type, cause);
+    }
 
     /**
      * Removes UUID from claim trust for given {@link TrustType}.
@@ -267,7 +341,10 @@ public interface Claim extends ContextSource {
      * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeTrust(UUID uuid, TrustType type, Cause cause);
+    @Deprecated
+    default ClaimResult removeTrust(UUID uuid, TrustType type, Cause cause) {
+        return this.removeUserTrust(uuid, type, cause);
+    }
 
     /**
      * Removes the list of UUID's from claim trust for given {@link TrustType}.
@@ -277,7 +354,10 @@ public interface Claim extends ContextSource {
      * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeTrusts(List<UUID> uuid, TrustType type, Cause cause);
+    @Deprecated
+    default ClaimResult removeTrusts(List<UUID> uuid, TrustType type, Cause cause) {
+        return this.removeUserTrusts(uuid, type, cause);
+    }
 
     /**
      * Clears all trusts for claim.
@@ -288,28 +368,206 @@ public interface Claim extends ContextSource {
     ClaimResult removeAllTrusts(Cause cause);
 
     /**
-     * Checks if the {@link UUID} is trusted in claim.
+     * Clears all user trusts for claim.
+     * 
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeAllUserTrusts(Cause cause);
+
+    /**
+     * Clears all group trusts for claim.
+     * 
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeAllGroupTrusts(Cause cause);
+
+    /**
+     * Grants claim trust to the UUID for given {@link TrustType}.
+     * 
+     * @param uuid The UUID of user
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult addUserTrust(UUID uuid, TrustType type, Cause cause);
+
+    /**
+     * Grants claim trust to the list of UUID's for given {@link TrustType}.
+     * 
+     * @param uuid The list of user UUID's
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult addUserTrusts(List<UUID> uuid, TrustType type, Cause cause);
+
+    /**
+     * Removes UUID from claim trust for given {@link TrustType}.
+     * 
+     * @param uuid The UUID of user
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeUserTrust(UUID uuid, TrustType type, Cause cause);
+
+    /**
+     * Removes the list of UUID's from claim trust for given {@link TrustType}.
+     * 
+     * @param uuid The list of user UUID's
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeUserTrusts(List<UUID> uuid, TrustType type, Cause cause);
+
+    /**
+     * Grants claim trust to the group for given {@link TrustType}.
+     * 
+     * @param group The group
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult addGroupTrust(String group, TrustType type, Cause cause);
+
+    /**
+     * Grants claim trust to the list of groups for given {@link TrustType}.
+     * 
+     * @param groups The list of groups
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult addGroupTrusts(List<String> groups, TrustType type, Cause cause);
+
+    /**
+     * Removes a group from claim trust for given {@link TrustType}.
+     * 
+     * @param group The group
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeGroupTrust(String group, TrustType type, Cause cause);
+
+    /**
+     * Removes the list of UUID's from claim trust for given {@link TrustType}.
+     * 
+     * @param groups The list of groups
+     * @param type The trust type
+     * @param cause The plugin cause
+     * @return The claim result
+     */
+    ClaimResult removeGroupTrusts(List<String> groups, TrustType type, Cause cause);
+
+    /**
+     * Checks if the {@link UUID} is able to build in claim.
      * 
      * @param uuid The uuid to check
      * @return Whether the uuid is trusted
      */
-    boolean isTrusted(UUID uuid);
+    default boolean isTrusted(UUID uuid) {
+        return this.isUserTrusted(uuid, TrustType.BUILDER);
+    }
 
+    /**
+     * Checks if the {@link UUID} is trusted with given {@link TrustType}.
+     * 
+     * @param uuid The uuid to check
+     * @param type The minimum trust required
+     * @return Whether the uuid is trusted
+     */
+    boolean isUserTrusted(UUID uuid, TrustType type);
+
+    /**
+     * Checks if the user is trusted with given {@link TrustType}.
+     * 
+     * @param user The user to check
+     * @param type The minimum trust required
+     * @return Whether the user is trusted
+     */
+    boolean isUserTrusted(User user, TrustType type);
+
+    /**
+     * Checks if the group is trusted in claim.
+     * 
+     * @param group The group to check
+     * @return Whether the group is trusted
+     */
+    default boolean isGroupTrusted(String group) {
+        return isGroupTrusted(group, TrustType.BUILDER);
+    }
+
+    /**
+     * Checks if the group is trusted with given {@link TrustType}.
+     * 
+     * @param group The group to check
+     * @param type The minimum trust required
+     * @return Whether the group is trusted
+     */
+    boolean isGroupTrusted(String group, TrustType type);
+
+    /**
+     * Checks if this type is {@link ClaimType#ADMIN}.
+     * 
+     * @return true if admin claim
+     */
     default boolean isAdminClaim() {
         return this.getType() == ClaimType.ADMIN;
     }
 
+    /**
+     * Checks if this type is {@link ClaimType#BASIC}.
+     * 
+     * @return true if basic claim
+     */
     default boolean isBasicClaim() {
         return this.getType() == ClaimType.BASIC;
     }
 
+    /**
+     * Checks if this type is {@link ClaimType#SUBDIVISION}.
+     * 
+     * @return true if subdivision
+     */
     default boolean isSubdivision() {
         return this.getType() == ClaimType.SUBDIVISION;
     }
 
+    /**
+     * Checks if this type is {@link ClaimType#TOWN}.
+     * 
+     * @return true if town
+     */
+    default boolean isTown() {
+        return this.getType() == ClaimType.TOWN;
+    }
+
+    /**
+     * Checks if this type is {@link ClaimType#WILDERNESS}.
+     * 
+     * @return true if wilderness
+     */
     default boolean isWilderness() {
         return this.getType() == ClaimType.WILDERNESS;
     }
+
+    /**
+     * Checks if this claim is within a town.
+     * 
+     * @return true if this claim is within a town
+     */
+    boolean isInTown();
+
+    /**
+     * Gets the town this claim is in.
+     * 
+     * @return the town this claim is in, if any
+     */
+    Optional<Claim> getTown();
 
     /**
      * Checks if the location is within this claim.
@@ -320,10 +578,10 @@ public interface Claim extends ContextSource {
      * 
      * @param location
      * @param ignoreHeight
-     * @param excludeSubdivisions
+     * @param excludeChildren
      * @return Whether this claim contains the passed location
      */
-    boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeSubdivisions);
+    boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeChildren);
 
     /**
      * Checks if this claim overlaps another.
@@ -335,9 +593,7 @@ public interface Claim extends ContextSource {
     boolean overlaps(Claim otherClaim);
 
     /**
-     * Extends a claim downward.
-     * 
-     * Note: By default, 2D claims do not extend to bedrock.
+     * Extends a cuboid claim downward.
      * 
      * @param newDepth The new depth
      * @return Whether the extension was successful
@@ -345,11 +601,54 @@ public interface Claim extends ContextSource {
     boolean extend(int newDepth);
 
     /**
+     * Checks if this claim is within another claim.
+     * 
+     * @param otherClaim The other claim
+     * @return Whether this claim is inside other claim
+     */
+    boolean isInside(Claim otherClaim);
+
+    /**
+     * Gets the chunk hashes this claim contains.
+     * 
+     * @return The set of chunk hashes
+     */
+    Set<Long> getChunkHashes();
+
+    /**
+     * Deletes all children claims.
+     * 
+     * @param cause The cause for deletion
+     * @return The result of deletion
+     */
+    ClaimResult deleteChildren(Cause cause);
+
+    /**
+     * Deletes all children claims of a specific {@link ClaimType}.
+     * 
+     * @param cause The cause for deletion
+     * @param type The type of claims to delete
+     * @return The result of deletion
+     */
+    ClaimResult deleteChildren(ClaimType type, Cause cause);
+
+    /**
+     * Deletes a child claim.
+     * 
+     * @param child The child claim to be deleted
+     * @param cause The cause for deletion
+     * @return The result of deletion
+     */
+    ClaimResult deleteChild(Claim child, Cause cause);
+
+    /**
      * Deletes the subdivision.
      * 
      * @param subdivision The subdivision to be deleted
+     * @param cause The cause for deletion
      * @return The result of deletion
      */
+    @Deprecated
     ClaimResult deleteSubdivision(Claim subdivision, Cause cause);
 
     /**
@@ -360,7 +659,7 @@ public interface Claim extends ContextSource {
     ClaimData getData();
 
     /**
-     * Gets the {@link Type} of claim.
+     * Gets the {@link ClaimType} of claim.
      * 
      * @return The claim type
      */
@@ -379,7 +678,7 @@ public interface Claim extends ContextSource {
     /**
      * Gets the claim owner's {@link UUID}.
      * 
-     * Note: {@link Type#ADMIN} and {@link Type#WILDERNESS} claims do not have
+     * Note: {@link ClaimType#ADMIN} and {@link ClaimType#WILDERNESS} claims do not have
      * owners.
      * 
      * @return The UUID of this claim
@@ -396,6 +695,262 @@ public interface Claim extends ContextSource {
     default Optional<Text> getName() {
         return this.getData().getName();
     }
+
+    default EconomyData getEconomyData() {
+        return this.getData().getEconomyData();
+    }
+
+    /**
+     * Gets the economy account used for claim bank.
+     * 
+     * @return the economy account, if available
+     */
+    Optional<Account> getEconomyAccount();
+
+    /**
+     * Sets {@link ClaimFlag} permission on the {@link Subject}.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param value The new value
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    default CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Cause cause) {
+        return setPermission(subject, flag, source, target, value, this.getContext(), cause);
+    }
+
+    /**
+     * Sets {@link ClaimFlag} permission for target on the {@link Subject}.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param value The new value
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    default CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Cause cause) {
+        return setPermission(subject, flag, target, value, this.getContext(), cause);
+    }
+
+    /**
+     * Gets the {@link ClaimFlag} permission value of {@link Subject} for source and target.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param target The target id
+     * @return The permission value, or {@link Tristate#UNDEFINED} if none
+     */
+    default Tristate getPermissionValue(Subject subject, ClaimFlag flag, String source, String target) {
+        return getPermissionValue(subject, flag, source, target, this.getContext());
+    }
+
+    /**
+     * Gets the {@link ClaimFlag} permission value of {@link Subject} for target.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param target The target id
+     * @return The permission value, or {@link Tristate#UNDEFINED} if none
+     */
+    default Tristate getPermissionValue(Subject subject, ClaimFlag flag, String target) {
+        return getPermissionValue(subject, flag, target, this.getContext());
+    }
+
+    /**
+     * Clears claim permissions on the {@link Subject}.
+     * 
+     * Note: All permissions will be cleared from all claim contexts. If you require
+     * a specific context, use {@link #clearPermissions(Subject, Context, Cause)}.
+     * 
+     * @param subject The subject
+     * @param cause The cause
+     * @return The result of clear
+     */
+    CompletableFuture<FlagResult> clearPermissions(Subject subject, Cause cause);
+
+    /**
+     * Clears claim permissions from specified {@link Context}.
+     * 
+     * Note: This uses the default subject which applies to all users in claim.
+     * 
+     * @param context The context holding the permissions
+     * @param cause The cause
+     * @return The result of clear
+     */
+    CompletableFuture<FlagResult> clearPermissions(Context context, Cause cause);
+
+    /**
+     * Clears claim permissions on the {@link Subject} from specified {@link Context}.
+     * 
+     * @param subject The subject
+     * @param context The context holding the permissions
+     * @param cause The cause
+     * @return The result of clear
+     */
+    CompletableFuture<FlagResult> clearPermissions(Subject subject, Context context, Cause cause);
+
+    /**
+     * Sets {@link ClaimFlag} permission with {@link Context}.
+     * 
+     * Note: This uses the default subject which applies to all users in claim.
+     * 
+     * @param flag The claim flag
+     * @param value The new value
+     * @param context The claim context
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, Tristate value, Context context, Cause cause);
+
+    /**
+     * Sets {@link ClaimFlag} permission on {@link Subject} with {@link Context}.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param value The new value
+     * @param context The claim context
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, Tristate value, Context context, Cause cause);
+
+    /**
+     * Sets {@link ClaimFlag} permission for target with {@link Context}.
+     * 
+     * Note: This uses the default subject which applies to all users in claim.
+     * 
+     * @param flag The claim flag
+     * @param target The target id
+     * @param value The new value
+     * @param context The claim context
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String target, Tristate value, Context context, Cause cause);
+
+    /**
+     * Sets {@link ClaimFlag} permission for target on {@link Subject} with {@link Context}.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param target The target id
+     * @param value The new value
+     * @param context The claim context
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Context context, Cause cause);
+
+    /**
+     * Sets {@link ClaimFlag} permission for source and target on default subject with {@link Context}.
+     * 
+     * @param flag The claim flag
+     * @param source The source id
+     * @param target The target id
+     * @param value The new value
+     * @param context The claim context
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause);
+
+    /**
+     * Sets {@link ClaimFlag} permission for source and target on {@link Subject} with {@link Context}.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param source The source id
+     * @param target The target id
+     * @param value The new value
+     * @param context The claim context
+     * @param cause The cause of set
+     * @return The result of set
+     */
+    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause);
+
+    /**
+     * Gets the {@link ClaimFlag} permission value for target with {@link Context}.
+     * 
+     * Note: This uses the default subject which applies to all users in claim.
+     * 
+     * @param flag The claim flag
+     * @param target The target id
+     * @param context The claim context
+     * @return The permission value, or {@link Tristate#UNDEFINED} if none
+     */
+    Tristate getPermissionValue(ClaimFlag flag, String target, Context context);
+
+    /**
+     * Gets the {@link ClaimFlag} permission value of {@link Subject} for target with {@link Context}.
+     * 
+     * Note: Only the default subject supports default and override context. Attempting to pass another subject 
+     * with these specific contexts will always return {@link Tristate#UNDEFINED}.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param target The target id
+     * @param context The claim context
+     * @return The permission value, or {@link Tristate#UNDEFINED} if none
+     */
+    Tristate getPermissionValue(Subject subject, ClaimFlag flag, String target, Context context);
+
+    /**
+     * Gets the {@link ClaimFlag} permission value for source and target with {@link Context}.
+     * 
+     * Note: This uses the default subject which applies to all users in claim.
+     * 
+     * @param flag The claim flag
+     * @param target The target id
+     * @param context The claim context
+     * @return The permission value, or {@link Tristate#UNDEFINED} if none
+     */
+    Tristate getPermissionValue(ClaimFlag flag, String source, String target, Context context);
+
+    /**
+     * Gets the {@link ClaimFlag} permission value of {@link Subject} for source and target with {@link Context}.
+     * 
+     * Note: Only the default subject supports default and override context. Attempting to pass another subject 
+     * with these specific contexts will always return {@link Tristate#UNDEFINED}.
+     * 
+     * @param subject The subject
+     * @param flag The claim flag
+     * @param target The target id
+     * @param context The claim context
+     * @return The permission value, or {@link Tristate#UNDEFINED} if none
+     */
+    Tristate getPermissionValue(Subject subject, ClaimFlag flag, String source, String target, Context context);
+
+    /**
+     * Gets all flag permissions with {@link Context}.
+     * 
+     * @param context The claim context
+     * @return A map containing all permissions, empty if none
+     */
+    Map<String, Boolean> getPermissions(Context context);
+
+    /**
+     * Gets the {@link Subject}'s flag permissions with {@link Context}.
+     * 
+     * @param subject The subject
+     * @param context The claim context
+     * @return A map containing all permissions, empty if none
+     */
+    Map<String, Boolean> getPermissions(Subject subject, Context context);
+
+    /**
+     * Gets the default context which is used for storing flag defaults.
+     * 
+     * @return The default context
+     */
+    Context getDefaultContext();
+
+    /**
+     * Gets the override context which is used for overriding claim flags.
+     * 
+     * @return The override context
+     */
+    Context getOverrideContext();
 
     /**
      * Gets a new claim builder instance for {@link Builder}.

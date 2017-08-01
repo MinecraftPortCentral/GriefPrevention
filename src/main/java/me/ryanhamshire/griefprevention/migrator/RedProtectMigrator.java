@@ -113,7 +113,7 @@ public class RedProtectMigrator {
                     Files.createFile(claimFilePath);
                 }
 
-                ClaimStorageData claimStorage = new ClaimStorageData(claimFilePath);
+                ClaimStorageData claimStorage = new ClaimStorageData(claimFilePath, world.getUniqueId());
                 ClaimDataConfig claimDataConfig = claimStorage.getConfig();
                 claimDataConfig.setName(Text.of(rname));
                 claimDataConfig.setWorldUniqueId(world.getUniqueId());

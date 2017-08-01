@@ -25,17 +25,17 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.ShovelMode;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.text.Text;
 
 public class CommandRestoreNatureFill implements CommandExecutor {
 
@@ -58,7 +58,10 @@ public class CommandRestoreNatureFill implements CommandExecutor {
             playerData.fillRadius = 2;
         }
 
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.FillModeActive, String.valueOf(playerData.fillRadius));
+        final Text message = GriefPreventionPlugin.instance.messageData.restoreNatureFillModeActive
+                .apply(ImmutableMap.of(
+                "radius", playerData.fillRadius)).build();
+        GriefPreventionPlugin.sendMessage(player, message);
         return CommandResult.success();
     }
 }

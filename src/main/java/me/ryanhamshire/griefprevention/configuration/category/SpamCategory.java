@@ -41,10 +41,6 @@ public class SpamCategory extends ConfigCategory {
     public boolean autoBanOffenders = false;
     @Setting(value = "monitor-commands", comment = "the list of slash commands monitored for spam,")
     public List<String> monitoredCommandList = new ArrayList<>();
-    @Setting(value = "ban-message", comment = "Message to show an automatically banned player.")
-    public String banMessage = "Banned for spam.";
-    @Setting(value = "ban-warning-message", comment = "Message to show a player who is close to spam level.")
-    public String banWarningMessage = "Please reduce your noise level.  Spammers will be banned.";
     @Setting(value = "allowed-ips", comment = "IP addresses which will not be censored.")
     public List<String> allowedIpAddresses = new ArrayList<>();
     @Setting(value = "death-message-cooldown", comment = "Cooldown period for death messages (per player) in seconds.")

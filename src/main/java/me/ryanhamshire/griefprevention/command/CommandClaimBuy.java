@@ -25,24 +25,26 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import me.ryanhamshire.griefprevention.GPPlayerData;
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.claim.GPClaimManager;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
-import org.spongepowered.api.service.economy.transaction.ResultType;
-import org.spongepowered.api.service.economy.transaction.TransactionResult;
+import org.spongepowered.api.service.economy.account.Account;
+import org.spongepowered.api.service.pagination.PaginationList;
+import org.spongepowered.api.service.pagination.PaginationService;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
 
-import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CommandClaimBuy implements CommandExecutor {
 
@@ -58,70 +60,44 @@ public class CommandClaimBuy implements CommandExecutor {
 
         // if economy is disabled, don't do anything
         if (!GriefPreventionPlugin.instance.economyService.isPresent()) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Economy plugin not installed!");
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.economyNotInstalled.toText());
             return CommandResult.success();
         }
 
-        if (!GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "No economy account found for user " + player.getName() + "!");
+        Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
+        if (playerAccount == null) {
+            final Text message = GriefPreventionPlugin.instance.messageData.economyUserNotFound
+                    .apply(ImmutableMap.of(
+                    "user", player.getName())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
             return CommandResult.success();
         }
 
-        GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties());
-        if (activeConfig.getConfig().economy.economyClaimBlockCost == 0 && activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.BuySellNotConfigured);
-            return CommandResult.success();
-        }
-
-        // if purchase disabled, send error message
-        if (activeConfig.getConfig().economy.economyClaimBlockCost == 0) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.OnlySellBlocks);
-            return CommandResult.success();
-        }
-
-        Optional<Integer> blockCountOpt = ctx.getOne("numberOfBlocks");
-        double balance = 0;
-        if (GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).isPresent()) {
-            balance = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().getBalance(GriefPreventionPlugin.instance
-                    .economyService.get().getDefaultCurrency()).doubleValue();
-        }
-
-        // if no parameter, just tell player cost per block and balance
-        if (!blockCountOpt.isPresent()) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Info, Messages.BlockPurchaseCost,
-                    String.valueOf(activeConfig.getConfig().economy.economyClaimBlockCost),
-                    String.valueOf(balance));
-            return CommandResult.success();
-        } else {
-            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-
-            // try to parse number of blocks
-            int blockCount = blockCountOpt.get();
-
-            if (blockCount <= 0) {
-                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Invalid block count of lte 0");
-                return CommandResult.success();
+        final double balance = playerAccount.getBalance(GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency()).doubleValue();
+        List<Claim> claimsForSale = new ArrayList<>();
+        GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
+        for (Claim worldClaim : claimManager.getWorldClaims()) {
+            if (worldClaim.isAdminClaim() || worldClaim.isWilderness()) {
+                continue;
             }
-
-            double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
-            // attempt to withdraw cost
-            TransactionResult transactionResult = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().withdraw
-                    (GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalCost),
-                            Cause.of(NamedCause.of(GriefPreventionPlugin.MOD_ID, GriefPreventionPlugin.instance)));
-
-            if (transactionResult.getResult() != ResultType.SUCCESS) {
-                GriefPreventionPlugin.sendMessage(player, TextMode.Err, "Could not withdraw funds. Reason: " + transactionResult.getResult().name() +
-                        ".");
-                return CommandResult.success();
+            if (worldClaim.getEconomyData().isForSale() && worldClaim.getEconomyData().getSalePrice() > -1) {
+                claimsForSale.add(worldClaim);
             }
-            // add blocks
-            playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);
-            playerData.getStorageData().save();
-
-            // inform player
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.PurchaseConfirmation, String.valueOf(totalCost),
-                    String.valueOf(playerData.getRemainingClaimBlocks()));
+            for (Claim child : worldClaim.getChildren(true)) {
+                if (child.isAdminClaim()) {
+                    continue;
+                }
+                if (child.getEconomyData().isForSale() && child.getEconomyData().getSalePrice() > -1) {
+                    claimsForSale.add(child);
+                }
+            }
         }
+
+        List<Text> claimsTextList = CommandHelper.generateClaimTextList(new ArrayList<Text>(), claimsForSale, player.getWorld().getName(), null, src, CommandHelper.createCommandConsumer(src, "claimbuy", ""), true, false);
+        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
+        PaginationList.Builder paginationBuilder = paginationService.builder()
+                .title(Text.of(TextColors.AQUA,"Claims for sale")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(claimsTextList);
+        paginationBuilder.sendTo(src);
         return CommandResult.success();
     }
 }

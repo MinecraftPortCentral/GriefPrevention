@@ -28,8 +28,6 @@ package me.ryanhamshire.griefprevention.command;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.ShovelMode;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -52,7 +50,7 @@ public class CommandClaimBasic implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.Basic;
         playerData.claimSubdividing = null;
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.BasicClaimsMode);
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimModeBasic.toText());
 
         return CommandResult.success();
     }

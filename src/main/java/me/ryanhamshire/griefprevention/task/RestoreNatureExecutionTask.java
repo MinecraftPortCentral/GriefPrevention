@@ -25,8 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
+import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
@@ -40,7 +43,6 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.lang.ref.WeakReference;
 import java.util.Optional;
 
 //this main thread task takes the output from the RestoreNatureProcessingTask\
@@ -74,21 +76,16 @@ class RestoreNatureExecutionTask implements Runnable {
         // apply changes to the world, but ONLY to unclaimed blocks
         // note that the edge of the results is not applied (the 1-block-wide
         // band around the outside of the chunk)
-        // those data were sent to the processing thread for referernce
+        // those data were sent to the processing thread for reference
         // purposes, but aren't part of the area selected for restoration
-        WeakReference<Claim> cachedClaim = null;
         for (int x = 1; x < this.snapshots.length - 1; x++) {
             for (int z = 1; z < this.snapshots[0][0].length - 1; z++) {
                 for (int y = this.miny; y < this.snapshots[0].length; y++) {
                     BlockSnapshot blockUpdate = this.snapshots[x][y][z];
                     BlockState currentBlock = blockUpdate.getLocation().get().getBlock();
-                    if (blockUpdate.getState() != currentBlock) {
-                        Claim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(blockUpdate.getLocation().get(), false, cachedClaim);
-                        if (claim != null) {
-                            cachedClaim = new WeakReference<>(claim);
-                            break;
-                        }
-
+                    int originalMeta = BlockUtils.getBlockStateMeta(blockUpdate.getState());
+                    int newMeta = BlockUtils.getBlockStateMeta(currentBlock);
+                    if (!blockUpdate.getState().getType().equals(currentBlock.getType()) || originalMeta != newMeta) {
                         blockUpdate.restore(true, BlockChangeFlag.PHYSICS);
                     }
                 }
@@ -116,14 +113,13 @@ class RestoreNatureExecutionTask implements Runnable {
         }
 
         // show visualization to player who started the restoration
-        //if (player != null) {
-            //GPClaim claim = new GPClaim(this.lesserCorner, this.greaterCorner, ClaimType.BASIC);
-            //GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, player.getUniqueId());
+        if (player != null) {
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            GPClaim claim = new GPClaim(this.lesserCorner, this.greaterCorner, ClaimType.BASIC, false);
             // TODO
-            /*claim.getVisualizer().createClaimBlockVisuals(height, locality, playerData);
-            Visualization visualization =
-                    Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation(), playerData);
-            Visualization.Apply(player, visualization);*/
-        //}
+            claim.getVisualizer().resetVisuals();
+            claim.getVisualizer().createClaimBlockVisuals(player.getLocation().getBlockY(), player.getLocation(), playerData);
+            claim.getVisualizer().apply(player);
+        }
     }
 }

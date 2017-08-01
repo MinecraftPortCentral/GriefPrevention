@@ -31,7 +31,7 @@ public final class GriefPrevention {
     private static final GriefPreventionApi api = null;
 
     /**
-     * Gets the API instance of {@link GriefPreventionAPI}
+     * Gets the API instance of {@link GriefPreventionApi}
      *
      * @return The API instance, if available
      * @throws IllegalStateException if the API is not loaded

@@ -31,14 +31,11 @@ import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import org.spongepowered.api.util.Functional;
 import org.spongepowered.common.SpongeImpl;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
 
 public class PlayerStorageData {
 
@@ -73,10 +70,12 @@ public class PlayerStorageData {
 
     public void save() {
         try {
-            if (this.configBase.requiresSave()) {
-                this.configMapper.serialize(this.root.getNode(GriefPreventionPlugin.MOD_ID));
-                this.loader.save(this.root);
-                this.configBase.setRequiresSave(false);
+            if (this.configBase != null) {
+                if (this.configBase.requiresSave()) {
+                    this.configMapper.serialize(this.root.getNode(GriefPreventionPlugin.MOD_ID));
+                    this.loader.save(this.root);
+                    this.configBase.setRequiresSave(false);
+                }
             }
         } catch (IOException | ObjectMappingException e) {
             SpongeImpl.getLogger().error("Failed to save configuration", e);
@@ -91,16 +90,6 @@ public class PlayerStorageData {
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
         }
-    }
-
-    public CompletableFuture<CommentedConfigurationNode> updateSetting(String key, Object value) {
-        return Functional.asyncFailableFuture(() -> {
-            CommentedConfigurationNode upd = getSetting(key);
-            upd.setValue(value);
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
-            this.loader.save(this.root);
-            return upd;
-        }, ForkJoinPool.commonPool());
     }
 
     public CommentedConfigurationNode getRootNode() {

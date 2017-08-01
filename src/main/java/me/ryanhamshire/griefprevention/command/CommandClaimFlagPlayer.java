@@ -24,13 +24,16 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
-import me.ryanhamshire.griefprevention.util.PlayerUtils;
+import me.ryanhamshire.griefprevention.util.ClaimClickData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -39,6 +42,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
@@ -46,13 +50,16 @@ import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
+import org.spongepowered.api.text.serializer.TextSerializers;
 import org.spongepowered.api.util.Tristate;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -68,7 +75,8 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
             return CommandResult.success();
         }
 
-        String name = ctx.<String>getOne("player").get();
+        User user = ctx.<User>getOne("player").get();
+        String name = user.getName();
         String flag = ctx.<String>getOne("flag").orElse(null);
         String source = ctx.<String>getOne("source").orElse(null);
         String target = null;
@@ -90,26 +98,56 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
         String context = ctx.<String>getOne("context").orElse(null);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
-        Optional<User> targetUser = PlayerUtils.resolvePlayerByName(name);
-        if (!targetUser.isPresent()) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "The playername " + name + " was not found."));
+        //Optional<User> targetUser = PlayerUtils.resolvePlayerByName(name);
+        /*if (!user.isPresent()) {
+            final Text message = GriefPreventionPlugin.instance.messageData.commandPlayerInvalid
+                    .apply(ImmutableMap.of(
+                    "player", name)).build();
+            GriefPreventionPlugin.sendMessage(player, message);
             return CommandResult.empty();
-        } else if (flag == null && value == null) {
+        } else*/
+
+        String reason = ctx.<String>getOne("reason").orElse(null);
+        Text reasonText = null;
+        if (reason != null) {
+            reasonText = TextSerializers.FORMATTING_CODE.deserialize(reason);
+        }
+        if (flag == null && value == null) {
             Set<Context> contexts = new HashSet<>();
             contexts.add(claim.getContext());
 
-            Subject subject = targetUser.get();
+            Subject subj = user;//targetUser.get();
             Map<String, Text> flagList = new TreeMap<>();
-            Map<String, Boolean> permissions = subject.getSubjectData().getPermissions(contexts);
+            Map<String, Boolean> permissions = new HashMap<>(subj.getSubjectData().getPermissions(contexts));
+            Map<String, ClaimClickData> inheritPermissions = new HashMap<>();
+            final List<Claim> inheritParents = claim.getInheritedParents();
+            Collections.reverse(inheritParents);
+            for (Claim current : inheritParents) {
+                GPClaim currentClaim = (GPClaim) current;
+                Map<String, Boolean> currentPermissions = new HashMap<>(subj.getSubjectData().getPermissions(ImmutableSet.of(currentClaim.context)));
+                for (Map.Entry<String, Boolean> permissionEntry : currentPermissions.entrySet()) {
+                    permissions.put(permissionEntry.getKey(), permissionEntry.getValue());
+                    inheritPermissions.put(permissionEntry.getKey(), new ClaimClickData(currentClaim, permissionEntry.getValue()));
+                }
+            }
+
             for (Map.Entry<String, Boolean> permissionEntry : permissions.entrySet()) {
                 String flagPermission = permissionEntry.getKey();
                 String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
                 Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
                         .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
+                ClaimClickData claimClickData = inheritPermissions.get(flagPermission);
+                Text valueText = null;
+                if (claimClickData != null) {
+                    valueText = Text.of(TextColors.AQUA, CommandHelper.getClickableText(src, subj, name, contexts, claimClickData.claim, flagPermission, Tristate.fromBoolean(claimClickData.value), source, FlagType.INHERIT));
+                } else {
+                    valueText = Text.of(TextColors.GOLD, CommandHelper.getClickableText(src, subj, name, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.PLAYER));
+                }
+
                 Text flagText = Text.of(
                         TextColors.GREEN, baseFlagText, "  ",
                         TextColors.WHITE, "[",
-                        TextColors.LIGHT_PURPLE, CommandHelper.getClickableText(src, subject, name, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.PLAYER),
+                        valueText,
                         TextColors.WHITE, "]");
                 flagList.put(flagPermission, flagText);
             }
@@ -117,18 +155,35 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
             List<Text> textList = new ArrayList<>(flagList.values());
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.GOLD, name, TextColors.AQUA, " Flag Permissions")).padding(Text.of("-")).contents(textList);
+                    .title(Text.of(TextColors.GOLD, name, TextColors.AQUA, " Flag Permissions")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(textList);
             paginationBuilder.sendTo(src);
             return CommandResult.success();
         }
 
-        User user = targetUser.get();
-        if (!src.hasPermission(GPPermissions.SET_ADMIN_FLAGS)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change flags on an admin player."));
+        if (!ClaimFlag.contains(flag)) {
+            src.sendMessage(Text.of(TextColors.RED, "Flag not found."));
+            return CommandResult.success();
+        }
+        Context claimContext = claim.getContext();
+        if (context != null) {
+            claimContext = CommandHelper.validateCustomContext(src, claim, context);
+            if (claimContext == null) {
+                final Text message = GriefPreventionPlugin.instance.messageData.flagInvalidContext
+                        .apply(ImmutableMap.of(
+                        "context", context,
+                        "flag", flag)).build();
+                GriefPreventionPlugin.sendMessage(src, message);
+                return CommandResult.success();
+            }
+        }
+
+        if (user.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && !src.hasPermission(GPPermissions.SET_ADMIN_FLAGS)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionSetAdminFlags.toText());
             return CommandResult.success();
         }
 
         Subject subj = user.getContainingCollection().get(user.getIdentifier());
-        return CommandHelper.addFlagPermission(src, subj, name, claim, flag, source, target, value, context);
+        claim.setPermission(subj, name, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
+        return CommandResult.success();
     }
 }

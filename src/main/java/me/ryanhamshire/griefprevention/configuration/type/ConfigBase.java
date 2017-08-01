@@ -29,7 +29,7 @@ import me.ryanhamshire.griefprevention.configuration.category.EconomyCategory;
 import me.ryanhamshire.griefprevention.configuration.category.FlagCategory;
 import me.ryanhamshire.griefprevention.configuration.category.GeneralCategory;
 import me.ryanhamshire.griefprevention.configuration.category.PvpCategory;
-import me.ryanhamshire.griefprevention.configuration.category.SiegeCategory;
+import me.ryanhamshire.griefprevention.configuration.category.TownCategory;
 import ninja.leaping.configurate.objectmapping.Setting;
 
 public abstract class ConfigBase {
@@ -45,5 +45,5 @@ public abstract class ConfigBase {
     @Setting
     public PvpCategory pvp = new PvpCategory();
     @Setting
-    public SiegeCategory siege = new SiegeCategory();
+    public TownCategory town = new TownCategory();
 }

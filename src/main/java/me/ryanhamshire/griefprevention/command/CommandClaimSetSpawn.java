@@ -24,11 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -37,7 +37,6 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
 
 public class CommandClaimSetSpawn implements CommandExecutor {
 
@@ -54,15 +53,18 @@ public class CommandClaimSetSpawn implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (player.hasPermission(GPPermissions.COMMAND_CLAIM_SET_SPAWN) && claim != null || playerData.canIgnoreClaim(claim)) {
-            if (claim.allowAccess(player) != null) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, Messages.NoAccessPermission));
+            if (!claim.isUserTrusted(player, TrustType.BUILDER)) {
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionAccess.toText());
                 return CommandResult.success();
             }
 
             claim.getInternalClaimData().setSpawnPos(player.getLocation().getBlockPosition());
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success, "Successfully set claim spawn to ", TextColors.AQUA, player.getLocation().getBlockPosition()));
+            final Text message = GriefPreventionPlugin.instance.messageData.commandSpawnSet
+                    .apply(ImmutableMap.of(
+                    "location", player.getLocation().getBlockPosition())).build();
+            GriefPreventionPlugin.sendMessage(src, message);
         } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
         }
 
         return CommandResult.success();

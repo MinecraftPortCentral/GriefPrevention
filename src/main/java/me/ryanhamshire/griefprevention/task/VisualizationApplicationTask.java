@@ -41,22 +41,29 @@ public class VisualizationApplicationTask implements Runnable {
     private Visualization visualization;
     private Player player;
     private GPPlayerData playerData;
+    private boolean resetActive;
 
     public VisualizationApplicationTask(Player player, GPPlayerData playerData, Visualization visualization) {
+        this(player, playerData, visualization, true);
+    }
+
+    public VisualizationApplicationTask(Player player, GPPlayerData playerData, Visualization visualization, boolean resetActive) {
         this.visualization = visualization;
         this.playerData = playerData;
         this.player = player;
+        this.resetActive = resetActive;
     }
 
     @Override
     public void run() {
         if (this.playerData.visualBlocks != null) {
-            // revert now
-            this.playerData.revertActiveVisual(this.player);
+            if (this.resetActive) {
+                this.playerData.revertActiveVisual(this.player);
+            }
         }
 
-        for (int i = 0; i < visualization.elements.size(); i++) {
-            BlockSnapshot snapshot = visualization.elements.get(i).getFinal();
+        for (int i = 0; i < this.visualization.elements.size(); i++) {
+            BlockSnapshot snapshot = this.visualization.elements.get(i).getFinal();
             this.player.sendBlockChange(snapshot.getPosition(), snapshot.getState());
         }
 
@@ -65,10 +72,13 @@ public class VisualizationApplicationTask implements Runnable {
             this.playerData.visualClaimId = this.visualization.getClaim().id;
             this.visualization.getClaim().playersWatching.add(this.player.getUniqueId());
         }
-        this.playerData.visualBlocks = new ArrayList<>(visualization.elements);
+        this.playerData.visualBlocks = new ArrayList<>(this.visualization.elements);
 
         // schedule automatic visualization reversion in 60 seconds.
-        this.playerData.visualRevertTask = Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES)
-                .execute(new VisualizationReversionTask(this.player, this.playerData)).submit(GriefPreventionPlugin.instance);
+        // only create revert task if not resizing/starting a claim
+        if (playerData.lastShovelLocation == null) {
+            this.playerData.visualRevertTask = Sponge.getGame().getScheduler().createTaskBuilder().async().delay(1, TimeUnit.MINUTES)
+                    .execute(new VisualizationReversionTask(this.player, this.playerData)).submit(GriefPreventionPlugin.instance);
+        }
     }
 }

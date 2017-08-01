@@ -27,8 +27,6 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin.IgnoreMode;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -53,7 +51,7 @@ public class CommandIgnorePlayer implements CommandExecutor {
         Player targetPlayer = args.<Player>getOne("player").get();
         if (targetPlayer.hasPermission(GPPermissions.NOT_IGNORABLE)) {
             try {
-                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.PlayerNotIgnorable));
+                throw new CommandException(GriefPreventionPlugin.instance.messageData.permissionPlayerNotIgnorable.toText());
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
@@ -61,9 +59,7 @@ public class CommandIgnorePlayer implements CommandExecutor {
         }
 
         GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), player, targetPlayer, IgnoreMode.StandardIgnore);
-
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.IgnoreConfirmation);
-
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.playerIgnoreConfirmation.toText());
         return CommandResult.success();
     }
 }

@@ -24,9 +24,19 @@
  */
 package me.ryanhamshire.griefprevention.api.data;
 
+import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 
+import java.util.List;
+
 public interface PlayerData {
+
+    /**
+     * Gets an immutable list of claims owned by this player.
+     * 
+     * @return The immutable list of owned claims, empty if none
+     */
+    List<Claim> getClaims();
 
     /**
      * Gets the abandon return ratio used when abandoning a claim.
@@ -63,7 +73,7 @@ public interface PlayerData {
      * Gets the max size limit of x, in blocks, for claim
      * creation.
      * 
-     * @param The claim type to check
+     * @param type The claim type to check
      * @return The maximum size of x for claim creation
      */
     int getMaxClaimX(ClaimType type);
@@ -72,9 +82,9 @@ public interface PlayerData {
      * Gets the max size limit of y, in blocks, for claim
      * creation.
      * 
-     * Note: This option is ignored for 2D claims (non-cuboids).
+     * Note: This option is ignored for 2D claims.
      * 
-     * @param The claim type to check
+     * @param type The claim type to check
      * @return The maximum size of y for claim creation
      */
     int getMaxClaimY(ClaimType type);
@@ -83,7 +93,7 @@ public interface PlayerData {
      * Gets the max size limit of z, in blocks, for claim
      * creation.
      * 
-     * @param The claim type to check
+     * @param type The claim type to check
      * @return The maximum size of z for claim creation
      */
     int getMaxClaimZ(ClaimType type);
@@ -123,6 +133,14 @@ public interface PlayerData {
      * @return The remaining claim blocks
      */
     int getRemainingClaimBlocks();
+
+    /**
+     * Checks if this player can ignore a claim.
+     * 
+     * @param claim The claim to check
+     * @return Whether this player can ignore the claim
+     */
+    boolean canIgnoreClaim(Claim claim);
 
     /**
      * Gets whether this player is currently in cuboid mode.

@@ -28,19 +28,40 @@ package me.ryanhamshire.griefprevention.util;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
-import me.ryanhamshire.griefprevention.BlockPosCache;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.init.Blocks;
+import net.minecraft.server.management.PlayerChunkMapEntry;
+import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.MinecraftException;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.ChunkProviderServer;
+import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.util.Direction;
+import org.spongepowered.api.util.blockray.BlockRay;
+import org.spongepowered.api.util.blockray.BlockRayHit;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.common.interfaces.IMixinChunk;
+import org.spongepowered.common.interfaces.world.gen.IMixinChunkProviderServer;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 public class BlockUtils {
 
+    private static final Direction[] CARDINAL_DIRECTIONS = new Direction[] {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
     private static final int NUM_XZ_BITS = 4;
     private static final int NUM_SHORT_Y_BITS = 8;
     private static final short XZ_MASK = 0xF;
@@ -172,5 +193,214 @@ public class BlockUtils {
 
     private static int setNibble(int num, int data, int which, int bitsToReplace) {
         return (num & ~(bitsToReplace << (which * 4)) | (data << (which * 4)));
+    }
+
+    private static void saveChunkData(ChunkProviderServer chunkProviderServer, Chunk chunkIn)
+    {
+        try
+        {
+            chunkIn.setLastSaveTime(chunkIn.getWorld().getTotalWorldTime());
+            chunkProviderServer.chunkLoader.saveChunk(chunkIn.getWorld(), chunkIn);
+        }
+        catch (IOException ioexception)
+        {
+            //LOGGER.error((String)"Couldn\'t save chunk", (Throwable)ioexception);
+        }
+        catch (MinecraftException minecraftexception)
+        {
+            //LOGGER.error((String)"Couldn\'t save chunk; already in use by another instance of Minecraft?", (Throwable)minecraftexception);
+        }
+        try
+        {
+            chunkProviderServer.chunkLoader.saveExtraChunkData(chunkIn.getWorld(), chunkIn);
+        }
+        catch (Exception exception)
+        {
+            //LOGGER.error((String)"Couldn\'t save entities", (Throwable)exception);
+        }
+    }
+
+    private static boolean unloadChunk(net.minecraft.world.chunk.Chunk chunk) {
+        net.minecraft.world.World mcWorld = chunk.getWorld();
+        ChunkProviderServer chunkProviderServer = (ChunkProviderServer) chunk.getWorld().getChunkProvider();
+
+        boolean saveChunk = false;
+        if (chunk.needsSaving(true)) {
+            saveChunk = true;
+        }
+
+        for (ClassInheritanceMultiMap<Entity> classinheritancemultimap : chunk.getEntityLists())
+        {
+            chunk.getWorld().unloadEntities(classinheritancemultimap);
+        }
+
+        if (saveChunk) {
+            saveChunkData(chunkProviderServer, chunk);
+        }
+
+        chunkProviderServer.id2ChunkMap.remove(ChunkPos.chunkXZ2Int(chunk.xPosition, chunk.zPosition));
+        ((IMixinChunk) chunk).setScheduledForUnload(-1);
+        org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
+        for (Direction direction : CARDINAL_DIRECTIONS) {
+            Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
+            IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) mcWorld.getChunkProvider();
+            net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
+                    (neighborPosition.getX(), neighborPosition.getZ());
+            if (neighbor != null) {
+                int neighborIndex = directionToIndex(direction);
+                int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
+                ((IMixinChunk) spongeChunk).setNeighborChunk(neighborIndex, null);
+                ((IMixinChunk) neighbor).setNeighborChunk(oppositeNeighborIndex, null);
+            }
+        }
+
+        return true;
+    }
+
+    public static boolean createFillerChunk(GPPlayerData playerData, WorldServer world, int chunkX, int chunkZ) {
+        ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
+        Chunk chunk = ((IMixinChunkProviderServer) chunkProviderServer).getLoadedChunkWithoutMarkingActive(chunkX, chunkZ);
+        if (chunk == null) {
+            return false;
+        }
+
+        unloadChunk(chunk);
+        org.spongepowered.api.world.Chunk fillerChunk = (org.spongepowered.api.world.Chunk) chunkProviderServer.chunkGenerator.provideChunk(chunk.xPosition, chunk.zPosition);
+        int maxBuildHeight = fillerChunk.getWorld().getDimension().getBuildHeight();
+        BlockSnapshot[][][] snapshots = new BlockSnapshot[18][maxBuildHeight][18];
+        BlockSnapshot startBlock = fillerChunk.createSnapshot(0, 0, 0);
+        Location<World> startLocation =
+                new Location<World>(fillerChunk.getWorld(), startBlock.getPosition().getX() - 1, 0, startBlock.getPosition().getZ() - 1);
+        for (int x = 0; x < snapshots.length; x++) {
+            for (int z = 0; z < snapshots[0][0].length; z++) {
+                for (int y = 0; y < snapshots[0].length; y++) {
+                    snapshots[x][y][z] = fillerChunk.getWorld()
+                            .createSnapshot(startLocation.getBlockX() + x, startLocation.getBlockY() + y, startLocation.getBlockZ() + z);
+                }
+            }
+        }
+        fillerChunk = null;
+        playerData.fillerBlocks = snapshots;
+        if (chunk != null) {
+            world.getChunkProvider().id2ChunkMap.put(ChunkPos.chunkXZ2Int(chunk.xPosition, chunk.zPosition), chunk);
+
+            org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
+            for (Direction direction : CARDINAL_DIRECTIONS) {
+                Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
+                IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) world.getChunkProvider();
+                net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
+                        (neighborPosition.getX(), neighborPosition.getZ());
+                if (neighbor != null) {
+                    int neighborIndex = directionToIndex(direction);
+                    int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
+                    ((IMixinChunk) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
+                    ((IMixinChunk) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
+                }
+            }
+        }
+        return true;
+    }
+
+    public static boolean regenerateChunk(Chunk chunk) {
+        boolean unload = unloadChunk(chunk);
+        ChunkProviderServer chunkProviderServer = (ChunkProviderServer) chunk.getWorld().getChunkProvider();
+
+        Chunk newChunk = chunkProviderServer.chunkGenerator.provideChunk(chunk.xPosition, chunk.zPosition);
+        PlayerChunkMapEntry playerChunk = ((WorldServer) chunk.getWorld()).getPlayerChunkMap().getEntry(chunk.xPosition, chunk.zPosition);
+        if (playerChunk != null) {
+            playerChunk.chunk = newChunk;
+        }
+
+        chunkLoadPostProcess(newChunk);
+        refreshChunk(newChunk);
+        return newChunk != null;
+    }
+
+    public static boolean refreshChunk(Chunk chunk) {
+        int x = chunk.xPosition;
+        int z = chunk.zPosition;
+        WorldServer world = (WorldServer) chunk.getWorld();
+        IMixinChunkProviderServer chunkProviderServer = (IMixinChunkProviderServer) world.getChunkProvider();
+        if (chunkProviderServer.getLoadedChunkWithoutMarkingActive(x, z) == null) {
+            return false;
+        }
+
+        int px = x << 4;
+        int pz = z << 4;
+
+        int height = world.getHeight() / 16;
+        for (int y = 0; y < 64; y++) {
+            world.notifyBlockUpdate(new BlockPos(px + (y / height), ((y % height) * 16), pz), Blocks.AIR.getDefaultState(), Blocks.STONE.getDefaultState(), 3);
+        }
+        world.notifyBlockUpdate(new BlockPos(px + 15, (height * 16) - 1, pz + 15), Blocks.AIR.getDefaultState(), Blocks.STONE.getDefaultState(), 3);
+
+        return true;
+    }
+
+    private static void chunkLoadPostProcess(Chunk chunk) {
+        if (chunk != null) {
+            WorldServer world = (WorldServer) chunk.getWorld();
+            world.getChunkProvider().id2ChunkMap.put(ChunkPos.chunkXZ2Int(chunk.xPosition, chunk.zPosition), chunk);
+
+            org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
+            for (Direction direction : CARDINAL_DIRECTIONS) {
+                Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
+                IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) world.getChunkProvider();
+                net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
+                        (neighborPosition.getX(), neighborPosition.getZ());
+                if (neighbor != null) {
+                    int neighborIndex = directionToIndex(direction);
+                    int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
+                    ((IMixinChunk) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
+                    ((IMixinChunk) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
+                }
+            }
+
+            chunk.populateChunk(world.getChunkProvider(), world.getChunkProvider().chunkGenerator);
+        }
+    }
+
+    private static int directionToIndex(Direction direction) {
+        switch (direction) {
+            case NORTH:
+            case NORTHEAST:
+            case NORTHWEST:
+                return 0;
+            case SOUTH:
+            case SOUTHEAST:
+            case SOUTHWEST:
+                return 1;
+            case EAST:
+                return 2;
+            case WEST:
+                return 3;
+            default:
+                throw new IllegalArgumentException("Unexpected direction");
+        }
+    }
+
+    public static Optional<Location<World>> getTargetBlock(Player player, GPPlayerData playerData, int maxDistance, boolean ignoreAir) throws IllegalStateException {
+        BlockRay<World> blockRay = BlockRay.from(player).distanceLimit(maxDistance).build();
+        GPClaim claim = null;
+        if (playerData.visualClaimId != null) {
+            claim = (GPClaim) GriefPreventionPlugin.instance.dataStore.getClaim(player.getWorld().getProperties(), playerData.visualClaimId);
+        }
+
+        while (blockRay.hasNext()) {
+            BlockRayHit<World> blockRayHit = blockRay.next();
+            if (claim != null) {
+                for (Vector3i corner : claim.getVisualizer().getVisualCorners()) {
+                    if (corner.equals(blockRayHit.getBlockPosition())) {
+                        return blockRayHit.getLocation().createSnapshot().getLocation();
+                    }
+                }
+            }
+            if ((!ignoreAir || blockRayHit.getLocation().getBlockType() != BlockTypes.AIR) &&
+                blockRayHit.getLocation().getBlockType() != BlockTypes.TALLGRASS) {
+                    return blockRayHit.getLocation().createSnapshot().getLocation();
+            }
+        }
+
+        return null;
     }
 }

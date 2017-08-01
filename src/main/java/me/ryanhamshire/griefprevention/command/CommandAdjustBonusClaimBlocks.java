@@ -25,11 +25,10 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -37,6 +36,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
@@ -61,10 +61,13 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
         playerData.getStorageData().save();
-
+        final Text message = GriefPreventionPlugin.instance.messageData.adjustBlocksSuccess
+                .apply(ImmutableMap.of(
+                "player", Text.of(user.getName()),
+                "adjustment", Text.of(adjustment),
+                "total", Text.of(playerData.getBonusClaimBlocks()))).build();
         GriefPreventionPlugin
-                .sendMessage(src, TextMode.Success, Messages.AdjustBlocksSuccess, user.getName(), String.valueOf(adjustment),
-                        String.valueOf(playerData.getBonusClaimBlocks()));
+                .sendMessage(src, message);
         GriefPreventionPlugin.addLogEntry(
                 src.getName() + " adjusted " + user.getName() + "'s bonus claim blocks by " + adjustment + ".",
                 CustomLogEntryTypes.AdminActivity);
