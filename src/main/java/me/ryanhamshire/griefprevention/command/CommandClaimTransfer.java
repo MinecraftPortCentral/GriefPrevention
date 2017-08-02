@@ -7,8 +7,6 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -36,7 +34,7 @@ public class CommandClaimTransfer implements CommandExecutor {
 
         User targetPlayer = args.<User>getOne("user").orElse(null);
         if (targetPlayer == null) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "No user found.");
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandPlayerInvalid.toText());
             return CommandResult.success();
         }
 
@@ -48,18 +46,18 @@ public class CommandClaimTransfer implements CommandExecutor {
             ownerId = claim.parent.getOwnerUniqueId();
         }
         if (claim == null || claim.isWilderness()) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.TransferClaimMissing);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
             return CommandResult.empty();
         }
 
         boolean isAdmin = playerData.canIgnoreClaim(claim);
         // check permission
         if (!isAdmin && claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CantTransferAdminClaim);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimTransferAdmin.toText());
             return CommandResult.empty();
         } else if (!isAdmin && (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)))) {
             // verify ownership
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
             return CommandResult.success();
         }
 
@@ -80,7 +78,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         }
 
         // confirm
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.TransferSuccess);
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimTransferSuccess.toText());
         GriefPreventionPlugin.addLogEntry(player.getName() + " transferred a claim at "
                         + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + targetPlayer.getName() + ".",
                 CustomLogEntryTypes.AdminActivity);

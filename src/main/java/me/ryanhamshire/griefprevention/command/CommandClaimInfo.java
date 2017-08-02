@@ -29,10 +29,11 @@ import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
@@ -45,19 +46,18 @@ import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
-import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -71,6 +71,16 @@ public class CommandClaimInfo implements CommandExecutor {
     private static final String INHERIT_PARENT = "InheritParent";
     private static final String PVP_OVERRIDE = "PvPOverride";
     private static final String REQUIRES_CLAIM_BLOCKS = "RequiresClaimBlocks";
+    private static final String FOR_SALE = "ForSale";
+    private boolean useTownInfo = false;
+
+    public CommandClaimInfo() {
+        
+    }
+
+    public CommandClaimInfo(boolean useTownInfo) {
+        this.useTownInfo = useTownInfo;
+    }
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -90,36 +100,36 @@ public class CommandClaimInfo implements CommandExecutor {
         if (player != null && claimIdentifier == null) {
             claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), false, null);
         } else {
-            for (WorldProperties worldProperties : Sponge.getServer().getAllWorldProperties()) {
-                GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(worldProperties);
-                for (Claim worldClaim : claimWorldManager.getWorldClaims()) {
-                    if (worldClaim.getUniqueId().toString().equalsIgnoreCase(claimIdentifier)) {
-                        claim = worldClaim;
-                        break;
-                    }
-                    Text claimName = worldClaim.getName().orElse(null);
-                    if (claimName != null && !claimName.isEmpty()) {
-                        if (claimName.toPlain().equalsIgnoreCase(claimIdentifier)) {
-                            claim = worldClaim;
-                            break;
-                        }
-                    }
-                }
-                if (claim != null) {
-                    break;
-                }
+            GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getLocation().getExtent().getProperties());
+            UUID uuid = null;
+            try {
+                uuid = UUID.fromString(claimIdentifier);
+                claim = claimManager.getClaimByUUID(uuid).orElse(null);
+            } catch (IllegalArgumentException e) {
+                
+            }
+            if (uuid == null) {
+                claim = claimManager.getClaimsByName(claimIdentifier).get(0);
             }
         }
 
         if (claim == null) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
             return CommandResult.success();
         }
 
-        GPClaim gpClaim = (GPClaim) claim;
+        if (this.useTownInfo) {
+            if (!claim.isInTown()) {
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.townNotIn.toText());
+                return CommandResult.success();
+            }
+            claim = claim.getTown().get();
+        }
+
+        final GPClaim gpClaim = (GPClaim) claim;
         UUID ownerUniqueId = claim.getOwnerUniqueId();
-        if (claim.getParent().isPresent()) {
-            ownerUniqueId = claim.getParent().get().getOwnerUniqueId();
+        if (gpClaim.isSubdivision()) {
+            ownerUniqueId = gpClaim.parent.getOwnerUniqueId();
         }
 
         if (!isAdmin) {
@@ -132,18 +142,18 @@ public class CommandClaimInfo implements CommandExecutor {
                     && !gpClaim.getInternalClaimData().getBuilders().contains(player.getUniqueId())
                     && !gpClaim.getInternalClaimData().getManagers().contains(player.getUniqueId())
                     && !player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_OTHERS)) {
-                player.sendMessage(Text.of(TextColors.RED, "You do not have permission to view information in this claim.")); 
+                player.sendMessage(GriefPreventionPlugin.instance.messageData.claimNotYours.toText()); 
                 return CommandResult.success();
             }
         }
 
+        final Text allowEdit = gpClaim.allowEdit(player);
         User owner = null;
         if (!claim.isWilderness()) {
             owner =  GriefPreventionPlugin.getOrCreateUser(ownerUniqueId);
         }
 
         List<Text> textList = new ArrayList<>();
-        List<Text> adminTextList = new ArrayList<>();
         Text name = claim.getName().orElse(null);
         Text greeting = claim.getData().getGreeting().orElse(null);
         Text farewell = claim.getData().getFarewell().orElse(null);
@@ -151,9 +161,13 @@ public class CommandClaimInfo implements CommandExecutor {
         String builders = "";
         String containers = "";
         String managers = "";
+        String accessorGroups = "";
+        String builderGroups = "";
+        String containerGroups = "";
+        String managerGroups = "";
 
         double claimY = 65.0D;
-        if (gpClaim.isCuboid() || GriefPreventionPlugin.getActiveConfig(gpClaim.world.getProperties()).getConfig().claim.extendIntoGroundDistance != 255) {
+        if (gpClaim.isCuboid()) {
             claimY = gpClaim.lesserBoundaryCorner.getY();
         }
         Location<World> southWest = gpClaim.lesserBoundaryCorner.setPosition(new Vector3d(gpClaim.lesserBoundaryCorner.getX(), claimY, gpClaim.greaterBoundaryCorner.getZ()));
@@ -177,60 +191,89 @@ public class CommandClaimInfo implements CommandExecutor {
             // ignore
         }
 
-        Text claimName = Text.of(TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, name == null ? NONE : name);
-        for (UUID uuid : gpClaim.getInternalClaimData().getAccessors()) {
+        if (claim.isWilderness() && name == null) {
+            name = Text.of(TextColors.GREEN, "Wilderness");
+        }
+        Text claimName = Text.of(
+                TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, name == null ? NONE : name);
+        if (!claim.isWilderness() && !claim.isAdminClaim()) {
+            claimName = Text.join(claimName, Text.of("   ", TextColors.YELLOW, "Area: ", TextColors.GRAY, claim.getArea()));
+        }
+        // users
+        final List<UUID> accessorList = gpClaim.getUserTrustList(TrustType.ACCESSOR, true);
+        final List<UUID> builderList = gpClaim.getUserTrustList(TrustType.BUILDER, true);
+        final List<UUID> containerList = gpClaim.getUserTrustList(TrustType.CONTAINER, true);
+        final List<UUID> managerList = gpClaim.getUserTrustList(TrustType.MANAGER, true);
+        for (UUID uuid : accessorList) {
             User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             accessors += user.getName() + " ";
         }
-        for (UUID uuid : gpClaim.getInternalClaimData().getBuilders()) {
+        for (UUID uuid : builderList) {
             User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             builders += user.getName() + " ";
         }
-        for (UUID uuid : gpClaim.getInternalClaimData().getContainers()) {
+        for (UUID uuid : containerList) {
             User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             containers += user.getName() + " ";
         }
-        for (UUID uuid : gpClaim.getInternalClaimData().getManagers()) {
+        for (UUID uuid : managerList) {
             User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             managers += user.getName() + " ";
         }
 
-        final Text adminClaimText = Text.of(TextColors.RED, "ADMIN");
-        final Text basicClaimText = Text.of(TextColors.GREEN, "BASIC");
-        TextColor claimTypeColor = TextColors.GREEN;
-        if (claim.isAdminClaim()) {
-            if (claim.isSubdivision()) {
-                claimTypeColor = TextColors.DARK_AQUA;
-            } else {
-                claimTypeColor = TextColors.RED;
-            }
-        } else if (claim.isSubdivision()) {
-            claimTypeColor = TextColors.AQUA;
+        // groups
+        for (String group : gpClaim.getInternalClaimData().getAccessorGroups()) {
+            accessorGroups += group + " ";
         }
-        
-        if (isAdmin) {
+        for (String group : gpClaim.getInternalClaimData().getBuilderGroups()) {
+            builderGroups += group + " ";
+        }
+        for (String group : gpClaim.getInternalClaimData().getContainerGroups()) {
+            containerGroups += group + " ";
+        }
+        for (String group : gpClaim.getInternalClaimData().getManagerGroups()) {
+            managerGroups += group + " ";
+        }
+
+        /*if (gpClaim.isInTown()) {
             Text returnToClaimInfo = Text.builder().append(Text.of(
                     TextColors.WHITE, "\n[", TextColors.AQUA, "Return to standard settings", TextColors.WHITE, "]\n"))
                 .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claiminfo", ""))).build();
-            Text claimDenyMessages = Text.of(TextColors.YELLOW, DENY_MESSAGES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, DENY_MESSAGES, gpClaim.getInternalClaimData().allowDenyMessages() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
-            Text claimRequiresClaimBlocks = Text.of(TextColors.YELLOW, REQUIRES_CLAIM_BLOCKS, TextColors.WHITE, " : ", getClickableInfoText(src, claim, REQUIRES_CLAIM_BLOCKS, gpClaim.getInternalClaimData().requiresClaimBlocks() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
-            Text claimExpiration = Text.of(TextColors.YELLOW, CLAIM_EXPIRATION, TextColors.WHITE, " : ", getClickableInfoText(src, claim, CLAIM_EXPIRATION, gpClaim.getInternalClaimData().allowClaimExpiration() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
-            Text claimFlagOverrides = Text.of(TextColors.YELLOW, FLAG_OVERRIDES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, FLAG_OVERRIDES, gpClaim.getInternalClaimData().allowFlagOverrides() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
-            Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", getClickableInfoText(src, claim, PVP_OVERRIDE, gpClaim.getInternalClaimData().getPvpOverride() == Tristate.TRUE ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, gpClaim.getInternalClaimData().getPvpOverride().name())), TextColors.RESET);
-            adminTextList.add(returnToClaimInfo);
-            adminTextList.add(claimDenyMessages);
-            if (!claim.isAdminClaim() && !claim.isWilderness()) {
-                adminTextList.add(claimRequiresClaimBlocks);
-                adminTextList.add(claimExpiration);
-            }
-            adminTextList.add(claimFlagOverrides);
-            adminTextList.add(pvp);
+            Text townName = Text.of(TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.RESET,
+                    gpClaim.getTownClaim().getTownData().getName().orElse(NONE));
+            Text townTag = Text.of(TextColors.YELLOW, "Tag", TextColors.WHITE, " : ", TextColors.RESET,
+                    gpClaim.getTownClaim().getTownData().getTownTag().orElse(NONE));
+            townTextList.add(returnToClaimInfo);
+            townTextList.add(townName);
+            townTextList.add(townTag);
+            Text townSettings = Text.builder()
+                    .append(Text.of(TextStyles.ITALIC, TextColors.GREEN, TOWN_SETTINGS))
+                    .onClick(TextActions.executeCallback(createSettingsConsumer(src, claim, townTextList, ClaimType.TOWN)))
+                    .onHover(TextActions.showText(Text.of("Click here to view town settings")))
+                    .build();
+            textList.add(townSettings);
+        }*/
+
+        if (isAdmin) {
             Text adminSettings = Text.builder()
                     .append(Text.of(TextStyles.ITALIC, TextColors.RED, ADMIN_SETTINGS))
-                    .onClick(TextActions.executeCallback(createAdminSettingsConsumer(src, claim, adminTextList)))
+                    .onClick(TextActions.executeCallback(createSettingsConsumer(src, claim, generateAdminSettings(src, gpClaim), ClaimType.ADMIN)))
                     .onHover(TextActions.showText(Text.of("Click here to view admin settings")))
                     .build();
             textList.add(adminSettings);
+        }
+
+        Text bankInfo = null;
+        Text forSaleText = null;
+        if (GriefPreventionPlugin.instance.economyService.isPresent()) {
+             if (GriefPreventionPlugin.getActiveConfig(gpClaim.getWorld().getProperties()).getConfig().claim.bankTaxSystem) {
+                 bankInfo = Text.builder().append(Text.of(TextColors.GOLD, TextStyles.ITALIC, "Bank Info"))
+                         .onHover(TextActions.showText(Text.of("Click to check bank information")))
+                         .onClick(TextActions.executeCallback(consumer -> { CommandHelper.displayClaimBankInfo(src, gpClaim, gpClaim.isTown() ? true : false, true); }))
+                         .build();
+             }
+             forSaleText = Text.builder()
+                     .append(Text.of(TextColors.YELLOW, "ForSale", TextColors.WHITE, " : ", getClickableInfoText(src, claim, FOR_SALE, claim.getEconomyData().isForSale() ? Text.of(TextColors.GREEN, "YES") : Text.of(TextColors.GRAY, "NO")))).build();
         }
 
         Text claimId = Text.join(Text.of(TextColors.YELLOW, "UUID", TextColors.WHITE, " : ",
@@ -238,16 +281,87 @@ public class CommandClaimInfo implements CommandExecutor {
                         .append(Text.of(TextColors.GRAY, claim.getUniqueId().toString()))
                         .onShiftClick(TextActions.insertText(claim.getUniqueId().toString())).build()));
         Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, owner != null && !claim.isAdminClaim() ? owner.getName() : "administrator");
-        Text claimType = Text.builder()
-                .append(Text.of(claimTypeColor, claim.getType().name()))
-                .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, isAdmin)))
-                .onHover(TextActions.showText(Text.of("Click here to switch claim type to ", claim.isAdminClaim() ? basicClaimText : adminClaimText)))
-                .build();
-        Text claimTypeInfo = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", 
-                claimType, " ", TextColors.GRAY, claim.isCuboid() ? "3D " : "2D ",
-                TextColors.WHITE, " (Area: ", TextColors.GRAY, claim.getArea(), " blocks",
-                TextColors.WHITE, ")");
+        Text adminShowText = Text.of();
+        Text basicShowText = Text.of();
+        Text subdivisionShowText = Text.of();
+        Text townShowText = Text.of();
+        Text claimType = Text.of();
+        final Text whiteOpenBracket = Text.of(TextColors.WHITE, "[");
+        final Text whiteCloseBracket = Text.of(TextColors.WHITE, "]");
+        if (allowEdit != null && !isAdmin) {
+            adminShowText = allowEdit;
+            basicShowText = allowEdit;
+            subdivisionShowText = allowEdit;
+            townShowText = allowEdit;
+            Text adminTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.ADMIN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "ADMIN")))
+                    .onHover(TextActions.showText(adminShowText)).build();
+            Text basicTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.BASIC ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "BASIC")))
+                    .onHover(TextActions.showText(basicShowText)).build();
+            Text subTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.SUBDIVISION ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "SUBDIVISION")))
+                    .onHover(TextActions.showText(subdivisionShowText)).build();
+            Text townTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.TOWN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "TOWN")))
+                    .onHover(TextActions.showText(townShowText)).build();
+            claimType = Text.builder()
+                    .append(Text.of(TextColors.GREEN, claim.isCuboid() ? "3D " : "2D "), adminTypeText, Text.of(" "), basicTypeText, Text.of(" "), subTypeText, Text.of(" "), townTypeText)
+                    .build();
+        } else {
+            if (!claim.isAdminClaim()) {
+                if (!isAdmin) {
+                    adminShowText = Text.of(TextColors.RED, "You do not have administrative permissions to change type to ADMIN.");
+                } else if (gpClaim.parent != null && gpClaim.parent.isAdminClaim()) {
+                    adminShowText = Text.of(TextColors.RED, "Admin claims cannot have direct admin children claims.");
+                } else {
+                    adminShowText = Text.of("Click here to change claim to ", TextColors.RED, "ADMIN ", TextColors.RESET, "type.");
+                }
+            }
+            if (!claim.isBasicClaim()) {
+                if (gpClaim.parent != null && gpClaim.parent.isBasicClaim()) {
+                    basicShowText = Text.of(TextColors.RED, "Basic claims cannot have direct basic children claims.");
+                } else {
+                    basicShowText = Text.of("Click here to change claim to ", TextColors.GREEN, "BASIC ", TextColors.RESET, "type.");
+                }
+            }
+            if (!claim.isSubdivision()) {
+                if (gpClaim.parent == null) {
+                    subdivisionShowText = Text.of(TextColors.RED, "Subdivisions cannot be created in the wilderness.");
+                } else {
+                    subdivisionShowText = Text.of("Click here to change claim to ", TextColors.AQUA, "SUBDIVISION ", TextColors.RESET, "type.");
+                }
+            }
+            if (!claim.isTown()) {
+                if (gpClaim.parent != null && gpClaim.parent.isTown()) {
+                    townShowText = Text.of(TextColors.RED, "Towns cannot contain children towns.");
+                } else {
+                    townShowText = Text.of("Click here to change claim to ", TextColors.GREEN, "TOWN ", TextColors.RESET, "type.");
+                }
+            }
+            Text adminTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.ADMIN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "ADMIN")))
+                    .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.ADMIN, isAdmin)))
+                    .onHover(TextActions.showText(adminShowText)).build();
+            Text basicTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.BASIC ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "BASIC")))
+                    .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.BASIC, isAdmin)))
+                    .onHover(TextActions.showText(basicShowText)).build();
+            Text subTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.SUBDIVISION ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "SUBDIVISION")))
+                    .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.SUBDIVISION, isAdmin)))
+                    .onHover(TextActions.showText(subdivisionShowText)).build();
+            Text townTypeText = Text.builder()
+                    .append(Text.of(claim.getType() == ClaimType.TOWN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "TOWN")))
+                    .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.TOWN, isAdmin)))
+                    .onHover(TextActions.showText(townShowText)).build();
+            claimType = Text.builder()
+                    .append(Text.of(TextColors.GREEN, claim.isCuboid() ? "3D " : "2D "), adminTypeText, Text.of(" "), basicTypeText, Text.of(" "), subTypeText, Text.of(" "), townTypeText)
+                    .build();
+        }
+        Text claimTypeInfo = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", claimType);
         Text claimInherit = Text.of(TextColors.YELLOW, INHERIT_PARENT, TextColors.WHITE, " : ", getClickableInfoText(src, claim, INHERIT_PARENT, claim.getData().doesInheritParent() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
+        Text claimExpired = Text.of(TextColors.YELLOW, "Expired", TextColors.WHITE, " : ", claim.getData().isExpired() ? Text.of(TextColors.RED, "YES") : Text.of(TextColors.GRAY, "NO"));
         Text claimFarewell = Text.of(TextColors.YELLOW, "Farewell", TextColors.WHITE, " : ", TextColors.RESET,
                 farewell == null ? NONE : farewell);
         Text claimGreeting = Text.of(TextColors.YELLOW, "Greeting", TextColors.WHITE, " : ", TextColors.RESET,
@@ -289,10 +403,10 @@ public class CommandClaimInfo implements CommandExecutor {
                 .append(Text.of(TextColors.YELLOW, "NorthCorners", TextColors.WHITE, " : "))
                 .append(northWestCorner)
                 .append(northEastCorner).build();
-        Text claimAccessors = Text.of(TextColors.YELLOW, "Accessors", TextColors.WHITE, " : ", TextColors.BLUE, accessors.equals("") ? NONE : accessors);
-        Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.YELLOW, builders.equals("") ? NONE : builders);
-        Text claimContainers = Text.of(TextColors.YELLOW, "Containers", TextColors.WHITE, " : ", TextColors.GREEN, containers.equals("") ? NONE : containers);
-        Text claimCoowners = Text.of(TextColors.YELLOW, "Managers", TextColors.WHITE, " : ", TextColors.GOLD, managers.equals("") ? NONE : managers);
+        Text claimAccessors = Text.of(TextColors.YELLOW, "Accessors", TextColors.WHITE, " : ", TextColors.BLUE, accessors.equals("") ? NONE : accessors, " ", TextColors.LIGHT_PURPLE, accessorGroups);
+        Text claimBuilders = Text.of(TextColors.YELLOW, "Builders", TextColors.WHITE, " : ", TextColors.YELLOW, builders.equals("") ? NONE : builders, " ", TextColors.LIGHT_PURPLE, builderGroups);
+        Text claimContainers = Text.of(TextColors.YELLOW, "Containers", TextColors.WHITE, " : ", TextColors.GREEN, containers.equals("") ? NONE : containers, " ", TextColors.LIGHT_PURPLE, containerGroups);
+        Text claimCoowners = Text.of(TextColors.YELLOW, "Managers", TextColors.WHITE, " : ", TextColors.GOLD, managers.equals("") ? NONE : managers, " ", TextColors.LIGHT_PURPLE, managerGroups);
         Text dateCreated = Text.of(TextColors.YELLOW, "Created", TextColors.WHITE, " : ", TextColors.GRAY, created != null ? created : "Unknown");
         Text dateLastActive = Text.of(TextColors.YELLOW, "LastActive", TextColors.WHITE, " : ", TextColors.GRAY, lastActive != null ? lastActive : "Unknown");
         Text worldName = Text.of(TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, claim.getWorld().getProperties().getWorldName());
@@ -300,10 +414,19 @@ public class CommandClaimInfo implements CommandExecutor {
         if (claimSpawn != null) {
             textList.add(claimSpawn);
         }
+        if (bankInfo != null) {
+            textList.add(bankInfo);
+        }
         textList.add(claimName);
         textList.add(ownerLine);
         textList.add(claimTypeInfo);
-        textList.add(claimInherit);
+        if (!claim.isAdminClaim() && !claim.isWilderness()) {
+            if (forSaleText != null) {
+                textList.add(Text.of(claimInherit, "   ", claimExpired, "   ", forSaleText));
+            } else {
+                textList.add(Text.of(claimInherit, "   ", claimExpired));
+            }
+        }
         textList.add(claimAccessors);
         textList.add(claimBuilders);
         textList.add(claimContainers);
@@ -319,11 +442,18 @@ public class CommandClaimInfo implements CommandExecutor {
         if (!claim.getParent().isPresent()) {
             textList.remove(claimInherit);
         }
+        if (claim.isAdminClaim()) {
+            textList.remove(bankInfo);
+            textList.remove(dateLastActive);
+        }
         if (claim.isWilderness()) {
+            textList.remove(bankInfo);
             textList.remove(claimAccessors);
             textList.remove(claimBuilders);
             textList.remove(claimContainers);
             textList.remove(claimCoowners);
+            textList.remove(claimInherit);
+            textList.remove(claimTypeInfo);
             textList.remove(dateLastActive);
             textList.remove(northCorners);
             textList.remove(southCorners);
@@ -331,26 +461,59 @@ public class CommandClaimInfo implements CommandExecutor {
 
         PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
         PaginationList.Builder paginationBuilder = paginationService.builder()
-                .title(Text.of(TextColors.AQUA, "Claim Info")).padding(Text.of("-")).contents(textList);
+                .title(Text.of(TextColors.AQUA, "Claim Info")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(textList);
         paginationBuilder.sendTo(src);
 
         return CommandResult.success();
     }
 
-    public static Consumer<CommandSource> createAdminSettingsConsumer(CommandSource src, Claim claim, List<Text> adminTextList) {
-        return admin -> {
+    public static Consumer<CommandSource> createSettingsConsumer(CommandSource src, Claim claim, List<Text> textList, ClaimType type) {
+        return settings -> {
+            String name = type == ClaimType.TOWN ? "Town Settings" : "Admin Settings";
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.AQUA, "Admin Claim Info")).padding(Text.of("-")).contents(adminTextList);
+                    .title(Text.of(TextColors.AQUA, name)).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(textList);
             paginationBuilder.sendTo(src);
         };
     }
 
+    private static List<Text> generateAdminSettings(CommandSource src, GPClaim claim) {
+        List<Text> textList = new ArrayList<>();
+        Text returnToClaimInfo = Text.builder().append(Text.of(
+                TextColors.WHITE, "\n[", TextColors.AQUA, "Return to standard settings", TextColors.WHITE, "]\n"))
+            .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claiminfo", claim.getUniqueId().toString()))).build();
+        Text claimDenyMessages = Text.of(TextColors.YELLOW, DENY_MESSAGES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, DENY_MESSAGES, claim.getInternalClaimData().allowDenyMessages() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
+        Text claimRequiresClaimBlocks = Text.of(TextColors.YELLOW, REQUIRES_CLAIM_BLOCKS, TextColors.WHITE, " : ", getClickableInfoText(src, claim, REQUIRES_CLAIM_BLOCKS, claim.getInternalClaimData().requiresClaimBlocks() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
+        Text claimExpiration = Text.of(TextColors.YELLOW, CLAIM_EXPIRATION, TextColors.WHITE, " : ", getClickableInfoText(src, claim, CLAIM_EXPIRATION, claim.getInternalClaimData().allowClaimExpiration() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
+        Text claimFlagOverrides = Text.of(TextColors.YELLOW, FLAG_OVERRIDES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, FLAG_OVERRIDES, claim.getInternalClaimData().allowFlagOverrides() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
+        Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", getClickableInfoText(src, claim, PVP_OVERRIDE, claim.getInternalClaimData().getPvpOverride() == Tristate.TRUE ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, claim.getInternalClaimData().getPvpOverride().name())), TextColors.RESET);
+        textList.add(returnToClaimInfo);
+        textList.add(claimDenyMessages);
+        if (!claim.isAdminClaim() && !claim.isWilderness()) {
+            textList.add(claimRequiresClaimBlocks);
+            textList.add(claimExpiration);
+        }
+        textList.add(claimFlagOverrides);
+        textList.add(pvp);
+        int fillSize = 20 - (textList.size() + 4);
+        for (int i = 0; i < fillSize; i++) {
+            textList.add(Text.of(" "));
+        }
+        return textList;
+    }
+
+    private static void executeAdminSettings(CommandSource src, GPClaim claim) {
+        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
+        PaginationList.Builder paginationBuilder = paginationService.builder()
+                .title(Text.of(TextColors.AQUA, "Admin Settings")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(generateAdminSettings(src, claim));
+        paginationBuilder.sendTo(src);
+    }
+
     public static Text getClickableInfoText(CommandSource src, Claim claim, String title, Text infoText) {
-        String onClickText = "Click here to toggle value.";
+        Text onClickText = Text.of("Click here to toggle value.");
         boolean hasPermission = true;
         if (src instanceof Player) {
-            String denyReason = ((GPClaim) claim).allowEdit((Player) src);
+            Text denyReason = ((GPClaim) claim).allowEdit((Player) src);
             if (denyReason != null) {
                 onClickText = denyReason;
                 hasPermission = false;
@@ -371,148 +534,81 @@ public class CommandClaimInfo implements CommandExecutor {
         return info -> {
             switch (title) {
                 case INHERIT_PARENT : 
-                    if (!claim.getParent().isPresent() || !src.hasPermission(GPPermissions.COMMAND_SUBDIVISION_INHERIT)) {
+                    if (!claim.getParent().isPresent() || !src.hasPermission(GPPermissions.COMMAND_CLAIM_INHERIT)) {
                         return;
                     }
 
                     gpClaim.getInternalClaimData().setInheritParent(!gpClaim.getInternalClaimData().doesInheritParent());
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     claim.getData().save();
-
-                    if (!gpClaim.getData().doesInheritParent()) {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "InheritParent ", TextColors.RED, "OFF"));
-                    } else {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "InheritParent ", TextColors.GREEN, "ON"));
-                    }
-                    break;
+                    CommandHelper.executeCommand(src, "claiminfo", gpClaim.getUniqueId().toString());
+                    return;
                 case CLAIM_EXPIRATION :
                     gpClaim.getInternalClaimData().setClaimExpiration(!gpClaim.getInternalClaimData().allowClaimExpiration());
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
-
-                    if (!gpClaim.getInternalClaimData().allowClaimExpiration()) {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "ClaimExpiration ", TextColors.RED, "OFF"));
-                    } else {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "ClaimExpiration ", TextColors.GREEN, "ON"));
-                    }
                     break;
                 case DENY_MESSAGES :
                     gpClaim.getInternalClaimData().setDenyMessages(!gpClaim.getInternalClaimData().allowDenyMessages());
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
-
-                    if (!gpClaim.getInternalClaimData().allowDenyMessages()) {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "DenyMessages ", TextColors.RED, "OFF"));
-                    } else {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "DenyMessages ", TextColors.GREEN, "ON"));
-                    }
                     break;
                 case FLAG_OVERRIDES :
                     gpClaim.getInternalClaimData().setFlagOverrides(!gpClaim.getInternalClaimData().allowFlagOverrides());
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
-
-                    if (!gpClaim.getInternalClaimData().allowFlagOverrides()) {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "FlagOverride ", TextColors.RED, "OFF"));
-                    } else {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "FlagOverride ", TextColors.GREEN, "ON"));
-                    }
                     break;
                 case PVP_OVERRIDE :
                     Tristate value = gpClaim.getInternalClaimData().getPvpOverride();
-                    Text newValue = Text.of();
                     if (value == Tristate.UNDEFINED) {
-                        newValue = Text.of(TextColors.GREEN, Tristate.TRUE);
                         gpClaim.getInternalClaimData().setPvpOverride(Tristate.TRUE);
                     } else if (value == Tristate.TRUE) {
-                        newValue = Text.of(TextColors.RED, Tristate.FALSE);
                         gpClaim.getInternalClaimData().setPvpOverride(Tristate.FALSE);
                     } else {
-                        newValue = Text.of(TextColors.GRAY, Tristate.UNDEFINED);
                         gpClaim.getInternalClaimData().setPvpOverride(Tristate.UNDEFINED);
                     }
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
-
-                    GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "PvPOverride ", newValue));
                     break;
                 case REQUIRES_CLAIM_BLOCKS :
                     boolean requiresClaimBlocks = gpClaim.getInternalClaimData().requiresClaimBlocks();
                     gpClaim.getInternalClaimData().setRequiresClaimBlocks(!requiresClaimBlocks);
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
-
-                    if (requiresClaimBlocks) {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "RequiresClaimBlocks ", TextColors.RED, "OFF"));
-                    } else {
-                        GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.WHITE, "RequiresClaimBlocks ", TextColors.GREEN, "ON"));
-                    }
                     break;
+                case FOR_SALE :
+                    boolean forSale = gpClaim.getEconomyData().isForSale();
+                    gpClaim.getEconomyData().setForSale(!forSale);
+                    gpClaim.getInternalClaimData().setRequiresSave(true);
+                    gpClaim.getClaimStorage().save();
+                    CommandHelper.executeCommand(src, "claiminfo", gpClaim.getUniqueId().toString());
+                    return;
                 default:
             }
+            executeAdminSettings(src, gpClaim);
         };
     }
 
-    private static Consumer<CommandSource> createClaimTypeConsumer(CommandSource src, Claim gpClaim, boolean isAdmin) {
+    private static Consumer<CommandSource> createClaimTypeConsumer(CommandSource src, Claim gpClaim, ClaimType clicked, boolean isAdmin) {
         GPClaim claim = (GPClaim) gpClaim;
         return type -> {
             if (!(src instanceof Player)) {
                 // ignore
                 return;
             }
-            if (!isAdmin) {
-                src.sendMessage(Text.of(TextColors.RED, "You do not have permission to change the type of this claim."));
-                return;
-            }
-            if (claim.isWilderness()) {
-                src.sendMessage(Text.of(TextColors.RED, "The wilderness cannot be changed."));
-                return;
-            }
-            if (claim.isSubdivision()) {
-                src.sendMessage(Text.of(TextColors.RED, "Subdivisions cannot be changed."));
-                return;
-            }
 
-            Player player = (Player) src;
-            if (claim.isBasicClaim()) {
-                GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-                List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(player.getUniqueId());
-                if (playerClaims != null) {
-                    playerClaims.remove(claim);
-                }
-
-                GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(player.getUniqueId());
-                playerData.revertActiveVisual(player);
-                claim.visualization = null;
-                claim.setOwnerUniqueId(null);
-                claim.type = ClaimType.ADMIN;
-                claim.getInternalClaimData().setType(ClaimType.ADMIN);
-                src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", TextColors.RED, "ADMIN", TextColors.GREEN, "." ));
+            final Player player = (Player) src;
+            if (((GPClaim) gpClaim).allowEdit(player) != null) {
+                src.sendMessage(GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
+                return;
+            }
+            final ClaimResult result = claim.changeType(clicked, Optional.of(((Player) src).getUniqueId()));
+            if (result.successful()) {
+                CommandHelper.executeCommand(src, "claiminfo", gpClaim.getUniqueId().toString());
+                //src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", claim.getFriendlyNameType(), TextColors.GREEN, "." ));
             } else {
-                GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(claim.world.getProperties());
-                List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(player.getUniqueId());
-                if (playerClaims != null && !playerClaims.contains(claim)) {
-                    playerClaims.add(claim);
-                }
-                GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(player.getUniqueId());
-                playerData.revertActiveVisual(player);
-                claim.type = ClaimType.BASIC;
-                claim.setOwnerUniqueId(player.getUniqueId());
-                claim.visualization = null;
-                claim.getInternalClaimData().setOwnerUniqueId(player.getUniqueId());
-                claim.getInternalClaimData().setType(ClaimType.BASIC);
-                src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", TextColors.AQUA, "BASIC", TextColors.GREEN, "." ));
+                src.sendMessage(result.getMessage().get());
             }
-            // revert visuals for all players watching this claim
-            List<UUID> playersWatching = new ArrayList<>(claim.playersWatching);
-            for (UUID playerUniqueId : playersWatching) {
-                player = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
-                if (player != null) {
-                    GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(claim.world, playerUniqueId);
-                    playerData.revertActiveVisual(player);
-                }
-            }
-            claim.getClaimStorage().save();
         };
     }
 }

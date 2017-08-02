@@ -26,6 +26,7 @@
 package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -180,7 +181,7 @@ public class RestoreNatureProcessingTask implements Runnable {
                 for (int y = this.seaLevel - 1; y < snapshots[0].length; y++) {
                     // note: see minecraft wiki data values for leaves
                     BlockSnapshot block = snapshots[x][y][z];
-                    if (block.getState().getType() == BlockTypes.LEAVES && ((((IMixinBlockState) block.getState()).getStateMeta()) & 0x4) != 0) {
+                    if (block.getState().getType() == BlockTypes.LEAVES && (BlockUtils.getBlockStateMeta(block.getState()) & 0x4) != 0) {
                         snapshots[x][y][z] = block.withState(BlockTypes.AIR.getDefaultState());
                     }
                 }

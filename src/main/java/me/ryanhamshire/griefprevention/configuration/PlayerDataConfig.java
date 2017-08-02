@@ -41,6 +41,8 @@ public class PlayerDataConfig extends ConfigCategory {
     @Setting(value = "cuboid-mode",
             comment = "Whether this player is currently in 3D cuboid mode.")
     private boolean cuboidMode = false;
+    @Setting(value = "migrated-blocks")
+    private boolean migrated = false;
 
     public int getAccruedClaimBlocks() {
         return this.accruedClaimBlocks;
@@ -75,5 +77,14 @@ public class PlayerDataConfig extends ConfigCategory {
 
     public void setRequiresSave(boolean flag) {
         this.requiresSave = flag;
+    }
+
+    // Remove after 4.0
+    public boolean hasMigratedBlocks() {
+        return this.migrated;
+    }
+
+    public void setMigratedBlocks(boolean flag) {
+        this.migrated = flag;
     }
 }

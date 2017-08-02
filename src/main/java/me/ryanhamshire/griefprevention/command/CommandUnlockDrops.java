@@ -27,8 +27,6 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -50,8 +48,7 @@ public class CommandUnlockDrops implements CommandExecutor {
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.dropsAreUnlocked = true;
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.DropUnlockConfirmation);
-
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.playerDropUnlockConfirmation.toText());
         return CommandResult.success();
     }
 }

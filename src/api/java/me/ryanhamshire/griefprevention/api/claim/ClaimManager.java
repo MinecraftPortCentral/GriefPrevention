@@ -30,9 +30,14 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Used to manage one or more {@link Claim}'s in a world.
+ */
 public interface ClaimManager {
 
     /**
@@ -43,8 +48,9 @@ public interface ClaimManager {
      * 
      * @param claim The claim to add
      * @param cause The cause of add
+     * @return The claim result
      */
-    void addClaim(Claim claim, Cause cause);
+    ClaimResult addClaim(Claim claim, Cause cause);
 
     /**
      * Gets the wilderness claim of this manager's world.
@@ -77,6 +83,14 @@ public interface ClaimManager {
     Optional<Claim> getClaimByUUID(UUID claimUniqueId);
 
     /**
+     * Gets a list of {@link Claim}'s with specified name.
+     * 
+     * @param name The claim name to search for
+     * @return The list of claims, empty list if none were found
+     */
+    List<Claim> getClaimsByName(String name);
+
+    /**
      * Gets an immutable list of player {@link Claim}'s for specified {@link UUID}.
      * 
      * Note: This will return an empty list if player has no claims.
@@ -96,13 +110,36 @@ public interface ClaimManager {
     List<Claim> getWorldClaims();
 
     /**
+     * Gets an immutable map of chunk hashes to {@link Claim}'s.
+     * 
+     * @return An immutable map of chunk hashes to claims, empty map if none exist.
+     */
+    Map<Long, Set<Claim>> getChunksToClaimsMap();
+
+    /**
      * Deletes a {@link Claim} from the managed world.
      * 
      * @param claim The claim to delete
      * @param cause The cause of deletion
      * @return The claim result
      */
-    ClaimResult deleteClaim(Claim claim, Cause cause);
+    default ClaimResult deleteClaim(Claim claim, Cause cause) {
+        return this.deleteClaim(claim, cause, true);
+    }
+
+    /**
+     * Deletes a {@link Claim} from the managed world.
+     * 
+     * Note: If children are not deleted, they will be moved
+     * to parent claim if one exists. If no parent exists, they
+     * will simply be moved to wilderness.
+     * 
+     * @param claim The claim to delete
+     * @param cause The cause of deletion
+     * @param deleteChildren Whether to delete children
+     * @return The claim result
+     */
+    ClaimResult deleteClaim(Claim claim, Cause cause, boolean deleteChildren);
 
     /**
      * Gets the managed {@link WorldProperties}.

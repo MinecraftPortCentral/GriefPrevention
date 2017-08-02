@@ -44,6 +44,9 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
             if (playerData == null) {
                 return;
             }
+            if (playerData.ignoreActiveContexts) {
+                return;
+            }
 
             GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
             if (sourceClaim != null) {

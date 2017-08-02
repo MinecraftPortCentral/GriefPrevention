@@ -27,8 +27,6 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -54,7 +52,7 @@ public class CommandGivePet implements CommandExecutor {
         // special case: cancellation
         if (args.getOne("player").orElse(false).equals(true)) {
             playerData.petGiveawayRecipient = null;
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.PetTransferCancellation);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandPetTransferCancel.toText());
             return CommandResult.success();
         }
 
@@ -65,7 +63,7 @@ public class CommandGivePet implements CommandExecutor {
         playerData.petGiveawayRecipient = targetPlayer;
 
         // send instructions
-        GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.ReadyToTransferPet);
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandPetTransferReady.toText());
 
         return CommandResult.success();
     }

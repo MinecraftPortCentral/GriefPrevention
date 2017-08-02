@@ -26,6 +26,7 @@ package me.ryanhamshire.griefprevention.api.event;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.data.ClaimData;
+import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.event.entity.TargetEntityEvent;
 import org.spongepowered.api.text.Text;
 

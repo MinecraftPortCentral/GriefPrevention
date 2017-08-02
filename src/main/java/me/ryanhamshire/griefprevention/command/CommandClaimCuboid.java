@@ -27,8 +27,6 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -53,9 +51,9 @@ public class CommandClaimCuboid implements CommandExecutor {
 
         // toggle cuboid claims mode on or off
         if (!playerData.getCuboidMode()) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.CuboidClaimDisabled);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidDisabled.toText());
         } else {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.CuboidClaimEnabled);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidEnabled.toText());
         }
 
         return CommandResult.success();

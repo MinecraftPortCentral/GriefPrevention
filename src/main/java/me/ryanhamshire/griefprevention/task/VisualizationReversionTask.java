@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import org.spongepowered.api.entity.living.player.Player;
 
 //applies a visualization for a player by sending him block change packets
@@ -46,6 +47,10 @@ class VisualizationReversionTask implements Runnable {
             return;
         }
 
+        // check for any active WECUI visuals
+        if (GriefPreventionPlugin.instance.worldEditProvider != null) {
+            GriefPreventionPlugin.instance.worldEditProvider.revertVisuals(this.player, this.playerData, this.playerData.visualClaimId);
+        }
         this.playerData.revertActiveVisual(this.player);
     }
 }

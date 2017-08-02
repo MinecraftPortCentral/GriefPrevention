@@ -25,6 +25,8 @@
  */
 package me.ryanhamshire.griefprevention;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
@@ -32,10 +34,11 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
+import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
-import org.spongepowered.api.Sponge;
+import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -43,6 +46,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -53,6 +57,7 @@ import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,7 +68,6 @@ public class GPPlayerData implements PlayerData {
     public UUID playerID;
     public WorldProperties worldProperties;
     private WeakReference<Subject> playerSubject;
-    private GriefPreventionConfig<?> activeConfig;
 
     // the player's claims
     private List<Claim> claimList;
@@ -85,6 +89,10 @@ public class GPPlayerData implements PlayerData {
     public Location<World> endShovelLocation;
     public Location<World> lastValidInspectLocation;
 
+    // used for nature restores
+    public Chunk fillerChunk;
+    public BlockSnapshot[][][] fillerBlocks;
+
     // the claim this player is currently resizing
     public GPClaim claimResizing;
 
@@ -99,9 +107,6 @@ public class GPPlayerData implements PlayerData {
 
     // timestamp of last death, for use in preventing death message spam
     public long lastDeathTimeStamp = 0;
-
-    // timestamp when last siege ended (where this player was the defender)
-    long lastSiegeEndTimeStamp = 0;
 
     // whether the player was kicked (set and used during logout)
     public boolean wasKicked = false;
@@ -136,10 +141,7 @@ public class GPPlayerData implements PlayerData {
 
     public boolean debugClaimPermissions = false;
     // the last claim this player was in, that we know of
-    public WeakReference<Claim> lastClaim;
-
-    // siege
-    public SiegeData siegeData;
+    public WeakReference<GPClaim> lastClaim = new WeakReference<>(null);
 
     // pvp
     public long lastPvpTimestamp = 0;
@@ -148,6 +150,11 @@ public class GPPlayerData implements PlayerData {
     // safety confirmation for deleting multi-subdivision claims
     public boolean warnedAboutMajorDeletion = false;
 
+    // town
+    public boolean inTown = false;
+    public boolean townChat = false;
+
+    public boolean ignoreActiveContexts = false;
     public InetAddress ipAddress;
 
     // whether or not this player has received a message about unlocking death
@@ -177,6 +184,8 @@ public class GPPlayerData implements PlayerData {
     // profanity warning, once per play session
     public boolean profanityWarned = false;
 
+    public Tristate lastInteractItemEntityResult = Tristate.UNDEFINED;
+    public Tristate lastInteractItemBlockResult = Tristate.UNDEFINED;
     public boolean lastInteractResult = false;
     public int lastTickCounter = 0;
     public UUID lastInteractClaim = GriefPreventionPlugin.PUBLIC_UUID;
@@ -188,59 +197,129 @@ public class GPPlayerData implements PlayerData {
     private String playerName;
 
     // cached option values
-    public double optionAbandonReturnRatio = 1.0;
-    public int optionBlocksAccruedPerHour = 120;
-    public int optionCreateClaimLimit = 0;
-    public int optionInitialClaimBlocks = 100;
-    public int optionMaxAccruedBlocks = 80000;
-    public int optionMaxClaimSizeX = 0;
-    public int optionMaxClaimSizeY = 0;
-    public int optionMaxClaimSizeZ = 0;
-    public int optionChestClaimExpiration = 7;
-    public int optionPlayerClaimExpiration = 14;
+    public double optionAbandonReturnRatioBasic = GPOptions.DEFAULT_ABANDON_RETURN_RATIO_BASIC;
+    public double optionAbandonReturnRatioTown = GPOptions.DEFAULT_ABANDON_RETURN_RATIO_TOWN;
+    public int optionBlocksAccruedPerHour = GPOptions.DEFAULT_BLOCKS_ACCRUED_PER_HOUR;
+    public int optionCreateClaimLimitBasic = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_BASIC;
+    public int optionCreateClaimLimitSubdivision = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION;
+    public int optionCreateClaimLimitTown = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_TOWN;
+    public int optionInitialClaimBlocks = GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS;
+    public int optionMaxAccruedBlocks = GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS;
+    public int optionMaxClaimSizeBasicX = GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_X;
+    public int optionMaxClaimSizeBasicY = GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Y;
+    public int optionMaxClaimSizeBasicZ = GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Z;
+    public int optionMaxClaimSizeTownX = GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_X;
+    public int optionMaxClaimSizeTownY = GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Y;
+    public int optionMaxClaimSizeTownZ = GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Z;
+    public int optionMaxClaimSizeSubX = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X;
+    public int optionMaxClaimSizeSubY = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y;
+    public int optionMaxClaimSizeSubZ = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z;
+    public int optionClaimExpirationChest = GPOptions.DEFAULT_CLAIM_EXPIRATION_CHEST;
+    public int optionClaimExpirationBasic = GPOptions.DEFAULT_CLAIM_EXPIRATION_BASIC;
+    public int optionClaimExpirationSubdivision = GPOptions.DEFAULT_CLAIM_EXPIRATION_SUBDIVISION;
+    public int optionClaimExpirationTown = GPOptions.DEFAULT_CLAIM_EXPIRATION_TOWN;
+    public int optionTaxExpirationBasic = GPOptions.DEFAULT_TAX_EXPIRATION_BASIC;
+    public int optionTaxExpirationSubdivision = GPOptions.DEFAULT_TAX_EXPIRATION_SUBDIVISION;
+    public int optionTaxExpirationTown = GPOptions.DEFAULT_TAX_EXPIRATION_TOWN;
+    public double optionTaxRateBasic = GPOptions.DEFAULT_TAX_RATE_BASIC;
+    public double optionTaxRateSubdivision = GPOptions.DEFAULT_TAX_RATE_SUBDIVISION;
+    public double optionTaxRateTown = GPOptions.DEFAULT_TAX_RATE_TOWN;
+    public double optionTaxRateTownBasic = GPOptions.DEFAULT_TAX_RATE_TOWN_BASIC;
+    public double optionTaxRateTownSubdivision = GPOptions.DEFAULT_TAX_RATE_TOWN_SUBDIVISION;
+    public Map<String, Double> optionMap = Maps.newHashMap();
 
     // cached permission values
     public boolean canManageAdminClaims = false;
     public boolean canManageWilderness = false;
     public boolean ignoreAdminClaims = false;
-    public boolean ignoreWilderness = false;
     public boolean ignoreBasicClaims = false;
+    public boolean ignoreTowns = false;
+    public boolean ignoreWilderness = false;
 
     public boolean dataInitialized = false;
+    public boolean showVisualFillers = true;
 
     public GPPlayerData(WorldProperties worldProperties, UUID playerUniqueId, PlayerStorageData playerStorage, GriefPreventionConfig<?> activeConfig, List<Claim> claims) {
         this.worldProperties = worldProperties;
         this.playerID = playerUniqueId;
         this.playerStorage = playerStorage;
         this.claimList = claims;
-        this.activeConfig = activeConfig;
         this.refreshPlayerOptions();
     }
 
     // Run async
     public void refreshPlayerOptions() {
-        Sponge.getScheduler().createAsyncExecutor(GriefPreventionPlugin.instance.pluginContainer).execute(() -> {
+        GriefPreventionPlugin.instance.executor.execute(() -> {
             if (this.playerSubject == null || this.playerSubject.get() == null) {
                 Subject subject = GriefPreventionPlugin.instance.permissionService.getUserSubjects().get(this.playerID.toString());
                 this.playerSubject = new WeakReference<>(subject);
             }
+            final Subject subject = this.playerSubject.get();
             // options
-            this.optionAbandonReturnRatio = PlayerUtils.getOptionDoubleValue(this.playerSubject.get(), GPOptions.ABANDON_RETURN_RATIO, 1.0);
-            this.optionBlocksAccruedPerHour = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
-            this.optionChestClaimExpiration = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.CHEST_CLAIM_EXPIRATION, 7);
-            this.optionCreateClaimLimit = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.CREATE_CLAIM_LIMIT, 0);
-            this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.INITIAL_CLAIM_BLOCKS, 100);
-            this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_ACCRUED_BLOCKS, 80000);
-            this.optionMaxClaimSizeX= PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_CLAIM_SIZE_X, 0);
-            this.optionMaxClaimSizeY= PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_CLAIM_SIZE_Y, 0);
-            this.optionMaxClaimSizeZ = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.MAX_CLAIM_SIZE_Z, 0);
-            this.optionPlayerClaimExpiration = PlayerUtils.getOptionIntValue(this.playerSubject.get(), GPOptions.PLAYER_CLAIM_EXPIRATION, 14);
+            this.optionAbandonReturnRatioTown = PlayerUtils.getOptionDoubleValue(subject, GPOptions.ABANDON_RETURN_RATIO_TOWN, this.optionAbandonReturnRatioTown);
+            this.optionAbandonReturnRatioBasic = PlayerUtils.getOptionDoubleValue(subject, GPOptions.ABANDON_RETURN_RATIO_BASIC, this.optionAbandonReturnRatioBasic);
+            this.optionBlocksAccruedPerHour = PlayerUtils.getOptionIntValue(subject, GPOptions.BLOCKS_ACCRUED_PER_HOUR, this.optionBlocksAccruedPerHour);
+            this.optionClaimExpirationChest = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_CHEST, this.optionClaimExpirationChest);
+            this.optionCreateClaimLimitBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.CREATE_CLAIM_LIMIT_BASIC, this.optionCreateClaimLimitBasic);
+            this.optionCreateClaimLimitTown = PlayerUtils.getOptionIntValue(subject, GPOptions.CREATE_CLAIM_LIMIT_TOWN, this.optionCreateClaimLimitTown);
+            this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.INITIAL_CLAIM_BLOCKS, this.optionInitialClaimBlocks);
+            this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_ACCRUED_BLOCKS, this.optionMaxAccruedBlocks);
+            this.optionMaxClaimSizeBasicX = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_X, this.optionMaxClaimSizeBasicX);
+            this.optionMaxClaimSizeBasicY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_Y, this.optionMaxClaimSizeBasicY);
+            this.optionMaxClaimSizeBasicZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_Z, this.optionMaxClaimSizeBasicZ);
+            this.optionMaxClaimSizeTownX = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_TOWN_X, this.optionMaxClaimSizeTownX);
+            this.optionMaxClaimSizeTownY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_TOWN_Y, this.optionMaxClaimSizeTownY);
+            this.optionMaxClaimSizeTownZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_TOWN_Z, this.optionMaxClaimSizeTownZ);
+            this.optionMaxClaimSizeSubX = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_X, this.optionMaxClaimSizeSubX);
+            this.optionMaxClaimSizeSubY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Y, this.optionMaxClaimSizeSubY);
+            this.optionMaxClaimSizeSubZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Z, this.optionMaxClaimSizeSubZ);
+            this.optionClaimExpirationChest = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_CHEST, this.optionClaimExpirationChest);
+            this.optionClaimExpirationBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_BASIC, this.optionClaimExpirationBasic);
+            this.optionClaimExpirationTown = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_TOWN, this.optionClaimExpirationTown);
+            this.optionTaxExpirationBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_BASIC, this.optionTaxExpirationBasic);
+            this.optionTaxExpirationSubdivision = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_BASIC, this.optionTaxExpirationSubdivision);
+            this.optionTaxExpirationTown = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_BASIC, this.optionTaxExpirationTown);
+            this.optionTaxRateBasic = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_BASIC, this.optionTaxRateBasic);
+            this.optionTaxRateSubdivision = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_BASIC, this.optionTaxRateSubdivision);
+            this.optionTaxRateTown = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_TOWN, this.optionTaxRateTown);
+            this.optionTaxRateTownBasic = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_TOWN_BASIC, this.optionTaxRateTownBasic);
+            this.optionTaxRateTownSubdivision = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_TOWN_BASIC, this.optionTaxRateTownSubdivision);
+            this.optionMap.put(GPOptions.ABANDON_RETURN_RATIO_TOWN, this.optionAbandonReturnRatioTown);
+            this.optionMap.put(GPOptions.ABANDON_RETURN_RATIO_BASIC, this.optionAbandonReturnRatioBasic);
+            this.optionMap.put(GPOptions.BLOCKS_ACCRUED_PER_HOUR, (double) this.optionBlocksAccruedPerHour);
+            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_CHEST, (double) this.optionClaimExpirationChest);
+            this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_BASIC, (double) this.optionCreateClaimLimitBasic);
+            this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_TOWN, (double) this.optionCreateClaimLimitTown);
+            this.optionMap.put(GPOptions.INITIAL_CLAIM_BLOCKS, (double) this.optionInitialClaimBlocks);
+            this.optionMap.put(GPOptions.MAX_ACCRUED_BLOCKS, (double) this.optionMaxAccruedBlocks);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_BASIC_X, (double) this.optionMaxClaimSizeBasicX);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_BASIC_Y, (double) this.optionMaxClaimSizeBasicY);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_BASIC_Z, (double) this.optionMaxClaimSizeBasicZ);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_X, (double) this.optionMaxClaimSizeSubX);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Y, (double) this.optionMaxClaimSizeSubY);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Z, (double) this.optionMaxClaimSizeSubZ);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_X, (double) this.optionMaxClaimSizeTownX);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_Y, (double) this.optionMaxClaimSizeTownY);
+            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_Z, (double) this.optionMaxClaimSizeTownZ);
+            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_CHEST, (double) this.optionClaimExpirationChest);
+            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_BASIC, (double) this.optionClaimExpirationBasic);
+            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_SUBDIVISION, (double) this.optionClaimExpirationSubdivision);
+            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_TOWN, (double) this.optionClaimExpirationTown);
+            this.optionMap.put(GPOptions.TAX_EXPIRATION_BASIC, (double) this.optionTaxExpirationBasic);
+            this.optionMap.put(GPOptions.TAX_EXPIRATION_SUBDIVISION, (double) this.optionTaxExpirationSubdivision);
+            this.optionMap.put(GPOptions.TAX_EXPIRATION_TOWN, (double) this.optionTaxExpirationTown);
+            this.optionMap.put(GPOptions.TAX_RATE_BASIC, (double) this.optionTaxRateBasic);
+            this.optionMap.put(GPOptions.TAX_RATE_SUBDIVISION, (double) this.optionTaxRateSubdivision);
+            this.optionMap.put(GPOptions.TAX_RATE_TOWN, (double) this.optionTaxRateTown);
+            this.optionMap.put(GPOptions.TAX_RATE_TOWN_BASIC, (double) this.optionTaxRateTownBasic);
+            this.optionMap.put(GPOptions.TAX_RATE_TOWN_SUBDIVISION, (double) this.optionTaxRateTownSubdivision);
             // permissions
-            this.ignoreAdminClaims = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_ADMIN);
-            this.ignoreWilderness = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_WILDERNESS);
-            this.ignoreBasicClaims = this.playerSubject.get().hasPermission(GPPermissions.IGNORE_CLAIMS_BASIC);
-            this.canManageAdminClaims = this.playerSubject.get().hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
-            this.canManageWilderness = this.playerSubject.get().hasPermission(GPPermissions.MANAGE_WILDERNESS);
+            this.ignoreAdminClaims = subject.hasPermission(GPPermissions.IGNORE_CLAIMS_ADMIN);
+            this.ignoreTowns = subject.hasPermission(GPPermissions.IGNORE_CLAIMS_TOWN);
+            this.ignoreWilderness = subject.hasPermission(GPPermissions.IGNORE_CLAIMS_WILDERNESS);
+            this.ignoreBasicClaims = subject.hasPermission(GPPermissions.IGNORE_CLAIMS_BASIC);
+            this.canManageAdminClaims = subject.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
+            this.canManageWilderness = subject.hasPermission(GPPermissions.MANAGE_WILDERNESS);
             this.playerName = CommandHelper.lookupPlayerName(this.playerID);
             this.dataInitialized = true;
         });
@@ -302,12 +381,12 @@ public class GPPlayerData implements PlayerData {
 
     @Override
     public int getChestClaimExpiration() {
-        return this.optionChestClaimExpiration;
+        return this.optionClaimExpirationChest;
     }
 
     @Override
     public int getCreateClaimLimit() {
-        return this.optionCreateClaimLimit;
+        return this.optionCreateClaimLimitBasic;
     }
 
     @Override
@@ -320,12 +399,17 @@ public class GPPlayerData implements PlayerData {
     public int getRemainingClaimBlocks() {
         int remainingBlocks = this.optionInitialClaimBlocks + this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
         for (Claim claim : this.claimList) {
-            if (!claim.isAdminClaim() && !claim.isSubdivision() && claim.getData().requiresClaimBlocks()) {
+            if (!claim.getParent().isPresent() && claim.getData().requiresClaimBlocks()) {
                 remainingBlocks -= claim.getArea();
             }
         }
 
         return remainingBlocks;
+    }
+
+    public double getRemainingChunks() {
+        final double remainingChunks = this.getRemainingClaimBlocks() / 65536.0;
+        return Math.round(remainingChunks * 100.0)/100.0;
     }
 
     public int getAccruedClaimBlocks() {
@@ -363,7 +447,7 @@ public class GPPlayerData implements PlayerData {
 
     @Override
     public double getAbandonedReturnRatio() {
-        return this.optionAbandonReturnRatio;
+        return this.optionAbandonReturnRatioBasic;
     }
 
     public boolean getCuboidMode() {
@@ -372,6 +456,56 @@ public class GPPlayerData implements PlayerData {
 
     public void setCuboidMode(boolean cuboidMode) {
         this.playerStorage.getConfig().setCuboidMode(cuboidMode);
+    }
+
+    public boolean canCreateClaim(Player player) {
+        return canCreateClaim(player, false);
+    }
+
+    public boolean canCreateClaim(Player player, boolean sendMessage) {
+        if (this.shovelMode == ShovelMode.Basic) {
+            if (!player.hasPermission(GPPermissions.CLAIM_CREATE_BASIC)) {
+                if (sendMessage) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimCreate.toText());
+                }
+                return false;
+            }
+            if (this.getCuboidMode() && !player.hasPermission(GPPermissions.CLAIM_CUBOID_BASIC)) {
+                this.setCuboidMode(false);
+                if (sendMessage) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionCuboid.toText());
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidDisabled.toText());
+                }
+                return false;
+            }
+        } else if (this.shovelMode == ShovelMode.Subdivide) {
+            if (!player.hasPermission(GPPermissions.CLAIM_CREATE_SUBDIVISION)) {
+                if (sendMessage) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimCreate.toText());
+                }
+                return false;
+            }
+            if (this.getCuboidMode() && !player.hasPermission(GPPermissions.CLAIM_CUBOID_SUBDIVISION)) {
+                this.setCuboidMode(false);
+                if (sendMessage) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionCuboid.toText());
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidDisabled.toText());
+                }
+                return false;
+            }
+        } else if (this.shovelMode == ShovelMode.Admin) {
+            if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+                return false;
+            }
+            if (this.getCuboidMode() && !player.hasPermission(GPPermissions.CLAIM_CUBOID_ADMIN)) {
+                
+                return false;
+            }
+        } else if (this.shovelMode == ShovelMode.Town && !player.hasPermission(GPPermissions.CLAIM_CREATE_TOWN)) {
+            return false;
+        }
+
+        return true;
     }
 
     public void saveAllData() {
@@ -383,6 +517,10 @@ public class GPPlayerData implements PlayerData {
     }
 
     public List<Claim> getClaims() {
+        return ImmutableList.copyOf(this.claimList);
+    }
+
+    public List<Claim> getInternalClaims() {
         return this.claimList;
     }
 
@@ -399,7 +537,7 @@ public class GPPlayerData implements PlayerData {
 
     public boolean checkLastInteraction(GPClaim claim, User user) {
         if (this.lastInteractResult && user != null && ((SpongeImpl.getServer().getTickCounter() - this.lastTickCounter) <= 2)) {
-            if (claim.getUniqueId().equals(this.lastInteractClaim) || claim.isWildernessClaim()) {
+            if (claim.getUniqueId().equals(this.lastInteractClaim) || claim.isWilderness()) {
                 return true;
             }
         }
@@ -411,17 +549,54 @@ public class GPPlayerData implements PlayerData {
         this.ignoreClaims = flag;
     }
 
-    public boolean canIgnoreClaim(GPClaim claim) {
+    @Override
+    public boolean canIgnoreClaim(Claim claim) {
         if (claim == null || this.ignoreClaims == false) {
             return false;
         }
 
         if (claim.isAdminClaim()) {
             return this.ignoreAdminClaims;
-        } else if (claim.isWildernessClaim()) {
+        } else if (claim.isWilderness()) {
             return this.ignoreWilderness;
         }
         return this.ignoreBasicClaims;
+    }
+
+    public boolean canManageOption(Player player, GPClaim claim, boolean isGroup) {
+        if (claim.allowEdit(player) != null) {
+            return false;
+        }
+
+        if (isGroup) {
+            if (claim.isTown() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_GROUP_TOWN)) {
+                return true;
+            }
+            if (claim.isAdminClaim() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_GROUP_ADMIN)) {
+                return true;
+            }
+            if (claim.isBasicClaim() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_GROUP_BASIC)) {
+                return true;
+            }
+            if (claim.isSubdivision() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_GROUP_SUBDIVISION)) {
+                return true;
+            }
+        } else {
+            if (claim.isTown() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_PLAYER_TOWN)) {
+                return true;
+            }
+            if (claim.isAdminClaim() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_PLAYER_ADMIN)) {
+                return true;
+            }
+            if (claim.isBasicClaim() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_PLAYER_BASIC)) {
+                return true;
+            }
+            if (claim.isSubdivision() && player.hasPermission(GPPermissions.COMMAND_OPTIONS_PLAYER_SUBDIVISION)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -431,16 +606,36 @@ public class GPPlayerData implements PlayerData {
 
     @Override
     public int getMaxClaimX(ClaimType type) {
-        return this.optionMaxClaimSizeX;
+        return this.optionMaxClaimSizeBasicX;
     }
 
     @Override
     public int getMaxClaimY(ClaimType type) {
-        return this.optionMaxClaimSizeY;
+        return this.optionMaxClaimSizeBasicY;
     }
 
     @Override
     public int getMaxClaimZ(ClaimType type) {
-        return this.optionMaxClaimSizeZ;
+        return this.optionMaxClaimSizeBasicZ;
+    }
+
+    public Subject getPlayerSubject() {
+        if (this.playerSubject == null || this.playerSubject.get() == null) {
+            Subject subject = GriefPreventionPlugin.instance.permissionService.getUserSubjects().get(this.playerID.toString());
+            this.playerSubject = new WeakReference<>(subject);
+        }
+
+        return this.playerSubject.get();
+    }
+
+    public double getTotalTax() {
+        double totalTax = 0;
+        final Subject subject = this.getPlayerSubject();
+        for (Claim claim : this.getInternalClaims()) {
+            double playerTaxRate = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_RATE, this);
+            totalTax += (claim.getArea() / 256) * playerTaxRate;
+        }
+
+        return totalTax;
     }
 }

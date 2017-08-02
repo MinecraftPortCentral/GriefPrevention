@@ -26,7 +26,6 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -50,16 +49,16 @@ public class CommandClaimInherit implements CommandExecutor {
 
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), false, null);
         if (claim.parent == null) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, "This command can only be used in subdivisions.");
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandInherit.toText());
             return CommandResult.success();
         }
         claim.getData().setInheritParent(!claim.getData().doesInheritParent());
         claim.getInternalClaimData().setRequiresSave(true);
 
         if (!claim.getData().doesInheritParent()) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.WHITE, "Subdivision inheritance ", TextColors.RED, "OFF"));
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.WHITE, "Parent claim inheritance ", TextColors.RED, "OFF"));
         } else {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.WHITE, "Subdivision inheritance ", TextColors.GREEN, "ON"));
+            GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.WHITE, "Parent claim inheritance ", TextColors.GREEN, "ON"));
         }
 
         return CommandResult.success();

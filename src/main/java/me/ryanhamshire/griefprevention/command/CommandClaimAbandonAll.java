@@ -26,13 +26,12 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -58,19 +57,19 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         }
         // count claims
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        int originalClaimCount = playerData.getClaims().size();
+        int originalClaimCount = playerData.getInternalClaims().size();
 
         // check count
         if (originalClaimCount == 0) {
             try {
-                throw new CommandException(GriefPreventionPlugin.getMessage(Messages.YouHaveNoClaims));
+                throw new CommandException(GriefPreventionPlugin.instance.messageData.claimNoClaims.toText());
             } catch (CommandException e) {
                 src.sendMessage(e.getText());
                 return CommandResult.success();
             }
         }
 
-        GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(ImmutableList.copyOf(playerData.getClaims()), Cause.of(NamedCause.source(src)));
+        GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(ImmutableList.copyOf(playerData.getInternalClaims()), Cause.of(NamedCause.source(src)));
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not abandon claim. A plugin has denied it."))));
@@ -78,13 +77,13 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         }
 
         // adjust claim blocks
-        for (Claim claim : playerData.getClaims()) {
+        for (Claim claim : playerData.getInternalClaims()) {
             // remove all context permissions
             player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
             if (claim.isSubdivision() || claim.isAdminClaim() || claim.isWilderness()) {
                 continue;
             }
-            playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatio))));
+            playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatioBasic))));
         }
 
         // delete them
@@ -92,7 +91,11 @@ public class CommandClaimAbandonAll implements CommandExecutor {
 
         // inform the player
         int remainingBlocks = playerData.getRemainingClaimBlocks();
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.SuccessfulAbandon, String.valueOf(remainingBlocks));
+        final Text message = GriefPreventionPlugin.instance.messageData.claimAbandonSuccess
+                .apply(ImmutableMap.of(
+                "remaining-blocks", Text.of(remainingBlocks)
+        )).build();
+        GriefPreventionPlugin.sendMessage(player, message);
 
         // revert any current visualization
         playerData.revertActiveVisual(player);

@@ -27,8 +27,6 @@ package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 
@@ -59,7 +57,7 @@ public class PvPImmunityValidationTask implements Runnable {
         if (!GriefPreventionPlugin.isInventoryEmpty(player)) {
             // if found, cancel invulnerability and notify
             playerData.pvpImmune = false;
-            GriefPreventionPlugin.sendMessage(player, TextMode.Warn, Messages.PvPImmunityEnd);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.pvpImmunityStart.toText());
         } else {
             // otherwise check again in one minute
             Sponge.getGame().getScheduler().createTaskBuilder().delay(1, TimeUnit.MINUTES).execute(this).submit(GriefPreventionPlugin.instance);

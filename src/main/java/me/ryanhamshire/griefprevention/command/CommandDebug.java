@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import me.ryanhamshire.griefprevention.GPDebugData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -37,29 +38,54 @@ public class CommandDebug implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
+        String target = ctx.<String>getOne("target").orElse(null);
         User user = ctx.<User>getOne("user").orElse(null);
-        boolean verbose = ctx.<Boolean>getOne("verbose").orElse(false);
+        GPDebugData debugData = null;
+        boolean paste = false;
+        if (target.equalsIgnoreCase("on")) {
+            debugData = getOrCreateDebugUser(src, user, true);
+        } else if (target.equalsIgnoreCase("record")) {
+            debugData = getOrCreateDebugUser(src, user, false);
+        } else if (target.equalsIgnoreCase("paste")) {
+            paste = true;
+        } else if (target.equalsIgnoreCase("off")) {
+            GriefPreventionPlugin.instance.getDebugUserMap().remove(src.getIdentifier());
+            GriefPreventionPlugin.debugLogging = false;
+        }
 
         final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
-        if (GriefPreventionPlugin.debugLogging) {
-            src.sendMessage(Text.of(
-                    GP_TEXT, TextColors.GRAY, "Debug ", TextColors.RED, "OFF", TextColors.WHITE, " | ", 
-                    TextColors.GRAY, "Verbose ", TextColors.RED, "OFF"));
-            GriefPreventionPlugin.debugLogging = false;
-            GriefPreventionPlugin.debugVerbose = false;
-            GriefPreventionPlugin.debugUser = null;
-            GriefPreventionPlugin.debugSource = null;
+        if (debugData == null) {
+            if (paste) {
+                debugData = GriefPreventionPlugin.instance.getDebugUserMap().get(src.getIdentifier());
+                if (debugData == null) {
+                    src.sendMessage(Text.of(TextColors.RED, "Nothing to paste!"));
+                    return CommandResult.success();
+                }
+                debugData.pasteRecords();
+            }
+            src.sendMessage(Text.of(GP_TEXT, TextColors.GRAY, "Debug ", TextColors.RED, "OFF"));
+            GriefPreventionPlugin.instance.getDebugUserMap().remove(src.getIdentifier());
         } else {
-            
             src.sendMessage(Text.of(
-                    GP_TEXT, TextColors.GRAY, "Debug ", TextColors.GREEN, "ON", TextColors.WHITE, " | ", 
-                    TextColors.GRAY, "Verbose ", verbose ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")));
-            GriefPreventionPlugin.debugLogging = true;
-            GriefPreventionPlugin.debugVerbose = verbose;
-            GriefPreventionPlugin.debugUser = user;
-            GriefPreventionPlugin.debugSource = src;
+                    GP_TEXT, TextColors.GRAY, "Debug: ", TextColors.GREEN, "ON", TextColors.WHITE, " | ", 
+                    TextColors.GRAY, "Verbose: ", !debugData.isRecording() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"), " | ",
+                    TextColors.GRAY, "Record: ", debugData.isRecording() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF"), " | ",
+                    TextColors.GRAY, "User: ", TextColors.GOLD, user == null ? "ALL" : user.getName()));
+            GriefPreventionPlugin.instance.getDebugUserMap().put(src.getIdentifier(), debugData);
         }
 
         return CommandResult.success();
+    }
+
+    private GPDebugData getOrCreateDebugUser(CommandSource src, User user, boolean verbose) {
+        GPDebugData debugData = GriefPreventionPlugin.instance.getDebugUserMap().get(src.getIdentifier());
+        if (debugData == null) {
+            debugData = new GPDebugData(src, user, verbose);
+            GriefPreventionPlugin.instance.getDebugUserMap().put(src.getIdentifier(), debugData);
+        } else {
+            debugData.setTarget(user);
+            debugData.setVerbose(verbose);
+        }
+        return debugData;
     }
 }

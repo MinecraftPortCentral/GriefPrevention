@@ -25,9 +25,8 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -35,6 +34,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.text.Text;
 
 public class CommandSoftMute implements CommandExecutor {
 
@@ -54,9 +54,15 @@ public class CommandSoftMute implements CommandExecutor {
         // toggle mute for player
         boolean isMuted = GriefPreventionPlugin.instance.dataStore.toggleSoftMute(targetPlayer.getUniqueId());
         if (isMuted) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.SoftMuted, targetPlayer.getName());
+            final Text message = GriefPreventionPlugin.instance.messageData.playerSoftMuted
+                    .apply(ImmutableMap.of(
+                    "player", targetPlayer.getName())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
         } else {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.UnSoftMuted, targetPlayer.getName());
+            final Text message = GriefPreventionPlugin.instance.messageData.playerUnsoftMuted
+                    .apply(ImmutableMap.of(
+                    "player", targetPlayer.getName())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
         }
 
         return CommandResult.success();

@@ -40,7 +40,9 @@ public enum ClaimType {
      */
     BASIC,
     /**
-     * A sub-claim created within a {@link #BASIC} claim.
+     * Represents a sub-claim type that can be one or more blocks.
+     * 
+     * Note: This type is not supported in {@link #WILDERNESS}
      */
     SUBDIVISION,
     /**

@@ -24,12 +24,16 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.util.ClaimClickData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -37,17 +41,21 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
-import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
+import org.spongepowered.api.text.serializer.TextSerializers;
 import org.spongepowered.api.util.Tristate;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -84,49 +92,95 @@ public class CommandClaimFlagGroup implements CommandExecutor {
             source = null;
         }
 
+        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+            final Text message = GriefPreventionPlugin.instance.messageData.commandGroupInvalid
+                    .apply(ImmutableMap.of(
+                    "group", group)).build();
+            GriefPreventionPlugin.sendMessage(player, message);
+            return CommandResult.success();
+        }
+
         Tristate value = ctx.<Tristate>getOne("value").orElse(null);
         String context = ctx.<String>getOne("context").orElse(null);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim == null) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "No claim found."));
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
             return CommandResult.success();
-        } else if (flag == null && value == null) {
+        }
+
+        String reason = ctx.<String>getOne("reason").orElse(null);
+        Text reasonText = null;
+        if (reason != null) {
+            reasonText = TextSerializers.FORMATTING_CODE.deserialize(reason);
+        }
+
+        final Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        if (flag == null && value == null) {
             Set<Context> contexts = new HashSet<>();
             contexts.add(claim.getContext());
-
-            PermissionService service = Sponge.getServiceManager().provide(PermissionService.class).get();
-            Subject subj = service.getGroupSubjects().get(group);
-            if (subj != null) {
-                Map<String, Text> flagList = new TreeMap<>();
-                Map<String, Boolean> permissions = subj.getSubjectData().getPermissions(contexts);
-                for (Map.Entry<String, Boolean> permissionEntry : permissions.entrySet()) {
-                    String flagPermission = permissionEntry.getKey();
-                    String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
-                    Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
-                            .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
-                    Text flagText = Text.of(
-                            TextColors.GREEN, baseFlagText, "  ",
-                            TextColors.WHITE, "[",
-                            TextColors.LIGHT_PURPLE, CommandHelper.getClickableText(src, subj, group, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.GROUP),
-                            TextColors.WHITE, "]");
-                    flagList.put(flagPermission, flagText);
+            Map<String, Text> flagList = new TreeMap<>();
+            Map<String, Boolean> groupPermissions = new HashMap<>(subj.getSubjectData().getPermissions(contexts));
+            Map<String, ClaimClickData> inheritPermissions = new HashMap<>();
+            final List<Claim> inheritParents = claim.getInheritedParents();
+            Collections.reverse(inheritParents);
+            for (Claim current : inheritParents) {
+                GPClaim currentClaim = (GPClaim) current;
+                Map<String, Boolean> currentPermissions = new HashMap<>(subj.getSubjectData().getPermissions(ImmutableSet.of(currentClaim.context)));
+                for (Map.Entry<String, Boolean> permissionEntry : currentPermissions.entrySet()) {
+                    groupPermissions.put(permissionEntry.getKey(), permissionEntry.getValue());
+                    inheritPermissions.put(permissionEntry.getKey(), new ClaimClickData(currentClaim, permissionEntry.getValue()));
                 }
-
-                List<Text> textList = new ArrayList<>(flagList.values());
-                PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
-                PaginationList.Builder paginationBuilder = paginationService.builder()
-                        .title(Text.of(TextColors.GOLD, group, TextColors.AQUA, " Flag Permissions")).padding(Text.of("-")).contents(textList);
-                paginationBuilder.sendTo(src);
             }
+
+            for (Map.Entry<String, Boolean> permissionEntry : groupPermissions.entrySet()) {
+                String flagPermission = permissionEntry.getKey();
+                String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
+                Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
+                        .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
+                ClaimClickData claimClickData = inheritPermissions.get(flagPermission);
+                Text valueText = null;
+                if (claimClickData != null) {
+                    valueText = Text.of(TextColors.AQUA, CommandHelper.getClickableText(src, subj, group, contexts, claimClickData.claim, flagPermission, Tristate.fromBoolean(claimClickData.value), source, FlagType.INHERIT));
+                } else {
+                    valueText = Text.of(TextColors.GOLD, CommandHelper.getClickableText(src, subj, group, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.GROUP));
+                }
+                
+                Text flagText = Text.of(
+                        TextColors.GREEN, baseFlagText, "  ",
+                        TextColors.WHITE, "[",
+                        TextColors.LIGHT_PURPLE, valueText,
+                        TextColors.WHITE, "]");
+                flagList.put(flagPermission, flagText);
+            }
+
+            List<Text> textList = new ArrayList<>(flagList.values());
+            PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
+            PaginationList.Builder paginationBuilder = paginationService.builder()
+                    .title(Text.of(TextColors.GOLD, group, TextColors.AQUA, " Flag Permissions")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(textList);
+            paginationBuilder.sendTo(src);
             return CommandResult.success();
         }
 
-        Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
-        if (subj == null) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
+        if (!ClaimFlag.contains(flag)) {
+            src.sendMessage(Text.of(TextColors.RED, "Flag not found."));
             return CommandResult.success();
         }
-        return CommandHelper.addFlagPermission(src, subj, group, claim, flag, source, target, value, context);
+        Context claimContext = claim.getContext();
+        if (context != null) {
+            claimContext = CommandHelper.validateCustomContext(src, claim, context);
+            if (claimContext == null) {
+                final Text message = GriefPreventionPlugin.instance.messageData.flagInvalidContext
+                        .apply(ImmutableMap.of(
+                        "context", context,
+                        "flag", flag)).build();
+                GriefPreventionPlugin.sendMessage(src, message);
+                return CommandResult.success();
+            }
+        }
+
+        claim.setPermission(subj, group, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
+        //CommandHelper.addFlagPermission(src, subj, group, claim, ClaimFlag.valueOf(flag), source, target, value, claimContext);
+        return CommandResult.success();
     }
 }

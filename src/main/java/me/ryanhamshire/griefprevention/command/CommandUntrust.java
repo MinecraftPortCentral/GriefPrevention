@@ -26,14 +26,14 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.event.GPTrustClaimEvent;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.event.GPGroupTrustClaimEvent;
+import me.ryanhamshire.griefprevention.event.GPUserTrustClaimEvent;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -44,9 +44,14 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Tristate;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class CommandUntrust implements CommandExecutor {
@@ -62,19 +67,21 @@ public class CommandUntrust implements CommandExecutor {
         }
 
         User user = ctx.<User>getOne("user").orElse(null);
+        String group = null;
         if (user == null) {
-            String group = ctx.<String>getOne("group").orElse(null);
+            group = ctx.<String>getOne("group").orElse(null);
             if (group.equalsIgnoreCase("public") || group.equalsIgnoreCase("all")) {
                 user = GriefPreventionPlugin.PUBLIC_USER;
+                group = null;
             }
         }
 
-        if (user == null) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Not a valid player."));
+        if (user == null && group == null) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandPlayerGroupInvalid.toText());
             return CommandResult.success();
         }
-        if (user.getUniqueId().equals(player.getUniqueId())) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You cannot not untrust yourself."));
+        if (user != null && user.getUniqueId().equals(player.getUniqueId())) {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.untrustSelf.toText());
             return CommandResult.success();
         }
 
@@ -82,38 +89,71 @@ public class CommandUntrust implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
         if (claim == null) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "No claim found at location. If you want to untrust all claims, use /untrustall instead."));
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
             return CommandResult.success();
         }
 
         // verify player has full perms
         UUID ownerID = claim.getOwnerUniqueId();
-        if (ownerID == null && claim.parent != null) {
+        if (ownerID == null && claim.isSubdivision()) {
             ownerID = claim.parent.getOwnerUniqueId();
         }
-        if (user.getUniqueId().equals(ownerID)) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, user.getName() + " is owner of claim and cannot be untrusted."));
+        if (user != null && user.getUniqueId().equals(ownerID)) {
+            final Text message = GriefPreventionPlugin.instance.messageData.untrustOwner
+                    .apply(ImmutableMap.of(
+                    "owner", user.getName())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
             return CommandResult.success();
         }
 
         if (claim.allowGrantPermission(player) != null && !(playerData != null && playerData.canIgnoreClaim(claim))) {
-            GriefPreventionPlugin.sendMessage(player, Text.of(TextMode.Err, "You do not have permission to edit this claim."));
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionEditClaim.toText());
             return CommandResult.success();
         }
 
-        GPTrustClaimEvent.Remove event = new GPTrustClaimEvent.Remove(claim, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not remove trust from user '" + user.getName() + "'. A plugin has denied it."))));
-            return CommandResult.success();
-        }
+        if (user != null) {
+            GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(claim, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not remove trust from user '" + user.getName() + "'. A plugin has denied it."))));
+                return CommandResult.success();
+            }
 
-        for (TrustType trustType : TrustType.values()) {
-            claim.getTrustList(trustType).remove(user.getUniqueId());
+            for (TrustType trustType : TrustType.values()) {
+                claim.getUserTrustList(trustType).remove(user.getUniqueId());
+            }
+        } else {
+            Set<Context> contexts = new HashSet<>();
+            contexts.add(claim.getContext());
+            if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+                for (TrustType trustType : TrustType.values()) {
+                    claim.getGroupTrustList(trustType).remove(group);
+                    claim.getInternalClaimData().setRequiresSave(true);
+                }
+
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
+                return CommandResult.success();
+            }
+
+            final Subject subject = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+            GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(claim, Cause.of(NamedCause.source(player)), ImmutableList.of(group), TrustType.NONE);
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not remove trust from group '" + group + "'. A plugin has denied it."))));
+                return CommandResult.success();
+            }
+
+            for (TrustType trustType : TrustType.values()) {
+                subject.getSubjectData().setPermission(contexts, GPPermissions.getTrustPermission(trustType), Tristate.UNDEFINED);
+                claim.getGroupTrustList(trustType).remove(group);
+            }
         }
 
         claim.getInternalClaimData().setRequiresSave(true);
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.UntrustIndividualSingleClaim, user.getName());
+        final Text message = GriefPreventionPlugin.instance.messageData.untrustIndividualSingleClaim
+                .apply(ImmutableMap.of(
+                "target", user != null ? user.getName() : group)).build();
+        GriefPreventionPlugin.sendMessage(player, message);
         return CommandResult.success();
     }
 }

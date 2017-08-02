@@ -24,57 +24,18 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
-import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.util.Tristate;
+import me.ryanhamshire.griefprevention.api.data.ClaimData;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.UUID;
 
-public interface IClaimData {
+public interface IClaimData extends ClaimData {
 
     boolean requiresSave();
 
-    boolean allowClaimExpiration();
-
-    boolean allowDenyMessages();
-
-    boolean allowFlagOverrides();
-
-    boolean isCuboid();
-
-    boolean isResizable();
-
-    boolean doesInheritParent();
-
-    boolean requiresClaimBlocks();
-
-    Tristate getPvpOverride();
-
-    UUID getWorldUniqueId();
-
-    UUID getOwnerUniqueId();
-
-    ClaimType getType();
-
-    Instant getDateCreated();
-
-    Instant getDateLastActive();
-
-    Optional<Text> getName();
-
-    Optional<Text> getGreeting();
-
-    Optional<Text> getFarewell();
-
-    Vector3i getLesserBoundaryCornerPos();
-
-    Vector3i getGreaterBoundaryCornerPos();
-
-    Optional<Vector3i> getSpawnPos();
+    boolean isExpired();
 
     List<UUID> getAccessors();
 
@@ -84,6 +45,14 @@ public interface IClaimData {
 
     List<UUID> getManagers();
 
+    List<String> getAccessorGroups();
+
+    List<String> getBuilderGroups();
+
+    List<String> getContainerGroups();
+
+    List<String> getManagerGroups();
+
     void setOwnerUniqueId(UUID newClaimOwner);
 
     void setWorldUniqueId(UUID uuid);
@@ -91,16 +60,6 @@ public interface IClaimData {
     void setType(ClaimType type);
 
     void setCuboid(boolean cuboid);
-
-    void setResizable(boolean resizable);
-
-    void setDateLastActive(Instant date);
-
-    void setName(Text name);
-
-    void setGreeting(Text message);
-
-    void setFarewell(Text message);
 
     void setLesserBoundaryCorner(String location);
 
@@ -116,17 +75,7 @@ public interface IClaimData {
 
     void setRequiresSave(boolean flag);
 
-    void setInheritParent(boolean flag);
+    void setExpired(boolean expire);
 
-    void setClaimExpiration(boolean flag);
-
-    void setFlagOverrides(boolean flag);
-
-    void setDenyMessages(boolean flag);
-
-    void setPvpOverride(Tristate value);
-
-    void setSpawnPos(Vector3i spawnPos);
-
-    void setRequiresClaimBlocks(boolean requiresClaimBlocks);
+    Map<UUID, ClaimDataConfig> getSubdivisions();
 }

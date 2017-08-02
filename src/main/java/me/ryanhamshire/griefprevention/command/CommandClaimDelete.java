@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
@@ -32,8 +33,6 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -48,6 +47,12 @@ import org.spongepowered.api.text.format.TextColors;
 
 public class CommandClaimDelete implements CommandExecutor {
 
+    private boolean deleteTopLevelClaim;
+
+    public CommandClaimDelete(boolean deleteTopLevelClaim) {
+        this.deleteTopLevelClaim = deleteTopLevelClaim;
+    }
+
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         Player player;
@@ -61,24 +66,28 @@ public class CommandClaimDelete implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), true);
 
-        if (claim.isWildernessClaim()) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.DeleteClaimMissing);
+        if (claim.isWilderness()) {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
         } else {
+            final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimDelete
+                    .apply(ImmutableMap.of(
+                    "type", claim.getType().name())).build();
+
             if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_ADMIN)) {
-                GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CantDeleteAdminClaim);
+                GriefPreventionPlugin.sendMessage(player, message);
                 return CommandResult.success();
             }
             if (claim.isBasicClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_BASIC)) {
-                GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.CantDeleteBasicClaim);
+                GriefPreventionPlugin.sendMessage(player, message);
                 return CommandResult.success();
             }
 
-            if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
-                GriefPreventionPlugin.sendMessage(player, TextMode.Warn, Messages.DeletionSubdivisionWarning);
+            if (!this.deleteTopLevelClaim && !claim.isTown() && claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChildrenWarning.toText());
                 playerData.warnedAboutMajorDeletion = true;
             } else {
 
-                ClaimResult claimResult = GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(src)));
+                ClaimResult claimResult = GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(src)), !this.deleteTopLevelClaim);
                 if (!claimResult.successful()) {
                     player.sendMessage(Text.of(TextColors.RED, claimResult.getMessage().orElse(Text.of("Could not delete claim. A plugin has denied it."))));
                     return CommandResult.success();
@@ -93,7 +102,7 @@ public class CommandClaimDelete implements CommandExecutor {
                     GriefPreventionPlugin.instance.restoreClaim(claim, 0);
                 }
 
-                GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.DeleteSuccess);
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDeleted.toText());
                 GriefPreventionPlugin.addLogEntry(
                         player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
                                 + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),

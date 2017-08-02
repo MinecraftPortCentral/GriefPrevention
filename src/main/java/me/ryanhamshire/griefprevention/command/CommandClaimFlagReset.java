@@ -24,10 +24,10 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -54,18 +54,21 @@ public class CommandClaimFlagReset implements CommandExecutor {
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
-        if (claim.isWildernessClaim()) {
+        final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimResetFlags
+                .apply(ImmutableMap.of(
+                "type", claim.getType().name())).build();
+        if (claim.isWilderness()) {
             if (!src.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset the Wilderness Claim to flag defaults."));
+                GriefPreventionPlugin.sendMessage(src, message);
                 return CommandResult.success();
             }
         } else if (claim.isAdminClaim()) {
             if (!player.getUniqueId().equals(claim.getOwnerUniqueId()) && !src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset an Admin Claim to flag defaults."));
+                GriefPreventionPlugin.sendMessage(src, message);
                 return CommandResult.success();
             }
         } else if (!src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && (claim.isBasicClaim() || claim.isSubdivision()) && !player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to reset your claim to flag defaults."));
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionClaimResetFlagsSelf.toText());
             return CommandResult.success();
         }
 
@@ -86,7 +89,7 @@ public class CommandClaimFlagReset implements CommandExecutor {
             }
         }
 
-        GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success, "Claim flags reset to defaults successfully."));
+        GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.flagResetSuccess.toText());
         return CommandResult.success();
     }
 }

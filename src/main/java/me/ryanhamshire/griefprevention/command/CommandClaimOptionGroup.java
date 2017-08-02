@@ -24,11 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -43,6 +43,7 @@ import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
 
 import java.util.HashSet;
 import java.util.List;
@@ -62,33 +63,44 @@ public class CommandClaimOptionGroup implements CommandExecutor {
         }
 
         String option = args.<String>getOne("option").orElse(null);
-        if (!player.hasPermission(GPPermissions.MANAGE_PERMISSION_OPTIONS)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign an option to groups."));
+        if (option != null && !option.startsWith("griefprevention.")) {
+            option = "griefprevention." + option;
+        }
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+
+        if (claim.isSubdivision()) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandOptionInvalidClaim.toText());
+            return CommandResult.success();
+        }
+        if (!playerData.canManageOption(player, claim, true)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionGroupOption.toText());
             return CommandResult.success();
         }
         String group = args.<String>getOne("group").orElse(null);
-        String value = args.<String>getOne("value").orElse(null);
+        Double value = args.<Double>getOne("value").orElse(null);
 
-        Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
-        if (subj == null) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Not a valid group."));
+        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+            GriefPreventionPlugin.sendMessage(player,GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
-        if (claim.isWildernessClaim() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim options here."));
+        final Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
+                .apply(ImmutableMap.of(
+                "type", claim.getType().name())).build();
+        if (claim.isWilderness() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
+            GriefPreventionPlugin.sendMessage(src, message);
             return CommandResult.success();
         } else if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim options."));
+            GriefPreventionPlugin.sendMessage(src, message);
             return CommandResult.success();
         }
 
         Set<Context> contexts = new HashSet<>();
+        contexts.add(claim.getContext());
         if (option == null || value == null) {
             List<Object[]> optionList = Lists.newArrayList();
-            contexts.add(claim.getContext());
             Map<String, String> options = subj.getSubjectData().getOptions(contexts);
             for (Map.Entry<String, String> optionEntry : options.entrySet()) {
                 String optionValue = optionEntry.getValue();
@@ -101,15 +113,15 @@ public class CommandClaimOptionGroup implements CommandExecutor {
 
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.AQUA, subj.getIdentifier() + " Options")).padding(Text.of("-")).contents(finalTexts);
+                    .title(Text.of(TextColors.AQUA, subj.getIdentifier() + " Claim Options")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(finalTexts);
             paginationBuilder.sendTo(src);
             return CommandResult.success();
         }
 
-        if (subj.getSubjectData().setOption(contexts, option, value)) {
+        if (subj.getSubjectData().setOption(contexts, option, value.toString())) {
             GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, option, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, subj.getIdentifier(), TextColors.WHITE, "."));
         } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "The permission plugin failed to set the option."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
         }
         return CommandResult.success();
     }

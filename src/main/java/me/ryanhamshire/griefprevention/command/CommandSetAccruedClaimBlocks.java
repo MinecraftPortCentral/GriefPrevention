@@ -28,8 +28,6 @@ package me.ryanhamshire.griefprevention.command;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
@@ -68,12 +66,11 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
             }
             return CommandResult.success();
         }
-        playerData.getStorageData().save();
 
-        GriefPreventionPlugin.sendMessage(src, TextMode.Success, Messages.SetClaimBlocksSuccess);
+        playerData.getStorageData().save();
+        GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandAcbSuccess.toText());
         GriefPreventionPlugin.addLogEntry(src.getName() + " set " + user.getName() + "'s accrued claim blocks to " + newAmount + ".",
                 CustomLogEntryTypes.AdminActivity);
-
         return CommandResult.success();
     }
 }

@@ -25,21 +25,17 @@
 package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.text.Text;
 
 public class CommandGpReload implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         GriefPreventionPlugin.instance.loadConfig();
-        GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success,
-                "Configuration updated. If you have updated your Grief Prevention JAR, you still need to restart your server."));
-
+        GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.pluginReload.toText());
         return CommandResult.success();
     }
 }

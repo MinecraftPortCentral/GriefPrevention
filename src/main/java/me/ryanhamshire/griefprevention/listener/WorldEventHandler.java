@@ -24,10 +24,12 @@
  */
 package me.ryanhamshire.griefprevention.listener;
 
-import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
+import me.ryanhamshire.griefprevention.task.TaxApplyTask;
+import me.ryanhamshire.griefprevention.util.TaskUtils;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.world.LoadWorldEvent;
@@ -37,15 +39,31 @@ import org.spongepowered.api.event.world.chunk.LoadChunkEvent;
 import org.spongepowered.api.event.world.chunk.UnloadChunkEvent;
 import org.spongepowered.common.SpongeImpl;
 
+import java.util.concurrent.TimeUnit;
+
 public class WorldEventHandler {
 
     @Listener
     public void onWorldLoad(LoadWorldEvent event) {
+        if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         GPTimings.WORLD_LOAD_EVENT.startTimingIfSync();
         GriefPreventionPlugin.instance.dataStore.loadWorldData(event.getTargetWorld());
         net.minecraft.world.World world = (net.minecraft.world.World) event.getTargetWorld();
         world.addEventListener(new EntityRemovalListener());
         GPTimings.WORLD_LOAD_EVENT.stopTimingIfSync();
+        if (!GriefPreventionPlugin.getActiveConfig(event.getTargetWorld().getProperties()).getConfig().claim.bankTaxSystem) {
+            return;
+        }
+        if (GriefPreventionPlugin.instance.economyService.isPresent()) {
+            // run tax task
+            TaxApplyTask taxTask = new TaxApplyTask(event.getTargetWorld().getProperties());
+            int taxHour = GriefPreventionPlugin.getActiveConfig(event.getTargetWorld().getProperties()).getConfig().claim.taxApplyHour;
+            long delay = TaskUtils.computeDelay(taxHour, 0, 0);
+            Sponge.getScheduler().createTaskBuilder().async().delay(delay, TimeUnit.SECONDS).interval(1, TimeUnit.DAYS).execute(taxTask).submit(GriefPreventionPlugin.instance);
+        }
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
@@ -61,7 +79,7 @@ public class WorldEventHandler {
     }
 
     @Listener
-    public void onWorldSave(SaveWorldEvent event) {
+    public void onWorldSave(SaveWorldEvent.Post event) {
         GPTimings.WORLD_SAVE_EVENT.startTimingIfSync();
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
         if (claimWorldManager == null) {

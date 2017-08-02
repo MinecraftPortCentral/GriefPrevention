@@ -35,10 +35,12 @@ public enum ClaimResultType {
     CLAIM_ALREADY_EXISTS,
     CLAIM_NOT_FOUND,
     CLAIMS_DISABLED,
+    EXCEEDS_MAX_CLAIM_LIMIT,
     EXCEEDS_MAX_SIZE_X,
     EXCEEDS_MAX_SIZE_Y,
     EXCEEDS_MAX_SIZE_Z,
     INSUFFICIENT_CLAIM_BLOCKS,
+    NOT_ENOUGH_FUNDS,
     REQUIRES_OWNER,
     WRONG_CLAIM_TYPE,
 
@@ -50,15 +52,10 @@ public enum ClaimResultType {
     OVERLAPPING_CLAIM,
 
     /**
-     * Returns parent claim in result.
-     */
-    PARENT_CLAIM_MISMATCH,
-
-    /**
      * Returns one or more claims that were cancelled.
      * 
-     * Note: If deleting a claim with subdivisions, this may
-     * return a list of one or more subdivisions in result that
+     * Note: If deleting a claim with child claims, this may
+     * return a list of one or more claims in result that
      * could not be deleted due to event cancellations.
      */
     CLAIM_EVENT_CANCELLED,
