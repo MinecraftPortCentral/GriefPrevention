@@ -4,15 +4,19 @@ buildscript {
             name = 'forge'
             url = 'http://files.minecraftforge.net/maven'
         }
+        maven {
+            url = 'https://plugins.gradle.org/m2/'
+        }
     }
 
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
     }
 }
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '1.2.4'
+    id 'com.github.johnrengelman.shadow' version '2.0.1'
     id 'org.spongepowered.plugin' version '0.8.1'
     id 'net.minecrell.vanillagradle.server' version '2.2-4'
     id 'maven'
@@ -35,6 +39,12 @@ minecraft {
 
 version = "$minecraft.version-$version.$buildNumber"
 
+project.ext.getGitHash = {
+    def command = Runtime.getRuntime().exec("git rev-parse --short HEAD")
+    def result = command.waitFor()
+    return (result == 0) ? command.inputStream.text.trim() : "nogit"
+}
+
 repositories {
     maven {
         name = 'nucleus'
@@ -43,6 +53,14 @@ repositories {
     maven {
         name = 'mcclans'
         url = 'http://direstone.com/artifactory/libs-release-local'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/repositories/releases'
+    }
+    maven {
+        name = 'worldedit'
+        url = 'http://maven.sk89q.com/artifactory/repo'		
     }
 }
 
@@ -58,13 +76,20 @@ dependencies {
         exclude module: 'testplugins'
 	}
 
+    compileOnly "com.sk89q.worldedit:worldedit-core:6.1.4-SNAPSHOT"
     compileOnly "com.googlecode.json-simple:json-simple:1.1"
+    compile "org.eclipse.mylyn.github:org.eclipse.egit.github.core:2.1.5"
     compileOnly "io.github.nucleuspowered:nucleus-api:0.29.0-S6.0"
     compileOnly "nl.riebie:mcclans-api:1.3"
 }
 
 jar {
     from sourceSets.api.output
+    manifest.attributes('FMLAT': 'griefprevention_at.cfg')
+    manifest.attributes('Implementation-Title': 'GriefPrevention')
+    manifest.attributes('Implementation-Version': "$version")
+    manifest.attributes('Git-Hash': project.ext.getGitHash())
+    classifier = 'original'
 }
 
 task apiJar(type: Jar) {
@@ -94,6 +119,23 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
     archives apiJar
     archives javadocJar
+    archives shadowJar
+}
+
+shadowJar {
+    mainSpec.sourcePaths.clear()
+    dependsOn reobfJar
+
+    classifier = ''
+
+    dependencies {
+       include dependency('org.eclipse.mylyn.github:org.eclipse.egit.github.core:2.1.5')
+    }
+
+    exclude "dummyThing"
+	afterEvaluate {
+        from zipTree(reobfJar.jar)
+    }
 }
 
 uploadArchives {

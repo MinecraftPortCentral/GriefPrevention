@@ -25,9 +25,9 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import static org.spongepowered.api.command.args.GenericArguments.bool;
 import static org.spongepowered.api.command.args.GenericArguments.catalogedElement;
 import static org.spongepowered.api.command.args.GenericArguments.choices;
+import static org.spongepowered.api.command.args.GenericArguments.doubleNum;
 import static org.spongepowered.api.command.args.GenericArguments.integer;
 import static org.spongepowered.api.command.args.GenericArguments.onlyOne;
 import static org.spongepowered.api.command.args.GenericArguments.optional;
@@ -40,6 +40,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
@@ -49,11 +51,11 @@ import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandon;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandonAll;
 import me.ryanhamshire.griefprevention.command.CommandClaimAdmin;
-import me.ryanhamshire.griefprevention.command.CommandClaimAdminList;
-import me.ryanhamshire.griefprevention.command.CommandClaimBanItem;
+import me.ryanhamshire.griefprevention.command.CommandClaimBank;
 import me.ryanhamshire.griefprevention.command.CommandClaimBasic;
 import me.ryanhamshire.griefprevention.command.CommandClaimBook;
 import me.ryanhamshire.griefprevention.command.CommandClaimBuy;
+import me.ryanhamshire.griefprevention.command.CommandClaimBuyBlocks;
 import me.ryanhamshire.griefprevention.command.CommandClaimClear;
 import me.ryanhamshire.griefprevention.command.CommandClaimCuboid;
 import me.ryanhamshire.griefprevention.command.CommandClaimDelete;
@@ -62,7 +64,6 @@ import me.ryanhamshire.griefprevention.command.CommandClaimDeleteAllAdmin;
 import me.ryanhamshire.griefprevention.command.CommandClaimFarewell;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlagDebug;
-import me.ryanhamshire.griefprevention.command.CommandClaimFlagGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlagPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlagReset;
 import me.ryanhamshire.griefprevention.command.CommandClaimGreeting;
@@ -71,18 +72,24 @@ import me.ryanhamshire.griefprevention.command.CommandClaimInfo;
 import me.ryanhamshire.griefprevention.command.CommandClaimInherit;
 import me.ryanhamshire.griefprevention.command.CommandClaimList;
 import me.ryanhamshire.griefprevention.command.CommandClaimName;
+import me.ryanhamshire.griefprevention.command.CommandClaimOption;
+import me.ryanhamshire.griefprevention.command.CommandClaimOptionGroup;
+import me.ryanhamshire.griefprevention.command.CommandClaimOptionPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimSell;
+import me.ryanhamshire.griefprevention.command.CommandClaimSellBlocks;
 import me.ryanhamshire.griefprevention.command.CommandClaimSetSpawn;
 import me.ryanhamshire.griefprevention.command.CommandClaimSpawn;
 import me.ryanhamshire.griefprevention.command.CommandClaimSubdivide;
+import me.ryanhamshire.griefprevention.command.CommandClaimTown;
 import me.ryanhamshire.griefprevention.command.CommandClaimTransfer;
-import me.ryanhamshire.griefprevention.command.CommandClaimUnbanItem;
+import me.ryanhamshire.griefprevention.command.CommandClaimWorldEdit;
 import me.ryanhamshire.griefprevention.command.CommandContainerTrust;
 import me.ryanhamshire.griefprevention.command.CommandDebug;
 import me.ryanhamshire.griefprevention.command.CommandGivePet;
 import me.ryanhamshire.griefprevention.command.CommandGpReload;
+import me.ryanhamshire.griefprevention.command.CommandGpVersion;
 import me.ryanhamshire.griefprevention.command.CommandIgnorePlayer;
 import me.ryanhamshire.griefprevention.command.CommandIgnoredPlayerList;
 import me.ryanhamshire.griefprevention.command.CommandPermissionTrust;
@@ -92,8 +99,9 @@ import me.ryanhamshire.griefprevention.command.CommandRestoreNatureAggressive;
 import me.ryanhamshire.griefprevention.command.CommandRestoreNatureFill;
 import me.ryanhamshire.griefprevention.command.CommandSeparate;
 import me.ryanhamshire.griefprevention.command.CommandSetAccruedClaimBlocks;
-import me.ryanhamshire.griefprevention.command.CommandSiege;
 import me.ryanhamshire.griefprevention.command.CommandSoftMute;
+import me.ryanhamshire.griefprevention.command.CommandTownChat;
+import me.ryanhamshire.griefprevention.command.CommandTownTag;
 import me.ryanhamshire.griefprevention.command.CommandTrust;
 import me.ryanhamshire.griefprevention.command.CommandTrustAll;
 import me.ryanhamshire.griefprevention.command.CommandTrustList;
@@ -104,32 +112,37 @@ import me.ryanhamshire.griefprevention.command.CommandUntrust;
 import me.ryanhamshire.griefprevention.command.CommandUntrustAll;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
+import me.ryanhamshire.griefprevention.configuration.MessageDataConfig;
+import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
 import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
 import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
 import me.ryanhamshire.griefprevention.listener.BlockEventHandler;
 import me.ryanhamshire.griefprevention.listener.EntityEventHandler;
+import me.ryanhamshire.griefprevention.listener.MCClansEventHandler;
 import me.ryanhamshire.griefprevention.listener.NucleusEventHandler;
 import me.ryanhamshire.griefprevention.listener.PlayerEventHandler;
 import me.ryanhamshire.griefprevention.listener.WorldEventHandler;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.logging.CustomLogger;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.provider.GPApiProvider;
+import me.ryanhamshire.griefprevention.provider.MCClansApiProvider;
+import me.ryanhamshire.griefprevention.provider.NucleusApiProvider;
+import me.ryanhamshire.griefprevention.provider.WorldEditApiProvider;
 import me.ryanhamshire.griefprevention.task.CleanupUnusedClaimsTask;
 import me.ryanhamshire.griefprevention.task.DeliverClaimBlocksTask;
 import me.ryanhamshire.griefprevention.task.IgnoreLoaderThread;
 import me.ryanhamshire.griefprevention.task.PvPImmunityValidationTask;
-import me.ryanhamshire.griefprevention.task.RestoreNatureProcessingTask;
 import me.ryanhamshire.griefprevention.task.SendPlayerMessageTask;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform.Component;
 import org.spongepowered.api.Sponge;
@@ -151,8 +164,12 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
+import org.spongepowered.api.event.block.ChangeBlockEvent;
+import org.spongepowered.api.event.block.TargetBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.cause.entity.damage.DamageType;
+import org.spongepowered.api.event.entity.TargetEntityEvent;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
@@ -161,14 +178,12 @@ import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.profile.GameProfile;
-import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.economy.EconomyService;
 import org.spongepowered.api.service.permission.PermissionDescription;
 import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
@@ -181,13 +196,11 @@ import org.spongepowered.common.interfaces.world.IMixinDimensionType;
 import org.spongepowered.common.registry.RegistryHelper;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -198,24 +211,29 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "3.2.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "4.2.0", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPreventionPlugin {
 
     // for convenience, a reference to the instance of this plugin
     public static GriefPreventionPlugin instance;
     public static final String MOD_ID = "GriefPrevention";
+    public static final String API_VERSION = GriefPreventionPlugin.class.getPackage().getSpecificationVersion();
+    public static final String IMPLEMENTATION_NAME = GriefPreventionPlugin.class.getPackage().getImplementationTitle();
+    public static final String IMPLEMENTATION_VERSION =  GriefPreventionPlugin.class.getPackage().getImplementationVersion();
+    public static String SPONGE_VERSION = "unknown";
     public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
     @Inject @ConfigDir(sharedRoot = false)
     private Path configPath;
+    public MessageDataConfig messageData;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
-    public static final String CONFIG_HEADER = "3.2.0\n"
+    public static final String CONFIG_HEADER = "4.2.0\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us on Discord or drop by our forums and leave a post.\n"
             + "# Discord: https://discord.gg/jy4FQDz\n"
-            + "# Forums: https://forums.spongepowered.org/t/griefprevention-official-thread-1-8-9-1-10-2/1123/\n";
+            + "# Forums: https://forums.spongepowered.org/t/griefprevention-official-thread-1-10-1-11-1-12/1123\n";
 
     // GP Public user info
     public static final UUID PUBLIC_UUID = UUID.fromString("41C82C87-7AfB-4024-BA57-13D2C99CAE77");
@@ -229,17 +247,12 @@ public class GriefPreventionPlugin {
     // GP Custom Subjects
     public static Subject GLOBAL_SUBJECT;
 
-    // GP Global contexts
-    public static final Context ADMIN_CLAIM_FLAG_DEFAULT_CONTEXT = new Context("gp_claim_defaults", "ADMIN");
-    public static final Context BASIC_CLAIM_FLAG_DEFAULT_CONTEXT = new Context("gp_claim_defaults", "BASIC");
-    public static final Context WILDERNESS_CLAIM_FLAG_DEFAULT_CONTEXT = new Context("gp_claim_defaults", "WILDERNESS");
-    public static final Context ADMIN_CLAIM_FLAG_OVERRIDE_CONTEXT = new Context("gp_claim_overrides", "ADMIN");
-    public static final Context BASIC_CLAIM_FLAG_OVERRIDE_CONTEXT = new Context("gp_claim_overrides", "BASIC");
-
     // this handles data storage, like player and region data
     public DataStore dataStore;
 
     public MCClansApiProvider clanApiProvider;
+    public NucleusApiProvider nucleusApiProvider;
+    public WorldEditApiProvider worldEditProvider;
     public PermissionService permissionService;
     public PermissionDescription.Builder permissionDescriptionBuilder;
     private GriefPreventionApi api;
@@ -256,9 +269,7 @@ public class GriefPreventionPlugin {
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
     public static boolean debugLogging = false;
-    public static boolean debugVerbose = false;
-    public static User debugUser = null;
-    public static CommandSource debugSource = null;
+    private Map<String, GPDebugData> debugUserMap = Maps.newHashMap();
 
     // how far away to search from a tree trunk for its branch blocks
     public static final int TREE_RADIUS = 5;
@@ -267,6 +278,8 @@ public class GriefPreventionPlugin {
     public static final int NOTIFICATION_SECONDS = 20;
 
     public static final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
+
+    public static final Map<String, String> ID_MAP = Maps.newHashMap();
 
     public Path getConfigPath() {
         return this.configPath;
@@ -289,77 +302,67 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, User user, String reason) {
-        addEventLogEntry(event, claim, location, null, null, user, reason);
-    }
-
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, User user, String permission, String reason) {
-        addEventLogEntry(event, claim, location, user, null, null, permission, reason);
-    }
-
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, Object source, Object target, User user, String reason) {
-        addEventLogEntry(event, claim, location, user, source, target, null, reason);
-    }
-
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, String flagPermission, Object source, Object target, User user, String reason) {
-        addEventLogEntry(event, claim, location, user, source, target, GPPermissionHandler.getPermission(source, target, flagPermission), reason);
-    }
-
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, User user, Object source, Object target, String permission, String reason) {
-        if (GriefPreventionPlugin.debugLogging) {
-            String message = "[Claim: " + claim == null ? "none" : claim.getUniqueId().toString() +
-                            "][Event: " + event.getClass().getSimpleName().replace('$', '.').replace(".Impl", "") +
-                            "][Cause: " + GPPermissionHandler.getPermissionIdentifier(event.getCause().root())  +
-                            "][Location: " + (location == null ? "none" : location.getBlockPosition()) + 
-                            "][User: " + (user == null ? "none" : user.getName());
-                            // TODO: Add more reasons                
-                            //"][Reason: " + (reason == null ? "none" : reason + "]");
-
-            if (GriefPreventionPlugin.debugUser == null) {
-                addLogEntry(message);
-            } else if (user != null && GriefPreventionPlugin.debugUser.getUniqueId().equals(user.getUniqueId())) {
-                if (GriefPreventionPlugin.debugVerbose) {
-                    CommandSource src = GriefPreventionPlugin.debugSource;
-                    if (src instanceof Player) {
-                        final Text textEvent = Text.of(GP_TEXT, TextColors.GRAY, "Event: ", TextColors.GREEN, event.getClass().getSimpleName().replace('$', '.').replace(".Impl", ""), "\n");
-                        final Text textCause = Text.of(GP_TEXT, TextColors.GRAY, "Cause: ", TextColors.LIGHT_PURPLE, GPPermissionHandler.getPermissionIdentifier(event.getCause().root()), "\n");
-                        final Text textLocation = Text.of(GP_TEXT, TextColors.GRAY, "Location: ", TextColors.WHITE, location == null ? "NONE" : location.getBlockPosition());
-                        final Text textUser = Text.of(TextColors.GRAY, "User: ", TextColors.GOLD, user.getName(), "\n");
-                        final Text textLocationAndUser = Text.of(textLocation, " ", textUser);
-                        Text textContext = null;
-                        Text textPermission = null;
-                        if (source != null) {
-                            textContext = Text.of(GP_TEXT, TextColors.GRAY, "Source: ", TextColors.YELLOW, GPPermissionHandler.getPermissionIdentifier(source));
-                            if (target != null) {
-                                textContext = Text.of(textContext, " ", TextColors.GRAY, "Target: ", TextColors.YELLOW, GPPermissionHandler.getPermissionIdentifier(target), "\n");
-                            } else {
-                                textContext = Text.of(textContext, "\n");
-                            }
-                        } else if (target != null) {
-                            textContext = Text.of(GP_TEXT, TextColors.GRAY, "Target: ", TextColors.YELLOW, GPPermissionHandler.getPermissionIdentifier(target), "\n");
-                        }
-                        if (permission != null) {
-                            textPermission = Text.of(GP_TEXT, TextColors.GRAY, "Permission: ", TextColors.RED, permission, "\n");
-                        }
-                        Text.Builder textBuilder = Text.builder().append(textEvent);
-                        if (textContext != null) {
-                            textBuilder.append(textContext);
-                        } else {
-                            textBuilder.append(textCause);
-                        }
-                        if (textPermission != null) {
-                            textBuilder.append(textPermission);
-                        }
-                        textBuilder.append(textLocationAndUser);
-                        GriefPreventionPlugin.debugSource.sendMessage(textBuilder.build());
-                                // TODO: Add more reasons
-                                //GP_TEXT, TextColors.GRAY, "Reason: ", TextColors.RED, reason == null ? "NONE" : reason, "\n"));
-                    } else {
-                        src.sendMessage(Text.of(message));
-                    }
+    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, User user, String permission) {
+        for (GPDebugData debugEntry : GriefPreventionPlugin.instance.getDebugUserMap().values()) {
+            final CommandSource source = debugEntry.getSource();
+            final User debugUser = debugEntry.getTarget();
+            if (debugUser != null) {
+                if (user == null || !user.getUniqueId().equals(debugUser.getUniqueId())) {
+                    continue;
                 }
-                addLogEntry(message);
             }
+
+            Object target = null;
+            if (event instanceof TargetEntityEvent) {
+                target = ((TargetEntityEvent) event).getTargetEntity();
+            } else if (event instanceof TargetBlockEvent) {
+                target = ((TargetBlockEvent) event).getTargetBlock();
+            } else if (event instanceof ChangeBlockEvent) {
+                if (event instanceof ChangeBlockEvent.Break) {
+                    target = ((ChangeBlockEvent) event).getTransactions().get(0).getOriginal();
+                } else {
+                    target = ((ChangeBlockEvent) event).getTransactions().get(0).getFinal();
+                }
+            }
+
+            // record
+            if (debugEntry.isRecording()) {
+                String targetIdentifier = GPPermissionHandler.getPermissionIdentifier(target);
+                permission = permission.replace("griefprevention.flag.", "");
+                final String messageClaim = claim == null ? "none" : claim.getUniqueId().toString();
+                final String messageEvent = event.getClass().getSimpleName().replace('$', '.').replace(".Impl", "");
+                final String messageSource = GPPermissionHandler.getPermissionIdentifier(event.getCause().root());
+                final String messageTarget = targetIdentifier.isEmpty() ? "none" : targetIdentifier;
+                final String messageLocation = location == null ? "none" : location.getBlockPosition().toString();
+                final String messageUser = user == null ? "none" : user.getName();
+                debugEntry.addRecord(messageClaim, messageEvent, messageSource, messageTarget, messageLocation, messageUser);
+                continue;
+            }
+
+            final Text textEvent = Text.of(GP_TEXT, TextColors.GRAY, "Event: ", TextColors.GREEN, event.getClass().getSimpleName().replace('$', '.').replace(".Impl", ""), "\n");
+            final Text textCause = Text.of(GP_TEXT, TextColors.GRAY, "Cause: ", TextColors.LIGHT_PURPLE, GPPermissionHandler.getPermissionIdentifier(event.getCause().root()), "\n");
+            final Text textLocation = Text.of(GP_TEXT, TextColors.GRAY, "Location: ", TextColors.WHITE, location == null ? "NONE" : location.getBlockPosition());
+            final Text textUser = Text.of(TextColors.GRAY, "User: ", TextColors.GOLD, user.getName(), "\n");
+            final Text textLocationAndUser = Text.of(textLocation, " ", textUser);
+            Text textContext = null;
+            Text textPermission = null;
+            if (target != null) {
+                textContext = Text.of(GP_TEXT, TextColors.GRAY, "Target: ", TextColors.YELLOW, GPPermissionHandler.getPermissionIdentifier(target), "\n");
+            }
+            if (permission != null) {
+                textPermission = Text.of(GP_TEXT, TextColors.GRAY, "Permission: ", TextColors.RED, permission, "\n");
+            }
+            Text.Builder textBuilder = Text.builder().append(textEvent);
+            if (textContext != null) {
+                textBuilder.append(textContext);
+            } else {
+                textBuilder.append(textCause);
+            }
+            if (textPermission != null) {
+                textBuilder.append(textPermission);
+            }
+            textBuilder.append(textLocationAndUser);
+            source.sendMessage(textBuilder.build());
         }
     }
 
@@ -368,7 +371,7 @@ public class GriefPreventionPlugin {
     }
 
     public static void addLogEntry(String entry) {
-        addLogEntry(entry, CustomLogEntryTypes.Debug, GriefPreventionPlugin.debugVerbose);
+        addLogEntry(entry, CustomLogEntryTypes.Debug, GriefPreventionPlugin.debugLogging);
     }
 
     @Listener
@@ -381,13 +384,13 @@ public class GriefPreventionPlugin {
     private boolean validateSpongeVersion() {
         if (Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getName().equals("SpongeForge")) {
             if (Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().isPresent()) {
-                int spongeVersion = 0;
+                int spongeBuild = 0;
                 try {
-                    String version = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
-                    version = version.substring(Math.max(version.length() - 4, 0));
-                    spongeVersion = Integer.parseInt(version);
-                    if (spongeVersion < 2403) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeVersion + " but GriefPrevention requires build 2403+.");
+                    SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
+                    String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
+                    spongeBuild = Integer.parseInt(build);
+                    if (spongeBuild < 2486) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2315+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -401,7 +404,7 @@ public class GriefPreventionPlugin {
 
     @Listener(order = Order.LAST)
     public void onPreInit(GamePreInitializationEvent event) {
-        if (!validateSpongeVersion()) {
+        if (!validateSpongeVersion() || Sponge.getPlatform().getType().isClient()) {
             return;
         }
 
@@ -419,7 +422,7 @@ public class GriefPreventionPlugin {
                 .assign(PermissionDescription.ROLE_USER, true)
                 .register();
             this.permissionDescriptionBuilder
-                .id(GPPermissions.COMMAND_ABANDON_CLAIM)
+                .id(GPPermissions.COMMAND_ABANDON_BASIC)
                 .description(Text.of("Allows a user to run the command /abandonclaim"))
                 .assign(PermissionDescription.ROLE_USER, true)
                 .register();
@@ -574,12 +577,7 @@ public class GriefPreventionPlugin {
                 .assign(PermissionDescription.ROLE_USER, true)
                 .register();
             this.permissionDescriptionBuilder
-                .id(GPPermissions.COMMAND_LIST_ADMIN_CLAIMS)
-                .description(Text.of("List all administrative claims"))
-                .assign(PermissionDescription.ROLE_ADMIN, true)
-                .register();
-            this.permissionDescriptionBuilder
-                .id(GPPermissions.COMMAND_LIST_CLAIMS)
+                .id(GPPermissions.COMMAND_CLAIM_LIST)
                 .description(Text.of("List all claims owned by a player."))
                 .assign(PermissionDescription.ROLE_USER, true)
                 .register();
@@ -670,7 +668,7 @@ public class GriefPreventionPlugin {
                 .assign(PermissionDescription.ROLE_USER, true)
                 .register();
             this.permissionDescriptionBuilder
-                .id(GPPermissions.COMMAND_SUBDIVISION_INHERIT)
+                .id(GPPermissions.COMMAND_CLAIM_INHERIT)
                 .description(Text.of("Toggles inheritance from parent claim."))
                 .assign(PermissionDescription.ROLE_USER, true)
                 .register();
@@ -719,12 +717,23 @@ public class GriefPreventionPlugin {
             return;
         }
 
+        if (Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase("sponge")) {
+            this.logger.error("Unable to initialize plugin. GriefPrevention requires one of the following permission plugins : LuckPerms, PEX, or PermissionsManager.");
+            return;
+        }
+
         this.loadConfig();
         this.customLogger = new CustomLogger();
         this.executor = Executors.newFixedThreadPool(GriefPreventionPlugin.getGlobalConfig().getConfig().thread.numExecutorThreads);
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
         if (Sponge.getPluginManager().getPlugin("mcclans").isPresent()) {
             this.clanApiProvider = new MCClansApiProvider();
+        }
+        if (Sponge.getPluginManager().getPlugin("nucleus").isPresent()) {
+            this.nucleusApiProvider = new NucleusApiProvider();
+        }
+        if (Sponge.getPluginManager().getPlugin("worldedit").isPresent() || Sponge.getPluginManager().getPlugin("fastasyncworldedit").isPresent()) {
+            this.worldEditProvider = new WorldEditApiProvider();
         }
 
         if (this.dataStore == null) {
@@ -744,14 +753,13 @@ public class GriefPreventionPlugin {
         Sponge.getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
         Sponge.getEventManager().registerListeners(this, new EntityEventHandler(dataStore));
         Sponge.getEventManager().registerListeners(this, new WorldEventHandler());
-        if (Sponge.getPluginManager().getPlugin("nucleus").isPresent()) {
+        if (this.nucleusApiProvider != null) {
             Sponge.getEventManager().registerListeners(this, new NucleusEventHandler());
         }
-        addLogEntry("Finished loading data " + dataMode + ".");
-        if (Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase("sponge")) {
-            this.logger.error("Unable to initialize plugin. GriefPrevention requires one of the following permission plugins : LuckPerms, PEX, or PermissionsManager.");
-            return;
+        if (this.clanApiProvider != null) {
+            Sponge.getEventManager().registerListeners(this, new MCClansEventHandler());
         }
+        addLogEntry("Finished loading data " + dataMode + ".");
 
         PUBLIC_USER = Sponge.getServiceManager().provide(UserStorageService.class).get()
                 .getOrCreate(GameProfile.of(GriefPreventionPlugin.PUBLIC_UUID, GriefPreventionPlugin.PUBLIC_NAME));
@@ -760,14 +768,14 @@ public class GriefPreventionPlugin {
         // unless claim block accrual is disabled, start the recurring per 10
         // minute event to give claim blocks to online players
         DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-        Sponge.getGame().getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
+        Sponge.getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
                 .submit(GriefPreventionPlugin.instance);
 
         // run cleanup task
         int cleanupTaskInterval = GriefPreventionPlugin.getGlobalConfig().getConfig().claim.cleanupTaskInterval;
         if (cleanupTaskInterval > 0) {
             CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask();
-            Sponge.getGame().getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask)
+            Sponge.getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask)
                     .submit(GriefPreventionPlugin.instance);
         }
 
@@ -799,11 +807,30 @@ public class GriefPreventionPlugin {
     public void registerBaseCommands() {
 
         ImmutableMap.Builder<String, String> flagChoicesBuilder = ImmutableMap.builder();
-        for (String flag: GPFlags.FLAG_LIST) {
-            flagChoicesBuilder.put(flag, flag);
+        for (ClaimFlag flag: ClaimFlag.values()) {
+            flagChoicesBuilder.put(flag.toString().toLowerCase(), flag.toString().toLowerCase());
         }
 
-        ImmutableMap<String, String> flagChoices = flagChoicesBuilder.build();
+        ImmutableMap.Builder<String, String> optionChoicesBuilder = ImmutableMap.builder();
+        for (String option: GPOptions.DEFAULT_OPTIONS.keySet()) {
+            option = option.replaceAll("griefprevention.", "");
+            optionChoicesBuilder.put(option, option);
+        }
+
+        ImmutableMap.Builder<String, String> debugChoicesBuilder = ImmutableMap.builder();
+        debugChoicesBuilder.put("on", "on");
+        debugChoicesBuilder.put("off", "off");
+        debugChoicesBuilder.put("log", "log");
+        debugChoicesBuilder.put("record", "record");
+        debugChoicesBuilder.put("paste", "paste");
+
+        ImmutableMap.Builder<String, String> contextChoicesBuilder = ImmutableMap.builder();
+        contextChoicesBuilder.put("default", "default");
+        contextChoicesBuilder.put("override", "override");
+        final ImmutableMap<String, String> flagChoices = flagChoicesBuilder.build();
+        final ImmutableMap<String, String> optionChoices = optionChoicesBuilder.build();
+        final ImmutableMap<String, String> debugChoices = debugChoicesBuilder.build();
+        final ImmutableMap<String, String> contextChoices = contextChoicesBuilder.build();
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Grants a player entry to your claim(s) and use of your bed"))
@@ -823,7 +850,7 @@ public class GriefPreventionPlugin {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Abandons a claim"))
-                .permission(GPPermissions.COMMAND_ABANDON_CLAIM)
+                .permission(GPPermissions.COMMAND_ABANDON_BASIC)
                 .executor(new CommandClaimAbandon(false))
                 .build(), "abandonclaim");
 
@@ -834,10 +861,10 @@ public class GriefPreventionPlugin {
                 .build(), "abandonallclaims");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Abandons a claim and all its subdivisions"))
+                .description(Text.of("Abandons the current claim level ignoring children."))
                 .permission(GPPermissions.COMMAND_ABANDON_TOP_LEVEL_CLAIM)
                 .executor(new CommandClaimAbandon(true))
-                .build(), "abandontoplevelclaim");
+                .build(), "abandontoplevelclaim", "abandontopclaim", "atc");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to administrative claims mode"))
@@ -846,18 +873,10 @@ public class GriefPreventionPlugin {
                 .build(), "adminclaims", "ac");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("List all administrative claims"))
-                .permission(GPPermissions.COMMAND_LIST_ADMIN_CLAIMS)
-                .arguments(optional(GenericArguments.world(Text.of("world"))))
-                .executor(new CommandClaimAdminList())
-                .build(), "adminclaimlist", "adminclaimslist", "claimadminlist");
-
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Bans the specified item id or item in hand if no id is specified."))
-                .permission(GPPermissions.COMMAND_BAN_ITEM)
-                .arguments(optional(catalogedElement(Text.of("item"), ItemType.class)))
-                .executor(new CommandClaimBanItem())
-                .build(), "banitem");
+                .description(Text.of("Switches the shovel tool to town claims mode"))
+                .permission(GPPermissions.COMMAND_TOWN_MODE)
+                .executor(new CommandClaimTown())
+                .build(), "townclaims");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool back to basic claims mode"))
@@ -903,7 +922,7 @@ public class GriefPreventionPlugin {
                         + "economy plugin"))
                 .permission(GPPermissions.COMMAND_BUY_CLAIM_BLOCKS)
                 .arguments(optional(integer(Text.of("numberOfBlocks"))))
-                .executor(new CommandClaimBuy())
+                .executor(new CommandClaimBuyBlocks())
                 .build(), "buyclaimblocks", "buyclaim");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
@@ -915,8 +934,14 @@ public class GriefPreventionPlugin {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission(GPPermissions.COMMAND_DELETE_CLAIM_BASE)
-                .executor(new CommandClaimDelete())
+                .executor(new CommandClaimDelete(false))
                 .build(), "deleteclaim", "dc");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
+                .permission(GPPermissions.COMMAND_DELETE_CLAIM_BASE)
+                .executor(new CommandClaimDelete(true))
+                .build(), "deletetopclaim", "dtc");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Delete all of another player's claims"))
@@ -951,13 +976,13 @@ public class GriefPreventionPlugin {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Toggles subdivision inherit mode"))
-                .permission(GPPermissions.COMMAND_SUBDIVISION_INHERIT)
+                .permission(GPPermissions.COMMAND_CLAIM_INHERIT)
                 .executor(new CommandClaimInherit())
                 .build(), "inheritpermissions", "inherit");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("List information about a player's claim blocks and claims"))
-                .permission(GPPermissions.COMMAND_LIST_CLAIMS)
+                .permission(GPPermissions.COMMAND_CLAIM_LIST)
                 .arguments(GenericArguments.firstParsing(
                         GenericArguments.seq(
                                 GenericArguments.user(Text.of("user")),
@@ -987,12 +1012,24 @@ public class GriefPreventionPlugin {
                 .build(), "claiminfo", "claimsinfo");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Sell your claim blocks for server money. Doesn't work on servers without a vault-compatible "
-                        + "economy plugin"))
+                .description(Text.of("List all claims available for purchase."))
+                .permission(GPPermissions.COMMAND_CLAIM_BUY)
+                .executor(new CommandClaimBuy())
+                .build(), "claimbuy");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Puts your claim up for sale. Use /claimsell amount. Requires an economy plugin"))
+                .permission(GPPermissions.COMMAND_SELL_CLAIM_BLOCKS)
+                .arguments(GenericArguments.firstParsing(doubleNum(Text.of("price")), string(Text.of("cancel"))))
+                .executor(new CommandClaimSell())
+                .build(), "claimsell");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Sell your claim blocks for server money. Doesn't work on servers without an economy plugin"))
                 .permission(GPPermissions.COMMAND_SELL_CLAIM_BLOCKS)
                 .arguments(optional(integer(Text.of("numberOfBlocks"))))
-                .executor(new CommandClaimSell())
-                .build(), "sellclaimblocks", "sellclaim");
+                .executor(new CommandClaimSellBlocks())
+                .build(), "sellclaimblocks", "claimsellblocks");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))
@@ -1027,10 +1064,8 @@ public class GriefPreventionPlugin {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Toggles debug"))
                 .permission(GPPermissions.COMMAND_DEBUG)
-                .arguments(GenericArguments.firstParsing(
-                        GenericArguments.seq(user(Text.of("user")),
-                                bool(Text.of("verbose"))),
-                        optional(bool(Text.of("verbose")))))
+                .arguments(GenericArguments.seq(choices(Text.of("target"), debugChoices),
+                                optional(user(Text.of("user")))))
                 .executor(new CommandDebug())
                 .build(), "gpdebug");
 
@@ -1082,6 +1117,12 @@ public class GriefPreventionPlugin {
                 .permission(GPPermissions.COMMAND_RELOAD)
                 .executor(new CommandGpReload())
                 .build(), "gpreload");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Displays GriefPrevention's version information"))
+                .permission(GPPermissions.COMMAND_VERSION)
+                .executor(new CommandGpVersion())
+                .build(), "gpversion");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Grants a player permission to grant their level of permission to others"))
@@ -1138,18 +1179,52 @@ public class GriefPreventionPlugin {
                 .build(), "setaccruedclaimblocks", "scb");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Initiates a siege versus another player"))
-                .arguments(optional(onlyOne(player(Text.of("playerName")))))
-                .permission(GPPermissions.COMMAND_SIEGE)
-                .executor(new CommandSiege())
-                .build(), "siege");
-
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Toggles whether a player's messages will only reach other soft-muted players"))
                 .permission(GPPermissions.COMMAND_SOFT_MUTE_PLAYER)
                 .arguments(onlyOne(user(Text.of("player"))))
                 .executor(new CommandSoftMute())
                 .build(), "softmute");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Used for claim bank queries."))
+                .permission(GPPermissions.COMMAND_CLAIM_BANK)
+                .arguments(optional(
+                        GenericArguments.seq(
+                                string(Text.of("command")),
+                                doubleNum(Text.of("amount")))))
+                .executor(new CommandClaimBank())
+                .build(), "claimbank", "cb");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Used for town bank queries."))
+                .permission(GPPermissions.COMMAND_TOWN_BANK)
+                .arguments(optional(
+                        GenericArguments.seq(
+                                string(Text.of("command")),
+                                doubleNum(Text.of("amount")))))
+                .executor(new CommandClaimBank(true))
+                .build(), "townbank", "tb");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Turns on town chat."))
+                .permission(GPPermissions.COMMAND_TOWN_CHAT)
+                .arguments(optional(string(Text.of("message"))))
+                .executor(new CommandTownChat())
+                .build(), "townchat", "tc");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gets information about a town"))
+                .permission(GPPermissions.COMMAND_TOWN_INFO_BASE)
+                .arguments(optional(string(Text.of("id"))))
+                .executor(new CommandClaimInfo(true))
+                .build(), "towninfo", "townsinfo");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Sets the tag of your town."))
+                .permission(GPPermissions.COMMAND_TOWN_TAG)
+                .arguments(string(Text.of("tag")))
+                .executor(new CommandTownTag())
+                .build(), "towntag", "tt");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Grants a player edit access to your claim(s)"))
@@ -1182,13 +1257,6 @@ public class GriefPreventionPlugin {
                 .arguments(string(Text.of("action")), optional(string(Text.of("name"))), optional(string(Text.of("description"))))
                 .executor(new CommandClaimTemplate())
                 .build(), "claimtemplate");*/
-
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Unbans the specified item id or item in hand if no id is specified."))
-                .permission(GPPermissions.COMMAND_UNBAN_ITEM)
-                .arguments(optional(catalogedElement(Text.of("item"), ItemType.class)))
-                .executor(new CommandClaimUnbanItem())
-                .build(), "unbanitem");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Unignores another player's chat messages"))
@@ -1226,16 +1294,21 @@ public class GriefPreventionPlugin {
                         string(Text.of("group"))))
                 .executor(new CommandUntrustAll()).build(), Arrays.asList("untrustall", "uta"));
 
-        Map<String, String> catalogMap = Maps.newHashMap();
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Uses the worldedit selection to create a claim."))
+                .permission(GPPermissions.CLAIM_CREATE)
+                .executor(new CommandClaimWorldEdit())
+                .build(), "claim");
+
         for (BlockType blockType : Sponge.getRegistry().getAllOf(BlockType.class)) {
             String modId = blockType.getId().split(":")[0].toLowerCase();
             if (modId.equals("none")) {
                 continue;
             }
-            if (!catalogMap.containsKey(modId + ":any")) {
-                catalogMap.put(modId + ":any", modId + ":any");
+            if (!ID_MAP.containsKey(modId + ":any")) {
+                ID_MAP.put(modId + ":any", modId + ":any");
             }
-            catalogMap.put(blockType.getId(), blockType.getId());
+            ID_MAP.put(blockType.getId(), blockType.getId());
         }
 
         for (EntityType entityType : Sponge.getRegistry().getAllOf(EntityType.class)) {
@@ -1243,17 +1316,17 @@ public class GriefPreventionPlugin {
             if (modId.equals("none")) {
                 continue;
             }
-            if (!catalogMap.containsKey(modId + ":any")) {
-                catalogMap.put(modId + ":any", modId + ":any");
+            if (!ID_MAP.containsKey(modId + ":any")) {
+                ID_MAP.put(modId + ":any", modId + ":any");
             }
-            if (!catalogMap.containsKey(entityType.getId())) {
-                catalogMap.put(entityType.getId(), entityType.getId());
+            if (!ID_MAP.containsKey(entityType.getId())) {
+                ID_MAP.put(entityType.getId(), entityType.getId());
             }
-            if (!catalogMap.containsKey(modId + ":animal") && Living.class.isAssignableFrom(entityType.getEntityClass())) {
-                catalogMap.put(modId + ":ambient", modId + ":ambient");
-                catalogMap.put(modId + ":animal", modId + ":animal");
-                catalogMap.put(modId + ":aquatic", modId + ":aquatic");
-                catalogMap.put(modId + ":monster", modId + ":monster");
+            if (!ID_MAP.containsKey(modId + ":animal") && Living.class.isAssignableFrom(entityType.getEntityClass())) {
+                ID_MAP.put(modId + ":ambient", modId + ":ambient");
+                ID_MAP.put(modId + ":animal", modId + ":animal");
+                ID_MAP.put(modId + ":aquatic", modId + ":aquatic");
+                ID_MAP.put(modId + ":monster", modId + ":monster");
             }
         }
 
@@ -1262,11 +1335,21 @@ public class GriefPreventionPlugin {
             if (modId.equals("none")) {
                 continue;
             }
-            if (!catalogMap.containsKey(modId + ":any")) {
-                catalogMap.put(modId + ":any", modId + ":any");
+            if (!ID_MAP.containsKey(modId + ":any")) {
+                ID_MAP.put(modId + ":any", modId + ":any");
             }
-            if (!catalogMap.containsKey(itemType.getId())) {
-                catalogMap.put(itemType.getId(), itemType.getId());
+            if (!ID_MAP.containsKey(itemType.getId())) {
+                ID_MAP.put(itemType.getId(), itemType.getId());
+            }
+        }
+
+        for (DamageType damageType : Sponge.getRegistry().getAllOf(DamageType.class)) {
+            String damageTypeId = damageType.getId();
+            if (!damageType.getId().contains(":")) {
+                damageTypeId = "minecraft:" + damageTypeId;
+            }
+            if (!ID_MAP.containsKey(damageType.getId())) {
+                ID_MAP.put(damageTypeId, damageTypeId);
             }
         }
         // commands
@@ -1277,21 +1360,25 @@ public class GriefPreventionPlugin {
                 for (String alias : command.getAllAliases()) {
                     String[] parts = alias.split(":");
                     if (parts.length > 1) {
-                        catalogMap.put(alias, alias);
+                        ID_MAP.put(alias, alias);
                     }
                 }
             }
         }
-        catalogMap.put("griefprevention:cf", "griefprevention:cf");
-        catalogMap.put("griefprevention:cfg", "griefprevention:cfg");
-        catalogMap.put("griefprevention:cfp", "griefprevention:cfp");
-        catalogMap.put("griefprevention:cpg", "griefprevention:cpg");
-        catalogMap.put("griefprevention:cpp", "griefprevention:cpp");
-        catalogMap.put("griefprevention:claimflag", "griefprevention:claimflag");
-        catalogMap.put("griefprevention:claimflaggroup", "griefprevention:claimflaggroup");
-        catalogMap.put("griefprevention:claimflagplayer", "griefprevention:claimflagplayer");
-        catalogMap.put("any", "any");
-        ImmutableMap<String, String> catalogChoices = ImmutableMap.copyOf(catalogMap);
+        ID_MAP.put("griefprevention:cf", "griefprevention:cf");
+        ID_MAP.put("griefprevention:cfg", "griefprevention:cfg");
+        ID_MAP.put("griefprevention:cfp", "griefprevention:cfp");
+        ID_MAP.put("griefprevention:co", "griefprevention:co");
+        ID_MAP.put("griefprevention:cog", "griefprevention:cog");
+        ID_MAP.put("griefprevention:cop", "griefprevention:cop");
+        ID_MAP.put("griefprevention:cpg", "griefprevention:cpg");
+        ID_MAP.put("griefprevention:cpp", "griefprevention:cpp");
+        ID_MAP.put("griefprevention:claimflag", "griefprevention:claimflag");
+        ID_MAP.put("griefprevention:claimflaggroup", "griefprevention:claimflaggroup");
+        ID_MAP.put("griefprevention:claimflagplayer", "griefprevention:claimflagplayer");
+        ID_MAP.put("any", "any");
+        ID_MAP.put("unknown", "unknown");
+        ImmutableMap<String, String> catalogChoices = ImmutableMap.copyOf(ID_MAP);
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gets/Sets claim flags in the claim you are standing in"))
@@ -1302,7 +1389,7 @@ public class GriefPreventionPlugin {
                             GenericArguments.firstParsing(
                                 GenericArguments.seq(
                                     choices(Text.of("target"), catalogChoices),
-                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                    onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                             .put("-1", Tristate.FALSE)
                                             .put("0", Tristate.UNDEFINED)
                                             .put("1", Tristate.TRUE)
@@ -1310,11 +1397,15 @@ public class GriefPreventionPlugin {
                                             .put("undefined", Tristate.UNDEFINED)
                                             .put("true", Tristate.TRUE)
                                             .build())),
-                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
+                                    GenericArguments.firstParsing(
+                                            GenericArguments.seq(
+                                                    onlyOne(choices(Text.of("context"), contextChoices)),
+                                                    optional(string(Text.of("reason")))),
+                                            optional(onlyOne(choices(Text.of("context"), contextChoices))))),
                                 GenericArguments.seq(
                                     onlyOne(choices(Text.of("source"), catalogChoices)),
                                     choices(Text.of("target"), catalogChoices),
-                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                    onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                             .put("-1", Tristate.FALSE)
                                             .put("0", Tristate.UNDEFINED)
                                             .put("1", Tristate.TRUE)
@@ -1322,10 +1413,14 @@ public class GriefPreventionPlugin {
                                             .put("undefined", Tristate.UNDEFINED)
                                             .put("true", Tristate.TRUE)
                                             .build())),
-                                    optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
+                                    GenericArguments.firstParsing(
+                                            GenericArguments.seq(
+                                                    onlyOne(choices(Text.of("context"), contextChoices)),
+                                                    optional(string(Text.of("reason")))),
+                                            optional(onlyOne(choices(Text.of("context"), contextChoices))))),
                                 GenericArguments.seq(
                                         string(Text.of("target")),
-                                        onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                        onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                 .put("-1", Tristate.FALSE)
                                                 .put("0", Tristate.UNDEFINED)
                                                 .put("1", Tristate.TRUE)
@@ -1333,11 +1428,15 @@ public class GriefPreventionPlugin {
                                                 .put("undefined", Tristate.UNDEFINED)
                                                 .put("true", Tristate.TRUE)
                                                 .build())),
-                                        optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))),
+                                        GenericArguments.firstParsing(
+                                                GenericArguments.seq(
+                                                        onlyOne(choices(Text.of("context"), contextChoices)),
+                                                        optional(string(Text.of("reason")))),
+                                                optional(onlyOne(choices(Text.of("context"), contextChoices))))),
                                 GenericArguments.seq(
                                         onlyOne(choices(Text.of("source"), catalogChoices)),
                                         string(Text.of("target")),
-                                        onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                        onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                 .put("-1", Tristate.FALSE)
                                                 .put("0", Tristate.UNDEFINED)
                                                 .put("1", Tristate.TRUE)
@@ -1345,9 +1444,52 @@ public class GriefPreventionPlugin {
                                                 .put("undefined", Tristate.UNDEFINED)
                                                 .put("true", Tristate.TRUE)
                                                 .build())),
-                                        optional(GenericArguments.onlyOne(GenericArguments.string(Text.of("context"))))))))))
+                                        GenericArguments.firstParsing(
+                                                GenericArguments.seq(
+                                                        onlyOne(choices(Text.of("context"), contextChoices)),
+                                                        optional(string(Text.of("reason")))),
+                                                optional(onlyOne(choices(Text.of("context"), contextChoices)))
+                                                )))))))
                 .executor(new CommandClaimFlag())
                 .build(), "claimflag", "cf");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gets/Sets claim options in the claim you are standing in"))
+                .permission(GPPermissions.COMMAND_OPTIONS_BASE)
+                .arguments(GenericArguments.firstParsing(
+                        optional(GenericArguments.seq(
+                            choices(Text.of("option"), optionChoices),
+                            GenericArguments.firstParsing(
+                                    doubleNum(Text.of("value")),
+                                    integer(Text.of("value")))))))
+                .executor(new CommandClaimOption())
+                .build(), "claimoption", "co");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gets/Sets group claim options in the claim you are standing in"))
+                .permission(GPPermissions.COMMAND_OPTIONS_BASE)
+                .arguments(GenericArguments.seq(
+                        string(Text.of("group")),
+                        optional(GenericArguments.seq(
+                            choices(Text.of("option"), optionChoices),
+                            GenericArguments.firstParsing(
+                                    doubleNum(Text.of("value")),
+                                    integer(Text.of("value")))))))
+                .executor(new CommandClaimOptionGroup())
+                .build(), "claimoptiongroup", "cog");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Gets/Sets player claim options in the claim you are standing in"))
+                .permission(GPPermissions.COMMAND_OPTIONS_BASE)
+                .arguments(GenericArguments.seq(
+                        user(Text.of("user")),
+                        optional(GenericArguments.seq(
+                            choices(Text.of("option"), optionChoices),
+                            GenericArguments.firstParsing(
+                                    doubleNum(Text.of("value")),
+                                    integer(Text.of("value")))))))
+                .executor(new CommandClaimOptionPlayer())
+                .build(), "claimoptionplayer", "cop");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gets/Sets flag permission for a group in claim you are standing in."))
@@ -1355,7 +1497,7 @@ public class GriefPreventionPlugin {
                 .arguments(GenericArguments.firstParsing(
                         GenericArguments.seq(
                             onlyOne(string(Text.of("group"))),
-                            GenericArguments.firstParsing(
+                            optional(GenericArguments.firstParsing(
                                 GenericArguments.seq(
                                     choices(Text.of("flag"), flagChoices),
                                     GenericArguments.firstParsing(
@@ -1400,8 +1542,8 @@ public class GriefPreventionPlugin {
                                                             .put("false", Tristate.FALSE)
                                                             .put("undefined", Tristate.UNDEFINED)
                                                             .put("true", Tristate.TRUE)
-                                                            .build())))))))))
-                .executor(new CommandClaimFlagGroup())
+                                                            .build()))))))))))
+                .executor(new CommandClaimFlag())
                 .build(), "claimflaggroup", "cfg");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
@@ -1409,8 +1551,8 @@ public class GriefPreventionPlugin {
                 .permission(GPPermissions.COMMAND_FLAGS_PLAYER)
                 .arguments(GenericArguments.firstParsing(
                         GenericArguments.seq(
-                            onlyOne(string(Text.of("player"))),
-                            GenericArguments.firstParsing(
+                            onlyOne(user(Text.of("player"))),
+                            optional(GenericArguments.firstParsing(
                                 GenericArguments.seq(
                                     choices(Text.of("flag"), flagChoices),
                                     GenericArguments.firstParsing(
@@ -1455,7 +1597,7 @@ public class GriefPreventionPlugin {
                                                             .put("false", Tristate.FALSE)
                                                             .put("undefined", Tristate.UNDEFINED)
                                                             .put("true", Tristate.TRUE)
-                                                            .build())))))))))
+                                                            .build()))))))))))
                 .executor(new CommandClaimFlagPlayer())
                 .build(), "claimflagplayer", "cfp");
     }
@@ -1468,9 +1610,9 @@ public class GriefPreventionPlugin {
             if (Files.notExists(DataStore.messagesFilePath)) {
                 Files.createFile(DataStore.messagesFilePath);
             }
-            if (this.dataStore != null) {
+            /*if (this.dataStore != null) {
                 this.dataStore.loadMessages();
-            }
+            }*/
             if (Files.notExists(DataStore.bannedWordsFilePath)) {
                 if (this.dataStore != null) {
                     this.dataStore.loadBannedWords();
@@ -1481,10 +1623,11 @@ public class GriefPreventionPlugin {
             }
 
             Path rootConfigPath = this.getConfigPath().resolve("worlds");
+            this.messageData = new MessageStorage(DataStore.messagesFilePath).getConfig();
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
             DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
-            this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.NONE);
-            this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.NONE);
+            this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.GOLDEN_SHOVEL);
+            this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.STICK);
             this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;
             for (World world : Sponge.getGame().getServer().getWorlds()) {
                 DimensionType dimType = world.getProperties().getDimensionType();
@@ -1583,7 +1726,7 @@ public class GriefPreventionPlugin {
             playerData.pvpImmune = true;
 
             // inform the player after he finishes respawning
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.PvPImmunityStart, 5L);
+            GriefPreventionPlugin.sendMessage(player, this.messageData.pvpImmunityStart.toText());
 
             // start a task to re-check this player's inventory every minute
             // until his immunity is gone
@@ -1616,7 +1759,7 @@ public class GriefPreventionPlugin {
             GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
 
             // if there's a claim here, keep looking
-            if (!claim.isWildernessClaim()) {
+            if (!claim.isWilderness()) {
                 candidateLocation = new Location<World>(claim.lesserBoundaryCorner.getExtent(), claim.lesserBoundaryCorner.getBlockX() - 1,
                         claim.lesserBoundaryCorner.getBlockY(), claim.lesserBoundaryCorner.getBlockZ() - 1);
                 continue;
@@ -1636,26 +1779,6 @@ public class GriefPreventionPlugin {
         location.getExtent().loadChunk(location.getBlockPosition(), true);
     }
 
-    public static Text getMessage(Messages messageID, String... args) {
-        return Text.of(GriefPreventionPlugin.instance.dataStore.getMessage(messageID, args));
-    }
-
-    public static void sendClaimDenyMessage(GPClaim claim, CommandSource player, TextColor color, Messages messageID, String... args) {
-        if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
-            return;
-        }
-
-        sendMessage(player, color, messageID, args);
-    }
-
-    public static void sendClaimDenyMessage(GPClaim claim, CommandSource player, TextColor color, String message) {
-        if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
-            return;
-        }
-
-        sendMessage(player, color, message);
-    }
-
     public static void sendClaimDenyMessage(GPClaim claim, CommandSource source, Text message) {
         if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
             return;
@@ -1665,25 +1788,11 @@ public class GriefPreventionPlugin {
     }
 
     // sends a color-coded message to a player
-    public static void sendMessage(CommandSource player, TextColor color, Messages messageID, String... args) {
-        sendMessage(player, color, messageID, 0, args);
-    }
-
-    // sends a color-coded message to a player
-    public static void sendMessage(CommandSource player, TextColor color, Messages messageID, long delayInTicks, String... args) {
-        sendMessage(player, GriefPreventionPlugin.instance.dataStore.parseMessage(messageID, color, args), delayInTicks);
-    }
-
-    public static void sendMessage(CommandSource player, TextColor color, String message) {
-        sendMessage(player, Text.of(color, message));
-    }
-
-    // sends a color-coded message to a player
     public static void sendMessage(CommandSource source, Text message) {
         if (source instanceof Player && SpongeImplHooks.isFakePlayer((net.minecraft.entity.Entity) source)) {
             return;
         }
-        if (message == Text.of() || message == null) {
+        if (message.toText() == Text.of() || message == null) {
             return;
         }
 
@@ -1712,8 +1821,12 @@ public class GriefPreventionPlugin {
     }
 
     public static GriefPreventionConfig<?> getActiveConfig(WorldProperties worldProperties) {
-        GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldProperties.getUniqueId());
-        GriefPreventionConfig<DimensionConfig> dimConfig = DataStore.dimensionConfigMap.get(worldProperties.getUniqueId());
+        return getActiveConfig(worldProperties.getUniqueId());
+    }
+
+    public static GriefPreventionConfig<?> getActiveConfig(UUID worldUniqueId) {
+        GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldUniqueId);
+        GriefPreventionConfig<DimensionConfig> dimConfig = DataStore.dimensionConfigMap.get(worldUniqueId);
         if (worldConfig == null || worldConfig.getConfig() == null) {
             return DataStore.globalConfig;
         }
@@ -1739,62 +1852,6 @@ public class GriefPreventionPlugin {
         return GriefPreventionPlugin.getActiveConfig(worldProperties).getConfig().claim.claimMode == mode.ordinal();
     }
 
-    public String allowBuild(Object source, Location<World> targetLocation, User user) {
-        GPPlayerData playerData = null;
-        if (user != null) {
-            playerData = this.dataStore.getOrCreatePlayerData(targetLocation.getExtent(), user.getUniqueId());
-        } else {
-            GPClaim claim = this.dataStore.getClaimAt(targetLocation, false);
-            if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.BLOCK_PLACE, source, targetLocation, user) == Tristate.FALSE) {
-                return this.dataStore.getMessage(Messages.NoBuildPermission);
-            }
-
-            return null;
-        }
-
-        GPClaim claim = null;
-        if (playerData != null) {
-            claim = this.dataStore.getClaimAtPlayer(playerData, targetLocation);
-        } else {
-            claim = this.dataStore.getClaimAt(targetLocation);
-        }
-
-        // exception: administrators in ignore claims mode and special player accounts created by server mods
-        if (playerData != null && playerData.canIgnoreClaim(claim)) {
-            return null;
-        }
-
-        // cache the claim for later reference
-        if (playerData != null) {
-            playerData.lastClaim = new WeakReference<>(claim);
-        }
-        return claim.allowBuild(source, targetLocation, user);
-    }
-
-    // A blocksnapshot must be passed here instead of location as the block in world represents the "final" block
-    public String allowBreak(Object source, BlockSnapshot blockSnapshot, User user) {
-        Location<World> location = blockSnapshot.getLocation().orElse(null);
-        if (location == null) {
-            return null;
-        }
-
-        GPPlayerData playerData = user != null ? this.dataStore.getOrCreatePlayerData(location.getExtent(), user.getUniqueId()) : null;
-        GPClaim claim = this.dataStore.getClaimAt(location);
-
-        // exception: administrators in ignore claims mode
-        if (user != null && (playerData.canIgnoreClaim(claim))) {
-            return null;
-        }
-
-        // cache the claim for later reference
-        if (playerData != null) {
-            playerData.lastClaim = new WeakReference<>(claim);
-        }
-
-        // if not in the wilderness, then apply claim rules (permissions, etc)
-        return claim.allowBreak(source, blockSnapshot, user);
-    }
-
     // restores nature in multiple chunks, as described by a claim instance
     // this restores all chunks which have ANY number of claim blocks from this claim in them
     // if the claim is still active (in the data store), then the claimed blocks
@@ -1806,7 +1863,7 @@ public class GriefPreventionPlugin {
         }
 
         // it's too expensive to do this for huge claims
-        if (claim.getArea() > 10000) {
+        if (claim.getArea() > 2560000) {
             return;
         }
 
@@ -1816,7 +1873,7 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public void restoreChunk(Chunk chunk, int miny, boolean aggressiveMode, long delayInTicks, Player playerReceivingVisualization) {
+    public void restoreChunk(Chunk chunk, int miny, boolean aggressiveMode, long delayInTicks, Player player) {
         // build a snapshot of this chunk, including 1 block boundary outside of
         // the chunk all the way around
         int maxHeight = chunk.getWorld().getDimension().getBuildHeight();
@@ -1834,61 +1891,24 @@ public class GriefPreventionPlugin {
         }
 
         // create task to process those data in another thread
-        Location<World> lesserBoundaryCorner = startBlock.getLocation().get();
+        Location<World> lesserBoundaryCorner = chunk.createSnapshot(0, 0, 0).getLocation().get();
         Location<World> greaterBoundaryCorner = chunk.createSnapshot(15, 0, 15).getLocation().get();
-
         // create task when done processing, this task will create a main thread task to actually update the world with processing results
-        RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getDimension().getType(),
+        /*RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getDimension().getType(),
                 lesserBoundaryCorner.getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()),
                 aggressiveMode, claimModeIsActive(lesserBoundaryCorner.getExtent().getProperties(), ClaimsMode.Creative),
-                playerReceivingVisualization);
-        Sponge.getGame().getScheduler().createTaskBuilder().async().delayTicks(delayInTicks).execute(task).submit(this);
-    }
-
-    @SuppressWarnings("unused")
-    private void parseBlockIdListFromConfig(List<String> stringsToParse, List<ItemInfo> blockTypes) {
-        // for each string in the list
-        for (int i = 0; i < stringsToParse.size(); i++) {
-            // try to parse the string value into a material info
-            String blockInfo = stringsToParse.get(i);
-            // validate block info
-            int count = StringUtils.countMatches(blockInfo, ":");
-            int meta = -1;
-            if (count == 2) {
-                // grab meta
-                int lastIndex = blockInfo.lastIndexOf(":");
-                try {
-                    if (blockInfo.length() >= lastIndex + 1) {
-                        meta = Integer.parseInt(blockInfo.substring(lastIndex + 1, blockInfo.length()));
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                blockInfo = blockInfo.substring(0, lastIndex);
-            } else if (count > 2) {
-                GriefPreventionPlugin.addLogEntry("ERROR: Invalid block entry " + blockInfo + " found in config. Skipping...");
-                continue;
-            }
-
-            Optional<BlockType> blockType = Sponge.getGame().getRegistry().getType(BlockType.class, blockInfo);
-
-            // null value returned indicates an error parsing the string from the config file
-            if (!blockType.isPresent() || !blockType.get().getItem().isPresent()) {
-                // show error in log
-                GriefPreventionPlugin.addLogEntry("ERROR: Unable to read a block entry from the config file.  Please update your config.");
-
-                // update string, which will go out to config file to help user
-                // find the error entry
-                if (!stringsToParse.get(i).contains("can't")) {
-                    stringsToParse.set(i, stringsToParse.get(i) + "     <-- can't understand this entry, see Sponge documentation");
-                }
-            }
-
-            // otherwise store the valid entry in config data
-            else {
-                blockTypes.add(new ItemInfo(blockType.get().getItem().get(), meta));
-            }
+                playerReceivingVisualization);*/
+        // show visualization to player who started the restoration
+        if (player != null) {
+            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            GPClaim claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner , ClaimType.BASIC, false);
+            // TODO
+            claim.getVisualizer().resetVisuals();
+            claim.getVisualizer().createClaimBlockVisuals(player.getLocation().getBlockY(), player.getLocation(), playerData);
+            claim.getVisualizer().apply(player);
         }
+
+        BlockUtils.regenerateChunk((net.minecraft.world.chunk.Chunk) chunk);
     }
 
     public int getSeaLevel(World world) {
@@ -1909,6 +1929,10 @@ public class GriefPreventionPlugin {
         }
 
         return false;
+    }
+
+    public Map<String, GPDebugData> getDebugUserMap() {
+        return this.debugUserMap;
     }
 
     public static boolean isEntityProtected(Entity entity) {

@@ -25,15 +25,15 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -46,14 +46,16 @@ import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class CommandClaimAbandon implements CommandExecutor {
 
-    private boolean deleteTopLevelClaim;
+    private boolean abandonTopClaim;
 
-    public CommandClaimAbandon(boolean deleteTopLevelClaim) {
-        this.deleteTopLevelClaim = deleteTopLevelClaim;
+    public CommandClaimAbandon(boolean abandonTopClaim) {
+        this.abandonTopClaim = abandonTopClaim;
     }
 
     @Override
@@ -65,27 +67,42 @@ public class CommandClaimAbandon implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
+
         // which claim is being abandoned?
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), true);
         UUID ownerId = claim.getOwnerUniqueId();
-        if (claim.parent != null) {
+        if (claim.isSubdivision()) {
             ownerId = claim.parent.getOwnerUniqueId();
-        }
-        if (claim.isWildernessClaim()) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.AbandonClaimMissing);
+        } else if (claim.isWilderness()) {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonClaimMissing.toText());
             return CommandResult.success();
-        } else if (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId))) {
+        } else if (!playerData.canIgnoreClaim(claim) && (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)))) {
             // verify ownership
-            GriefPreventionPlugin.sendMessage(player, TextMode.Err, Messages.NotYourClaim);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
             return CommandResult.success();
         }
 
-        // warn if has children and we're not explicitly deleting a top level claim
-        else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
-            GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.DeleteTopLevelClaim);
+        if (!claim.isTown() && !claim.isAdminClaim() && claim.children.size() > 0 && !this.abandonTopClaim) {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonTopLevel.toText());
             return CommandResult.empty();
         } else {
+            if (this.abandonTopClaim && (claim.isTown() || claim.isAdminClaim()) && claim.children.size() > 0) {
+                List<Claim> invalidClaims = new ArrayList<>();
+                for (Claim child : claim.getChildren(true)) {
+                    if (child.getOwnerUniqueId() == null || !child.getOwnerUniqueId().equals(ownerId)) {
+                        //return CommandResult.empty();
+                        invalidClaims.add(child);
+                    }
+                }
+
+                if (!invalidClaims.isEmpty()) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonTownChildren.toText());
+                    CommandHelper.showClaims(player, invalidClaims, 0, true);
+                    return CommandResult.success();
+                }
+            }
+
             GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(claim, Cause.of(NamedCause.source(src)));
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
@@ -95,7 +112,7 @@ public class CommandClaimAbandon implements CommandExecutor {
 
             // delete it
             GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
-            claimManager.deleteClaim(claim);
+            claimManager.deleteClaim(claim, this.abandonTopClaim);
             claim.removeSurfaceFluids(null);
             // remove all context permissions
             player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
@@ -104,20 +121,24 @@ public class CommandClaimAbandon implements CommandExecutor {
             // if in a creative mode world, restore the claim area
             if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
                 GriefPreventionPlugin.addLogEntry(
-                        player.getName() + " abandoned a claim @ " + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
-                GriefPreventionPlugin.sendMessage(player, TextMode.Warn, Messages.UnclaimCleanupWarning);
+                        player.getName() + " abandoned a " + claim.getType() + " @ " + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCleanupWarning.toText());
                 GriefPreventionPlugin.instance.restoreClaim(claim, 20L * 60 * 2);
             }
 
             // this prevents blocks being gained without spending adjust claim blocks when abandoning a top level claim
             if (!claim.isSubdivision() && !claim.isAdminClaim()) {
-                int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatio)));
+                int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatioBasic)));
                 playerData.setAccruedClaimBlocks(newAccruedClaimCount);
             }
 
             // tell the player how many claim blocks he has left
             int remainingBlocks = playerData.getRemainingClaimBlocks();
-            GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.AbandonSuccess, String.valueOf(remainingBlocks));
+            final Text message = GriefPreventionPlugin.instance.messageData.claimAbandonSuccess
+                    .apply(ImmutableMap.of(
+                    "remaining-blocks", Text.of(remainingBlocks)
+            )).build();
+            GriefPreventionPlugin.sendMessage(player, message);
             // revert any current visualization
             playerData.revertActiveVisual(player);
             playerData.warnedAboutMajorDeletion = false;

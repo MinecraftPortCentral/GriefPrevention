@@ -27,9 +27,11 @@ package me.ryanhamshire.griefprevention.api;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
+import me.ryanhamshire.griefprevention.api.economy.BankTransaction;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,9 +54,32 @@ public interface GriefPreventionApi {
         return this.getClaimManager(world.getProperties());
     }
 
+    /**
+     * Gets the global {@link PlayerData} for specified {@link UUID}.
+     * 
+     * @param playerUniqueId The player UUID
+     * @return The player data associated with uuid, if available
+     */
     Optional<PlayerData> getGlobalPlayerData(UUID playerUniqueId);
 
+    /**
+     * Gets the world {@link PlayerData} for specified {@link UUID}.
+     * 
+     * @param worldProperties The world properties
+     * @param playerUniqueId The player UUID
+     * @return The player data associated with uuid, if available
+     */
     Optional<PlayerData> getWorldPlayerData(WorldProperties worldProperties, UUID playerUniqueId);
+
+    /**
+     * Gets an immutable list of all player {@link Claim}'s.
+     * 
+     * Note: This will return an empty list if player has no claims.
+     * 
+     * @param playerUniqueId The player UUID
+     * @return An immutable list of all claims, empty list if none were found
+     */
+    List<Claim> getAllPlayerClaims(UUID playerUniqueId);
 
     /**
      * Gets the claim manager of world.
@@ -70,4 +95,11 @@ public interface GriefPreventionApi {
      * @return The claim builder
      */
     Claim.Builder createClaimBuilder();
+
+    /**
+     * Creates a bank transaction builder.
+     * 
+     * @return The bank transaction builder
+     */
+    BankTransaction.Builder createBankTransactionBuilder();
 }

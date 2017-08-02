@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.api.event;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.event.Cancellable;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.text.Text;
@@ -58,7 +59,6 @@ public interface ClaimEvent extends Cancellable, Event {
      * if applicable.
      * 
      * @param message The message
-     * @return The claim message to send to {@link CommandSource}
      */
     void setMessage(Text message);
 

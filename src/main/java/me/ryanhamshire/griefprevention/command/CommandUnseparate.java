@@ -27,8 +27,6 @@ package me.ryanhamshire.griefprevention.command;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin.IgnoreMode;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -48,14 +46,13 @@ public class CommandUnseparate implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
+
         // validate target players
         User targetPlayer = args.<User>getOne("player1").get();
         User targetPlayer2 = args.<User>getOne("player2").get();
-
         GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), targetPlayer, targetPlayer2, IgnoreMode.None);
         GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), targetPlayer2, targetPlayer, IgnoreMode.None);
-
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.UnSeparateConfirmation);
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.playerUnseparate.toText());
         return CommandResult.success();
     }
 }

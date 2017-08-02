@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.util;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import me.ryanhamshire.griefprevention.visual.VisualizationType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
@@ -76,7 +77,23 @@ public class PlayerUtils {
         if (shovelMode == ShovelMode.Subdivide) {
             return ClaimType.SUBDIVISION;
         }
+        if (shovelMode == ShovelMode.Town) {
+            return ClaimType.TOWN;
+        }
         return ClaimType.BASIC;
+    }
+
+    public static VisualizationType getVisualTypeFromShovel(ShovelMode shovelMode) {
+        if (shovelMode == ShovelMode.Admin) {
+            return VisualizationType.ADMINCLAIM;
+        }
+        if (shovelMode == ShovelMode.Subdivide) {
+            return VisualizationType.SUBDIVISION;
+        }
+        if (shovelMode == ShovelMode.Town) {
+            return VisualizationType.TOWN;
+        }
+        return VisualizationType.CLAIM;
     }
 
     public static Tristate getTristateFromString(String value) {

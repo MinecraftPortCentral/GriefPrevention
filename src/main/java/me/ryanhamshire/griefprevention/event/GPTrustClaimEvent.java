@@ -30,52 +30,23 @@ import me.ryanhamshire.griefprevention.api.event.TrustClaimEvent;
 import org.spongepowered.api.event.cause.Cause;
 
 import java.util.List;
-import java.util.UUID;
 
 public class GPTrustClaimEvent extends GPClaimEvent implements TrustClaimEvent {
 
-    private List<UUID> users;
     private TrustType trustType;
 
-    public GPTrustClaimEvent(Claim claim, Cause cause, List<UUID> users, TrustType trustType) {
+    public GPTrustClaimEvent(Claim claim, Cause cause, TrustType trustType) {
         super(claim, cause);
-        this.users = users;
         this.trustType = trustType;
     }
 
-    public GPTrustClaimEvent(List<Claim> claims, Cause cause, List<UUID> users, TrustType trustType) {
+    public GPTrustClaimEvent(List<Claim> claims, Cause cause, TrustType trustType) {
         super(claims, cause);
-        this.users = users;
         this.trustType = trustType;
-    }
-
-    @Override
-    public List<UUID> getUsers() {
-        return this.users;
     }
 
     @Override
     public TrustType getTrustType() {
         return this.trustType;
-    }
-
-    public static class Add extends GPTrustClaimEvent implements TrustClaimEvent.Add {
-        public Add(List<Claim> claims, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claims, cause, users, trustType);
-        }
-
-        public Add(Claim claim, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claim, cause, users, trustType);
-        }
-    }
-
-    public static class Remove extends GPTrustClaimEvent implements TrustClaimEvent.Remove {
-        public Remove(List<Claim> claims, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claims, cause, users, trustType);
-        }
-
-        public Remove(Claim claim, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claim, cause, users, trustType);
-        }
     }
 }

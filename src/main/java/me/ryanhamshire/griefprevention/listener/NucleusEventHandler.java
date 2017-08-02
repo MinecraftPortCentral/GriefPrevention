@@ -27,11 +27,9 @@ package me.ryanhamshire.griefprevention.listener;
 import io.github.nucleuspowered.nucleus.api.events.NucleusHomeEvent;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.Messages;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -48,9 +46,9 @@ public class NucleusEventHandler {
 
         GPClaim claim = DATASTORE.getClaimAt(location);
         if (claim != null && !claim.isWilderness() && !claim.isAdminClaim()) {
-            if (claim.allowAccess(event.getUser()) != null) {
+            if (!claim.isUserTrusted(event.getUser(), TrustType.ACCESSOR)) {
                 event.setCancelled(true);
-                event.setCancelMessage(Text.of(TextColors.RED, DATASTORE.getMessage(Messages.NucleusNoSetHome)));
+                event.setCancelMessage(GriefPreventionPlugin.instance.messageData.nucleusNoSetHome.toText());
             }
         }
     }

@@ -25,6 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
+import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.GPNamedCause;
@@ -33,6 +34,8 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
@@ -61,12 +64,13 @@ public class CleanupUnusedClaimsTask implements Runnable {
             Iterator<GPClaim> iterator = ((ArrayList) claimList.clone()).iterator();
             while (iterator.hasNext()) {
                 GPClaim claim = iterator.next();
+                final GPPlayerData playerData = claim.getOwnerPlayerData();
                 // skip administrative claims
-                if (claim.isAdminClaim() || claim.getInternalClaimData().allowClaimExpiration() || claim.getOwnerPlayerData() == null) {
+                if (claim.isAdminClaim() || claim.getInternalClaimData().allowClaimExpiration() || playerData == null) {
                     continue;
                 }
 
-                if (!claim.getOwnerPlayerData().dataInitialized) {
+                if (!playerData.dataInitialized) {
                     continue;
                 }
 
@@ -80,8 +84,9 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 Instant claimLastActive = claim.getInternalClaimData().getDateLastActive();
     
                 // if this claim is a chest claim and those are set to expire
-                if (claim.getArea() <= areaOfDefaultClaim && claim.getOwnerPlayerData().optionChestClaimExpiration > 0) {
-                    if (claimLastActive.plus(Duration.ofDays(claim.getOwnerPlayerData().optionChestClaimExpiration))
+                Double claimExpirationChest = GPOptionHandler.getClaimOptionDouble(playerData.getPlayerSubject(), claim, GPOptions.CLAIM_EXPIRATION_CHEST, playerData);
+                if (claim.getArea() <= areaOfDefaultClaim && claimExpirationChest > 0) {
+                    if (claimLastActive.plus(Duration.ofDays(claimExpirationChest.intValue()))
                             .isBefore(Instant.now())) {
                         claim.removeSurfaceFluids(null);
                         claimManager.deleteClaim(claim, Cause.of(NamedCause.of(GPNamedCause.CHEST_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer)));
@@ -95,9 +100,10 @@ public class CleanupUnusedClaimsTask implements Runnable {
                         GriefPreventionPlugin.addLogEntry(" " + claim.getOwnerName() + "'s new player claim " + "'" + claim.id + "' expired.", CustomLogEntryTypes.AdminActivity);
                     }
                 }
-    
-                if (claim.getOwnerPlayerData().optionPlayerClaimExpiration > 0) {
-                    if (claimLastActive.plus(Duration.ofDays(claim.getOwnerPlayerData().optionPlayerClaimExpiration))
+
+                Double claimExpirationBasic = GPOptionHandler.getClaimOptionDouble(playerData.getPlayerSubject(), claim, GPOptions.CLAIM_EXPIRATION_BASIC, playerData);
+                if (claimExpirationBasic > 0) {
+                    if (claimLastActive.plus(Duration.ofDays(claimExpirationBasic.intValue()))
                             .isBefore(Instant.now())) {
                         claimManager.deleteClaim(claim, Cause.of(NamedCause.of(GPNamedCause.PLAYER_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer)));
                         GriefPreventionPlugin.addLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "

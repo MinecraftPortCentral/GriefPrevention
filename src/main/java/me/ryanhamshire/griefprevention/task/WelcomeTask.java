@@ -25,21 +25,7 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-import me.ryanhamshire.griefprevention.DataStore;
-import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
-import net.minecraft.entity.player.EntityPlayer;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.data.key.Keys;
-import org.spongepowered.api.data.manipulator.mutable.DisplayNameData;
-import org.spongepowered.api.data.manipulator.mutable.item.AuthorData;
-import org.spongepowered.api.data.manipulator.mutable.item.PagedData;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.item.ItemTypes;
-import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.common.text.SpongeTexts;
 
 public class WelcomeTask implements Runnable {
 
@@ -57,7 +43,7 @@ public class WelcomeTask implements Runnable {
         }
 
         // offer advice and a helpful link
-        GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.AvoidGriefClaimLand);
+        /*GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.AvoidGriefClaimLand);
         GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2);
 
         // give the player a reference book for later
@@ -116,7 +102,7 @@ public class WelcomeTask implements Runnable {
             }
 
             ((EntityPlayer) player).inventory.addItemStackToInventory((net.minecraft.item.ItemStack) (Object) itemStack.copy());
-        }
+        }*/
 
     }
 

@@ -37,8 +37,6 @@ public class ClaimCategory extends ConfigCategory {
     public List<String> accessTrustCommands = new ArrayList<>();
     @Setting(value = "auto-claim-radius", comment = "Radius used for auto-created claims. Set to -1 to disable.")
     public int claimRadius = 4;
-    @Setting(value = "banned-item-ids", comment = "Contains list of banned item ids on server.")
-    public List<String> bannedItemIds = new ArrayList<>();
     @Setting(value = "cleanup-task-interval", comment = "The interval in minutes for restoring blocks in an expired claim. Set to 0 to disable. Note: This only supports vanilla blocks. Use with caution if using custom biomes.")
     public int cleanupTaskInterval = 5;
     @Setting(value = "deliver-manuals", comment = "Send players manuals on claim creation.")
@@ -46,7 +44,7 @@ public class ClaimCategory extends ConfigCategory {
     @Setting(value = "auto-nature-restore", comment = "Whether survival claims will be automatically restored to nature when auto-deleted.")
     public boolean claimAutoNatureRestore = false;
     @Setting(value = "extend-into-ground-distance", comment = "How far below the shoveled block a new claim will reach. Set to 255 if you want to always extend to bedrock.")
-    public int extendIntoGroundDistance = 5;
+    public int extendIntoGroundDistance = 255;
     @Setting(value = "claim-max-depth", comment = "Limit on how deep claims can go.")
     public int maxClaimDepth = 0;
     @Setting(value = "investigation-tool", comment = "The item used to investigate claims with a right-click.")
@@ -60,6 +58,12 @@ public class ClaimCategory extends ConfigCategory {
     @Setting(value = "claims-mode",
             comment = "The mode used when creating claims. (0 = Disabled, 1 = Survival, 2 = Creative)")
     public int claimMode = 1;
+    @Setting(value = "bank-tax-system", comment = "Whether to enable the bank/tax system for claims. Set to true to enable.")
+    public boolean bankTaxSystem = false;
+    @Setting(value = "tax-apply-hour", comment = "The specific hour in day to apply tax to all claims.")
+    public int taxApplyHour = 12;
+    @Setting(value = "bank-transaction-log-limit")
+    public int bankTransactionLogLimit = 60;
 
     public ClaimCategory() {
 

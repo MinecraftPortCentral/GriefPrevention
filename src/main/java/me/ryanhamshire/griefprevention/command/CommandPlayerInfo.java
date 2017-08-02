@@ -29,7 +29,9 @@ import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
-import me.ryanhamshire.griefprevention.message.TextMode;
+import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandPermissionException;
@@ -44,6 +46,7 @@ import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.time.format.DateTimeParseException;
@@ -64,7 +67,7 @@ public class CommandPlayerInfo implements CommandExecutor {
 
         if (user == null) {
             if (!(src instanceof Player)) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No player specified."));
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandPlayerInvalid.toText());
                 return CommandResult.success();
             }
 
@@ -86,7 +89,7 @@ public class CommandPlayerInfo implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
         boolean useGlobalData = DataStore.USE_GLOBAL_PLAYER_STORAGE;
         List<Claim> claimList = new ArrayList<>();
-        for (Claim claim : playerData.getClaims()) {
+        for (Claim claim : playerData.getInternalClaims()) {
             if (useGlobalData) {
                 claimList.add(claim);
             } else {
@@ -96,22 +99,66 @@ public class CommandPlayerInfo implements CommandExecutor {
             }
         }
         Text claimSizeLimit = Text.of(TextColors.GRAY, "none");
-        if (playerData.optionMaxClaimSizeX != 0 || playerData.optionMaxClaimSizeY != 0 || playerData.optionMaxClaimSizeZ != 0) {
-            claimSizeLimit = Text.of(TextColors.GRAY, playerData.optionMaxClaimSizeX + "," + playerData.optionMaxClaimSizeY + "," + playerData.optionMaxClaimSizeZ);
+        if (playerData.optionMaxClaimSizeBasicX != 0 || playerData.optionMaxClaimSizeBasicY != 0 || playerData.optionMaxClaimSizeBasicZ != 0) {
+            claimSizeLimit = Text.of(TextColors.GRAY, playerData.optionMaxClaimSizeBasicX + "," + playerData.optionMaxClaimSizeBasicY + "," + playerData.optionMaxClaimSizeBasicZ);
         }
+
+        Text townTaxRate = Text.of(
+                TextColors.GRAY, "TOWN", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateTown, 
+                TextColors.GRAY, " BASIC", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateTownBasic, 
+                TextColors.GRAY, " SUB", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateTownSubdivision);
+        Text claimTaxRate = Text.of(
+                TextColors.GRAY, "BASIC", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateBasic, 
+                TextColors.GRAY, " SUB", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateSubdivision);
+        Text currentClaimTaxRate = Text.of(TextColors.YELLOW, "Current Claim Tax Rate", TextColors.WHITE, " : ", TextColors.RED, "N/A");
+        if (src instanceof Player) {
+            Player player = (Player) src;
+            if (player.getUniqueId().equals(user.getUniqueId())) {
+                final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+                if (claim != null && !claim.isWilderness()) {
+                    final double playerTaxRate = GPOptionHandler.getClaimOptionDouble(user, claim, GPOptions.Type.TAX_RATE, playerData);
+                    currentClaimTaxRate = Text.of(
+                            TextColors.YELLOW, "Current Claim Tax Rate", TextColors.WHITE, " : ",
+                            TextColors.GREEN, playerTaxRate);
+                }
+            }
+        }
+        final Text WHITE_SEMI_COLON = Text.of(TextColors.WHITE, " : ");
+        final double claimableChunks = playerData.getRemainingClaimBlocks() / 65536.0;
         List<Text> claimsTextList = Lists.newArrayList();
-        claimsTextList.add(Text.of(
-                TextColors.YELLOW, "UUID", TextColors.WHITE, " : ", TextColors.GRAY, user.getUniqueId(), "\n",
-                TextColors.YELLOW, "World", TextColors.WHITE, " : ", TextColors.GRAY, worldProperties.getWorldName(), "\n",
-                TextColors.YELLOW, "Claim Size Limits", TextColors.WHITE, " : ", claimSizeLimit, "\n",
-                TextColors.YELLOW, "Initial Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
-                TextColors.YELLOW, "Accrued Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
-                TextColors.YELLOW, "Max Accrued Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionMaxAccruedBlocks, "\n",
-                TextColors.YELLOW, "Bonus Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getBonusClaimBlocks(), "\n",
-                TextColors.YELLOW, "Remaining Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getRemainingClaimBlocks(), "\n", 
-                TextColors.YELLOW, "Abandoned Return Ratio", TextColors.WHITE, " : ", TextColors.GREEN, playerData.getAbandonedReturnRatio(), "\n",
-                TextColors.YELLOW, "Total Blocks", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionInitialClaimBlocks + playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks(), "\n",
-                TextColors.YELLOW, "Total Claims", TextColors.WHITE, " : ", TextColors.GREEN, claimList.size()));
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().claim.bankTaxSystem) {
+            claimsTextList.add(Text.of(
+                    TextColors.YELLOW, "UUID", WHITE_SEMI_COLON, TextColors.GRAY, user.getUniqueId(), "\n",
+                    TextColors.YELLOW, "World", WHITE_SEMI_COLON, TextColors.GRAY, worldProperties.getWorldName(), "\n",
+                    TextColors.YELLOW, "Claim Size Limits", WHITE_SEMI_COLON, claimSizeLimit, "\n",
+                    TextColors.YELLOW, "Initial Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
+                    TextColors.YELLOW, "Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
+                    TextColors.YELLOW, "Max Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionMaxAccruedBlocks, "\n",
+                    TextColors.YELLOW, "Bonus Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getBonusClaimBlocks(), "\n",
+                    TextColors.YELLOW, "Remaining Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getRemainingClaimBlocks(), "\n", 
+                    TextColors.YELLOW, "Abandoned Return Ratio", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAbandonedReturnRatio(), "\n",
+                    TextColors.YELLOW, "Global Town Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, townTaxRate, "\n",
+                    TextColors.YELLOW, "Global Claim Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, claimTaxRate, "\n",
+                    currentClaimTaxRate, "\n",
+                    TextColors.YELLOW, "Total Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks + playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks(), "\n",
+                    TextColors.YELLOW, "Total Claimable Chunks", WHITE_SEMI_COLON, TextColors.GREEN, Math.round(claimableChunks * 100.0)/100.0, "\n",
+                    TextColors.YELLOW, "Total Claims", WHITE_SEMI_COLON, TextColors.GREEN, claimList.size(), "\n",
+                    TextColors.YELLOW, "Total Tax", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getTotalTax()));
+        } else {
+            claimsTextList.add(Text.of(
+                    TextColors.YELLOW, "UUID", WHITE_SEMI_COLON, TextColors.GRAY, user.getUniqueId(), "\n",
+                    TextColors.YELLOW, "World", WHITE_SEMI_COLON, TextColors.GRAY, worldProperties.getWorldName(), "\n",
+                    TextColors.YELLOW, "Claim Size Limits", WHITE_SEMI_COLON, claimSizeLimit, "\n",
+                    TextColors.YELLOW, "Initial Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
+                    TextColors.YELLOW, "Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
+                    TextColors.YELLOW, "Max Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionMaxAccruedBlocks, "\n",
+                    TextColors.YELLOW, "Bonus Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getBonusClaimBlocks(), "\n",
+                    TextColors.YELLOW, "Remaining Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getRemainingClaimBlocks(), "\n", 
+                    TextColors.YELLOW, "Abandoned Return Ratio", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAbandonedReturnRatio(), "\n",
+                    TextColors.YELLOW, "Total Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks + playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks(), "\n",
+                    TextColors.YELLOW, "Total Claimable Chunks", WHITE_SEMI_COLON, TextColors.GREEN, Math.round(claimableChunks * 100.0)/100.0, "\n",
+                    TextColors.YELLOW, "Total Claims", WHITE_SEMI_COLON, TextColors.GREEN, claimList.size()));
+        }
 
         JoinData joinData = user.getOrCreate(JoinData.class).orElse(null);
         if (joinData != null && joinData.lastPlayed().exists()) {
@@ -128,7 +175,7 @@ public class CommandPlayerInfo implements CommandExecutor {
 
         PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
         PaginationList.Builder paginationBuilder = paginationService.builder()
-                .title(Text.of(TextColors.AQUA, "Player Info")).padding(Text.of("-")).contents(claimsTextList);
+                .title(Text.of(TextColors.AQUA, "Player Info")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(claimsTextList);
         paginationBuilder.sendTo(src);
 
         return CommandResult.success();

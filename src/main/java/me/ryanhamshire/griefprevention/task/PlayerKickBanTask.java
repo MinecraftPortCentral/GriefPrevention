@@ -32,8 +32,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.UserListBansEntry;
 import net.minecraft.util.text.TextComponentTranslation;
-
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.common.SpongeImpl;
 
 //kicks or bans a player
@@ -45,7 +45,7 @@ public class PlayerKickBanTask implements Runnable {
     private Player player;
 
     // message to send player.
-    private String reason;
+    private Text reason;
 
     // source of ban
     @SuppressWarnings("unused")
@@ -54,7 +54,7 @@ public class PlayerKickBanTask implements Runnable {
     // whether to ban
     private boolean ban;
 
-    public PlayerKickBanTask(Player player, String reason, String source, boolean ban) {
+    public PlayerKickBanTask(Player player, Text reason, String source, boolean ban) {
         this.player = player;
         this.reason = reason;
         this.source = source;
@@ -68,12 +68,12 @@ public class PlayerKickBanTask implements Runnable {
             GameProfile gameprofile = minecraftserver.getPlayerProfileCache().getGameProfileForUsername(player.getName());
 
             UserListBansEntry userlistbansentry = new UserListBansEntry(gameprofile, null, ((EntityPlayer) player).getName(),
-                    null, this.reason);
+                    null, this.reason.toPlain());
             minecraftserver.getPlayerList().getBannedPlayers().addEntry(userlistbansentry);
             EntityPlayerMP entityplayermp = minecraftserver.getPlayerList().getPlayerByUsername(this.player.getName());
 
             if (entityplayermp != null) {
-                entityplayermp.connection.disconnect(new TextComponentTranslation("You are banned from this server.", new Object[0]));
+                entityplayermp.connection.disconnect(new TextComponentTranslation("You are banned from this server."));
             }
         }
     }

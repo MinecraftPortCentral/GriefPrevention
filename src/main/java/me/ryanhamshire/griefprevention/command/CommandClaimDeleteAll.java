@@ -26,12 +26,11 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -61,7 +60,7 @@ public class CommandClaimDeleteAll implements CommandExecutor {
         User otherPlayer = ctx.<User>getOne("player").get();
         // count claims
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        int originalClaimCount = playerData.getClaims().size();
+        int originalClaimCount = playerData.getInternalClaims().size();
 
         // check count
         if (originalClaimCount == 0) {
@@ -69,7 +68,7 @@ public class CommandClaimDeleteAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getClaims()), Cause.of(NamedCause.source(src)));
+        GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getInternalClaims()), Cause.of(NamedCause.source(src)));
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not delete all claims. A plugin has denied it."))));
@@ -78,8 +77,10 @@ public class CommandClaimDeleteAll implements CommandExecutor {
 
         // delete all that player's claims
         GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId());
-
-        GriefPreventionPlugin.sendMessage(player, TextMode.Success, Messages.DeleteAllSuccess, otherPlayer.getName());
+        final Text message = GriefPreventionPlugin.instance.messageData.claimDeleteAllSuccess
+                .apply(ImmutableMap.of(
+                "owner", otherPlayer.getName())).build();
+        GriefPreventionPlugin.sendMessage(player, message);
         if (player != null) {
             GriefPreventionPlugin.addLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".",
                     CustomLogEntryTypes.AdminActivity);

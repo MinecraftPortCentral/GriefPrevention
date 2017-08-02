@@ -26,6 +26,8 @@ package me.ryanhamshire.griefprevention.api.data;
 
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import org.spongepowered.api.service.economy.account.Account;
+import org.spongepowered.api.service.economy.account.VirtualAccount;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
@@ -48,7 +50,7 @@ public interface ClaimData {
     Optional<Text> getName();
 
     /**
-     * Gets the {@link Type} of claim.
+     * Gets the {@link ClaimType} of claim.
      * 
      * @return The claim type
      */
@@ -75,6 +77,8 @@ public interface ClaimData {
      */
     Optional<Vector3i> getSpawnPos();
 
+    Optional<UUID> getParent();
+
     /** Gets the claim's world {@link UUID}.
      * 
      * @return The world UUID
@@ -84,7 +88,7 @@ public interface ClaimData {
     /**
      * Gets the claim owner's {@link UUID}.
      * 
-     * Note: {@link Type#ADMIN} and {@link Type#WILDERNESS} claims do not have
+     * Note: {@link ClaimType#ADMIN} and {@link ClaimType#WILDERNESS} claims do not have
      * owners.
      * 
      * @return The UUID of this claim
@@ -144,16 +148,14 @@ public interface ClaimData {
     boolean allowClaimExpiration();
 
     /**
-     * Gets whether claim is 3D.
+     * Gets whether claim is a 3D cuboid.
      * 
-     * @return
+     * @return True if 3D cuboid, false if not
      */
     boolean isCuboid();
 
     /**
      * Gets whether this claim is inheriting from parent claim.
-     * 
-     * Note: Only {@link ClaimType#SUBDIVISION}'s have parent claim's.
      * 
      * @return If claim inherits from parent
      */
@@ -166,6 +168,7 @@ public interface ClaimData {
      */
     boolean isResizable();
 
+    boolean isExpired();
     /**
      * Gets whether this claim requires claim blocks.
      * 
@@ -207,18 +210,16 @@ public interface ClaimData {
     /**
      * Toggles whether this claim is inheriting from parent claim.
      * 
-     * Note: Only {@link ClaimType#SUBDIVISION}'s have parent claim's.
-     * 
      * @param inherit Whether claim inherits from parent
      */
     void setInheritParent(boolean inherit);
 
     /**
-     * Toggles whether this claim is resizable.
+     * Toggles whether this claim is resizeable.
      * 
      * @param resizeable Whether claim can be resized.
      */
-    void setResizable(boolean resizable);
+    void setResizable(boolean resizeable);
 
     /**
      * Toggles whether this claim allows deny messages to be sent to
@@ -242,6 +243,8 @@ public interface ClaimData {
      */
     void setFlagOverrides(boolean allow);
 
+    void setParent(UUID uniqueId);
+
     /**
      * Overrides the world PvP setting.
      * 
@@ -259,9 +262,6 @@ public interface ClaimData {
     /**
      * Sets if this claim requires claim blocks from players. This is true by default.
      * 
-     * Note: If set to false, it is recommended to use {@link #setMaxWidth}
-     * in order to prevent claim from being expanded indefinitely.
-     * 
      * @param requiresClaimBlocks Whether this claim requires claim blocks
      */
     void setRequiresClaimBlocks(boolean requiresClaimBlocks);
@@ -269,7 +269,7 @@ public interface ClaimData {
     /**
      * Sets the spawn position of claim.
      * 
-     * @param spawnPos The new spawn position
+     * @param location The new spawn position
      */
     default void setSpawnPos(Location<World> location) {
         setSpawnPos(location.getBlockPosition());
@@ -278,12 +278,14 @@ public interface ClaimData {
     /**
      * Sets the spawn position of claim.
      * 
-     * @param spawnPos The new spawn position
+     * @param pos The new spawn position
      */
-    void setSpawnPos(Vector3i spawnPos);
+    void setSpawnPos(Vector3i pos);
 
     /**
      * Saves all changes to storage.
      */
     void save();
+
+    EconomyData getEconomyData();
 }

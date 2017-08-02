@@ -28,8 +28,6 @@ package me.ryanhamshire.griefprevention.command;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.ShovelMode;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -51,7 +49,7 @@ public class CommandRestoreNature implements CommandExecutor {
         // change shovel mode
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.RestoreNature;
-        GriefPreventionPlugin.sendMessage(player, TextMode.Instr, Messages.RestoreNatureActivate);
+        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.restoreNatureActivate.toText());
         return CommandResult.success();
     }
 }

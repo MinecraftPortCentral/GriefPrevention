@@ -31,5 +31,6 @@ public enum ShovelMode {
     Subdivide,
     RestoreNature,
     RestoreNatureAggressive,
-    RestoreNatureFill
+    RestoreNatureFill,
+    Town
 }

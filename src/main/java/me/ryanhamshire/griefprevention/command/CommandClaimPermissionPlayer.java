@@ -24,12 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.TextMode;
-import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -44,6 +43,7 @@ import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.util.Tristate;
 
 import java.util.HashSet;
@@ -65,18 +65,21 @@ public class CommandClaimPermissionPlayer implements CommandExecutor {
 
         String permission = args.<String>getOne("permission").orElse(null);
         if (permission != null && !player.hasPermission(permission)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign a permission that you do not have."));
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionAssignWithoutHaving.toText());
             return CommandResult.success();
         }
         User user = args.<User>getOne("user").orElse(null);
         String value = args.<String>getOne("value").orElse(null);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
-        if (claim.isWildernessClaim() && !playerData.canManageWilderness) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim permissions here."));
+        final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
+                .apply(ImmutableMap.of(
+                "type", claim.getType().name())).build();
+        if (claim.isWilderness() && !playerData.canManageWilderness) {
+            GriefPreventionPlugin.sendMessage(src, message);
             return CommandResult.success();
         } else if (claim.isAdminClaim() && !playerData.canManageAdminClaims) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim permissions."));
+            GriefPreventionPlugin.sendMessage(src, message);
             return CommandResult.success();
         }
 
@@ -97,14 +100,14 @@ public class CommandClaimPermissionPlayer implements CommandExecutor {
 
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.AQUA, user.getName() + " Permissions")).padding(Text.of("-")).contents(finalTexts);
+                    .title(Text.of(TextColors.AQUA, user.getName() + " Permissions")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(finalTexts);
             paginationBuilder.sendTo(src);
             return CommandResult.success();
         }
 
         Tristate tristateValue = PlayerUtils.getTristateFromString(value);
         if (tristateValue == null) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "Invalid value entered. '" + value + "' is not a valid value. Valid values are : true, false, undefined, 1, -1, or 0."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "Invalid value entered. '" + value + "' is not a valid value. Valid values are : true, false, undefined, 1, -1, or 0."));
             return CommandResult.success();
         }
 

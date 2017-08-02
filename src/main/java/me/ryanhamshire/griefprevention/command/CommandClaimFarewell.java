@@ -24,11 +24,10 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.Messages;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -36,7 +35,6 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.serializer.TextSerializers;
 
 public class CommandClaimFarewell implements CommandExecutor {
@@ -55,20 +53,23 @@ public class CommandClaimFarewell implements CommandExecutor {
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         if (claim != null) {
             if (claim.allowEdit(player) != null) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, Messages.NoEditPermission));
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionEditClaim.toText());
                 return CommandResult.success();
             }
 
-            Text message = TextSerializers.FORMATTING_CODE.deserialize(ctx.<String>getOne("message").get());
-            if (message.isEmpty()) {
+            Text farewell = TextSerializers.FORMATTING_CODE.deserialize(ctx.<String>getOne("message").get());
+            if (farewell.isEmpty()) {
                 claim.getInternalClaimData().setFarewell(null);
             } else {
-                claim.getInternalClaimData().setFarewell(message);
+                claim.getInternalClaimData().setFarewell(farewell);
             }
             claim.getInternalClaimData().setRequiresSave(true);
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Success, "Set claim farewell to ", TextColors.AQUA, message));
+            final Text message = GriefPreventionPlugin.instance.messageData.claimFarewell
+                    .apply(ImmutableMap.of(
+                    "farewell", farewell)).build();
+            GriefPreventionPlugin.sendMessage(src, message);
         } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No claim in your current location."));
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
         }
 
         return CommandResult.success();

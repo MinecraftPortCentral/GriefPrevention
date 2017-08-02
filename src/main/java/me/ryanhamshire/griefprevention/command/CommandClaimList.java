@@ -25,15 +25,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
-import com.flowpowered.math.vector.Vector3d;
-import com.google.common.collect.Lists;
-import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
-import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandPermissionException;
@@ -48,7 +44,7 @@ import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.world.Location;
+import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
@@ -58,6 +54,19 @@ import java.util.function.Consumer;
 
 public class CommandClaimList implements CommandExecutor {
 
+    private final ClaimType forcedType;
+    private boolean canListOthers;
+    private boolean canListAdmin;
+    private boolean displayOwned = true;
+
+    public CommandClaimList() {
+        this.forcedType = null;
+    }
+
+    public CommandClaimList(ClaimType type) {
+        this.forcedType = type;
+    }
+
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
         List<User> userValues = new ArrayList<>(ctx.getAll("user"));
@@ -66,24 +75,24 @@ public class CommandClaimList implements CommandExecutor {
         if (userValues.size() > 0) {
             user = userValues.get(0);
         }
+        if (src instanceof Player) {
+            this.displayOwned = true;
+        }
 
         if (user == null) {
             if (!(src instanceof Player)) {
-                GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "No player specified."));
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandPlayerInvalid.toText());
                 return CommandResult.success();
             }
 
             user = (User) src;
         }
         if (worldProperties == null) {
-            if (src != null && !(src instanceof Player)) {
-                worldProperties = Sponge.getServer().getDefaultWorld().get();
-            }
+            worldProperties = Sponge.getServer().getDefaultWorld().get();
         }
 
-        boolean canListOthers = src.hasPermission(GPPermissions.LIST_BASIC_CLAIMS);
         // otherwise if no permission to delve into another player's claims data or self
-        if (!src.hasPermission(GPPermissions.COMMAND_LIST_CLAIMS)) {
+        if (!src.hasPermission(GPPermissions.COMMAND_CLAIM_LIST)) {
             try {
                 throw new CommandPermissionException();
             } catch (CommandPermissionException e) {
@@ -92,93 +101,126 @@ public class CommandClaimList implements CommandExecutor {
             }
         }
 
-        List<Text> claimsTextList = new ArrayList<>();
-        // load the target player's data
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, user.getUniqueId());
-            claimsTextList = generateClaimTextList(claimsTextList, playerData.getClaims(), worldProperties, user, src, canListOthers);
-        } else {
-            for (World world : Sponge.getServer().getWorlds()) {
-                GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
-                claimsTextList = generateClaimTextList(claimsTextList, claimWorldManager.getPlayerClaims(user.getUniqueId()), worldProperties, user, src, canListOthers);
+        String arguments = "";
+        if (user != null) {
+            arguments = user.getName();
+        }
+        if (worldProperties != null) {
+            if (arguments.isEmpty()) {
+                arguments = worldProperties.getWorldName();
+            } else {
+                arguments += " " + worldProperties.getWorldName();
             }
         }
 
-
-        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
-        PaginationList.Builder paginationBuilder = paginationService.builder()
-                .title(Text.of(TextColors.GOLD, user.getName(), TextColors.AQUA," Claims")).padding(Text.of("-")).contents(claimsTextList);
-        paginationBuilder.sendTo(src);
-
-        // drop the data we just loaded, if the player isn't online
-        if (!user.isOnline()) {
-            GriefPreventionPlugin.instance.dataStore.clearCachedPlayerData(worldProperties, user.getUniqueId());
-        }
-
+        this.canListOthers = src.hasPermission(GPPermissions.LIST_OTHER_CLAIMS);
+        this.canListAdmin = src.hasPermission(GPPermissions.LIST_OTHER_CLAIMS);
+        showClaimList(src, user, this.forcedType, worldProperties);
         return CommandResult.success();
     }
 
-    private Consumer<CommandSource> createReturnClaimListConsumer(CommandSource src, String arguments) {
+    private void showClaimList(CommandSource src, User user, ClaimType type, WorldProperties worldProperties) {
+        List<Text> claimsTextList = new ArrayList<>();
+        List<Claim> claims = new ArrayList<>();
+        for (World world : Sponge.getServer().getWorlds()) {
+            if (!this.displayOwned && !world.getProperties().getUniqueId().equals(worldProperties.getUniqueId())) {
+                continue;
+            }
+            final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
+            // load the target player's data
+            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
+            List<Claim> claimList = null;
+            if (this.displayOwned) {
+                claimList = playerData.getClaims();
+            } else {
+                claimList = claimWorldManager.getWorldClaims();
+            }
+            for (Claim claim : claimList) {
+                if (claims.contains(claim)) {
+                    continue;
+                }
+
+                if (user != null && this.displayOwned) {
+                    if (user.getUniqueId().equals(claim.getOwnerUniqueId())) {
+                        claims.add(claim);
+                    }
+                } else if (type != null) {
+                    if (claim.getType() == type) {
+                        claims.add(claim);
+                    }
+                } else {
+                    claims.add(claim);
+                }
+            }
+        }
+        claimsTextList = CommandHelper.generateClaimTextList(claimsTextList, claims, worldProperties.getWorldName(), user, src, createClaimListConsumer(src, user, type, worldProperties), this.canListOthers, false);
+
+        final Text whiteOpenBracket = Text.of(TextColors.WHITE, "[");
+        final Text whiteCloseBracket = Text.of(TextColors.WHITE, "]");
+        Text ownedShowText = Text.of("Click here to view the claims you own.");
+        Text allShowText = Text.of("Click here to show all types.");
+        Text adminShowText = Text.of("Click here to filter by ", TextColors.RED, "ADMIN ", TextColors.RESET, "type.");
+        Text basicShowText = Text.of("Click here to filter by ", TextColors.YELLOW, "BASIC ", TextColors.RESET, "type.");
+        Text subdivisionShowText = Text.of("Click here to filter by ", TextColors.AQUA, "SUBDIVISION ", TextColors.RESET, "type.");
+        Text townShowText = Text.of("Click here to filter by ", TextColors.GREEN, "TOWN ", TextColors.RESET, "type.");
+        Text ownedTypeText = Text.builder()
+                .append(Text.of((this.displayOwned && type == null) ? Text.of(whiteOpenBracket, TextColors.GOLD, "OWN", whiteCloseBracket) : Text.of(TextColors.GRAY, "OWN")))
+                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, "OWN", worldProperties)))
+                .onHover(TextActions.showText(ownedShowText)).build();
+        Text allTypeText = Text.builder()
+                .append(Text.of((!this.displayOwned && type == null) ? Text.of(whiteOpenBracket, TextColors.LIGHT_PURPLE, "ALL", whiteCloseBracket) : Text.of(TextColors.GRAY, "ALL")))
+                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, "ALL", worldProperties)))
+                .onHover(TextActions.showText(allShowText)).build();
+        Text adminTypeText = Text.builder()
+                .append(Text.of(type == ClaimType.ADMIN ? Text.of(whiteOpenBracket, TextColors.RED, "ADMIN", whiteCloseBracket) : Text.of(TextColors.GRAY, "ADMIN")))
+                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, ClaimType.ADMIN, worldProperties)))
+                .onHover(TextActions.showText(adminShowText)).build();
+        Text basicTypeText = Text.builder()
+                .append(Text.of(type == ClaimType.BASIC ? Text.of(whiteOpenBracket, TextColors.YELLOW, "BASIC", whiteCloseBracket) : Text.of(TextColors.GRAY, "BASIC")))
+                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, ClaimType.BASIC, worldProperties)))
+                .onHover(TextActions.showText(basicShowText)).build();
+        Text subTypeText = Text.builder()
+                .append(Text.of(type == ClaimType.SUBDIVISION ? Text.of(whiteOpenBracket, TextColors.AQUA, "SUBDIVISION", whiteCloseBracket) : Text.of(TextColors.GRAY, "SUBDIVISION")))
+                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, ClaimType.SUBDIVISION, worldProperties)))
+                .onHover(TextActions.showText(subdivisionShowText)).build();
+        Text townTypeText = Text.builder()
+                .append(Text.of(type == ClaimType.TOWN ? Text.of(whiteOpenBracket, TextColors.GREEN, "TOWN", whiteCloseBracket) : Text.of(TextColors.GRAY, "TOWN")))
+                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, ClaimType.TOWN, worldProperties)))
+                .onHover(TextActions.showText(townShowText)).build();
+        Text claimListHead = Text.builder().append(Text.of(
+                TextColors.AQUA," Displaying : ", ownedTypeText, "  ", allTypeText, "  ", adminTypeText, "  ", basicTypeText, "  ", subTypeText, "  ", townTypeText)).build();
+        final int fillSize = 20 - (claimsTextList.size() + 2);
+        for (int i = 0; i < fillSize; i++) {
+            claimsTextList.add(Text.of(" "));
+        }
+
+        PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
+        PaginationList.Builder paginationBuilder = paginationService.builder()
+                .title(claimListHead).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(claimsTextList);
+        paginationBuilder.sendTo(src);
+
+        // drop the data we just loaded, if the player isn't online
+        // TODO : add task to unload data
+        //if (!user.isOnline()) {
+        //    GriefPreventionPlugin.instance.dataStore.clearCachedPlayerData(worldProperties, user.getUniqueId());
+        //}
+    }
+
+    private Consumer<CommandSource> createClaimListConsumer(CommandSource src, User user, String type, WorldProperties worldProperties) {
         return consumer -> {
-            Text claimListReturnCommand = Text.builder().append(Text.of(
-                    TextColors.WHITE, "\n[", TextColors.AQUA, "Return to claimslist", TextColors.WHITE, "]\n"))
-                .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claimslist", arguments))).build();
-            src.sendMessage(claimListReturnCommand);
+            if (type.equalsIgnoreCase("ALL")) {
+                this.displayOwned = false;
+            } else {
+                this.displayOwned = true;
+            }
+            showClaimList(src, user, null, worldProperties);
         };
     }
 
-    private List<Text> generateClaimTextList(List<Text> claimsTextList, List<Claim> claimList, WorldProperties worldProperties, User user, CommandSource src, boolean canListOthers) {
-        if (claimList.size() > 0) {
-            for (Claim playerClaim : claimList) {
-                GPClaim claim = (GPClaim) playerClaim;
-                if (claim.isAdminClaim() || (worldProperties != null && !claim.world.getProperties().getUniqueId().equals(worldProperties.getUniqueId()))) {
-                    continue;
-                }
-                // Only list claims trusted
-                if (src instanceof User && src != user && claim.allowAccess((User) src) != null && !canListOthers) {
-                    continue;
-                }
-                Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), 65.0D, claim.greaterBoundaryCorner.getPosition().getZ()));
-                Text claimName = claim.getData().getName().orElse(null);
-                if (claimName == null) {
-                    claimName = Text.of(TextColors.GREEN, "Claim");
-                }
-
-                String arguments = "";
-                if (user != null) {
-                    arguments = user.getName();
-                }
-                if (worldProperties != null) {
-                    if (arguments.isEmpty()) {
-                        arguments = worldProperties.getWorldName();
-                    } else {
-                        arguments += " " + worldProperties.getWorldName();
-                    }
-                }
-
-                Text claimInfoCommandClick = Text.builder().append(Text.of(
-                        TextColors.GREEN, claimName))
-                .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claiminfo", claim.id.toString(), createReturnClaimListConsumer(src, arguments))))
-                .onHover(TextActions.showText(Text.of("Click here to check claim info.")))
-                .build();
-
-                Text claimCoordsTPClick = Text.builder().append(Text.of(
-                        TextColors.GRAY, southWest.getBlockPosition()))
-                .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(src, southWest, claim)))
-                .onHover(TextActions.showText(Text.of("Click here to teleport to ", claimName, " in world ", TextColors.GOLD, claim.getWorld().getProperties().getWorldName(), TextColors.WHITE, ".")))
-                .build();
-
-                claimsTextList.add(Text.builder()
-                        .append(Text.of(
-                                claimInfoCommandClick, TextColors.WHITE, " : ", 
-                                claimCoordsTPClick, " ", 
-                                TextColors.YELLOW, "(Area : " + claim.getArea() + " blocks)"))
-                        .build());
-            }
-            if (claimsTextList.size() == 0) {
-                claimsTextList.add(Text.of(TextColors.RED, "No claims found in world."));
-            }
-        }
-        return claimsTextList;
+    private Consumer<CommandSource> createClaimListConsumer(CommandSource src, User user, ClaimType type, WorldProperties worldProperties) {
+        return consumer -> {
+            this.displayOwned = false;
+            showClaimList(src, user, type, worldProperties);
+        };
     }
 }

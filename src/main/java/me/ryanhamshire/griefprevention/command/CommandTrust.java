@@ -38,15 +38,21 @@ public class CommandTrust implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
-        try {
-            User user = ctx.<User>getOne("user").orElse(null);
-            if (user == null) {
-                String group = ctx.<String>getOne("group").orElse(null);
-                if (group.equalsIgnoreCase("public") || group.equalsIgnoreCase("all")) {
-                    user = GriefPreventionPlugin.PUBLIC_USER;
-                }
+        User user = ctx.<User>getOne("user").orElse(null);
+        String group = null;
+        if (user == null) {
+            group = ctx.<String>getOne("group").orElse(null);
+            if (group.equalsIgnoreCase("public") || group.equalsIgnoreCase("all")) {
+                user = GriefPreventionPlugin.PUBLIC_USER;
+                group = null;
             }
-            CommandHelper.handleTrustCommand(GriefPreventionPlugin.checkPlayer(src), TrustType.BUILDER, user);
+        }
+        try {
+            if (user != null) {
+                CommandHelper.handleUserTrustCommand(GriefPreventionPlugin.checkPlayer(src), TrustType.BUILDER, user);
+            } else {
+                CommandHelper.handleGroupTrustCommand(GriefPreventionPlugin.checkPlayer(src), TrustType.BUILDER, group);
+            }
         } catch (CommandException e) {
             src.sendMessage(e.getText());
         }

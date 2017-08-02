@@ -26,17 +26,7 @@ package me.ryanhamshire.griefprevention.api.event;
 
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 
-import java.util.List;
-import java.util.UUID;
-
 public interface TrustClaimEvent extends ClaimEvent {
-
-    /**
-     * Gets the list of {@link User}'s requesting trust.
-     * 
-     * @return The list of users requesting trust
-     */
-    List<UUID> getUsers();
 
     /**
      * The {@link TrustType} to grant user.

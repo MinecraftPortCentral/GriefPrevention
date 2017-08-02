@@ -24,11 +24,11 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.message.TextMode;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -43,6 +43,7 @@ import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.format.TextStyles;
 
 import java.util.HashSet;
 import java.util.List;
@@ -62,19 +63,31 @@ public class CommandClaimOptionPlayer implements CommandExecutor {
         }
 
         String option = args.<String>getOne("option").orElse(null);
-        if (option != null && !player.hasPermission(GPPermissions.MANAGE_PERMISSION_OPTIONS)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You are not allowed to assign an option to players."));
+        if (option != null && !option.startsWith("griefprevention.")) {
+            option = "griefprevention." + option;
+        }
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+
+        if (claim.isSubdivision()) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandOptionInvalidClaim.toText());
             return CommandResult.success();
         }
+        if (!playerData.canManageOption(player, claim, false)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionPlayerOption.toText());
+            return CommandResult.success();
+        }
+
         User user = args.<User>getOne("user").orElse(null);
-        String value = args.<String>getOne("value").orElse(null);
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
-        if (claim.isWildernessClaim() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You must be a wilderness admin to change claim options here."));
+        Double value = args.<Double>getOne("value").orElse(null);
+        final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
+                .apply(ImmutableMap.of(
+                "type", claim.getType().name())).build();
+        if (claim.isWilderness() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
+            GriefPreventionPlugin.sendMessage(src, message);
             return CommandResult.success();
         } else if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "You do not have permission to change admin claim options."));
+            GriefPreventionPlugin.sendMessage(src, message);
             return CommandResult.success();
         }
 
@@ -95,15 +108,15 @@ public class CommandClaimOptionPlayer implements CommandExecutor {
 
             PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
             PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.AQUA, user.getName() + " Options")).padding(Text.of("-")).contents(finalTexts);
+                    .title(Text.of(TextColors.AQUA, user.getName() + " Claim Options")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(finalTexts);
             paginationBuilder.sendTo(src);
             return CommandResult.success();
         }
 
-        if (user.getSubjectData().setOption(contexts, option, value)) {
+        if (user.getSubjectData().setOption(contexts, option, value.toString())) {
             GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, option, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on user ", TextColors.GOLD, user.getName(), TextColors.WHITE, "."));
         } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextMode.Err, "The permission plugin failed to set the option."));
+            GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
         }
 
         return CommandResult.success();

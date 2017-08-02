@@ -24,13 +24,16 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
+import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.configuration.category.ConfigCategory;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+import org.spongepowered.api.service.context.Context;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @ConfigSerializable
@@ -52,6 +55,16 @@ public class ClaimTemplateConfig extends ConfigCategory {
     public ArrayList<UUID> containers = new ArrayList<>();
     @Setting(value = ClaimStorageData.MAIN_MANAGERS, comment = "The coowners associated with subdivision.")
     public ArrayList<UUID> coowners = new ArrayList<>();
+    @Setting(value = ClaimStorageData.MAIN_ACCESSOR_GROUPS)
+    private List<String> accessorGroups = new ArrayList<>();
+    @Setting(value = ClaimStorageData.MAIN_BUILDER_GROUPS)
+    private List<String> builderGroups = new ArrayList<>();
+    @Setting(value = ClaimStorageData.MAIN_CONTAINER_GROUPS)
+    private List<String> containerGroups = new ArrayList<>();
+    @Setting(value = ClaimStorageData.MAIN_MANAGER_GROUPS)
+    private List<String> managerGroups = new ArrayList<>();
+    @Setting(value = "permissions")
+    private Map<Context, String> permissions = Maps.newHashMap();
 
     public ClaimTemplateConfig() {
 
@@ -81,6 +94,22 @@ public class ClaimTemplateConfig extends ConfigCategory {
 
     public List<UUID> getCoowners() {
         return this.coowners;
+    }
+
+    public List<String> getAccessorGroups() {
+        return this.accessorGroups;
+    }
+
+    public List<String> getBuilderGroups() {
+        return this.builderGroups;
+    }
+
+    public List<String> getContainerGroups() {
+        return this.containerGroups;
+    }
+
+    public List<String> getManagerGroups() {
+        return this.managerGroups;
     }
 
     public String getTemplateName() {
