@@ -71,11 +71,10 @@ sourceSets {
 dependencies {
     apiCompile "org.spongepowered:spongeapi:$apiVersion"
 
-    compile sourceSets.api.output
+    compileOnly sourceSets.api.output
     compileOnly ("org.spongepowered:spongecommon:$apiVersion:dev") {
         exclude module: 'testplugins'
 	}
-
     compileOnly "com.sk89q.worldedit:worldedit-core:6.1.4-SNAPSHOT"
     compileOnly "com.googlecode.json-simple:json-simple:1.1"
     compile "org.eclipse.mylyn.github:org.eclipse.egit.github.core:2.1.5"
