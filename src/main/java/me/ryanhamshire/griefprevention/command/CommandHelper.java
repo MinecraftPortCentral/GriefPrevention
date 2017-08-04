@@ -52,6 +52,7 @@ import me.ryanhamshire.griefprevention.event.GPUserTrustClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import me.ryanhamshire.griefprevention.util.TaskUtils;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import org.apache.commons.lang3.StringUtils;
@@ -997,12 +998,12 @@ public class CommandHelper {
             return;
         }
 
-        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+        if (!PermissionUtils.hasSubject(group)) {
             GriefPreventionPlugin.sendMessage(player, invalidGroup);
             return;
         }
 
-        Subject subject = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        Subject subject = PermissionUtils.getSubject(group);
         // determine which claim the player is standing in
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);

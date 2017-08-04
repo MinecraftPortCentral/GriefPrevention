@@ -414,7 +414,7 @@ public class GriefPreventionPlugin {
             return;
         }
 
-        this.permissionDescriptionBuilder = this.permissionService.newDescriptionBuilder(this.pluginContainer).orElse(null);
+        this.permissionDescriptionBuilder = this.permissionService.newDescriptionBuilder(this.pluginContainer);
         if (this.permissionDescriptionBuilder != null) {
             this.permissionDescriptionBuilder
                 .id(GPPermissions.COMMAND_ABANDON_ALL_CLAIMS)

@@ -110,11 +110,15 @@ public class CommandClaimOption implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().setOption(contexts, option, value.toString())) {
-            GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, option, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, GriefPreventionPlugin.GLOBAL_SUBJECT.getIdentifier(), TextColors.WHITE, "."));
-        } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
-        }
+       final String flagOption = option;
+       GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().setOption(contexts, option, value.toString())
+           .thenAccept(consumer -> {
+               if (consumer.booleanValue()) {
+                   GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, flagOption, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, GriefPreventionPlugin.GLOBAL_SUBJECT.getIdentifier(), TextColors.WHITE, "."));
+               } else {
+                   GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
+               }
+           });
 
         return CommandResult.success();
     }

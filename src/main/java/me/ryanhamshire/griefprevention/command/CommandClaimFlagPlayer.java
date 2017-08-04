@@ -116,7 +116,7 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
             Set<Context> contexts = new HashSet<>();
             contexts.add(claim.getContext());
 
-            Subject subj = user;//targetUser.get();
+            Subject subj = user;
             Map<String, Text> flagList = new TreeMap<>();
             Map<String, Boolean> permissions = new HashMap<>(subj.getSubjectData().getPermissions(contexts));
             Map<String, ClaimClickData> inheritPermissions = new HashMap<>();
@@ -182,8 +182,7 @@ public class CommandClaimFlagPlayer implements CommandExecutor {
             return CommandResult.success();
         }
 
-        Subject subj = user.getContainingCollection().get(user.getIdentifier());
-        claim.setPermission(subj, name, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
+        claim.setPermission(user, name, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
         return CommandResult.success();
     }
 }

@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -71,12 +72,12 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
         String group = args.<String>getOne("group").orElse(null);
         String value = args.<String>getOne("value").orElse(null);
 
-        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+        if (!PermissionUtils.hasSubject(group)) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
             return CommandResult.success();
         }
 
-        final Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        final Subject subj = PermissionUtils.getSubject(group);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage

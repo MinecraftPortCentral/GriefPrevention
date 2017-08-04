@@ -35,6 +35,7 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.event.GPGroupTrustClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPUserTrustClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -110,12 +111,12 @@ public class CommandUntrustAll implements CommandExecutor {
                 this.removeAllUserTrust(claim, user);
             }
         } else {
-            if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+            if (!PermissionUtils.hasSubject(group)) {
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
                 return CommandResult.success();
             }
 
-            final Subject subject = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+            final Subject subject = PermissionUtils.getSubject(group);
             GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(claimList, Cause.of(NamedCause.source(player)), ImmutableList.of(group), TrustType.NONE);
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {

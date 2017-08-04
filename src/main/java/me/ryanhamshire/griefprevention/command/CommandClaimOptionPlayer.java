@@ -113,11 +113,15 @@ public class CommandClaimOptionPlayer implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (user.getSubjectData().setOption(contexts, option, value.toString())) {
-            GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, option, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on user ", TextColors.GOLD, user.getName(), TextColors.WHITE, "."));
-        } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
-        }
+        final String flagOption = option;
+        user.getSubjectData().setOption(contexts, option, value.toString())
+            .thenAccept(consumer -> {
+                if (consumer.booleanValue()) {
+                    GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, flagOption, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on user ", TextColors.GOLD, user.getName(), TextColors.WHITE, "."));
+                } else {
+                    GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
+                }
+            });
 
         return CommandResult.success();
     }

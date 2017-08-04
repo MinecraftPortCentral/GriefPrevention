@@ -34,6 +34,7 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.ClaimClickData;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -92,7 +93,7 @@ public class CommandClaimFlagGroup implements CommandExecutor {
             source = null;
         }
 
-        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+        if (!PermissionUtils.hasSubject(group)) {
             final Text message = GriefPreventionPlugin.instance.messageData.commandGroupInvalid
                     .apply(ImmutableMap.of(
                     "group", group)).build();
@@ -115,7 +116,7 @@ public class CommandClaimFlagGroup implements CommandExecutor {
             reasonText = TextSerializers.FORMATTING_CODE.deserialize(reason);
         }
 
-        final Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        final Subject subj = PermissionUtils.getSubject(group);
         if (flag == null && value == null) {
             Set<Context> contexts = new HashSet<>();
             contexts.add(claim.getContext());

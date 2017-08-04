@@ -30,6 +30,7 @@ import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -80,12 +81,12 @@ public class CommandClaimOptionGroup implements CommandExecutor {
         String group = args.<String>getOne("group").orElse(null);
         Double value = args.<Double>getOne("value").orElse(null);
 
-        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+        if (!PermissionUtils.hasSubject(group)) {
             GriefPreventionPlugin.sendMessage(player,GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
             return CommandResult.success();
         }
 
-        final Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        final Subject subj = PermissionUtils.getSubject(group);
         final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
                 .apply(ImmutableMap.of(
                 "type", claim.getType().name())).build();
@@ -118,11 +119,15 @@ public class CommandClaimOptionGroup implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (subj.getSubjectData().setOption(contexts, option, value.toString())) {
-            GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, option, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, subj.getIdentifier(), TextColors.WHITE, "."));
-        } else {
-            GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
-        }
+        final String flagOption = option;
+        subj.getSubjectData().setOption(contexts, option, value.toString())
+            .thenAccept(consumer -> {
+                if (consumer.booleanValue()) {
+                    GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, flagOption, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, subj.getIdentifier(), TextColors.WHITE, "."));
+                } else {
+                    GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
+                }
+            });
         return CommandResult.success();
     }
 

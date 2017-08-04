@@ -63,6 +63,7 @@ import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import me.ryanhamshire.griefprevention.visual.VisualizationType;
 import net.minecraft.util.math.ChunkPos;
@@ -1984,11 +1985,11 @@ public class GPClaim implements Claim {
             return false;
         }
 
-        if (!GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasRegistered(group)) {
+        if (!PermissionUtils.hasSubject(group)) {
             return false;
         }
 
-        final Subject subj = GriefPreventionPlugin.instance.permissionService.getGroupSubjects().get(group);
+        final Subject subj = PermissionUtils.getSubject(group);
         Set<Context> contexts = new HashSet<>();
         contexts.add(this.getContext());
 

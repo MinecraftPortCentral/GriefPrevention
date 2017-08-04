@@ -37,6 +37,7 @@ import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -251,7 +252,7 @@ public class GPPlayerData implements PlayerData {
     public void refreshPlayerOptions() {
         GriefPreventionPlugin.instance.executor.execute(() -> {
             if (this.playerSubject == null || this.playerSubject.get() == null) {
-                Subject subject = GriefPreventionPlugin.instance.permissionService.getUserSubjects().get(this.playerID.toString());
+                Subject subject = PermissionUtils.getSubject(this.playerID.toString());
                 this.playerSubject = new WeakReference<>(subject);
             }
             final Subject subject = this.playerSubject.get();
@@ -621,7 +622,7 @@ public class GPPlayerData implements PlayerData {
 
     public Subject getPlayerSubject() {
         if (this.playerSubject == null || this.playerSubject.get() == null) {
-            Subject subject = GriefPreventionPlugin.instance.permissionService.getUserSubjects().get(this.playerID.toString());
+            Subject subject = PermissionUtils.getSubject(this.playerID.toString());
             this.playerSubject = new WeakReference<>(subject);
         }
 
