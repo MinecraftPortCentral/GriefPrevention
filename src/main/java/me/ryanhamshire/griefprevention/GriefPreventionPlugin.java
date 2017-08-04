@@ -1294,11 +1294,13 @@ public class GriefPreventionPlugin {
                         string(Text.of("group"))))
                 .executor(new CommandUntrustAll()).build(), Arrays.asList("untrustall", "uta"));
 
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Uses the worldedit selection to create a claim."))
-                .permission(GPPermissions.CLAIM_CREATE)
-                .executor(new CommandClaimWorldEdit())
-                .build(), "claim");
+        if (this.worldEditProvider != null) {
+            Sponge.getCommandManager().register(this, CommandSpec.builder()
+                    .description(Text.of("Uses the worldedit selection to create a claim."))
+                    .permission(GPPermissions.CLAIM_CREATE)
+                    .executor(new CommandClaimWorldEdit())
+                    .build(), "claim");
+        }
 
         for (BlockType blockType : Sponge.getRegistry().getAllOf(BlockType.class)) {
             String modId = blockType.getId().split(":")[0].toLowerCase();
