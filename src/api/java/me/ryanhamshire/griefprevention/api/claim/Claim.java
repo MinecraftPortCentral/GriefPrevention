@@ -1073,7 +1073,7 @@ public interface Claim extends ContextSource {
          * 
          * Note: This is true by default.
          * 
-         * @param requiresClaimBlocks Whether this claim requires claim blocks
+         * @param requireClaimBlocks Whether this claim requires claim blocks
          * @return The builder
          */
         Builder requireClaimBlocks(boolean requireClaimBlocks);
@@ -1106,7 +1106,7 @@ public interface Claim extends ContextSource {
         /**
          * The spawn position of this claim.
          * 
-         * @param location The spawn position
+         * @param spawnPos The spawn position
          * @return The builder
          */
         Builder spawnPos(Vector3i spawnPos);

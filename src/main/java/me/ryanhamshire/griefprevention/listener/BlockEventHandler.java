@@ -701,10 +701,13 @@ public class BlockEventHandler {
         Location<World> location = event.getTargetTile().getLocation();
         // Prevent users exploiting signs
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location, false, null);
-        if (!claim.isUserTrusted(user, TrustType.BUILDER)) {
+        if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
             if (user instanceof Player) {
                 event.setCancelled(true);
-                GriefPreventionPlugin.sendClaimDenyMessage(claim, (Player) user, null);
+                final Text message = GriefPreventionPlugin.instance.messageData.permissionAccess
+                        .apply(ImmutableMap.of(
+                        "player", Text.of(claim.getOwnerName()))).build();
+                GriefPreventionPlugin.sendClaimDenyMessage(claim, (Player) user, message);
                 return;
             }
         }
