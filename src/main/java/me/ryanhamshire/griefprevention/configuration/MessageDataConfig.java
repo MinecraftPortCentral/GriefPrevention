@@ -34,19 +34,19 @@ import org.spongepowered.api.text.format.TextColors;
 @ConfigSerializable
 public class MessageDataConfig extends ConfigCategory {
 
-    @Setting("abandon-claim-advertisement")
+    @Setting(MessageStorage.ABANDON_CLAIM_ADVERTISEMENT)
     public TextTemplate abandonClaimAdvertisement = TextTemplate.of("To delete another claim and free up some blocks, use /AbandonClaim.");
 
-    @Setting("abandon-other-success")
+    @Setting(MessageStorage.ABANDON_OTHER_SUCCESS)
     public TextTemplate abandonOtherSuccess = TextTemplate.of(TextColors.GREEN, TextTemplate.arg("player"), "'s claim has been abandoned.", TextTemplate.arg("player"), " now has ", TextTemplate.arg("total"), " available claim blocks.");
 
     @Setting("access")
     public TextTemplate access = TextTemplate.of("Access");
 
-    @Setting("adjust-blocks-success")
+    @Setting(MessageStorage.ADJUST_BLOCKS_SUCCESS)
     public TextTemplate adjustBlocksSuccess = TextTemplate.of(TextColors.GREEN, "Adjusted ", TextTemplate.arg("player"), "'s bonus claim blocks by ", TextTemplate.arg("adjustment"), ".  New total bonus blocks: ", TextTemplate.arg("total"), ".");
 
-    @Setting("adjust-group-blocks-success")
+    @Setting(MessageStorage.ADJUST_GROUP_BLOCKS_SUCCESS)
     public TextTemplate adjustGroupBlocksSuccess = TextTemplate.of(TextColors.GREEN, "Adjusted bonus claim blocks for players with the ", TextTemplate.arg("permission"), " permission by ", TextTemplate.arg("amount"), ".  New total: ", TextTemplate.arg("bonus"), ".");
 
     @Setting("advertise-acb")
@@ -67,13 +67,13 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("block-change-from-wilderness")
     public TextTemplate blockChangeFromWilderness = TextTemplate.of(TextColors.RED, "Claim blocks are not allowed to be changed from wilderness.");
 
-    @Setting("block-claimed")
+    @Setting(MessageStorage.BLOCK_CLAIMED)
     public TextTemplate blockClaimed = TextTemplate.of(TextColors.GREEN, "That block has been claimed by ", TextTemplate.arg("owner").color(TextColors.GOLD), ".");
 
     @Setting("block-not-claimed")
     public TextTemplate blockNotClaimed = TextTemplate.of(TextColors.RED, "No one has claimed this block.");
 
-    @Setting("block-sale-value")
+    @Setting(MessageStorage.BLOCK_SALE_VALUE)
     public TextTemplate blockSaleValue = TextTemplate.of(TextColors.GREEN, "Each claim block is worth ", TextTemplate.arg("block-value"), ".  You have ", TextTemplate.arg("available-blocks"), " available for sale.");
 
     @Setting("book-author")
@@ -91,7 +91,7 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("book-title")
     public TextTemplate bookTitle = TextTemplate.of("How to Claim Land");
 
-    @Setting("book-tools")
+    @Setting(MessageStorage.BOOK_TOOLS)
     public TextTemplate bookTools = TextTemplate.of("Our claim tools are ", TextTemplate.arg("modification-tool"), " and ", TextTemplate.arg("information-tool"), ".");
 
     @Setting("book-useful-commands")
@@ -106,7 +106,7 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("chat-how-to-claim-regex")
     public TextTemplate chatHowToClaimRegex = TextTemplate.of("(^|.*\\W)how\\W.*\\W(claim|protect|lock)(\\W.*|$)", "This is a Java Regular Expression.  Look it up before editing!  It's used to tell players about the demo video when they ask how " + "to claim land.");
 
-    @Setting("claim-abandon-success")
+    @Setting(MessageStorage.CLAIM_ABANDON_SUCCESS)
     public TextTemplate claimAbandonSuccess = TextTemplate.of(TextColors.GREEN, "Claim abandoned. You now have ", TextTemplate.arg("remaining-blocks"), " available claim blocks.");
 
     @Setting("claim-automatic-notification")
@@ -160,25 +160,37 @@ public class MessageDataConfig extends ConfigCategory {
     public TextTemplate claimCreateSuccess = TextTemplate.of(TextColors.GREEN, TextTemplate.arg("type"), " created!  Use /trust to share it with friends.");
 
     @Setting("claim-cleanup-warning")
-    public TextTemplate claimCleanupWarning = TextTemplate.of("The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you " + "want to keep, you should reclaim it.");
+    public TextTemplate claimCleanupWarning = TextTemplate.of("The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you want to keep, you should reclaim it.");
 
     @Setting("claim-context-not-found")
     public TextTemplate claimContextNotFound = TextTemplate.of(TextColors.RED, "Context '", TextTemplate.arg("context"), "' was not found.");
 
-    @Setting("claim-create-max-x")
-    public TextTemplate claimCreateMaxX = TextTemplate.of(TextColors.RED, "You cannot create passed the max claim x of ", TextTemplate.arg("maxCoordX"), ".");
+    @Setting(MessageStorage.CLAIM_SIZE_MAX_X)
+    public TextTemplate claimSizeMaxX = TextTemplate.of(TextColors.RED, "The claim x size of ", TextTemplate.arg("size").color(TextColors.GREEN), " exceeds the max size of ", TextTemplate.arg("max-size").color(TextColors.GREEN), ".\nThe area needs to be a mininum of ", TextTemplate.arg("min-area").color(TextColors.GREEN), " and a max of ", TextTemplate.arg("max-area").color(TextColors.GREEN));
 
-    @Setting("claim-create-max-y")
-    public TextTemplate claimCreateMaxY = TextTemplate.of(TextColors.RED, "You cannot create passed the max claim y of ", TextTemplate.arg("maxCoordY"), ".");
+    @Setting(MessageStorage.CLAIM_SIZE_MAX_Y)
+    public TextTemplate claimSizeMaxY = TextTemplate.of(TextColors.RED, "The claim y size of ", TextTemplate.arg("size").color(TextColors.GREEN), " exceeds the max size of ", TextTemplate.arg("max-size").color(TextColors.GREEN), ".\nThe area needs to be a minimum of ", TextTemplate.arg("min-area").color(TextColors.GREEN), " and a max of ", TextTemplate.arg("max-area").color(TextColors.GREEN));
 
-    @Setting("claim-create-max-z")
-    public TextTemplate claimCreateMaxZ = TextTemplate.of(TextColors.RED, "You cannot create passed the max claim z of ", TextTemplate.arg("maxCoordZ"), ".");
+    @Setting(MessageStorage.CLAIM_SIZE_MAX_Z)
+    public TextTemplate claimSizeMaxZ = TextTemplate.of(TextColors.RED, "The claim z size of ", TextTemplate.arg("size").color(TextColors.GREEN), " exceeds the max size of ", TextTemplate.arg("max-size").color(TextColors.GREEN), ".\nThe area needs to be a minimum of ", TextTemplate.arg("min-area").color(TextColors.GREEN), " and a max of ", TextTemplate.arg("max-area").color(TextColors.GREEN));
+
+    @Setting(MessageStorage.CLAIM_SIZE_MIN_X)
+    public TextTemplate claimSizeMinX = TextTemplate.of(TextColors.RED, "The claim x size of ", TextTemplate.arg("size").color(TextColors.GREEN), " is below the minimum size of ", TextTemplate.arg("min-size").color(TextColors.GREEN), ".\nThe area needs to be a minimum of ", TextTemplate.arg("min-area").color(TextColors.GREEN), " and a max of ", TextTemplate.arg("max-area").color(TextColors.GREEN));
+
+    @Setting(MessageStorage.CLAIM_SIZE_MIN_Y)
+    public TextTemplate claimSizeMinY = TextTemplate.of(TextColors.RED, "The claim y size of ", TextTemplate.arg("size").color(TextColors.GREEN), " is below the minimum size of ", TextTemplate.arg("min-size").color(TextColors.GREEN), ".\nThe area needs to be a minimum of ", TextTemplate.arg("min-area").color(TextColors.GREEN), " and a max of ", TextTemplate.arg("max-area").color(TextColors.GREEN));
+
+    @Setting(MessageStorage.CLAIM_SIZE_MIN_Z)
+    public TextTemplate claimSizeMinZ = TextTemplate.of(TextColors.RED, "The claim z size of ", TextTemplate.arg("size").color(TextColors.GREEN), " is below the minimum size of ", TextTemplate.arg("min-size").color(TextColors.GREEN), ".\nThe area needs to be a minimum of ", TextTemplate.arg("min-area").color(TextColors.GREEN), " and a max of ", TextTemplate.arg("max-area").color(TextColors.GREEN));
+
+    @Setting(MessageStorage.CLAIM_SIZE_TOO_SMALL)
+    public TextTemplate claimSizeTooSmall = TextTemplate.of(TextColors.RED, "The selected claim size of ", TextTemplate.arg("width"), "x", TextTemplate.arg("length"), " would be too small. A claim must be at least ", TextTemplate.arg("minimum-width"), "x", TextTemplate.arg("minimum-length"), " in size.");
 
     @Setting("claim-create-failed-claim-limit")
     public TextTemplate claimCreateFailedLimit = TextTemplate.of(TextColors.RED, "You've reached your limit on land claims.  Use /AbandonClaim to remove one before creating another.");
 
-    @Setting("claim-create-insufficient-blocks")
-    public TextTemplate claimCreateInsufficientBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks to claim that entire area. You need ", TextTemplate.arg("additional-blocks"), " more blocks.");
+    @Setting(MessageStorage.CLAIM_CREATE_INSUFFICIENT_BLOCKS)
+    public TextTemplate claimCreateInsufficientBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks to claim this area.\nYou need ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-create-subdivision-fail")
     public TextTemplate claimCreateSubdivisionFail = TextTemplate.of("No claim exists at selected corner. Please click a valid opposite corner within parent claim in order to create your subdivision.");
@@ -237,20 +249,8 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-owner-only")
     public TextTemplate claimOwnerOnly = TextTemplate.of(TextColors.RED, "Only ", TextTemplate.arg("owner"), " can modify this claim.");
 
-    @Setting("claim-resize-max-x")
-    public TextTemplate claimResizeMaxX = TextTemplate.of(TextColors.RED, "You cannot resize passed the max claim x of ", TextTemplate.arg("maxCoordX"), ".");
-
-    @Setting("claim-resize-max-y")
-    public TextTemplate claimResizeMaxY = TextTemplate.of(TextColors.RED, "You cannot resize passed the max claim y of ", TextTemplate.arg("maxCoordY"), ".");
-
-    @Setting("claim-resize-max-z")
-    public TextTemplate claimResizeMaxZ = TextTemplate.of(TextColors.RED, "You cannot resize passed the max claim z of ", TextTemplate.arg("maxCoordZ"), ".");
-
-    @Setting("claim-resize-insufficient-blocks")
-    public TextTemplate claimResizeInsufficientBlocks = TextTemplate.of(TextColors.RED, "The selected claim size of ", TextTemplate.arg("area"), " blocks(", TextTemplate.arg("width"), "x", TextTemplate.arg("height"), ") would be too small. A claim must use at least ", TextTemplate.arg("minimum-area"), " total claim blocks.");
-
-    @Setting("claim-resize-need-blocks")
-    public TextTemplate claimResizeNeedBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this size. You need ", TextTemplate.arg("amount").color(TextColors.GOLD), " more blocks.");
+    @Setting(MessageStorage.CLAIM_RESIZE_NEED_BLOCKS)
+    public TextTemplate claimResizeNeedBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this size.\nYou need ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-resize-overlap-subdivision")
     public TextTemplate claimResizeOverlapSubdivision = TextTemplate.of(TextColors.RED, "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use " + "your shovel at a corner to resize it.");
@@ -261,8 +261,8 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-resize-start")
     public TextTemplate claimResizeStart = TextTemplate.of(TextColors.GREEN, "Resizing claim.  Use your shovel again at the new location for this corner.");
 
-    @Setting("claim-resize-success")
-    public TextTemplate claimResizeSuccess = TextTemplate.of(TextColors.GREEN, "Claim resized. ", TextTemplate.arg("remaining-blocks"), " available claim blocks remaining.");
+    @Setting(MessageStorage.CLAIM_RESIZE_SUCCESS)
+    public TextTemplate claimResizeSuccess = TextTemplate.of(TextColors.GREEN, "Claim resized. You have ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks remaining.\n(", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-respecting")
     public TextTemplate claimRespecting = TextTemplate.of(TextColors.GREEN, "Now respecting claims.");
@@ -429,7 +429,7 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("economy-claim-sale-confirmation")
     public TextTemplate economyClaimSaleConfirmation = TextTemplate.of(TextColors.GREEN, "Are you sure you want to sell your claim for ", TextTemplate.arg("sale_price").color(TextColors.GOLD), " ? If your claim is sold, all items and blocks will be transferred to the buyer. Click confirm if this is OK.");
 
-    @Setting("economy-claim-sale-confirmed")
+    @Setting(MessageStorage.ECONOMY_CLAIM_SALE_CONFIRMED)
     public TextTemplate economyClaimSaleConfirmed = TextTemplate.of(TextColors.GREEN, "You have successfully put your claim up for sale for the amount of ", TextTemplate.arg("sale_price").color(TextColors.GOLD), ".");
 
     @Setting("economy-claim-sale-invalid-price")
@@ -438,7 +438,7 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("economy-claim-sold")
     public TextTemplate economyClaimSold = TextTemplate.of(TextColors.GREEN, "Your claim sold! The amount of ", TextTemplate.arg("amount").color(TextColors.GOLD), " has been deposited into your account. Your total available balance is now ", TextTemplate.arg("balance").color(TextColors.GOLD));
 
-    @Setting("economy-user-not-found")
+    @Setting(MessageStorage.ECONOMY_USER_NOT_FOUND)
     public TextTemplate economyUserNotFound = TextTemplate.of(TextColors.RED, "No economy account found for user ", TextTemplate.arg("user"), ".");
 
     @Setting("economy-withdraw-error")

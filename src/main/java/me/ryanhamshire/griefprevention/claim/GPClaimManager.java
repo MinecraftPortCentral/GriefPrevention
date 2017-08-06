@@ -164,7 +164,6 @@ public class GPClaimManager implements ClaimManager {
         this.getPlayerDataMap().remove(playerUniqueId);
     }
 
-    @Override
     public ClaimResult addClaim(Claim claim, Cause cause) {
         GPClaim newClaim = (GPClaim) claim;
         // ensure this new claim won't overlap any existing claims

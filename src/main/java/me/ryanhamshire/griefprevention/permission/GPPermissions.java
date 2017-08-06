@@ -78,6 +78,7 @@ public class GPPermissions {
     public static final String CLAIM_CUBOID_SUBDIVISION = "griefprevention.user.claim.cuboid.subdivision";
     public static final String CLAIM_CUBOID_TOWN = "griefprevention.user.claim.cuboid.town";
     public static final String CLAIM_RESIZE = "griefprevention.user.claim.resize";
+    public static final String CLAIM_SHOW_TUTORIAL = "griefprevention.user.claim.show-tutorial";
     public static final String SIEGE_IMMUNE = "griefprevention.user.claim.siege.immune";
     public static final String VISUALIZE_CLAIMS = "griefprevention.user.claim.visualize";
     public static final String VISUALIZE_CLAIMS_NEARBY = "griefprevention.user.claim.visualize.nearby";

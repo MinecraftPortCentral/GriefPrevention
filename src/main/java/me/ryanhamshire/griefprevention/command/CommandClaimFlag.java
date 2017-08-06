@@ -32,6 +32,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimContexts;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.claim.FlagResult;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.event.GPFlagClaimEvent;
@@ -489,7 +490,7 @@ public class CommandClaimFlag implements CommandExecutor {
                     Text hover = CommandHelper.getBaseFlagOverlayText(baseFlagPerm);
                     if (claim.isWilderness()) {
                         Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(baseFlagPerm);
-                        if (reason != null) {
+                        if (reason != null && !reason.isEmpty()) {
                             hover = Text.of(TextColors.GREEN, "Ban Reason", TextColors.WHITE, " : ", reason);
                         }
                     }
@@ -628,6 +629,9 @@ public class CommandClaimFlag implements CommandExecutor {
             final String sourceId = GPPermissionHandler.getSourcePermission(flagPermission);
             final String targetId = GPPermissionHandler.getTargetPermission(flagPermission);
             final ClaimFlag claimFlag = GPPermissionHandler.getFlagFromPermission(flagPermission);
+            if (claimFlag == null) {
+                return;
+            }
             Context claimContext = claim.getContext();
             Tristate newValue = Tristate.UNDEFINED;
             if (type == FlagType.DEFAULT) {
@@ -637,7 +641,11 @@ public class CommandClaimFlag implements CommandExecutor {
                     } else {
                         newValue = Tristate.TRUE;
                     }
-                    final Boolean defaultValue = DataStore.CLAIM_FLAG_DEFAULTS.get(claim.getType()).get(claimFlag.toString());
+                    ClaimType claimType = claim.getType();
+                    if (claimType == ClaimType.SUBDIVISION) {
+                        claimType = ClaimType.BASIC;
+                    }
+                    final Boolean defaultValue = DataStore.CLAIM_FLAG_DEFAULTS.get(claimType).get(claimFlag.toString());
                     if (defaultValue != null && defaultValue == newValue.asBoolean()) {
                         newValue = Tristate.UNDEFINED;
                     }

@@ -46,6 +46,7 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPFlagResult;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.economy.GPBankTransaction;
 import me.ryanhamshire.griefprevention.event.GPGroupTrustClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPUserTrustClaimEvent;
@@ -101,6 +102,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -442,18 +444,20 @@ public class CommandHelper {
         }
 
         if (context == ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT) {
-            if (reason == null) {
-                reason = Text.of();
+            if (reason != null && !reason.isEmpty()) {
+                GriefPreventionPlugin.getGlobalConfig().getConfig().bans.addBan(flagPermission, reason);
+                GriefPreventionPlugin.getGlobalConfig().save();
             }
-            GriefPreventionPlugin.getGlobalConfig().getConfig().bans.addBan(flagPermission, reason);
-            GriefPreventionPlugin.getGlobalConfig().save();
         }
 
         if (subject == GriefPreventionPlugin.GLOBAL_SUBJECT) {
             if (context == claim.getContext() || !ClaimContexts.CONTEXT_LIST.contains(context)) {
                 contexts.add(claim.getContext());
             } else {
-                contexts.add(claim.world.getContext());
+                // wilderness overrides affect all worlds
+                if (context != ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT) {
+                    contexts.add(claim.world.getContext());
+                }
             }
 
             GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, value);
@@ -688,21 +692,19 @@ public class CommandHelper {
             }
             Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
             if (playerAccount == null) {
-                final Text message = GriefPreventionPlugin.instance.messageData.economyUserNotFound
-                        .apply(ImmutableMap.of(
-                        "user", player.getName())).build();
-                GriefPreventionPlugin.sendMessage(player, message);
+                Map<String, ?> params = ImmutableMap.of(
+                        "user", player.getName());
+                GriefPreventionPlugin.sendMessage(player, MessageStorage.ECONOMY_USER_NOT_FOUND, GriefPreventionPlugin.instance.messageData.economyUserNotFound, params);
                 return;
             }
 
             final double balance = playerAccount.getBalance(GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency()).doubleValue();
             if (balance < claim.getEconomyData().getSalePrice()) {
-                final Text message = GriefPreventionPlugin.instance.messageData.economyClaimBuyNotEnoughFunds
-                        .apply(ImmutableMap.of(
+                Map<String, ?> params = ImmutableMap.of(
                         "sale_price", claim.getEconomyData().getSalePrice(),
                         "balance", balance,
-                        "amount_needed", claim.getEconomyData().getSalePrice() -  balance)).build();
-                GriefPreventionPlugin.sendMessage(src, message);
+                        "amount_needed", claim.getEconomyData().getSalePrice() -  balance);
+                GriefPreventionPlugin.sendMessage(player, "economy-claim-buy-not-enough-funds", GriefPreventionPlugin.instance.messageData.economyClaimBuyNotEnoughFunds, params);
                 return;
             }
             final Text message = GriefPreventionPlugin.instance.messageData.economyClaimBuyConfirmation

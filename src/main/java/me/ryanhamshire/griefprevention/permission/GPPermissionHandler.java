@@ -274,20 +274,23 @@ public class GPPermissionHandler {
         Set<Context> contexts = new LinkedHashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
         if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
+            contexts.add(claim.world.getContext());
         } else if (claim.isTown()) {
             contexts.add(ClaimContexts.TOWN_OVERRIDE_CONTEXT);
+            contexts.add(claim.world.getContext());
         } else if (claim.isBasicClaim()) {
             contexts.add(ClaimContexts.BASIC_OVERRIDE_CONTEXT);
+            contexts.add(claim.world.getContext());
         } else if (claim.isWilderness()) {
             contexts.add(ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT);
             player = user instanceof Player ? (Player) user : null;
         }
-        contexts.add(claim.world.getContext());
+
         Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
         if (value != Tristate.UNDEFINED) {
-            if (player != null && claim.isWilderness()) {
+            if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                 Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(flagPermission);
-                if (reason != null) {
+                if (reason != null && !reason.isEmpty()) {
                     player.sendMessage(reason);
                 }
             }
@@ -296,9 +299,9 @@ public class GPPermissionHandler {
         if (targetMetaPermission != null) {
             value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetMetaPermission);
             if (value != Tristate.UNDEFINED) {
-                if (player != null && claim.isWilderness()) {
+                if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                     Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetMetaPermission);
-                    if (reason != null) {
+                    if (reason != null && !reason.isEmpty()) {
                         player.sendMessage(reason);
                     }
                 }
@@ -369,18 +372,20 @@ public class GPPermissionHandler {
             contexts.add(ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT);
         } else if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
+            contexts.add(claim.world.getContext());
         } else if (claim.isTown()) {
             contexts.add(ClaimContexts.TOWN_OVERRIDE_CONTEXT);
+            contexts.add(claim.world.getContext());
         } else {
             contexts.add(ClaimContexts.BASIC_OVERRIDE_CONTEXT);
+            contexts.add(claim.world.getContext());
         }
-        contexts.add(claim.world.getContext());
 
         Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
         if (value != Tristate.UNDEFINED) {
-            if (player != null && claim.isWilderness()) {
+            if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                 Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(flagPermission);
-                if (reason != null) {
+                if (reason != null && !reason.isEmpty()) {
                     player.sendMessage(reason);
                 }
             }
@@ -389,9 +394,9 @@ public class GPPermissionHandler {
         if (targetMetaPermission != null) {
             value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetMetaPermission);
             if (value != Tristate.UNDEFINED) {
-                if (player != null && claim.isWilderness()) {
+                if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                     Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetMetaPermission);
-                    if (reason != null) {
+                    if (reason != null && !reason.isEmpty()) {
                         player.sendMessage(reason);
                     }
                 }

@@ -145,7 +145,7 @@ public interface ClaimData {
      * 
      * @return If claim can expire
      */
-    boolean allowClaimExpiration();
+    boolean allowExpiration();
 
     /**
      * Gets whether claim is a 3D cuboid.
@@ -215,33 +215,33 @@ public interface ClaimData {
     void setInheritParent(boolean inherit);
 
     /**
-     * Toggles whether this claim is resizeable.
+     * Toggles whether this claim is resizable.
      * 
-     * @param resizeable Whether claim can be resized.
+     * @param allowResize Whether claim can be resized.
      */
-    void setResizable(boolean resizeable);
+    void setResizable(boolean allowResize);
 
     /**
      * Toggles whether this claim allows deny messages to be sent to
      * players. If false, no deny messages will be sent.
      * 
-     * @param allow Whether to allow sending deny messages to players
+     * @param allowDenyMessages Whether to allow sending deny messages to players
      */
-    void setDenyMessages(boolean allow);
+    void setDenyMessages(boolean allowDenyMessages);
 
     /**
      * Toggles whether this claim can expire due to no player activity.
      * 
-     * @param allow Whether this claim allows expirations
+     * @param allowExpire Whether this claim allows expirations
      */
-    void setClaimExpiration(boolean allow);
+    void setExpiration(boolean allowExpire);
 
     /**
      * Toggles whether this claim should allow flag overrides.
      * 
-     * @param allow Whether this claim allows flag overrides
+     * @param allowOverrides Whether this claim allows flag overrides
      */
-    void setFlagOverrides(boolean allow);
+    void setFlagOverrides(boolean allowOverrides);
 
     void setParent(UUID uniqueId);
 
@@ -260,7 +260,9 @@ public interface ClaimData {
     void setPvpOverride(Tristate value);
 
     /**
-     * Sets if this claim requires claim blocks from players. This is true by default.
+     * Sets if this claim requires claim blocks from players.
+     * 
+     * Note: This is true by default.
      * 
      * @param requiresClaimBlocks Whether this claim requires claim blocks
      */
