@@ -277,13 +277,7 @@ public class GPClaim implements Claim {
     }
 
     public UUID getOwnerUniqueId() {
-        if (this.isSubdivision()) {
-            if (this.parent == null) {
-                return this.ownerUniqueId;
-            }
-            return this.parent.getOwnerUniqueId();
-        }
-        if (this.isAdminClaim()) {
+        if (this.isAdminClaim() || this.ownerUniqueId == null) {
             return GriefPreventionPlugin.ADMIN_USER_UUID;
         }
 
