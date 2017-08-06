@@ -215,6 +215,12 @@ public class GPPlayerData implements PlayerData {
     public int optionMaxClaimSizeSubX = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X;
     public int optionMaxClaimSizeSubY = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y;
     public int optionMaxClaimSizeSubZ = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z;
+    public int optionMinClaimSizeBasicX = GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_X;
+    public int optionMinClaimSizeBasicY = GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Y;
+    public int optionMinClaimSizeBasicZ = GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Z;
+    public int optionMinClaimSizeTownX = GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_X;
+    public int optionMinClaimSizeTownY = GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Y;
+    public int optionMinClaimSizeTownZ = GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Z;
     public int optionClaimExpirationChest = GPOptions.DEFAULT_CLAIM_EXPIRATION_CHEST;
     public int optionClaimExpirationBasic = GPOptions.DEFAULT_CLAIM_EXPIRATION_BASIC;
     public int optionClaimExpirationSubdivision = GPOptions.DEFAULT_CLAIM_EXPIRATION_SUBDIVISION;
@@ -274,6 +280,12 @@ public class GPPlayerData implements PlayerData {
             this.optionMaxClaimSizeSubX = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_X, this.optionMaxClaimSizeSubX);
             this.optionMaxClaimSizeSubY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Y, this.optionMaxClaimSizeSubY);
             this.optionMaxClaimSizeSubZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Z, this.optionMaxClaimSizeSubZ);
+            this.optionMinClaimSizeBasicX = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_X, this.optionMinClaimSizeBasicX);
+            this.optionMinClaimSizeBasicY = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_Y, this.optionMinClaimSizeBasicY);
+            this.optionMinClaimSizeBasicZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_Z, this.optionMinClaimSizeBasicZ);
+            this.optionMinClaimSizeTownX = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_TOWN_X, this.optionMinClaimSizeTownX);
+            this.optionMinClaimSizeTownY = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_TOWN_Y, this.optionMinClaimSizeTownY);
+            this.optionMinClaimSizeTownZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_TOWN_Z, this.optionMinClaimSizeTownZ);
             this.optionClaimExpirationChest = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_CHEST, this.optionClaimExpirationChest);
             this.optionClaimExpirationBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_BASIC, this.optionClaimExpirationBasic);
             this.optionClaimExpirationTown = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_TOWN, this.optionClaimExpirationTown);
@@ -302,6 +314,12 @@ public class GPPlayerData implements PlayerData {
             this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_X, (double) this.optionMaxClaimSizeTownX);
             this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_Y, (double) this.optionMaxClaimSizeTownY);
             this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_Z, (double) this.optionMaxClaimSizeTownZ);
+            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_BASIC_X, (double) this.optionMinClaimSizeBasicX);
+            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_BASIC_Y, (double) this.optionMinClaimSizeBasicY);
+            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_BASIC_Z, (double) this.optionMinClaimSizeBasicZ);
+            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_X, (double) this.optionMinClaimSizeTownX);
+            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_Y, (double) this.optionMinClaimSizeTownY);
+            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_Z, (double) this.optionMinClaimSizeTownZ);
             this.optionMap.put(GPOptions.CLAIM_EXPIRATION_CHEST, (double) this.optionClaimExpirationChest);
             this.optionMap.put(GPOptions.CLAIM_EXPIRATION_BASIC, (double) this.optionClaimExpirationBasic);
             this.optionMap.put(GPOptions.CLAIM_EXPIRATION_SUBDIVISION, (double) this.optionClaimExpirationSubdivision);
@@ -400,7 +418,12 @@ public class GPPlayerData implements PlayerData {
     public int getRemainingClaimBlocks() {
         int remainingBlocks = this.optionInitialClaimBlocks + this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
         for (Claim claim : this.claimList) {
-            if (!claim.getParent().isPresent() && claim.getData().requiresClaimBlocks()) {
+            if (claim.isSubdivision()) {
+                continue;
+            }
+
+            GPClaim gpClaim = (GPClaim) claim;
+            if ((gpClaim.parent == null || gpClaim.parent.isAdminClaim()) && claim.getData().requiresClaimBlocks()) {
                 remainingBlocks -= claim.getArea();
             }
         }
@@ -607,23 +630,102 @@ public class GPPlayerData implements PlayerData {
 
     @Override
     public int getMaxClaimX(ClaimType type) {
-        return this.optionMaxClaimSizeBasicX;
+        switch(type) {
+            case BASIC:
+                return this.optionMaxClaimSizeBasicX;
+            case SUBDIVISION:
+                return this.optionMaxClaimSizeSubX;
+            case TOWN:
+                return this.optionMaxClaimSizeTownX;
+            default:
+                break;
+        }
+
+        return 0;
     }
 
     @Override
     public int getMaxClaimY(ClaimType type) {
-        return this.optionMaxClaimSizeBasicY;
+        switch(type) {
+            case BASIC:
+                return this.optionMaxClaimSizeBasicY;
+            case SUBDIVISION:
+                return this.optionMaxClaimSizeSubY;
+            case TOWN:
+                return this.optionMaxClaimSizeTownY;
+            default:
+                break;
+        }
+
+        return 0;
     }
 
     @Override
     public int getMaxClaimZ(ClaimType type) {
-        return this.optionMaxClaimSizeBasicZ;
+        switch(type) {
+            case BASIC:
+                return this.optionMaxClaimSizeBasicZ;
+            case SUBDIVISION:
+                return this.optionMaxClaimSizeSubZ;
+            case TOWN:
+                return this.optionMaxClaimSizeTownZ;
+            default:
+                break;
+        }
+
+        return 0;
+    }
+
+    @Override
+    public int getMinClaimX(ClaimType type) {
+        switch(type) {
+            case BASIC:
+                return this.optionMinClaimSizeBasicX;
+            case TOWN:
+                return this.optionMinClaimSizeTownX;
+            default:
+                break;
+        }
+
+        return 0;
+    }
+
+    @Override
+    public int getMinClaimY(ClaimType type) {
+        switch(type) {
+            case BASIC:
+                return this.optionMinClaimSizeBasicY;
+            case TOWN:
+                return this.optionMinClaimSizeTownY;
+            default:
+                break;
+        }
+
+        return 0;
+    }
+
+    @Override
+    public int getMinClaimZ(ClaimType type) {
+        switch(type) {
+            case BASIC:
+                return this.optionMinClaimSizeBasicZ;
+            case TOWN:
+                return this.optionMinClaimSizeTownZ;
+            default:
+                break;
+        }
+
+        return 0;
     }
 
     public Subject getPlayerSubject() {
+        this.playerSubject = null;
         if (this.playerSubject == null || this.playerSubject.get() == null) {
-            Subject subject = PermissionUtils.getSubject(this.playerID.toString());
-            this.playerSubject = new WeakReference<>(subject);
+            User user = GriefPreventionPlugin.getOrCreateUser(this.playerID);
+            if (user.isOnline()) {
+                user = user.getPlayer().get();
+            }
+            this.playerSubject = new WeakReference<>(user);
         }
 
         return this.playerSubject.get();

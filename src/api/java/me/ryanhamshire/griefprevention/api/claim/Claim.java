@@ -227,17 +227,6 @@ public interface Claim extends ContextSource {
     ClaimResult resize(int x1, int x2, int y1, int y2, int z1, int z2, Cause cause);
 
     /**
-     * Creates a child claim.
-     * 
-     * @param point1 The first point
-     * @param point2 The second point
-     * @param owner The owner of claim
-     * @param cuboid Whether claim is 3D
-     * @return The claim result
-     */
-    ClaimResult createChild(Vector3i point1, Vector3i point2, UUID owner, boolean cuboid, ClaimType type, Cause cause);
-
-    /**
      * Gets an immutable list of child claims.
      * 
      * Note: This will return an empty list if no child claims
@@ -963,30 +952,177 @@ public interface Claim extends ContextSource {
 
     public interface Builder {
 
+        /**
+         * The cause of creation.
+         * 
+         * Note: This is usually a player or plugin.
+         * 
+         * @param cause The cause
+         * @return The builder
+         */
         Builder cause(Cause cause);
 
-        Builder cuboid(boolean cuboid);
-
+        /**
+         * The location bounds of claim.
+         * 
+         * @param loc1 The lesser boundary location
+         * @param loc2 The greater boundary location
+         * @return The builder
+         */
         default Builder bounds(Location<World> loc1, Location<World> loc2) {
             return this.bounds(loc1.getBlockPosition(), loc2.getBlockPosition());
         }
 
+        /**
+         * The position bounds of claim.
+         * 
+         * @param point1 The lesser boundary position
+         * @param point2 The greater boundary position
+         * @return The builder
+         */
         Builder bounds(Vector3i point1, Vector3i point2);
 
+        /**
+         * The owner of claim.
+         * 
+         * Note: {@link ClaimType#ADMIN} does not use owners.
+         * 
+         * @param ownerUniqueId The claim owner UUID, if available
+         * @return The builder
+         */
         Builder owner(UUID ownerUniqueId);
 
-        Builder parent(Claim parentClaim);
-
+        /**
+         * The claim type.
+         * 
+         * @param type The claim type
+         * @return The builder
+         */
         Builder type(ClaimType type);
 
+        /**
+         * The world to add claim into.
+         * 
+         * @param world The world
+         * @return The builder
+         */
         Builder world(World world);
 
-        Builder sizeRestrictions(boolean sizeRestrictions);
+        /**
+         * The parent claim.
+         * 
+         * Note: This is required when adding a child claim
+         * to an existing parent.
+         * 
+         * @param parent The parent, if available
+         * @return The builder
+         */
+        Builder parent(Claim parent);
 
-        Builder requiresClaimBlocks(boolean requiresClaimBlocks);
+        /**
+         * Toggles whether this claim allows deny messages to be sent to
+         * players. If false, no deny messages will be sent.
+         * 
+         * @param allowDeny Whether to allow sending deny messages to players
+         * @return The builder
+         */
+        Builder denyMessages(boolean allowDeny);
 
+        /**
+         * Toggles whether this claim can expire due to no activity.
+         * 
+         * @param allowExpire Whether this claim can expire
+         * @return The builder
+         */
+        Builder expire(boolean allowExpire);
+
+        /**
+         * Sets the farewell message when a player exits the claim.
+         * 
+         * @param farewell The farewell message
+         * @return The builder
+         */
+        Builder farewell(Text farewell);
+
+        /**
+         * Sets the greeting message when a player exits the claim.
+         * 
+         * @param greeting The greeting message
+         * @return The builder
+         */
+        Builder greeting(Text greeting);
+
+        /**
+         * Toggles whether this claim is inheriting from parent claim.
+         * 
+         * @param inherit Whether claim inherits from parent
+         * @return The builder
+         */
+        Builder inherit(boolean inherit);
+
+        /**
+         * Toggles whether this claim should allow flag overrides.
+         * 
+         * @param allowOverrides Whether this claim allows flag overrides
+         * @return The builder
+         */
+        Builder overrides(boolean allowOverrides);
+
+        /**
+         * Sets if this claim requires claim blocks from players.
+         * 
+         * Note: This is true by default.
+         * 
+         * @param requiresClaimBlocks Whether this claim requires claim blocks
+         * @return The builder
+         */
+        Builder requireClaimBlocks(boolean requireClaimBlocks);
+
+        /**
+         * Toggles whether this claim is resizable.
+         * 
+         * @param allowResize Whether claim can be resized.
+         */
+        Builder resizable(boolean allowResize);
+
+        /**
+         * Whether to check for min/max size restrictions.
+         * 
+         * @param checkSize Whether to check for size restrictions.
+         * @return The builder
+         */
+        Builder sizeRestrictions(boolean checkSize);
+
+        /**
+         * The spawn location of this claim.
+         * 
+         * @param location The spawn location
+         * @return The builder
+         */
+        default Builder spawnPos(Location<World> location) {
+            return this.spawnPos(location.getBlockPosition());
+        }
+
+        /**
+         * The spawn position of this claim.
+         * 
+         * @param location The spawn position
+         * @return The builder
+         */
+        Builder spawnPos(Vector3i spawnPos);
+
+        /**
+         * Resets the builder to default settings.
+         * 
+         * @return The builder
+         */
         Builder reset();
 
+        /**
+         * Returns the {@link ClaimResult}.
+         * 
+         * @return The claim result
+         */
         ClaimResult build();
     }
 }

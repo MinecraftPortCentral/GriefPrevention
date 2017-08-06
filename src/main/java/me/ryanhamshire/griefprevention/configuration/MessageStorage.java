@@ -36,6 +36,7 @@ import org.spongepowered.common.SpongeImpl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class MessageStorage {
 
@@ -44,6 +45,28 @@ public class MessageStorage {
             .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
     private ObjectMapper<MessageDataConfig>.BoundInstance configMapper;
     private MessageDataConfig configBase;
+
+    public static final String ABANDON_CLAIM_ADVERTISEMENT = "abandon-claim-advertisement";
+    public static final String ABANDON_OTHER_SUCCESS = "abandon-other-success";
+    public static final String ADJUST_BLOCKS_SUCCESS = "adjust-blocks-success";
+    public static final String ADJUST_GROUP_BLOCKS_SUCCESS = "adjust-group-blocks-success";
+    public static final String BLOCK_CLAIMED = "block-claimed";
+    public static final String BLOCK_SALE_VALUE = "block-sale-value";
+    public static final String BOOK_TOOLS = "book-tools";
+    public static final String CLAIM_ABANDON_SUCCESS = "claim-abandon-success";
+    public static final String CLAIM_BANK_INFO = "claim-bank-info";
+    public static final String CLAIM_RESIZE_NEED_BLOCKS = "claim-resize-need-blocks";
+    public static final String CLAIM_RESIZE_SUCCESS = "claim-resize-success";
+    public static final String CLAIM_SIZE_MAX_X = "claim-size-max-x";
+    public static final String CLAIM_SIZE_MAX_Y = "claim-size-max-y";
+    public static final String CLAIM_SIZE_MAX_Z = "claim-size-max-z";
+    public static final String CLAIM_SIZE_MIN_X = "claim-size-min-x";
+    public static final String CLAIM_SIZE_MIN_Y = "claim-size-min-y";
+    public static final String CLAIM_SIZE_MIN_Z = "claim-size-min-z";
+    public static final String CLAIM_SIZE_TOO_SMALL = "claim-size-too-small";
+    public static final String CLAIM_CREATE_INSUFFICIENT_BLOCKS = "claim-create-insufficient-blocks";
+    public static final String ECONOMY_CLAIM_SALE_CONFIRMED = "economy-claim-sale-confirmed";
+    public static final String ECONOMY_USER_NOT_FOUND = "economy-user-not-found";
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public MessageStorage(Path path) {
@@ -85,6 +108,31 @@ public class MessageStorage {
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
         }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void resetMessageData(String message) {
+        for (Map.Entry<Object, ? extends CommentedConfigurationNode> mapEntry : this.root.getNode(GriefPreventionPlugin.MOD_ID).getChildrenMap().entrySet()) {
+            CommentedConfigurationNode node = (CommentedConfigurationNode) mapEntry.getValue();
+            String key = "";
+            String comment = node.getComment().orElse(null);
+            if (comment == null && node.getKey() instanceof String) {
+                key = (String) node.getKey();
+                if (key.equalsIgnoreCase(message)) {
+                    this.root.getNode(GriefPreventionPlugin.MOD_ID).removeChild(mapEntry.getKey());
+                }
+            }
+        }
+ 
+        try {
+            this.loader.save(this.root);
+            this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(MessageDataConfig.class).bindToNew();
+            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
+        } catch (IOException | ObjectMappingException e) {
+            e.printStackTrace();
+        }
+
+       GriefPreventionPlugin.instance.messageData = this.configBase;
     }
 
     public CommentedConfigurationNode getRootNode() {

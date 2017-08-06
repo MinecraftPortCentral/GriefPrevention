@@ -38,10 +38,6 @@ public class TownCategory extends ConfigCategory {
     public int extendIntoGroundDistance = 255;
     @Setting(value = "max-depth", comment = "Limit on how deep towns can go.")
     public int maxClaimDepth = 0;
-    @Setting(value = "minimum-area", comment = "Minimum area for towns.")
-    public int minimumArea = 100;
-    @Setting(value = "minimum-width", comment = "Minimum width for towns.")
-    public int minimumWidth = 16;
     @Setting(value = "creation-cost", comment = "The required amount of funds to create a town. (Default: 0)\nNote: This requires an Economy plugin.")
     public double cost = 0;
     @Setting(value = "clan-require-town", comment = "If true, requires a town to be owned for MCClans.")

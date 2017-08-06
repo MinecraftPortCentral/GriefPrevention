@@ -184,6 +184,8 @@ import org.spongepowered.api.service.permission.PermissionService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.TextTemplate;
+import org.spongepowered.api.text.TextTemplateArgumentException;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
@@ -226,6 +228,7 @@ public class GriefPreventionPlugin {
     @Inject private Logger logger;
     @Inject @ConfigDir(sharedRoot = false)
     private Path configPath;
+    public MessageStorage messageStorage;
     public MessageDataConfig messageData;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
@@ -1294,11 +1297,13 @@ public class GriefPreventionPlugin {
                         string(Text.of("group"))))
                 .executor(new CommandUntrustAll()).build(), Arrays.asList("untrustall", "uta"));
 
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-                .description(Text.of("Uses the worldedit selection to create a claim."))
-                .permission(GPPermissions.CLAIM_CREATE)
-                .executor(new CommandClaimWorldEdit())
-                .build(), "claim");
+        if (this.worldEditProvider != null) {
+            Sponge.getCommandManager().register(this, CommandSpec.builder()
+                    .description(Text.of("Uses the worldedit selection to create a claim."))
+                    .permission(GPPermissions.CLAIM_CREATE)
+                    .executor(new CommandClaimWorldEdit())
+                    .build(), "claim");
+        }
 
         for (BlockType blockType : Sponge.getRegistry().getAllOf(BlockType.class)) {
             String modId = blockType.getId().split(":")[0].toLowerCase();
@@ -1623,7 +1628,8 @@ public class GriefPreventionPlugin {
             }
 
             Path rootConfigPath = this.getConfigPath().resolve("worlds");
-            this.messageData = new MessageStorage(DataStore.messagesFilePath).getConfig();
+            messageStorage = new MessageStorage(DataStore.messagesFilePath);
+            messageData = messageStorage.getConfig();
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
             DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.GOLDEN_SHOVEL);
@@ -1787,7 +1793,19 @@ public class GriefPreventionPlugin {
         sendMessage(source, message);
     }
 
-    // sends a color-coded message to a player
+    public static void sendMessage(CommandSource src, String messageKey, TextTemplate template, Map<String, ?>  params) {
+        Text message = null;
+        try {
+            message = template.apply(params).build();
+        } catch (TextTemplateArgumentException e) {
+            // fix message data
+            GriefPreventionPlugin.instance.messageStorage.resetMessageData(messageKey);
+        }
+        if (message != null) {
+            sendMessage(src, message);
+        }
+    }
+
     public static void sendMessage(CommandSource source, Text message) {
         if (source instanceof Player && SpongeImplHooks.isFakePlayer((net.minecraft.entity.Entity) source)) {
             return;

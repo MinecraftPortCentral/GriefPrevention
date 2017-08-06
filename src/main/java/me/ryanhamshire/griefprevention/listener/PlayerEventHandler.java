@@ -46,6 +46,7 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
@@ -139,6 +140,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -1567,10 +1569,12 @@ public class PlayerEventHandler {
                 GriefPreventionPlugin.sendMessage(player, message);
 
                 // link to a video demo of land claiming, based on world type
-                if (GriefPreventionPlugin.instance.claimModeIsActive(player.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlCreativeBasics.toText());
-                } else if (GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getLocation().getExtent().getProperties())) {
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSurvivalBasics.toText());
+                if (player.hasPermission(GPPermissions.CLAIM_SHOW_TUTORIAL)) {
+                    if (GriefPreventionPlugin.instance.claimModeIsActive(player.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
+                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlCreativeBasics.toText());
+                    } else if (GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getLocation().getExtent().getProperties())) {
+                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSurvivalBasics.toText());
+                    }
                 }
             } else {
                 if (playerData.lastShovelLocation != null) {
@@ -1775,8 +1779,14 @@ public class PlayerEventHandler {
         // FEATURE: shovel and stick can be used from a distance away
         if (clickedBlock.getState().getType() == BlockTypes.AIR) {
             // try to find a far away non-air block along line of sight
-            final boolean ignoreAir = playerData.lastShovelLocation == null;
-            final int distance = ignoreAir ? 100 : (int) SpongeImplHooks.getBlockReachDistance((EntityPlayerMP) player);
+            boolean ignoreAir = false;
+            if (this.worldEditProvider != null) {
+                // Ignore air so players can use client-side WECUI block target which uses max reach distance
+                if (this.worldEditProvider.hasCUISupport(player) && playerData.getCuboidMode() && playerData.lastShovelLocation != null) {
+                    ignoreAir = true;
+                }
+            }
+            final int distance = !ignoreAir ? 100 : (int) SpongeImplHooks.getBlockReachDistance((EntityPlayerMP) player);
             location = BlockUtils.getTargetBlock(player, playerData, distance, ignoreAir).orElse(null);
         }
 
@@ -1955,8 +1965,6 @@ public class PlayerEventHandler {
             // figure out what the coords of his new claim would be
             int newx1, newx2, newz1, newz2, newy1, newy2;
             int smallX = 0, smallY = 0, smallZ = 0, bigX = 0, bigY = 0, bigZ = 0;
-            int newWidth = 0;
-            int newHeight = 0;
 
             if (playerData.claimResizing.isCuboid()) {
                 newx1 = playerData.lastShovelLocation.getBlockX();
@@ -1991,14 +1999,6 @@ public class PlayerEventHandler {
                 } else {
                     bigZ = newz2;
                 }
-                /*newx1 = smallX;
-                newy1 = smallY;
-                newz1 = smallZ;
-                newx2 = bigX;
-                newy2 = bigY;
-                newz2 = bigZ;*/
-                newWidth = Math.abs(bigX - smallX) + 1;
-                newHeight = Math.abs(bigZ - smallZ) + 1;
             } else {
                 if (playerData.lastShovelLocation.getBlockX() == playerData.claimResizing.getLesserBoundaryCorner().getBlockX()) {
                     newx1 = location.getBlockX();
@@ -2026,71 +2026,6 @@ public class PlayerEventHandler {
     
                 newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
                 newy2 = playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1;
-
-                newWidth = (Math.abs(newx1 - newx2) + 1);
-                newHeight = (Math.abs(newz1 - newz2) + 1);
-            }
-
-            if (!playerData.claimResizing.isAdminClaim()) {
-                Double maxClaimX = GPOptionHandler.getClaimOptionDouble(player, playerData.claimResizing, GPOptions.Type.CLAIM_SIZE_X, playerData);
-                Double maxClaimY = GPOptionHandler.getClaimOptionDouble(player, playerData.claimResizing, GPOptions.Type.CLAIM_SIZE_Y, playerData);
-                Double maxClaimZ = GPOptionHandler.getClaimOptionDouble(player, playerData.claimResizing, GPOptions.Type.CLAIM_SIZE_Z, playerData);
-
-                if (maxClaimX != null && maxClaimY != null && maxClaimZ != null) {
-                    if (maxClaimX <= 0 || newWidth > maxClaimX) {
-                        final Text message = GriefPreventionPlugin.instance.messageData.claimResizeMaxX
-                                .apply(ImmutableMap.of(
-                                "maxCoordX", maxClaimX.intValue())).build();
-                        GriefPreventionPlugin.sendMessage(player, message);
-                        event.setCancelled(true);
-                        GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                        return;
-                    }
-                    if (playerData.claimResizing.isCuboid() && (maxClaimY <= 0 || newWidth > maxClaimY)) {
-                        final Text message = GriefPreventionPlugin.instance.messageData.claimResizeMaxY
-                                .apply(ImmutableMap.of(
-                                "maxCoordY", maxClaimY.intValue())).build();
-                        GriefPreventionPlugin.sendMessage(player, message);
-                        event.setCancelled(true);
-                        GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                        return;
-                    }
-                    if (maxClaimZ <= 0 || newWidth > maxClaimZ) {
-                        final Text message = GriefPreventionPlugin.instance.messageData.claimResizeMaxZ
-                                .apply(ImmutableMap.of(
-                                "maxCoordZ", maxClaimZ.intValue())).build();
-                        GriefPreventionPlugin.sendMessage(player, message);
-                        event.setCancelled(true);
-                        GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                        return;
-                    }
-                }
-            }
-
-            // for top level claims, apply size rules and claim blocks requirement
-            if (!playerData.claimResizing.isSubdivision()) {
-                // measure new claim, apply size rules
-                int newArea = newWidth * newHeight;
-                //boolean smaller = newWidth < playerData.claimResizing.getWidth() || newHeight < playerData.claimResizing.getHeight();
-
-                if (!this.checkClaimArea(player, playerData, activeConfig, newWidth, newHeight)) {
-                    GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                    return;
-                }
-
-                // make sure player has enough blocks to make up the difference
-                if (!playerData.claimResizing.isAdminClaim() && player.getName().equals(playerData.claimResizing.getOwnerName())) {
-                    int blocksRemainingAfter = playerData.getRemainingClaimBlocks() + (playerData.claimResizing.getArea() - newArea);
-                    if (blocksRemainingAfter < 0) {
-                        final Text message = GriefPreventionPlugin.instance.messageData.claimResizeNeedBlocks
-                                .apply(ImmutableMap.of(
-                                "amount", blocksRemainingAfter)).build();
-                        GriefPreventionPlugin.sendMessage(player, message);
-                        this.tryAdvertiseAdminAlternatives(player);
-                        GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                        return;
-                    }
-                }
             }
 
             // special rule for making a top-level claim smaller. to check this, verifying the old claim's corners are inside the new claim's boundaries.
@@ -2157,10 +2092,11 @@ public class PlayerEventHandler {
                 playerData.lastShovelLocation = null;
                 playerData.endShovelLocation = null;
                 // inform about success, visualize, communicate remaining blocks available
-                final Text message = GriefPreventionPlugin.instance.messageData.claimResizeSuccess
-                        .apply(ImmutableMap.of(
-                        "remaining-blocks", claimBlocksRemaining)).build();
-                GriefPreventionPlugin.sendMessage(player, message);
+                final double claimableChunks = claimBlocksRemaining / 65536.0;
+                Map<String, ?> params = ImmutableMap.of(
+                        "remaining-chunks", Math.round(claimableChunks * 100.0)/100.0, 
+                        "remaining-blocks", claimBlocksRemaining);
+                GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_RESIZE_SUCCESS, GriefPreventionPlugin.instance.messageData.claimResizeSuccess, params);
                 playerData.revertActiveVisual(player);
                 ((GPClaim) claim).getVisualizer().resetVisuals();
                 ((GPClaim) claim).getVisualizer().createClaimBlockVisuals(location.getBlockY(), player.getLocation(), playerData);
@@ -2196,6 +2132,9 @@ public class PlayerEventHandler {
                     claims.add(overlapClaim);
                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                 }
+                event.setCancelled(true);
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
             }
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
@@ -2298,15 +2237,7 @@ public class PlayerEventHandler {
                                 claims.add(overlapClaim);
                                 CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                             }
-                            GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                            return;
-                        }
-                        // try to create a new claim (will return null if this subdivision overlaps another)
-                        // apply minimum claim dimensions rule
-                        int newWidth = Math.abs(playerData.lastShovelLocation.getBlockX() - location.getBlockX()) + 1;
-                        int newHeight = Math.abs(playerData.lastShovelLocation.getBlockZ() - location.getBlockZ()) + 1;
 
-                        if (!this.checkClaimArea(player, playerData, activeConfig, newWidth, newHeight)) {
                             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                             return;
                         }
@@ -2318,29 +2249,22 @@ public class PlayerEventHandler {
                                 playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
                                         location.getBlockZ());
 
-                        // if he's at the claim count per player limit already and
-                        // doesn't have permission to bypass, display an error message
-                        if (!player.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
-                            int createClaimLimit = GPOptionHandler.getClaimOptionDouble(player, playerData.claimSubdividing, GPOptions.CREATE_CLAIM_LIMIT_BASIC, playerData).intValue();
-                            if (createClaimLimit > 0 &&
-                                    (playerData.getInternalClaims().size() + 1) >= createClaimLimit) {
-                                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit.toText());
-                                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                                return;
-                            }
-                        }
-
-                        ClaimResult result = playerData.claimSubdividing.createChild(
-                                lesserBoundaryCorner, greaterBoundaryCorner,
-                                player.getUniqueId(), playerData.getCuboidMode(), PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode), GriefPreventionPlugin.pluginCause);
+                        ClaimResult result = this.dataStore.createClaim(player.getWorld(),
+                                lesserBoundaryCorner, greaterBoundaryCorner, PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode),
+                                player.getUniqueId(), playerData.getCuboidMode(), playerData.claimSubdividing, Cause.of(NamedCause.source(player)));
 
                         GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
                         // if it didn't succeed, tell the player why
-                        if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
-                            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
-                            List<Claim> claims = new ArrayList<>();
-                            claims.add(gpClaim);
-                            CommandHelper.showClaims(player, claims, location.getBlockY(), true);
+                        if (!result.successful()) {
+                            if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
+                                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
+                                List<Claim> claims = new ArrayList<>();
+                                claims.add(gpClaim);
+                                CommandHelper.showClaims(player, claims, location.getBlockY(), true);
+                            } else {
+                                GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.RED, "Unable able to create claim due to result " + result.getResultType()));
+                            }
+                            event.setCancelled(true);
                             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                             return;
                         }
@@ -2459,31 +2383,6 @@ public class PlayerEventHandler {
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;
             }
-            // apply minimum claim dimensions rule
-            int newWidth = Math.abs(playerData.lastShovelLocation.getBlockX() - location.getBlockX()) + 1;
-            int newHeight = Math.abs(playerData.lastShovelLocation.getBlockZ() - location.getBlockZ()) + 1;
-
-            if (!this.checkClaimArea(player, playerData, activeConfig, newWidth, newHeight)) {
-                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                return;
-            }
-
-            // if not an administrative claim, verify the player has enough claim blocks for this new claim
-            if (playerData.shovelMode != ShovelMode.Admin) {
-                int newClaimArea = newWidth * newHeight;
-                int remainingBlocks = playerData.getRemainingClaimBlocks();
-                if (newClaimArea > remainingBlocks) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateInsufficientBlocks
-                            .apply(ImmutableMap.of(
-                            "additional-blocks", newClaimArea - remainingBlocks)).build();
-                    GriefPreventionPlugin.sendMessage(player, message);
-                    this.tryAdvertiseAdminAlternatives(player);
-                    GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                    return;
-                }
-            } else {
-                playerID = null;
-            }
 
             int y = lastShovelLocation.getBlockY();
             boolean cuboid = playerData.getCuboidMode();
@@ -2511,23 +2410,8 @@ public class PlayerEventHandler {
             GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
             // if it didn't succeed, tell the player why
             if (!result.successful()) {
-                /*if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_X) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateMaxX
-                            .apply(ImmutableMap.of(
-                            "maxCoordX", playerData.optionMaxClaimBasicSizeX)).build();
-                    GriefPreventionPlugin.sendMessage(player, message);
-                } else if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_Y) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateMaxY
-                            .apply(ImmutableMap.of(
-                            "maxCoordY", playerData.optionMaxClaimBasicSizeX)).build();
-                    GriefPreventionPlugin.sendMessage(player, message);
-                } else if (result.getResultType() == ClaimResultType.EXCEEDS_MAX_SIZE_Z) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateMaxZ
-                            .apply(ImmutableMap.of(
-                            "maxCoordZ", playerData.optionMaxClaimBasicSizeX)).build();
-                    GriefPreventionPlugin.sendMessage(player, message);
-                } else {*/
-                if (result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_X && result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_Y && result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_Z) {
+                if (result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_X && result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_Y && result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_Z
+                        && result.getResultType() != ClaimResultType.EXCEEDS_MIN_SIZE_X && result.getResultType() != ClaimResultType.EXCEEDS_MIN_SIZE_Y && result.getResultType() != ClaimResultType.EXCEEDS_MIN_SIZE_Z) {
                     GPClaim overlapClaim = (GPClaim) result.getClaim().get();
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
                     List<Claim> claims = new ArrayList<>();
@@ -2671,35 +2555,5 @@ public class PlayerEventHandler {
         }
 
         return claim;
-    }
-
-    private boolean checkClaimArea(Player player, GPPlayerData playerData, GriefPreventionConfig<?> config, int width, int height) {
-        if (playerData.shovelMode != ShovelMode.Admin && playerData.shovelMode != ShovelMode.Subdivide) {
-            final int area = width * height;
-            final int minWidth = playerData.shovelMode == ShovelMode.Town ? config.getConfig().town.minimumWidth : config.getConfig().claim.claimMinimumWidth;
-            final int minArea = playerData.shovelMode == ShovelMode.Town ? config.getConfig().town.minimumArea : config.getConfig().claim.claimMinimumArea;
-            final Text message = GriefPreventionPlugin.instance.messageData.claimResizeInsufficientBlocks
-                    .apply(ImmutableMap.of(
-                    "area", area,
-                    "width", width,
-                    "height", height,
-                    "minimum-area", minArea)).build();
-            if (width < minWidth
-                    || height < minWidth) {
-                GriefPreventionPlugin.sendMessage(player, message);
-
-                return false;
-            }
-
-            if (area < minArea) {
-                if (area != 1) {
-                    GriefPreventionPlugin.sendMessage(player, message);
-                }
-
-                return false;
-            }
-        }
-
-        return true;
     }
 }

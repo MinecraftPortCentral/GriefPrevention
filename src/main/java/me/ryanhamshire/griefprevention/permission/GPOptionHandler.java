@@ -37,7 +37,11 @@ import java.util.Set;
 public class GPOptionHandler {
 
     public static Double getClaimOptionDouble(Subject subject, Claim claim, GPOptions.Type type, GPPlayerData playerData) {
-        return getClaimOptionDouble(subject, claim, checkClaimOption(type, claim), playerData);
+        final String claimOption = checkClaimOption(type, claim);
+        if (claimOption.equals(GPOptions.INVALID_OPTION)) {
+            return 0.0;
+        }
+        return getClaimOptionDouble(subject, claim, claimOption, playerData);
     }
 
     public static Double getClaimOptionDouble(Subject subject, Claim claim, String option, GPPlayerData playerData) {
@@ -89,8 +93,12 @@ public class GPOptionHandler {
     }
 
     private static String checkClaimOption(GPOptions.Type type, Claim claim) {
+        if (claim.isAdminClaim()) {
+            return GPOptions.INVALID_OPTION;
+        }
+
         switch (type) {
-            case CLAIM_SIZE_X :
+            case MAX_CLAIM_SIZE_X :
                 if (claim.isTown()) {
                     return GPOptions.MAX_CLAIM_SIZE_TOWN_X;
                 }
@@ -98,7 +106,7 @@ public class GPOptionHandler {
                     return GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_X;
                 }
                 return GPOptions.MAX_CLAIM_SIZE_BASIC_X;
-            case CLAIM_SIZE_Y :
+            case MAX_CLAIM_SIZE_Y :
                 if (claim.isTown()) {
                     return GPOptions.MAX_CLAIM_SIZE_TOWN_Y;
                 }
@@ -106,7 +114,7 @@ public class GPOptionHandler {
                     return GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Y;
                 }
                 return GPOptions.MAX_CLAIM_SIZE_BASIC_Y;
-            case CLAIM_SIZE_Z :
+            case MAX_CLAIM_SIZE_Z :
                 if (claim.isTown()) {
                     return GPOptions.MAX_CLAIM_SIZE_TOWN_Z;
                 }
@@ -114,6 +122,30 @@ public class GPOptionHandler {
                     return GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Z;
                 }
                 return GPOptions.MAX_CLAIM_SIZE_BASIC_Z;
+            case MIN_CLAIM_SIZE_X :
+                if (claim.isTown()) {
+                    return GPOptions.MIN_CLAIM_SIZE_TOWN_X;
+                }
+                if (claim.isSubdivision()) {
+                    return GPOptions.INVALID_OPTION;
+                }
+                return GPOptions.MIN_CLAIM_SIZE_BASIC_X;
+            case MIN_CLAIM_SIZE_Y :
+                if (claim.isTown()) {
+                    return GPOptions.MIN_CLAIM_SIZE_TOWN_Y;
+                }
+                if (claim.isSubdivision()) {
+                    return GPOptions.INVALID_OPTION;
+                }
+                return GPOptions.MIN_CLAIM_SIZE_BASIC_Y;
+            case MIN_CLAIM_SIZE_Z :
+                if (claim.isTown()) {
+                    return GPOptions.MIN_CLAIM_SIZE_TOWN_Z;
+                }
+                if (claim.isSubdivision()) {
+                    return GPOptions.INVALID_OPTION;
+                }
+                return GPOptions.MIN_CLAIM_SIZE_BASIC_Z;
             case CLAIM_LIMIT :
                 if (claim.isTown()) {
                     return GPOptions.CREATE_CLAIM_LIMIT_TOWN;

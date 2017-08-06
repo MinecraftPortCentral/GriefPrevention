@@ -380,7 +380,6 @@ public abstract class DataStore {
                 .type(claimType)
                 .owner(ownerUniqueId)
                 .parent(parent)
-                .cuboid(cuboid)
                 .cause(cause)
                 .build();
         if(claimResult.successful()) {
@@ -390,13 +389,17 @@ public abstract class DataStore {
     }
 
     public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Cause cause) {
+        return createClaim(world, point1, point2, claimType, ownerUniqueId, cuboid, null, cause);
+    }
+
+    public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Claim parent, Cause cause) {
         GPClaimManager claimManager = this.getClaimWorldManager(world.getProperties());
         ClaimResult claimResult = Claim.builder()
                 .bounds(point1, point2)
                 .world(world)
                 .type(claimType)
                 .owner(ownerUniqueId)
-                .cuboid(cuboid)
+                .parent(parent)
                 .cause(cause)
                 .build();
         if(claimResult.successful()) {

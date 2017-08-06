@@ -41,18 +41,6 @@ import java.util.UUID;
 public interface ClaimManager {
 
     /**
-     * Adds a new {@link Claim} to the manager in order to be tracked by world.
-     * 
-     * Note: This is required in order for a claim to be detected
-     * in a world as this adds the claim to all required lists.
-     * 
-     * @param claim The claim to add
-     * @param cause The cause of add
-     * @return The claim result
-     */
-    ClaimResult addClaim(Claim claim, Cause cause);
-
-    /**
      * Gets the wilderness claim of this manager's world.
      * 
      * @return The wilderness claim
