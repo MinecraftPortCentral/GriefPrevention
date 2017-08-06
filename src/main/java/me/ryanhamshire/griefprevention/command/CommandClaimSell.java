@@ -30,6 +30,7 @@ import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -41,6 +42,7 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class CommandClaimSell implements CommandExecutor {
@@ -116,10 +118,9 @@ public class CommandClaimSell implements CommandExecutor {
             claim.getEconomyData().setSalePrice(price);
             claim.getEconomyData().setForSale(true);
             claim.getData().save();
-            final Text message = GriefPreventionPlugin.instance.messageData.economyClaimSaleConfirmed
-                    .apply(ImmutableMap.of(
-                    "sale_price", price)).build();
-            GriefPreventionPlugin.sendMessage(src, message);
+            Map<String, ?> params = ImmutableMap.of(
+                    "sale_price", price);
+            GriefPreventionPlugin.sendMessage(src, MessageStorage.ECONOMY_CLAIM_SALE_CONFIRMED, GriefPreventionPlugin.instance.messageData.economyClaimSaleConfirmed, params);
         };
     }
 }

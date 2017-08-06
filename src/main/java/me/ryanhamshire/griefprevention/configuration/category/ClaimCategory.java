@@ -49,10 +49,6 @@ public class ClaimCategory extends ConfigCategory {
     public int maxClaimDepth = 0;
     @Setting(value = "investigation-tool", comment = "The item used to investigate claims with a right-click.")
     public String investigationTool = "minecraft:stick";
-    @Setting(value = "minimum-area", comment = "Minimum area for non-admin claims.")
-    public int claimMinimumArea = 100;
-    @Setting(value = "minimum-width", comment = "Minimum width for non-admin claims.")
-    public int claimMinimumWidth = 5;
     @Setting(value = "modification-tool", comment = "The item used to create/resize claims with a right click.")
     public String modificationTool = "minecraft:golden_shovel";
     @Setting(value = "claims-mode",

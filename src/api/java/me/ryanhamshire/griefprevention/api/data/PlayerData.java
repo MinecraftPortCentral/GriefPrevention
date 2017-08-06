@@ -99,6 +99,35 @@ public interface PlayerData {
     int getMaxClaimZ(ClaimType type);
 
     /**
+     * Gets the min size limit of x, in blocks, for claim
+     * creation.
+     * 
+     * @param type The claim type to check
+     * @return The minimum size of x for claim creation
+     */
+    int getMinClaimX(ClaimType type);
+
+    /**
+     * Gets the min size limit of y, in blocks, for claim
+     * creation.
+     * 
+     * Note: This option is ignored for 2D claims.
+     * 
+     * @param type The claim type to check
+     * @return The minimum size of y for claim creation
+     */
+    int getMinClaimY(ClaimType type);
+
+    /**
+     * Gets the min size limit of z, in blocks, for claim
+     * creation.
+     * 
+     * @param type The claim type to check
+     * @return The minimum size of z for claim creation
+     */
+    int getMinClaimZ(ClaimType type);
+
+    /**
      * Gets the total bonus claim blocks.
      * 
      * @return The total bonus claim blocks

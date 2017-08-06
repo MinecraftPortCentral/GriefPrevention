@@ -181,6 +181,17 @@ public class BlockUtils {
         return meta;
     }
 
+    public static int getBlockArea(World world, Vector3i lesser, Vector3i greater, boolean cuboid) {
+        int claimWidth = greater.getX() - lesser.getX() + 1;
+        int claimHeight = greater.getY() - lesser.getY() + 1;
+        if (!cuboid) {
+            claimHeight = 256;
+        }
+        int claimLength = greater.getZ() - lesser.getZ() + 1;
+
+        return claimLength * claimWidth * claimHeight;
+    }
+
     /**
      * Serialize this BlockPos into a short value
      */
@@ -391,16 +402,22 @@ public class BlockUtils {
             if (claim != null) {
                 for (Vector3i corner : claim.getVisualizer().getVisualCorners()) {
                     if (corner.equals(blockRayHit.getBlockPosition())) {
-                        return blockRayHit.getLocation().createSnapshot().getLocation();
+                        return Optional.of(blockRayHit.getLocation());
                     }
                 }
             }
-            if ((!ignoreAir || blockRayHit.getLocation().getBlockType() != BlockTypes.AIR) &&
-                blockRayHit.getLocation().getBlockType() != BlockTypes.TALLGRASS) {
-                    return blockRayHit.getLocation().createSnapshot().getLocation();
+            if (ignoreAir) {
+                if (blockRayHit.getLocation().getBlockType() != BlockTypes.TALLGRASS) {
+                    return Optional.of(blockRayHit.getLocation());
+                }
+            } else { 
+                if (blockRayHit.getLocation().getBlockType() != BlockTypes.AIR &&
+                        blockRayHit.getLocation().getBlockType() != BlockTypes.TALLGRASS) {
+                    return Optional.of(blockRayHit.getLocation());
+                }
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 }

@@ -136,7 +136,7 @@ public class TaxApplyTask implements Runnable {
                     //}
                 } else {
                     if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays)).isBefore(localNow)) {
-                        claim.getData().setClaimExpiration(true);
+                        claim.getData().setExpiration(true);
                     }
                 }
             }

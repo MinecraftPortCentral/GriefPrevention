@@ -676,11 +676,13 @@ public class BlockEventHandler {
                         visualization.apply(player);
                     }
 
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSurvivalBasics.toText());
+                    if (player.hasPermission(GPPermissions.CLAIM_SHOW_TUTORIAL)) {
+                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSurvivalBasics.toText());
+                    }
                 }
 
                 // check to see if this chest is in a claim, and warn when it isn't
-                if (targetClaim.isWilderness()) {
+                if (targetClaim.isWilderness() && player.hasPermission(GPPermissions.CLAIM_SHOW_TUTORIAL)) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.warningChestUnprotected.toText());
                 }
             }

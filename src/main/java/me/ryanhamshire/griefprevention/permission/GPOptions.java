@@ -3,17 +3,18 @@ package me.ryanhamshire.griefprevention.permission;
 import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class GPOptions {
 
     public enum Type {
         ABANDON_RETURN_RATIO,
-        CLAIM_SIZE_X,
-        CLAIM_SIZE_Y,
-        CLAIM_SIZE_Z,
+        MAX_CLAIM_SIZE_X,
+        MAX_CLAIM_SIZE_Y,
+        MAX_CLAIM_SIZE_Z,
+        MIN_CLAIM_SIZE_X,
+        MIN_CLAIM_SIZE_Y,
+        MIN_CLAIM_SIZE_Z,
         CLAIM_EXPIRATION,
         CLAIM_LIMIT,
         EXPIRATION_DAYS_KEEP,
@@ -22,8 +23,8 @@ public class GPOptions {
     }
 
     public static final Map<String, String> DEFAULT_OPTIONS = Maps.newHashMap();
-    public static final List<String> DEFAULT_CLAIM_OPTIONS = new ArrayList<>();
 
+    public static final String INVALID_OPTION = "invalid-option";
     public static final String ABANDON_RETURN_RATIO_BASIC = "griefprevention.abandon-return-ratio-basic";
     public static final String ABANDON_RETURN_RATIO_TOWN = "griefprevention.abandon-return-ratio-town";
     public static final String BLOCKS_ACCRUED_PER_HOUR = "griefprevention.blocks-accrued-per-hour";
@@ -41,6 +42,12 @@ public class GPOptions {
     public static final String MAX_CLAIM_SIZE_TOWN_X = "griefprevention.max-claim-size-town-x";
     public static final String MAX_CLAIM_SIZE_TOWN_Y = "griefprevention.max-claim-size-town-y";
     public static final String MAX_CLAIM_SIZE_TOWN_Z = "griefprevention.max-claim-size-town-z";
+    public static final String MIN_CLAIM_SIZE_BASIC_X = "griefprevention.min-claim-size-basic-x";
+    public static final String MIN_CLAIM_SIZE_BASIC_Y = "griefprevention.min-claim-size-basic-y";
+    public static final String MIN_CLAIM_SIZE_BASIC_Z = "griefprevention.min-claim-size-basic-z";
+    public static final String MIN_CLAIM_SIZE_TOWN_X = "griefprevention.min-claim-size-town-x";
+    public static final String MIN_CLAIM_SIZE_TOWN_Y = "griefprevention.min-claim-size-town-y";
+    public static final String MIN_CLAIM_SIZE_TOWN_Z = "griefprevention.min-claim-size-town-z";
     public static final String CLAIM_EXPIRATION_CHEST = "griefprevention.claim-expiration-chest";
     public static final String CLAIM_EXPIRATION_BASIC = "griefprevention.claim-expiration-basic";
     public static final String CLAIM_EXPIRATION_TOWN = "griefprevention.claim-expiration-town";
@@ -72,14 +79,20 @@ public class GPOptions {
     public static final int DEFAULT_INITIAL_CLAIM_BLOCKS = 25600;
     public static final int DEFAULT_MAX_ACCRUED_BLOCKS = 20480000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_X= 500;
-    public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Y = 500;
+    public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Z = 500;
     public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_X= 1000;
-    public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_Y = 1000;
+    public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_Z = 1000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X= 250;
-    public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y = 250;
+    public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z = 250;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_X= 10;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Y = 10;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Z = 10;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_X= 32;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_Y = 32;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_Z = 32;
     public static final int DEFAULT_CLAIM_EXPIRATION_CHEST = 7;
     public static final int DEFAULT_CLAIM_EXPIRATION_BASIC = 14;
     public static final int DEFAULT_CLAIM_EXPIRATION_SUBDIVISION = 14;
@@ -114,15 +127,15 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(INITIAL_CLAIM_BLOCKS, Integer.toString(GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS));
         // The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.
         DEFAULT_OPTIONS.put(MAX_ACCRUED_BLOCKS, Integer.toString(GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS));
-        // The max size of x, in blocks, that a claim can be, 100 by default.
+        // The max size of x, in blocks, that a basic claim can be, 100 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_X, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_X));
-        // The max size of y, in blocks, that a claim can be, 100 by default.
+        // The max size of y, in blocks, that a basic claim can be, 256 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_Y, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Y));
-        // The max size of z, in blocks, that a claim can be, 100 by default.
+        // The max size of z, in blocks, that a basic claim can be, 100 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_Z, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Z));
         // The max size of x, in blocks, that a town can be, 200 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_X, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_X));
-        // The max size of y, in blocks, that a town can be, 200 by default.
+        // The max size of y, in blocks, that a town can be, 256 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_Y, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Y));
         // The max size of z, in blocks, that a town can be, 200 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_Z, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Z));
@@ -132,6 +145,18 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Y, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y));
         // The max size of z, in blocks, that a subdivision can be, 100 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Z, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z));
+        // The min size of x, in blocks, that a basic claim can be, 10 by default.
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_X, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_X));
+        // The min size of y, in blocks, that a basic claim can be, 10 by default.
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Y, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Y));
+        // The min size of z, in blocks, that a basic claim can be, 10 by default.
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Z, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Z));
+        // The min size of x, in blocks, that a town can be, 32 by default.
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_X, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_X));
+        // The min size of y, in blocks, that a town can be, 32 by default.
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Y, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Y));
+        // The min size of z, in blocks, that a town can be, 32 by default.
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Z, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Z));
         // Number of days of inactivity before an automatic chest claim will be deleted.
         DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_CHEST, Integer.toString(GPOptions.DEFAULT_CLAIM_EXPIRATION_CHEST));
         // Number of days of inactivity before an unused claim will be deleted.
@@ -164,11 +189,5 @@ public class GPOptions {
             // The default trust level between clan members for all member claims. 0: None, 1: Access, 2: Container, 3: Builder
             DEFAULT_OPTIONS.put(MEMBER_TRUST_LEVEL, "1");
         }
-
-        // Default Claim Options
-        DEFAULT_CLAIM_OPTIONS.add(CREATE_CLAIM_LIMIT_BASIC);
-        DEFAULT_CLAIM_OPTIONS.add(CREATE_CLAIM_LIMIT_SUBDIVISION);
-        DEFAULT_CLAIM_OPTIONS.add(CREATE_CLAIM_LIMIT_TOWN);
-        DEFAULT_CLAIM_OPTIONS.add(MAX_CLAIM_SIZE_BASIC_X);
     }
 }

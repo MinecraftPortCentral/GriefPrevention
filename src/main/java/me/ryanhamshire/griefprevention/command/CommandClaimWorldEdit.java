@@ -85,14 +85,12 @@ public class CommandClaimWorldEdit implements CommandExecutor {
         final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
             .bounds(lesser, greater)
             .cause(cause)
-            .cuboid(true)
             .owner(player.getUniqueId())
             .sizeRestrictions(true)
             .type(PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode))
             .world(player.getWorld())
             .build();
         if (result.successful()) {
-            GriefPrevention.getApi().getClaimManager(player.getWorld()).addClaim(result.getClaim().get(), cause);
             final Text message = GriefPreventionPlugin.instance.messageData.claimCreateSuccess
                     .apply(ImmutableMap.of(
                     "type", playerData.shovelMode.name())).build();

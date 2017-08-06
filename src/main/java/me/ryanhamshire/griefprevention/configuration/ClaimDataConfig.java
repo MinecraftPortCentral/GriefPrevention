@@ -199,7 +199,7 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     }
 
     @Override
-    public boolean allowClaimExpiration() {
+    public boolean allowExpiration() {
         return this.allowClaimExpiration;
     }
 
@@ -336,7 +336,7 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     }
 
     @Override
-    public void setClaimExpiration(boolean flag) {
+    public void setExpiration(boolean flag) {
         this.requiresSave = true;
         this.allowClaimExpiration = flag;
     }
@@ -482,6 +482,10 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
 
     @Override
     public void setSpawnPos(Vector3i spawnPos) {
+        if (spawnPos == null) {
+            return;
+        }
+
         this.requiresSave = true;
         this.spawnPos = spawnPos;
         this.claimSpawn = BlockUtils.positionToString(spawnPos);
