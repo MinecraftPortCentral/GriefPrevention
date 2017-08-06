@@ -1603,7 +1603,7 @@ public class GPClaim implements Claim {
                     System.out.println("Test2");
                     GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_MIN_X, GriefPreventionPlugin.instance.messageData.claimSizeMinX, params);
                 }
-                return new GPClaimResult(ClaimResultType.EXCEEDS_MIN_SIZE_X);
+                return new GPClaimResult(ClaimResultType.BELOW_MIN_SIZE_X);
             }
         }
         if (this.cuboid && minClaimY > 0) {
@@ -1626,7 +1626,7 @@ public class GPClaim implements Claim {
                     }
                     GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_MIN_Y, GriefPreventionPlugin.instance.messageData.claimSizeMinY, params);
                 }
-                return new GPClaimResult(ClaimResultType.EXCEEDS_MIN_SIZE_Y);
+                return new GPClaimResult(ClaimResultType.BELOW_MIN_SIZE_Y);
             }
         }
         if (minClaimZ > 0) {
@@ -1649,7 +1649,7 @@ public class GPClaim implements Claim {
                     }
                     GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_MIN_Z, GriefPreventionPlugin.instance.messageData.claimSizeMinZ, params);
                 }
-                return new GPClaimResult(ClaimResultType.EXCEEDS_MIN_SIZE_Z);
+                return new GPClaimResult(ClaimResultType.BELOW_MIN_SIZE_Z);
             }
         }
 
