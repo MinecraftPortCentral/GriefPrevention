@@ -14,16 +14,17 @@ public class BanCategory extends ConfigCategory {
     private Map<String, Text> banReasons = Maps.newHashMap();
 
     public void addBan(String permission, Text reason) {
-        permission = permission.replace("griefprevention.flag.", "");
+        permission = permission.replace("griefprevention.flag.", "").toLowerCase();
         this.banReasons.put(permission, reason);
     }
 
     public void removeBan(String permission) {
+        permission = permission.replace("griefprevention.flag.", "").toLowerCase();
         this.banReasons.remove(permission);
     }
 
     public Text getReason(String permission) {
-        permission = permission.replace("griefprevention.flag.", "");
+        permission = permission.replace("griefprevention.flag.", "").toLowerCase();
         for (Map.Entry<String, Text> banEntry : this.banReasons.entrySet()) {
             if (permission.contains(banEntry.getKey())) {
                 return banEntry.getValue();

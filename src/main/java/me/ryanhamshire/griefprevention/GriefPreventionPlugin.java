@@ -1310,10 +1310,11 @@ public class GriefPreventionPlugin {
             if (modId.equals("none")) {
                 continue;
             }
+            final String blockTypeId = blockType.getId().toLowerCase();
             if (!ID_MAP.containsKey(modId + ":any")) {
                 ID_MAP.put(modId + ":any", modId + ":any");
             }
-            ID_MAP.put(blockType.getId(), blockType.getId());
+            ID_MAP.put(blockTypeId, blockTypeId);
         }
 
         for (EntityType entityType : Sponge.getRegistry().getAllOf(EntityType.class)) {
@@ -1321,11 +1322,12 @@ public class GriefPreventionPlugin {
             if (modId.equals("none")) {
                 continue;
             }
+            final String entityTypeId = entityType.getId().toLowerCase();
             if (!ID_MAP.containsKey(modId + ":any")) {
                 ID_MAP.put(modId + ":any", modId + ":any");
             }
-            if (!ID_MAP.containsKey(entityType.getId())) {
-                ID_MAP.put(entityType.getId(), entityType.getId());
+            if (!ID_MAP.containsKey(entityTypeId)) {
+                ID_MAP.put(entityTypeId, entityTypeId);
             }
             if (!ID_MAP.containsKey(modId + ":animal") && Living.class.isAssignableFrom(entityType.getEntityClass())) {
                 ID_MAP.put(modId + ":ambient", modId + ":ambient");
@@ -1340,16 +1342,17 @@ public class GriefPreventionPlugin {
             if (modId.equals("none")) {
                 continue;
             }
+            final String itemTypeId = itemType.getId().toLowerCase();
             if (!ID_MAP.containsKey(modId + ":any")) {
                 ID_MAP.put(modId + ":any", modId + ":any");
             }
-            if (!ID_MAP.containsKey(itemType.getId())) {
-                ID_MAP.put(itemType.getId(), itemType.getId());
+            if (!ID_MAP.containsKey(itemTypeId)) {
+                ID_MAP.put(itemTypeId, itemTypeId);
             }
         }
 
         for (DamageType damageType : Sponge.getRegistry().getAllOf(DamageType.class)) {
-            String damageTypeId = damageType.getId();
+            String damageTypeId = damageType.getId().toLowerCase();
             if (!damageType.getId().contains(":")) {
                 damageTypeId = "minecraft:" + damageTypeId;
             }

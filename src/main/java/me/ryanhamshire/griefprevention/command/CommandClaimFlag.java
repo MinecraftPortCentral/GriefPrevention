@@ -223,20 +223,23 @@ public class CommandClaimFlag implements CommandExecutor {
             Set<Context> overrideContexts = new HashSet<>();
             if (claim.isAdminClaim()) {
                 contexts.add(ClaimContexts.ADMIN_DEFAULT_CONTEXT);
+                contexts.add(claim.world.getContext());
                 overrideContexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
+                overrideContexts.add(claim.world.getContext());
             } else if (claim.isBasicClaim() || claim.isSubdivision()) {
                 contexts.add(ClaimContexts.BASIC_DEFAULT_CONTEXT);
+                contexts.add(claim.world.getContext());
                 overrideContexts.add(ClaimContexts.BASIC_OVERRIDE_CONTEXT);
+                overrideContexts.add(claim.world.getContext());
             } else if (claim.isTown()) {
                 contexts.add(ClaimContexts.TOWN_DEFAULT_CONTEXT);
+                contexts.add(claim.world.getContext());
                 overrideContexts.add(ClaimContexts.TOWN_OVERRIDE_CONTEXT);
+                overrideContexts.add(claim.world.getContext());
             } else {
                 contexts.add(ClaimContexts.WILDERNESS_DEFAULT_CONTEXT);
+                contexts.add(claim.world.getContext());
                 overrideContexts.add(ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT);
-            }
-            contexts.add(claim.world.getContext());
-            if (!overrideContexts.isEmpty()) {
-                overrideContexts.add(claim.world.getContext());
             }
 
             Map<String, Boolean> defaultTransientPermissions = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData().getPermissions(contexts);
