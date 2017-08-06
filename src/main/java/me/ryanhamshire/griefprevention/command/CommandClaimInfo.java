@@ -128,9 +128,6 @@ public class CommandClaimInfo implements CommandExecutor {
 
         final GPClaim gpClaim = (GPClaim) claim;
         UUID ownerUniqueId = claim.getOwnerUniqueId();
-        if (gpClaim.isSubdivision()) {
-            ownerUniqueId = gpClaim.parent.getOwnerUniqueId();
-        }
 
         if (!isAdmin) {
             GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
