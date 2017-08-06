@@ -45,6 +45,13 @@ public interface GriefPreventionApi {
     double getApiVersion();
 
     /**
+     * Gets the implementation version.
+     * 
+     * @return The implementation version
+     */
+    String getImplementationVersion();
+
+    /**
      * Gets the claim manager of world.
      * 
      * @param world

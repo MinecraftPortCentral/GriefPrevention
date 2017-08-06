@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.provider;
 
+import com.google.common.collect.ImmutableList;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
@@ -34,8 +35,11 @@ import me.ryanhamshire.griefprevention.api.data.PlayerData;
 import me.ryanhamshire.griefprevention.api.economy.BankTransaction;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.economy.GPBankTransaction;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +54,11 @@ public class GPApiProvider implements GriefPreventionApi {
     @Override
     public double getApiVersion() {
         return API_VERSION;
+    }
+
+    @Override
+    public String getImplementationVersion() {
+        return GriefPreventionPlugin.IMPLEMENTATION_VERSION;
     }
 
     @Override
@@ -79,7 +88,11 @@ public class GPApiProvider implements GriefPreventionApi {
 
     @Override
     public List<Claim> getAllPlayerClaims(UUID playerUniqueId) {
-        // TODO Auto-generated method stub
-        return null;
+        List<Claim> claimList = new ArrayList<>();
+        for (World world : Sponge.getServer().getWorlds()) {
+            claimList.addAll(this.getClaimManager(world).getPlayerClaims(playerUniqueId));
+        }
+
+        return ImmutableList.copyOf(claimList);
     }
 }
