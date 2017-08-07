@@ -55,7 +55,7 @@ public class MessageStorage {
     public static final String BOOK_TOOLS = "book-tools";
     public static final String CLAIM_ABANDON_SUCCESS = "claim-abandon-success";
     public static final String CLAIM_BANK_INFO = "claim-bank-info";
-    public static final String CLAIM_RESIZE_NEED_BLOCKS = "claim-resize-need-blocks";
+    public static final String CLAIM_SIZE_NEED_BLOCKS = "claim-size-need-blocks";
     public static final String CLAIM_RESIZE_SUCCESS = "claim-resize-success";
     public static final String CLAIM_SIZE_MAX_X = "claim-size-max-x";
     public static final String CLAIM_SIZE_MAX_Y = "claim-size-max-y";

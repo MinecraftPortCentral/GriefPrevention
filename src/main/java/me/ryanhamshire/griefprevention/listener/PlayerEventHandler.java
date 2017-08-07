@@ -2412,8 +2412,7 @@ public class PlayerEventHandler {
             GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
             // if it didn't succeed, tell the player why
             if (!result.successful()) {
-                if (result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_X && result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_Y && result.getResultType() != ClaimResultType.EXCEEDS_MAX_SIZE_Z
-                        && result.getResultType() != ClaimResultType.BELOW_MIN_SIZE_X && result.getResultType() != ClaimResultType.BELOW_MIN_SIZE_Y && result.getResultType() != ClaimResultType.BELOW_MIN_SIZE_Z) {
+                if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
                     GPClaim overlapClaim = (GPClaim) result.getClaim().get();
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
                     List<Claim> claims = new ArrayList<>();
