@@ -249,8 +249,8 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-owner-only")
     public TextTemplate claimOwnerOnly = TextTemplate.of(TextColors.RED, "Only ", TextTemplate.arg("owner"), " can modify this claim.");
 
-    @Setting(MessageStorage.CLAIM_RESIZE_NEED_BLOCKS)
-    public TextTemplate claimResizeNeedBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this size.\nYou need ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
+    @Setting(MessageStorage.CLAIM_SIZE_NEED_BLOCKS)
+    public TextTemplate claimSizeNeedBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this claim size.\nYou need ", TextTemplate.arg("chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-resize-overlap-subdivision")
     public TextTemplate claimResizeOverlapSubdivision = TextTemplate.of(TextColors.RED, "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use " + "your shovel at a corner to resize it.");
