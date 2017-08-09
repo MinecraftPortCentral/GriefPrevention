@@ -26,8 +26,6 @@ package me.ryanhamshire.griefprevention.api.data;
 
 import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
-import org.spongepowered.api.service.economy.account.Account;
-import org.spongepowered.api.service.economy.account.VirtualAccount;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
@@ -177,6 +175,13 @@ public interface ClaimData {
     boolean requiresClaimBlocks();
 
     /**
+     * Gets whether this claim has min/max size restrictions.
+     * 
+     * @return Whether claim has size restrictions
+     */
+    boolean hasSizeRestrictions();
+
+    /**
      * Sets the name of claim.
      * 
      * @param name The claim name
@@ -267,6 +272,15 @@ public interface ClaimData {
      * @param requiresClaimBlocks Whether this claim requires claim blocks
      */
     void setRequiresClaimBlocks(boolean requiresClaimBlocks);
+
+    /**
+     * Sets if this claim checks for min/max size restrictions.
+     * 
+     * Note: {@link ClaimType#ADMIN} and {@link ClaimType#WILDERNESS} can not have restrictions.
+     * 
+     * @param sizeRestrictions Whether this claim checks size restrictions.
+     */
+    void setSizeRestrictions(boolean sizeRestrictions);
 
     /**
      * Sets the spawn position of claim.

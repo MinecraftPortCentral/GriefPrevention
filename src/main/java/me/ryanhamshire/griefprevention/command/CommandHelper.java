@@ -398,11 +398,12 @@ public class CommandHelper {
             Player player = (Player) src;
             GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             Tristate result = Tristate.UNDEFINED;
-            if (!playerData.canManageAdminClaims && GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission)) {
-                result = Tristate.fromBoolean(src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission));
-            } else if (result != Tristate.TRUE && playerData.canManageAdminClaims) {
+            if (playerData.canManageAdminClaims) {
                 result = Tristate.fromBoolean(src.hasPermission(GPPermissions.ADMIN_CLAIM_FLAGS + "." + basePermission));
+            } else if (GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission)) {
+                result = Tristate.fromBoolean(src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission));
             }
+
             if (result != Tristate.TRUE) {
                 GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionFlagUse.toText());
                 return new GPFlagResult(FlagResultType.NO_PERMISSION);
@@ -1444,9 +1445,13 @@ public class CommandHelper {
                         TextColors.AQUA, "Note", TextColors.WHITE, " : ", "minecraft represents the modid and horse represents the entity id.\n",
                             "Specifying no modid will always default to minecraft.\n");
             case INTERACT_INVENTORY :
-                return Text.of("Controls whether a player can interact with a block that contains inventory such as a chest.\n",
-                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from interacting with any block that contains inventory, enter\n",
+                return Text.of("Controls whether a player can right-click with a block that contains inventory such as a chest.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from right-clicking any block that contains inventory, enter\n",
                         TextColors.GREEN, "/cf interact-inventory any false");
+            case INTERACT_INVENTORY_CLICK :
+                return Text.of("Controls whether a player can click on an inventory slot.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from clicking an inventory slot that contains diamond, enter\n",
+                        TextColors.GREEN, "/cf interact-inventory-click minecraft:diamond false");
             case INTERACT_ITEM_PRIMARY :
                 return Text.of("Controls whether a player can left-click(attack) with an item.\n",
                         TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent players from left-clicking while holding a diamond sword, enter\n",

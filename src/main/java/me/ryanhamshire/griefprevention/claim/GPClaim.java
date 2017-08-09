@@ -148,11 +148,11 @@ public class GPClaim implements Claim {
     private GPPlayerData ownerPlayerData;
     private Account economyAccount;
 
-    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, boolean cuboid) {
-        this(world, point1, point2, type, ownerUniqueId, cuboid, null);
+    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId) {
+        this(world, point1, point2, type, ownerUniqueId, null);
     }
 
-    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, boolean cuboid, GPClaim parent) {
+    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, GPClaim parent) {
         int smallx, bigx, smally, bigy, smallz, bigz;
         int x1 = point1.getX();
         int x2 = point2.getX();
@@ -197,7 +197,7 @@ public class GPClaim implements Claim {
         this.type = type;
         this.id = UUID.randomUUID();
         this.context = new Context("gp_claim", this.id.toString());
-        this.cuboid = cuboid;
+        this.cuboid = smally != 0 || bigy != 255;
         this.parent = parent;
         this.hashCode = this.id.hashCode();
         this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
@@ -563,11 +563,7 @@ public class GPClaim implements Claim {
     // returns a friendly owner name (for admin claims, returns "an administrator" as the owner)
     @Override
     public Text getOwnerName() {
-        if (this.isWilderness()) {
-            return GriefPreventionPlugin.instance.messageData.ownerWilderness.toText();
-        }
-
-        if (this.isAdminClaim()) {
+        if (this.isAdminClaim() || this.isWilderness()) {
             return GriefPreventionPlugin.instance.messageData.ownerAdmin.toText();
         }
 
@@ -2386,7 +2382,6 @@ public class GPClaim implements Claim {
 
         private UUID ownerUniqueId;
         private ClaimType type = ClaimType.BASIC;
-        private boolean cuboid = false;
         private boolean requiresClaimBlocks = true;
         private boolean denyMessages = true;
         private boolean expire = true;
@@ -2507,7 +2502,6 @@ public class GPClaim implements Claim {
         public Builder reset() {
             this.ownerUniqueId = null;
             this.type = ClaimType.BASIC;
-            this.cuboid = false;
             this.world = null;
             this.point1 = null;
             this.point2 = null;
@@ -2529,7 +2523,7 @@ public class GPClaim implements Claim {
                 this.sizeRestrictions = this.type == ClaimType.ADMIN ? false : true;
             }
 
-            GPClaim claim = new GPClaim(this.world, this.point1, this.point2, this.type, this.ownerUniqueId, this.cuboid);
+            GPClaim claim = new GPClaim(this.world, this.point1, this.point2, this.type, this.ownerUniqueId);
             claim.parent = (GPClaim) this.parent;
             Player player = null;
             if (this.cause.root() instanceof Player) {
@@ -2547,8 +2541,8 @@ public class GPClaim implements Claim {
 
                  final User user = GriefPreventionPlugin.getOrCreateUser(this.ownerUniqueId);
                  if (!user.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
-                     int createClaimLimit = GPOptionHandler.getClaimOptionDouble(user, playerData.claimSubdividing, GPOptions.CREATE_CLAIM_LIMIT_BASIC, playerData).intValue();
-                     if (createClaimLimit > 0 && (playerData.getInternalClaims().size() + 1) >= createClaimLimit) {
+                     final Double createClaimLimit = GPOptionHandler.getClaimOptionDouble(user, playerData.claimSubdividing, GPOptions.CREATE_CLAIM_LIMIT_BASIC, playerData);
+                     if (createClaimLimit != null && createClaimLimit > 0 && (playerData.getInternalClaims().size() + 1) >= createClaimLimit.intValue()) {
                          return new GPClaimResult(claim, ClaimResultType.EXCEEDS_MAX_CLAIM_LIMIT);
                      }
                  }
@@ -2627,6 +2621,7 @@ public class GPClaim implements Claim {
             claim.getData().setFarewell(this.farewell);
             claim.getData().setGreeting(this.greeting);
             claim.getData().setSpawnPos(this.spawnPos);
+            claim.getData().setSizeRestrictions(this.sizeRestrictions);
             final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
             claimManager.addClaim(claim, true);
 

@@ -70,7 +70,9 @@ public class CommandClaimInfo implements CommandExecutor {
     private static final String FLAG_OVERRIDES = "FlagOverrides";
     private static final String INHERIT_PARENT = "InheritParent";
     private static final String PVP_OVERRIDE = "PvPOverride";
+    private static final String RESIZABLE = "Resizable";
     private static final String REQUIRES_CLAIM_BLOCKS = "RequiresClaimBlocks";
+    private static final String SIZE_RESTRICTIONS = "SizeRestrictions";
     private static final String FOR_SALE = "ForSale";
     private boolean useTownInfo = false;
 
@@ -502,7 +504,9 @@ public class CommandClaimInfo implements CommandExecutor {
                 TextColors.WHITE, "\n[", TextColors.AQUA, "Return to standard settings", TextColors.WHITE, "]\n"))
             .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claiminfo", claim.getUniqueId().toString()))).build();
         Text claimDenyMessages = Text.of(TextColors.YELLOW, DENY_MESSAGES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, DENY_MESSAGES, claim.getInternalClaimData().allowDenyMessages() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
+        Text claimResizable = Text.of(TextColors.YELLOW, RESIZABLE, TextColors.WHITE, " : ", getClickableInfoText(src, claim, RESIZABLE, claim.getInternalClaimData().isResizable() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
         Text claimRequiresClaimBlocks = Text.of(TextColors.YELLOW, REQUIRES_CLAIM_BLOCKS, TextColors.WHITE, " : ", getClickableInfoText(src, claim, REQUIRES_CLAIM_BLOCKS, claim.getInternalClaimData().requiresClaimBlocks() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
+        Text claimSizeRestrictions = Text.of(TextColors.YELLOW, SIZE_RESTRICTIONS, TextColors.WHITE, " : ", getClickableInfoText(src, claim, SIZE_RESTRICTIONS, claim.getInternalClaimData().hasSizeRestrictions() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
         Text claimExpiration = Text.of(TextColors.YELLOW, CLAIM_EXPIRATION, TextColors.WHITE, " : ", getClickableInfoText(src, claim, CLAIM_EXPIRATION, claim.getInternalClaimData().allowExpiration() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
         Text claimFlagOverrides = Text.of(TextColors.YELLOW, FLAG_OVERRIDES, TextColors.WHITE, " : ", getClickableInfoText(src, claim, FLAG_OVERRIDES, claim.getInternalClaimData().allowFlagOverrides() ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, "OFF")), TextColors.RESET);
         Text pvp = Text.of(TextColors.YELLOW, "PvP", TextColors.WHITE, " : ", getClickableInfoText(src, claim, PVP_OVERRIDE, claim.getInternalClaimData().getPvpOverride() == Tristate.TRUE ? Text.of(TextColors.GREEN, "ON") : Text.of(TextColors.RED, claim.getInternalClaimData().getPvpOverride().name())), TextColors.RESET);
@@ -511,6 +515,8 @@ public class CommandClaimInfo implements CommandExecutor {
         if (!claim.isAdminClaim() && !claim.isWilderness()) {
             textList.add(claimRequiresClaimBlocks);
             textList.add(claimExpiration);
+            textList.add(claimResizable);
+            textList.add(claimSizeRestrictions);
         }
         textList.add(claimFlagOverrides);
         textList.add(pvp);
@@ -589,9 +595,21 @@ public class CommandClaimInfo implements CommandExecutor {
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
                     break;
+                case RESIZABLE :
+                    boolean resizable = gpClaim.getInternalClaimData().isResizable();
+                    gpClaim.getInternalClaimData().setResizable(!resizable);
+                    gpClaim.getInternalClaimData().setRequiresSave(true);
+                    gpClaim.getClaimStorage().save();
+                    break;
                 case REQUIRES_CLAIM_BLOCKS :
                     boolean requiresClaimBlocks = gpClaim.getInternalClaimData().requiresClaimBlocks();
                     gpClaim.getInternalClaimData().setRequiresClaimBlocks(!requiresClaimBlocks);
+                    gpClaim.getInternalClaimData().setRequiresSave(true);
+                    gpClaim.getClaimStorage().save();
+                    break;
+                case SIZE_RESTRICTIONS :
+                    boolean sizeRestrictions = gpClaim.getInternalClaimData().hasSizeRestrictions();
+                    gpClaim.getInternalClaimData().setSizeRestrictions(!sizeRestrictions);
                     gpClaim.getInternalClaimData().setRequiresSave(true);
                     gpClaim.getClaimStorage().save();
                     break;

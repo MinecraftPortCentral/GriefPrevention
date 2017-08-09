@@ -200,13 +200,13 @@ public class GPClaimManager implements ClaimManager {
             DATASTORE.writeClaimToStorage(claim);
         }
 
+        // We need to keep track of all claims so they can be referenced by children during server startup
+        this.claimUniqueIdMap.put(claim.id, claim);
+
         if (claim.isWilderness()) {
             this.theWildernessClaim = claim;
             return;
         }
-
-        // We need to keep track of all claims so they can be referenced by children during server startup
-        this.claimUniqueIdMap.put(claim.id, claim);
 
         if (claim.parent != null) {
             claim.parent.children.add(claimToAdd);
@@ -375,11 +375,12 @@ public class GPClaimManager implements ClaimManager {
         World world = Sponge.getServer().getWorld(worldProperties.getUniqueId()).get();
         Location<World> lesserCorner = new Location<World>(world, -30000000, 0, -30000000);
         Location<World> greaterCorner = new Location<World>(world, 29999999, 255, 29999999);
-        GPClaim worldClaim = new GPClaim(lesserCorner, greaterCorner, UUID.randomUUID(), ClaimType.WILDERNESS, null);
-        worldClaim.setOwnerUniqueId(GriefPreventionPlugin.WORLD_USER_UUID);
-        worldClaim.initializeClaimData(null);
-        DATASTORE.writeClaimToStorage(worldClaim);
-        this.theWildernessClaim = worldClaim;
+        GPClaim wilderness = new GPClaim(lesserCorner, greaterCorner, UUID.randomUUID(), ClaimType.WILDERNESS, null);
+        wilderness.setOwnerUniqueId(GriefPreventionPlugin.WORLD_USER_UUID);
+        wilderness.initializeClaimData(null);
+        DATASTORE.writeClaimToStorage(wilderness);
+        this.theWildernessClaim = wilderness;
+        this.claimUniqueIdMap.put(wilderness.getUniqueId(), wilderness);
     }
 
     @Override

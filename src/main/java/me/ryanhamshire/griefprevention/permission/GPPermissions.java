@@ -186,8 +186,6 @@ public class GPPermissions {
     public static final String ENTITY_COLLIDE_BLOCK = "griefprevention.flag.collide-block";
     public static final String ENTITY_COLLIDE_ENTITY = "griefprevention.flag.collide-entity";
     public static final String ENTITY_DAMAGE = "griefprevention.flag.entity-damage";
-    public static final String ENTITY_EXPLOSION = "griefprevention.flag.explosion";
-    public static final String ENTITY_FALL = "griefprevention.flag.entity-fall";
     public static final String ENTITY_RIDING = "griefprevention.flag.entity-riding";
     public static final String ENTITY_SPAWN = "griefprevention.flag.entity-spawn";
     public static final String ENTITY_TELEPORT_FROM = "griefprevention.flag.entity-teleport-from";
@@ -202,9 +200,10 @@ public class GPPermissions {
     public static final String INTERACT_BLOCK_SECONDARY = "griefprevention.flag.interact-block-secondary";
     public static final String INTERACT_ENTITY_PRIMARY = "griefprevention.flag.interact-entity-primary";
     public static final String INTERACT_ENTITY_SECONDARY = "griefprevention.flag.interact-entity-secondary";
-    public static final String INTERACT_INVENTORY = "griefprevention.flag.interact-inventory";
     public static final String INTERACT_ITEM_PRIMARY = "griefprevention.flag.interact-item-primary";
     public static final String INTERACT_ITEM_SECONDARY = "griefprevention.flag.interact-item-secondary";
+    public static final String INVENTORY_CLICK = "griefprevention.flag.interact-inventory-click";
+    public static final String INVENTORY_OPEN = "griefprevention.flag.interact-inventory";
     public static final String ITEM_DROP = "griefprevention.flag.item-drop";
     public static final String ITEM_PICKUP = "griefprevention.flag.item-pickup";
     public static final String ITEM_SPAWN = "griefprevention.flag.item-spawn";
