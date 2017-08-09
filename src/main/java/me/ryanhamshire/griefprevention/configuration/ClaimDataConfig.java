@@ -69,6 +69,8 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     private boolean isResizable = true;
     @Setting
     private boolean isExpired = false;
+    @Setting
+    private boolean sizeRestrictions = true;
     @Setting(value = ClaimStorageData.MAIN_ALLOW_DENY_MESSAGES)
     private boolean allowDenyMessages = true;
     @Setting(value = ClaimStorageData.MAIN_ALLOW_CLAIM_EXPIRATION)
@@ -226,6 +228,15 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     @Override
     public boolean isResizable() {
         return this.isResizable;
+    }
+
+    @Override
+    public boolean hasSizeRestrictions() {
+        if (this.claimType == ClaimType.ADMIN || this.claimType == ClaimType.WILDERNESS) {
+            this.sizeRestrictions = false;
+            return false;
+        }
+        return this.sizeRestrictions;
     }
 
     @Override
@@ -442,6 +453,11 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     @Override
     public void setRequiresSave(boolean flag) {
         this.requiresSave = flag;
+    }
+
+    @Override
+    public void setSizeRestrictions(boolean sizeRestrictions) {
+        this.sizeRestrictions = sizeRestrictions;
     }
 
     @Override

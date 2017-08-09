@@ -63,7 +63,6 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
-import org.spongepowered.api.event.cause.entity.damage.DamageTypes;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
@@ -124,44 +123,28 @@ public class EntityEventHandler {
         GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location, false, null);
 
         User user = event.getCause().first(User.class).orElse(null);
-        //Object source = event.getCause().root();
-        Optional<Explosive> explosive = Optional.empty();
+        Explosive explosive = null;
         if (event.getExplosion() instanceof Explosion) {
-            explosive = ((Explosion) event.getExplosion()).getSourceExplosive();
+            explosive = ((Explosion) event.getExplosion()).getSourceExplosive().orElse(null);
         }
 
-        if (explosive.isPresent()) {
-            Entity entity = (Entity) explosive.get();
+        if (explosive != null) {
+            Entity entity = (Entity) explosive;
 
             if (user == null) {
-                Optional<UUID> uuid = entity.getCreator();
-                if (uuid.isPresent()) {
-                    user = Sponge.getServiceManager().provide(UserStorageService.class).get().get(uuid.get()).orElse(null);
+                UUID uuid = entity.getCreator().orElse(null);
+                if (uuid != null) {
+                    user = GriefPreventionPlugin.getOrCreateUser(uuid);
                 }
             }
 
-            final Tristate value = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ENTITY_EXPLOSION, null, null, user, true);
-            if(value != Tristate.UNDEFINED) {
-                if (value == Tristate.TRUE) {
-                    GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
-                    return;
-                }
-
+            if(GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION, entity, location, user, true) == Tristate.FALSE) {
                 event.setCancelled(true);
                 GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
                 return;
             }
         }
 
-        final Tristate value = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION, null, null, user, true);
-        if(value != Tristate.UNDEFINED) {
-            if (value == Tristate.TRUE) {
-                GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
-                return;
-            }
-
-            event.setCancelled(true);
-        }
         GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
     }
 
@@ -330,12 +313,7 @@ public class EntityEventHandler {
         if (!(targetEntity instanceof Player) && claim.isUserTrusted(user, TrustType.ACCESSOR)) {
             return false;
         }
-        // check fall
-        if (damageSource.getType() == DamageTypes.FALL) {
-            if (GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_FALL, cause.root(), targetEntity, user) == Tristate.FALSE) {
-                return true;
-            }
-        }
+
         // Protect owned entities anywhere in world
         if (sourceEntity != null && !(SpongeImplHooks.isCreatureOfType((net.minecraft.entity.Entity) targetEntity, EnumCreatureType.MONSTER))) {
             Tristate perm = Tristate.UNDEFINED;

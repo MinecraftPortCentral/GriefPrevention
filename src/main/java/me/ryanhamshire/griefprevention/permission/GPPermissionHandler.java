@@ -58,6 +58,7 @@ import org.spongepowered.api.event.cause.entity.spawn.LocatableBlockSpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
@@ -109,27 +110,39 @@ public class GPPermissionHandler {
         String targetModPermission = null;
         String targetMetaPermission = null;
         if (!targetId.isEmpty()) {
+            String[] parts = targetId.split(":");
+            String targetMod = parts[0];
+            // move target meta to end of permission
+            Pattern p = Pattern.compile("\\.[\\d+]*$");
+            Matcher m = p.matcher(targetId);
+            String targetMeta = "";
+            if (m.find()) {
+                targetMeta = m.group(0);
+                targetId = targetId.replace(targetMeta, "");
+            }
+            if (!targetMeta.isEmpty()) {
+                targetMetaPermission = flagPermission + "." + targetId.replace(":", ".") + targetMeta;
+            }
             if (!sourceId.isEmpty()) {
-                String[] parts = targetId.split(":");
-                String targetMod = parts[0];
-                // move target meta to end of permission
-                Pattern p = Pattern.compile("\\.[\\d+]*$");
-                Matcher m = p.matcher(targetId);
-                String targetMeta = "";
-                if (m.find()) {
-                    targetMeta = m.group(0);
-                    targetId = targetId.replace(targetMeta, "");
-                }
-                if (!targetMeta.isEmpty()) {
-                    targetMetaPermission = flagPermission + "." + targetId.replace(":", ".") + targetMeta;
-                }
                 targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId + targetMeta;
                 targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
                 targetPermission += "." + targetId + ".source." + sourceId + targetMeta;
             } else {
-                targetPermission += "." + targetId;
+                targetModPermission = flagPermission + "." + targetMod + targetMeta;
+                targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
+                targetPermission += "." + targetId + targetMeta;
             }
+        } else if (!sourceId.isEmpty()) {
+            String targetMod = "";
+            if (sourceId.contains(":")) {
+                String[] parts = sourceId.split(":");
+                targetMod = parts[0];
+                targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId;
+                targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
+            }
+            targetPermission += ".source." + sourceId;
         }
+
         targetPermission = StringUtils.replace(targetPermission, ":", ".");
         if (checkOverride) {
             Tristate override = Tristate.UNDEFINED;
@@ -563,6 +576,8 @@ public class GPPermissionHandler {
                 }
 
                 return damageTypeId;
+            } else if (obj instanceof ItemStackSnapshot) {
+                return ((ItemStackSnapshot) obj).getType().getId();
             } else if (obj instanceof CatalogType) {
                 return ((CatalogType) obj).getId();
             } else if (obj instanceof String) {
