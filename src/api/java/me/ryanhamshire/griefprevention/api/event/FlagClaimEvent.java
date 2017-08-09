@@ -35,11 +35,11 @@ public interface FlagClaimEvent extends ClaimEvent {
 
     Subject getSubject();
 
-    interface Clear {
+    interface Clear extends FlagClaimEvent {
         java.util.Set<Context> getContexts();
     }
 
-    interface Set {
+    interface Set extends FlagClaimEvent {
 
         ClaimFlag getFlag();
 

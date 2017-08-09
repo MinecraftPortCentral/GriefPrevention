@@ -1162,17 +1162,7 @@ public class PlayerEventHandler {
             Location<World> location = entityItem.getLocation();
             GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
             if (claim != null) {
-                // check for bans first
-                Tristate override = GPPermissionHandler.getFlagOverride(event, location, GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(claim.getWorld().getProperties()).getWildernessClaim(), GPPermissions.ITEM_DROP, source, entityItem);
-                if (override != Tristate.UNDEFINED) {
-                    GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
-                    if (override == Tristate.TRUE) {
-                        return;
-                    }
-                    event.setCancelled(true);
-                    return;
-                }
-                override = GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ITEM_DROP,  user, entityItem);
+                final Tristate override = GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ITEM_DROP,  user, entityItem, true);
                 if (override != Tristate.UNDEFINED) {
                     if (override == Tristate.TRUE) {
                         GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
@@ -1433,8 +1423,12 @@ public class PlayerEventHandler {
 
         Tristate override = Tristate.UNDEFINED;
         if (itemInHand != ItemTypes.NONE) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem);
-            if (override == Tristate.FALSE) {
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, true);
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    return;
+                }
+
                 if (!claim.isWilderness()) {
                     final Text message = GriefPreventionPlugin.instance.messageData.permissionInteractItem
                             .apply(ImmutableMap.of(
@@ -1448,8 +1442,14 @@ public class PlayerEventHandler {
         }
 
         if (entity != null) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, ENTITY_PERMISSION, playerItem, entity);
-            if (override == Tristate.FALSE) {
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, ENTITY_PERMISSION, playerItem, entity, true);
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    playerData.lastInteractItemEntityResult = Tristate.TRUE;
+                    return;
+                }
+
+                playerData.lastInteractItemEntityResult = Tristate.FALSE;
                 if (!claim.isWilderness()) {
                     final Text message = GriefPreventionPlugin.instance.messageData.permissionInteractItemEntity
                             .apply(ImmutableMap.of(
@@ -1463,8 +1463,14 @@ public class PlayerEventHandler {
         }
 
         if (blockSnapshot != null) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot);
-            if (override == Tristate.FALSE) {
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, true);
+            if (override != Tristate.UNDEFINED) {
+                if (override == Tristate.TRUE) {
+                    playerData.lastInteractItemBlockResult = Tristate.TRUE;
+                    return;
+                }
+
+                playerData.lastInteractItemBlockResult = Tristate.FALSE;
                 if (!claim.isWilderness()) {
                     final Text message = GriefPreventionPlugin.instance.messageData.permissionInteractItemBlock
                             .apply(ImmutableMap.of(

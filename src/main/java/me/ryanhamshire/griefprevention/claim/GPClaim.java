@@ -37,6 +37,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimContexts;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
+import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
@@ -125,6 +126,7 @@ public class GPClaim implements Claim {
     private Set<Long> chunkHashes;
     private final int hashCode;
     private final GPClaimManager worldClaimManager;
+    private final Claim wildernessClaim;
 
     // Permission Context
     public Context context;
@@ -199,7 +201,12 @@ public class GPClaim implements Claim {
         this.cuboid = smally != 0 || bigy != 255;
         this.parent = parent;
         this.hashCode = this.id.hashCode();
-        this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
+        this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        if (this.type == ClaimType.WILDERNESS) {
+            this.wildernessClaim = this;
+        } else {
+            this.wildernessClaim = this.worldClaimManager.getWildernessClaim();
+        }
     }
 
     // Used for visualizations
@@ -224,7 +231,12 @@ public class GPClaim implements Claim {
         this.type = type;
         this.context = new Context("gp_claim", this.id.toString());
         this.hashCode = this.id.hashCode();
-        this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
+        this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        if (this.type == ClaimType.WILDERNESS) {
+            this.wildernessClaim = this;
+        } else {
+            this.wildernessClaim = this.worldClaimManager.getWildernessClaim();
+        }
     }
 
     public void initializeClaimData(GPClaim parent) {
@@ -1132,7 +1144,7 @@ public class GPClaim implements Claim {
         }
 
         if (!claimsToMigrate.isEmpty()) {
-            this.worldClaimManager.getWildernessClaim().migrateClaims(claimsToMigrate);
+            ((GPClaim) this.wildernessClaim).migrateClaims(claimsToMigrate);
         }
 
         final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
@@ -1651,6 +1663,16 @@ public class GPClaim implements Claim {
         if (this.ownerPlayerData != null) {
             this.ownerPlayerData.getInternalClaims().remove(this);
         }
+    }
+
+    @Override
+    public Claim getWilderness() {
+        return this.wildernessClaim;
+    }
+
+    @Override
+    public ClaimManager getClaimManager() {
+        return (ClaimManager) this.worldClaimManager;
     }
 
     @Override
