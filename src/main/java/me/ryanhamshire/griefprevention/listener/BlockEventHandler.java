@@ -334,7 +334,7 @@ public class BlockEventHandler {
             targetClaim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
         }
 
-        Tristate result = GPPermissionHandler.getFlagOverride(event, event.getTargetLocation(), targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock());
+        Tristate result = GPPermissionHandler.getFlagOverride(event, event.getTargetLocation(), targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), true);
         if (result != Tristate.UNDEFINED) {
             if (result == Tristate.TRUE) {
                 if (playerData != null) {
