@@ -559,6 +559,20 @@ public interface Claim extends ContextSource {
     Optional<Claim> getTown();
 
     /**
+     * Gets the {@link ClaimManager} of this claim's world.
+     * 
+     * @return The claim manager
+     */
+    ClaimManager getClaimManager();
+
+    /**
+     * Gets the wilderness claim of this claim's world.
+     * 
+     * @return The wilderness claim
+     */
+    Claim getWilderness();
+
+    /**
      * Checks if the location is within this claim.
      * 
      * Note: If ignoreHeight is true, this will only check

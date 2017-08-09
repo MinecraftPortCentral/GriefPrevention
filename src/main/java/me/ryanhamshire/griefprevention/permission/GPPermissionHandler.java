@@ -148,7 +148,7 @@ public class GPPermissionHandler {
             Tristate override = Tristate.UNDEFINED;
             if (user != null) {
                 // check for bans first
-                override = getFlagOverride(GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(claim.getWorld().getProperties()).getWildernessClaim(), user, targetPermission, targetModPermission, targetMetaPermission);
+                override = getFlagOverride((GPClaim) claim.getWilderness(), user, targetPermission, targetModPermission, targetMetaPermission);
                 if (override != Tristate.UNDEFINED) {
                     return override;
                 }
@@ -331,11 +331,17 @@ public class GPPermissionHandler {
         return processResult(claim, flagPermission, Tristate.UNDEFINED);
     }
 
-    public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target) {
+    public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, boolean checkWildernessOverride) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
             return processResult(claim, flagPermission, Tristate.UNDEFINED);
         }
 
+        if (checkWildernessOverride && !claim.isWilderness()) {
+            final Tristate wildernessOverride = getFlagOverride(event, location, (GPClaim) claim.getWilderness(), flagPermission, source, target, false);
+            if (wildernessOverride != Tristate.UNDEFINED) {
+                return wildernessOverride;
+            }
+        }
         currentEvent = event;
         currentLocation = location;
 

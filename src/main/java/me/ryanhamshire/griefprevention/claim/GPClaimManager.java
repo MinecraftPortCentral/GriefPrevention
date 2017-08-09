@@ -385,6 +385,9 @@ public class GPClaimManager implements ClaimManager {
 
     @Override
     public GPClaim getWildernessClaim() {
+        if (this.theWildernessClaim == null) {
+            this.createWildernessClaim(worldProperties);
+        }
         return this.theWildernessClaim;
     }
 

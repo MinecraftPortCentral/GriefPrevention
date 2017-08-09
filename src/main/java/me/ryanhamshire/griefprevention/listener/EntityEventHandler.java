@@ -793,7 +793,7 @@ public class EntityEventHandler {
         }
 
         if (sourceClaim != null) {
-            Tristate override = GPPermissionHandler.getFlagOverride(event, sourceLocation, sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type, entity);
+            Tristate override = GPPermissionHandler.getFlagOverride(event, sourceLocation, sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type, entity, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
@@ -857,7 +857,7 @@ public class EntityEventHandler {
         Location<World> destination = event.getToTransform().getLocation();
         GPClaim toClaim = this.dataStore.getClaimAt(destination, false, null);
         if (toClaim != null) {
-            Tristate override = GPPermissionHandler.getFlagOverride(event, event.getToTransform().getLocation(), toClaim, GPPermissions.ENTITY_TELEPORT_TO, type, entity);
+            Tristate override = GPPermissionHandler.getFlagOverride(event, event.getToTransform().getLocation(), toClaim, GPPermissions.ENTITY_TELEPORT_TO, type, entity, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
