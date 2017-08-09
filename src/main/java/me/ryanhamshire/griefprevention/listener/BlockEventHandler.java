@@ -446,13 +446,13 @@ public class BlockEventHandler {
             }
 
             targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), false, targetClaim);
-            if (location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot.getLocation(), creator, true) == Tristate.FALSE) {
+            if (location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot, creator, true) == Tristate.FALSE) {
                 event.setCancelled(true);
                 GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
                 return;
             }
 
-            if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION, source, blockSnapshot.getLocation(), creator, true) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION, source, blockSnapshot, creator, true) == Tristate.FALSE) {
                 // Avoid lagging server from large explosions.
                 if (event.getTransactions().size() > 100) {
                     event.setCancelled(true);

@@ -46,7 +46,7 @@ import java.util.UUID;
 
 public class GPApiProvider implements GriefPreventionApi {
 
-    public static final double API_VERSION = 0.5;
+    public static final double API_VERSION = 0.6;
 
     public GPApiProvider() {
     }

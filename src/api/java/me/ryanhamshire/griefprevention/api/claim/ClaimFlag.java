@@ -112,9 +112,13 @@ public enum ClaimFlag {
      */
     INTERACT_ENTITY_SECONDARY("interact-entity-secondary"),
     /**
-     * Used to allow or deny a player from interacting with a block that contains inventory.
+     * Used to allow or deny a user from opening an inventory container.
      */
     INTERACT_INVENTORY("interact-inventory"),
+    /**
+     * Used to allow or deny a user from clicking an item in an inventory slot.
+     */
+    INTERACT_INVENTORY_CLICK("interact-inventory-click"),
     /**
      * Used to allow or deny a player from left-clicking with an item in hand.
      */

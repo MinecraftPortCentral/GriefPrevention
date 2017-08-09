@@ -471,9 +471,6 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("owner-admin")
     public TextTemplate ownerAdmin = TextTemplate.of("an administrator");
 
-    @Setting("owner-wilderness")
-    public TextTemplate ownerWilderness = TextTemplate.of("a wilderness administrator");
-
     @Setting("permission-access")
     public TextTemplate permissionAccess = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("player"), "'s permission to access that.");
 
@@ -544,10 +541,10 @@ public class MessageDataConfig extends ConfigCategory {
     public TextTemplate permissionFlowLiquid = TextTemplate.of(TextColors.RED, "You don't have permission to flow liquid in this claim.");
 
     @Setting("permission-interact-block")
-    public TextTemplate permissionInteractBlock = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.LIGHT_PURPLE), "'s", TextColors.RED, " permission to interact with the block ", TextTemplate.arg("block"), ".");
+    public TextTemplate permissionInteractBlock = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.GOLD), "'s", TextColors.RED, " permission to interact with the block ", TextTemplate.arg("block").color(TextColors.LIGHT_PURPLE), ".");
 
     @Setting("permission-interact-entity")
-    public TextTemplate permissionInteractEntity = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.LIGHT_PURPLE), "'s", TextColors.RED, " permission to interact with the entity ", TextTemplate.arg("entity"), ".");
+    public TextTemplate permissionInteractEntity = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.GOLD), "'s", TextColors.RED, " permission to interact with the entity ", TextTemplate.arg("entity").color(TextColors.LIGHT_PURPLE), ".");
 
     @Setting("permission-interact-item-block")
     public TextTemplate permissionInteractItemBlock = TextTemplate.of(TextColors.RED, "You don't have permission to use ", TextTemplate.arg("item").color(TextColors.LIGHT_PURPLE), TextColors.RED, " on a ", TextTemplate.arg("block").color(TextColors.AQUA), ".");
@@ -555,14 +552,14 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("permission-interact-item-entity")
     public TextTemplate permissionInteractItemEntity = TextTemplate.of(TextColors.RED, "You don't have permission to use ", TextTemplate.arg("item").color(TextColors.LIGHT_PURPLE), TextColors.RED, " on a ", TextTemplate.arg("entity").color(TextColors.AQUA), ".");
 
-    @Setting("permission-interact")
-    public TextTemplate permissionInteractItem = TextTemplate.of(TextColors.RED, "You don't have ", TextColors.LIGHT_PURPLE, TextTemplate.arg("owner"), "'s", TextColors.RED, " permission to interact with the item ", TextTemplate.arg("item"), ".");
+    @Setting("permission-interact-item")
+    public TextTemplate permissionInteractItem = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.GOLD), "'s", TextColors.RED, " permission to interact with the item ", TextTemplate.arg("item").color(TextColors.LIGHT_PURPLE), ".");
 
-    @Setting("permission-inventory")
-    public TextTemplate permissionInventory = TextTemplate.of(TextColors.RED, "You don't have ", TextColors.LIGHT_PURPLE, TextTemplate.arg("owner"), "'s", TextColors.RED, " permission to use that.");
+    @Setting("permission-inventory-open")
+    public TextTemplate permissionInventoryOpen = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.GOLD), "'s", TextColors.RED, " permission to open ", TextTemplate.arg("block").color(TextColors.LIGHT_PURPLE), ".");
 
     @Setting("permission-item-drop")
-    public TextTemplate permissionItemDrop = TextTemplate.of(TextColors.RED, "You can't drop items in this claim.");
+    public TextTemplate permissionItemDrop = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.GOLD), "'s", TextColors.RED, " permission to drop the item ", TextTemplate.arg("item").color(TextColors.LIGHT_PURPLE), " in this claim.");
 
     @Setting("permission-item-use")
     public TextTemplate permissionItemUse = TextTemplate.of(TextColors.RED, "You can't use the item ", TextTemplate.arg("item"), " in this claim.");

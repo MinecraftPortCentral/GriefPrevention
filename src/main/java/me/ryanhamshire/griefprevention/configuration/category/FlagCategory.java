@@ -76,6 +76,8 @@ public class FlagCategory extends ConfigCategory {
         defaultAdminFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultAdminFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultAdminFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultAdminFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultAdminFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultAdminFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
@@ -108,6 +110,8 @@ public class FlagCategory extends ConfigCategory {
         defaultBasicFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultBasicFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultBasicFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultBasicFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultBasicFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultBasicFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
@@ -140,6 +144,8 @@ public class FlagCategory extends ConfigCategory {
         defaultTownFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultTownFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultTownFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultTownFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
+        defaultTownFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultTownFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultTownFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultTownFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
@@ -172,6 +178,8 @@ public class FlagCategory extends ConfigCategory {
         defaultWildernessFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), true);;
         defaultWildernessFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ITEM_SPAWN.toString(), true);
@@ -194,6 +202,8 @@ public class FlagCategory extends ConfigCategory {
         userClaimFlags.add(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString());
         userClaimFlags.add(ClaimFlag.INTERACT_ITEM_PRIMARY.toString());
         userClaimFlags.add(ClaimFlag.INTERACT_ITEM_SECONDARY.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_INVENTORY_CLICK.toString());
+        userClaimFlags.add(ClaimFlag.INTERACT_INVENTORY.toString());
         userClaimFlags.add(ClaimFlag.ITEM_DROP.toString());
         userClaimFlags.add(ClaimFlag.ITEM_PICKUP.toString());
         userClaimFlags.add(ClaimFlag.ITEM_USE.toString());
