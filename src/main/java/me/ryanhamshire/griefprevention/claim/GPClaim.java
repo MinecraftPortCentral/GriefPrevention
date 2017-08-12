@@ -289,7 +289,14 @@ public class GPClaim implements Claim {
     }
 
     public UUID getOwnerUniqueId() {
-        if (this.isAdminClaim() || this.ownerUniqueId == null) {
+        if (this.isAdminClaim()) {
+            return GriefPreventionPlugin.ADMIN_USER_UUID;
+        }
+        if (this.ownerUniqueId == null) {
+            if (this.parent != null) {
+                return this.parent.getOwnerUniqueId();
+            }
+
             return GriefPreventionPlugin.ADMIN_USER_UUID;
         }
 
@@ -576,10 +583,6 @@ public class GPClaim implements Claim {
     public Text getOwnerName() {
         if (this.isAdminClaim() || this.isWilderness()) {
             return GriefPreventionPlugin.instance.messageData.ownerAdmin.toText();
-        }
-
-        if (this.isSubdivision()) {
-            return this.parent.getOwnerName();
         }
 
         if (this.getOwnerPlayerData() == null) {
@@ -908,9 +911,19 @@ public class GPClaim implements Claim {
         this.claimData.setGreaterBoundaryCorner(BlockUtils.positionToString(this.greaterBoundaryCorner));
         // Will save next world save
         this.claimData.setRequiresSave(true);
-        // Update SubdivisionData
+    }
+
+    public void save() {
         for (Claim child : this.children) {
-            ((GPClaim) child).updateClaimStorageData();
+            GPClaim childClaim = (GPClaim) child;
+            if (childClaim.getInternalClaimData().requiresSave()) {
+                childClaim.save();
+            }
+        }
+        if (this.getInternalClaimData().requiresSave()) {
+            this.updateClaimStorageData();
+            this.getClaimStorage().save();
+            this.getInternalClaimData().setRequiresSave(false);
         }
     }
 

@@ -72,9 +72,8 @@ public class CommandClaimAbandon implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), true);
         UUID ownerId = claim.getOwnerUniqueId();
-        if (claim.isSubdivision()) {
-            ownerId = claim.parent.getOwnerUniqueId();
-        } else if (claim.isWilderness()) {
+
+        if (claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonClaimMissing.toText());
             return CommandResult.success();
         } else if (!playerData.canIgnoreClaim(claim) && (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)))) {

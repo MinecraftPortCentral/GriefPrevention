@@ -274,6 +274,7 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
         if (this.spawnPos == null && this.claimSpawn != null) {
             try {
                 this.spawnPos = BlockUtils.positionFromString(this.claimSpawn);
+                this.requiresSave = true;
             } catch (Exception e) {
                 e.printStackTrace();
             }
