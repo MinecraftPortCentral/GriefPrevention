@@ -373,7 +373,6 @@ public abstract class DataStore {
     }
 
     public ClaimResult createAdminClaim(Claim parent, World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Cause cause) {
-        GPClaimManager claimManager = this.getClaimWorldManager(world.getProperties());
         ClaimResult claimResult = Claim.builder()
                 .bounds(point1, point2)
                 .world(world)
@@ -382,9 +381,7 @@ public abstract class DataStore {
                 .parent(parent)
                 .cause(cause)
                 .build();
-        if(claimResult.successful()) {
-            claimManager.addClaim(claimResult.getClaim().get(), true);
-        }
+
         return claimResult;
     }
 
@@ -393,7 +390,6 @@ public abstract class DataStore {
     }
 
     public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Claim parent, Cause cause) {
-        GPClaimManager claimManager = this.getClaimWorldManager(world.getProperties());
         ClaimResult claimResult = Claim.builder()
                 .bounds(point1, point2)
                 .world(world)
@@ -402,9 +398,7 @@ public abstract class DataStore {
                 .parent(parent)
                 .cause(cause)
                 .build();
-        if(claimResult.successful()) {
-            claimManager.addClaim(claimResult.getClaim().get(), true);
-        }
+
         return claimResult;
     }
 
