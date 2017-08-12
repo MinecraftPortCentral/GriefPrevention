@@ -2385,7 +2385,7 @@ public class PlayerEventHandler {
     
                 GPClaim parentClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location);
                 if (!parentClaim.isWilderness()) {
-                    createClaimLimit = GPOptionHandler.getClaimOptionDouble(player, parentClaim, GPOptions.CREATE_CLAIM_LIMIT_BASIC, playerData).intValue();
+                    createClaimLimit = GPOptionHandler.getClaimOptionDouble(player, parentClaim, GPOptions.Type.CLAIM_LIMIT, playerData).intValue();
                 }
 
                 if (createClaimLimit > 0 &&

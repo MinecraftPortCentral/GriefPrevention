@@ -133,23 +133,23 @@ public class BlockEventHandler {
 
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
+                    continue;
                 }
                 if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
+                    continue;
                 }
                 if (user != null && pistonExtend) {
                     if (targetClaim.isUserTrusted(user, TrustType.ACCESSOR)) {
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                        return;
+                        continue;
                     }
                 }
                 if (event.getCause().containsNamed(NamedCause.FIRE_SPREAD)) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                        return;
+                        continue;
                     }
                 }
 
@@ -157,7 +157,7 @@ public class BlockEventHandler {
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
+                    continue;
                 }
             }
         } else if (user != null) {
@@ -168,18 +168,18 @@ public class BlockEventHandler {
 
                 if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
+                    continue;
                 }
                 if (playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
+                    continue;
                 }
 
                 if (event.getCause().containsNamed(NamedCause.FIRE_SPREAD)) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                        return;
+                        continue;
                     }
                 }
 
@@ -196,7 +196,7 @@ public class BlockEventHandler {
                 if (!userAllowed) {
                     event.setCancelled(true);
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
+                    continue;
                 }
             }
         }
