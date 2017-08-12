@@ -209,7 +209,7 @@ public class GPClaimManager implements ClaimManager {
         }
 
         if (claim.parent != null) {
-            claim.parent.children.add(claimToAdd);
+            claim.parent.children.add(claim);
             this.worldClaims.remove(claim);
             this.deleteChunkHashes((GPClaim) claim);
             if (!claim.isAdminClaim() && claim.isInTown() && !claim.getTownClaim().getOwnerUniqueId().equals(claim.getOwnerUniqueId())) {
@@ -306,6 +306,9 @@ public class GPClaimManager implements ClaimManager {
         GPPlayerData playerData = this.getPlayerDataMap().get(claim.getOwnerUniqueId());
         if (playerData != null) {
             playerData.getInternalClaims().remove(claim);
+            if (playerData.lastClaim != null) {
+                playerData.lastClaim.clear();
+            }
         }
         // transfer bank balance to owner
         final Account bankAccount = claim.getEconomyAccount().orElse(null);
@@ -331,6 +334,9 @@ public class GPClaimManager implements ClaimManager {
             if (player != null) {
                 playerData = this.getOrCreatePlayerData(playerUniqueId);
                 playerData.revertActiveVisual(player);
+                if (playerData.lastClaim != null) {
+                    playerData.lastClaim.clear();
+                }
                 if (GriefPreventionPlugin.instance.worldEditProvider != null) {
                     GriefPreventionPlugin.instance.worldEditProvider.revertVisuals(player, playerData, claim.getUniqueId());
                 }
@@ -415,11 +421,7 @@ public class GPClaimManager implements ClaimManager {
     public void save() {
         for (Claim claim : this.worldClaims) {
             GPClaim gpClaim = (GPClaim) claim;
-            if (gpClaim.getInternalClaimData().requiresSave()) {
-                gpClaim.updateClaimStorageData();
-                gpClaim.getClaimStorage().save();
-                gpClaim.getInternalClaimData().setRequiresSave(false);
-            }
+            gpClaim.save();
         }
 
         for (GPPlayerData playerData : this.getPlayerDataMap().values()) {
