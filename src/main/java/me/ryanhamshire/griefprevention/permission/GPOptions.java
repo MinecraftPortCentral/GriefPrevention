@@ -79,13 +79,13 @@ public class GPOptions {
     public static final int DEFAULT_INITIAL_CLAIM_BLOCKS = 25600;
     public static final int DEFAULT_MAX_ACCRUED_BLOCKS = 20480000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_X= 5000;
-    public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Y = 255;
+    public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Z = 5000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_X= 10000;
-    public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_Y = 255;
+    public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_TOWN_Z = 10000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X= 1000;
-    public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y = 255;
+    public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z = 1000;
     public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_X= 10;
     public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Y = 5;
