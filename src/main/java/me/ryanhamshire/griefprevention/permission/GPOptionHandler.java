@@ -37,6 +37,10 @@ import java.util.Set;
 public class GPOptionHandler {
 
     public static Double getClaimOptionDouble(Subject subject, Claim claim, GPOptions.Type type, GPPlayerData playerData) {
+        if (claim == null) {
+            return 0.0;
+        }
+
         final String claimOption = checkClaimOption(type, claim);
         if (claimOption.equals(GPOptions.INVALID_OPTION)) {
             return 0.0;
