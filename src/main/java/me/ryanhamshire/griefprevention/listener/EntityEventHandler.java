@@ -84,6 +84,8 @@ import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.chat.ChatType;
+import org.spongepowered.api.text.chat.ChatTypes;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -685,12 +687,14 @@ public class EntityEventHandler {
                     playerData.lastClaim = new WeakReference<>(toClaim);
                     Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
                     if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
-                        player.sendMessage(Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                        ChatType chatType = gpEvent.getEnterMessageChatType().orElse(ChatTypes.CHAT);
+                        player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
                     }
 
                     Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                     if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
-                        player.sendMessage(Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                        ChatType chatType = gpEvent.getExitMessageChatType().orElse(ChatTypes.CHAT);
+                        player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
                     }
 
                     if (toClaim.isInTown()) {
@@ -749,12 +753,14 @@ public class EntityEventHandler {
                 playerData.lastClaim = new WeakReference<>(toClaim);
                 Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
                 if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
-                    player.sendMessage(Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                    ChatType chatType = gpEvent.getEnterMessageChatType().orElse(ChatTypes.CHAT);
+                    player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
                 }
 
                 Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                 if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
-                    player.sendMessage(Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                    ChatType chatType = gpEvent.getExitMessageChatType().orElse(ChatTypes.CHAT);
+                    player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
                 }
 
                 if (toClaim.isInTown()) {
