@@ -897,7 +897,7 @@ public class EntityEventHandler {
                     //GriefPreventionPlugin.sendClaimDenyMessage(toClaim, player, denyReason);
                 }
 
-                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, user, null);
+                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, type.getId(), entity.getType().getId(), user, null, Tristate.FALSE);
                 event.setCancelled(true);
                 if (type.equals(EntityTypes.ENDER_PEARL)) {
                     ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ENDER_PEARL));

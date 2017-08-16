@@ -32,6 +32,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.util.Tristate;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -75,9 +76,9 @@ public class GPDebugData {
         this.header.add("| Record start | " + DATE_FORMAT.format(new Date(this.startTime)) + "|");
     }
 
-    public void addRecord(String claim, String event, String source, String target, String location, String user) {
+    public void addRecord(String flag, String source, String target, String location, String user, Tristate result) {
         if (this.records.size() < MAX_LINES) {
-            this.records.add("| " + claim + " | " + event + " | " + source + " | " + target + " | " + location + " | " + user + " | ");
+            this.records.add("| " + flag + " | " + source + " | " + target + " | " + location + " | " + user + " | " + result + " | ");
         } else {
             this.source.sendMessage(Text.of("MAX DEBUG LIMIT REACHED!", "\n",
                     TextColors.GREEN, "Pasting output..."));
@@ -119,8 +120,8 @@ public class GPDebugData {
         debugOutput.add("| Time elapsed | " + elapsed + " seconds" + "|");
         debugOutput.add("");
         debugOutput.add("### Output") ;
-        debugOutput.add("| Claim | Event | Source | Target | Location | User |");
-        debugOutput.add("|-------|-------|--------|--------|----------|------|");
+        debugOutput.add("| Flag  | Source | Target | Location | User | Result |");
+        debugOutput.add("|-------|--------|--------|----------|------|--------|");
 
         debugOutput.addAll(this.records);
 

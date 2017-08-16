@@ -50,7 +50,9 @@ public class CommandDebug implements CommandExecutor {
             paste = true;
         } else if (target.equalsIgnoreCase("off")) {
             GriefPreventionPlugin.instance.getDebugUserMap().remove(src.getIdentifier());
-            GriefPreventionPlugin.debugLogging = false;
+            if (GriefPreventionPlugin.instance.getDebugUserMap().isEmpty()) {
+                GriefPreventionPlugin.debugActive = false;
+            }
         }
 
         final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
@@ -59,12 +61,15 @@ public class CommandDebug implements CommandExecutor {
                 debugData = GriefPreventionPlugin.instance.getDebugUserMap().get(src.getIdentifier());
                 if (debugData == null) {
                     src.sendMessage(Text.of(TextColors.RED, "Nothing to paste!"));
-                    return CommandResult.success();
+                } else {
+                    debugData.pasteRecords();
                 }
-                debugData.pasteRecords();
             }
             src.sendMessage(Text.of(GP_TEXT, TextColors.GRAY, "Debug ", TextColors.RED, "OFF"));
             GriefPreventionPlugin.instance.getDebugUserMap().remove(src.getIdentifier());
+            if (GriefPreventionPlugin.instance.getDebugUserMap().isEmpty()) {
+                GriefPreventionPlugin.debugActive = false;
+            }
         } else {
             src.sendMessage(Text.of(
                     GP_TEXT, TextColors.GRAY, "Debug: ", TextColors.GREEN, "ON", TextColors.WHITE, " | ", 
@@ -86,6 +91,7 @@ public class CommandDebug implements CommandExecutor {
             debugData.setTarget(user);
             debugData.setVerbose(verbose);
         }
+        GriefPreventionPlugin.debugActive = true;
         return debugData;
     }
 }
