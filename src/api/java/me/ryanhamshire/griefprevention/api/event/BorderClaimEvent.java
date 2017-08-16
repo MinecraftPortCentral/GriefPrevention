@@ -29,6 +29,8 @@ import me.ryanhamshire.griefprevention.api.data.ClaimData;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.event.entity.TargetEntityEvent;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.chat.ChatType;
+import org.spongepowered.api.text.chat.ChatTypes;
 
 import java.util.Optional;
 
@@ -75,8 +77,9 @@ public interface BorderClaimEvent extends ClaimEvent, TargetEntityEvent {
      * If no message is set, the {@link ClaimData#getGreeting()} will be used.
      * 
      * @param message The message to set
+     * @param chatType The desired chat type, in which the message will be displayed
      */
-    void setEnterMessage(@Nullable Text message);
+    void setEnterMessage(@Nullable Text message, ChatType chatType);
 
     /**
      * Sets the exit message for this event only.
@@ -85,6 +88,53 @@ public interface BorderClaimEvent extends ClaimEvent, TargetEntityEvent {
      * If no message is set, the {@link ClaimData#getFarewell()} will be used.
      * 
      * @param message The message to set
+     * @param chatType The desired chat type, in which the message will be displayed
      */
-    void setExitMessage(@Nullable Text message);
+    void setExitMessage(@Nullable Text message, ChatType chatType);
+
+
+    /**
+     * Sets the exit message for this event only.
+     * The message will send as the chat type {@link ChatTypes#CHAT}
+     *
+     * Note: Setting message to {@code null} will hide the message.
+     * If no message is set, the {@link ClaimData#getFarewell()} will be used.
+     *
+     * For changing the ChatType see {@link BorderClaimEvent#setExitMessage(Text, ChatType)}
+     *
+     * @param message The message to set
+     */
+    default void setExitMessage(@Nullable Text message) {
+        setExitMessage(message, ChatTypes.CHAT);
+    }
+
+
+    /**
+     * Sets the enter message for this event only.
+     * The message will send as the chat type {@link ChatTypes#CHAT}
+     *
+     * Note: Setting message to {@code null} will hide the message.
+     * If no message is set, the {@link ClaimData#getGreeting()} will be used.
+     *
+     * For changing the ChatType see {@link BorderClaimEvent#setEnterMessage(Text, ChatType)}
+     *
+     * @param message The message to set
+     */
+    default void setEnterMessage(@Nullable Text message) {
+        setEnterMessage(message, ChatTypes.CHAT);
+    }
+
+    /**
+     * Returns the chat type for the exit message, if the optional is empty, then {@link ChatTypes#CHAT} will be used
+     *
+     * @return The chat type
+     */
+    Optional<ChatType> getExitMessageChatType();
+
+    /**
+     * Returns the chat type for the enter message, if the optional is empty, then {@link ChatTypes#CHAT} will be used
+     *
+     * @return The chat type
+     */
+    Optional<ChatType> getEnterMessageChatType();
 }
