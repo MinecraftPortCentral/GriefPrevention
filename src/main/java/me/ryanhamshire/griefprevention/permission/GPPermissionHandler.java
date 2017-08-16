@@ -52,6 +52,7 @@ import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.action.CollideEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
+import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.spawn.BlockSpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.LocatableBlockSpawnCause;
@@ -79,7 +80,10 @@ import java.util.regex.Pattern;
 public class GPPermissionHandler {
 
     private static Event currentEvent;
-    private static Location<World> currentLocation;
+    private static Location<World> eventLocation;
+    private static User eventUser;
+    private static String eventSource = "none";
+    private static String eventTarget = "none";
 
     public static Tristate getClaimPermission(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user) {
         return getClaimPermission(event, location, claim, flagPermission, source, target, user, null, false);
@@ -94,15 +98,18 @@ public class GPPermissionHandler {
             return processResult(claim, flagPermission, Tristate.TRUE);
         }
 
-        currentEvent = event;
-        currentLocation = location;
         GPPlayerData playerData = null;
-        if (user != null && user instanceof Player) {
-            playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, user.getUniqueId());
-            if (playerData.canIgnoreClaim(claim)) {
-                return processResult(claim, flagPermission, Tristate.TRUE);
+        if (user != null) {
+            eventUser = user;
+            if (user instanceof Player) {
+                playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, user.getUniqueId());
+                if (playerData.canIgnoreClaim(claim)) {
+                    return processResult(claim, flagPermission, Tristate.TRUE);
+                }
             }
         }
+        currentEvent = event;
+        eventLocation = location;
 
         String sourceId = getPermissionIdentifier(source, true);
         String targetPermission = flagPermission;
@@ -324,11 +331,17 @@ public class GPPermissionHandler {
         if (targetModPermission != null) {
             value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
             if (value != Tristate.UNDEFINED) {
+                if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
+                    Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetModPermission);
+                    if (reason != null && !reason.isEmpty()) {
+                        player.sendMessage(reason);
+                    }
+                }
                 return processResult(claim, targetModPermission, value, user);
             }
         }
 
-        return processResult(claim, flagPermission, Tristate.UNDEFINED);
+        return processResult(claim, flagPermission, Tristate.UNDEFINED, user);
     }
 
     public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, boolean checkWildernessOverride) {
@@ -343,7 +356,7 @@ public class GPPermissionHandler {
             }
         }
         currentEvent = event;
-        currentLocation = location;
+        eventLocation = location;
 
         final Player player = source instanceof Player ? (Player) source : null;
         if (player != null) {
@@ -351,6 +364,7 @@ public class GPPermissionHandler {
             if (playerData.canIgnoreClaim(claim)) {
                 return processResult(claim, flagPermission, Tristate.TRUE);
             }
+            eventUser = player;
         }
 
         String targetModPermission = null;
@@ -426,11 +440,17 @@ public class GPPermissionHandler {
         if (targetModPermission != null) {
             value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
             if (value != Tristate.UNDEFINED) {
+                if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
+                    Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetModPermission);
+                    if (reason != null && !reason.isEmpty()) {
+                        player.sendMessage(reason);
+                    }
+                }
                 return processResult(claim, targetModPermission, value);
             }
         }
 
-        return processResult(claim, flagPermission, Tristate.UNDEFINED);
+        return processResult(claim, flagPermission, Tristate.UNDEFINED, player);
     }
 
     // used by Flag API
@@ -466,19 +486,27 @@ public class GPPermissionHandler {
     }
 
     public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue) {
-        return processResult(claim, permission, permissionValue, null);
+        return processResult(claim, permission, permissionValue, eventUser);
     }
 
     public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue, User user) {
-        if (permissionValue == Tristate.FALSE) {
+        if (GriefPreventionPlugin.debugActive) {
+            if (user == null) {
+                if (eventUser != null) {
+                    user = eventUser;
+                } else if (currentEvent.getCause().root() instanceof User) {
+                    user = (User) currentEvent.getCause().root();
+                }
+            }
             if (currentEvent instanceof CollideEvent || currentEvent instanceof NotifyNeighborBlockEvent) {
                 if (claim.getWorld().getProperties().getTotalTime() % 100 == 0L) {
-                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, currentLocation, user, permission);
+                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, user, permission, permissionValue);
                 }
             } else {
-                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, currentLocation, user, permission);
+                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, user, permission, permissionValue);
             }
         }
+
         return permissionValue;
     }
 
@@ -492,30 +520,31 @@ public class GPPermissionHandler {
             if (obj instanceof Entity) {
                 Entity targetEntity = (Entity) obj;
                 net.minecraft.entity.Entity mcEntity = (net.minecraft.entity.Entity) targetEntity;
-                String targetId = "";
+                String id = "";
                 if (mcEntity instanceof EntityItem) {
                     EntityItem mcItem = (EntityItem) mcEntity;
                     net.minecraft.item.ItemStack itemStack = mcItem.getItem();
                     if (itemStack != null && itemStack.getItem() != null) {
                         ItemType itemType = (ItemType) itemStack.getItem();
-                        targetId = itemType.getId() + "." + itemStack.getItemDamage();
+                        id = itemType.getId() + "." + itemStack.getItemDamage();
                     }
                 } else {
                     if (targetEntity.getType() != null) {
-                        targetId = targetEntity.getType().getId();
+                        id = targetEntity.getType().getId();
                     }
                 }
                 // Workaround for pixelmon using same class for most entities.
                 // In this circumstance, we will use the entity name instead
-                if (targetId.equals("pixelmon:pixelmon")) {
-                    targetId = "pixelmon:" + mcEntity.getName().toLowerCase();
+                if (id.equals("pixelmon:pixelmon")) {
+                    id = "pixelmon:" + mcEntity.getName().toLowerCase();
                 }
+                populateEventSourceTarget(id, isSource);
                 if (!isSource && targetEntity instanceof Living) {
                     for (EnumCreatureType type : EnumCreatureType.values()) {
                         if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
-                            String[] parts = targetId.split(":");
+                            String[] parts = id.split(":");
                             if (parts.length > 1) {
-                                targetId =  parts[0] + ":" + GPFlags.SPAWN_TYPES.inverse().get(type) + ":" + parts[1];
+                                id =  parts[0] + ":" + GPFlags.SPAWN_TYPES.inverse().get(type) + ":" + parts[1];
                                 break;
                             }
                         }
@@ -523,11 +552,14 @@ public class GPPermissionHandler {
                 }
 
                 if (targetEntity instanceof Item) {
-                    targetId = ((Item) targetEntity).getItemType().getId();
+                    id = ((Item) targetEntity).getItemType().getId();
+                    populateEventSourceTarget(id, isSource);
                 }
 
-                return targetId.toLowerCase();
+                return id.toLowerCase();
             } else if (obj instanceof EntityType) {
+                final String id = ((EntityType) obj).getId();
+                populateEventSourceTarget(id, isSource);
                 return ((EntityType) obj).getId();
             } else if (obj instanceof SpawnCause) {
                 SpawnCause spawnCause = (SpawnCause) obj;
@@ -542,67 +574,91 @@ public class GPPermissionHandler {
                     return getPermissionIdentifier(locatableSpawnCause.getLocatableBlock(), true);
                 }
             } else if (obj instanceof BlockType) {
-                String targetId = ((BlockType) obj).getId();
-                return targetId;
+                String id = ((BlockType) obj).getId();
+                populateEventSourceTarget(id, isSource);
+                return id;
             } else if (obj instanceof BlockSnapshot) {
                 BlockSnapshot blockSnapshot = (BlockSnapshot) obj;
                 BlockState blockstate = blockSnapshot.getState();
-                String targetId = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
-                return targetId.toLowerCase();
+                String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                populateEventSourceTarget(id, isSource);
+                return id.toLowerCase();
             } else if (obj instanceof BlockState) {
                 BlockState blockstate = (BlockState) obj;
-                String targetId = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
-                return targetId.toLowerCase();
+                String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                populateEventSourceTarget(id, isSource);
+                return id.toLowerCase();
             } else if (obj instanceof LocatableBlock) {
                 LocatableBlock locatableBlock = (LocatableBlock) obj;
                 BlockState blockstate = locatableBlock.getBlockState();
-                String targetId = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
-                return targetId.toLowerCase();
+                String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                populateEventSourceTarget(id, isSource);
+                return id.toLowerCase();
             } else if (obj instanceof ItemStack) {
                 ItemStack itemstack = (ItemStack) obj;
-                String targetId = "";
+                String id = "";
                 if (itemstack.getItem() instanceof ItemBlock) {
                     ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
                     net.minecraft.item.ItemStack nmsStack = (net.minecraft.item.ItemStack)(Object) itemstack;
                     BlockState blockState = ((BlockState) itemBlock.getBlock().getStateFromMeta(nmsStack.getItemDamage()));
-                    targetId = blockState.getType().getId() + "." + nmsStack.getItemDamage();//.replace("[", ".[");
+                    id = blockState.getType().getId() + "." + nmsStack.getItemDamage();
                 } else {
-                    targetId = itemstack.getItem().getId() + "." + ((net.minecraft.item.ItemStack)(Object) itemstack).getItemDamage();
+                    id = itemstack.getItem().getId() + "." + ((net.minecraft.item.ItemStack)(Object) itemstack).getItemDamage();
                 }
 
-                return targetId.toLowerCase();
+                populateEventSourceTarget(id, isSource);
+                return id.toLowerCase();
             } else if (obj instanceof ItemType) {
-                String targetId = ((ItemType) obj).getId().toLowerCase();
-                return targetId;
+                String id = ((ItemType) obj).getId().toLowerCase();
+                populateEventSourceTarget(id, isSource);
+                return id;
+            } else if (obj instanceof EntityDamageSource) {
+                final EntityDamageSource damageSource = (EntityDamageSource) obj;
+                if (eventUser == null && damageSource.getSource() instanceof User) {
+                    eventUser = (User) damageSource.getSource();
+                }
+
+                final String id = damageSource.getSource().getType().getId();
+                populateEventSourceTarget(id, isSource);
+                return damageSource.getSource().getType().getId();
             } else if (obj instanceof DamageSource) {
                 final DamageSource damageSource = (DamageSource) obj;
-                String damageTypeId = damageSource.getType().getId();
-                if (!damageTypeId.contains(":")) {
-                    damageTypeId = "minecraft:" + damageTypeId;
+                String id = damageSource.getType().getId();
+                if (!id.contains(":")) {
+                    id = "minecraft:" + id;
                 }
 
-                return damageTypeId;
+                populateEventSourceTarget(id, isSource);
+                return id;
             } else if (obj instanceof ItemStackSnapshot) {
-                return ((ItemStackSnapshot) obj).getType().getId();
+                final String id = ((ItemStackSnapshot) obj).getType().getId();
+                populateEventSourceTarget(id, isSource);
+                return id;
             } else if (obj instanceof CatalogType) {
-                return ((CatalogType) obj).getId();
+                final String id = ((CatalogType) obj).getId();
+                populateEventSourceTarget(id, isSource);
+                return id;
             } else if (obj instanceof String) {
-                return obj.toString().toLowerCase();
+                final String id = obj.toString().toLowerCase();
+                populateEventSourceTarget(id, isSource);
+                return id;
             } else if (obj instanceof PluginContainer) {
-                return ((PluginContainer) obj).getId();
+                final String id = ((PluginContainer) obj).getId();
+                populateEventSourceTarget(id, isSource);
+                return id;
             }
         }
 
+        populateEventSourceTarget("none", isSource);
         return "";
     }
 
     public static ClaimFlag getFlagFromPermission(String flagPermission) {
-        for (ClaimFlag flag : ClaimFlag.values()) {
-            if (flagPermission.contains(flag.toString())) {
-                return flag;
-            }
+        try {
+            return ClaimFlag.getEnum(flagPermission);
+        } catch (IllegalArgumentException e) {
+            return null;
         }
-        return null;
     }
 
     public static String getSourcePermission(String flagPermission) {
@@ -667,5 +723,13 @@ public class GPPermissionHandler {
             targetId = targetId.replace(targetMeta, "");
         }
         return targetId;
+    }
+
+    private static void populateEventSourceTarget(String id, boolean isSource) {
+        if (isSource) {
+            eventSource = id.toLowerCase();
+        } else {
+            eventTarget = id.toLowerCase();
+        }
     }
 }

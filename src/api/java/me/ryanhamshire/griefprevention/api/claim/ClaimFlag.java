@@ -172,7 +172,7 @@ public enum ClaimFlag {
 
     public static boolean contains(String value) {
         value = value.replace("griefprevention.flag.", "");
-        String[] parts = value.split(".");
+        String[] parts = value.split("\\.");
         if (parts.length > 0) {
             value = parts[0];
         }
@@ -187,7 +187,7 @@ public enum ClaimFlag {
 
     public static ClaimFlag getEnum(String value) {
         value = value.replace("griefprevention.flag.", "");
-        String[] parts = value.split(".");
+        String[] parts = value.split("\\.");
         if (parts.length > 0) {
             value = parts[0];
         }

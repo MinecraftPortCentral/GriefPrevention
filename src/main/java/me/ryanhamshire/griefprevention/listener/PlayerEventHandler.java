@@ -639,7 +639,7 @@ public class PlayerEventHandler {
             }
         }
         // second check the full command
-        if (GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, null, commandPermission, player) == Tristate.FALSE) {
+        if (GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getCause().root(), commandPermission, player) == Tristate.FALSE) {
             final Text denyMessage = GriefPreventionPlugin.instance.messageData.commandBlocked
                     .apply(ImmutableMap.of(
                     "command", command,

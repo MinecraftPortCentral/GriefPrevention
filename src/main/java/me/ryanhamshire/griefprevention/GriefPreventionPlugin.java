@@ -272,6 +272,7 @@ public class GriefPreventionPlugin {
     // log entry manager for GP's custom log files
     CustomLogger customLogger;
     public static boolean debugLogging = false;
+    public static boolean debugActive = false;
     private Map<String, GPDebugData> debugUserMap = Maps.newHashMap();
 
     // how far away to search from a tree trunk for its branch blocks
@@ -305,9 +306,9 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, User user, String permission) {
+    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, String source, String target, User user, String permission, Tristate result) {
         for (GPDebugData debugEntry : GriefPreventionPlugin.instance.getDebugUserMap().values()) {
-            final CommandSource source = debugEntry.getSource();
+            final CommandSource debugSource = debugEntry.getSource();
             final User debugUser = debugEntry.getTarget();
             if (debugUser != null) {
                 if (user == null || !user.getUniqueId().equals(debugUser.getUniqueId())) {
@@ -315,30 +316,18 @@ public class GriefPreventionPlugin {
                 }
             }
 
-            Object target = null;
-            if (event instanceof TargetEntityEvent) {
-                target = ((TargetEntityEvent) event).getTargetEntity();
-            } else if (event instanceof TargetBlockEvent) {
-                target = ((TargetBlockEvent) event).getTargetBlock();
-            } else if (event instanceof ChangeBlockEvent) {
-                if (event instanceof ChangeBlockEvent.Break) {
-                    target = ((ChangeBlockEvent) event).getTransactions().get(0).getOriginal();
-                } else {
-                    target = ((ChangeBlockEvent) event).getTransactions().get(0).getFinal();
-                }
-            }
-
             // record
             if (debugEntry.isRecording()) {
-                String targetIdentifier = GPPermissionHandler.getPermissionIdentifier(target);
                 permission = permission.replace("griefprevention.flag.", "");
-                final String messageClaim = claim == null ? "none" : claim.getUniqueId().toString();
-                final String messageEvent = event.getClass().getSimpleName().replace('$', '.').replace(".Impl", "");
-                final String messageSource = GPPermissionHandler.getPermissionIdentifier(event.getCause().root());
-                final String messageTarget = targetIdentifier.isEmpty() ? "none" : targetIdentifier;
+                final String messageEvent = GPPermissionHandler.getFlagFromPermission(permission).toString();
+                final String messageSource = source == null ? "none" : source;
+                String messageTarget = target == null ? "none" : target;
+                if (messageTarget.endsWith(".0")) {
+                    messageTarget = messageTarget.substring(0, messageTarget.length() - 2);
+                }
                 final String messageLocation = location == null ? "none" : location.getBlockPosition().toString();
                 final String messageUser = user == null ? "none" : user.getName();
-                debugEntry.addRecord(messageClaim, messageEvent, messageSource, messageTarget, messageLocation, messageUser);
+                debugEntry.addRecord(messageEvent, messageSource, messageTarget, messageLocation, messageUser, result);
                 continue;
             }
 
@@ -365,7 +354,7 @@ public class GriefPreventionPlugin {
                 textBuilder.append(textPermission);
             }
             textBuilder.append(textLocationAndUser);
-            source.sendMessage(textBuilder.build());
+            debugSource.sendMessage(textBuilder.build());
         }
     }
 
@@ -392,8 +381,8 @@ public class GriefPreventionPlugin {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
                     spongeBuild = Integer.parseInt(build);
-                    if (spongeBuild < 2526) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2526+.");
+                    if (spongeBuild < 2558) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2558+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
