@@ -267,6 +267,7 @@ public class GPPlayerData implements PlayerData {
             this.optionBlocksAccruedPerHour = PlayerUtils.getOptionIntValue(subject, GPOptions.BLOCKS_ACCRUED_PER_HOUR, this.optionBlocksAccruedPerHour);
             this.optionClaimExpirationChest = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_CHEST, this.optionClaimExpirationChest);
             this.optionCreateClaimLimitBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.CREATE_CLAIM_LIMIT_BASIC, this.optionCreateClaimLimitBasic);
+            this.optionCreateClaimLimitSubdivision = PlayerUtils.getOptionIntValue(subject, GPOptions.CREATE_CLAIM_LIMIT_SUBDIVISION, this.optionCreateClaimLimitSubdivision);
             this.optionCreateClaimLimitTown = PlayerUtils.getOptionIntValue(subject, GPOptions.CREATE_CLAIM_LIMIT_TOWN, this.optionCreateClaimLimitTown);
             this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.INITIAL_CLAIM_BLOCKS, this.optionInitialClaimBlocks);
             this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_ACCRUED_BLOCKS, this.optionMaxAccruedBlocks);
@@ -301,6 +302,7 @@ public class GPPlayerData implements PlayerData {
             this.optionMap.put(GPOptions.BLOCKS_ACCRUED_PER_HOUR, (double) this.optionBlocksAccruedPerHour);
             this.optionMap.put(GPOptions.CLAIM_EXPIRATION_CHEST, (double) this.optionClaimExpirationChest);
             this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_BASIC, (double) this.optionCreateClaimLimitBasic);
+            this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_SUBDIVISION, (double) this.optionCreateClaimLimitSubdivision);
             this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_TOWN, (double) this.optionCreateClaimLimitTown);
             this.optionMap.put(GPOptions.INITIAL_CLAIM_BLOCKS, (double) this.optionInitialClaimBlocks);
             this.optionMap.put(GPOptions.MAX_ACCRUED_BLOCKS, (double) this.optionMaxAccruedBlocks);
