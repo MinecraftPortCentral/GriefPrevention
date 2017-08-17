@@ -1212,7 +1212,7 @@ public class PlayerEventHandler {
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.canIgnoreClaim(claim)) {
+        if (playerData.canIgnoreClaim(claim) || playerData.lastInteractItemBlockResult == Tristate.TRUE) {
             GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.stopTimingIfSync();
             return;
         }
