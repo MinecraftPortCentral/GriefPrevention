@@ -48,6 +48,7 @@ public class GPOptions {
     public static final String MIN_CLAIM_SIZE_TOWN_X = "griefprevention.min-claim-size-town-x";
     public static final String MIN_CLAIM_SIZE_TOWN_Y = "griefprevention.min-claim-size-town-y";
     public static final String MIN_CLAIM_SIZE_TOWN_Z = "griefprevention.min-claim-size-town-z";
+    public static final String CLAIM_CREATE_MODE = "griefprevention.claim-create-mode";
     public static final String CLAIM_EXPIRATION_CHEST = "griefprevention.claim-expiration-chest";
     public static final String CLAIM_EXPIRATION_BASIC = "griefprevention.claim-expiration-basic";
     public static final String CLAIM_EXPIRATION_TOWN = "griefprevention.claim-expiration-town";
@@ -93,6 +94,7 @@ public class GPOptions {
     public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_X= 32;
     public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_Y = 32;
     public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_Z = 32;
+    public static final int DEFAULT_CLAIM_CREATE_MODE = 0;
     public static final int DEFAULT_CLAIM_EXPIRATION_CHEST = 7;
     public static final int DEFAULT_CLAIM_EXPIRATION_BASIC = 14;
     public static final int DEFAULT_CLAIM_EXPIRATION_SUBDIVISION = 14;
@@ -157,6 +159,8 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Y, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Y));
         // The min size of z, in blocks, that a town can be, 32 by default.
         DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Z, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Z));
+        // The default claiming mode for players on login
+        DEFAULT_OPTIONS.put(CLAIM_CREATE_MODE, Integer.toString(DEFAULT_CLAIM_CREATE_MODE));
         // Number of days of inactivity before an automatic chest claim will be deleted.
         DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_CHEST, Integer.toString(GPOptions.DEFAULT_CLAIM_EXPIRATION_CHEST));
         // Number of days of inactivity before an unused claim will be deleted.
