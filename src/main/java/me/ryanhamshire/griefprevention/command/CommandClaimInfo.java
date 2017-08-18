@@ -111,7 +111,10 @@ public class CommandClaimInfo implements CommandExecutor {
                 
             }
             if (uuid == null) {
-                claim = claimManager.getClaimsByName(claimIdentifier).get(0);
+                final List<Claim> claimList = claimManager.getClaimsByName(claimIdentifier);
+                if (!claimList.isEmpty()) {
+                    claim = claimList.get(0);
+                }
             }
         }
 

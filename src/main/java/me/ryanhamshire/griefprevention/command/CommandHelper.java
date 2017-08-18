@@ -575,7 +575,7 @@ public class CommandHelper {
                 if (height != 0) {
                     height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY();
                 }
-                Visualization visualization = Visualization.fromClaims(claims, playerData.getCuboidMode() ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
+                Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
                 visualization.apply(player);
             } else {
                 GPClaim gpClaim = (GPClaim) claims.get(0);

@@ -1426,6 +1426,7 @@ public class PlayerEventHandler {
             override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
+                    playerData.lastInteractItemBlockResult = Tristate.TRUE;
                     return;
                 }
 
@@ -1828,7 +1829,7 @@ public class PlayerEventHandler {
             boolean ignoreAir = false;
             if (this.worldEditProvider != null) {
                 // Ignore air so players can use client-side WECUI block target which uses max reach distance
-                if (this.worldEditProvider.hasCUISupport(player) && playerData.getCuboidMode() && playerData.lastShovelLocation != null) {
+                if (this.worldEditProvider.hasCUISupport(player) && playerData.optionClaimCreateMode == 1 && playerData.lastShovelLocation != null) {
                     ignoreAir = true;
                 }
             }
@@ -2071,7 +2072,7 @@ public class PlayerEventHandler {
                 }
     
                 newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
-                newy2 = playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1;
+                newy2 = playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1;
             }
 
             // special rule for making a top-level claim smaller. to check this, verifying the old claim's corners are inside the new claim's boundaries.
@@ -2289,15 +2290,15 @@ public class PlayerEventHandler {
                         }
 
                         Vector3i lesserBoundaryCorner = new Vector3i(playerData.lastShovelLocation.getBlockX(), 
-                                playerData.getCuboidMode() ? playerData.lastShovelLocation.getBlockY() : 0,
+                                playerData.optionClaimCreateMode == 1 ? playerData.lastShovelLocation.getBlockY() : 0,
                                 playerData.lastShovelLocation.getBlockZ());
                         Vector3i greaterBoundaryCorner = new Vector3i(location.getBlockX(), 
-                                playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
+                                playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
                                         location.getBlockZ());
 
                         ClaimResult result = this.dataStore.createClaim(player.getWorld(),
                                 lesserBoundaryCorner, greaterBoundaryCorner, PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode),
-                                player.getUniqueId(), playerData.getCuboidMode(), playerData.claimSubdividing, Cause.of(NamedCause.source(player)));
+                                player.getUniqueId(), playerData.optionClaimCreateMode == 1, playerData.claimSubdividing, Cause.of(NamedCause.source(player)));
 
                         GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
                         // if it didn't succeed, tell the player why
@@ -2431,7 +2432,7 @@ public class PlayerEventHandler {
             }
 
             int y = lastShovelLocation.getBlockY();
-            boolean cuboid = playerData.getCuboidMode();
+            boolean cuboid = playerData.optionClaimCreateMode == 1;
             if (!cuboid) {
                 y = lastShovelLocation.getBlockY() - activeConfig.getConfig().claim.extendIntoGroundDistance;
                 if (y > 0) {
@@ -2444,7 +2445,7 @@ public class PlayerEventHandler {
                     lastShovelLocation.getBlockZ());
             Vector3i greaterBoundary = new Vector3i(
                     location.getBlockX(),
-                    playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
+                    playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
                     location.getBlockZ());
             // try to create a new claim
             ClaimResult result = this.dataStore.createClaim(
@@ -2518,7 +2519,7 @@ public class PlayerEventHandler {
                 Location<World> nearbyLocation = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation : player.getLocation();
                 List<Claim> claims = this.dataStore.getNearbyClaims(nearbyLocation);
                 int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY();
-                Visualization visualization = Visualization.fromClaims(claims, playerData.getCuboidMode() ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
+                Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
                 visualization.apply(player);
                 final Text message = GriefPreventionPlugin.instance.messageData.claimShowNearby
                         .apply(ImmutableMap.of(
@@ -2552,7 +2553,7 @@ public class PlayerEventHandler {
         // visualize boundary
         if (claim.id != playerData.visualClaimId) {
             int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : clickedBlock.getLocation().get().getBlockY();
-            claim.getVisualizer().createClaimBlockVisuals(playerData.getCuboidMode() ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData);
+            claim.getVisualizer().createClaimBlockVisuals(playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData);
             claim.getVisualizer().apply(player);
             playerData.revertActiveVisual(player);
             if (this.worldEditProvider != null) {

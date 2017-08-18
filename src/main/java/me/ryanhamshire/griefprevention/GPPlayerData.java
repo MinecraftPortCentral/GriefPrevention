@@ -220,6 +220,7 @@ public class GPPlayerData implements PlayerData {
     public int optionMinClaimSizeTownX = GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_X;
     public int optionMinClaimSizeTownY = GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Y;
     public int optionMinClaimSizeTownZ = GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Z;
+    public int optionClaimCreateMode = GPOptions.DEFAULT_CLAIM_CREATE_MODE;
     public int optionClaimExpirationChest = GPOptions.DEFAULT_CLAIM_EXPIRATION_CHEST;
     public int optionClaimExpirationBasic = GPOptions.DEFAULT_CLAIM_EXPIRATION_BASIC;
     public int optionClaimExpirationSubdivision = GPOptions.DEFAULT_CLAIM_EXPIRATION_SUBDIVISION;
@@ -286,6 +287,7 @@ public class GPPlayerData implements PlayerData {
             this.optionMinClaimSizeTownX = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_TOWN_X, this.optionMinClaimSizeTownX);
             this.optionMinClaimSizeTownY = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_TOWN_Y, this.optionMinClaimSizeTownY);
             this.optionMinClaimSizeTownZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_TOWN_Z, this.optionMinClaimSizeTownZ);
+            this.optionClaimCreateMode = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_CREATE_MODE, this.optionClaimCreateMode);
             this.optionClaimExpirationChest = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_CHEST, this.optionClaimExpirationChest);
             this.optionClaimExpirationBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_BASIC, this.optionClaimExpirationBasic);
             this.optionClaimExpirationTown = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_TOWN, this.optionClaimExpirationTown);
@@ -321,6 +323,7 @@ public class GPPlayerData implements PlayerData {
             this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_X, (double) this.optionMinClaimSizeTownX);
             this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_Y, (double) this.optionMinClaimSizeTownY);
             this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_Z, (double) this.optionMinClaimSizeTownZ);
+            this.optionMap.put(GPOptions.CLAIM_CREATE_MODE, (double) this.optionClaimCreateMode);
             this.optionMap.put(GPOptions.CLAIM_EXPIRATION_CHEST, (double) this.optionClaimExpirationChest);
             this.optionMap.put(GPOptions.CLAIM_EXPIRATION_BASIC, (double) this.optionClaimExpirationBasic);
             this.optionMap.put(GPOptions.CLAIM_EXPIRATION_SUBDIVISION, (double) this.optionClaimExpirationSubdivision);
@@ -475,12 +478,16 @@ public class GPPlayerData implements PlayerData {
         return this.optionAbandonReturnRatioBasic;
     }
 
-    public boolean getCuboidMode() {
-        return this.playerStorage.getConfig().getCuboidMode();
+    public int getClaimCreateMode() {
+        return this.optionClaimCreateMode;
     }
 
-    public void setCuboidMode(boolean cuboidMode) {
-        this.playerStorage.getConfig().setCuboidMode(cuboidMode);
+    public void setClaimCreateMode(int mode) {
+        // default to 0 if invalid
+        if (mode != 0 && mode != 1) {
+            mode = 0;
+        }
+        this.optionClaimCreateMode = mode;
     }
 
     public boolean canCreateClaim(Player player) {
@@ -489,14 +496,13 @@ public class GPPlayerData implements PlayerData {
 
     public boolean canCreateClaim(Player player, boolean sendMessage) {
         if (this.shovelMode == ShovelMode.Basic) {
-            if (!player.hasPermission(GPPermissions.CLAIM_CREATE_BASIC)) {
+            if (this.optionClaimCreateMode == 0 && !player.hasPermission(GPPermissions.CLAIM_CREATE_BASIC)) {
                 if (sendMessage) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimCreate.toText());
                 }
                 return false;
             }
-            if (this.getCuboidMode() && !player.hasPermission(GPPermissions.CLAIM_CUBOID_BASIC)) {
-                this.setCuboidMode(false);
+            if (this.optionClaimCreateMode == 1 && !player.hasPermission(GPPermissions.CLAIM_CUBOID_BASIC)) {
                 if (sendMessage) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionCuboid.toText());
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidDisabled.toText());
@@ -504,14 +510,12 @@ public class GPPlayerData implements PlayerData {
                 return false;
             }
         } else if (this.shovelMode == ShovelMode.Subdivide) {
-            if (!player.hasPermission(GPPermissions.CLAIM_CREATE_SUBDIVISION)) {
+            if (this.optionClaimCreateMode == 0 && !player.hasPermission(GPPermissions.CLAIM_CREATE_SUBDIVISION)) {
                 if (sendMessage) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimCreate.toText());
                 }
                 return false;
-            }
-            if (this.getCuboidMode() && !player.hasPermission(GPPermissions.CLAIM_CUBOID_SUBDIVISION)) {
-                this.setCuboidMode(false);
+            } else if (!player.hasPermission(GPPermissions.CLAIM_CUBOID_SUBDIVISION)) {
                 if (sendMessage) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionCuboid.toText());
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidDisabled.toText());
@@ -519,15 +523,17 @@ public class GPPlayerData implements PlayerData {
                 return false;
             }
         } else if (this.shovelMode == ShovelMode.Admin) {
-            if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+            if (this.optionClaimCreateMode == 0 && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+                return false;
+            } else if (!player.hasPermission(GPPermissions.CLAIM_CUBOID_ADMIN)) {
                 return false;
             }
-            if (this.getCuboidMode() && !player.hasPermission(GPPermissions.CLAIM_CUBOID_ADMIN)) {
-                
+        } else if (this.shovelMode == ShovelMode.Town) {
+            if (this.optionClaimCreateMode == 0 && !player.hasPermission(GPPermissions.CLAIM_CREATE_TOWN)) {
+                return false;
+            } else if (!player.hasPermission(GPPermissions.CLAIM_CUBOID_TOWN)) {
                 return false;
             }
-        } else if (this.shovelMode == ShovelMode.Town && !player.hasPermission(GPPermissions.CLAIM_CREATE_TOWN)) {
-            return false;
         }
 
         return true;
