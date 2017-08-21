@@ -958,14 +958,12 @@ public class PlayerEventHandler {
         // clear active visuals
         Player player = event.getTargetEntity();
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        playerData.visualBlocks = null;
-        if (playerData.visualRevertTask != null) {
-            playerData.visualRevertTask.cancel();
-        }
         if (this.worldEditProvider != null) {
             this.worldEditProvider.revertVisuals(player, playerData, null);
             this.worldEditProvider.removePlayer(player);
         }
+        playerData.onDisconnect();
+        GriefPreventionPlugin.instance.dataStore.removePlayerData(player.getWorld().getProperties(), player.getUniqueId());
     }
 
     // when a player spawns, conditionally apply temporary pvp protection
@@ -1699,9 +1697,9 @@ public class PlayerEventHandler {
             return;
         }
         final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
-        final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, true);
+        final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, TrustType.BUILDER, true);
         if (result == Tristate.FALSE) {
-            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player, TrustType.BUILDER, true) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 playerData.setLastInteractData(claim);
                 return;
@@ -1752,12 +1750,14 @@ public class PlayerEventHandler {
         }
 
         GPClaim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        final TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
         if (playerData != null && !playerData.canIgnoreClaim(playerClaim)) {
-            Tristate result = GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock(), player, true);
+            final TrustType trustType = (tileEntity != null && tileEntity instanceof IInventory) ? TrustType.CONTAINER : TrustType.ACCESSOR;
+            Tristate result = GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock(), player, trustType, true);
             if (result == Tristate.FALSE) {
                 // if player is holding an item, check if it can be placed
                 if (itemInHand != null) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player) == Tristate.TRUE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player, TrustType.BUILDER, true) == Tristate.TRUE) {
                         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                         playerData.setLastInteractData(playerClaim);
                         return;
@@ -1778,7 +1778,6 @@ public class PlayerEventHandler {
         }
 
         // apply rules for containers
-        TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
         if (tileEntity != null && tileEntity instanceof IInventory) {
             // block container use during pvp combat, same reason
             if (playerData.inPvpCombat(player.getWorld())) {
