@@ -749,4 +749,15 @@ public class GPPlayerData implements PlayerData {
 
         return totalTax;
     }
+
+    public void onDisconnect() {
+        this.visualBlocks = null;
+        this.lastInteractClaim = null;
+        this.claimResizing = null;
+        this.claimSubdividing = null;
+        if (this.visualRevertTask != null) {
+            this.visualRevertTask.cancel();
+            this.visualRevertTask = null;
+        }
+    }
 }
