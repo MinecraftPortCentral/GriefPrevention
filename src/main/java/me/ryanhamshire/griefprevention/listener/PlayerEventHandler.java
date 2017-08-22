@@ -637,7 +637,7 @@ public class PlayerEventHandler {
             }
         }
         // second check the full command
-        if (GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, null, commandPermission, player) == Tristate.FALSE) {
+        if (GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getCause().root(), commandPermission, player) == Tristate.FALSE) {
             final Text denyMessage = GriefPreventionPlugin.instance.messageData.commandBlocked
                     .apply(ImmutableMap.of(
                     "command", command,
@@ -956,14 +956,12 @@ public class PlayerEventHandler {
         // clear active visuals
         Player player = event.getTargetEntity();
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        playerData.visualBlocks = null;
-        if (playerData.visualRevertTask != null) {
-            playerData.visualRevertTask.cancel();
-        }
         if (this.worldEditProvider != null) {
             this.worldEditProvider.revertVisuals(player, playerData, null);
             this.worldEditProvider.removePlayer(player);
         }
+        playerData.onDisconnect();
+        GriefPreventionPlugin.instance.dataStore.removePlayerData(player.getWorld().getProperties(), player.getUniqueId());
     }
 
     // when a player spawns, conditionally apply temporary pvp protection
@@ -1212,7 +1210,7 @@ public class PlayerEventHandler {
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.canIgnoreClaim(claim)) {
+        if (playerData.lastInteractItemBlockResult == Tristate.TRUE) {
             GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.stopTimingIfSync();
             return;
         }
@@ -1241,11 +1239,6 @@ public class PlayerEventHandler {
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.canIgnoreClaim(claim)) {
-            GPTimings.PLAYER_INTERACT_INVENTORY_CLICK_EVENT.stopTimingIfSync();
-            return;
-        }
-
         final boolean isDrop = event instanceof ClickInventoryEvent.Drop;
         for (SlotTransaction transaction : event.getTransactions()) {
             if (transaction.getOriginal() == ItemStackSnapshot.NONE) {
@@ -1295,7 +1288,7 @@ public class PlayerEventHandler {
         GPClaim claim = this.dataStore.getClaimAt(location);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
-        if (playerData.canIgnoreClaim(claim) || playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
+        if (playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
             GPTimings.PLAYER_INTERACT_ENTITY_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
@@ -1326,7 +1319,7 @@ public class PlayerEventHandler {
         Location<World> location = targetEntity.getLocation();
         GPClaim claim = this.dataStore.getClaimAt(location);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.canIgnoreClaim(claim) || playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
+        if (playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
             GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
             return;
         }
@@ -1424,6 +1417,7 @@ public class PlayerEventHandler {
             override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
+                    playerData.lastInteractItemBlockResult = Tristate.TRUE;
                     return;
                 }
 
@@ -1697,9 +1691,9 @@ public class PlayerEventHandler {
             return;
         }
         final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
-        final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, true);
+        final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, TrustType.BUILDER, true);
         if (result == Tristate.FALSE) {
-            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player, TrustType.BUILDER, true) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 playerData.setLastInteractData(claim);
                 return;
@@ -1750,12 +1744,14 @@ public class PlayerEventHandler {
         }
 
         GPClaim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location, false);
-        if (playerData != null && !playerData.canIgnoreClaim(playerClaim)) {
-            Tristate result = GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock(), player, true);
+        final TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
+        if (playerData != null) {
+            final TrustType trustType = (tileEntity != null && tileEntity instanceof IInventory) ? TrustType.CONTAINER : TrustType.ACCESSOR;
+            Tristate result = GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock(), player, trustType, true);
             if (result == Tristate.FALSE) {
                 // if player is holding an item, check if it can be placed
                 if (itemInHand != null) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player) == Tristate.TRUE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player, TrustType.BUILDER, true) == Tristate.TRUE) {
                         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                         playerData.setLastInteractData(playerClaim);
                         return;
@@ -1776,7 +1772,6 @@ public class PlayerEventHandler {
         }
 
         // apply rules for containers
-        TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
         if (tileEntity != null && tileEntity instanceof IInventory) {
             // block container use during pvp combat, same reason
             if (playerData.inPvpCombat(player.getWorld())) {
@@ -1826,7 +1821,7 @@ public class PlayerEventHandler {
             boolean ignoreAir = false;
             if (this.worldEditProvider != null) {
                 // Ignore air so players can use client-side WECUI block target which uses max reach distance
-                if (this.worldEditProvider.hasCUISupport(player) && playerData.getCuboidMode() && playerData.lastShovelLocation != null) {
+                if (this.worldEditProvider.hasCUISupport(player) && playerData.optionClaimCreateMode == 1 && playerData.lastShovelLocation != null) {
                     ignoreAir = true;
                 }
             }
@@ -2069,7 +2064,7 @@ public class PlayerEventHandler {
                 }
     
                 newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
-                newy2 = playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1;
+                newy2 = playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1;
             }
 
             // special rule for making a top-level claim smaller. to check this, verifying the old claim's corners are inside the new claim's boundaries.
@@ -2176,6 +2171,14 @@ public class PlayerEventHandler {
                     claims.add(overlapClaim);
                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                 }
+                if (claimResult.getResultType() == ClaimResultType.CLAIM_EVENT_CANCELLED) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
+                    if (this.worldEditProvider != null) {
+                        this.worldEditProvider.stopVisualDrag(player);
+                        this.worldEditProvider.revertVisuals(player, playerData, null);
+                        this.worldEditProvider.revertVisuals(player, playerData, playerData.claimResizing.getUniqueId());
+                    }
+                }
                 event.setCancelled(true);
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;
@@ -2196,26 +2199,42 @@ public class PlayerEventHandler {
                 // if he clicked on a corner, start resizing it
                 if (BlockUtils.clickedClaimCorner(claim, location.getBlockPosition())) {
                     boolean playerCanResize = true;
-                    // players can always resize subdivisions
-                    if (!claim.isSubdivision() && !player.hasPermission(GPPermissions.CLAIM_RESIZE) && claim.allowEdit(player) != null) {
-                        if (claim.parent == null) {
-                            if (claim.isTown()) {
+                    if (!player.hasPermission(GPPermissions.CLAIM_RESIZE_ALL) 
+                            && !playerData.canIgnoreClaim(claim) 
+                            && !claim.isUserTrusted(player.getUniqueId(), TrustType.MANAGER)) {
+
+                        // Check trust
+                        if (claim.isAdminClaim()) {
+                            if (!playerData.canManageAdminClaims) {
+                                playerCanResize = false;
+                            }
+                        } else if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+                            playerCanResize = false;
+                        }
+                        if (!playerCanResize) {
+                            if (claim.parent != null) {
+                                if (claim.parent.isAdminClaim() && claim.isSubdivision()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN_SUBDIVISION);
+                                } else if (claim.parent.isBasicClaim() && claim.isSubdivision()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC_SUBDIVISION);
+                                } else if (claim.isTown()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_TOWN);
+                                } else if (claim.isAdminClaim()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN);
+                                } else {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC);
+                                }
+                            } else if (claim.isTown()) {
                                 playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_TOWN);
                             } else if (claim.isAdminClaim()) {
                                 playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN);
                             } else {
                                 playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC);
                             }
-                        } else {
-                            if (claim.isAdminClaim()) {
-                                playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN_SUBDIVISION);
-                            } else {
-                                playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC_SUBDIVISION);
-                            }
                         }
                     }
 
-                    if (claim.getInternalClaimData().isResizable() && !playerCanResize) {
+                    if (!claim.getInternalClaimData().isResizable() || !playerCanResize) {
                         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimResize.toText());
                         return;
                     }
@@ -2287,15 +2306,15 @@ public class PlayerEventHandler {
                         }
 
                         Vector3i lesserBoundaryCorner = new Vector3i(playerData.lastShovelLocation.getBlockX(), 
-                                playerData.getCuboidMode() ? playerData.lastShovelLocation.getBlockY() : 0,
+                                playerData.optionClaimCreateMode == 1 ? playerData.lastShovelLocation.getBlockY() : 0,
                                 playerData.lastShovelLocation.getBlockZ());
                         Vector3i greaterBoundaryCorner = new Vector3i(location.getBlockX(), 
-                                playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
+                                playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
                                         location.getBlockZ());
 
                         ClaimResult result = this.dataStore.createClaim(player.getWorld(),
                                 lesserBoundaryCorner, greaterBoundaryCorner, PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode),
-                                player.getUniqueId(), playerData.getCuboidMode(), playerData.claimSubdividing, Cause.of(NamedCause.source(player)));
+                                player.getUniqueId(), playerData.optionClaimCreateMode == 1, playerData.claimSubdividing, Cause.of(NamedCause.source(player)));
 
                         GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
                         // if it didn't succeed, tell the player why
@@ -2429,7 +2448,7 @@ public class PlayerEventHandler {
             }
 
             int y = lastShovelLocation.getBlockY();
-            boolean cuboid = playerData.getCuboidMode();
+            boolean cuboid = playerData.optionClaimCreateMode == 1;
             if (!cuboid) {
                 y = lastShovelLocation.getBlockY() - activeConfig.getConfig().claim.extendIntoGroundDistance;
                 if (y > 0) {
@@ -2442,7 +2461,7 @@ public class PlayerEventHandler {
                     lastShovelLocation.getBlockZ());
             Vector3i greaterBoundary = new Vector3i(
                     location.getBlockX(),
-                    playerData.getCuboidMode() ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
+                    playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
                     location.getBlockZ());
             // try to create a new claim
             ClaimResult result = this.dataStore.createClaim(
@@ -2516,7 +2535,7 @@ public class PlayerEventHandler {
                 Location<World> nearbyLocation = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation : player.getLocation();
                 List<Claim> claims = this.dataStore.getNearbyClaims(nearbyLocation);
                 int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY();
-                Visualization visualization = Visualization.fromClaims(claims, playerData.getCuboidMode() ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
+                Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
                 visualization.apply(player);
                 final Text message = GriefPreventionPlugin.instance.messageData.claimShowNearby
                         .apply(ImmutableMap.of(
@@ -2550,7 +2569,7 @@ public class PlayerEventHandler {
         // visualize boundary
         if (claim.id != playerData.visualClaimId) {
             int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : clickedBlock.getLocation().get().getBlockY();
-            claim.getVisualizer().createClaimBlockVisuals(playerData.getCuboidMode() ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData);
+            claim.getVisualizer().createClaimBlockVisuals(playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData);
             claim.getVisualizer().apply(player);
             playerData.revertActiveVisual(player);
             if (this.worldEditProvider != null) {

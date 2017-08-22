@@ -143,6 +143,15 @@ public interface PlayerData {
     int getChestClaimExpiration();
 
     /**
+     * Gets the claim creation mode for player on login.
+     * 
+     * Note: 0 is for 2D cuboids, 1 is for 3D cuboids
+     * 
+     * @return The claim creation mode
+     */
+    int getClaimCreateMode();
+
+    /**
      * Gets the max amount of claims this player can create.
      * 
      * @return The max create claim limit
@@ -177,7 +186,14 @@ public interface PlayerData {
      * 
      * @return If player is in cuboid mode
      */
-    boolean getCuboidMode();
+    @Deprecated
+    default boolean getCuboidMode() {
+        if (this.getClaimCreateMode() == 1) {
+            return true;
+        }
+
+        return false;
+    }
 
     /**
      * Sets the total amount of accrued claim blocks.
@@ -194,9 +210,25 @@ public interface PlayerData {
     void setBonusClaimBlocks(int blocks);
 
     /**
+     * Sets the claim create mode for player on login.
+     * 
+     * Note: 0 is for 2D cuboids, 1 is for 3D cuboids
+     * 
+     * @param mode
+     */
+    void setClaimCreateMode(int mode);
+
+    /**
      * Toggles whether player is in cuboid creation mode.
      * 
      * @param cuboidMode
      */
-    void setCuboidMode(boolean cuboidMode);
+    @Deprecated
+    default void setCuboidMode(boolean cuboidMode) {
+        if (cuboidMode) {
+            this.setClaimCreateMode(1);
+        } else {
+            this.setClaimCreateMode(0);
+        }
+    }
 }

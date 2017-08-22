@@ -47,13 +47,12 @@ public class CommandClaimCuboid implements CommandExecutor {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        playerData.setCuboidMode(!playerData.getCuboidMode());
-
-        // toggle cuboid claims mode on or off
-        if (!playerData.getCuboidMode()) {
-            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidDisabled.toText());
-        } else {
+        if (playerData.optionClaimCreateMode == 0) {
+            playerData.setClaimCreateMode(1);
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidEnabled.toText());
+        } else {
+            playerData.setClaimCreateMode(0);
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCuboidDisabled.toText());
         }
 
         return CommandResult.success();

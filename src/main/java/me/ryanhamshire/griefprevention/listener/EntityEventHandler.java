@@ -85,7 +85,6 @@ import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.chat.ChatType;
-import org.spongepowered.api.text.chat.ChatTypes;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -294,9 +293,6 @@ public class EntityEventHandler {
         GPPlayerData playerData = null;
         if (player != null) {
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(targetEntity.getWorld(), player.getUniqueId());
-            if (playerData.canIgnoreClaim(GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false))) {
-                return false;
-            }
         }
         if (!GriefPreventionPlugin.isEntityProtected(targetEntity)) {
             return false;
@@ -324,12 +320,6 @@ public class EntityEventHandler {
             if (!(sourceEntity instanceof Player) && !(targetEntity instanceof Player)) {
                 if (sourceEntity instanceof User) {
                     User sourceUser = (User) sourceEntity;
-                    if (sourceUser instanceof Player) {
-                        playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(targetEntity.getWorld(), sourceUser.getUniqueId());
-                        if (playerData.canIgnoreClaim(claim)) {
-                            return false;
-                        }
-                    }
                     perm = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, sourceUser);
                     if (targetEntity instanceof EntityLivingBase && perm == Tristate.TRUE) {
                         return false;
@@ -687,13 +677,13 @@ public class EntityEventHandler {
                     playerData.lastClaim = new WeakReference<>(toClaim);
                     Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
                     if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
-                        ChatType chatType = gpEvent.getEnterMessageChatType().orElse(ChatTypes.CHAT);
+                        ChatType chatType = gpEvent.getEnterMessageChatType();
                         player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
                     }
 
                     Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                     if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
-                        ChatType chatType = gpEvent.getExitMessageChatType().orElse(ChatTypes.CHAT);
+                        ChatType chatType = gpEvent.getExitMessageChatType();
                         player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
                     }
 
@@ -753,13 +743,13 @@ public class EntityEventHandler {
                 playerData.lastClaim = new WeakReference<>(toClaim);
                 Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
                 if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
-                    ChatType chatType = gpEvent.getEnterMessageChatType().orElse(ChatTypes.CHAT);
+                    ChatType chatType = gpEvent.getEnterMessageChatType();
                     player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
                 }
 
                 Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                 if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
-                    ChatType chatType = gpEvent.getExitMessageChatType().orElse(ChatTypes.CHAT);
+                    ChatType chatType = gpEvent.getExitMessageChatType();
                     player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
                 }
 
@@ -909,7 +899,7 @@ public class EntityEventHandler {
                     //GriefPreventionPlugin.sendClaimDenyMessage(toClaim, player, denyReason);
                 }
 
-                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, user, null);
+                GriefPreventionPlugin.addEventLogEntry(event, toClaim, destination, type.getId(), entity.getType().getId(), user, null, Tristate.FALSE);
                 event.setCancelled(true);
                 if (type.equals(EntityTypes.ENDER_PEARL)) {
                     ((EntityPlayer) player).inventory.addItemStackToInventory(new net.minecraft.item.ItemStack(Items.ENDER_PEARL));
