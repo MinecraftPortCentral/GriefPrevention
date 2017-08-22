@@ -103,9 +103,6 @@ public class GPPermissionHandler {
             eventUser = user;
             if (user instanceof Player) {
                 playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, user.getUniqueId());
-                if (playerData.canIgnoreClaim(claim)) {
-                    return processResult(claim, flagPermission, Tristate.TRUE);
-                }
             }
         }
         currentEvent = event;
@@ -167,6 +164,10 @@ public class GPPermissionHandler {
             }
         }
 
+        // Check for ignoreclaims after override checks
+        if (playerData != null && playerData.canIgnoreClaim(claim)) {
+            return processResult(claim, flagPermission, Tristate.TRUE);
+        }
         if (user != null) {
             if (type != null) {
                 if (claim.isUserTrusted(user, type)) {
@@ -360,10 +361,6 @@ public class GPPermissionHandler {
 
         final Player player = source instanceof Player ? (Player) source : null;
         if (player != null) {
-            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.getWorld(), player.getUniqueId());
-            if (playerData.canIgnoreClaim(claim)) {
-                return processResult(claim, flagPermission, Tristate.TRUE);
-            }
             eventUser = player;
         }
 

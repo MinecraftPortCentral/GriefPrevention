@@ -1212,7 +1212,7 @@ public class PlayerEventHandler {
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.canIgnoreClaim(claim) || playerData.lastInteractItemBlockResult == Tristate.TRUE) {
+        if (playerData.lastInteractItemBlockResult == Tristate.TRUE) {
             GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.stopTimingIfSync();
             return;
         }
@@ -1241,11 +1241,6 @@ public class PlayerEventHandler {
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.canIgnoreClaim(claim)) {
-            GPTimings.PLAYER_INTERACT_INVENTORY_CLICK_EVENT.stopTimingIfSync();
-            return;
-        }
-
         final boolean isDrop = event instanceof ClickInventoryEvent.Drop;
         for (SlotTransaction transaction : event.getTransactions()) {
             if (transaction.getOriginal() == ItemStackSnapshot.NONE) {
@@ -1295,7 +1290,7 @@ public class PlayerEventHandler {
         GPClaim claim = this.dataStore.getClaimAt(location);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
-        if (playerData.canIgnoreClaim(claim) || playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
+        if (playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
             GPTimings.PLAYER_INTERACT_ENTITY_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
@@ -1326,7 +1321,7 @@ public class PlayerEventHandler {
         Location<World> location = targetEntity.getLocation();
         GPClaim claim = this.dataStore.getClaimAt(location);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.canIgnoreClaim(claim) || playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
+        if (playerData.lastInteractItemBlockResult == Tristate.TRUE || playerData.lastInteractItemEntityResult == Tristate.TRUE) {
             GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
             return;
         }
@@ -1752,7 +1747,7 @@ public class PlayerEventHandler {
 
         GPClaim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location, false);
         final TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
-        if (playerData != null && !playerData.canIgnoreClaim(playerClaim)) {
+        if (playerData != null) {
             final TrustType trustType = (tileEntity != null && tileEntity instanceof IInventory) ? TrustType.CONTAINER : TrustType.ACCESSOR;
             Tristate result = GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock(), player, trustType, true);
             if (result == Tristate.FALSE) {

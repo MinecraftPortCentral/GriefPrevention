@@ -62,35 +62,31 @@ public class GPOptionHandler {
             option = "griefprevention." + option;
         }
 
-        final double adminValue = playerData.optionMap.get(option);
-        Set<Context> contexts = new HashSet<>();
-        contexts.add(claim.getContext());
-        String optionValueStr = subject.getOption(contexts, option).orElse(null);
+        Double adminValue = GPOptions.DEFAULT_OPTIONS.get(option);
+        if (adminValue == null) {
+            adminValue = 0.0;
+        }
 
-        if (optionValueStr == null) {
-            if (subject != GriefPreventionPlugin.GLOBAL_SUBJECT) {
-                optionValueStr = GriefPreventionPlugin.GLOBAL_SUBJECT.getOption(contexts, option).orElse(null);
-                if (optionValueStr == null) {
-                    return adminValue;
-                }
-            } else {
-                return adminValue;
-            }
+        if (subject == GriefPreventionPlugin.GLOBAL_SUBJECT) {
+            return adminValue;
         }
 
         Double optionValue = null;
+        Set<Context> contexts = new HashSet<>();
+        contexts.add(claim.getContext());
+        String optionValueStr = subject.getOption(contexts, option).orElse(null);
+        if (optionValueStr == null) {
+            return adminValue;
+        }
+
         try {
             optionValue = Double.parseDouble(optionValueStr);
         } catch (NumberFormatException e) {
-
+            return adminValue;
         }
-        if (optionValue != null) {
-            if (optionValue > adminValue) {
-                return adminValue;
-            }
-        } else if (subject != GriefPreventionPlugin.GLOBAL_SUBJECT) {
-            Double defaultValue = getClaimOptionDouble(GriefPreventionPlugin.GLOBAL_SUBJECT, claim, option, playerData);
-            return defaultValue;
+
+        if (optionValue > adminValue) {
+            return adminValue;
         }
 
         return optionValue;

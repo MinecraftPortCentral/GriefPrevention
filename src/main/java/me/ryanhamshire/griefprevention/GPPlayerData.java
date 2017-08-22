@@ -57,7 +57,6 @@ import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -233,7 +232,6 @@ public class GPPlayerData implements PlayerData {
     public double optionTaxRateTown = GPOptions.DEFAULT_TAX_RATE_TOWN;
     public double optionTaxRateTownBasic = GPOptions.DEFAULT_TAX_RATE_TOWN_BASIC;
     public double optionTaxRateTownSubdivision = GPOptions.DEFAULT_TAX_RATE_TOWN_SUBDIVISION;
-    public Map<String, Double> optionMap = Maps.newHashMap();
 
     // cached permission values
     public boolean canManageAdminClaims = false;
@@ -299,43 +297,6 @@ public class GPPlayerData implements PlayerData {
             this.optionTaxRateTown = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_TOWN, this.optionTaxRateTown);
             this.optionTaxRateTownBasic = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_TOWN_BASIC, this.optionTaxRateTownBasic);
             this.optionTaxRateTownSubdivision = PlayerUtils.getOptionDoubleValue(subject, GPOptions.TAX_RATE_TOWN_BASIC, this.optionTaxRateTownSubdivision);
-            this.optionMap.put(GPOptions.ABANDON_RETURN_RATIO_TOWN, this.optionAbandonReturnRatioTown);
-            this.optionMap.put(GPOptions.ABANDON_RETURN_RATIO_BASIC, this.optionAbandonReturnRatioBasic);
-            this.optionMap.put(GPOptions.BLOCKS_ACCRUED_PER_HOUR, (double) this.optionBlocksAccruedPerHour);
-            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_CHEST, (double) this.optionClaimExpirationChest);
-            this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_BASIC, (double) this.optionCreateClaimLimitBasic);
-            this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_SUBDIVISION, (double) this.optionCreateClaimLimitSubdivision);
-            this.optionMap.put(GPOptions.CREATE_CLAIM_LIMIT_TOWN, (double) this.optionCreateClaimLimitTown);
-            this.optionMap.put(GPOptions.INITIAL_CLAIM_BLOCKS, (double) this.optionInitialClaimBlocks);
-            this.optionMap.put(GPOptions.MAX_ACCRUED_BLOCKS, (double) this.optionMaxAccruedBlocks);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_BASIC_X, (double) this.optionMaxClaimSizeBasicX);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_BASIC_Y, (double) this.optionMaxClaimSizeBasicY);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_BASIC_Z, (double) this.optionMaxClaimSizeBasicZ);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_X, (double) this.optionMaxClaimSizeSubX);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Y, (double) this.optionMaxClaimSizeSubY);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Z, (double) this.optionMaxClaimSizeSubZ);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_X, (double) this.optionMaxClaimSizeTownX);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_Y, (double) this.optionMaxClaimSizeTownY);
-            this.optionMap.put(GPOptions.MAX_CLAIM_SIZE_TOWN_Z, (double) this.optionMaxClaimSizeTownZ);
-            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_BASIC_X, (double) this.optionMinClaimSizeBasicX);
-            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_BASIC_Y, (double) this.optionMinClaimSizeBasicY);
-            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_BASIC_Z, (double) this.optionMinClaimSizeBasicZ);
-            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_X, (double) this.optionMinClaimSizeTownX);
-            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_Y, (double) this.optionMinClaimSizeTownY);
-            this.optionMap.put(GPOptions.MIN_CLAIM_SIZE_TOWN_Z, (double) this.optionMinClaimSizeTownZ);
-            this.optionMap.put(GPOptions.CLAIM_CREATE_MODE, (double) this.optionClaimCreateMode);
-            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_CHEST, (double) this.optionClaimExpirationChest);
-            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_BASIC, (double) this.optionClaimExpirationBasic);
-            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_SUBDIVISION, (double) this.optionClaimExpirationSubdivision);
-            this.optionMap.put(GPOptions.CLAIM_EXPIRATION_TOWN, (double) this.optionClaimExpirationTown);
-            this.optionMap.put(GPOptions.TAX_EXPIRATION_BASIC, (double) this.optionTaxExpirationBasic);
-            this.optionMap.put(GPOptions.TAX_EXPIRATION_SUBDIVISION, (double) this.optionTaxExpirationSubdivision);
-            this.optionMap.put(GPOptions.TAX_EXPIRATION_TOWN, (double) this.optionTaxExpirationTown);
-            this.optionMap.put(GPOptions.TAX_RATE_BASIC, (double) this.optionTaxRateBasic);
-            this.optionMap.put(GPOptions.TAX_RATE_SUBDIVISION, (double) this.optionTaxRateSubdivision);
-            this.optionMap.put(GPOptions.TAX_RATE_TOWN, (double) this.optionTaxRateTown);
-            this.optionMap.put(GPOptions.TAX_RATE_TOWN_BASIC, (double) this.optionTaxRateTownBasic);
-            this.optionMap.put(GPOptions.TAX_RATE_TOWN_SUBDIVISION, (double) this.optionTaxRateTownSubdivision);
             // permissions
             this.ignoreAdminClaims = subject.hasPermission(GPPermissions.IGNORE_CLAIMS_ADMIN);
             this.ignoreTowns = subject.hasPermission(GPPermissions.IGNORE_CLAIMS_TOWN);
