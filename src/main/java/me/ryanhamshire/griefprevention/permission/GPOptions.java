@@ -22,7 +22,7 @@ public class GPOptions {
         TAX_RATE
     }
 
-    public static final Map<String, String> DEFAULT_OPTIONS = Maps.newHashMap();
+    public static final Map<String, Double> DEFAULT_OPTIONS = Maps.newHashMap();
 
     public static final String INVALID_OPTION = "invalid-option";
     public static final String ABANDON_RETURN_RATIO_BASIC = "griefprevention.abandon-return-ratio-basic";
@@ -114,84 +114,84 @@ public class GPOptions {
 
     static {
         // The portion of claim blocks returned to a player when a claim is abandoned.
-        DEFAULT_OPTIONS.put(ABANDON_RETURN_RATIO_BASIC, Double.toString(GPOptions.DEFAULT_ABANDON_RETURN_RATIO_BASIC));
+        DEFAULT_OPTIONS.put(ABANDON_RETURN_RATIO_BASIC, GPOptions.DEFAULT_ABANDON_RETURN_RATIO_BASIC);
         // The portion of claim blocks returned to a player when a town is abandoned.
-        DEFAULT_OPTIONS.put(ABANDON_RETURN_RATIO_TOWN, Double.toString(GPOptions.DEFAULT_ABANDON_RETURN_RATIO_TOWN));
+        DEFAULT_OPTIONS.put(ABANDON_RETURN_RATIO_TOWN, GPOptions.DEFAULT_ABANDON_RETURN_RATIO_TOWN);
         // "Blocks earned per hour. By default, each 'active' player should receive 10 blocks every 5 min. Note: The player must have moved at least 3 blocks since last delivery."
-        DEFAULT_OPTIONS.put(BLOCKS_ACCRUED_PER_HOUR, Integer.toString(GPOptions.DEFAULT_BLOCKS_ACCRUED_PER_HOUR));
+        DEFAULT_OPTIONS.put(BLOCKS_ACCRUED_PER_HOUR, (double) GPOptions.DEFAULT_BLOCKS_ACCRUED_PER_HOUR);
         // Maximum number of claims per player.
-        DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_BASIC, Integer.toString(GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_BASIC));
+        DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_BASIC, (double) GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_BASIC);
         // Maximum number of subdivisions per player.
-        DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_SUBDIVISION, Integer.toString(GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION));
+        DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_SUBDIVISION, (double) GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION);
         // Maximum number of towns per player.
-        DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_TOWN, Integer.toString(GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_TOWN));
+        DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_TOWN, (double) GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_TOWN);
         // The number of claim blocks a new player starts with.
-        DEFAULT_OPTIONS.put(INITIAL_CLAIM_BLOCKS, Integer.toString(GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS));
+        DEFAULT_OPTIONS.put(INITIAL_CLAIM_BLOCKS, (double) GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS);
         // The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.
-        DEFAULT_OPTIONS.put(MAX_ACCRUED_BLOCKS, Integer.toString(GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS));
+        DEFAULT_OPTIONS.put(MAX_ACCRUED_BLOCKS, (double) GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS);
         // The max size of x, in blocks, that a basic claim can be, 100 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_X, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_X));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_X, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_X);
         // The max size of y, in blocks, that a basic claim can be, 256 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_Y, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Y));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_Y, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Y);
         // The max size of z, in blocks, that a basic claim can be, 100 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_Z, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Z));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_Z, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Z);
         // The max size of x, in blocks, that a town can be, 200 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_X, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_X));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_X, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_X);
         // The max size of y, in blocks, that a town can be, 256 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_Y, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Y));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_Y, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Y);
         // The max size of z, in blocks, that a town can be, 200 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_Z, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Z));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_TOWN_Z, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_TOWN_Z);
         // The max size of x, in blocks, that a subdivision can be, 100 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_X, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_X, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X);
         // The max size of y, in blocks, that a subdivision can be, 100 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Y, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Y, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y);
         // The max size of z, in blocks, that a subdivision can be, 100 by default.
-        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Z, Integer.toString(GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z));
+        DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Z, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z);
         // The min size of x, in blocks, that a basic claim can be, 10 by default.
-        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_X, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_X));
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_X, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_X);
         // The min size of y, in blocks, that a basic claim can be, 10 by default.
-        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Y, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Y));
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Y, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Y);
         // The min size of z, in blocks, that a basic claim can be, 10 by default.
-        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Z, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Z));
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Z, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Z);
         // The min size of x, in blocks, that a town can be, 32 by default.
-        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_X, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_X));
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_X, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_X);
         // The min size of y, in blocks, that a town can be, 32 by default.
-        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Y, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Y));
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Y, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Y);
         // The min size of z, in blocks, that a town can be, 32 by default.
-        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Z, Integer.toString(GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Z));
+        DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_Z, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_Z);
         // The default claiming mode for players on login
-        DEFAULT_OPTIONS.put(CLAIM_CREATE_MODE, Integer.toString(DEFAULT_CLAIM_CREATE_MODE));
+        DEFAULT_OPTIONS.put(CLAIM_CREATE_MODE, (double) DEFAULT_CLAIM_CREATE_MODE);
         // Number of days of inactivity before an automatic chest claim will be deleted.
-        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_CHEST, Integer.toString(GPOptions.DEFAULT_CLAIM_EXPIRATION_CHEST));
+        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_CHEST, (double) GPOptions.DEFAULT_CLAIM_EXPIRATION_CHEST);
         // Number of days of inactivity before an unused claim will be deleted.
-        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_BASIC, Integer.toString(GPOptions.DEFAULT_CLAIM_EXPIRATION_BASIC));
+        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_BASIC, (double) GPOptions.DEFAULT_CLAIM_EXPIRATION_BASIC);
         // Number of days of inactivity before an unused claim will be deleted.
-        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_SUBDIVISION, Integer.toString(GPOptions.DEFAULT_CLAIM_EXPIRATION_SUBDIVISION));
+        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_SUBDIVISION, (double) GPOptions.DEFAULT_CLAIM_EXPIRATION_SUBDIVISION);
         // Number of days of inactivity before an unused town will be deleted.
-        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_TOWN, Integer.toString(GPOptions.DEFAULT_CLAIM_EXPIRATION_TOWN));
-        DEFAULT_OPTIONS.put(TAX_EXPIRATION_BASIC, Integer.toString(GPOptions.DEFAULT_TAX_EXPIRATION_BASIC));
-        DEFAULT_OPTIONS.put(TAX_EXPIRATION_SUBDIVISION, Integer.toString(GPOptions.DEFAULT_TAX_EXPIRATION_SUBDIVISION));
-        DEFAULT_OPTIONS.put(TAX_EXPIRATION_TOWN, Integer.toString(GPOptions.DEFAULT_TAX_EXPIRATION_TOWN));
+        DEFAULT_OPTIONS.put(CLAIM_EXPIRATION_TOWN, (double) GPOptions.DEFAULT_CLAIM_EXPIRATION_TOWN);
+        DEFAULT_OPTIONS.put(TAX_EXPIRATION_BASIC, (double) GPOptions.DEFAULT_TAX_EXPIRATION_BASIC);
+        DEFAULT_OPTIONS.put(TAX_EXPIRATION_SUBDIVISION, (double) GPOptions.DEFAULT_TAX_EXPIRATION_SUBDIVISION);
+        DEFAULT_OPTIONS.put(TAX_EXPIRATION_TOWN, (double) GPOptions.DEFAULT_TAX_EXPIRATION_TOWN);
         // The amount of days to keep claim in an expired state due to reasons such as not paying taxes.
-        DEFAULT_OPTIONS.put(TAX_EXPIRATION_BASIC_DAYS_KEEP, Integer.toString(GPOptions.DEFAULT_TAX_EXPIRATION_BASIC_DAYS_KEEP));
-        DEFAULT_OPTIONS.put(TAX_RATE_BASIC, Double.toString(GPOptions.DEFAULT_TAX_RATE_BASIC));
-        DEFAULT_OPTIONS.put(TAX_RATE_SUBDIVISION, Double.toString(GPOptions.DEFAULT_TAX_RATE_SUBDIVISION));
-        DEFAULT_OPTIONS.put(TAX_RATE_TOWN, Double.toString(GPOptions.DEFAULT_TAX_RATE_TOWN));
-        DEFAULT_OPTIONS.put(TAX_RATE_TOWN_BASIC, Double.toString(GPOptions.DEFAULT_TAX_RATE_TOWN_BASIC));
-        DEFAULT_OPTIONS.put(TAX_RATE_TOWN_SUBDIVISION, Double.toString(GPOptions.DEFAULT_TAX_RATE_TOWN_SUBDIVISION));
+        DEFAULT_OPTIONS.put(TAX_EXPIRATION_BASIC_DAYS_KEEP, (double) GPOptions.DEFAULT_TAX_EXPIRATION_BASIC_DAYS_KEEP);
+        DEFAULT_OPTIONS.put(TAX_RATE_BASIC, GPOptions.DEFAULT_TAX_RATE_BASIC);
+        DEFAULT_OPTIONS.put(TAX_RATE_SUBDIVISION, GPOptions.DEFAULT_TAX_RATE_SUBDIVISION);
+        DEFAULT_OPTIONS.put(TAX_RATE_TOWN, GPOptions.DEFAULT_TAX_RATE_TOWN);
+        DEFAULT_OPTIONS.put(TAX_RATE_TOWN_BASIC, GPOptions.DEFAULT_TAX_RATE_TOWN_BASIC);
+        DEFAULT_OPTIONS.put(TAX_RATE_TOWN_SUBDIVISION, GPOptions.DEFAULT_TAX_RATE_TOWN_SUBDIVISION);
         // The amount of tax per claim block owned. If a claim costs 100 claim blocks and tax is 1 then the total tax would be 100 each time it runs.")
-        DEFAULT_OPTIONS.put(TOWN_PURCHASE_COST, Double.toString(GPOptions.DEFAULT_TOWN_PURCHASE_COST));
+        DEFAULT_OPTIONS.put(TOWN_PURCHASE_COST, GPOptions.DEFAULT_TOWN_PURCHASE_COST);
 
         if (GriefPreventionPlugin.instance.clanApiProvider != null) {
             // The ratio used to determine how many bonus blocks the leader of a clan receives. 
             // Example: If the ratio is 1.0 and there are 10 active members, the leader would gain 10 bonus claim blocks(1.0 * 10) every time the claim block task runs.
-            DEFAULT_OPTIONS.put(LEADER_CLAIM_BOOST, "1.0");
+            DEFAULT_OPTIONS.put(LEADER_CLAIM_BOOST, 1.0);
             // Number of bonus claim blocks to give members of a clan
-            DEFAULT_OPTIONS.put(MEMBER_CLAIM_BOOST, "10");
+            DEFAULT_OPTIONS.put(MEMBER_CLAIM_BOOST, 10.0);
             // Number of days of inactivity before a clan member is considered inactive. Note: Inactive clan members do not count toward claim boosts.
-            DEFAULT_OPTIONS.put(MEMBER_EXPIRATION, "14");
+            DEFAULT_OPTIONS.put(MEMBER_EXPIRATION, 14.0);
             // The default trust level between clan members for all member claims. 0: None, 1: Access, 2: Container, 3: Builder
-            DEFAULT_OPTIONS.put(MEMBER_TRUST_LEVEL, "1");
+            DEFAULT_OPTIONS.put(MEMBER_TRUST_LEVEL, 1.0);
         }
     }
 }

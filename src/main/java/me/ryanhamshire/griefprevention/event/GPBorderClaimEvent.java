@@ -30,6 +30,7 @@ import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.chat.ChatType;
+import org.spongepowered.api.text.chat.ChatTypes;
 
 import java.util.Optional;
 
@@ -41,8 +42,8 @@ public class GPBorderClaimEvent extends GPClaimEvent implements BorderClaimEvent
     private final Claim exitClaim;
     private Text enterMessage;
     private Text exitMessage;
-    private ChatType enterChatType;
-    private ChatType exitChatType;
+    private ChatType enterChatType = ChatTypes.CHAT;
+    private ChatType exitChatType = ChatTypes.CHAT;
 
     public GPBorderClaimEvent(Entity entity, Claim exit, Claim enter, Cause cause) {
         super(enter, cause);
@@ -91,13 +92,13 @@ public class GPBorderClaimEvent extends GPClaimEvent implements BorderClaimEvent
     }
 
     @Override
-    public Optional<ChatType> getExitMessageChatType() {
-        return Optional.of(exitChatType);
+    public ChatType getExitMessageChatType() {
+        return exitChatType;
     }
 
     @Override
-    public Optional<ChatType> getEnterMessageChatType() {
-        return Optional.of(enterChatType);
+    public ChatType getEnterMessageChatType() {
+        return enterChatType;
     }
 
 

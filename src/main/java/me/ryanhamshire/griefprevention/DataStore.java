@@ -695,9 +695,24 @@ public abstract class DataStore {
 
     private void setOptionDefaultPermissions(Set<Context> contexts) {
         GriefPreventionPlugin.instance.executor.execute(() -> {
-            final SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
-            for (Map.Entry<String, String> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
-                globalSubjectData.setOption(contexts, optionEntry.getKey(), optionEntry.getValue());
+            SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
+            for (Map.Entry<String, Double> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
+                globalSubjectData.setOption(contexts, optionEntry.getKey(), Double.toString(optionEntry.getValue()));
+            }
+
+            // Check for default option overrides
+            globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData();
+            for (String option : GPOptions.DEFAULT_OPTIONS.keySet()) {
+                final String optionValue = globalSubjectData.getOptions(contexts).get(option);
+                if (optionValue != null) {
+                    Double doubleValue = null;
+                    try {
+                        doubleValue = Double.parseDouble(optionValue);
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+                    GPOptions.DEFAULT_OPTIONS.put(option, doubleValue);
+                }
             }
         });
     }

@@ -125,16 +125,20 @@ public interface BorderClaimEvent extends ClaimEvent, TargetEntityEvent {
     }
 
     /**
-     * Returns the chat type for the exit message, if the optional is empty, then {@link ChatTypes#CHAT} will be used
+     * Returns the chat type for the exit message.
+     * 
+     * Note: Default is {@link ChatTypes#CHAT}
      *
      * @return The chat type
      */
-    Optional<ChatType> getExitMessageChatType();
+    ChatType getExitMessageChatType();
 
     /**
-     * Returns the chat type for the enter message, if the optional is empty, then {@link ChatTypes#CHAT} will be used
+     * Returns the chat type for the enter message.
      *
+     * Note: Default is {@link ChatTypes#CHAT}
+     * 
      * @return The chat type
      */
-    Optional<ChatType> getEnterMessageChatType();
+    ChatType getEnterMessageChatType();
 }
