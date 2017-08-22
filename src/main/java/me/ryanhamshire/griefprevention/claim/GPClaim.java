@@ -1300,7 +1300,7 @@ public class GPClaim implements Claim {
 
         // check player has enough claim blocks
         if ((this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
-            int remainingClaimBlocks = playerData.getRemainingClaimBlocks();
+            int remainingClaimBlocks = this.ownerPlayerData.getRemainingClaimBlocks();
             final int newArea = BlockUtils.getBlockArea(this.world, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition(), this.cuboid);
             final int currentArea = BlockUtils.getBlockArea(this.world, currentLesserCorner.getBlockPosition(), currentGreaterCorner.getBlockPosition(), this.cuboid);
             if (newArea > currentArea) {

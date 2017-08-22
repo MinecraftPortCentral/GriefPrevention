@@ -2173,6 +2173,14 @@ public class PlayerEventHandler {
                     claims.add(overlapClaim);
                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                 }
+                if (claimResult.getResultType() == ClaimResultType.CLAIM_EVENT_CANCELLED) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
+                    if (this.worldEditProvider != null) {
+                        this.worldEditProvider.stopVisualDrag(player);
+                        this.worldEditProvider.revertVisuals(player, playerData, null);
+                        this.worldEditProvider.revertVisuals(player, playerData, playerData.claimResizing.getUniqueId());
+                    }
+                }
                 event.setCancelled(true);
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;
@@ -2193,26 +2201,42 @@ public class PlayerEventHandler {
                 // if he clicked on a corner, start resizing it
                 if (BlockUtils.clickedClaimCorner(claim, location.getBlockPosition())) {
                     boolean playerCanResize = true;
-                    // players can always resize subdivisions
-                    if (!claim.isSubdivision() && !player.hasPermission(GPPermissions.CLAIM_RESIZE) && claim.allowEdit(player) != null) {
-                        if (claim.parent == null) {
-                            if (claim.isTown()) {
+                    if (!player.hasPermission(GPPermissions.CLAIM_RESIZE_ALL) 
+                            && !playerData.canIgnoreClaim(claim) 
+                            && !claim.isUserTrusted(player.getUniqueId(), TrustType.MANAGER)) {
+
+                        // Check trust
+                        if (claim.isAdminClaim()) {
+                            if (!playerData.canManageAdminClaims) {
+                                playerCanResize = false;
+                            }
+                        } else if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
+                            playerCanResize = false;
+                        }
+                        if (!playerCanResize) {
+                            if (claim.parent != null) {
+                                if (claim.parent.isAdminClaim() && claim.isSubdivision()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN_SUBDIVISION);
+                                } else if (claim.parent.isBasicClaim() && claim.isSubdivision()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC_SUBDIVISION);
+                                } else if (claim.isTown()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_TOWN);
+                                } else if (claim.isAdminClaim()) {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN);
+                                } else {
+                                    playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC);
+                                }
+                            } else if (claim.isTown()) {
                                 playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_TOWN);
                             } else if (claim.isAdminClaim()) {
                                 playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN);
                             } else {
                                 playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC);
                             }
-                        } else {
-                            if (claim.isAdminClaim()) {
-                                playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_ADMIN_SUBDIVISION);
-                            } else {
-                                playerCanResize = player.hasPermission(GPPermissions.CLAIM_RESIZE_BASIC_SUBDIVISION);
-                            }
                         }
                     }
 
-                    if (claim.getInternalClaimData().isResizable() && !playerCanResize) {
+                    if (!claim.getInternalClaimData().isResizable() || !playerCanResize) {
                         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimResize.toText());
                         return;
                     }

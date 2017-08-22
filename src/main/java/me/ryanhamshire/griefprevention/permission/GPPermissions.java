@@ -139,6 +139,7 @@ public class GPPermissions {
     public static final String IGNORE_CLAIMS_TOWN = "griefprevention.admin.claim.command.ignore.town";
     public static final String IGNORE_CLAIMS_WILDERNESS = "griefprevention.admin.claim.command.ignore.wilderness";
     public static final String CLAIM_CUBOID_ADMIN = "griefprevention.admin.claim.cuboid";
+    public static final String CLAIM_RESIZE_ALL = "griefprevention.admin.claim.resize";
     public static final String CLAIM_RESIZE_ADMIN = "griefprevention.admin.claim.resize.admin";
     public static final String CLAIM_RESIZE_ADMIN_SUBDIVISION = "griefprevention.admin.claim.resize.admin.subdivision";
     public static final String CLAIM_RESIZE_BASIC = "griefprevention.admin.claim.resize.basic";
