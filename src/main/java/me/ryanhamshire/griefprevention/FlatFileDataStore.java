@@ -164,7 +164,11 @@ public class FlatFileDataStore extends DataStore {
         final DimensionType dimType = worldProperties.getDimensionType();
         final Path dimPath = rootConfigPath.resolve(((IMixinDimensionType) dimType).getModId()).resolve(((IMixinDimensionType) dimType).getEnumName());
         final Path newWorldDataPath = dimPath.resolve(worldProperties.getWorldName());
-        final GPClaimManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        GPClaimManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        if (claimWorldManager == null) {
+            this.registerWorld(worldProperties);
+            claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        }
 
         try {
             // Migrate RedProtectData if enabled
