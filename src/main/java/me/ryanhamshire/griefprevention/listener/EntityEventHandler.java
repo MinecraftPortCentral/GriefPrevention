@@ -979,53 +979,17 @@ public class EntityEventHandler {
                     return true;
                 }
 
-                // Avoid living entities breaking itemframes
-                if (rootCause instanceof EntityItemFrame && entity instanceof EntityLiving) {
-                    return false;
-                }
-
-                /* Is this still needed ?
-                // always allow collisions with players
-                if (entity instanceof Player || entity instanceof EntityItem) {
-                    return true;
-                }
-
-                User owner = null;
-                int entityId = ((net.minecraft.entity.Entity) entity).getEntityId();
-                GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(entity.getWorld(), user.getUniqueId());
-                GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false);
-                if (playerData.lastCollideEntityId == entityId && playerData.lastClaim != null && playerData.lastClaim.get() != null) {
-                    if (claim.id.equals(playerData.lastClaim.get().getUniqueId())) {
-                        return playerData.lastCollideEntityResult;
-                    }
-                }
-                if (claim != null) {
-                    // check owner
-                    owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
-                    if (owner == null) {
-                        playerData.setLastCollideEntityData(entityId, true);
-                        return true;
+                if (!(rootCause instanceof EntityLivingBase)) {
+                    // Avoid living entities breaking itemframes
+                    if (rootCause instanceof EntityItemFrame && entity instanceof EntityLiving) {
+                        return false;
                     }
 
-                    // check if user owns entity
-                    if (owner.getUniqueId().equals(user.getUniqueId())) {
-                        playerData.setLastCollideEntityData(entityId, true);
-                        return true;
-                    }
-
-                    if (claim.allowAccess(user) != null) {
-                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, user) == Tristate.FALSE) {
-                            playerData.setLastCollideEntityData(entityId, false);
-                            return false;
-                        }
-                    } else if (claim.allowAccess(owner) != null) {
-                        if (GPPermissionHandler.getClaimPermission(claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, owner) == Tristate.FALSE) {
-                            playerData.setLastCollideEntityData(entityId, false);
-                            return false;
-                        }
+                    final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false);
+                    if (!claim.isUserTrusted(user, TrustType.BUILDER)) {
+                        return false;
                     }
                 }
-                playerData.setLastCollideEntityData(entityId, true); */
                 return true;
             }
         });
