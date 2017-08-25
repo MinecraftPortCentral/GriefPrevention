@@ -719,6 +719,8 @@ public abstract class DataStore {
 
     abstract GPPlayerData getPlayerDataFromStorage(UUID playerID);
 
+    public abstract void registerWorld(WorldProperties worldProperties);
+
     public abstract void loadWorldData(World world);
 
     public abstract void unloadWorldData(WorldProperties worldProperties);
