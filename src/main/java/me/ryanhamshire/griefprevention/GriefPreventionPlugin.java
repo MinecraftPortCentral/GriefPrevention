@@ -400,9 +400,9 @@ public class GriefPreventionPlugin {
             return;
         }
 
-        this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).get();
-        if (Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase("sponge")) {
-            this.logger.error("Unable to initialize plugin. GriefPrevention requires one of the following permission plugins : LuckPerms, PEX, or PermissionsManager.");
+        this.permissionService = Sponge.getServiceManager().provide(PermissionService.class).orElse(null);
+        if (this.permissionService == null) {
+            this.logger.error("Unable to initialize plugin. GriefPrevention requires a permissions plugin such as LuckPerms.");
             return;
         }
 
@@ -709,8 +709,8 @@ public class GriefPreventionPlugin {
             return;
         }
 
-        if (Sponge.getServiceManager().getRegistration(PermissionService.class).get().getPlugin().getId().equalsIgnoreCase("sponge")) {
-            this.logger.error("Unable to initialize plugin. GriefPrevention requires one of the following permission plugins : LuckPerms, PEX, or PermissionsManager.");
+        if (this.permissionService == null) {
+            this.logger.error("Unable to initialize plugin. GriefPrevention requires a permissions plugin such as LuckPerms.");
             return;
         }
 
