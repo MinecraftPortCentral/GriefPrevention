@@ -605,6 +605,12 @@ public class BlockEventHandler {
                 return;
             }
 
+            // Allow blocks to grow within claims
+            if (user == null && sourceClaim != null && sourceClaim.getUniqueId().equals(targetClaim.getUniqueId())) {
+                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                return;
+            }
+
             // warn players when they place TNT above sea level, since it doesn't destroy blocks there
             if (player != null && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, event.getCause().root(), block.getState(), user) == Tristate.FALSE && block.getState().getType() == BlockTypes.TNT &&
                     !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
