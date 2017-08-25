@@ -32,6 +32,7 @@ import me.ryanhamshire.griefprevention.util.TaskUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
+import org.spongepowered.api.event.world.ConstructWorldPropertiesEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.event.world.UnloadWorldEvent;
@@ -42,6 +43,15 @@ import org.spongepowered.common.SpongeImpl;
 import java.util.concurrent.TimeUnit;
 
 public class WorldEventHandler {
+
+    @Listener
+    public void onConstructWorldProperties(ConstructWorldPropertiesEvent event) {
+        if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getWorldProperties())) {
+            return;
+        }
+
+        GriefPreventionPlugin.instance.dataStore.registerWorld(event.getWorldProperties());
+    }
 
     @Listener
     public void onWorldLoad(LoadWorldEvent event) {

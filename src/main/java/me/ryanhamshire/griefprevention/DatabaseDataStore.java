@@ -515,6 +515,10 @@ public class DatabaseDataStore extends DataStore {
     }
 
     @Override
+    public void registerWorld(WorldProperties worldProperties) {
+    }
+
+    @Override
     public void loadWorldData(World world) {
     }
 

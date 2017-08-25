@@ -41,7 +41,6 @@ import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.migrator.RedProtectMigrator;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
-import org.apache.commons.io.FileUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
@@ -118,9 +117,7 @@ public class FlatFileDataStore extends DataStore {
         }
     }
 
-    @Override
-    public void loadWorldData(World world) {
-        WorldProperties worldProperties = world.getProperties();
+    public void registerWorld(WorldProperties worldProperties) {
         DimensionType dimType = worldProperties.getDimensionType();
         Path dimPath = rootConfigPath.resolve(((IMixinDimensionType) dimType).getModId()).resolve(((IMixinDimensionType) dimType).getEnumName());
         if (!Files.exists(dimPath.resolve(worldProperties.getWorldName()))) {
@@ -141,36 +138,9 @@ public class FlatFileDataStore extends DataStore {
         GPClaimManager claimWorldManager = new GPClaimManager(worldProperties);
         this.claimWorldManagers.put(worldProperties.getUniqueId(), claimWorldManager);
 
-        // check if world has existing data
-        Path oldWorldDataPath = rootWorldSavePath.resolve(worldProperties.getWorldName()).resolve(claimDataPath);
-        Path oldPlayerDataPath = rootWorldSavePath.resolve(worldProperties.getWorldName()).resolve(playerDataPath);
-        if (worldProperties.getUniqueId() == Sponge.getGame().getServer().getDefaultWorld().get().getUniqueId()) {
-            oldWorldDataPath = rootWorldSavePath.resolve(claimDataPath);
-            oldPlayerDataPath = rootWorldSavePath.resolve(playerDataPath);
-        }
-
-        if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-            // use global player data
-            oldPlayerDataPath = rootWorldSavePath.resolve(playerDataPath);
-        }
-
         Path newWorldDataPath = dimPath.resolve(worldProperties.getWorldName());
 
         try {
-            // Check for old data location
-            if (Files.exists(oldWorldDataPath)) {
-                GriefPreventionPlugin.instance.getLogger().info("Detected GP claim data in old location.");
-                GriefPreventionPlugin.instance.getLogger().info("Migrating GP claim data from " + oldWorldDataPath.toAbsolutePath() + " to " + newWorldDataPath.toAbsolutePath() + "...");
-                FileUtils.moveDirectoryToDirectory(oldWorldDataPath.toFile(), newWorldDataPath.toFile(), true);
-                GriefPreventionPlugin.instance.getLogger().info("Done.");
-            }
-            if (Files.exists(oldPlayerDataPath)) {
-                GriefPreventionPlugin.instance.getLogger().info("Detected GP player data in old location.");
-                GriefPreventionPlugin.instance.getLogger().info("Migrating GP player data from " + oldPlayerDataPath.toAbsolutePath() + " to " + newWorldDataPath.toAbsolutePath() + "...");
-                FileUtils.moveDirectoryToDirectory(oldPlayerDataPath.toFile(), newWorldDataPath.toFile(), true);
-                GriefPreventionPlugin.instance.getLogger().info("Done.");
-            }
-
             // Create data folders if they do not exist
             if (!Files.exists(newWorldDataPath.resolve("ClaimData"))) {
                 Files.createDirectories(newWorldDataPath.resolve("ClaimData"));
@@ -182,7 +152,24 @@ public class FlatFileDataStore extends DataStore {
             } else if (!Files.exists(newWorldDataPath.resolve("PlayerData"))) {
                 Files.createDirectories(newWorldDataPath.resolve("PlayerData"));
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    @Override
+    public void loadWorldData(World world) {
+        final WorldProperties worldProperties = world.getProperties();
+        final DimensionType dimType = worldProperties.getDimensionType();
+        final Path dimPath = rootConfigPath.resolve(((IMixinDimensionType) dimType).getModId()).resolve(((IMixinDimensionType) dimType).getEnumName());
+        final Path newWorldDataPath = dimPath.resolve(worldProperties.getWorldName());
+        GPClaimManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        if (claimWorldManager == null) {
+            this.registerWorld(worldProperties);
+            claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+        }
+
+        try {
             // Migrate RedProtectData if enabled
             if (GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.redProtectMigrator) {
                 Path redProtectFilePath = redProtectDataPath.resolve("data_" + worldProperties.getWorldName() + ".conf");
