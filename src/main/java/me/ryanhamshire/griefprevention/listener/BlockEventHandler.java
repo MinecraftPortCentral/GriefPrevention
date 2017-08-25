@@ -53,6 +53,7 @@ import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.data.Transaction;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -80,6 +81,7 @@ import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 import org.spongepowered.common.interfaces.world.IMixinLocation;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -128,7 +130,16 @@ public class BlockEventHandler {
     
             GPClaim sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
             GPClaim targetClaim = null;
-            for (Location<World> location : event.getLocations()) {
+            List<Location<World>> sourceLocations = event.getLocations();
+            if (pistonExtend) {
+                // check next block in extend direction
+                sourceLocations = new ArrayList<>(event.getLocations());
+                Location<World> location = sourceLocations.get(sourceLocations.size() - 1);
+                final Direction direction = locatableBlock.getLocation().getBlock().get(Keys.DIRECTION).get();
+                final Location<World> dirLoc = location.getBlockRelative(direction);
+                sourceLocations.add(dirLoc);
+            }
+            for (Location<World> location : sourceLocations) {
                 targetClaim = this.dataStore.getClaimAt(location, false, targetClaim);
 
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
