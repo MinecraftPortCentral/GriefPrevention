@@ -194,7 +194,10 @@ public class GPClaim implements Claim {
         this.world = world;
         this.lesserBoundaryCorner = new Location<World>(world, smallx, smally, smallz);
         this.greaterBoundaryCorner = new Location<World>(world, bigx, bigy, bigz);
-        this.ownerUniqueId = ownerUniqueId;
+        if (ownerUniqueId != null) {
+            this.ownerUniqueId = ownerUniqueId;
+            this.ownerPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
+        }
         this.type = type;
         this.id = UUID.randomUUID();
         this.context = new Context("gp_claim", this.id.toString());
