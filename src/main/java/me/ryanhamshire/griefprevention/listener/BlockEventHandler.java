@@ -599,7 +599,7 @@ public class BlockEventHandler {
             if (result != Tristate.UNDEFINED) {
                 if (result == Tristate.TRUE) {
                     GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                    return;
+                    continue;
                 }
 
                 event.setCancelled(true);
