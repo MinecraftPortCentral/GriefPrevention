@@ -62,6 +62,11 @@ public class GPApiProvider implements GriefPreventionApi {
     }
 
     @Override
+    public boolean isEnabled(WorldProperties worldProperties) {
+        return GriefPreventionPlugin.instance.claimsEnabledForWorld(worldProperties);
+    }
+
+    @Override
     public ClaimManager getClaimManager(WorldProperties worldProperties) {
         return GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(worldProperties);
     }
