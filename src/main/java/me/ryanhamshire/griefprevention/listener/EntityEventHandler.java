@@ -997,7 +997,11 @@ public class EntityEventHandler {
                     }
 
                     final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false);
-                    if (!claim.isUserTrusted(user, TrustType.BUILDER)) {
+                    if (claim.isWilderness()) {
+                        return true;
+                    }
+
+                    if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                         return false;
                     }
                 }
