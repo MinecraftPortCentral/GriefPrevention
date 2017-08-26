@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 public class WorldEventHandler {
 
-    @Listener
+    @Listener(order = Order.EARLY)
     public void onConstructWorldProperties(ConstructWorldPropertiesEvent event) {
         if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getWorldProperties())) {
             return;
@@ -53,7 +53,7 @@ public class WorldEventHandler {
         GriefPreventionPlugin.instance.dataStore.registerWorld(event.getWorldProperties());
     }
 
-    @Listener
+    @Listener(order = Order.EARLY, beforeModifications = true)
     public void onWorldLoad(LoadWorldEvent event) {
         if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;

@@ -52,14 +52,22 @@ public interface GriefPreventionApi {
     String getImplementationVersion();
 
     /**
-     * Gets the claim manager of world.
+     * Checks if GriefPrevention is enabled in world.
      * 
-     * @param world
-     * @return The claim manager of world
+     * @param world The world to check.
+     * @return true if enabled, false if not.
      */
-    default ClaimManager getClaimManager(World world) {
-        return this.getClaimManager(world.getProperties());
+    default boolean isEnabled(World world) {
+        return isEnabled(world.getProperties());
     }
+
+    /**
+     * Checks if GriefPrevention is enabled in world.
+     * 
+     * @param worldProperties The world properties to check.
+     * @return true if enabled, false if not.
+     */
+    boolean isEnabled(WorldProperties worldProperties);
 
     /**
      * Gets the global {@link PlayerData} for specified {@link UUID}.
@@ -87,6 +95,16 @@ public interface GriefPreventionApi {
      * @return An immutable list of all claims, empty list if none were found
      */
     List<Claim> getAllPlayerClaims(UUID playerUniqueId);
+
+    /**
+     * Gets the claim manager of world.
+     * 
+     * @param world
+     * @return The claim manager of world
+     */
+    default ClaimManager getClaimManager(World world) {
+        return this.getClaimManager(world.getProperties());
+    }
 
     /**
      * Gets the claim manager of world.
