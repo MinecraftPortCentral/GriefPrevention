@@ -53,7 +53,7 @@ public class WorldEventHandler {
         GriefPreventionPlugin.instance.dataStore.registerWorld(event.getWorldProperties());
     }
 
-    @Listener(order = Order.EARLY)
+    @Listener(order = Order.EARLY, beforeModifications = true)
     public void onWorldLoad(LoadWorldEvent event) {
         if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
