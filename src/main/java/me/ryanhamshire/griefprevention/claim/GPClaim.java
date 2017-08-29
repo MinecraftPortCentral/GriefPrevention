@@ -1987,20 +1987,10 @@ public class GPClaim implements Claim {
             return true;
         }
 
-        // check public
-        if (this.claimData.getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-            return true;
-        }
-        if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-            return true;
-        }
-        if (this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-            return true;
-        }
-        if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-            return true;
-        }
         if (type == TrustType.ACCESSOR) {
+            if (this.claimData.getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
             if (this.claimData.getAccessors().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2014,6 +2004,9 @@ public class GPClaim implements Claim {
                 return true;
             }
         } else if (type == TrustType.BUILDER) {
+            if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
             if (this.claimData.getBuilders().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2021,6 +2014,9 @@ public class GPClaim implements Claim {
                 return true;
             }
         } else if (type == TrustType.CONTAINER) {
+            if (this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
             if (this.claimData.getContainers().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2031,6 +2027,9 @@ public class GPClaim implements Claim {
                 return true;
             }
         } else if (type == TrustType.MANAGER) {
+            if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
             if (this.claimData.getManagers().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2528,82 +2527,94 @@ public class GPClaim implements Claim {
             }
             GPPlayerData playerData = null;
             if (!GriefPreventionPlugin.wildernessCuboids && claim.cuboid) {
-                if (claim.parent == null && !claim.isAdminClaim()) {
-                    return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
+                boolean ignoreClaims = false;
+                if (this.ownerUniqueId != null) {
+                    playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
+                    if (playerData.canIgnoreClaim(claim)) {
+                        ignoreClaims = true;
+                    }
                 }
-                if (claim.parent != null && !claim.getOwnerUniqueId().equals(claim.parent.getOwnerUniqueId())) {
-                    return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
+                if (!ignoreClaims) {
+                    if (claim.parent == null && !claim.isAdminClaim()) {
+                        return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
+                    }
+                    if (claim.parent != null && !claim.getOwnerUniqueId().equals(claim.parent.getOwnerUniqueId())) {
+                        return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
+                    }
                 }
                 // 3D claims are always free when wilderness cuboids is disabled
                 this.requiresClaimBlocks = false;
             }
 
             if (this.ownerUniqueId != null) {
-                 playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
-                 if (this.sizeRestrictions) {
-                     ClaimResult claimResult = claim.checkSizeLimits(player, playerData, this.point1, this.point2);
-                     if (!claimResult.successful()) {
-                         return claimResult;
-                     }
-                 }
+                if (playerData != null) {
+                    playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
+                }
 
-                 final User user = GriefPreventionPlugin.getOrCreateUser(this.ownerUniqueId);
-                 if (!user.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
-                     final Double createClaimLimit = GPOptionHandler.getClaimOptionDouble(user, claim, GPOptions.Type.CLAIM_LIMIT, playerData);
-                     if (createClaimLimit != null && createClaimLimit > 0 && (playerData.getInternalClaims().size() + 1) >= createClaimLimit.intValue()) {
-                         return new GPClaimResult(claim, ClaimResultType.EXCEEDS_MAX_CLAIM_LIMIT);
-                     }
-                 }
+                if (this.sizeRestrictions) {
+                    ClaimResult claimResult = claim.checkSizeLimits(player, playerData, this.point1, this.point2);
+                    if (!claimResult.successful()) {
+                        return claimResult;
+                    }
+                }
 
-                 // check player has enough claim blocks
-                 if ((claim.isBasicClaim() || claim.isTown()) && this.requiresClaimBlocks) {
-                     final int area = BlockUtils.getBlockArea(this.world, claim.lesserBoundaryCorner.getBlockPosition(), claim.greaterBoundaryCorner.getBlockPosition(), claim.cuboid);
-                     final int remainingClaimBlocks = playerData.getRemainingClaimBlocks() - area;
-                     if (remainingClaimBlocks < 0) {
-                         if (player != null) {
-                             if (GriefPreventionPlugin.wildernessCuboids) {
-                                 final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
-                                 final Map<String, ?> params = ImmutableMap.of(
-                                         "chunks", Math.round(claimableChunks * 100.0)/100.0,
-                                         "blocks", Math.abs(remainingClaimBlocks));
-                                 GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks3d, params);
-                             } else {
-                                 final Map<String, ?> params = ImmutableMap.of(
-                                         "blocks", Math.abs(remainingClaimBlocks));
-                                 GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_2D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks2d, params);
-                             }
-                         }
-                         playerData.lastShovelLocation = null;
-                         playerData.claimResizing = null;
-                         return new GPClaimResult(ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS);
-                     }
-                 }
+                final User user = GriefPreventionPlugin.getOrCreateUser(this.ownerUniqueId);
+                if (!user.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
+                    final Double createClaimLimit = GPOptionHandler.getClaimOptionDouble(user, claim, GPOptions.Type.CLAIM_LIMIT, playerData);
+                    if (createClaimLimit != null && createClaimLimit > 0 && (playerData.getInternalClaims().size() + 1) >= createClaimLimit.intValue()) {
+                        return new GPClaimResult(claim, ClaimResultType.EXCEEDS_MAX_CLAIM_LIMIT);
+                    }
+                }
 
-                 if (claim.isTown() && GriefPreventionPlugin.instance.economyService != null && player != null) {
-                     final double townCost = GriefPreventionPlugin.getGlobalConfig().getConfig().town.cost;
-                     if (townCost > 0) {
-                         Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
-                         if (playerAccount == null) {
-                             final Text message = GriefPreventionPlugin.instance.messageData.economyUserNotFound
-                                     .apply(ImmutableMap.of(
-                                     "user", claim.getOwnerName())).build();
-                             GriefPreventionPlugin.sendMessage(player, message);
-                             return new GPClaimResult(claim, ClaimResultType.NOT_ENOUGH_FUNDS);
-                         }
-                         final double balance = playerAccount.getBalance(GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency()).doubleValue();
-                         if (balance < townCost) {
-                             final Text message = GriefPreventionPlugin.instance.messageData.townCreateNotEnoughFunds
-                                     .apply(ImmutableMap.of(
-                                     "create_cost", townCost,
-                                     "balance", balance,
-                                     "amount_needed", townCost - balance)).build();
-                             GriefPreventionPlugin.sendMessage(player, message);
-                             return new GPClaimResult(claim, ClaimResultType.NOT_ENOUGH_FUNDS);
-                         }
-                         final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
-                         playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(townCost), Cause.source(player).build());
-                     }
-                 }
+                // check player has enough claim blocks
+                if ((claim.isBasicClaim() || claim.isTown()) && this.requiresClaimBlocks) {
+                    final int area = BlockUtils.getBlockArea(this.world, claim.lesserBoundaryCorner.getBlockPosition(), claim.greaterBoundaryCorner.getBlockPosition(), claim.cuboid);
+                    final int remainingClaimBlocks = playerData.getRemainingClaimBlocks() - area;
+                    if (remainingClaimBlocks < 0) {
+                        if (player != null) {
+                            if (GriefPreventionPlugin.wildernessCuboids) {
+                                final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
+                                final Map<String, ?> params = ImmutableMap.of(
+                                        "chunks", Math.round(claimableChunks * 100.0)/100.0,
+                                        "blocks", Math.abs(remainingClaimBlocks));
+                                GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks3d, params);
+                            } else {
+                                final Map<String, ?> params = ImmutableMap.of(
+                                        "blocks", Math.abs(remainingClaimBlocks));
+                                GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_2D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks2d, params);
+                            }
+                        }
+                        playerData.lastShovelLocation = null;
+                        playerData.claimResizing = null;
+                        return new GPClaimResult(ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS);
+                    }
+                }
+
+                if (claim.isTown() && GriefPreventionPlugin.instance.economyService != null && player != null) {
+                    final double townCost = GriefPreventionPlugin.getGlobalConfig().getConfig().town.cost;
+                    if (townCost > 0) {
+                        Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
+                        if (playerAccount == null) {
+                            final Text message = GriefPreventionPlugin.instance.messageData.economyUserNotFound
+                                    .apply(ImmutableMap.of(
+                                    "user", claim.getOwnerName())).build();
+                            GriefPreventionPlugin.sendMessage(player, message);
+                            return new GPClaimResult(claim, ClaimResultType.NOT_ENOUGH_FUNDS);
+                        }
+                        final double balance = playerAccount.getBalance(GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency()).doubleValue();
+                        if (balance < townCost) {
+                            final Text message = GriefPreventionPlugin.instance.messageData.townCreateNotEnoughFunds
+                                    .apply(ImmutableMap.of(
+                                    "create_cost", townCost,
+                                    "balance", balance,
+                                    "amount_needed", townCost - balance)).build();
+                            GriefPreventionPlugin.sendMessage(player, message);
+                            return new GPClaimResult(claim, ClaimResultType.NOT_ENOUGH_FUNDS);
+                        }
+                        final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
+                        playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(townCost), Cause.source(player).build());
+                    }
+                }
             }
 
             final ClaimResult result = claim.checkArea(false);
