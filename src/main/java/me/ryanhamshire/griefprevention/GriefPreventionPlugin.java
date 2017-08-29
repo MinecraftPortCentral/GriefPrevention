@@ -172,6 +172,7 @@ import org.spongepowered.api.event.cause.entity.damage.DamageType;
 import org.spongepowered.api.event.entity.TargetEntityEvent;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.ItemTypes;
@@ -203,6 +204,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -758,11 +760,6 @@ public class GriefPreventionPlugin {
                 .getOrCreate(GameProfile.of(GriefPreventionPlugin.PUBLIC_UUID, GriefPreventionPlugin.PUBLIC_NAME));
         WORLD_USER = Sponge.getServiceManager().provide(UserStorageService.class).get()
                 .getOrCreate(GameProfile.of(GriefPreventionPlugin.WORLD_USER_UUID, GriefPreventionPlugin.WORLD_USER_NAME));
-        // unless claim block accrual is disabled, start the recurring per 10
-        // minute event to give claim blocks to online players
-        DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
-        Sponge.getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
-                .submit(GriefPreventionPlugin.instance);
 
         // run cleanup task
         int cleanupTaskInterval = GriefPreventionPlugin.getGlobalConfig().getConfig().claim.cleanupTaskInterval;
@@ -789,9 +786,67 @@ public class GriefPreventionPlugin {
 
         // TODO - rewrite /gp command
         //Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand().getCommandSpec(),
-               //CommandGriefPrevention.getCommand().getAliases());
+        //CommandGriefPrevention.getCommand().getAliases());
         registerBaseCommands();
         this.dataStore.loadClaimTemplates();
+    }
+
+    @Listener
+    public void onServerStarted(GameStartedServerEvent event) {
+        if (!validateSpongeVersion()) {
+            return;
+        }
+
+        if (this.permissionService == null) {
+            this.logger.error("Unable to initialize plugin. GriefPrevention requires a permissions plugin such as LuckPerms.");
+            return;
+        }
+
+        final boolean resetMigration = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations;
+        final int resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
+        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate;
+        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate;
+        boolean migrate = false;
+        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && !GriefPreventionPlugin.wildernessCuboids) 
+                || (migration3dRate > -1 && GriefPreventionPlugin.wildernessCuboids)) {
+            migrate = true;
+        }
+
+        if (migrate) {
+            List<GPPlayerData> playerDataList = new ArrayList<>();
+            if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+                final GPClaimManager claimWorldManager = this.dataStore.getClaimWorldManager(Sponge.getServer().getDefaultWorld().get());
+                claimWorldManager.resetPlayerData();
+                playerDataList = new ArrayList<>(claimWorldManager.getPlayerDataMap().values());
+                for (GPPlayerData playerData : playerDataList) {
+                    if (!Sponge.getServer().getPlayer(playerData.playerID).isPresent() && playerData.getClaims().isEmpty()) {
+                        playerData.onDisconnect();
+                        claimWorldManager.removePlayer(playerData.playerID);
+                    }
+                }
+            }
+            if (!DataStore.USE_GLOBAL_PLAYER_STORAGE) {
+                for (World world : Sponge.getServer().getWorlds()) {
+                    final GPClaimManager claimWorldManager = this.dataStore.getClaimWorldManager(world.getProperties());
+                    playerDataList = new ArrayList<>(claimWorldManager.getPlayerDataMap().values());
+                    for (GPPlayerData playerData : playerDataList) {
+                        if (!Sponge.getServer().getPlayer(playerData.playerID).isPresent() && playerData.getClaims().isEmpty()) {
+                            playerData.onDisconnect();
+                            GriefPreventionPlugin.instance.dataStore.removePlayerData(world.getProperties(), playerData.playerID);
+                        }
+                    }
+                }
+            }
+            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations = false;
+            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData = -1;
+            GriefPreventionPlugin.getGlobalConfig().save();
+        }
+
+        // unless claim block accrual is disabled, start the recurring per 10
+        // minute event to give claim blocks to online players
+        DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
+        Sponge.getScheduler().createTaskBuilder().interval(5, TimeUnit.MINUTES).execute(task)
+                .submit(GriefPreventionPlugin.instance);
         addLogEntry("Boot finished.");
         this.logger.info("Loaded successfully.");
     }
