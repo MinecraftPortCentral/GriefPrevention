@@ -73,14 +73,13 @@ public class CommandClaimBuy implements CommandExecutor {
             return CommandResult.success();
         }
 
-        final double balance = playerAccount.getBalance(GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency()).doubleValue();
         List<Claim> claimsForSale = new ArrayList<>();
         GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
         for (Claim worldClaim : claimManager.getWorldClaims()) {
-            if (worldClaim.isAdminClaim() || worldClaim.isWilderness()) {
+            if (worldClaim.isWilderness()) {
                 continue;
             }
-            if (worldClaim.getEconomyData().isForSale() && worldClaim.getEconomyData().getSalePrice() > -1) {
+            if (!worldClaim.isAdminClaim() && worldClaim.getEconomyData().isForSale() && worldClaim.getEconomyData().getSalePrice() > -1) {
                 claimsForSale.add(worldClaim);
             }
             for (Claim child : worldClaim.getChildren(true)) {
