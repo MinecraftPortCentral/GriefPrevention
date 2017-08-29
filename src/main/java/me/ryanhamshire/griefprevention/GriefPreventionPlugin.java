@@ -230,6 +230,7 @@ public class GriefPreventionPlugin {
     private Path configPath;
     public MessageStorage messageStorage;
     public MessageDataConfig messageData;
+    public static boolean wildernessCuboids;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
     public static final String CONFIG_HEADER = "4.1.0\n"
@@ -1624,6 +1625,7 @@ public class GriefPreventionPlugin {
             messageData = messageStorage.getConfig();
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
             DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
+            wildernessCuboids = DataStore.globalConfig.getConfig().playerdata.wildernessCuboids;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.GOLDEN_SHOVEL);
             this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.STICK);
             this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;

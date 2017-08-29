@@ -193,13 +193,23 @@ public class CommandClaimInfo implements CommandExecutor {
             // ignore
         }
 
+        final int sizeX = Math.abs(claim.getGreaterBoundaryCorner().getBlockX() - claim.getLesserBoundaryCorner().getBlockX()) + 1;
+        final int sizeY = Math.abs(claim.getGreaterBoundaryCorner().getBlockY() - claim.getLesserBoundaryCorner().getBlockY()) + 1;
+        final int sizeZ = Math.abs(claim.getGreaterBoundaryCorner().getBlockZ() - claim.getLesserBoundaryCorner().getBlockZ()) + 1;
+        Text claimSize = Text.of();
+        if (claim.isCuboid()) {
+            claimSize = Text.of("  ", TextColors.YELLOW, "Area: ", TextColors.GRAY, sizeX + "x" + sizeY + "x" + sizeZ);
+        } else {
+            claimSize = Text.of("  ", TextColors.YELLOW, "Area: ", TextColors.GRAY, sizeX + "x" + sizeZ);
+        }
+        final Text claimCost = Text.of("  ", TextColors.YELLOW, "Blocks: ", TextColors.GRAY, claim.getArea());
         if (claim.isWilderness() && name == null) {
             name = Text.of(TextColors.GREEN, "Wilderness");
         }
         Text claimName = Text.of(
                 TextColors.YELLOW, "Name", TextColors.WHITE, " : ", TextColors.GRAY, name == null ? NONE : name);
         if (!claim.isWilderness() && !claim.isAdminClaim()) {
-            claimName = Text.join(claimName, Text.of("   ", TextColors.YELLOW, "Area: ", TextColors.GRAY, claim.getArea()));
+            claimName = Text.join(claimName, claimSize, claimCost);
         }
         // users
         final List<UUID> accessorList = gpClaim.getUserTrustList(TrustType.ACCESSOR, true);
@@ -276,6 +286,9 @@ public class CommandClaimInfo implements CommandExecutor {
              }
              forSaleText = Text.builder()
                      .append(Text.of(TextColors.YELLOW, "ForSale", TextColors.WHITE, " : ", getClickableInfoText(src, claim, FOR_SALE, claim.getEconomyData().isForSale() ? Text.of(TextColors.GREEN, "YES") : Text.of(TextColors.GRAY, "NO")))).build();
+             if (claim.getEconomyData().isForSale()) {
+                 forSaleText = Text.join(forSaleText, Text.of("  ", TextColors.YELLOW, "Price", TextColors.WHITE, " : ", TextColors.GOLD, claim.getEconomyData().getSalePrice()));
+             }
         }
 
         Text claimId = Text.join(Text.of(TextColors.YELLOW, "UUID", TextColors.WHITE, " : ",
@@ -445,10 +458,9 @@ public class CommandClaimInfo implements CommandExecutor {
         textList.add(ownerLine);
         textList.add(claimTypeInfo);
         if (!claim.isAdminClaim() && !claim.isWilderness()) {
+            textList.add(Text.of(claimInherit, "   ", claimExpired));
             if (forSaleText != null) {
-                textList.add(Text.of(claimInherit, "   ", claimExpired, "   ", forSaleText));
-            } else {
-                textList.add(Text.of(claimInherit, "   ", claimExpired));
+                textList.add(forSaleText);
             }
         }
         textList.add(claimAccessors);
