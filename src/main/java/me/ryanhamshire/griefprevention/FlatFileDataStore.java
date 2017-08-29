@@ -221,44 +221,6 @@ public class FlatFileDataStore extends DataStore {
 
         // handle default flag permissions
         this.setupDefaultPermissions(world);
-        // migrate playerdata to new claim block system
-        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate;
-        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate;
-        final int resetClaimBlockData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
-        if (migration3dRate <= -1 && migration2dRate <= -1 && resetClaimBlockData <= -1) {
-            return;
-        }
-        if (GriefPreventionPlugin.wildernessCuboids && migration2dRate >= 0) {
-            return;
-        }
-        if (!GriefPreventionPlugin.wildernessCuboids && migration3dRate >= 0) {
-            return;
-        }
-
-        for (GPPlayerData playerData : claimWorldManager.getPlayerDataMap().values()) {
-            final PlayerStorageData playerStorage = playerData.getStorageData();
-            final int accruedBlocks = playerStorage.getConfig().getAccruedClaimBlocks();
-            int newAccruedBlocks = accruedBlocks;
-            // first check reset
-            if (resetClaimBlockData > -1) {
-                newAccruedBlocks = resetClaimBlockData;
-                playerStorage.getConfig().setBonusClaimBlocks(0);
-            } else if (migration3dRate > -1 && !playerStorage.getConfig().hasMigratedBlocks()) {
-                newAccruedBlocks = accruedBlocks * migration3dRate;
-                playerStorage.getConfig().setMigratedBlocks(true);
-            } else if (migration2dRate > -1 && !playerStorage.getConfig().hasMigratedBlocks()) {
-                newAccruedBlocks = accruedBlocks / migration2dRate;
-                playerStorage.getConfig().setMigratedBlocks(true);
-            }
-            if (newAccruedBlocks < 0) {
-                newAccruedBlocks = 0;
-            }
-            if (newAccruedBlocks > playerData.optionMaxAccruedBlocks) {
-                newAccruedBlocks = playerData.optionMaxAccruedBlocks;
-            }
-            playerStorage.getConfig().setAccruedClaimBlocks(newAccruedBlocks);
-            playerStorage.save();
-        }
     }
 
     public void unloadWorldData(WorldProperties worldProperties) {
@@ -331,6 +293,16 @@ public class FlatFileDataStore extends DataStore {
     }
 
     void loadPlayerData(WorldProperties worldProperties, File[] files) throws Exception {
+        final boolean resetMigration = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations;
+        final int resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
+        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate;
+        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate;
+        boolean migrate = false;
+        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && !GriefPreventionPlugin.wildernessCuboids) 
+                || (migration3dRate > -1 && GriefPreventionPlugin.wildernessCuboids)) {
+            // load all player data if migrating
+            migrate = true;
+        }
         for (int i = 0; i < files.length; i++) {
             if (files[i].isFile()) // avoids folders
             {
@@ -344,8 +316,8 @@ public class FlatFileDataStore extends DataStore {
                     continue;
                 }
 
-                if (!Sponge.getServer().getPlayer(playerUUID).isPresent()) {
-                    return;
+                if (!migrate && !Sponge.getServer().getPlayer(playerUUID).isPresent()) {
+                    continue;
                 }
 
                 try {
