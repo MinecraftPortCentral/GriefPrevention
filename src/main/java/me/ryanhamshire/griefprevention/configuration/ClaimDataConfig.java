@@ -26,6 +26,7 @@ package me.ryanhamshire.griefprevention.configuration;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
+import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.EconomyData;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
@@ -510,6 +511,9 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
 
     @Override
     public boolean requiresClaimBlocks() {
+        if (!GriefPreventionPlugin.wildernessCuboids && this.isCuboid) {
+            return false;
+        }
         return this.requiresClaimBlocks;
     }
 

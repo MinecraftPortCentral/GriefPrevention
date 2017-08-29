@@ -55,8 +55,10 @@ public class MessageStorage {
     public static final String BOOK_TOOLS = "book-tools";
     public static final String CLAIM_ABANDON_SUCCESS = "claim-abandon-success";
     public static final String CLAIM_BANK_INFO = "claim-bank-info";
-    public static final String CLAIM_SIZE_NEED_BLOCKS = "claim-size-need-blocks";
-    public static final String CLAIM_RESIZE_SUCCESS = "claim-resize-success";
+    public static final String CLAIM_SIZE_NEED_BLOCKS_2D = "claim-size-need-blocks-2d";
+    public static final String CLAIM_SIZE_NEED_BLOCKS_3D = "claim-size-need-blocks-3d";
+    public static final String CLAIM_RESIZE_SUCCESS_2D = "claim-resize-success-2d";
+    public static final String CLAIM_RESIZE_SUCCESS_3D = "claim-resize-success-3d";
     public static final String CLAIM_SIZE_MAX_X = "claim-size-max-x";
     public static final String CLAIM_SIZE_MAX_Y = "claim-size-max-y";
     public static final String CLAIM_SIZE_MAX_Z = "claim-size-max-z";
@@ -64,7 +66,8 @@ public class MessageStorage {
     public static final String CLAIM_SIZE_MIN_Y = "claim-size-min-y";
     public static final String CLAIM_SIZE_MIN_Z = "claim-size-min-z";
     public static final String CLAIM_SIZE_TOO_SMALL = "claim-size-too-small";
-    public static final String CLAIM_CREATE_INSUFFICIENT_BLOCKS = "claim-create-insufficient-blocks";
+    public static final String CLAIM_CREATE_INSUFFICIENT_BLOCKS_2D = "claim-create-insufficient-blocks-2d";
+    public static final String CLAIM_CREATE_INSUFFICIENT_BLOCKS_3D = "claim-create-insufficient-blocks-3d";
     public static final String ECONOMY_CLAIM_SALE_CONFIRMED = "economy-claim-sale-confirmed";
     public static final String ECONOMY_USER_NOT_FOUND = "economy-user-not-found";
 

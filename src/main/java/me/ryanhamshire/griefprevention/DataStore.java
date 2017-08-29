@@ -372,19 +372,6 @@ public abstract class DataStore {
         claim.updateClaimStorageData();
     }
 
-    public ClaimResult createAdminClaim(Claim parent, World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Cause cause) {
-        ClaimResult claimResult = Claim.builder()
-                .bounds(point1, point2)
-                .world(world)
-                .type(claimType)
-                .owner(ownerUniqueId)
-                .parent(parent)
-                .cause(cause)
-                .build();
-
-        return claimResult;
-    }
-
     public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Cause cause) {
         return createClaim(world, point1, point2, claimType, ownerUniqueId, cuboid, null, cause);
     }

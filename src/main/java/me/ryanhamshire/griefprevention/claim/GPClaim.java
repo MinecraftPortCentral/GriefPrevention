@@ -148,6 +148,7 @@ public class GPClaim implements Claim {
 
     private GPPlayerData ownerPlayerData;
     private Account economyAccount;
+    private static final int MAX_AREA = GriefPreventionPlugin.wildernessCuboids ? 2560000 : 10000;
 
     public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId) {
         this(world, point1, point2, type, ownerUniqueId, null);
@@ -421,7 +422,7 @@ public class GPClaim implements Claim {
         }
 
         // don't do it for very large claims
-        if (this.getArea() > 2560000) {
+        if (this.getArea() > MAX_AREA) {
             return;
         }
 
@@ -469,7 +470,7 @@ public class GPClaim implements Claim {
         Location<World> greater = this.getGreaterBoundaryCorner();
 
         // don't bother for very large claims, too expensive
-        if (this.getArea() > 2560000) {
+        if (this.getArea() > MAX_AREA) {
             return false;
         }
 
@@ -500,13 +501,17 @@ public class GPClaim implements Claim {
     // measurements. all measurements are in blocks
     @Override
     public int getArea() {
-        int claimWidth = this.greaterBoundaryCorner.getBlockX() - this.lesserBoundaryCorner.getBlockX() + 1;
+        final int claimWidth = this.greaterBoundaryCorner.getBlockX() - this.lesserBoundaryCorner.getBlockX() + 1;
+        final int claimLength = this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
+        if (!GriefPreventionPlugin.wildernessCuboids) {
+            return claimWidth * claimLength;
+        }
+
         // 2D claims are always 256 in height
         int claimHeight = 256;
         if (this.cuboid) {
             claimHeight = this.greaterBoundaryCorner.getBlockY() - this.lesserBoundaryCorner.getBlockY() + 1;
         }
-        int claimLength = this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
 
         return claimLength * claimWidth * claimHeight;
     }
@@ -774,56 +779,6 @@ public class GPClaim implements Claim {
         }
 
         return true;
-    }
-
-    // whether more entities may be added to a claim
-    public Text allowMoreEntities() {
-        if (this.isSubdivision()) {
-            return this.parent.allowMoreEntities();
-        }
-
-        // this rule only applies to creative mode worlds
-        if (!GriefPreventionPlugin.instance.claimModeIsActive(this.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-            return null;
-        }
-
-        // admin claims aren't restricted
-        if (this.isAdminClaim()) {
-            return null;
-        }
-
-        // don't apply this rule to very large claims
-        if (this.getArea() > 2560000) {
-            return null;
-        }
-
-        // determine maximum allowable entity count, based on claim size
-        int maxEntities = this.getArea() / 12800;
-        if (maxEntities == 0) {
-            return GriefPreventionPlugin.instance.messageData.claimTooSmallEntities.toText();
-        }
-
-        // count current entities (ignoring players)
-        int totalEntities = 0;
-        ArrayList<Chunk> chunks = this.getChunks();
-        for (Chunk chunk : chunks) {
-            ArrayList<Entity> entities = (ArrayList<Entity>) chunk.getEntities();
-            for (int i = 0; i < entities.size(); i++) {
-                Entity entity = entities.get(i);
-                if (!(entity instanceof Player) && this.contains(entity.getLocation(), false, false)) {
-                    totalEntities++;
-                    if (totalEntities > maxEntities) {
-                        entity.remove();
-                    }
-                }
-            }
-        }
-
-        if (totalEntities > maxEntities) {
-            return GriefPreventionPlugin.instance.messageData.claimTooManyEntities.toText();
-        }
-
-        return null;
     }
 
     @Override
@@ -1303,18 +1258,23 @@ public class GPClaim implements Claim {
 
         // check player has enough claim blocks
         if ((this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
-            int remainingClaimBlocks = this.ownerPlayerData.getRemainingClaimBlocks();
             final int newArea = BlockUtils.getBlockArea(this.world, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition(), this.cuboid);
             final int currentArea = BlockUtils.getBlockArea(this.world, currentLesserCorner.getBlockPosition(), currentGreaterCorner.getBlockPosition(), this.cuboid);
             if (newArea > currentArea) {
-                final int neededBlocks = remainingClaimBlocks - (newArea - currentArea);
-                if (neededBlocks < 0) {
+                final int remainingClaimBlocks = this.ownerPlayerData.getRemainingClaimBlocks() - (newArea - currentArea);
+                if (remainingClaimBlocks < 0) {
                     if (player != null) {
-                        final double claimableChunks = Math.abs(neededBlocks / 65536.0);
-                        Map<String, ?> params = ImmutableMap.of(
-                                "chunks", Math.round(claimableChunks * 100.0)/100.0,
-                                "blocks", Math.abs(neededBlocks));
-                        GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks, params);
+                        if (GriefPreventionPlugin.wildernessCuboids) {
+                            final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
+                            final Map<String, ?> params = ImmutableMap.of(
+                                    "chunks", Math.round(claimableChunks * 100.0)/100.0,
+                                    "blocks", Math.abs(remainingClaimBlocks));
+                            GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks3d, params);
+                        } else {
+                            final Map<String, ?> params = ImmutableMap.of(
+                                    "blocks", Math.abs(remainingClaimBlocks));
+                            GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_2D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks2d, params);
+                        }
                     }
                     playerData.lastShovelLocation = null;
                     playerData.claimResizing = null;
@@ -1532,7 +1492,7 @@ public class GPClaim implements Claim {
         final int maxClaimZ = GPOptionHandler.getClaimOptionDouble(subject, this, GPOptions.Type.MAX_CLAIM_SIZE_Z, playerData).intValue();
 
         if (maxClaimX > 0) {
-            int size = Math.abs(greaterCorner.getX() - lesserCorner.getX() + 1);
+            int size = Math.abs(greaterCorner.getX() - lesserCorner.getX()) + 1;
             if (size > maxClaimX) {
                 if (player != null) {
                     Map<String, ?> params = null;
@@ -1555,7 +1515,7 @@ public class GPClaim implements Claim {
             }
         }
         if (this.cuboid && maxClaimY > 0) {
-            int size = Math.abs(greaterCorner.getY() - lesserCorner.getY() + 1);
+            int size = Math.abs(greaterCorner.getY() - lesserCorner.getY()) + 1;
             if (size > maxClaimY) {
                 if (player != null) {
                     Map<String, ?> params = null;
@@ -1578,7 +1538,7 @@ public class GPClaim implements Claim {
             }
         }
         if (maxClaimZ > 0) {
-            int size = Math.abs(greaterCorner.getZ() - lesserCorner.getZ() + 1);
+            int size = Math.abs(greaterCorner.getZ() - lesserCorner.getZ()) + 1;
             if (size > maxClaimZ) {
                 if (player != null) {
                     Map<String, ?> params = null;
@@ -1601,7 +1561,7 @@ public class GPClaim implements Claim {
             }
         }
         if (minClaimX > 0) {
-            int size = Math.abs(greaterCorner.getX() - lesserCorner.getX() + 1);
+            int size = Math.abs(greaterCorner.getX() - lesserCorner.getX()) + 1;
             if (size < minClaimX) {
                 if (player != null) {
                     Map<String, ?> params = null;
@@ -1624,7 +1584,7 @@ public class GPClaim implements Claim {
             }
         }
         if (this.cuboid && minClaimY > 0) {
-            int size = Math.abs(greaterCorner.getY() - lesserCorner.getY() + 1);
+            int size = Math.abs(greaterCorner.getY() - lesserCorner.getY()) + 1;
             if (size < minClaimY) {
                 if (player != null) {
                     Map<String, ?> params = null;
@@ -1647,7 +1607,7 @@ public class GPClaim implements Claim {
             }
         }
         if (minClaimZ > 0) {
-            int size = Math.abs(greaterCorner.getZ() - lesserCorner.getZ() + 1);
+            int size = Math.abs(greaterCorner.getZ() - lesserCorner.getZ()) + 1;
             if (size < minClaimZ) {
                 if (player != null) {
                     Map<String, ?> params = null;
@@ -2567,6 +2527,17 @@ public class GPClaim implements Claim {
                 player = (Player) this.cause.root();
             }
             GPPlayerData playerData = null;
+            if (!GriefPreventionPlugin.wildernessCuboids && claim.cuboid) {
+                if (claim.parent == null && !claim.isAdminClaim()) {
+                    return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
+                }
+                if (claim.parent != null && !claim.getOwnerUniqueId().equals(claim.parent.getOwnerUniqueId())) {
+                    return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
+                }
+                // 3D claims are always free when wilderness cuboids is disabled
+                this.requiresClaimBlocks = false;
+            }
+
             if (this.ownerUniqueId != null) {
                  playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
                  if (this.sizeRestrictions) {
@@ -2586,16 +2557,21 @@ public class GPClaim implements Claim {
 
                  // check player has enough claim blocks
                  if ((claim.isBasicClaim() || claim.isTown()) && this.requiresClaimBlocks) {
-                     int remainingClaimBlocks = playerData.getRemainingClaimBlocks();
                      final int area = BlockUtils.getBlockArea(this.world, claim.lesserBoundaryCorner.getBlockPosition(), claim.greaterBoundaryCorner.getBlockPosition(), claim.cuboid);
-                     final int neededBlocks = remainingClaimBlocks - area;
-                     if (neededBlocks < 0) {
+                     final int remainingClaimBlocks = playerData.getRemainingClaimBlocks() - area;
+                     if (remainingClaimBlocks < 0) {
                          if (player != null) {
-                             final double claimableChunks = Math.abs(neededBlocks / 65536.0);
-                             Map<String, ?> params = ImmutableMap.of(
-                                     "chunks", Math.round(claimableChunks * 100.0)/100.0,
-                                     "blocks", Math.abs(neededBlocks));
-                             GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks, params);
+                             if (GriefPreventionPlugin.wildernessCuboids) {
+                                 final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
+                                 final Map<String, ?> params = ImmutableMap.of(
+                                         "chunks", Math.round(claimableChunks * 100.0)/100.0,
+                                         "blocks", Math.abs(remainingClaimBlocks));
+                                 GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks3d, params);
+                             } else {
+                                 final Map<String, ?> params = ImmutableMap.of(
+                                         "blocks", Math.abs(remainingClaimBlocks));
+                                 GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_2D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks2d, params);
+                             }
                          }
                          playerData.lastShovelLocation = null;
                          playerData.claimResizing = null;

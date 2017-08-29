@@ -182,12 +182,17 @@ public class BlockUtils {
     }
 
     public static int getBlockArea(World world, Vector3i lesser, Vector3i greater, boolean cuboid) {
-        int claimWidth = greater.getX() - lesser.getX() + 1;
-        int claimHeight = greater.getY() - lesser.getY() + 1;
-        if (!cuboid) {
-            claimHeight = 256;
+        final int claimWidth = greater.getX() - lesser.getX() + 1;
+        final int claimLength = greater.getZ() - lesser.getZ() + 1;
+        if (!GriefPreventionPlugin.wildernessCuboids) {
+            return claimWidth * claimLength;
         }
-        int claimLength = greater.getZ() - lesser.getZ() + 1;
+
+        // 2D claims are always 256 in height
+        int claimHeight = 256;
+        if (cuboid) {
+            claimHeight = greater.getY() - lesser.getY() + 1;
+        }
 
         return claimLength * claimWidth * claimHeight;
     }

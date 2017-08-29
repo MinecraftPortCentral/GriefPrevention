@@ -147,6 +147,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-children-warning")
     public TextTemplate claimChildrenWarning = TextTemplate.of("This claim includes child claims.  If you're sure you want to delete it, use /DeleteClaim again.");
 
+    @Setting("claim-create-cuboid-disabled")
+    public TextTemplate claimCreateCuboidDisabled = TextTemplate.of(TextColors.RED, "The creation of 3D cuboid claims has been disabled by an administrator.\nYou can only create 3D claims as an Admin or on a 2D claim that you own.");
+
     @Setting("claim-create-overlap")
     public TextTemplate claimCreateOverlap = TextTemplate.of(TextColors.RED, "You can't create a claim here because it would overlap your other claim.  Use /abandonclaim to delete it, or use your shovel at a corner to resize it.");
 
@@ -189,8 +192,11 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-create-failed-claim-limit")
     public TextTemplate claimCreateFailedLimit = TextTemplate.of(TextColors.RED, "You've reached your limit on land claims.  Use /AbandonClaim to remove one before creating another.");
 
-    @Setting(MessageStorage.CLAIM_CREATE_INSUFFICIENT_BLOCKS)
-    public TextTemplate claimCreateInsufficientBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks to claim this area.\nYou need ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
+    @Setting(MessageStorage.CLAIM_CREATE_INSUFFICIENT_BLOCKS_2D)
+    public TextTemplate claimCreateInsufficientBlocks2d = TextTemplate.of(TextColors.RED, "You don't have enough blocks to claim this area.\nYou need ", TextTemplate.arg("remaining-blocks").color(TextColors.GOLD), " more blocks.");
+
+    @Setting(MessageStorage.CLAIM_CREATE_INSUFFICIENT_BLOCKS_3D)
+    public TextTemplate claimCreateInsufficientBlocks3d = TextTemplate.of(TextColors.RED, "You don't have enough blocks to claim this area.\nYou need ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-create-subdivision-fail")
     public TextTemplate claimCreateSubdivisionFail = TextTemplate.of("No claim exists at selected corner. Please click a valid opposite corner within parent claim in order to create your subdivision.");
@@ -249,8 +255,11 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-owner-only")
     public TextTemplate claimOwnerOnly = TextTemplate.of(TextColors.RED, "Only ", TextTemplate.arg("owner"), " can modify this claim.");
 
-    @Setting(MessageStorage.CLAIM_SIZE_NEED_BLOCKS)
-    public TextTemplate claimSizeNeedBlocks = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this claim size.\nYou need ", TextTemplate.arg("chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("blocks").color(TextColors.WHITE), " blocks)");
+    @Setting(MessageStorage.CLAIM_SIZE_NEED_BLOCKS_2D)
+    public TextTemplate claimSizeNeedBlocks2d = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this claim size.\nYou need ", TextTemplate.arg("blocks").color(TextColors.GREEN), " more blocks.");
+
+    @Setting(MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D)
+    public TextTemplate claimSizeNeedBlocks3d = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this claim size.\nYou need ", TextTemplate.arg("chunks").color(TextColors.GREEN), " more chunks. (", TextTemplate.arg("blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-resize-overlap-subdivision")
     public TextTemplate claimResizeOverlapSubdivision = TextTemplate.of(TextColors.RED, "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use " + "your shovel at a corner to resize it.");
@@ -261,8 +270,11 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-resize-start")
     public TextTemplate claimResizeStart = TextTemplate.of(TextColors.GREEN, "Resizing claim.  Use your shovel again at the new location for this corner.");
 
-    @Setting(MessageStorage.CLAIM_RESIZE_SUCCESS)
-    public TextTemplate claimResizeSuccess = TextTemplate.of(TextColors.GREEN, "Claim resized. You have ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks remaining.\n(", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
+    @Setting("claim-resize-success-2d")
+    public TextTemplate claimResizeSuccess = TextTemplate.of(TextColors.GREEN, "Claim resized. You have ", TextTemplate.arg("remaining-blocks").color(TextColors.GOLD), " more blocks remaining.");
+
+    @Setting(MessageStorage.CLAIM_RESIZE_SUCCESS_3D)
+    public TextTemplate claimResizeSuccess3d = TextTemplate.of(TextColors.GREEN, "Claim resized. You have ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks remaining.\n(", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-respecting")
     public TextTemplate claimRespecting = TextTemplate.of(TextColors.GREEN, "Now respecting claims.");
@@ -615,8 +627,11 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("player-not-ignoring")
     public TextTemplate playerNotIgnoring = TextTemplate.of("You're not ignoring that player.");
 
-    @Setting("player-remaining-blocks")
-    public TextTemplate playerRemainingBlocks = TextTemplate.of(TextColors.YELLOW, "You may claim up to ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
+    @Setting("player-remaining-blocks-2d")
+    public TextTemplate playerRemainingBlocks2d = TextTemplate.of(TextColors.YELLOW, "You may claim up to ", TextTemplate.arg("remaining-blocks").color(TextColors.GREEN), " more blocks.");
+
+    @Setting("player-remaining-blocks-3d")
+    public TextTemplate playerRemainingBlocks3d = TextTemplate.of(TextColors.YELLOW, "You may claim up to ", TextTemplate.arg("remaining-chunks").color(TextColors.GREEN), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("player-separate")
     public TextTemplate playerSeparate = TextTemplate.of("Those players will now ignore each other in chat.");
@@ -703,13 +718,13 @@ public class MessageDataConfig extends ConfigCategory {
     public TextTemplate townTrust = TextTemplate.of(TextColors.RED, "That belongs to the town.");
 
     @Setting("trust-already-has")
-    public TextTemplate trustAlreadyHas = TextTemplate.of(TextTemplate.arg("target"), " already has ", TextTemplate.arg("type"), " permission.");
+    public TextTemplate trustAlreadyHas = TextTemplate.of(TextColors.RED, TextTemplate.arg("target"), " already has ", TextTemplate.arg("type"), " permission.");
 
     @Setting("trust-current-claim")
-    public TextTemplate trustGrant = TextTemplate.of("Granted ", TextTemplate.arg("target"), " permission to ", TextTemplate.arg("type"), " in current claim.");
+    public TextTemplate trustGrant = TextTemplate.of(TextColors.GREEN, "Granted ", TextTemplate.arg("target").color(TextColors.AQUA), " permission to ", TextTemplate.arg("type"), " in current claim.");
 
     @Setting("trust-individual-all-claims")
-    public TextTemplate trustIndividualAllClaims = TextTemplate.of("Granted ", TextTemplate.arg("player"), "'s full trust to all your claims.  To unset permissions for ALL your claims, use /untrustall.");
+    public TextTemplate trustIndividualAllClaims = TextTemplate.of(TextColors.GREEN, "Granted ", TextTemplate.arg("player").color(TextColors.AQUA), "'s full trust to all your claims.  To unset permissions for ALL your claims, use /untrustall.");
 
     @Setting("trust-list-header")
     public TextTemplate trustListHeader = TextTemplate.of("Explicit permissions here:");

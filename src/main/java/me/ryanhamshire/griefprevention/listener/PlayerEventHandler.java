@@ -1620,11 +1620,18 @@ public class PlayerEventHandler {
                 }
 
                 // tell him how many claim blocks he has available
-                final Text message = GriefPreventionPlugin.instance.messageData.playerRemainingBlocks
-                        .apply(ImmutableMap.of(
-                        "remaining-chunks", playerData.getRemainingChunks(),
-                        "remaining-blocks", playerData.getRemainingClaimBlocks())).build();
-                GriefPreventionPlugin.sendMessage(player, message);
+                if (GriefPreventionPlugin.wildernessCuboids) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.playerRemainingBlocks3d
+                            .apply(ImmutableMap.of(
+                            "remaining-chunks", playerData.getRemainingChunks(),
+                            "remaining-blocks", playerData.getRemainingClaimBlocks())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                } else {
+                    final Text message = GriefPreventionPlugin.instance.messageData.playerRemainingBlocks2d
+                            .apply(ImmutableMap.of(
+                            "remaining-blocks", playerData.getRemainingClaimBlocks())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                }
 
                 // link to a video demo of land claiming, based on world type
                 if (player.hasPermission(GPPermissions.CLAIM_SHOW_TUTORIAL)) {
@@ -2146,11 +2153,17 @@ public class PlayerEventHandler {
                 playerData.lastShovelLocation = null;
                 playerData.endShovelLocation = null;
                 // inform about success, visualize, communicate remaining blocks available
-                final double claimableChunks = claimBlocksRemaining / 65536.0;
-                Map<String, ?> params = ImmutableMap.of(
-                        "remaining-chunks", Math.round(claimableChunks * 100.0)/100.0, 
-                        "remaining-blocks", claimBlocksRemaining);
-                GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_RESIZE_SUCCESS, GriefPreventionPlugin.instance.messageData.claimResizeSuccess, params);
+                if (GriefPreventionPlugin.wildernessCuboids) {
+                    final double claimableChunks = claimBlocksRemaining / 65536.0;
+                    final Map<String, ?> params = ImmutableMap.of(
+                            "remaining-chunks", Math.round(claimableChunks * 100.0)/100.0, 
+                            "remaining-blocks", claimBlocksRemaining);
+                    GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_RESIZE_SUCCESS_3D, GriefPreventionPlugin.instance.messageData.claimResizeSuccess3d, params);
+                } else {
+                    final Map<String, ?> params = ImmutableMap.of(
+                            "remaining-blocks", claimBlocksRemaining);
+                    GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_RESIZE_SUCCESS_2D, GriefPreventionPlugin.instance.messageData.claimResizeSuccess, params);
+                }
                 playerData.revertActiveVisual(player);
                 ((GPClaim) claim).getVisualizer().resetVisuals();
                 ((GPClaim) claim).getVisualizer().createClaimBlockVisuals(location.getBlockY(), player.getLocation(), playerData);
@@ -2206,6 +2219,18 @@ public class PlayerEventHandler {
         // a resize, creating a new claim, town, or creating a subdivision
 
         GPClaim claim = this.dataStore.getClaimAt(location, true);
+        // check if cuboids are allowed
+        if (!GriefPreventionPlugin.wildernessCuboids && playerData.getClaimCreateMode() == 1) {
+            if ((claim.isWilderness() && playerData.shovelMode != ShovelMode.Admin) 
+                    || (!claim.isWilderness() && !player.getUniqueId().equals(claim.getOwnerUniqueId()))) {
+                playerData.lastShovelLocation = null;
+                playerData.claimSubdividing = null;
+                playerData.claimResizing = null;
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateCuboidDisabled.toText());
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
+        }
         // if within an existing claim, he's not creating a new one
         if (!claim.isWilderness()) {
             // if the player has permission to edit the claim or subdivision
@@ -2251,6 +2276,7 @@ public class PlayerEventHandler {
 
                     if (!claim.getInternalClaimData().isResizable() || !playerCanResize) {
                         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimResize.toText());
+                        GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                         return;
                     }
 
