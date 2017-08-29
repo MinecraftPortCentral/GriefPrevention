@@ -2222,7 +2222,7 @@ public class PlayerEventHandler {
         // check if cuboids are allowed
         if (!GriefPreventionPlugin.wildernessCuboids && playerData.getClaimCreateMode() == 1) {
             if ((claim.isWilderness() && playerData.shovelMode != ShovelMode.Admin) 
-                    || (!claim.isWilderness() && !player.getUniqueId().equals(claim.getOwnerUniqueId()))) {
+                    || (!claim.isWilderness() && !playerData.canIgnoreClaim(claim) && !player.getUniqueId().equals(claim.getOwnerUniqueId()))) {
                 playerData.lastShovelLocation = null;
                 playerData.claimSubdividing = null;
                 playerData.claimResizing = null;
