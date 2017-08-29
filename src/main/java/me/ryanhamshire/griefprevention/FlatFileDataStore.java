@@ -211,23 +211,42 @@ public class FlatFileDataStore extends DataStore {
         // handle default flag permissions
         this.setupDefaultPermissions(world);
         // migrate playerdata to new claim block system
-        final int migrationRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrationRate;
-        if (migrationRate <= -1) {
+        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate;
+        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate;
+        final int resetClaimBlockData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
+        if (migration3dRate <= -1 && migration2dRate <= -1 && resetClaimBlockData <= -1) {
+            return;
+        }
+        if (GriefPreventionPlugin.wildernessCuboids && migration2dRate >= 0) {
+            return;
+        }
+        if (!GriefPreventionPlugin.wildernessCuboids && migration3dRate >= 0) {
             return;
         }
 
         for (GPPlayerData playerData : claimWorldManager.getPlayerDataMap().values()) {
             final PlayerStorageData playerStorage = playerData.getStorageData();
-            if (!playerStorage.getConfig().hasMigratedBlocks()) {
-                final int accruedBlocks = playerStorage.getConfig().getAccruedClaimBlocks();
-                int newAccruedBlocks = accruedBlocks * migrationRate;
-                if (newAccruedBlocks > playerData.optionMaxAccruedBlocks) {
-                    newAccruedBlocks = playerData.optionMaxAccruedBlocks;
-                }
-                playerStorage.getConfig().setAccruedClaimBlocks(accruedBlocks * migrationRate);
+            final int accruedBlocks = playerStorage.getConfig().getAccruedClaimBlocks();
+            int newAccruedBlocks = accruedBlocks;
+            // first check reset
+            if (resetClaimBlockData > -1) {
+                newAccruedBlocks = resetClaimBlockData;
+                playerStorage.getConfig().setBonusClaimBlocks(0);
+            } else if (migration3dRate > -1 && !playerStorage.getConfig().hasMigratedBlocks()) {
+                newAccruedBlocks = accruedBlocks * migration3dRate;
                 playerStorage.getConfig().setMigratedBlocks(true);
-                playerStorage.save();
+            } else if (migration2dRate > -1 && !playerStorage.getConfig().hasMigratedBlocks()) {
+                newAccruedBlocks = accruedBlocks / migration2dRate;
+                playerStorage.getConfig().setMigratedBlocks(true);
             }
+            if (newAccruedBlocks < 0) {
+                newAccruedBlocks = 0;
+            }
+            if (newAccruedBlocks > playerData.optionMaxAccruedBlocks) {
+                newAccruedBlocks = playerData.optionMaxAccruedBlocks;
+            }
+            playerStorage.getConfig().setAccruedClaimBlocks(newAccruedBlocks);
+            playerStorage.save();
         }
     }
 

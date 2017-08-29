@@ -73,12 +73,12 @@ public class GPOptions {
 
     public static final double DEFAULT_ABANDON_RETURN_RATIO_BASIC = 1.0;
     public static final double DEFAULT_ABANDON_RETURN_RATIO_TOWN = 1.0;
-    public static final int DEFAULT_BLOCKS_ACCRUED_PER_HOUR = 30720;
+    public static final int DEFAULT_BLOCKS_ACCRUED_PER_HOUR = GriefPreventionPlugin.wildernessCuboids ? 30720 : 120;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_BASIC = 20;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION = 10;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_TOWN = 1;
-    public static final int DEFAULT_INITIAL_CLAIM_BLOCKS = 25600;
-    public static final int DEFAULT_MAX_ACCRUED_BLOCKS = 20480000;
+    public static final int DEFAULT_INITIAL_CLAIM_BLOCKS = GriefPreventionPlugin.wildernessCuboids ? 25600 : 100;
+    public static final int DEFAULT_MAX_ACCRUED_BLOCKS = GriefPreventionPlugin.wildernessCuboids ? 20480000 : 80000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_X= 5000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Z = 5000;
