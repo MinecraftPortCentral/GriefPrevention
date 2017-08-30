@@ -2548,7 +2548,7 @@ public class GPClaim implements Claim {
             }
 
             if (this.ownerUniqueId != null) {
-                if (playerData != null) {
+                if (playerData == null) {
                     playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
                 }
 
