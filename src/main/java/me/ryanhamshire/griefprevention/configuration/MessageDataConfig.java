@@ -690,6 +690,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("restore-nature-fillmode-active")
     public TextTemplate restoreNatureFillModeActive = TextTemplate.of(TextColors.GREEN, "Fill mode activated with radius ", TextTemplate.arg("radius"), ". Right click an area to fill.");
 
+    @Setting(MessageStorage.SCHEMATIC_RESTORE_CONFIRMED)
+    public TextTemplate schematicRestoreConfirmed = TextTemplate.of(TextColors.GREEN, "You have successfully restored your claim from schematic backup ", TextTemplate.arg("schematic_name").color(TextColors.GOLD), ".");
+
     @Setting("town-create-not-enough-funds")
     public TextTemplate townCreateNotEnoughFunds = TextTemplate.of(TextColors.RED, "You do not have enough funds to create this town for ", TextTemplate.arg("create_cost").color(TextColors.GOLD), ". You currently have a balance of ", TextTemplate.arg("balance").color(TextColors.GOLD), " and need ", TextTemplate.arg("amount_needed").color(TextColors.GOLD), " more for creation.");
 

@@ -114,6 +114,7 @@ public class GPPermissions {
     public static final String COMMAND_CLAIM_CLEAR = "griefprevention.admin.claim.command.clear";
     public static final String COMMAND_CLAIM_PERMISSION_GROUP = "griefprevention.admin.claim.command.permission-group";
     public static final String COMMAND_CLAIM_PERMISSION_PLAYER = "griefprevention.admin.claim.command.permission-player";
+    public static final String COMMAND_CLAIM_SCHEMATIC = "griefprevention.admin.claim.command.schematic";
     public static final String COMMAND_DEBUG = "griefprevention.admin.claim.command.debug";
     public static final String COMMAND_DELETE_CLAIM_BASE = "griefprevention.admin.claim.command.delete.base";
     public static final String DELETE_CLAIM_BASIC = "griefprevention.admin.claim.command.delete.basic";

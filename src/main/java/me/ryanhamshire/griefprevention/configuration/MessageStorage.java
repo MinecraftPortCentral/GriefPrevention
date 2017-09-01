@@ -70,6 +70,7 @@ public class MessageStorage {
     public static final String CLAIM_CREATE_INSUFFICIENT_BLOCKS_3D = "claim-create-insufficient-blocks-3d";
     public static final String ECONOMY_CLAIM_SALE_CONFIRMED = "economy-claim-sale-confirmed";
     public static final String ECONOMY_USER_NOT_FOUND = "economy-user-not-found";
+    public static final String SCHEMATIC_RESTORE_CONFIRMED = "schematic-restore-confirmed";
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public MessageStorage(Path path) {

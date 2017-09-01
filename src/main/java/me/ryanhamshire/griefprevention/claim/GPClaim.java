@@ -27,11 +27,13 @@ package me.ryanhamshire.griefprevention.claim;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.flowpowered.math.vector.Vector3d;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.DataStore;
+import me.ryanhamshire.griefprevention.FlatFileDataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
@@ -73,6 +75,9 @@ import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.data.DataContainer;
+import org.spongepowered.api.data.persistence.DataFormats;
+import org.spongepowered.api.data.persistence.DataTranslators;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -90,14 +95,18 @@ import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.extent.ArchetypeVolume;
+import org.spongepowered.api.world.schematic.Schematic;
 import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -108,6 +117,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.zip.GZIPOutputStream;
 
 import javax.annotation.Nullable;
 
@@ -145,6 +155,7 @@ public class GPClaim implements Claim {
     public ArrayList<Claim> children = new ArrayList<>();
     public Visualization visualization;
     public List<UUID> playersWatching = new ArrayList<>();
+    public List<Schematic> schematicBackups = new ArrayList<>();
 
     private GPPlayerData ownerPlayerData;
     private Account economyAccount;
@@ -2927,5 +2938,49 @@ public class GPClaim implements Claim {
         }
 
         return ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT;
+    }
+
+    @Override
+    public boolean applySchematic(Schematic schematic) {
+        if (!schematic.containsBlock(this.lesserBoundaryCorner.getBlockPosition()) && !schematic.containsBlock(this.greaterBoundaryCorner.getBlockPosition())) {
+            return false;
+        }
+
+        schematic.apply(this.lesserBoundaryCorner.setPosition(new Vector3d(0, 0, 0)), BlockChangeFlag.ALL, GriefPreventionPlugin.pluginCause);
+        return true;
+    }
+
+    @Override
+    public Optional<Schematic> createBackupSchematic(String backupName) {
+        final ArchetypeVolume volume = world.createArchetypeVolume(this.lesserBoundaryCorner.getBlockPosition(), this.greaterBoundaryCorner.getBlockPosition(), new Vector3i(0, 0, 0));
+        final Schematic schematic = Schematic.builder()
+                .metaValue(Schematic.METADATA_NAME, backupName)
+                .metaValue(Schematic.METADATA_DATE, Instant.now().toString())
+                .metaValue("UUID", this.id.toString())
+                .volume(volume)
+                .build();
+
+        DataContainer schematicData = DataTranslators.SCHEMATIC.translate(schematic);
+        final Path schematicPath = FlatFileDataStore.schematicWorldMap.get(this.world.getProperties().getUniqueId()).resolve(this.id.toString());
+        try {
+            Files.createDirectories(schematicPath);
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+        File outputFile = schematicPath.resolve(backupName + ".schematic").toFile();
+        try {
+            DataFormats.NBT.writeTo(new GZIPOutputStream(new FileOutputStream(outputFile)), schematicData);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+
+        this.schematicBackups.add(schematic);
+        return Optional.of(schematic);
+    }
+
+    @Override
+    public List<Schematic> getBackupSchematics() {
+        return this.schematicBackups;
     }
 }

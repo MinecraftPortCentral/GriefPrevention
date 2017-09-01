@@ -43,17 +43,22 @@ import me.ryanhamshire.griefprevention.migrator.PolisMigrator;
 import me.ryanhamshire.griefprevention.migrator.RedProtectMigrator;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.data.DataContainer;
+import org.spongepowered.api.data.persistence.DataFormats;
+import org.spongepowered.api.data.persistence.DataTranslators;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.schematic.Schematic;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.interfaces.world.IMixinDimensionType;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -64,6 +69,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
+import java.util.zip.GZIPInputStream;
 
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore {
@@ -77,6 +83,7 @@ public class FlatFileDataStore extends DataStore {
     public final static Path polisDataPath = GriefPreventionPlugin.instance.getConfigPath().getParent().resolve("polis").resolve("data");
     public final static Path redProtectDataPath = GriefPreventionPlugin.instance.getConfigPath().getParent().resolve("RedProtect").resolve("data");
     public final static Map<UUID, Task> cleanupClaimTasks = Maps.newHashMap();
+    public final static Map<UUID, Path> schematicWorldMap = Maps.newHashMap();
     private final Path rootConfigPath = GriefPreventionPlugin.instance.getConfigPath().resolve("worlds");
     public static Path rootWorldSavePath;
 
@@ -146,6 +153,12 @@ public class FlatFileDataStore extends DataStore {
             if (!Files.exists(newWorldDataPath.resolve("ClaimData"))) {
                 Files.createDirectories(newWorldDataPath.resolve("ClaimData"));
             }
+            if (!Files.exists(newWorldDataPath.resolve("SchematicData"))) {
+                Files.createDirectories(newWorldDataPath.resolve("SchematicData"));
+            }
+
+            schematicWorldMap.put(worldProperties.getUniqueId(), newWorldDataPath.resolve("SchematicData"));
+
             if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
                 if (!globalPlayerDataPath.toFile().exists()) {
                     Files.createDirectories(globalPlayerDataPath);
@@ -436,7 +449,35 @@ public class FlatFileDataStore extends DataStore {
         if (!claim.isWilderness()) {
             claimStorage.migrateSubdivision(claim);
         }
+
+        loadSchematics(claim);
         return claim;
+    }
+
+    public void loadSchematics(Claim claim) {
+        Path path = FlatFileDataStore.schematicWorldMap.get(claim.getWorld().getProperties().getUniqueId()).resolve(claim.getUniqueId().toString());
+        if (!Files.exists(path)) {
+            try {
+                Files.createDirectories(path);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+
+        File files[] = path.toFile().listFiles();
+        for (File file : files) {
+            DataContainer schematicData = null;
+            Schematic schematic = null;
+            try {
+                schematicData = DataFormats.NBT.readFrom(new GZIPInputStream(new FileInputStream(file)));
+                schematic = DataTranslators.SCHEMATIC.translate(schematicData);
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
+            }
+            ((GPClaim) claim).schematicBackups.add(schematic);
+        }
     }
 
     @Override

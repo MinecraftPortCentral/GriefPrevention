@@ -77,6 +77,7 @@ import me.ryanhamshire.griefprevention.command.CommandClaimOptionGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimOptionPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimPermissionPlayer;
+import me.ryanhamshire.griefprevention.command.CommandClaimSchematic;
 import me.ryanhamshire.griefprevention.command.CommandClaimSell;
 import me.ryanhamshire.griefprevention.command.CommandClaimSellBlocks;
 import me.ryanhamshire.griefprevention.command.CommandClaimSetSpawn;
@@ -1078,6 +1079,16 @@ public class GriefPreventionPlugin {
                 .arguments(optional(integer(Text.of("numberOfBlocks"))))
                 .executor(new CommandClaimSellBlocks())
                 .build(), "sellclaimblocks", "claimsellblocks");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .description(Text.of("Manages claim schematics. Use '/claimschematic backup' to create a live backup of claim."))
+                .permission(GPPermissions.COMMAND_CLAIM_SCHEMATIC)
+                .arguments(optional(
+                        GenericArguments.seq(
+                                string(Text.of("action")),
+                                onlyOne(string(Text.of("name"))))))
+                .executor(new CommandClaimSchematic())
+                .build(), "claimschematic");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Switches the shovel tool to subdivision mode, used to subdivide your claims"))

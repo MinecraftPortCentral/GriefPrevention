@@ -41,6 +41,7 @@ import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.schematic.Schematic;
 
 import java.util.List;
 import java.util.Map;
@@ -660,6 +661,30 @@ public interface Claim extends ContextSource {
      * @return The claim's persisted data
      */
     ClaimData getData();
+
+    /**
+     * Applies a backup schematic to this claim.
+     * 
+     * @param schematic
+     * @return If schematic restore was successful, false if not
+     */
+    boolean applySchematic(Schematic schematic);
+
+    /**
+     * Creates a backup schematic with provided name that is stored
+     * with this claim.
+     * 
+     * @param backupName
+     * @return If success, the newly created backup schematic
+     */
+    Optional<Schematic> createBackupSchematic(String backupName);
+
+    /**
+     * Gets a list of currently stored backup schematics.
+     * 
+     * @return The list of backup schematics, empty if none
+     */
+    List<Schematic> getBackupSchematics();
 
     /**
      * Gets the {@link ClaimType} of claim.
