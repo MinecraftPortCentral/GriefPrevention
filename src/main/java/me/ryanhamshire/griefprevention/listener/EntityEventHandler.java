@@ -230,7 +230,7 @@ public class EntityEventHandler {
                         return true;
                     }
                 }
-                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, spawnCause, entity, user, true) == Tristate.FALSE) {
+                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, spawnCause, entity, user, TrustType.BUILDER, true) == Tristate.FALSE) {
                     return false;
                 }
                 return true;
