@@ -964,7 +964,7 @@ public class PlayerEventHandler {
             this.worldEditProvider.removePlayer(player);
         }
         playerData.onDisconnect();
-        if (!playerData.getClaims().isEmpty()) {
+        if (playerData.getClaims().isEmpty()) {
             GriefPreventionPlugin.instance.dataStore.removePlayerData(player.getWorld().getProperties(), player.getUniqueId());
         }
     }
