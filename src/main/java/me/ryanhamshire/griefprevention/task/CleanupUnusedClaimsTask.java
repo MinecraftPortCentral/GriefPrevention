@@ -85,7 +85,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
     
                 // if this claim is a chest claim and those are set to expire
                 Double claimExpirationChest = GPOptionHandler.getClaimOptionDouble(playerData.getPlayerSubject(), claim, GPOptions.CLAIM_EXPIRATION_CHEST, playerData);
-                if (claim.getArea() <= areaOfDefaultClaim && claimExpirationChest > 0) {
+                if (claim.getClaimBlocks() <= areaOfDefaultClaim && claimExpirationChest > 0) {
                     if (claimLastActive.plus(Duration.ofDays(claimExpirationChest.intValue()))
                             .isBefore(Instant.now())) {
                         claim.removeSurfaceFluids(null);

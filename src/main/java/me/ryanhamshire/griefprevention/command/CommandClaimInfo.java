@@ -202,7 +202,7 @@ public class CommandClaimInfo implements CommandExecutor {
         } else {
             claimSize = Text.of("  ", TextColors.YELLOW, "Area: ", TextColors.GRAY, sizeX + "x" + sizeZ);
         }
-        final Text claimCost = Text.of("  ", TextColors.YELLOW, "Blocks: ", TextColors.GRAY, claim.getArea());
+        final Text claimCost = Text.of("  ", TextColors.YELLOW, "Blocks: ", TextColors.GRAY, claim.getClaimBlocks());
         if (claim.isWilderness() && name == null) {
             name = Text.of(TextColors.GREEN, "Wilderness");
         }

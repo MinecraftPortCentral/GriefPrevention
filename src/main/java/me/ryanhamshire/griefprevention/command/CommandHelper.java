@@ -156,7 +156,7 @@ public class CommandHelper {
             if (!claim.isSubdivision() && !claim.isAdminClaim()) {
                 playerData.setAccruedClaimBlocks(
                         playerData.getAccruedClaimBlocks() - (int) Math
-                                .ceil((claim.getArea() * (1 - playerData.optionAbandonReturnRatioBasic))));
+                                .ceil((claim.getClaimBlocks() * (1 - playerData.optionAbandonReturnRatioBasic))));
 
                 // tell the player how many claim blocks he has left
                 int remainingBlocks = playerData.getRemainingClaimBlocks();
@@ -614,7 +614,7 @@ public class CommandHelper {
                 Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, claim.getOwnerName(), "\n");
                 Text claimTypeInfo = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", 
                         claim.getFriendlyNameType(), " ", TextColors.GRAY, claim.isCuboid() ? "3D " : "2D ",
-                        TextColors.WHITE, " (Area: ", TextColors.GRAY, claim.getArea(), " blocks",
+                        TextColors.WHITE, " (Area: ", TextColors.GRAY, claim.getClaimBlocks(), " blocks",
                         TextColors.WHITE, ")\n");
                 Text clickInfo = Text.of("Click to check more info.");
                 Text basicInfo = Text.builder().append(
@@ -1209,14 +1209,14 @@ public class CommandHelper {
                 for (Claim playerClaim : playerData.getInternalClaims()) {
                     GPClaim playerTown = (GPClaim) playerClaim.getTown().orElse(null);
                     if (!playerClaim.isTown() && playerTown != null && playerTown.getUniqueId().equals(claim.getUniqueId())) {
-                        taxOwed += (playerTown.getArea() / 256) * playerTaxRate;
+                        taxOwed += (playerTown.getClaimBlocks() / 256) * playerTaxRate;
                     }
                 }
             } else {
-                taxOwed = town.getArea() * playerTaxRate;
+                taxOwed = town.getClaimBlocks() * playerTaxRate;
             }
         } else {
-            taxOwed = claim.getArea() * playerTaxRate;
+            taxOwed = claim.getClaimBlocks() * playerTaxRate;
         }
 
         final GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(claim.getWorld().getProperties());

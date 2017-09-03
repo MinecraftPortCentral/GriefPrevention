@@ -952,19 +952,6 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_JOIN_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
-    public void onPlayerDisconnect(ClientConnectionEvent.Disconnect event) {
-        // clear active visuals
-        Player player = event.getTargetEntity();
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (this.worldEditProvider != null) {
-            this.worldEditProvider.revertVisuals(player, playerData, null);
-            this.worldEditProvider.removePlayer(player);
-        }
-        playerData.onDisconnect();
-        GriefPreventionPlugin.instance.dataStore.removePlayerData(player.getWorld().getProperties(), player.getUniqueId());
-    }
-
     // when a player spawns, conditionally apply temporary pvp protection
     @Listener(order = Order.LAST)
     public void onPlayerRespawn(RespawnPlayerEvent event) {
@@ -1074,8 +1061,15 @@ public class PlayerEventHandler {
             player.offer(Keys.HEALTH, 0d);
         }
 
-        // drop data about this player
-        this.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), playerID);
+        if (this.worldEditProvider != null) {
+            this.worldEditProvider.revertVisuals(player, playerData, null);
+            this.worldEditProvider.removePlayer(player);
+        }
+
+        playerData.onDisconnect();
+        if (playerData.getClaims().isEmpty()) {
+            this.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), playerID);
+        }
 
         // reduce count of players with that player's IP address
         // TODO: re-enable when achievement data is implemented
@@ -2177,7 +2171,7 @@ public class PlayerEventHandler {
                 }
 
                 // if increased to a sufficiently large size and no children yet, send children instructions
-                if (oldClaim.getArea() < 1000 && claim.getArea() >= 1000 && claim.getChildren(false).isEmpty()
+                if (oldClaim.getClaimBlocks() < 1000 && claim.getClaimBlocks() >= 1000 && claim.getChildren(false).isEmpty()
                         && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSubdivisionBasics.toText(), 201L);
                 }
@@ -2538,7 +2532,7 @@ public class PlayerEventHandler {
                 gpClaim.getVisualizer().createClaimBlockVisuals(location.getBlockY(), player.getLocation(), playerData);
                 gpClaim.getVisualizer().apply(player, false);
                 // if it's a big claim, tell the player about subdivisions
-                if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && gpClaim.getArea() >= 1000) {
+                if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && gpClaim.getClaimBlocks() >= 1000) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSubdivisionBasics.toText(), 201L);
                 }
             }
