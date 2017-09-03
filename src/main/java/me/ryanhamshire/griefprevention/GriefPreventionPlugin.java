@@ -1930,7 +1930,7 @@ public class GriefPreventionPlugin {
         }
 
         // it's too expensive to do this for huge claims
-        if (claim.getArea() > 2560000) {
+        if (claim.getClaimBlocks() > (wildernessCuboids ? 2560000 : 10000)) {
             return;
         }
 

@@ -964,7 +964,9 @@ public class PlayerEventHandler {
             this.worldEditProvider.removePlayer(player);
         }
         playerData.onDisconnect();
-        GriefPreventionPlugin.instance.dataStore.removePlayerData(player.getWorld().getProperties(), player.getUniqueId());
+        if (!playerData.getClaims().isEmpty()) {
+            GriefPreventionPlugin.instance.dataStore.removePlayerData(player.getWorld().getProperties(), player.getUniqueId());
+        }
     }
 
     // when a player spawns, conditionally apply temporary pvp protection
@@ -2179,7 +2181,7 @@ public class PlayerEventHandler {
                 }
 
                 // if increased to a sufficiently large size and no children yet, send children instructions
-                if (oldClaim.getArea() < 1000 && claim.getArea() >= 1000 && claim.getChildren(false).isEmpty()
+                if (oldClaim.getClaimBlocks() < 1000 && claim.getClaimBlocks() >= 1000 && claim.getChildren(false).isEmpty()
                         && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSubdivisionBasics.toText(), 201L);
                 }
@@ -2540,7 +2542,7 @@ public class PlayerEventHandler {
                 gpClaim.getVisualizer().createClaimBlockVisuals(location.getBlockY(), player.getLocation(), playerData);
                 gpClaim.getVisualizer().apply(player, false);
                 // if it's a big claim, tell the player about subdivisions
-                if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && gpClaim.getArea() >= 1000) {
+                if (!player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS) && gpClaim.getClaimBlocks() >= 1000) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSubdivisionBasics.toText(), 201L);
                 }
             }

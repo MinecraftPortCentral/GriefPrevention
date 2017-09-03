@@ -83,7 +83,7 @@ public class CommandClaimAbandonAll implements CommandExecutor {
             if (claim.isSubdivision() || claim.isAdminClaim() || claim.isWilderness()) {
                 continue;
             }
-            playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatioBasic))));
+            playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getClaimBlocks() * (1 - playerData.optionAbandonReturnRatioBasic))));
         }
 
         // delete them

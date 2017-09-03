@@ -113,14 +113,14 @@ public class TaxApplyTask implements Runnable {
         final Subject subject = playerData.getPlayerSubject();
         final Account claimAccount = claim.getEconomyAccount().orElse(null);
         double taxRate = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_RATE, playerData);
-        double taxOwed = (claim.getArea() / 256) * taxRate;
+        double taxOwed = (claim.getClaimBlocks() / 256) * taxRate;
         GPTaxClaimEvent event = new GPTaxClaimEvent(claim, taxRate, taxOwed, GriefPreventionPlugin.pluginCause);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
              return;
         }
         taxRate = event.getTaxRate();
-        taxOwed = claim.getArea() * taxRate;
+        taxOwed = claim.getClaimBlocks() * taxRate;
 
         TransactionResult result = claimAccount.withdraw(this.economyService.getDefaultCurrency(), BigDecimal.valueOf(taxOwed), GriefPreventionPlugin.pluginCause);
         if (result.getResult() != ResultType.SUCCESS) {

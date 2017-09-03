@@ -389,7 +389,7 @@ public class GPPlayerData implements PlayerData {
 
             GPClaim gpClaim = (GPClaim) claim;
             if ((gpClaim.parent == null || gpClaim.parent.isAdminClaim()) && claim.getData().requiresClaimBlocks()) {
-                remainingBlocks -= claim.getArea();
+                remainingBlocks -= claim.getClaimBlocks();
             }
         }
 
@@ -705,7 +705,7 @@ public class GPPlayerData implements PlayerData {
         final Subject subject = this.getPlayerSubject();
         for (Claim claim : this.getInternalClaims()) {
             double playerTaxRate = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_RATE, this);
-            totalTax += (claim.getArea() / 256) * playerTaxRate;
+            totalTax += (claim.getClaimBlocks() / 256) * playerTaxRate;
         }
 
         return totalTax;

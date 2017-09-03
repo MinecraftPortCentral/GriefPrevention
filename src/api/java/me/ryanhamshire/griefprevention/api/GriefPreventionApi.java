@@ -55,7 +55,7 @@ public interface GriefPreventionApi {
      * Checks if GriefPrevention is enabled in world.
      * 
      * @param world The world to check.
-     * @return true if enabled, false if not.
+     * @return true if enabled, false if not
      */
     default boolean isEnabled(World world) {
         return isEnabled(world.getProperties());
@@ -65,9 +65,19 @@ public interface GriefPreventionApi {
      * Checks if GriefPrevention is enabled in world.
      * 
      * @param worldProperties The world properties to check.
-     * @return true if enabled, false if not.
+     * @return true if enabled, false if not
      */
     boolean isEnabled(WorldProperties worldProperties);
+
+    /**
+     * Checks to see if cuboids are allowed in wilderness.
+     * 
+     * Note: If false, claims use area which only checks x and z.
+     *  If true, claims use volume which checks x, y, and z.
+     * 
+     * @return true if enabled, false if not
+     */
+    boolean isWildernessCuboidsEnabled();
 
     /**
      * Gets the global {@link PlayerData} for specified {@link UUID}.
