@@ -954,21 +954,6 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_JOIN_EVENT.stopTimingIfSync();
     }
 
-    @Listener(order = Order.FIRST)
-    public void onPlayerDisconnect(ClientConnectionEvent.Disconnect event) {
-        // clear active visuals
-        Player player = event.getTargetEntity();
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (this.worldEditProvider != null) {
-            this.worldEditProvider.revertVisuals(player, playerData, null);
-            this.worldEditProvider.removePlayer(player);
-        }
-        playerData.onDisconnect();
-        if (playerData.getClaims().isEmpty()) {
-            GriefPreventionPlugin.instance.dataStore.removePlayerData(player.getWorld().getProperties(), player.getUniqueId());
-        }
-    }
-
     // when a player spawns, conditionally apply temporary pvp protection
     @Listener(order = Order.LAST)
     public void onPlayerRespawn(RespawnPlayerEvent event) {
@@ -1078,8 +1063,15 @@ public class PlayerEventHandler {
             player.offer(Keys.HEALTH, 0d);
         }
 
-        // drop data about this player
-        this.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), playerID);
+        if (this.worldEditProvider != null) {
+            this.worldEditProvider.revertVisuals(player, playerData, null);
+            this.worldEditProvider.removePlayer(player);
+        }
+
+        playerData.onDisconnect();
+        if (playerData.getClaims().isEmpty()) {
+            this.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), playerID);
+        }
 
         // reduce count of players with that player's IP address
         // TODO: re-enable when achievement data is implemented
