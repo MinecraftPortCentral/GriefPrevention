@@ -832,13 +832,15 @@ public class GriefPreventionPlugin {
                     for (GPPlayerData playerData : playerDataList) {
                         if (!Sponge.getServer().getPlayer(playerData.playerID).isPresent() && playerData.getClaims().isEmpty()) {
                             playerData.onDisconnect();
-                            GriefPreventionPlugin.instance.dataStore.removePlayerData(world.getProperties(), playerData.playerID);
+                            claimWorldManager.removePlayer(playerData.playerID);
                         }
                     }
                 }
             }
             GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations = false;
             GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData = -1;
+            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate = -1;
+            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate = -1;
             GriefPreventionPlugin.getGlobalConfig().save();
         }
 
