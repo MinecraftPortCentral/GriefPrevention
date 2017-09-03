@@ -127,7 +127,7 @@ public class CommandClaimAbandon implements CommandExecutor {
 
             // this prevents blocks being gained without spending adjust claim blocks when abandoning a top level claim
             if (!claim.isSubdivision() && !claim.isAdminClaim()) {
-                int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getArea() * (1 - playerData.optionAbandonReturnRatioBasic)));
+                int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getClaimBlocks() * (1 - playerData.optionAbandonReturnRatioBasic)));
                 playerData.setAccruedClaimBlocks(newAccruedClaimCount);
             }
 

@@ -108,11 +108,27 @@ public interface Claim extends ContextSource {
     boolean isParent(Claim claim);
 
     /**
-     * Gets the claim's area in blocks.
+     * Gets the claim blocks required for this claim.
      * 
-     * @return The area of claim
+     * Note: If cuboids are enabled in wilderness, 2D claims will factor in Y.
+     * 
+     * @return The claim blocks of claim
+     */
+    int getClaimBlocks();
+
+    /**
+     * Gets the total claim area in blocks.
+     * 
+     * @return The total area of claim
      */
     int getArea();
+
+    /**
+     * Gets the total claim volume in blocks.
+     *      
+     * @return The total volume of claim
+     */
+    int getVolume();
 
     /**
      * Gets the claim's width in blocks.

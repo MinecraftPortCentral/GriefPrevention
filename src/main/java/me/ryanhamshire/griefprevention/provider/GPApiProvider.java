@@ -67,6 +67,11 @@ public class GPApiProvider implements GriefPreventionApi {
     }
 
     @Override
+    public boolean isWildernessCuboidsEnabled() {
+        return GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.wildernessCuboids;
+    }
+
+    @Override
     public ClaimManager getClaimManager(WorldProperties worldProperties) {
         return GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(worldProperties);
     }

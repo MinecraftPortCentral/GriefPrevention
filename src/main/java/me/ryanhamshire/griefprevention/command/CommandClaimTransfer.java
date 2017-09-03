@@ -66,7 +66,7 @@ public class CommandClaimTransfer implements CommandExecutor {
             if (claimResult.getResultType() == ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS) {
                 src.sendMessage(Text.of(TextColors.RED, "Could not transfer claim to player with UUID " + targetPlayer.getUniqueId() + "."
                     + " Player only has " + targetPlayerData.getRemainingClaimBlocks() + " claim blocks remaining." 
-                    + " The claim requires a total of " + claim.getArea() + " claim blocks to own."));
+                    + " The claim requires a total of " + claim.getClaimBlocks() + " claim blocks to own."));
             } else if (claimResult.getResultType() == ClaimResultType.WRONG_CLAIM_TYPE) {
                 src.sendMessage(Text.of(TextColors.RED, "The wilderness claim cannot be transferred."));
             } else if (claimResult.getResultType() == ClaimResultType.CLAIM_EVENT_CANCELLED) {

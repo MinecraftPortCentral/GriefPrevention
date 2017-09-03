@@ -422,7 +422,7 @@ public class GPClaim implements Claim {
         }
 
         // don't do it for very large claims
-        if (this.getArea() > MAX_AREA) {
+        if (this.getClaimBlocks() > MAX_AREA) {
             return;
         }
 
@@ -470,7 +470,7 @@ public class GPClaim implements Claim {
         Location<World> greater = this.getGreaterBoundaryCorner();
 
         // don't bother for very large claims, too expensive
-        if (this.getArea() > MAX_AREA) {
+        if (this.getClaimBlocks() > MAX_AREA) {
             return false;
         }
 
@@ -498,22 +498,34 @@ public class GPClaim implements Claim {
         return false;
     }
 
-    // measurements. all measurements are in blocks
+    @Override
+    public int getClaimBlocks() {
+        if (GriefPreventionPlugin.wildernessCuboids) {
+            return this.getVolume();
+        }
+
+        return this.getArea();
+    }
+
     @Override
     public int getArea() {
         final int claimWidth = this.greaterBoundaryCorner.getBlockX() - this.lesserBoundaryCorner.getBlockX() + 1;
         final int claimLength = this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
-        if (!GriefPreventionPlugin.wildernessCuboids) {
-            return claimWidth * claimLength;
-        }
 
+        return claimWidth * claimLength;
+    }
+
+    @Override
+    public int getVolume() {
+        final int claimWidth = this.greaterBoundaryCorner.getBlockX() - this.lesserBoundaryCorner.getBlockX() + 1;
+        final int claimLength = this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
         // 2D claims are always 256 in height
         int claimHeight = 256;
         if (this.cuboid) {
             claimHeight = this.greaterBoundaryCorner.getBlockY() - this.lesserBoundaryCorner.getBlockY() + 1;
         }
 
-        return claimLength * claimWidth * claimHeight;
+        return claimWidth * claimLength * claimHeight;
     }
 
     @Override
@@ -957,7 +969,7 @@ public class GPClaim implements Claim {
 
         if (this.isBasicClaim() && this.claimData.requiresClaimBlocks()) {
             int remainingClaimBlocks = newOwnerData.getRemainingClaimBlocks();
-            if (remainingClaimBlocks < 0 || (this.getArea() > remainingClaimBlocks)) {
+            if (remainingClaimBlocks < 0 || (this.getClaimBlocks() > remainingClaimBlocks)) {
                 return new GPClaimResult(ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS);
             }
         }
