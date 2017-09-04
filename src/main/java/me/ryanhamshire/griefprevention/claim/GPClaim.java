@@ -2725,7 +2725,7 @@ public class GPClaim implements Claim {
             contexts.add(context);
         }
 
-        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, GriefPreventionPlugin.GLOBAL_SUBJECT, contexts, cause);
+        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, subject, contexts, cause);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
@@ -2757,7 +2757,7 @@ public class GPClaim implements Claim {
         CompletableFuture<FlagResult> result = new CompletableFuture<>();
         Set<Context> contexts = new HashSet<>();
         contexts.add(context);
-        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, GriefPreventionPlugin.GLOBAL_SUBJECT, contexts, cause);
+        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, subject, contexts, cause);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
@@ -2800,7 +2800,7 @@ public class GPClaim implements Claim {
             return result;
         }
 
-        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, GriefPreventionPlugin.GLOBAL_SUBJECT, flag, null, target, value, context, cause);
+        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, null, target, value, context, cause);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
@@ -2812,7 +2812,13 @@ public class GPClaim implements Claim {
         if (root instanceof CommandSource) {
             commandSource = (CommandSource) root;
         }
-        result.complete(CommandHelper.addFlagPermission(commandSource, GriefPreventionPlugin.GLOBAL_SUBJECT, GriefPreventionPlugin.GLOBAL_SUBJECT.getIdentifier(), this, flag, null, target, value, context, null));
+        String subjectName = subject.getIdentifier();
+        if (subject instanceof User) {
+            subjectName = ((User) subject).getName();
+        } else if (subject == GriefPreventionPlugin.GLOBAL_SUBJECT) {
+            subjectName = "ALL";
+        }
+        result.complete(CommandHelper.addFlagPermission(commandSource, subject, subjectName, this, flag, null, target, value, context, null));
         return result;
     }
 
