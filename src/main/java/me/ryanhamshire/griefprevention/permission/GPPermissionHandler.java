@@ -152,13 +152,13 @@ public class GPPermissionHandler {
             Tristate override = Tristate.UNDEFINED;
             if (user != null) {
                 // check global bans in wilderness
-                override = getFlagOverride((GPClaim) claim.getWilderness(), user, user, targetPermission, targetModPermission, targetMetaPermission);
+                override = getFlagOverride((GPClaim) claim.getWilderness(), user, user, playerData, targetPermission, targetModPermission, targetMetaPermission);
                 if (override != Tristate.UNDEFINED) {
                     return override;
                 }
             }
             // First check for claim flag overrides
-            override = getFlagOverride(claim, user == null ? GriefPreventionPlugin.GLOBAL_SUBJECT : user, user, targetPermission, targetModPermission, targetMetaPermission);
+            override = getFlagOverride(claim, user == null ? GriefPreventionPlugin.GLOBAL_SUBJECT : user, user, playerData, targetPermission, targetModPermission, targetMetaPermission);
             if (override != Tristate.UNDEFINED) {
                 return override;
             }
@@ -286,13 +286,19 @@ public class GPPermissionHandler {
         return processResult(claim, permission, Tristate.UNDEFINED);
     }
 
-    private static Tristate getFlagOverride(GPClaim claim, Subject subject, User user, String flagPermission, String targetModPermission, String targetMetaPermission) {
+    private static Tristate getFlagOverride(GPClaim claim, Subject subject, User user, GPPlayerData playerData, String flagPermission, String targetModPermission, String targetMetaPermission) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
             return processResult(claim, flagPermission, Tristate.UNDEFINED);
         }
 
         Player player = null;
+        if (playerData != null) {
+            playerData.ignoreActiveContexts = true;
+        }
         Set<Context> contexts = new LinkedHashSet<>(subject.getActiveContexts());
+        if (playerData != null) {
+            playerData.ignoreActiveContexts = false;
+        }
         if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
             contexts.add(claim.world.getContext());
@@ -345,13 +351,13 @@ public class GPPermissionHandler {
         return processResult(claim, flagPermission, Tristate.UNDEFINED, user);
     }
 
-    public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user, boolean checkWildernessOverride) {
+    public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user, GPPlayerData playerData, boolean checkWildernessOverride) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
             return processResult(claim, flagPermission, Tristate.UNDEFINED);
         }
 
         if (checkWildernessOverride && !claim.isWilderness()) {
-            final Tristate wildernessOverride = getFlagOverride(event, location, (GPClaim) claim.getWilderness(), flagPermission, source, target, user, false);
+            final Tristate wildernessOverride = getFlagOverride(event, location, (GPClaim) claim.getWilderness(), flagPermission, source, target, user, playerData, false);
             if (wildernessOverride != Tristate.UNDEFINED) {
                 return wildernessOverride;
             }
@@ -395,7 +401,13 @@ public class GPPermissionHandler {
         }
 
         flagPermission = StringUtils.replace(flagPermission, ":", ".");
+        if (playerData != null) {
+            playerData.ignoreActiveContexts = true;
+        }
         Set<Context> contexts = new LinkedHashSet<>(subject.getActiveContexts());
+        if (playerData != null) {
+            playerData.ignoreActiveContexts = false;
+        }
         if (claim.isWilderness()) {
             contexts.add(ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT);
             player = user instanceof Player ? (Player) user : null;

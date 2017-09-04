@@ -1153,7 +1153,7 @@ public class PlayerEventHandler {
             Location<World> location = entityItem.getLocation();
             GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
             if (claim != null) {
-                final Tristate override = GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ITEM_DROP,  user, entityItem, user, true);
+                final Tristate override = GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ITEM_DROP,  user, entityItem, user, playerData, true);
                 if (override != Tristate.UNDEFINED) {
                     if (override == Tristate.TRUE) {
                         GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
@@ -1384,11 +1384,15 @@ public class PlayerEventHandler {
     public void onPlayerInteractItem(InteractItemEvent event, @Root Player player) {
         final World world = player.getWorld();
         final ItemType playerItem = event.getItemStack().getType();
-        if (playerItem instanceof ItemFood || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
         final HandInteractEvent handEvent = (HandInteractEvent) event;
+        final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
+        // always reset last interact result
+        playerData.lastInteractItemBlockResult = Tristate.UNDEFINED;
+        playerData.lastInteractItemEntityResult = Tristate.UNDEFINED;
         final ItemStack itemInHand = player.getItemInHand(handEvent.getHandType()).orElse(null);
         final boolean primaryEvent = event instanceof InteractItemEvent.Primary ? true : false;
         final BlockSnapshot blockSnapshot = event.getCause().get(NamedCause.HIT_TARGET, BlockSnapshot.class).orElse(BlockSnapshot.NONE);
@@ -1396,7 +1400,6 @@ public class PlayerEventHandler {
             return;
         }
 
-        final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         final Vector3d interactPoint = event.getInteractionPoint().orElse(null);
         final Entity entity = event.getCause().get(NamedCause.HIT_TARGET, Entity.class).orElse(null);
         final Location<World> location = entity != null ? entity.getLocation() 
@@ -1404,7 +1407,7 @@ public class PlayerEventHandler {
                         : interactPoint != null ? new Location<World>(world, interactPoint) 
                                 : player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
-        if (itemInHand == ItemTypes.NONE && blockSnapshot == BlockSnapshot.NONE && entity == null) {
+        if ((itemInHand == ItemTypes.NONE || playerItem instanceof ItemFood) && blockSnapshot == BlockSnapshot.NONE && entity == null) {
             return;
         }
         final String ITEM_PERMISSION = primaryEvent ? GPPermissions.INTERACT_ITEM_PRIMARY : GPPermissions.INTERACT_ITEM_SECONDARY;
@@ -1413,7 +1416,7 @@ public class PlayerEventHandler {
 
         Tristate override = Tristate.UNDEFINED;
         if (itemInHand != ItemTypes.NONE) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, player, true);
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, player, playerData, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     playerData.lastInteractItemBlockResult = Tristate.TRUE;
@@ -1436,7 +1439,7 @@ public class PlayerEventHandler {
         }
 
         if (entity != null) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, ENTITY_PERMISSION, playerItem, entity, player, true);
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, ENTITY_PERMISSION, playerItem, entity, player, playerData, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     playerData.lastInteractItemEntityResult = Tristate.TRUE;
@@ -1457,7 +1460,7 @@ public class PlayerEventHandler {
         }
 
         if (blockSnapshot != null) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, player, true);
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, player, playerData, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     playerData.lastInteractItemBlockResult = Tristate.TRUE;
