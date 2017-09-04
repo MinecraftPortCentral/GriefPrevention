@@ -25,17 +25,11 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
-import me.ryanhamshire.griefprevention.permission.GPPermissions;
-import me.ryanhamshire.griefprevention.util.ClaimClickData;
 import me.ryanhamshire.griefprevention.util.PermissionUtils;
-import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -44,26 +38,20 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
-import org.spongepowered.api.service.pagination.PaginationList;
-import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.text.serializer.TextSerializers;
 import org.spongepowered.api.util.Tristate;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
-public class CommandClaimFlagGroup implements CommandExecutor {
+public class CommandClaimFlagGroup extends ClaimFlagBase implements CommandExecutor {
+
+    public CommandClaimFlagGroup() {
+        super(ClaimSubjectType.GROUP);
+    }
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
@@ -117,49 +105,10 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         }
 
         final Subject subj = PermissionUtils.getSubject(group);
+        this.subject = subj;
+        this.friendlySubjectName = group;
         if (flag == null && value == null) {
-            Set<Context> contexts = new HashSet<>();
-            contexts.add(claim.getContext());
-            Map<String, Text> flagList = new TreeMap<>();
-            Map<String, Boolean> groupPermissions = new HashMap<>(subj.getSubjectData().getPermissions(contexts));
-            Map<String, ClaimClickData> inheritPermissions = new HashMap<>();
-            final List<Claim> inheritParents = claim.getInheritedParents();
-            Collections.reverse(inheritParents);
-            for (Claim current : inheritParents) {
-                GPClaim currentClaim = (GPClaim) current;
-                Map<String, Boolean> currentPermissions = new HashMap<>(subj.getSubjectData().getPermissions(ImmutableSet.of(currentClaim.context)));
-                for (Map.Entry<String, Boolean> permissionEntry : currentPermissions.entrySet()) {
-                    groupPermissions.put(permissionEntry.getKey(), permissionEntry.getValue());
-                    inheritPermissions.put(permissionEntry.getKey(), new ClaimClickData(currentClaim, permissionEntry.getValue()));
-                }
-            }
-
-            for (Map.Entry<String, Boolean> permissionEntry : groupPermissions.entrySet()) {
-                String flagPermission = permissionEntry.getKey();
-                String baseFlagPerm = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
-                Text baseFlagText = Text.builder().append(Text.of(TextColors.GREEN, baseFlagPerm))
-                        .onHover(TextActions.showText(CommandHelper.getBaseFlagOverlayText(baseFlagPerm))).build();
-                ClaimClickData claimClickData = inheritPermissions.get(flagPermission);
-                Text valueText = null;
-                if (claimClickData != null) {
-                    valueText = Text.of(TextColors.AQUA, CommandHelper.getClickableText(src, subj, group, contexts, claimClickData.claim, flagPermission, Tristate.fromBoolean(claimClickData.value), source, FlagType.INHERIT));
-                } else {
-                    valueText = Text.of(TextColors.GOLD, CommandHelper.getClickableText(src, subj, group, contexts, claim, flagPermission, Tristate.fromBoolean(permissionEntry.getValue()), source, FlagType.GROUP));
-                }
-                
-                Text flagText = Text.of(
-                        TextColors.GREEN, baseFlagText, "  ",
-                        TextColors.WHITE, "[",
-                        TextColors.LIGHT_PURPLE, valueText,
-                        TextColors.WHITE, "]");
-                flagList.put(flagPermission, flagText);
-            }
-
-            List<Text> textList = new ArrayList<>(flagList.values());
-            PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
-            PaginationList.Builder paginationBuilder = paginationService.builder()
-                    .title(Text.of(TextColors.GOLD, group, TextColors.AQUA, " Flag Permissions")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(textList);
-            paginationBuilder.sendTo(src);
+            showFlagPermissions(src, claim, FlagType.ALL, source);
             return CommandResult.success();
         }
 
@@ -181,7 +130,6 @@ public class CommandClaimFlagGroup implements CommandExecutor {
         }
 
         claim.setPermission(subj, group, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
-        //CommandHelper.addFlagPermission(src, subj, group, claim, ClaimFlag.valueOf(flag), source, target, value, claimContext);
         return CommandResult.success();
     }
 }

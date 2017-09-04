@@ -151,14 +151,14 @@ public class GPPermissionHandler {
         if (checkOverride) {
             Tristate override = Tristate.UNDEFINED;
             if (user != null) {
-                // check for bans first
-                override = getFlagOverride((GPClaim) claim.getWilderness(), user, targetPermission, targetModPermission, targetMetaPermission);
+                // check global bans in wilderness
+                override = getFlagOverride((GPClaim) claim.getWilderness(), user, user, targetPermission, targetModPermission, targetMetaPermission);
                 if (override != Tristate.UNDEFINED) {
                     return override;
                 }
             }
             // First check for claim flag overrides
-            override = getFlagOverride(claim, user, targetPermission, targetModPermission, targetMetaPermission);
+            override = getFlagOverride(claim, user == null ? GriefPreventionPlugin.GLOBAL_SUBJECT : user, user, targetPermission, targetModPermission, targetMetaPermission);
             if (override != Tristate.UNDEFINED) {
                 return override;
             }
@@ -286,13 +286,13 @@ public class GPPermissionHandler {
         return processResult(claim, permission, Tristate.UNDEFINED);
     }
 
-    private static Tristate getFlagOverride(GPClaim claim, User user, String flagPermission, String targetModPermission, String targetMetaPermission) {
+    private static Tristate getFlagOverride(GPClaim claim, Subject subject, User user, String flagPermission, String targetModPermission, String targetMetaPermission) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
             return processResult(claim, flagPermission, Tristate.UNDEFINED);
         }
 
         Player player = null;
-        Set<Context> contexts = new LinkedHashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
+        Set<Context> contexts = new LinkedHashSet<>(subject.getActiveContexts());
         if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
             contexts.add(claim.world.getContext());
@@ -307,7 +307,7 @@ public class GPPermissionHandler {
             player = user instanceof Player ? (Player) user : null;
         }
 
-        Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
+        Tristate value = subject.getPermissionValue(contexts, flagPermission);
         if (value != Tristate.UNDEFINED) {
             if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                 Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(flagPermission);
@@ -318,7 +318,7 @@ public class GPPermissionHandler {
             return processResult(claim, flagPermission, value, user);
         }
         if (targetMetaPermission != null) {
-            value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetMetaPermission);
+            value = subject.getPermissionValue(contexts, targetMetaPermission);
             if (value != Tristate.UNDEFINED) {
                 if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                     Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetMetaPermission);
@@ -330,7 +330,7 @@ public class GPPermissionHandler {
             }
         }
         if (targetModPermission != null) {
-            value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
+            value = subject.getPermissionValue(contexts, targetModPermission);
             if (value != Tristate.UNDEFINED) {
                 if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                     Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetModPermission);
@@ -345,25 +345,23 @@ public class GPPermissionHandler {
         return processResult(claim, flagPermission, Tristate.UNDEFINED, user);
     }
 
-    public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, boolean checkWildernessOverride) {
+    public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user, boolean checkWildernessOverride) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
             return processResult(claim, flagPermission, Tristate.UNDEFINED);
         }
 
         if (checkWildernessOverride && !claim.isWilderness()) {
-            final Tristate wildernessOverride = getFlagOverride(event, location, (GPClaim) claim.getWilderness(), flagPermission, source, target, false);
+            final Tristate wildernessOverride = getFlagOverride(event, location, (GPClaim) claim.getWilderness(), flagPermission, source, target, user, false);
             if (wildernessOverride != Tristate.UNDEFINED) {
                 return wildernessOverride;
             }
         }
+
         currentEvent = event;
         eventLocation = location;
-
-        final Player player = source instanceof Player ? (Player) source : null;
-        if (player != null) {
-            eventUser = player;
-        }
-
+        eventUser = user;
+        Player player = null;
+        final Subject subject = user != null ? user : GriefPreventionPlugin.GLOBAL_SUBJECT;
         String targetModPermission = null;
         String targetMetaPermission = null;
         if (target != null && source == null) {
@@ -397,9 +395,10 @@ public class GPPermissionHandler {
         }
 
         flagPermission = StringUtils.replace(flagPermission, ":", ".");
-        Set<Context> contexts = new LinkedHashSet<>(GriefPreventionPlugin.GLOBAL_SUBJECT.getActiveContexts());
+        Set<Context> contexts = new LinkedHashSet<>(subject.getActiveContexts());
         if (claim.isWilderness()) {
             contexts.add(ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT);
+            player = user instanceof Player ? (Player) user : null;
         } else if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
             contexts.add(claim.world.getContext());
@@ -411,7 +410,7 @@ public class GPPermissionHandler {
             contexts.add(claim.world.getContext());
         }
 
-        Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, flagPermission);
+        Tristate value = subject.getPermissionValue(contexts, flagPermission);
         if (value != Tristate.UNDEFINED) {
             if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                 Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(flagPermission);
@@ -419,10 +418,10 @@ public class GPPermissionHandler {
                     player.sendMessage(reason);
                 }
             }
-            return processResult(claim, flagPermission, value);
+            return processResult(claim, flagPermission, value, user);
         }
         if (targetMetaPermission != null) {
-            value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetMetaPermission);
+            value = subject.getPermissionValue(contexts, targetMetaPermission);
             if (value != Tristate.UNDEFINED) {
                 if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                     Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetMetaPermission);
@@ -430,12 +429,12 @@ public class GPPermissionHandler {
                         player.sendMessage(reason);
                     }
                 }
-                return processResult(claim, targetMetaPermission, value);
+                return processResult(claim, targetMetaPermission, value, user);
             }
         }
         // check target modid
         if (targetModPermission != null) {
-            value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
+            value = subject.getPermissionValue(contexts, targetModPermission);
             if (value != Tristate.UNDEFINED) {
                 if (player != null && claim.isWilderness() && value == Tristate.FALSE) {
                     Text reason = GriefPreventionPlugin.getGlobalConfig().getConfig().bans.getReason(targetModPermission);
@@ -443,11 +442,11 @@ public class GPPermissionHandler {
                         player.sendMessage(reason);
                     }
                 }
-                return processResult(claim, targetModPermission, value);
+                return processResult(claim, targetModPermission, value, user);
             }
         }
 
-        return processResult(claim, flagPermission, Tristate.UNDEFINED, player);
+        return processResult(claim, flagPermission, Tristate.UNDEFINED, user);
     }
 
     // used by Flag API

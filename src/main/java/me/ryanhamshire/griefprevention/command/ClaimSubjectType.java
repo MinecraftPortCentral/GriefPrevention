@@ -22,38 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.configuration.category;
+package me.ryanhamshire.griefprevention.command;
 
-import com.google.common.collect.Maps;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-import org.spongepowered.api.text.Text;
+public enum ClaimSubjectType {
 
-import java.util.Map;
+    GLOBAL("Global"),
+    GROUP("Group"),
+    PLAYER("Player");
 
-@ConfigSerializable
-public class BanCategory extends ConfigCategory {
+    private String friendlyName;
 
-    @Setting
-    private Map<String, Text> banReasons = Maps.newHashMap();
-
-    public void addBan(String permission, Text reason) {
-        permission = permission.replace("griefprevention.flag.", "").toLowerCase();
-        this.banReasons.put(permission, reason);
+    private ClaimSubjectType(String name) {
+        this.friendlyName = name;
     }
 
-    public void removeBan(String permission) {
-        permission = permission.replace("griefprevention.flag.", "").toLowerCase();
-        this.banReasons.remove(permission);
-    }
-
-    public Text getReason(String permission) {
-        permission = permission.replace("griefprevention.flag.", "").toLowerCase();
-        for (Map.Entry<String, Text> banEntry : this.banReasons.entrySet()) {
-            if (permission.contains(banEntry.getKey())) {
-                return banEntry.getValue();
-            }
-        }
-        return null;
+    public String getFriendlyName() {
+        return this.friendlyName;
     }
 }

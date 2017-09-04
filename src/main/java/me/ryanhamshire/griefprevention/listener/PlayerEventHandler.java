@@ -1153,7 +1153,7 @@ public class PlayerEventHandler {
             Location<World> location = entityItem.getLocation();
             GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
             if (claim != null) {
-                final Tristate override = GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ITEM_DROP,  user, entityItem, true);
+                final Tristate override = GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ITEM_DROP,  user, entityItem, user, true);
                 if (override != Tristate.UNDEFINED) {
                     if (override == Tristate.TRUE) {
                         GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
@@ -1413,7 +1413,7 @@ public class PlayerEventHandler {
 
         Tristate override = Tristate.UNDEFINED;
         if (itemInHand != ItemTypes.NONE) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, true);
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, player, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     playerData.lastInteractItemBlockResult = Tristate.TRUE;
@@ -1436,7 +1436,7 @@ public class PlayerEventHandler {
         }
 
         if (entity != null) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, ENTITY_PERMISSION, playerItem, entity, true);
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, ENTITY_PERMISSION, playerItem, entity, player, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     playerData.lastInteractItemEntityResult = Tristate.TRUE;
@@ -1457,7 +1457,7 @@ public class PlayerEventHandler {
         }
 
         if (blockSnapshot != null) {
-            override = GPPermissionHandler.getFlagOverride(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, true);
+            override = GPPermissionHandler.getFlagOverride(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, player, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
                     playerData.lastInteractItemBlockResult = Tristate.TRUE;

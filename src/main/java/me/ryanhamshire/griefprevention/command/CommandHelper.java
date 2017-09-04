@@ -44,7 +44,7 @@ import me.ryanhamshire.griefprevention.api.economy.BankTransactionType;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPFlagResult;
-import me.ryanhamshire.griefprevention.command.CommandClaimFlag.FlagType;
+import me.ryanhamshire.griefprevention.command.ClaimFlagBase.FlagType;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.economy.GPBankTransaction;
@@ -421,16 +421,35 @@ public class CommandHelper {
                     GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionFlagDefaults.toText());
                     return new GPFlagResult(FlagResultType.NO_PERMISSION);
                 }
+                if (flagType == null) {
+                    flagType = FlagType.DEFAULT;
+                }
             } else if (context == ClaimContexts.ADMIN_OVERRIDE_CONTEXT || 
-                    context == ClaimContexts.TOWN_DEFAULT_CONTEXT ||
+                    context == ClaimContexts.TOWN_OVERRIDE_CONTEXT ||
                     context == ClaimContexts.BASIC_OVERRIDE_CONTEXT ||
                     context == ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT) {
                 if (!src.hasPermission(GPPermissions.MANAGE_FLAG_OVERRIDES)) {
                     GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionFlagOverrides.toText());
                     return new GPFlagResult(FlagResultType.NO_PERMISSION);
                 }
+                if (flagType == null) {
+                    flagType = FlagType.OVERRIDE;
+                }
             }
             contexts.add(context);
+        } else {
+            if (flagType == null) {
+                flagType = FlagType.CLAIM;
+            }
+        }
+
+        Text flagTypeText = Text.of();
+        if (flagType == FlagType.OVERRIDE) {
+            flagTypeText = Text.of(TextColors.RED, "OVERRIDE");
+        } else if (flagType == FlagType.DEFAULT) {
+            flagTypeText = Text.of(TextColors.LIGHT_PURPLE, "DEFAULT");
+        } else if (flagType == FlagType.CLAIM) {
+            flagTypeText = Text.of(TextColors.GOLD, "CLAIM");
         }
 
         if (source != null) {
@@ -464,34 +483,37 @@ public class CommandHelper {
 
             GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().setPermission(contexts, flagPermission, value);
             if (!clicked) {
-                src.sendMessage(Text.of(
-                    Text.builder().append(Text.of(
-                            TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
-                        .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflag", ""))).build(),
-                    TextColors.GREEN, "Set permission of ", 
-                    TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
-                    TextColors.GREEN, " to ", 
-                    flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  GriefPreventionPlugin.GLOBAL_SUBJECT, subjectName, contexts, flagPermission, value, flagType)), 
-                    TextColors.GREEN, " for ", 
-                    TextColors.GOLD, "ALL."));
+                src.sendMessage(Text.of(Text.builder()
+                    .append(Text.of(TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
+                    .onClick(TextActions.executeCallback(createCommandConsumer(src, "claimflag", ""))).build(),
+                        TextColors.GREEN, "Set ", flagTypeText, " permission ", 
+                        TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
+                        TextColors.GREEN, "\n to ", 
+                        TextColors.LIGHT_PURPLE, getClickableText(src, GriefPreventionPlugin.GLOBAL_SUBJECT, subjectName, contexts, flagPermission, value, flagType), 
+                        TextColors.GREEN, " on ", 
+                        TextColors.GOLD, "ALL"));
             }
         } else {
-            if (!contexts.contains(claim.getContext())) {
+            if (context == claim.getContext() || !ClaimContexts.CONTEXT_LIST.contains(context)) {
                 contexts.add(claim.getContext());
+            } else {
+                // wilderness overrides affect all worlds
+                if (context != ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT) {
+                    contexts.add(claim.world.getContext());
+                }
             }
 
             subject.getSubjectData().setPermission(contexts, flagPermission, value);
             if (!clicked) {
-                src.sendMessage(Text.of(
-                        Text.builder().append(Text.of(
-                                TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
-                            .onClick(TextActions.executeCallback(createCommandConsumer(src, subject instanceof User ? "claimflagplayer" : "claimflaggroup", subjectName))).build(),
-                        TextColors.GREEN, "Set permission of ", 
-                        TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
-                        TextColors.GREEN, " to ", 
-                        flagType == null ? Text.of(TextColors.LIGHT_PURPLE, value) : Text.of(getFlagTypeColor(flagType), getClickableText(src,  subject, subjectName, contexts, flagPermission, value, flagType)), 
-                        TextColors.GREEN, " for ", 
-                        TextColors.GOLD, subjectName));
+                src.sendMessage(Text.of(Text.builder()
+                        .append(Text.of(TextColors.WHITE, "\n[", TextColors.AQUA, "Return to flags", TextColors.WHITE, "]\n"))
+                        .onClick(TextActions.executeCallback(createCommandConsumer(src, subject instanceof User ? "claimflagplayer" : "claimflaggroup", subjectName))).build(),
+                            TextColors.GREEN, "Set ", flagTypeText, " permission ", 
+                            TextColors.AQUA, flagPermission.replace(GPPermissions.FLAG_BASE + ".", ""), 
+                            TextColors.GREEN, "\n to ", 
+                            TextColors.LIGHT_PURPLE, getClickableText(src, subject, subjectName, contexts, flagPermission, value, flagType), 
+                            TextColors.GREEN, " on ", 
+                            TextColors.GOLD, subjectName));
             }
         }
 
@@ -509,7 +531,7 @@ public class CommandHelper {
         return color;
     }
 
-    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, Tristate flagValue, FlagType type) {
+    public static Consumer<CommandSource> createFlagConsumer(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, Tristate flagValue, FlagType flagType) {
         return consumer -> {
             Tristate newValue = Tristate.UNDEFINED;
             if (flagValue == Tristate.TRUE) {
@@ -518,16 +540,24 @@ public class CommandHelper {
                 newValue = Tristate.TRUE;
             }
 
+            Text flagTypeText = Text.of();
+            if (flagType == FlagType.OVERRIDE) {
+                flagTypeText = Text.of(TextColors.RED, "OVERRIDE");
+            } else if (flagType == FlagType.DEFAULT) {
+                flagTypeText = Text.of(TextColors.LIGHT_PURPLE, "DEFAULT");
+            } else if (flagType == FlagType.CLAIM) {
+                flagTypeText = Text.of(TextColors.GOLD, "CLAIM");
+            }
             String target = flagPermission.replace(GPPermissions.FLAG_BASE + ".",  "");
             Set<Context> newContexts = new HashSet<>(contexts);
             subject.getSubjectData().setPermission(newContexts, flagPermission, newValue);
             src.sendMessage(Text.of(
-                    TextColors.GREEN, "Set permission of ", 
+                    TextColors.GREEN, "Set ", flagTypeText, " permission ", 
                     TextColors.AQUA, target, 
-                    TextColors.GREEN, " to ", 
-                    getFlagTypeColor(type), getClickableText(src, subject, subjectName, newContexts, flagPermission, newValue, type), 
+                    TextColors.GREEN, "\n to ", 
+                    TextColors.LIGHT_PURPLE, getClickableText(src, subject, subjectName, newContexts, flagPermission, newValue, flagType), 
                     TextColors.GREEN, " for ", 
-                    TextColors.GOLD, subjectName, "."));
+                    TextColors.GOLD, subjectName));
         };
     }
 
@@ -813,9 +843,9 @@ public class CommandHelper {
     public static Text getClickableText(CommandSource src, Subject subject, String subjectName, Set<Context> contexts, String flagPermission, Tristate flagValue, FlagType type) {
         String onClickText = "Click here to toggle " + type.name().toLowerCase() + " value.";
         Text.Builder textBuilder = Text.builder()
-        .append(Text.of(flagValue.toString().toLowerCase()))
-        .onHover(TextActions.showText(Text.of(onClickText, "\n", getFlagTypeHoverText(type))))
-        .onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, flagPermission, flagValue, type)));
+                .append(Text.of(flagValue.toString().toLowerCase()))
+                .onHover(TextActions.showText(Text.of(onClickText, "\n", getFlagTypeHoverText(type))))
+                .onClick(TextActions.executeCallback(createFlagConsumer(src, subject, subjectName, contexts, flagPermission, flagValue, type)));
         return textBuilder.build();
     }
 
