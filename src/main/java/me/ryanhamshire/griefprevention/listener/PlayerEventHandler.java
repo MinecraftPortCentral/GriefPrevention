@@ -1180,7 +1180,11 @@ public class PlayerEventHandler {
                 } else if (perm == Tristate.FALSE) {
                     event.setCancelled(true);
                     if (entity instanceof Player) {
-                        GriefPreventionPlugin.sendClaimDenyMessage(claim, player, GriefPreventionPlugin.instance.messageData.permissionItemDrop.toText());
+                        final Text message = GriefPreventionPlugin.instance.messageData.permissionItemDrop
+                                .apply(ImmutableMap.of(
+                                "owner", claim.getOwnerName(),
+                                "item", entityItem.getType().getId())).build();
+                        GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
                     }
                     GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
                     return;
