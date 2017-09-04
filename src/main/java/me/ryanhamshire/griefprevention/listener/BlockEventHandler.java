@@ -345,7 +345,7 @@ public class BlockEventHandler {
             targetClaim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
         }
 
-        Tristate result = GPPermissionHandler.getFlagOverride(event, event.getTargetLocation(), targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), user, true);
+        Tristate result = GPPermissionHandler.getFlagOverride(event, event.getTargetLocation(), targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), user, playerData, true);
         if (result != Tristate.UNDEFINED) {
             if (result == Tristate.TRUE) {
                 if (playerData != null) {
@@ -527,7 +527,7 @@ public class BlockEventHandler {
                             .apply(ImmutableMap.of(
                             "player", Text.of(targetClaim.getOwnerName())
                     )).build();
-                    GriefPreventionPlugin.sendClaimDenyMessage(targetClaim, (Player) event.getCause().root(), message);
+                    GriefPreventionPlugin.sendClaimDenyMessage(targetClaim, (Player) source, message);
                 }
 
                 event.setCancelled(true);
@@ -600,6 +600,14 @@ public class BlockEventHandler {
                     continue;
                 }
 
+                // TODO - make sure this doesn't spam
+                /*if (source instanceof Player) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.permissionBuild
+                            .apply(ImmutableMap.of(
+                            "player", Text.of(targetClaim.getOwnerName())
+                    )).build();
+                    GriefPreventionPlugin.sendClaimDenyMessage(targetClaim, (Player) source, message);
+                }*/
                 event.setCancelled(true);
                 GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                 return;

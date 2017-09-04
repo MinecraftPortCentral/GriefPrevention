@@ -124,7 +124,7 @@ public class CommandPlayerInfo implements CommandExecutor {
             }
         }
         final Text WHITE_SEMI_COLON = Text.of(TextColors.WHITE, " : ");
-        final double claimableChunks = playerData.getRemainingClaimBlocks() / 65536.0;
+        final double claimableChunks = GriefPreventionPlugin.wildernessCuboids ? (playerData.getRemainingClaimBlocks() / 65536.0) : (playerData.getRemainingClaimBlocks() / 256.0);
         List<Text> claimsTextList = Lists.newArrayList();
         if (GriefPreventionPlugin.getGlobalConfig().getConfig().claim.bankTaxSystem) {
             claimsTextList.add(Text.of(

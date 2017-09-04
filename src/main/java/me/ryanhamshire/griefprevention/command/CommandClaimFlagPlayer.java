@@ -39,7 +39,6 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
-import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.serializer.TextSerializers;
@@ -122,8 +121,7 @@ public class CommandClaimFlagPlayer extends ClaimFlagBase implements CommandExec
             return CommandResult.success();
         }
 
-        Subject subj = user.getContainingCollection().get(user.getIdentifier());
-        claim.setPermission(subj, name, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
+        claim.setPermission(user, name, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
         return CommandResult.success();
     }
 }

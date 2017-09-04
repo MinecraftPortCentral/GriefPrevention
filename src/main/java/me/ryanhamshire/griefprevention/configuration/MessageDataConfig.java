@@ -484,10 +484,10 @@ public class MessageDataConfig extends ConfigCategory {
     public TextTemplate ownerAdmin = TextTemplate.of("an administrator");
 
     @Setting("permission-access")
-    public TextTemplate permissionAccess = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("player"), "'s permission to access that.");
+    public TextTemplate permissionAccess = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("player").color(TextColors.GOLD), "'s permission to access that.");
 
     @Setting("permission-build")
-    public TextTemplate permissionBuild = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("player"), "'s permission to build.");
+    public TextTemplate permissionBuild = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("player").color(TextColors.GOLD), "'s permission to build.");
 
     @Setting("permission-claim-create")
     public TextTemplate permissionClaimCreate = TextTemplate.of(TextColors.RED, "You don't have permission to claim land.");
