@@ -29,9 +29,9 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 
 public class ClaimClickData {
     public final GPClaim claim;
-    public final boolean value;
+    public final Object value;
 
-    public ClaimClickData(GPClaim claim, boolean value) {
+    public ClaimClickData(GPClaim claim, Object value) {
         this.claim = claim;
         this.value = value;
     }

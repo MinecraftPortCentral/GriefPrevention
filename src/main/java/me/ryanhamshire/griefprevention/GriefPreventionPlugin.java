@@ -46,6 +46,7 @@ import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
+import me.ryanhamshire.griefprevention.command.ClaimFlagBase;
 import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandon;
@@ -64,6 +65,7 @@ import me.ryanhamshire.griefprevention.command.CommandClaimDeleteAllAdmin;
 import me.ryanhamshire.griefprevention.command.CommandClaimFarewell;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlag;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlagDebug;
+import me.ryanhamshire.griefprevention.command.CommandClaimFlagGroup;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlagPlayer;
 import me.ryanhamshire.griefprevention.command.CommandClaimFlagReset;
 import me.ryanhamshire.griefprevention.command.CommandClaimGreeting;
@@ -384,8 +386,8 @@ public class GriefPreventionPlugin {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
                     spongeBuild = Integer.parseInt(build);
-                    if (spongeBuild < 2558) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2558+.");
+                    if (spongeBuild < 2597) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2597+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -1552,53 +1554,73 @@ public class GriefPreventionPlugin {
                 .arguments(GenericArguments.firstParsing(
                         GenericArguments.seq(
                             onlyOne(string(Text.of("group"))),
-                            optional(GenericArguments.firstParsing(
-                                GenericArguments.seq(
+                            optional(GenericArguments.seq(
                                     choices(Text.of("flag"), flagChoices),
                                     GenericArguments.firstParsing(
-                                            GenericArguments.seq(
-                                                choices(Text.of("target"), catalogChoices),
-                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                        GenericArguments.seq(
+                                            choices(Text.of("target"), catalogChoices),
+                                            onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                    .put("-1", Tristate.FALSE)
+                                                    .put("0", Tristate.UNDEFINED)
+                                                    .put("1", Tristate.TRUE)
+                                                    .put("false", Tristate.FALSE)
+                                                    .put("undefined", Tristate.UNDEFINED)
+                                                    .put("true", Tristate.TRUE)
+                                                    .build())),
+                                            GenericArguments.firstParsing(
+                                                    GenericArguments.seq(
+                                                            onlyOne(choices(Text.of("context"), contextChoices)),
+                                                            optional(string(Text.of("reason")))),
+                                                    optional(onlyOne(choices(Text.of("context"), contextChoices))))),
+                                        GenericArguments.seq(
+                                            onlyOne(choices(Text.of("source"), catalogChoices)),
+                                            choices(Text.of("target"), catalogChoices),
+                                            onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                    .put("-1", Tristate.FALSE)
+                                                    .put("0", Tristate.UNDEFINED)
+                                                    .put("1", Tristate.TRUE)
+                                                    .put("false", Tristate.FALSE)
+                                                    .put("undefined", Tristate.UNDEFINED)
+                                                    .put("true", Tristate.TRUE)
+                                                    .build())),
+                                            GenericArguments.firstParsing(
+                                                    GenericArguments.seq(
+                                                            onlyOne(choices(Text.of("context"), contextChoices)),
+                                                            optional(string(Text.of("reason")))),
+                                                    optional(onlyOne(choices(Text.of("context"), contextChoices))))),
+                                        GenericArguments.seq(
+                                                string(Text.of("target")),
+                                                onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                         .put("-1", Tristate.FALSE)
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
                                                         .put("undefined", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
-                                                        .build()))),
-                                            GenericArguments.seq(
+                                                        .build())),
+                                                GenericArguments.firstParsing(
+                                                        GenericArguments.seq(
+                                                                onlyOne(choices(Text.of("context"), contextChoices)),
+                                                                optional(string(Text.of("reason")))),
+                                                        optional(onlyOne(choices(Text.of("context"), contextChoices))))),
+                                        GenericArguments.seq(
                                                 onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                choices(Text.of("target"), catalogChoices),
-                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                string(Text.of("target")),
+                                                onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                         .put("-1", Tristate.FALSE)
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
                                                         .put("undefined", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
-                                                        .build()))),
-                                            GenericArguments.seq(
-                                                    string(Text.of("target")),
-                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                            .put("-1", Tristate.FALSE)
-                                                            .put("0", Tristate.UNDEFINED)
-                                                            .put("1", Tristate.TRUE)
-                                                            .put("false", Tristate.FALSE)
-                                                            .put("undefined", Tristate.UNDEFINED)
-                                                            .put("true", Tristate.TRUE)
-                                                            .build()))),
-                                            GenericArguments.seq(
-                                                    onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                    string(Text.of("target")),
-                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                            .put("-1", Tristate.FALSE)
-                                                            .put("0", Tristate.UNDEFINED)
-                                                            .put("1", Tristate.TRUE)
-                                                            .put("false", Tristate.FALSE)
-                                                            .put("undefined", Tristate.UNDEFINED)
-                                                            .put("true", Tristate.TRUE)
-                                                            .build()))))))))))
-                .executor(new CommandClaimFlag())
+                                                        .build())),
+                                                GenericArguments.firstParsing(
+                                                        GenericArguments.seq(
+                                                                onlyOne(choices(Text.of("context"), contextChoices)),
+                                                                optional(string(Text.of("reason")))),
+                                                        optional(onlyOne(choices(Text.of("context"), contextChoices)))
+                                                        ))))))))
+                .executor(new CommandClaimFlagGroup())
                 .build(), "claimflaggroup", "cfg");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
@@ -1607,52 +1629,72 @@ public class GriefPreventionPlugin {
                 .arguments(GenericArguments.firstParsing(
                         GenericArguments.seq(
                             onlyOne(user(Text.of("player"))),
-                            optional(GenericArguments.firstParsing(
-                                GenericArguments.seq(
+                            optional(GenericArguments.seq(
                                     choices(Text.of("flag"), flagChoices),
                                     GenericArguments.firstParsing(
-                                            GenericArguments.seq(
-                                                choices(Text.of("target"), catalogChoices),
-                                                onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                        GenericArguments.seq(
+                                            choices(Text.of("target"), catalogChoices),
+                                            onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                    .put("-1", Tristate.FALSE)
+                                                    .put("0", Tristate.UNDEFINED)
+                                                    .put("1", Tristate.TRUE)
+                                                    .put("false", Tristate.FALSE)
+                                                    .put("undefined", Tristate.UNDEFINED)
+                                                    .put("true", Tristate.TRUE)
+                                                    .build())),
+                                            GenericArguments.firstParsing(
+                                                    GenericArguments.seq(
+                                                            onlyOne(choices(Text.of("context"), contextChoices)),
+                                                            optional(string(Text.of("reason")))),
+                                                    optional(onlyOne(choices(Text.of("context"), contextChoices))))),
+                                        GenericArguments.seq(
+                                            onlyOne(choices(Text.of("source"), catalogChoices)),
+                                            choices(Text.of("target"), catalogChoices),
+                                            onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                    .put("-1", Tristate.FALSE)
+                                                    .put("0", Tristate.UNDEFINED)
+                                                    .put("1", Tristate.TRUE)
+                                                    .put("false", Tristate.FALSE)
+                                                    .put("undefined", Tristate.UNDEFINED)
+                                                    .put("true", Tristate.TRUE)
+                                                    .build())),
+                                            GenericArguments.firstParsing(
+                                                    GenericArguments.seq(
+                                                            onlyOne(choices(Text.of("context"), contextChoices)),
+                                                            optional(string(Text.of("reason")))),
+                                                    optional(onlyOne(choices(Text.of("context"), contextChoices))))),
+                                        GenericArguments.seq(
+                                                string(Text.of("target")),
+                                                onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
                                                         .put("-1", Tristate.FALSE)
                                                         .put("0", Tristate.UNDEFINED)
                                                         .put("1", Tristate.TRUE)
                                                         .put("false", Tristate.FALSE)
                                                         .put("undefined", Tristate.UNDEFINED)
                                                         .put("true", Tristate.TRUE)
-                                                        .build()))),
-                                            GenericArguments.seq(
-                                                    onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                    choices(Text.of("target"), catalogChoices),
-                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                            .put("-1", Tristate.FALSE)
-                                                            .put("0", Tristate.UNDEFINED)
-                                                            .put("1", Tristate.TRUE)
-                                                            .put("false", Tristate.FALSE)
-                                                            .put("undefined", Tristate.UNDEFINED)
-                                                            .put("true", Tristate.TRUE)
-                                                            .build()))),
-                                            GenericArguments.seq(
-                                                    string(Text.of("target")),
-                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                            .put("-1", Tristate.FALSE)
-                                                            .put("0", Tristate.UNDEFINED)
-                                                            .put("1", Tristate.TRUE)
-                                                            .put("false", Tristate.FALSE)
-                                                            .put("undefined", Tristate.UNDEFINED)
-                                                            .put("true", Tristate.TRUE)
-                                                            .build()))),
-                                            GenericArguments.seq(
-                                                    onlyOne(choices(Text.of("source"), catalogChoices)),
-                                                    string(Text.of("target")),
-                                                    onlyOne(GenericArguments.choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
-                                                            .put("-1", Tristate.FALSE)
-                                                            .put("0", Tristate.UNDEFINED)
-                                                            .put("1", Tristate.TRUE)
-                                                            .put("false", Tristate.FALSE)
-                                                            .put("undefined", Tristate.UNDEFINED)
-                                                            .put("true", Tristate.TRUE)
-                                                            .build()))))))))))
+                                                        .build())),
+                                                GenericArguments.firstParsing(
+                                                        GenericArguments.seq(
+                                                                onlyOne(choices(Text.of("context"), contextChoices)),
+                                                                optional(string(Text.of("reason")))),
+                                                        optional(onlyOne(choices(Text.of("context"), contextChoices))))),
+                                        GenericArguments.seq(
+                                                onlyOne(choices(Text.of("source"), catalogChoices)),
+                                                string(Text.of("target")),
+                                                onlyOne(choices(Text.of("value"), ImmutableMap.<String, Tristate>builder()
+                                                        .put("-1", Tristate.FALSE)
+                                                        .put("0", Tristate.UNDEFINED)
+                                                        .put("1", Tristate.TRUE)
+                                                        .put("false", Tristate.FALSE)
+                                                        .put("undefined", Tristate.UNDEFINED)
+                                                        .put("true", Tristate.TRUE)
+                                                        .build())),
+                                                GenericArguments.firstParsing(
+                                                        GenericArguments.seq(
+                                                                onlyOne(choices(Text.of("context"), contextChoices)),
+                                                                optional(string(Text.of("reason")))),
+                                                        optional(onlyOne(choices(Text.of("context"), contextChoices)))
+                                                        ))))))))
                 .executor(new CommandClaimFlagPlayer())
                 .build(), "claimflagplayer", "cfp");
     }
