@@ -2489,21 +2489,14 @@ public class PlayerEventHandler {
                 return;
             }
 
-            int y = lastShovelLocation.getBlockY();
-            boolean cuboid = playerData.optionClaimCreateMode == 1;
-            if (!cuboid) {
-                y = lastShovelLocation.getBlockY() - activeConfig.getConfig().claim.extendIntoGroundDistance;
-                if (y > 0) {
-                    cuboid = true;
-                }
-            }
+            final boolean cuboid = playerData.optionClaimCreateMode == 1;
             Vector3i lesserBoundary = new Vector3i(
                     lastShovelLocation.getBlockX(),
                     cuboid ? lastShovelLocation.getBlockY() : 0,
                     lastShovelLocation.getBlockZ());
             Vector3i greaterBoundary = new Vector3i(
                     location.getBlockX(),
-                    playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
+                    cuboid ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
                     location.getBlockZ());
             // try to create a new claim
             ClaimResult result = this.dataStore.createClaim(
