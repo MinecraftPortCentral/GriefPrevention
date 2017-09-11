@@ -78,6 +78,7 @@ public class FlatFileDataStore extends DataStore {
     public final static Map<UUID, Task> cleanupClaimTasks = Maps.newHashMap();
     private final Path rootConfigPath = GriefPreventionPlugin.instance.getConfigPath().resolve("worlds");
     public static Path rootWorldSavePath;
+    private int claimLoadCount = 0;
 
     public FlatFileDataStore() {
     }
@@ -188,7 +189,7 @@ public class FlatFileDataStore extends DataStore {
             File[] files = newWorldDataPath.resolve("ClaimData").toFile().listFiles();
             if (files != null && files.length > 0) {
                 this.loadClaimData(files, worldProperties);
-                GriefPreventionPlugin.instance.getLogger().info("[" + worldProperties.getWorldName() + "] " + files.length + " total claims loaded.");
+                GriefPreventionPlugin.instance.getLogger().info("[" + worldProperties.getWorldName() + "] " + this.claimLoadCount + " total claims loaded.");
             }
 
             if (GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.useGlobalPlayerDataStorage) {
@@ -210,6 +211,7 @@ public class FlatFileDataStore extends DataStore {
 
         // handle default flag permissions
         this.setupDefaultPermissions(world);
+        this.claimLoadCount = 0;
     }
 
     public void unloadWorldData(WorldProperties worldProperties) {
@@ -425,6 +427,8 @@ public class FlatFileDataStore extends DataStore {
         if (!claim.isWilderness()) {
             claimStorage.migrateSubdivision(claim);
         }
+
+        this.claimLoadCount++;
         return claim;
     }
 
