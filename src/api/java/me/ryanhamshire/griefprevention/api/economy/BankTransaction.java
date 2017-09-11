@@ -25,7 +25,6 @@
 package me.ryanhamshire.griefprevention.api.economy;
 
 import me.ryanhamshire.griefprevention.GriefPrevention;
-import org.spongepowered.api.event.cause.Cause;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -74,8 +73,6 @@ public interface BankTransaction {
     }
 
     public interface Builder {
-
-        Builder cause(Cause cause);
 
         Builder type(BankTransactionType type);
 

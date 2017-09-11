@@ -26,7 +26,6 @@ package me.ryanhamshire.griefprevention.event;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.TransferClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
 
 import java.util.UUID;
 
@@ -35,8 +34,8 @@ public class GPTransferClaimEvent extends GPClaimEvent implements TransferClaimE
     private UUID originalOwner;
     private UUID newOwner;
 
-    public GPTransferClaimEvent(Claim claim, Cause cause, UUID originalOwner, UUID newOwner) {
-        super(claim, cause);
+    public GPTransferClaimEvent(Claim claim, UUID originalOwner, UUID newOwner) {
+        super(claim);
         this.originalOwner = originalOwner;
         this.newOwner = newOwner;
     }

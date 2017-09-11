@@ -27,7 +27,6 @@ package me.ryanhamshire.griefprevention.event;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.api.event.TrustClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
 
 import java.util.List;
 
@@ -35,13 +34,13 @@ public class GPTrustClaimEvent extends GPClaimEvent implements TrustClaimEvent {
 
     private TrustType trustType;
 
-    public GPTrustClaimEvent(Claim claim, Cause cause, TrustType trustType) {
-        super(claim, cause);
+    public GPTrustClaimEvent(Claim claim, TrustType trustType) {
+        super(claim);
         this.trustType = trustType;
     }
 
-    public GPTrustClaimEvent(List<Claim> claims, Cause cause, TrustType trustType) {
-        super(claims, cause);
+    public GPTrustClaimEvent(List<Claim> claims, TrustType trustType) {
+        super(claims);
         this.trustType = trustType;
     }
 

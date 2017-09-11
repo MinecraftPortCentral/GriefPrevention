@@ -2127,10 +2127,10 @@ public class PlayerEventHandler {
                 if (playerData.claimResizing.isCuboid()) {
                     // 3D resize
                     claimResult =
-                        playerData.claimResizing.resizeCuboid(newx1, newy1, newz1, newx2, newy2, newz2, Sponge.getCauseStackManager().getCurrentCause());
+                        playerData.claimResizing.resizeCuboid(newx1, newy1, newz1, newx2, newy2, newz2);
                 } else {
                     // 2D resize
-                    claimResult = playerData.claimResizing.resize(newx1, newx2, newy1, newy2, newz1, newz2, Sponge.getCauseStackManager().getCurrentCause());
+                    claimResult = playerData.claimResizing.resize(newx1, newx2, newy1, newy2, newz1, newz2);
                 }
 
                 if (claimResult.successful()) {

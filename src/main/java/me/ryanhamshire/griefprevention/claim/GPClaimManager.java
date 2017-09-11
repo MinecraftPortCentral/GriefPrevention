@@ -47,7 +47,6 @@ import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.CauseStackManager;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.economy.EconomyService;
 import org.spongepowered.api.service.economy.account.Account;
 import org.spongepowered.api.service.economy.account.UniqueAccount;
@@ -165,7 +164,7 @@ public class GPClaimManager implements ClaimManager {
         this.getPlayerDataMap().remove(playerUniqueId);
     }
 
-    public ClaimResult addClaim(Claim claim, Cause cause) {
+    public ClaimResult addClaim(Claim claim) {
         GPClaim newClaim = (GPClaim) claim;
         // ensure this new claim won't overlap any existing claims
         ClaimResult result = newClaim.checkArea(false);
@@ -262,12 +261,8 @@ public class GPClaimManager implements ClaimManager {
     }
 
     @Override
-    public ClaimResult deleteClaim(Claim claim, Cause cause, boolean deleteChildren) {
-        if (cause == null) {
-            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED);
-        }
-
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(claim, cause);
+    public ClaimResult deleteClaim(Claim claim, boolean deleteChildren) {
+        GPDeleteClaimEvent event = new GPDeleteClaimEvent(claim);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -277,12 +272,12 @@ public class GPClaimManager implements ClaimManager {
         return new GPClaimResult(claim, ClaimResultType.SUCCESS);
     }
 
-    public void deleteClaim(Claim claim, boolean deleteChildren) {
+    public void deleteClaimInternal(Claim claim, boolean deleteChildren) {
         final GPClaim gpClaim = (GPClaim) claim;
         List<Claim> subClaims = claim.getChildren(false);
         for (Claim child : subClaims) {
             if (deleteChildren) {
-                this.deleteClaim(child, true);
+                this.deleteClaimInternal(child, true);
                 continue;
             }
 

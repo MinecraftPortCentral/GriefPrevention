@@ -69,7 +69,7 @@ public class CommandClaimDeleteAll implements CommandExecutor {
 
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(src);
-            GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getInternalClaims()), Sponge.getCauseStackManager().getCurrentCause());
+            GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getInternalClaims()));
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 player

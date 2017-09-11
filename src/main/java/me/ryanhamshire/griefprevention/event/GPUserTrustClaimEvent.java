@@ -27,7 +27,6 @@ package me.ryanhamshire.griefprevention.event;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.api.event.UserTrustClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,13 +35,13 @@ public class GPUserTrustClaimEvent extends GPTrustClaimEvent implements UserTrus
 
     private List<UUID> users;
 
-    public GPUserTrustClaimEvent(Claim claim, Cause cause, List<UUID> users, TrustType trustType) {
-        super(claim, cause, trustType);
+    public GPUserTrustClaimEvent(Claim claim, List<UUID> users, TrustType trustType) {
+        super(claim, trustType);
         this.users = users;
     }
 
-    public GPUserTrustClaimEvent(List<Claim> claims, Cause cause, List<UUID> users, TrustType trustType) {
-        super(claims, cause, trustType);
+    public GPUserTrustClaimEvent(List<Claim> claims, List<UUID> users, TrustType trustType) {
+        super(claims, trustType);
         this.users = users;
     }
 
@@ -52,22 +51,22 @@ public class GPUserTrustClaimEvent extends GPTrustClaimEvent implements UserTrus
     }
 
     public static class Add extends GPUserTrustClaimEvent implements UserTrustClaimEvent.Add {
-        public Add(List<Claim> claims, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claims, cause, users, trustType);
+        public Add(List<Claim> claims, List<UUID> users, TrustType trustType) {
+            super(claims, users, trustType);
         }
 
-        public Add(Claim claim, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claim, cause, users, trustType);
+        public Add(Claim claim, List<UUID> users, TrustType trustType) {
+            super(claim, users, trustType);
         }
     }
 
     public static class Remove extends GPUserTrustClaimEvent implements UserTrustClaimEvent.Remove {
-        public Remove(List<Claim> claims, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claims, cause, users, trustType);
+        public Remove(List<Claim> claims,List<UUID> users, TrustType trustType) {
+            super(claims, users, trustType);
         }
 
-        public Remove(Claim claim, Cause cause, List<UUID> users, TrustType trustType) {
-            super(claim, cause, users, trustType);
+        public Remove(Claim claim, List<UUID> users, TrustType trustType) {
+            super(claim, users, trustType);
         }
     }
 }

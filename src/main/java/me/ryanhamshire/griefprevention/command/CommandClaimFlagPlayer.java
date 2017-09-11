@@ -124,7 +124,7 @@ public class CommandClaimFlagPlayer extends ClaimFlagBase implements CommandExec
 
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(src);
-            claim.setPermission(user, name, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Sponge.getCauseStackManager().getCurrentCause());
+            claim.setPermission(user, name, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText);
         }
         return CommandResult.success();
     }

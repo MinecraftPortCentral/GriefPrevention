@@ -42,7 +42,6 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.CauseStackManager;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.pagination.PaginationList;
@@ -588,7 +587,7 @@ public class ClaimFlagBase {
             }
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().pushCause(src);
-                GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(claim, this.subject, claimFlag, sourceId, targetId, toggleType ? newValue : flagValue, claimContext, Sponge.getCauseStackManager().getCurrentCause());
+                GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(claim, this.subject, claimFlag, sourceId, targetId, toggleType ? newValue : flagValue, claimContext);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     return;

@@ -103,7 +103,7 @@ public class CommandClaimAbandon implements CommandExecutor {
 
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().pushCause(src);
-                GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(claim, Sponge.getCauseStackManager().getCurrentCause());
+                GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(claim);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player
@@ -114,7 +114,7 @@ public class CommandClaimAbandon implements CommandExecutor {
 
             // delete it
             GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
-            claimManager.deleteClaim(claim, this.abandonTopClaim);
+            claimManager.deleteClaimInternal(claim, this.abandonTopClaim);
             claim.removeSurfaceFluids(null);
             // remove all context permissions
             player.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));

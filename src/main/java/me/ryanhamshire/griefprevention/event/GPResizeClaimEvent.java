@@ -26,7 +26,6 @@ package me.ryanhamshire.griefprevention.event;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.ResizeClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -36,8 +35,8 @@ public class GPResizeClaimEvent extends GPClaimEvent implements ResizeClaimEvent
     private Location<World> startCorner;
     private Location<World> endCorner;
 
-    public GPResizeClaimEvent(Claim claim, Cause cause, Location<World> startCorner, Location<World> endCorner, Claim resizedClaim) {
-        super(claim, cause);
+    public GPResizeClaimEvent(Claim claim, Location<World> startCorner, Location<World> endCorner, Claim resizedClaim) {
+        super(claim);
         this.resizedClaim = resizedClaim;
     }
 

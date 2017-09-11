@@ -132,7 +132,7 @@ public class CommandClaimFlagGroup extends ClaimFlagBase implements CommandExecu
 
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(src);
-            claim.setPermission(subj, group, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Sponge.getCauseStackManager().getCurrentCause());
+            claim.setPermission(subj, group, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText);
         }
         return CommandResult.success();
     }

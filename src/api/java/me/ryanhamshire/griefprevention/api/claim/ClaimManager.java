@@ -24,7 +24,6 @@
  */
 package me.ryanhamshire.griefprevention.api.claim;
 
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -108,11 +107,10 @@ public interface ClaimManager {
      * Deletes a {@link Claim} from the managed world.
      * 
      * @param claim The claim to delete
-     * @param cause The cause of deletion
      * @return The claim result
      */
-    default ClaimResult deleteClaim(Claim claim, Cause cause) {
-        return this.deleteClaim(claim, cause, true);
+    default ClaimResult deleteClaim(Claim claim) {
+        return this.deleteClaim(claim, true);
     }
 
     /**
@@ -123,11 +121,10 @@ public interface ClaimManager {
      * will simply be moved to wilderness.
      * 
      * @param claim The claim to delete
-     * @param cause The cause of deletion
      * @param deleteChildren Whether to delete children
      * @return The claim result
      */
-    ClaimResult deleteClaim(Claim claim, Cause cause, boolean deleteChildren);
+    ClaimResult deleteClaim(Claim claim, boolean deleteChildren);
 
     /**
      * Gets the managed {@link WorldProperties}.

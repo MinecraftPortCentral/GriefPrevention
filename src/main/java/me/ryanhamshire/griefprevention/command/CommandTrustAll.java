@@ -99,9 +99,7 @@ public class CommandTrustAll implements CommandExecutor {
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().pushCause(player);
                 GPUserTrustClaimEvent.Add
-                    event =
-                    new GPUserTrustClaimEvent.Add(claimList, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(user.getUniqueId()),
-                        TrustType.NONE);
+                    event = new GPUserTrustClaimEvent.Add(claimList, ImmutableList.of(user.getUniqueId()), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,
@@ -123,8 +121,7 @@ public class CommandTrustAll implements CommandExecutor {
                 final Subject subject = PermissionUtils.getSubject(group);
                 Sponge.getCauseStackManager().pushCause(player);
                 GPGroupTrustClaimEvent.Add
-                    event =
-                    new GPGroupTrustClaimEvent.Add(claimList, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(group), TrustType.NONE);
+                    event = new GPGroupTrustClaimEvent.Add(claimList, ImmutableList.of(group), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,

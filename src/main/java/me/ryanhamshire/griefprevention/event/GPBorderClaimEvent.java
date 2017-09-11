@@ -27,7 +27,6 @@ package me.ryanhamshire.griefprevention.event;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.BorderClaimEvent;
 import org.spongepowered.api.entity.Entity;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.chat.ChatType;
 import org.spongepowered.api.text.chat.ChatTypes;
@@ -45,8 +44,8 @@ public class GPBorderClaimEvent extends GPClaimEvent implements BorderClaimEvent
     private ChatType enterChatType = ChatTypes.CHAT;
     private ChatType exitChatType = ChatTypes.CHAT;
 
-    public GPBorderClaimEvent(Entity entity, Claim exit, Claim enter, Cause cause) {
-        super(enter, cause);
+    public GPBorderClaimEvent(Entity entity, Claim exit, Claim enter) {
+        super(enter);
         this.targetEntity = entity;
         this.exitClaim = exit;
     }

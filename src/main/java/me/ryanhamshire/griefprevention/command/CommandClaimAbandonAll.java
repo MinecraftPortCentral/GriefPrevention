@@ -69,7 +69,7 @@ public class CommandClaimAbandonAll implements CommandExecutor {
         }
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(src);
-            GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(ImmutableList.copyOf(playerData.getInternalClaims()), Sponge.getCauseStackManager().getCurrentCause());
+            GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(ImmutableList.copyOf(playerData.getInternalClaims()));
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not abandon claim. A plugin has denied it."))));

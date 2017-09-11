@@ -145,7 +145,7 @@ public class CommandClaimFlag extends ClaimFlagBase implements CommandExecutor {
                 try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                     Sponge.getCauseStackManager().pushCause(src);
                     claim.setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", ClaimFlag.getEnum(flag), source, target, value, claimContext,
-                        reasonText, Sponge.getCauseStackManager().getCurrentCause());
+                        reasonText);
                 }
                 return CommandResult.success();
             }

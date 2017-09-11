@@ -143,7 +143,7 @@ public class CommandHelper {
             claim.removeSurfaceFluids(null);
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().pushCause(player);
-                GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Sponge.getCauseStackManager().getCurrentCause(), !deleteTopLevelClaim);
+                GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, !deleteTopLevelClaim);
             }
             // if in a creative mode world, restore the claim area
             if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
@@ -1001,7 +1001,7 @@ public class CommandHelper {
             Sponge.getCauseStackManager().pushCause(player);
             GPUserTrustClaimEvent.Add
                 event =
-                new GPUserTrustClaimEvent.Add(targetClaims, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(user.getUniqueId()), trustType);
+                new GPUserTrustClaimEvent.Add(targetClaims, ImmutableList.of(user.getUniqueId()), trustType);
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 player.sendMessage(Text.of(TextColors.RED,
@@ -1081,7 +1081,7 @@ public class CommandHelper {
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(player);
             GPGroupTrustClaimEvent.Add event =
-                new GPGroupTrustClaimEvent.Add(targetClaims, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(group), trustType);
+                new GPGroupTrustClaimEvent.Add(targetClaims, ImmutableList.of(group), trustType);
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 player.sendMessage(

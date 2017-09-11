@@ -976,7 +976,7 @@ public class GPClaim implements Claim {
         }
 
         // transfer
-        GPTransferClaimEvent event = new GPTransferClaimEvent(this, Sponge.getCauseStackManager().getCurrentCause(), this.getOwnerUniqueId(), newOwnerID);
+        GPTransferClaimEvent event = new GPTransferClaimEvent(this, this.getOwnerUniqueId(), newOwnerID);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(this, ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -1213,15 +1213,16 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult resize(int newx1, int newx2, int newy1, int newy2, int newz1, int newz2, Cause cause) {
+    public ClaimResult resize(int newx1, int newx2, int newy1, int newy2, int newz1, int newz2) {
         if (this.cuboid) {
-            return resizeCuboid(newx1, newx2, newy1, newy2, newz1, newz2, cause);
+            return resizeCuboid(newx1, newx2, newy1, newy2, newz1, newz2);
         }
 
         Location<World> startCorner = null;
         Location<World> endCorner = null;
         GPPlayerData playerData = null;
         Player player = null;
+        final Cause cause = Sponge.getCauseStackManager().getCurrentCause();
         if (!(cause.root() instanceof Player)) {
             startCorner = new Location<World>(this.world, newx1, newy1, newz1);
             endCorner = new Location<World>(this.world, newx2, newy2, newz2);
@@ -1308,7 +1309,7 @@ public class GPClaim implements Claim {
             return result;
         }
 
-        GPResizeClaimEvent event = new GPResizeClaimEvent(this, cause, startCorner, endCorner, this);
+        GPResizeClaimEvent event = new GPResizeClaimEvent(this, startCorner, endCorner, this);
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
             this.lesserBoundaryCorner = currentLesserCorner;
@@ -1362,7 +1363,7 @@ public class GPClaim implements Claim {
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
-    public ClaimResult resizeCuboid(int newx1, int newy1, int newz1, int newx2, int newy2, int newz2, Cause cause) {
+    public ClaimResult resizeCuboid(int newx1, int newy1, int newz1, int newx2, int newy2, int newz2) {
         int smallX = this.lesserBoundaryCorner.getBlockX();
         int smallY = this.lesserBoundaryCorner.getBlockY();
         int smallZ = this.lesserBoundaryCorner.getBlockZ();
@@ -1398,6 +1399,7 @@ public class GPClaim implements Claim {
         Location<World> endCorner = null;
         GPPlayerData playerData = null;
         Player player = null;
+        final Cause cause = Sponge.getCauseStackManager().getCurrentCause();
         if (!(cause.root() instanceof Player)) {
             startCorner = new Location<World>(this.world, smallX, smallY, smallZ);
             endCorner = new Location<World>(this.world, bigX, bigY, bigZ);
@@ -1439,7 +1441,7 @@ public class GPClaim implements Claim {
             return result;
         }
 
-        GPResizeClaimEvent event = new GPResizeClaimEvent(this, cause, startCorner, endCorner, 
+        GPResizeClaimEvent event = new GPResizeClaimEvent(this, startCorner, endCorner, 
                 new GPClaim(newLesserCorner.copy(), newGreaterCorner.copy(), this.type, this.cuboid));
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
@@ -1776,12 +1778,7 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult deleteSubdivision(Claim child, Cause cause) {
-        return this.deleteChild(child, cause);
-    }
-
-    @Override
-    public ClaimResult deleteChild(Claim child, Cause cause) {
+    public ClaimResult deleteChild(Claim child) {
         boolean found = false;
         for (Claim childClaim : this.children) {
             if (childClaim.getUniqueId().equals(child.getUniqueId())) {
@@ -1793,24 +1790,17 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND);
         }
 
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(child, cause);
-        SpongeImpl.postEvent(event);
-        if (event.isCancelled()) {
-            return new GPClaimResult(child, ClaimResultType.CLAIM_EVENT_CANCELLED);
-        }
-
         final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-        claimManager.deleteClaim(child, true);
-        return new GPClaimResult(event.getClaims(), ClaimResultType.SUCCESS);
+        return claimManager.deleteClaim(child, true);
     }
 
     @Override
-    public ClaimResult deleteChildren(Cause cause) {
-        return this.deleteChildren(null, cause);
+    public ClaimResult deleteChildren() {
+        return this.deleteChildren(null);
     }
 
     @Override
-    public ClaimResult deleteChildren(ClaimType claimType, Cause cause) {
+    public ClaimResult deleteChildren(ClaimType claimType) {
         List<Claim> claimList = new ArrayList<>();
         for (Claim child : this.children) {
             if (claimType == null || child.getType() == claimType) {
@@ -1822,7 +1812,7 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND);
         }
 
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(claimList, cause);
+        GPDeleteClaimEvent event = new GPDeleteClaimEvent(claimList);
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
             return new GPClaimResult(claimList, ClaimResultType.CLAIM_EVENT_CANCELLED);
@@ -1830,7 +1820,7 @@ public class GPClaim implements Claim {
 
         final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
         for (Claim child : claimList) {
-            claimManager.deleteClaim(child, true);
+            claimManager.deleteClaimInternal(child, true);
         }
 
         return new GPClaimResult(event.getClaims(), ClaimResultType.SUCCESS);
@@ -2082,8 +2072,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult addUserTrust(UUID uuid, TrustType type, Cause cause) {
-        GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(this, cause, ImmutableList.of(uuid), type);
+    public ClaimResult addUserTrust(UUID uuid, TrustType type) {
+        GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(this, ImmutableList.of(uuid), type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2098,8 +2088,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult addUserTrusts(List<UUID> uuids, TrustType type, Cause cause) {
-        GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(this, cause, uuids, type);
+    public ClaimResult addUserTrusts(List<UUID> uuids, TrustType type) {
+        GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(this, uuids, type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2116,8 +2106,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeUserTrust(UUID uuid, TrustType type, Cause cause) {
-        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, cause, ImmutableList.of(uuid), type);
+    public ClaimResult removeUserTrust(UUID uuid, TrustType type) {
+        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, ImmutableList.of(uuid), type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2128,8 +2118,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeUserTrusts(List<UUID> uuids, TrustType type, Cause cause) {
-        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, cause, uuids, type);
+    public ClaimResult removeUserTrusts(List<UUID> uuids, TrustType type) {
+        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, uuids, type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2146,8 +2136,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult addGroupTrust(String group, TrustType type, Cause cause) {
-        GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(this, cause, ImmutableList.of(group), type);
+    public ClaimResult addGroupTrust(String group, TrustType type) {
+        GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(this, ImmutableList.of(group), type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2162,8 +2152,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult addGroupTrusts(List<String> groups, TrustType type, Cause cause) {
-        GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(this, cause, groups, type);
+    public ClaimResult addGroupTrusts(List<String> groups, TrustType type) {
+        GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(this, groups, type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2180,8 +2170,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeGroupTrust(String group, TrustType type, Cause cause) {
-        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, ImmutableList.of(group), type);
+    public ClaimResult removeGroupTrust(String group, TrustType type) {
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, ImmutableList.of(group), type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2192,8 +2182,8 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeGroupTrusts(List<String> groups, TrustType type, Cause cause) {
-        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, groups, type);
+    public ClaimResult removeGroupTrusts(List<String> groups, TrustType type) {
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, groups, type);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2210,16 +2200,16 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeAllTrusts(Cause cause) {
+    public ClaimResult removeAllTrusts() {
         List<UUID> userTrustList = this.getUserTrusts();
-        GPUserTrustClaimEvent.Remove userEvent = new GPUserTrustClaimEvent.Remove(this, cause, userTrustList, TrustType.NONE);
+        GPUserTrustClaimEvent.Remove userEvent = new GPUserTrustClaimEvent.Remove(this, userTrustList, TrustType.NONE);
         Sponge.getEventManager().post(userEvent);
         if (userEvent.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, userEvent.getMessage().orElse(null));
         }
 
         List<String> groupTrustList = this.getGroupTrusts();
-        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, groupTrustList, TrustType.NONE);
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, groupTrustList, TrustType.NONE);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2237,9 +2227,9 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeAllUserTrusts(Cause cause) {
+    public ClaimResult removeAllUserTrusts() {
         List<UUID> trustList = this.getUserTrusts();
-        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, cause, trustList, TrustType.NONE);
+        GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(this, trustList, TrustType.NONE);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2253,9 +2243,9 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult removeAllGroupTrusts(Cause cause) {
+    public ClaimResult removeAllGroupTrusts() {
         List<String> trustList = this.getGroupTrusts();
-        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, cause, trustList, TrustType.NONE);
+        GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(this, trustList, TrustType.NONE);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2408,11 +2398,6 @@ public class GPClaim implements Claim {
 
         public ClaimBuilder() {
             
-        }
-
-        @Override
-        public Builder cause(Cause cause) {
-            return this;
         }
 
         @Override
@@ -2634,7 +2619,7 @@ public class GPClaim implements Claim {
                 return result;
             }
 
-            GPCreateClaimEvent event = new GPCreateClaimEvent(claim, Sponge.getCauseStackManager().getCurrentCause());
+            GPCreateClaimEvent event = new GPCreateClaimEvent(claim);
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED);
@@ -2718,14 +2703,14 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public CompletableFuture<FlagResult> clearPermissions(Subject subject, Cause cause) {
+    public CompletableFuture<FlagResult> clearPermissions(Subject subject) {
         CompletableFuture<FlagResult> result = new CompletableFuture<>();
         Set<Context> contexts = new HashSet<>();
         for (Context context : ClaimContexts.CONTEXT_LIST) {
             contexts.add(context);
         }
 
-        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, subject, contexts, cause);
+        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, subject, contexts);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
@@ -2748,16 +2733,16 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public CompletableFuture<FlagResult> clearPermissions(Context context, Cause cause) {
-        return clearPermissions(GriefPreventionPlugin.GLOBAL_SUBJECT, context, cause);
+    public CompletableFuture<FlagResult> clearPermissions(Context context) {
+        return clearPermissions(GriefPreventionPlugin.GLOBAL_SUBJECT, context);
     }
 
     @Override
-    public CompletableFuture<FlagResult> clearPermissions(Subject subject, Context context, Cause cause) {
+    public CompletableFuture<FlagResult> clearPermissions(Subject subject, Context context) {
         CompletableFuture<FlagResult> result = new CompletableFuture<>();
         Set<Context> contexts = new HashSet<>();
         contexts.add(context);
-        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, subject, contexts, cause);
+        GPFlagClaimEvent.Clear event = new GPFlagClaimEvent.Clear(this, subject, contexts);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
@@ -2771,22 +2756,22 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, Tristate value, Context context, Cause cause) {
-       return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, value, context, cause);
+    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, Tristate value, Context context) {
+       return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, value, context);
     }
 
     @Override
-    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, Tristate value, Context context, Cause cause) {
-        return setPermission(subject, flag, "any", value, context, cause);
+    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, Tristate value, Context context) {
+        return setPermission(subject, flag, "any", value, context);
     }
 
     @Override
-    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String target, Tristate value, Context context, Cause cause) {
-        return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, target, value, context, cause);
+    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String target, Tristate value, Context context) {
+        return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, target, value, context);
     }
 
     @Override
-    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Context context, Cause cause) {
+    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Context context) {
         if (target.equalsIgnoreCase("any:any")) {
             target = "any";
         }
@@ -2800,7 +2785,7 @@ public class GPClaim implements Claim {
             return result;
         }
 
-        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, null, target, value, context, cause);
+        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, null, target, value, context);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
@@ -2808,6 +2793,7 @@ public class GPClaim implements Claim {
         }
 
         CommandSource commandSource = Sponge.getServer().getConsole();
+        final Cause cause = Sponge.getCauseStackManager().getCurrentCause();
         Object root = cause.root();
         if (root instanceof CommandSource) {
             commandSource = (CommandSource) root;
@@ -2823,16 +2809,16 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause) {
-       return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, source, target, value, context, cause);
+    public CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String source, String target, Tristate value, Context context) {
+       return setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, flag, source, target, value, context);
     }
 
     @Override
-    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause) {
-        return setPermission(subject, subject.getIdentifier(), flag, source, target, value, context, null, cause);
+    public CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context) {
+        return setPermission(subject, subject.getIdentifier(), flag, source, target, value, context, null);
     }
 
-    public CompletableFuture<FlagResult> setPermission(Subject subject, String friendlyName, ClaimFlag flag, String source, String target, Tristate value, Context context, Text reason, Cause cause) {
+    public CompletableFuture<FlagResult> setPermission(Subject subject, String friendlyName, ClaimFlag flag, String source, String target, Tristate value, Context context, Text reason) {
         if (source != null && (source.equalsIgnoreCase("any:any") || source.equalsIgnoreCase("any"))) {
             source = null;
         }
@@ -2854,7 +2840,7 @@ public class GPClaim implements Claim {
             return result;
         }*/
 
-        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, source, target, value, context, cause);
+        GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, source, target, value, context);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             result.complete(new GPFlagResult(FlagResultType.EVENT_CANCELLED, event.getMessage().orElse(null)));
@@ -2862,7 +2848,7 @@ public class GPClaim implements Claim {
         }
 
         CommandSource commandSource = Sponge.getServer().getConsole();
-        Object root = cause.root();
+        Object root = Sponge.getCauseStackManager().getCurrentCause();
         if (root instanceof CommandSource) {
             commandSource = (CommandSource) root;
         }

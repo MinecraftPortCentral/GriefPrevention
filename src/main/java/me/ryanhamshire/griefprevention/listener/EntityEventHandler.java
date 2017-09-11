@@ -385,7 +385,7 @@ public class EntityEventHandler {
                             attackerData.lastClaim = new WeakReference<>(attackerClaim);
                             GPAttackPlayerEvent
                                 pvpEvent =
-                                new GPAttackPlayerEvent(attackerClaim, Sponge.getCauseStackManager().getCurrentCause(), defender);
+                                new GPAttackPlayerEvent(attackerClaim, defender);
                             Sponge.getEventManager().post(pvpEvent);
                             if (!pvpEvent.isCancelled()) {
                                 pvpEvent.setCancelled(true);
@@ -399,7 +399,7 @@ public class EntityEventHandler {
                             defenderData.lastClaim = new WeakReference<>(defenderClaim);
                             GPAttackPlayerEvent
                                 pvpEvent =
-                                new GPAttackPlayerEvent(defenderClaim, Sponge.getCauseStackManager().getCurrentCause(), defender);
+                                new GPAttackPlayerEvent(defenderClaim, defender);
                             Sponge.getEventManager().post(pvpEvent);
                             if (!pvpEvent.isCancelled()) {
                                 pvpEvent.setCancelled(true);
@@ -599,7 +599,7 @@ public class EntityEventHandler {
             GPClaim fromClaim = this.dataStore.getClaimAt(fromLocation, false, null);
             GPClaim toClaim = this.dataStore.getClaimAt(toLocation, false, null);
             if (fromClaim != toClaim) {
-                GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim, event.getCause());
+                GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim);
                 Sponge.getEventManager().post(gpEvent);
                 if (gpEvent.isCancelled()) {
                     event.setCancelled(true);
@@ -651,7 +651,7 @@ public class EntityEventHandler {
         }
 
         User user = player != null ? player : owner;
-        GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim, event.getCause());
+        GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim);
         if (user != null && toClaim.isUserTrusted(user, TrustType.ACCESSOR)) {
             Sponge.getEventManager().post(gpEvent);
             if (gpEvent.isCancelled()) {
@@ -858,11 +858,11 @@ public class EntityEventHandler {
                     if (claim.getOwnerUniqueId().equals(playerUniqueId)) {
                         // update lastActive timestamp for claim
                         claim.getData().setDateLastActive(Instant.now());
-                        claimWorldManager.addClaim(claim, Sponge.getCauseStackManager().getCurrentCause());
+                        claimWorldManager.addClaim(claim);
                     } else if (claim.getParent().isPresent() && claim.getParent().get().getOwnerUniqueId().equals(playerUniqueId)) {
                         // update lastActive timestamp for subdivisions if parent owner logs on
                         claim.getData().setDateLastActive(Instant.now());
-                        claimWorldManager.addClaim(claim, Sponge.getCauseStackManager().getCurrentCause());
+                        claimWorldManager.addClaim(claim);
                     }
                 }
             }

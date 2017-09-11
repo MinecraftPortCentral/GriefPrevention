@@ -26,7 +26,6 @@ package me.ryanhamshire.griefprevention.event;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.TaxClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
 
 public class GPTaxClaimEvent extends GPClaimEvent implements TaxClaimEvent {
 
@@ -34,8 +33,8 @@ public class GPTaxClaimEvent extends GPClaimEvent implements TaxClaimEvent {
     private final double originalTaxAmount;
     private double taxRate;
 
-    public GPTaxClaimEvent(Claim claim, double rate, double amount, Cause cause) {
-        super(claim, cause);
+    public GPTaxClaimEvent(Claim claim, double rate, double amount) {
+        super(claim);
         this.originalTaxRate = rate;
         this.originalTaxAmount = amount;
         this.taxRate = rate;

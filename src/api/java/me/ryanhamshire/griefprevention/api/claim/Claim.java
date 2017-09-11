@@ -31,7 +31,6 @@ import me.ryanhamshire.griefprevention.api.data.EconomyData;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.context.ContextSource;
 import org.spongepowered.api.service.economy.account.Account;
@@ -213,8 +212,8 @@ public interface Claim extends ContextSource {
      * @param endCornerLoc The end corner location
      * @return The claim result
      */
-    default ClaimResult resize(Location<World> startCornerLoc, Location<World> endCornerLoc, Cause cause) {
-        return this.resize(startCornerLoc.getBlockPosition(), endCornerLoc.getBlockPosition(), cause);
+    default ClaimResult resize(Location<World> startCornerLoc, Location<World> endCornerLoc) {
+        return this.resize(startCornerLoc.getBlockPosition(), endCornerLoc.getBlockPosition());
     }
 
     /**
@@ -224,8 +223,8 @@ public interface Claim extends ContextSource {
      * @param endCornerPos The end corner block position
      * @return The claim result
      */
-    default ClaimResult resize(Vector3i startCornerPos, Vector3i endCornerPos, Cause cause) {
-        return this.resize(startCornerPos.getX(), endCornerPos.getX(), startCornerPos.getY(), endCornerPos.getY(), startCornerPos.getZ(), endCornerPos.getZ(), cause);
+    default ClaimResult resize(Vector3i startCornerPos, Vector3i endCornerPos) {
+        return this.resize(startCornerPos.getX(), endCornerPos.getX(), startCornerPos.getY(), endCornerPos.getY(), startCornerPos.getZ(), endCornerPos.getZ());
     }
 
     /**
@@ -237,10 +236,9 @@ public interface Claim extends ContextSource {
      * @param y2 The end Y-axis position
      * @param z1 The start Z-axis position
      * @param z2 The end Z-axis position
-     * @param cause The cause of resize
      * @return The claim result
      */
-    ClaimResult resize(int x1, int x2, int y1, int y2, int z1, int z2, Cause cause);
+    ClaimResult resize(int x1, int x2, int y1, int y2, int z1, int z2);
 
     /**
      * Gets an immutable list of child claims.
@@ -313,160 +311,97 @@ public interface Claim extends ContextSource {
     List<String> getGroupTrusts(TrustType type);
 
     /**
-     * Grants claim trust to the UUID for given {@link TrustType}.
-     * 
-     * @param uuid The UUID of user
-     * @param type The trust type
-     * @param cause The plugin cause
-     * @return The claim result
-     */
-    @Deprecated
-    default ClaimResult addTrust(UUID uuid, TrustType type, Cause cause) {
-        return this.addUserTrust(uuid, type, cause);
-    }
-
-    /**
-     * Grants claim trust to the list of UUID's for given {@link TrustType}.
-     * 
-     * @param uuid The list of user UUID's
-     * @param type The trust type
-     * @param cause The plugin cause
-     * @return The claim result
-     */
-    @Deprecated
-    default ClaimResult addTrusts(List<UUID> uuid, TrustType type, Cause cause) {
-        return this.addUserTrusts(uuid, type, cause);
-    }
-
-    /**
-     * Removes UUID from claim trust for given {@link TrustType}.
-     * 
-     * @param uuid The UUID of user
-     * @param type The trust type
-     * @param cause The plugin cause
-     * @return The claim result
-     */
-    @Deprecated
-    default ClaimResult removeTrust(UUID uuid, TrustType type, Cause cause) {
-        return this.removeUserTrust(uuid, type, cause);
-    }
-
-    /**
-     * Removes the list of UUID's from claim trust for given {@link TrustType}.
-     * 
-     * @param uuid The list of user UUID's
-     * @param type The trust type
-     * @param cause The plugin cause
-     * @return The claim result
-     */
-    @Deprecated
-    default ClaimResult removeTrusts(List<UUID> uuid, TrustType type, Cause cause) {
-        return this.removeUserTrusts(uuid, type, cause);
-    }
-
-    /**
      * Clears all trusts for claim.
      * 
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeAllTrusts(Cause cause);
+    ClaimResult removeAllTrusts();
 
     /**
      * Clears all user trusts for claim.
      * 
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeAllUserTrusts(Cause cause);
+    ClaimResult removeAllUserTrusts();
 
     /**
      * Clears all group trusts for claim.
      * 
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeAllGroupTrusts(Cause cause);
+    ClaimResult removeAllGroupTrusts();
 
     /**
      * Grants claim trust to the UUID for given {@link TrustType}.
      * 
      * @param uuid The UUID of user
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult addUserTrust(UUID uuid, TrustType type, Cause cause);
+    ClaimResult addUserTrust(UUID uuid, TrustType type);
 
     /**
      * Grants claim trust to the list of UUID's for given {@link TrustType}.
      * 
      * @param uuid The list of user UUID's
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult addUserTrusts(List<UUID> uuid, TrustType type, Cause cause);
+    ClaimResult addUserTrusts(List<UUID> uuid, TrustType type);
 
     /**
      * Removes UUID from claim trust for given {@link TrustType}.
      * 
      * @param uuid The UUID of user
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeUserTrust(UUID uuid, TrustType type, Cause cause);
+    ClaimResult removeUserTrust(UUID uuid, TrustType type);
 
     /**
      * Removes the list of UUID's from claim trust for given {@link TrustType}.
      * 
      * @param uuid The list of user UUID's
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeUserTrusts(List<UUID> uuid, TrustType type, Cause cause);
+    ClaimResult removeUserTrusts(List<UUID> uuid, TrustType type);
 
     /**
      * Grants claim trust to the group for given {@link TrustType}.
      * 
      * @param group The group
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult addGroupTrust(String group, TrustType type, Cause cause);
+    ClaimResult addGroupTrust(String group, TrustType type);
 
     /**
      * Grants claim trust to the list of groups for given {@link TrustType}.
      * 
      * @param groups The list of groups
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult addGroupTrusts(List<String> groups, TrustType type, Cause cause);
+    ClaimResult addGroupTrusts(List<String> groups, TrustType type);
 
     /**
      * Removes a group from claim trust for given {@link TrustType}.
      * 
      * @param group The group
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeGroupTrust(String group, TrustType type, Cause cause);
+    ClaimResult removeGroupTrust(String group, TrustType type);
 
     /**
      * Removes the list of UUID's from claim trust for given {@link TrustType}.
      * 
      * @param groups The list of groups
      * @param type The trust type
-     * @param cause The plugin cause
      * @return The claim result
      */
-    ClaimResult removeGroupTrusts(List<String> groups, TrustType type, Cause cause);
+    ClaimResult removeGroupTrusts(List<String> groups, TrustType type);
 
     /**
      * Checks if the {@link UUID} is able to build in claim.
@@ -637,38 +572,25 @@ public interface Claim extends ContextSource {
     /**
      * Deletes all children claims.
      * 
-     * @param cause The cause for deletion
      * @return The result of deletion
      */
-    ClaimResult deleteChildren(Cause cause);
+    ClaimResult deleteChildren();
 
     /**
      * Deletes all children claims of a specific {@link ClaimType}.
      * 
-     * @param cause The cause for deletion
      * @param type The type of claims to delete
      * @return The result of deletion
      */
-    ClaimResult deleteChildren(ClaimType type, Cause cause);
+    ClaimResult deleteChildren(ClaimType type);
 
     /**
      * Deletes a child claim.
      * 
      * @param child The child claim to be deleted
-     * @param cause The cause for deletion
      * @return The result of deletion
      */
-    ClaimResult deleteChild(Claim child, Cause cause);
-
-    /**
-     * Deletes the subdivision.
-     * 
-     * @param subdivision The subdivision to be deleted
-     * @param cause The cause for deletion
-     * @return The result of deletion
-     */
-    @Deprecated
-    ClaimResult deleteSubdivision(Claim subdivision, Cause cause);
+    ClaimResult deleteChild(Claim child);
 
     /**
      * Gets the persisted data of claim.
@@ -732,11 +654,10 @@ public interface Claim extends ContextSource {
      * @param subject The subject
      * @param flag The claim flag
      * @param value The new value
-     * @param cause The cause of set
      * @return The result of set
      */
-    default CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Cause cause) {
-        return setPermission(subject, flag, source, target, value, this.getContext(), cause);
+    default CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value) {
+        return setPermission(subject, flag, source, target, value, this.getContext());
     }
 
     /**
@@ -745,11 +666,10 @@ public interface Claim extends ContextSource {
      * @param subject The subject
      * @param flag The claim flag
      * @param value The new value
-     * @param cause The cause of set
      * @return The result of set
      */
-    default CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Cause cause) {
-        return setPermission(subject, flag, target, value, this.getContext(), cause);
+    default CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value) {
+        return setPermission(subject, flag, target, value, this.getContext());
     }
 
     /**
@@ -780,13 +700,12 @@ public interface Claim extends ContextSource {
      * Clears claim permissions on the {@link Subject}.
      * 
      * Note: All permissions will be cleared from all claim contexts. If you require
-     * a specific context, use {@link #clearPermissions(Subject, Context, Cause)}.
+     * a specific context, use {@link #clearPermissions(Subject, Context)}.
      * 
      * @param subject The subject
-     * @param cause The cause
      * @return The result of clear
      */
-    CompletableFuture<FlagResult> clearPermissions(Subject subject, Cause cause);
+    CompletableFuture<FlagResult> clearPermissions(Subject subject);
 
     /**
      * Clears claim permissions from specified {@link Context}.
@@ -794,20 +713,18 @@ public interface Claim extends ContextSource {
      * Note: This uses the default subject which applies to all users in claim.
      * 
      * @param context The context holding the permissions
-     * @param cause The cause
      * @return The result of clear
      */
-    CompletableFuture<FlagResult> clearPermissions(Context context, Cause cause);
+    CompletableFuture<FlagResult> clearPermissions(Context context);
 
     /**
      * Clears claim permissions on the {@link Subject} from specified {@link Context}.
      * 
      * @param subject The subject
      * @param context The context holding the permissions
-     * @param cause The cause
      * @return The result of clear
      */
-    CompletableFuture<FlagResult> clearPermissions(Subject subject, Context context, Cause cause);
+    CompletableFuture<FlagResult> clearPermissions(Subject subject, Context context);
 
     /**
      * Sets {@link ClaimFlag} permission with {@link Context}.
@@ -817,10 +734,9 @@ public interface Claim extends ContextSource {
      * @param flag The claim flag
      * @param value The new value
      * @param context The claim context
-     * @param cause The cause of set
      * @return The result of set
      */
-    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, Tristate value, Context context, Cause cause);
+    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, Tristate value, Context context);
 
     /**
      * Sets {@link ClaimFlag} permission on {@link Subject} with {@link Context}.
@@ -829,10 +745,9 @@ public interface Claim extends ContextSource {
      * @param flag The claim flag
      * @param value The new value
      * @param context The claim context
-     * @param cause The cause of set
      * @return The result of set
      */
-    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, Tristate value, Context context, Cause cause);
+    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, Tristate value, Context context);
 
     /**
      * Sets {@link ClaimFlag} permission for target with {@link Context}.
@@ -843,10 +758,9 @@ public interface Claim extends ContextSource {
      * @param target The target id
      * @param value The new value
      * @param context The claim context
-     * @param cause The cause of set
      * @return The result of set
      */
-    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String target, Tristate value, Context context, Cause cause);
+    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String target, Tristate value, Context context);
 
     /**
      * Sets {@link ClaimFlag} permission for target on {@link Subject} with {@link Context}.
@@ -856,10 +770,9 @@ public interface Claim extends ContextSource {
      * @param target The target id
      * @param value The new value
      * @param context The claim context
-     * @param cause The cause of set
      * @return The result of set
      */
-    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Context context, Cause cause);
+    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String target, Tristate value, Context context);
 
     /**
      * Sets {@link ClaimFlag} permission for source and target on default subject with {@link Context}.
@@ -869,10 +782,9 @@ public interface Claim extends ContextSource {
      * @param target The target id
      * @param value The new value
      * @param context The claim context
-     * @param cause The cause of set
      * @return The result of set
      */
-    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause);
+    CompletableFuture<FlagResult> setPermission(ClaimFlag flag, String source, String target, Tristate value, Context context);
 
     /**
      * Sets {@link ClaimFlag} permission for source and target on {@link Subject} with {@link Context}.
@@ -883,10 +795,9 @@ public interface Claim extends ContextSource {
      * @param target The target id
      * @param value The new value
      * @param context The claim context
-     * @param cause The cause of set
      * @return The result of set
      */
-    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause);
+    CompletableFuture<FlagResult> setPermission(Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context);
 
     /**
      * Gets the {@link ClaimFlag} permission value for target with {@link Context}.
@@ -981,16 +892,6 @@ public interface Claim extends ContextSource {
     }
 
     public interface Builder {
-
-        /**
-         * The cause of creation.
-         * 
-         * Note: This is usually a player or plugin.
-         * 
-         * @param cause The cause
-         * @return The builder
-         */
-        Builder cause(Cause cause);
 
         /**
          * The location bounds of claim.

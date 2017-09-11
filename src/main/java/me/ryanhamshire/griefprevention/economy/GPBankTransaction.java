@@ -29,7 +29,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.economy.BankTransaction;
 import me.ryanhamshire.griefprevention.api.economy.BankTransactionType;
-import org.spongepowered.api.event.cause.Cause;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -82,18 +81,9 @@ public class GPBankTransaction implements BankTransaction {
 
     public static class BankTransactionBuilder implements Builder {
 
-        private Cause cause;
-        private Claim claim;
         private UUID source;
-        private Instant timestamp;
         private double amount;
         private BankTransactionType type;
-
-        @Override
-        public Builder cause(Cause cause) {
-            this.cause = cause;
-            return this;
-        }
 
         @Override
         public Builder type(BankTransactionType type) {
@@ -115,7 +105,6 @@ public class GPBankTransaction implements BankTransaction {
 
         @Override
         public Builder reset() {
-            this.cause = null;
             this.source = null;
             this.amount = 0;
             this.type = null;
@@ -125,7 +114,6 @@ public class GPBankTransaction implements BankTransaction {
         @Override
         public BankTransaction build() {
             checkNotNull(this.type);
-            checkNotNull(this.cause);
             checkNotNull(this.amount);
             if (this.source != null) {
                 return new GPBankTransaction(this.type, this.source, Instant.now(), this.amount); 

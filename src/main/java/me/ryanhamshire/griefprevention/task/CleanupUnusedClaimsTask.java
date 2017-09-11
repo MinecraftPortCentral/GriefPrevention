@@ -94,7 +94,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
                             Sponge.getCauseStackManager().addContext(GPContextKeys.CHEST_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer);
 
                             claim.removeSurfaceFluids(null);
-                            claimManager.deleteClaim(claim, Sponge.getCauseStackManager().getCurrentCause());
+                            claimManager.deleteClaim(claim);
 
                             // if configured to do so, restore the land to natural
                             if (GriefPreventionPlugin.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative) || activeConfig
@@ -115,7 +115,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
                             .isBefore(Instant.now())) {
                             Sponge.getCauseStackManager().addContext(GPContextKeys.PLAYER_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer);
 
-                            claimManager.deleteClaim(claim, Sponge.getCauseStackManager().getCurrentCause());
+                            claimManager.deleteClaim(claim);
                             GriefPreventionPlugin.addLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "
                                                               + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
                                 CustomLogEntryTypes.AdminActivity);

@@ -27,14 +27,13 @@ package me.ryanhamshire.griefprevention.event;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.AttackPlayerEvent;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
 
 public class GPAttackPlayerEvent extends GPClaimEvent implements AttackPlayerEvent {
 
     private Player targetPlayer;
 
-    public GPAttackPlayerEvent(Claim claim, Cause cause, Player targetPlayer) {
-        super(claim, cause);
+    public GPAttackPlayerEvent(Claim claim, Player targetPlayer) {
+        super(claim);
     }
 
     @Override

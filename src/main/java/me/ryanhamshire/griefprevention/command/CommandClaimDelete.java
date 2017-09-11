@@ -91,7 +91,7 @@ public class CommandClaimDelete implements CommandExecutor {
                     Sponge.getCauseStackManager().pushCause(src);
                     ClaimResult
                         claimResult =
-                        GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Sponge.getCauseStackManager().getCurrentCause(), !this.deleteTopLevelClaim);
+                        GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, !this.deleteTopLevelClaim);
                     if (!claimResult.successful()) {
                         player.sendMessage(
                             Text.of(TextColors.RED, claimResult.getMessage().orElse(Text.of("Could not delete claim. A plugin has denied it."))));

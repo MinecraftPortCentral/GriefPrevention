@@ -117,7 +117,7 @@ public class TaxApplyTask implements Runnable {
         double taxOwed = (claim.getClaimBlocks() / 256) * taxRate;
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(GriefPreventionPlugin.instance);
-            GPTaxClaimEvent event = new GPTaxClaimEvent(claim, taxRate, taxOwed, Sponge.getCauseStackManager().getCurrentCause());
+            GPTaxClaimEvent event = new GPTaxClaimEvent(claim, taxRate, taxOwed);
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 return;

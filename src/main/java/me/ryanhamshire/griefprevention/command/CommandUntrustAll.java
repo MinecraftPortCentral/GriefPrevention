@@ -102,9 +102,7 @@ public class CommandUntrustAll implements CommandExecutor {
             Sponge.getCauseStackManager().pushCause(player);
             if (user != null) {
                 GPUserTrustClaimEvent.Remove
-                    event =
-                    new GPUserTrustClaimEvent.Remove(claimList, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(user.getUniqueId()),
-                        TrustType.NONE);
+                    event = new GPUserTrustClaimEvent.Remove(claimList, ImmutableList.of(user.getUniqueId()), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,
@@ -123,8 +121,7 @@ public class CommandUntrustAll implements CommandExecutor {
 
                 final Subject subject = PermissionUtils.getSubject(group);
                 GPGroupTrustClaimEvent.Remove
-                    event =
-                    new GPGroupTrustClaimEvent.Remove(claimList, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(group), TrustType.NONE);
+                    event = new GPGroupTrustClaimEvent.Remove(claimList, ImmutableList.of(group), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,

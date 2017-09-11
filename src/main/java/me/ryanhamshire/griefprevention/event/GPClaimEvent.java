@@ -25,11 +25,10 @@
 package me.ryanhamshire.griefprevention.event;
 
 import com.google.common.collect.ImmutableList;
-import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.ClaimEvent;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.EventContext;
 import org.spongepowered.api.event.impl.AbstractEvent;
 import org.spongepowered.api.text.Text;
 
@@ -39,18 +38,18 @@ import java.util.Optional;
 public class GPClaimEvent extends AbstractEvent implements ClaimEvent {
 
     private List<Claim> claims;
-    private Cause cause;
     private Text message;
     private boolean isCancelled = false;
+    private final Cause cause;
 
-    public GPClaimEvent(Claim claim, Cause cause) {
+    public GPClaimEvent(Claim claim) {
         this.claims = ImmutableList.of(claim);
-        this.cause = cause;
+        this.cause = Sponge.getCauseStackManager().getCurrentCause();
     }
 
-    public GPClaimEvent(List<Claim> claims, Cause cause) {
+    public GPClaimEvent(List<Claim> claims) {
         this.claims = ImmutableList.copyOf(claims);
-        this.cause = cause;
+        this.cause = Sponge.getCauseStackManager().getCurrentCause();
     }
 
     @Override
@@ -65,10 +64,6 @@ public class GPClaimEvent extends AbstractEvent implements ClaimEvent {
 
     @Override
     public Cause getCause() {
-        if (this.cause == null) {
-            return Cause.of(EventContext.empty(), GriefPreventionPlugin.instance);
-        }
-
         return this.cause;
     }
 

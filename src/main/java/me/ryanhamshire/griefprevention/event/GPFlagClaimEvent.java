@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.event.FlagClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.util.Tristate;
@@ -39,8 +38,8 @@ public class GPFlagClaimEvent extends GPClaimEvent implements FlagClaimEvent {
 
     private final Subject subject;
 
-    public GPFlagClaimEvent(Claim claim, Subject subject, Cause cause) {
-        super(claim, cause);
+    public GPFlagClaimEvent(Claim claim, Subject subject) {
+        super(claim);
         this.subject = subject;
     }
 
@@ -48,8 +47,8 @@ public class GPFlagClaimEvent extends GPClaimEvent implements FlagClaimEvent {
 
         private final java.util.Set<Context> contexts;
 
-        public Clear(Claim claim, Subject subject, java.util.Set<Context> contexts, Cause cause) {
-            super(claim, subject, cause);
+        public Clear(Claim claim, Subject subject, java.util.Set<Context> contexts) {
+            super(claim, subject);
             this.contexts = ImmutableSet.copyOf(contexts);
         }
 
@@ -67,8 +66,8 @@ public class GPFlagClaimEvent extends GPClaimEvent implements FlagClaimEvent {
         private final String target;
         private final Context context;
 
-        public Set(Claim claim, Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context, Cause cause) {
-            super(claim, subject, cause);
+        public Set(Claim claim, Subject subject, ClaimFlag flag, String source, String target, Tristate value, Context context) {
+            super(claim, subject);
             this.flag = flag;
             this.source = source;
             this.target = target;

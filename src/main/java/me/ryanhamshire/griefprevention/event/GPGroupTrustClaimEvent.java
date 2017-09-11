@@ -27,7 +27,6 @@ package me.ryanhamshire.griefprevention.event;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.api.event.GroupTrustClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
 
 import java.util.List;
 
@@ -35,13 +34,13 @@ public class GPGroupTrustClaimEvent extends GPTrustClaimEvent implements GroupTr
 
     private List<String> groups;
 
-    public GPGroupTrustClaimEvent(Claim claim, Cause cause, List<String> groups, TrustType trustType) {
-        super(claim, cause, trustType);
+    public GPGroupTrustClaimEvent(Claim claim, List<String> groups, TrustType trustType) {
+        super(claim, trustType);
         this.groups = groups;
     }
 
-    public GPGroupTrustClaimEvent(List<Claim> claims, Cause cause, List<String> groups, TrustType trustType) {
-        super(claims, cause, trustType);
+    public GPGroupTrustClaimEvent(List<Claim> claims, List<String> groups, TrustType trustType) {
+        super(claims, trustType);
         this.groups = groups;
     }
 
@@ -51,22 +50,22 @@ public class GPGroupTrustClaimEvent extends GPTrustClaimEvent implements GroupTr
     }
 
     public static class Add extends GPGroupTrustClaimEvent implements GroupTrustClaimEvent.Add {
-        public Add(List<Claim> claims, Cause cause, List<String> groups, TrustType trustType) {
-            super(claims, cause, groups, trustType);
+        public Add(List<Claim> claims, List<String> groups, TrustType trustType) {
+            super(claims, groups, trustType);
         }
 
-        public Add(Claim claim, Cause cause, List<String> groups, TrustType trustType) {
-            super(claim, cause, groups, trustType);
+        public Add(Claim claim, List<String> groups, TrustType trustType) {
+            super(claim, groups, trustType);
         }
     }
 
     public static class Remove extends GPGroupTrustClaimEvent implements GroupTrustClaimEvent.Remove {
-        public Remove(List<Claim> claims, Cause cause, List<String> groups, TrustType trustType) {
-            super(claims, cause, groups, trustType);
+        public Remove(List<Claim> claims, List<String> groups, TrustType trustType) {
+            super(claims, groups, trustType);
         }
 
-        public Remove(Claim claim, Cause cause, List<String> groups, TrustType trustType) {
-            super(claim, cause, groups, trustType);
+        public Remove(Claim claim, List<String> groups, TrustType trustType) {
+            super(claim, groups, trustType);
         }
     }
 }

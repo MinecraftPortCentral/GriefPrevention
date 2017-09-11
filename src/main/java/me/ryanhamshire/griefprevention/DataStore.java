@@ -54,7 +54,6 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.CauseStackManager;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.SubjectData;
 import org.spongepowered.api.service.user.UserStorageService;
@@ -409,7 +408,7 @@ public abstract class DataStore {
 
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(src);
-            GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(claimsToDelete), Sponge.getCauseStackManager().getCurrentCause());
+            GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(claimsToDelete));
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED,
@@ -422,7 +421,7 @@ public abstract class DataStore {
             gpClaim.removeSurfaceFluids(null);
 
             GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-            claimWorldManager.deleteClaim(claim, true);
+            claimWorldManager.deleteClaimInternal(claim, true);
 
             // if in a creative mode world, delete the claim
             if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
@@ -433,9 +432,9 @@ public abstract class DataStore {
         return new GPClaimResult(claimsToDelete, ClaimResultType.SUCCESS);
     }
 
-    public ClaimResult deleteClaim(Claim claim, Cause cause, boolean deleteChildren) {
+    public ClaimResult deleteClaim(Claim claim, boolean deleteChildren) {
         GPClaimManager claimManager = this.getClaimWorldManager(claim.getWorld().getProperties());
-        return claimManager.deleteClaim(claim, cause, deleteChildren);
+        return claimManager.deleteClaim(claim, deleteChildren);
     }
 
     // deletes all claims owned by a player
@@ -446,7 +445,7 @@ public abstract class DataStore {
                 ((GPClaim) claim).removeSurfaceFluids(null);
                 GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
                 GPClaimManager claimWorldManager = this.claimWorldManagers.get(claim.getWorld().getProperties().getUniqueId());
-                claimWorldManager.deleteClaim(claim, true);
+                claimWorldManager.deleteClaimInternal(claim, true);
 
                 // if in a creative mode world, delete the claim
                 if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
@@ -475,7 +474,7 @@ public abstract class DataStore {
             for (Claim claim : claimsToDelete) {
                 ((GPClaim) claim).removeSurfaceFluids(null);
                 GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-                claimWorldManager.deleteClaim(claim, true);
+                claimWorldManager.deleteClaimInternal(claim, true);
 
                 // if in a creative mode world, delete the claim
                 if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
