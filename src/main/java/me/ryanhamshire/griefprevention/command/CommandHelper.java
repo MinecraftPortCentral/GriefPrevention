@@ -200,7 +200,6 @@ public class CommandHelper {
             case BLOCK_BREAK :
             case BLOCK_PLACE :
             case ENTITY_COLLIDE_BLOCK :
-            case PORTAL_USE :
                 if (validateBlockTarget(target) ||
                     validateItemTarget(target)) {
                     return true;
@@ -211,6 +210,7 @@ public class CommandHelper {
             case EXIT_CLAIM :
             case ENTITY_RIDING :
             case ENTITY_DAMAGE :
+            case PORTAL_USE :
                 if (validateEntityTarget(target) ||
                     validateBlockTarget(target) ||
                     validateItemTarget(target)) {
