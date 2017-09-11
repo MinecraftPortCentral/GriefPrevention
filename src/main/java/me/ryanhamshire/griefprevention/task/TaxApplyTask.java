@@ -36,6 +36,7 @@ import me.ryanhamshire.griefprevention.event.GPTaxClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.service.economy.EconomyService;
 import org.spongepowered.api.service.economy.account.Account;
 import org.spongepowered.api.service.economy.transaction.ResultType;
@@ -114,41 +115,48 @@ public class TaxApplyTask implements Runnable {
         final Account claimAccount = claim.getEconomyAccount().orElse(null);
         double taxRate = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_RATE, playerData);
         double taxOwed = (claim.getClaimBlocks() / 256) * taxRate;
-        GPTaxClaimEvent event = new GPTaxClaimEvent(claim, taxRate, taxOwed, GriefPreventionPlugin.pluginCause);
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-             return;
-        }
-        taxRate = event.getTaxRate();
-        taxOwed = claim.getClaimBlocks() * taxRate;
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(GriefPreventionPlugin.instance);
+            GPTaxClaimEvent event = new GPTaxClaimEvent(claim, taxRate, taxOwed, Sponge.getCauseStackManager().getCurrentCause());
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                return;
+            }
+            taxRate = event.getTaxRate();
+            taxOwed = claim.getClaimBlocks() * taxRate;
 
-        TransactionResult result = claimAccount.withdraw(this.economyService.getDefaultCurrency(), BigDecimal.valueOf(taxOwed), GriefPreventionPlugin.pluginCause);
-        if (result.getResult() != ResultType.SUCCESS) {
-            final Instant localNow = Instant.now();
-            Instant taxPastDueDate = claim.getEconomyData().getTaxPastDueDate().orElse(null);
-            if (taxPastDueDate == null) {
-                claim.getEconomyData().setTaxPastDueDate(Instant.now());
-            } else {
-                final int taxExpirationDays = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_EXPIRATION, playerData).intValue();
-                if (claim.getData().isExpired()) {
-                    final int expireDaysToKeep = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.EXPIRATION_DAYS_KEEP, playerData).intValue();
-                    //if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays + expireDaysToKeep)).isBefore(localNow)) {
-                    //}
+            TransactionResult result = claimAccount.withdraw(this.economyService.getDefaultCurrency(), BigDecimal.valueOf(taxOwed), Sponge.getCauseStackManager().getCurrentCause());
+            if (result.getResult() != ResultType.SUCCESS) {
+                final Instant localNow = Instant.now();
+                Instant taxPastDueDate = claim.getEconomyData().getTaxPastDueDate().orElse(null);
+                if (taxPastDueDate == null) {
+                    claim.getEconomyData().setTaxPastDueDate(Instant.now());
                 } else {
-                    if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays)).isBefore(localNow)) {
-                        claim.getData().setExpiration(true);
+                    final int taxExpirationDays = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_EXPIRATION, playerData).intValue();
+                    if (claim.getData().isExpired()) {
+                        final int expireDaysToKeep = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.EXPIRATION_DAYS_KEEP, playerData).intValue();
+                        //if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays + expireDaysToKeep)).isBefore(localNow)) {
+                        //}
+                    } else {
+                        if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays)).isBefore(localNow)) {
+                            claim.getData().setExpiration(true);
+                        }
                     }
                 }
-            }
-            final double totalTaxOwed = claim.getData().getEconomyData().getTaxBalance() + taxOwed;
-            claim.getData().getEconomyData().setTaxBalance(totalTaxOwed);
-            claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_FAIL, Instant.now(), taxOwed));
-        } else {
-            claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxOwed));
-            if (inTown) {
-                final GPClaim town = claim.getTownClaim();
-                town.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxOwed));
-                town.getEconomyAccount().get().deposit(this.economyService.getDefaultCurrency(), BigDecimal.valueOf(taxOwed), GriefPreventionPlugin.pluginCause);
+                final double totalTaxOwed = claim.getData().getEconomyData().getTaxBalance() + taxOwed;
+                claim.getData().getEconomyData().setTaxBalance(totalTaxOwed);
+                claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_FAIL, Instant.now(), taxOwed));
+            } else {
+                claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxOwed));
+                if (inTown) {
+                    final GPClaim town = claim.getTownClaim();
+                    town.getData()
+                        .getEconomyData()
+                        .addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxOwed));
+                    town.getEconomyAccount()
+                        .get()
+                        .deposit(this.economyService.getDefaultCurrency(), BigDecimal.valueOf(taxOwed), Sponge.getCauseStackManager().getCurrentCause());
+                }
             }
         }
     }

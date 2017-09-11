@@ -43,8 +43,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
@@ -97,15 +96,22 @@ public class CommandTrustAll implements CommandExecutor {
         }
 
         if (user != null) {
-            GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(claimList, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
-            Sponge.getEventManager().post(event);
-            if (event.isCancelled()) {
-                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not add trust for user '" + user.getName() + "'. A plugin has denied it."))));
-                return CommandResult.success();
-            }
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(player);
+                GPUserTrustClaimEvent.Add
+                    event =
+                    new GPUserTrustClaimEvent.Add(claimList, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(user.getUniqueId()),
+                        TrustType.NONE);
+                Sponge.getEventManager().post(event);
+                if (event.isCancelled()) {
+                    player.sendMessage(Text.of(TextColors.RED,
+                        event.getMessage().orElse(Text.of("Could not add trust for user '" + user.getName() + "'. A plugin has denied it."))));
+                    return CommandResult.success();
+                }
 
-            for (Claim claim : claimList) {
-                this.addAllUserTrust(claim, user);
+                for (Claim claim : claimList) {
+                    this.addAllUserTrust(claim, user);
+                }
             }
         } else {
             if (!PermissionUtils.hasSubject(group)) {
@@ -113,16 +119,22 @@ public class CommandTrustAll implements CommandExecutor {
                 return CommandResult.success();
             }
 
-            final Subject subject = PermissionUtils.getSubject(group);
-            GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(claimList, Cause.of(NamedCause.source(player)), ImmutableList.of(group), TrustType.NONE);
-            Sponge.getEventManager().post(event);
-            if (event.isCancelled()) {
-                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not add trust for group '" + group + "'. A plugin has denied it."))));
-                return CommandResult.success();
-            }
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                final Subject subject = PermissionUtils.getSubject(group);
+                Sponge.getCauseStackManager().pushCause(player);
+                GPGroupTrustClaimEvent.Add
+                    event =
+                    new GPGroupTrustClaimEvent.Add(claimList, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(group), TrustType.NONE);
+                Sponge.getEventManager().post(event);
+                if (event.isCancelled()) {
+                    player.sendMessage(Text.of(TextColors.RED,
+                        event.getMessage().orElse(Text.of("Could not add trust for group '" + group + "'. A plugin has denied it."))));
+                    return CommandResult.success();
+                }
 
-            for (Claim claim : claimList) {
-                this.addAllGroupTrust(claim, subject);
+                for (Claim claim : claimList) {
+                    this.addAllGroupTrust(claim, subject);
+                }
             }
         }
 

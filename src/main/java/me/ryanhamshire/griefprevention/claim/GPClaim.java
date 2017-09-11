@@ -976,7 +976,7 @@ public class GPClaim implements Claim {
         }
 
         // transfer
-        GPTransferClaimEvent event = new GPTransferClaimEvent(this, GriefPreventionPlugin.pluginCause, this.getOwnerUniqueId(), newOwnerID);
+        GPTransferClaimEvent event = new GPTransferClaimEvent(this, Sponge.getCauseStackManager().getCurrentCause(), this.getOwnerUniqueId(), newOwnerID);
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(this, ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
@@ -2405,10 +2405,14 @@ public class GPClaim implements Claim {
         private Text greeting;
         private Text farewell;
         private Claim parent;
-        private Cause cause;
 
         public ClaimBuilder() {
             
+        }
+
+        @Override
+        public Builder cause(Cause cause) {
+            return this;
         }
 
         @Override
@@ -2502,11 +2506,6 @@ public class GPClaim implements Claim {
             return this;
         }
 
-        public Builder cause(Cause cause) {
-            this.cause = cause;
-            return this;
-        }
-
         @Override
         public Builder reset() {
             this.ownerUniqueId = null;
@@ -2524,7 +2523,6 @@ public class GPClaim implements Claim {
             checkNotNull(this.world);
             checkNotNull(this.point1);
             checkNotNull(this.point2);
-            checkNotNull(this.cause);
             if (this.type == ClaimType.SUBDIVISION) {
                 checkNotNull(this.parent);
             }
@@ -2535,8 +2533,9 @@ public class GPClaim implements Claim {
             GPClaim claim = new GPClaim(this.world, this.point1, this.point2, this.type, this.ownerUniqueId);
             claim.parent = (GPClaim) this.parent;
             Player player = null;
-            if (this.cause.root() instanceof Player) {
-                player = (Player) this.cause.root();
+            final Cause cause = Sponge.getCauseStackManager().getCurrentCause();
+            if (cause.root() instanceof Player) {
+                player = (Player) cause.root();
             }
             GPPlayerData playerData = null;
             if (!GriefPreventionPlugin.wildernessCuboids && claim.cuboid) {
@@ -2625,7 +2624,7 @@ public class GPClaim implements Claim {
                             return new GPClaimResult(claim, ClaimResultType.NOT_ENOUGH_FUNDS);
                         }
                         final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
-                        playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(townCost), Cause.source(player).build());
+                        playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(townCost), cause);
                     }
                 }
             }
@@ -2635,7 +2634,7 @@ public class GPClaim implements Claim {
                 return result;
             }
 
-            GPCreateClaimEvent event = new GPCreateClaimEvent(claim, this.cause);
+            GPCreateClaimEvent event = new GPCreateClaimEvent(claim, Sponge.getCauseStackManager().getCurrentCause());
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED);

@@ -57,6 +57,7 @@ import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
@@ -64,7 +65,8 @@ import org.spongepowered.api.event.block.CollideBlockEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.world.ExplosionEvent;
@@ -103,24 +105,26 @@ public class BlockEventHandler {
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPre(ChangeBlockEvent.Pre event) {
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
-        User user = event.getCause().first(User.class).orElse(null);
+        final Cause cause = event.getCause();
+        User user = cause.first(User.class).orElse(null);
+        final EventContext context = cause.getContext();
+        boolean hasFakePlayer = context.containsKey(EventContextKeys.FAKE_PLAYER);
         if (user != null) {
-            if (event.getCause().containsNamed(NamedCause.PLAYER_BREAK) && !event.getCause().containsNamed(NamedCause.FAKE_PLAYER)) {
+            if (context.containsKey(EventContextKeys.PLAYER_BREAK) && !hasFakePlayer) {
                 GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
-            if (event.getCause().containsNamed(NamedCause.PISTON_RETRACT)) {
+            if (context.containsKey(EventContextKeys.PISTON_RETRACT)) {
                 GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
         }
 
-        LocatableBlock locatableBlock = event.getCause().first(LocatableBlock.class).orElse(null);
-        TileEntity tileEntity = event.getCause().first(TileEntity.class).orElse(null);
-        Object rootCause = event.getCause().root();
+        LocatableBlock locatableBlock = cause.first(LocatableBlock.class).orElse(null);
+        TileEntity tileEntity = cause.first(TileEntity.class).orElse(null);
+        Object rootCause = cause.root();
         Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
-        boolean hasFakePlayer = event.getCause().containsNamed("FakePlayer");
-        final boolean pistonExtend = event.getCause().containsNamed(NamedCause.PISTON_EXTEND);
+        final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
 
         if (sourceLocation != null) {
             if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
@@ -156,7 +160,7 @@ public class BlockEventHandler {
                         continue;
                     }
                 }
-                if (event.getCause().containsNamed(NamedCause.FIRE_SPREAD)) {
+                if (context.containsKey(EventContextKeys.FIRE_SPREAD)) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -186,7 +190,7 @@ public class BlockEventHandler {
                     continue;
                 }
 
-                if (event.getCause().containsNamed(NamedCause.FIRE_SPREAD)) {
+                if (context.containsKey(EventContextKeys.FIRE_SPREAD)) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -662,47 +666,50 @@ public class BlockEventHandler {
 
                 // if the player doesn't have any claims yet, automatically create a claim centered at the chest
                 if (playerData.getInternalClaims().size() == 0) {
-                    // radius == 0 means protect ONLY the chest
-                    if (activeConfig.getConfig().claim.claimRadius == 0) {
-                        this.dataStore.createClaim(
-                                block.getLocation().get().getExtent(), 
-                                block.getPosition(), block.getPosition(), ClaimType.BASIC, player.getUniqueId(), false, Cause.of(NamedCause.source(player)));
-                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChestConfirmation.toText());
-                    }
+                    try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                        // radius == 0 means protect ONLY the chest
+                        if (activeConfig.getConfig().claim.claimRadius == 0) {
+                            Sponge.getCauseStackManager().pushCause(player);
+                            this.dataStore.createClaim(
+                                block.getLocation().get().getExtent(),
+                                block.getPosition(), block.getPosition(), ClaimType.BASIC, player.getUniqueId(), false);
+                            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChestConfirmation.toText());
+                        }
 
-                    // otherwise, create a claim in the area around the chest
-                    else {
-                        Vector3i lesserBoundary = new Vector3i(
-                                block.getPosition().getX() - radius, 
+                        // otherwise, create a claim in the area around the chest
+                        else {
+                            Vector3i lesserBoundary = new Vector3i(
+                                block.getPosition().getX() - radius,
                                 0,
                                 block.getPosition().getZ() - radius);
-                        Vector3i greaterBoundary = new Vector3i(
+                            Vector3i greaterBoundary = new Vector3i(
                                 block.getPosition().getX() + radius,
                                 player.getWorld().getDimension().getBuildHeight() - 1,
                                 block.getPosition().getZ() + radius);
-                        // as long as the automatic claim overlaps another existing
-                        // claim, shrink it note that since the player had permission to place the
-                        // chest, at the very least, the automatic claim will include the chest
-                        while (radius >= 0 && !this.dataStore.createClaim(block.getLocation().get().getExtent(),
+                            // as long as the automatic claim overlaps another existing
+                            // claim, shrink it note that since the player had permission to place the
+                            // chest, at the very least, the automatic claim will include the chest
+                            while (radius >= 0 && !this.dataStore.createClaim(block.getLocation().get().getExtent(),
                                 lesserBoundary,
                                 greaterBoundary,
                                 ClaimType.BASIC,
-                                player.getUniqueId(), false, Cause.of(NamedCause.source(player))).successful()) {
-                            radius--;
+                                player.getUniqueId(), false).successful()) {
+                                radius--;
+                            }
+
+                            // notify and explain to player
+                            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimAutomaticNotification.toText());
+
+                            // show the player the protected area
+                            GPClaim newClaim = this.dataStore.getClaimAt(block.getLocation().get(), false, null);
+                            Visualization visualization = new Visualization(newClaim, VisualizationType.CLAIM);
+                            visualization.createClaimBlockVisuals(block.getPosition().getY(), player.getLocation(), playerData);
+                            visualization.apply(player);
                         }
 
-                        // notify and explain to player
-                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimAutomaticNotification.toText());
-
-                        // show the player the protected area
-                        GPClaim newClaim = this.dataStore.getClaimAt(block.getLocation().get(), false, null);
-                        Visualization visualization = new Visualization(newClaim, VisualizationType.CLAIM);
-                        visualization.createClaimBlockVisuals(block.getPosition().getY(), player.getLocation(), playerData);
-                        visualization.apply(player);
-                    }
-
-                    if (player.hasPermission(GPPermissions.CLAIM_SHOW_TUTORIAL)) {
-                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSurvivalBasics.toText());
+                        if (player.hasPermission(GPPermissions.CLAIM_SHOW_TUTORIAL)) {
+                            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.urlSurvivalBasics.toText());
+                        }
                     }
                 }
 

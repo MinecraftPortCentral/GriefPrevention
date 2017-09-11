@@ -43,8 +43,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
@@ -112,41 +111,52 @@ public class CommandUntrust implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (user != null) {
-            GPUserTrustClaimEvent.Remove event = new GPUserTrustClaimEvent.Remove(claim, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
-            Sponge.getEventManager().post(event);
-            if (event.isCancelled()) {
-                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not remove trust from user '" + user.getName() + "'. A plugin has denied it."))));
-                return CommandResult.success();
-            }
-
-            for (TrustType trustType : TrustType.values()) {
-                claim.getUserTrustList(trustType).remove(user.getUniqueId());
-            }
-        } else {
-            Set<Context> contexts = new HashSet<>();
-            contexts.add(claim.getContext());
-            if (!PermissionUtils.hasSubject(group)) {
-                for (TrustType trustType : TrustType.values()) {
-                    claim.getGroupTrustList(trustType).remove(group);
-                    claim.getInternalClaimData().setRequiresSave(true);
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(player);
+            if (user != null) {
+                GPUserTrustClaimEvent.Remove
+                    event =
+                    new GPUserTrustClaimEvent.Remove(claim, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(user.getUniqueId()),
+                        TrustType.NONE);
+                Sponge.getEventManager().post(event);
+                if (event.isCancelled()) {
+                    final Text message = event.getMessage()
+                        .orElse(Text.of("Could not remove trust from user '" + user.getName() + "'. A plugin has denied it."));
+                    player.sendMessage(Text.of(TextColors.RED, message));
+                    return CommandResult.success();
                 }
 
-                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
-                return CommandResult.success();
-            }
+                for (TrustType trustType : TrustType.values()) {
+                    claim.getUserTrustList(trustType).remove(user.getUniqueId());
+                }
+            } else {
+                Set<Context> contexts = new HashSet<>();
+                contexts.add(claim.getContext());
+                if (!PermissionUtils.hasSubject(group)) {
+                    for (TrustType trustType : TrustType.values()) {
+                        claim.getGroupTrustList(trustType).remove(group);
+                        claim.getInternalClaimData().setRequiresSave(true);
+                    }
 
-            final Subject subject = PermissionUtils.getSubject(group);
-            GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(claim, Cause.of(NamedCause.source(player)), ImmutableList.of(group), TrustType.NONE);
-            Sponge.getEventManager().post(event);
-            if (event.isCancelled()) {
-                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not remove trust from group '" + group + "'. A plugin has denied it."))));
-                return CommandResult.success();
-            }
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
+                    return CommandResult.success();
+                }
 
-            for (TrustType trustType : TrustType.values()) {
-                subject.getSubjectData().setPermission(contexts, GPPermissions.getTrustPermission(trustType), Tristate.UNDEFINED);
-                claim.getGroupTrustList(trustType).remove(group);
+                final Subject subject = PermissionUtils.getSubject(group);
+                GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(claim,
+                    Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(group), TrustType.NONE);
+                Sponge.getEventManager().post(event);
+                if (event.isCancelled()) {
+                    final Text message = event.getMessage()
+                        .orElse(Text.of("Could not remove trust from group '" + group + "'. A plugin has denied it."));
+                    player.sendMessage(Text.of(TextColors.RED, message));
+                    return CommandResult.success();
+                }
+
+                for (TrustType trustType : TrustType.values()) {
+                    subject.getSubjectData().setPermission(contexts, GPPermissions.getTrustPermission(trustType), Tristate.UNDEFINED);
+                    claim.getGroupTrustList(trustType).remove(group);
+                }
             }
         }
 

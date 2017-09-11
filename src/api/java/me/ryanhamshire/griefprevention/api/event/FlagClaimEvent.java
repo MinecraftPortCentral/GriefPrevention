@@ -49,6 +49,6 @@ public interface FlagClaimEvent extends ClaimEvent {
 
         Tristate getValue();
 
-        Context getContext();
+        Context getPermissionContext();
     }
 }

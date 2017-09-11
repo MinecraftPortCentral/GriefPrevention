@@ -29,14 +29,15 @@ import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
 import org.spongepowered.api.text.Text;
@@ -99,22 +100,27 @@ public class CommandClaimSellBlocks implements CommandExecutor {
 
             // attempt to compute value and deposit it
             double totalValue = blockCount * activeConfig.getConfig().economy.economyClaimBlockSell;
-            TransactionResult transactionResult = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().deposit
-                    (GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalValue),
-                            Cause.of(NamedCause.of(GriefPreventionPlugin.MOD_ID, GriefPreventionPlugin.instance)));
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(player);
+                Sponge.getCauseStackManager().addContext(GriefPreventionPlugin.PLUGIN_CONTEXT, GriefPreventionPlugin.instance);
+                TransactionResult
+                    transactionResult =
+                    GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).get().deposit
+                        (GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalValue),
+                            Sponge.getCauseStackManager().getCurrentCause());
 
-
-            if (transactionResult.getResult() != ResultType.SUCCESS) {
-                final Text message = GriefPreventionPlugin.instance.messageData.economyBlockSellError
+                if (transactionResult.getResult() != ResultType.SUCCESS) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.economyBlockSellError
                         .apply(ImmutableMap.of(
-                        "reason", transactionResult.getResult().name())).build();
-                GriefPreventionPlugin.sendMessage(player, message);
-                return CommandResult.success();
-            }
-            // subtract blocks
-            playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() - blockCount);
-            playerData.getStorageData().save();
+                            "reason", transactionResult.getResult().name())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                    return CommandResult.success();
+                }
+                // subtract blocks
+                playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() - blockCount);
+                playerData.getStorageData().save();
 
+            }
             final Text message = GriefPreventionPlugin.instance.messageData.economyBlockSaleConfirmation
                     .apply(ImmutableMap.of(
                     "deposit", totalValue,

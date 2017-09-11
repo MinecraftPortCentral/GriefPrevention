@@ -46,6 +46,7 @@ import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.service.economy.EconomyService;
 import org.spongepowered.api.service.economy.account.Account;
@@ -313,12 +314,16 @@ public class GPClaimManager implements ClaimManager {
         // transfer bank balance to owner
         final Account bankAccount = claim.getEconomyAccount().orElse(null);
         if (bankAccount != null) {
-            final EconomyService economyService = GriefPreventionPlugin.instance.economyService.get();
-            final UniqueAccount ownerAccount = economyService.getOrCreateAccount(claim.getOwnerUniqueId()).orElse(null);
-            if (ownerAccount != null) {
-                ownerAccount.deposit(economyService.getDefaultCurrency(), bankAccount.getBalance(economyService.getDefaultCurrency()), GriefPreventionPlugin.pluginCause);
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(GriefPreventionPlugin.instance);
+                final EconomyService economyService = GriefPreventionPlugin.instance.economyService.get();
+                final UniqueAccount ownerAccount = economyService.getOrCreateAccount(claim.getOwnerUniqueId()).orElse(null);
+                if (ownerAccount != null) {
+                    ownerAccount.deposit(economyService.getDefaultCurrency(), bankAccount.getBalance(economyService.getDefaultCurrency()),
+                        Sponge.getCauseStackManager().getCurrentCause());
+                }
+                bankAccount.resetBalance(economyService.getDefaultCurrency(), Sponge.getCauseStackManager().getCurrentCause());
             }
-            bankAccount.resetBalance(economyService.getDefaultCurrency(), GriefPreventionPlugin.pluginCause);
         }
         this.worldClaims.remove(claim);
         this.claimUniqueIdMap.remove(claim.getUniqueId());

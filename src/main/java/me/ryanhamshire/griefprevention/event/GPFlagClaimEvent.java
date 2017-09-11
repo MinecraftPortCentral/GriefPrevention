@@ -97,7 +97,7 @@ public class GPFlagClaimEvent extends GPClaimEvent implements FlagClaimEvent {
         }
 
         @Override
-        public Context getContext() {
+        public Context getPermissionContext() {
             return this.context;
         }
     }

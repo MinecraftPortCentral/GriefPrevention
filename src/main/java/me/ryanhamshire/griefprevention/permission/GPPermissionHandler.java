@@ -53,10 +53,6 @@ import org.spongepowered.api.event.action.CollideEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
-import org.spongepowered.api.event.cause.entity.spawn.BlockSpawnCause;
-import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
-import org.spongepowered.api.event.cause.entity.spawn.LocatableBlockSpawnCause;
-import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
@@ -541,11 +537,7 @@ public class GPPermissionHandler {
                         id = targetEntity.getType().getId();
                     }
                 }
-                // Workaround for pixelmon using same class for most entities.
-                // In this circumstance, we will use the entity name instead
-                if (id.equals("pixelmon:pixelmon")) {
-                    id = "pixelmon:" + mcEntity.getName().toLowerCase();
-                }
+
                 populateEventSourceTarget(id, isSource);
                 if (!isSource && targetEntity instanceof Living) {
                     for (EnumCreatureType type : EnumCreatureType.values()) {
@@ -569,18 +561,6 @@ public class GPPermissionHandler {
                 final String id = ((EntityType) obj).getId();
                 populateEventSourceTarget(id, isSource);
                 return ((EntityType) obj).getId();
-            } else if (obj instanceof SpawnCause) {
-                SpawnCause spawnCause = (SpawnCause) obj;
-                if (spawnCause instanceof EntitySpawnCause) {
-                    EntitySpawnCause entitySpawnCause = (EntitySpawnCause) spawnCause;
-                    return getPermissionIdentifier(entitySpawnCause.getEntity(), true);
-                } else if (spawnCause instanceof BlockSpawnCause) {
-                    BlockSpawnCause blockSpawnCause = (BlockSpawnCause) spawnCause;
-                    return getPermissionIdentifier(blockSpawnCause.getBlockSnapshot(), true);
-                } else if (spawnCause instanceof LocatableBlockSpawnCause) {
-                    LocatableBlockSpawnCause locatableSpawnCause = (LocatableBlockSpawnCause) spawnCause;
-                    return getPermissionIdentifier(locatableSpawnCause.getLocatableBlock(), true);
-                }
             } else if (obj instanceof BlockType) {
                 String id = ((BlockType) obj).getId();
                 populateEventSourceTarget(id, isSource);

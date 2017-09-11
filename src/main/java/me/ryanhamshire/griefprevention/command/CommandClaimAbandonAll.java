@@ -39,8 +39,7 @@ import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
@@ -68,12 +67,14 @@ public class CommandClaimAbandonAll implements CommandExecutor {
                 return CommandResult.success();
             }
         }
-
-        GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(ImmutableList.copyOf(playerData.getInternalClaims()), Cause.of(NamedCause.source(src)));
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not abandon claim. A plugin has denied it."))));
-            return CommandResult.success();
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(src);
+            GPDeleteClaimEvent.Abandon event = new GPDeleteClaimEvent.Abandon(ImmutableList.copyOf(playerData.getInternalClaims()), Sponge.getCauseStackManager().getCurrentCause());
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not abandon claim. A plugin has denied it."))));
+                return CommandResult.success();
+            }
         }
 
         // adjust claim blocks

@@ -29,14 +29,14 @@ import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.service.economy.account.Account;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
@@ -107,16 +107,19 @@ public class CommandClaimBuyBlocks implements CommandExecutor {
 
             double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
             // attempt to withdraw cost
-            TransactionResult transactionResult = playerAccount.withdraw
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().addContext(GriefPreventionPlugin.PLUGIN_CONTEXT, GriefPreventionPlugin.instance);
+                TransactionResult transactionResult = playerAccount.withdraw
                     (GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency(), BigDecimal.valueOf(totalCost),
-                            Cause.of(NamedCause.of(GriefPreventionPlugin.MOD_ID, GriefPreventionPlugin.instance)));
+                        Sponge.getCauseStackManager().getCurrentCause());
 
-            if (transactionResult.getResult() != ResultType.SUCCESS) {
-                final Text message = GriefPreventionPlugin.instance.messageData.economyWithdrawError
+                if (transactionResult.getResult() != ResultType.SUCCESS) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.economyWithdrawError
                         .apply(ImmutableMap.of(
-                        "reason", transactionResult.getResult().name())).build();
-                GriefPreventionPlugin.sendMessage(player, message);
-                return CommandResult.success();
+                            "reason", transactionResult.getResult().name())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                    return CommandResult.success();
+                }
             }
             // add blocks
             playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);

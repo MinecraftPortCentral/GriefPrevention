@@ -26,10 +26,12 @@
 package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
+import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
@@ -37,6 +39,7 @@ import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.hanging.Hanging;
 import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.BlockChangeFlag;
 import org.spongepowered.api.world.Chunk;
@@ -95,19 +98,23 @@ class RestoreNatureExecutionTask implements Runnable {
         // clean up any entities in the chunk, ensure no players are suffocated
         Optional<Chunk> chunk = this.lesserCorner.getExtent().getChunk(this.lesserCorner.getBlockX() >> 4, 0, this.lesserCorner.getBlockZ() >> 4);
         if (chunk.isPresent()) {
-            for (Entity entity : chunk.get().getEntities()) {
-                if (!(entity instanceof Player || entity instanceof Animal)) {
-                    // hanging entities (paintings, item frames) are protected when they're in land claims
-                    if (!(entity instanceof Hanging) || GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, null) == null) {
-                        // everything else is removed
-                        entity.remove();
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(GriefPreventionPlugin.instance);
+                for (Entity entity : chunk.get().getEntities()) {
+                    if (!(entity instanceof Player || entity instanceof Animal)) {
+                        // hanging entities (paintings, item frames) are protected when they're in land claims
+                        if (!(entity instanceof Hanging)
+                            || GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, null) == null) {
+                            // everything else is removed
+                            entity.remove();
+                        }
                     }
-                }
 
-                // for players, always ensure there's air where the player is standing
-                else {
-                    entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState(), GriefPreventionPlugin.pluginCause);
-                    entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState(), GriefPreventionPlugin.pluginCause);
+                    // for players, always ensure there's air where the player is standing
+                    else {
+                        entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState());
+                        entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState());
+                    }
                 }
             }
         }

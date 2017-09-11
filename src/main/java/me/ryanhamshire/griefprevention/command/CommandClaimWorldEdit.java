@@ -38,12 +38,14 @@ import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
@@ -81,30 +83,31 @@ public class CommandClaimWorldEdit implements CommandExecutor {
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         final Vector3i lesser = new Vector3i(region.getMinimumPoint().getBlockX(), region.getMinimumPoint().getBlockY(), region.getMinimumPoint().getBlockZ());
         final Vector3i greater = new Vector3i(region.getMaximumPoint().getBlockX(), region.getMaximumPoint().getBlockY(), region.getMaximumPoint().getBlockZ());
-        final Cause cause = Cause.source(player).build();
-        final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
-            .bounds(lesser, greater)
-            .cause(cause)
-            .owner(player.getUniqueId())
-            .sizeRestrictions(true)
-            .type(PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode))
-            .world(player.getWorld())
-            .build();
-        if (result.successful()) {
-            final Text message = GriefPreventionPlugin.instance.messageData.claimCreateSuccess
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(player);
+            final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
+                .bounds(lesser, greater)
+                .owner(player.getUniqueId())
+                .sizeRestrictions(true)
+                .type(PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode))
+                .world(player.getWorld())
+                .build();
+            if (result.successful()) {
+                final Text message = GriefPreventionPlugin.instance.messageData.claimCreateSuccess
                     .apply(ImmutableMap.of(
-                    "type", playerData.shovelMode.name())).build();
-            GriefPreventionPlugin.sendMessage(player, message);
-        } else {
-            if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
-                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
-                List<Claim> claims = new ArrayList<>();
-                claims.add(result.getClaim().get());
-                CommandHelper.showClaims(player, claims, 0, true);
-                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                        "type", playerData.shovelMode.name())).build();
+                GriefPreventionPlugin.sendMessage(player, message);
+            } else {
+                if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
+                    List<Claim> claims = new ArrayList<>();
+                    claims.add(result.getClaim().get());
+                    CommandHelper.showClaims(player, claims, 0, true);
+                    GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                }
             }
-        }
 
+        }
         return CommandResult.success();
     }
 }

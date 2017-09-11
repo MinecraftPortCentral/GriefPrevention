@@ -58,18 +58,16 @@ import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.entity.projectile.Projectile;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.IndirectEntityDamageSource;
-import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
-import org.spongepowered.api.event.cause.entity.spawn.SpawnCause;
-import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
-import org.spongepowered.api.event.cause.entity.teleport.TeleportCause;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportType;
 import org.spongepowered.api.event.cause.entity.teleport.TeleportTypes;
 import org.spongepowered.api.event.entity.AttackEntityEvent;
@@ -173,7 +171,7 @@ public class EntityEventHandler {
 
     // when a creature spawns...
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onEntitySpawn(SpawnEntityEvent event, @First SpawnCause spawnCause) {
+    public void onEntitySpawn(SpawnEntityEvent event, @Root Object sourceCause) {
         if (event instanceof DropItemEvent || event.getEntities().isEmpty()) {
             return;
         }
@@ -214,24 +212,7 @@ public class EntityEventHandler {
                     }
                     permission = GPPermissions.ITEM_SPAWN;
                 }
-                // Always allow pixelmon spawns from pokeballs
-                if (spawnCause instanceof EntitySpawnCause) {
-                    final EntitySpawnCause entitySpawnCause = (EntitySpawnCause) spawnCause;
-                    final String entityId = entitySpawnCause.getEntity().getType().getId();
-                    if (entityId.equals("pixelmon:occupiedpokeball") || entityId.equals("pixelmon:pokeball")) {
-                        User owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
-                        if (owner != null) {
-                            return true;
-                        }
-                    }
-                } else if (entity.getType().getId().equals("pixelmon:occupiedpokeball") || entity.getType().getId().equals("pixelmon:pokeball") || 
-                        (spawnCause.getType() == SpawnTypes.CUSTOM && entity.getType().getId().equals("pixelmon:pixelmon"))) {
-                    User owner = ((IMixinEntity) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
-                    if (owner != null) {
-                        return true;
-                    }
-                }
-                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, spawnCause, entity, user, TrustType.BUILDER, true) == Tristate.FALSE) {
+                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, sourceCause, entity, user, true) == Tristate.FALSE) {
                     return false;
                 }
                 return true;
@@ -397,27 +378,34 @@ public class EntityEventHandler {
                 // FEATURE: prevent players from engaging in PvP combat inside land claims (when it's disabled)
                 GPClaim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, attackerData.lastClaim.get());
                 if (!attackerData.canIgnoreClaim(attackerClaim)) {
-                    // ignore claims mode allows for pvp inside land claims
-                    if (attackerClaim != null && !attackerData.inPvpCombat(defender.getWorld()) && attackerClaim.protectPlayersInClaim()) {
-                        attackerData.lastClaim = new WeakReference<>(attackerClaim);
-                        GPAttackPlayerEvent pvpEvent = new GPAttackPlayerEvent(attackerClaim, Cause.of(NamedCause.source(entityDamageSource)), defender);
-                        Sponge.getEventManager().post(pvpEvent);
-                        if (!pvpEvent.isCancelled()) {
-                            pvpEvent.setCancelled(true);
-                            GriefPreventionPlugin.sendMessage(attacker, GriefPreventionPlugin.instance.messageData.pvpPlayerSafeZone.toText());
-                            return true;
+                    try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                        Sponge.getCauseStackManager().pushCause(entityDamageSource);
+                        // ignore claims mode allows for pvp inside land claims
+                        if (attackerClaim != null && !attackerData.inPvpCombat(defender.getWorld()) && attackerClaim.protectPlayersInClaim()) {
+                            attackerData.lastClaim = new WeakReference<>(attackerClaim);
+                            GPAttackPlayerEvent
+                                pvpEvent =
+                                new GPAttackPlayerEvent(attackerClaim, Sponge.getCauseStackManager().getCurrentCause(), defender);
+                            Sponge.getEventManager().post(pvpEvent);
+                            if (!pvpEvent.isCancelled()) {
+                                pvpEvent.setCancelled(true);
+                                GriefPreventionPlugin.sendMessage(attacker, GriefPreventionPlugin.instance.messageData.pvpPlayerSafeZone.toText());
+                                return true;
+                            }
                         }
-                    }
 
-                    GPClaim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim.get());
-                    if (defenderClaim != null && !defenderData.inPvpCombat(defender.getWorld()) && defenderClaim.protectPlayersInClaim()) {
-                        defenderData.lastClaim = new WeakReference<>(defenderClaim);
-                        GPAttackPlayerEvent pvpEvent = new GPAttackPlayerEvent(defenderClaim, Cause.of(NamedCause.source(entityDamageSource)), defender);
-                        Sponge.getEventManager().post(pvpEvent);
-                        if (!pvpEvent.isCancelled()) {
-                            pvpEvent.setCancelled(true);
-                            GriefPreventionPlugin.sendMessage(attacker, GriefPreventionPlugin.instance.messageData.pvpPlayerSafeZone.toText());
-                            return true;
+                        GPClaim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim.get());
+                        if (defenderClaim != null && !defenderData.inPvpCombat(defender.getWorld()) && defenderClaim.protectPlayersInClaim()) {
+                            defenderData.lastClaim = new WeakReference<>(defenderClaim);
+                            GPAttackPlayerEvent
+                                pvpEvent =
+                                new GPAttackPlayerEvent(defenderClaim, Sponge.getCauseStackManager().getCurrentCause(), defender);
+                            Sponge.getEventManager().post(pvpEvent);
+                            if (!pvpEvent.isCancelled()) {
+                                pvpEvent.setCancelled(true);
+                                GriefPreventionPlugin.sendMessage(attacker, GriefPreventionPlugin.instance.messageData.pvpPlayerSafeZone.toText());
+                                return true;
+                            }
                         }
                     }
                 }
@@ -766,7 +754,7 @@ public class EntityEventHandler {
 
     // when a player teleports
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onEntityTeleport(MoveEntityEvent.Teleport event, @First TeleportCause teleportCause) {
+    public void onEntityTeleport(MoveEntityEvent.Teleport event) {
         GPTimings.ENTITY_TELEPORT_EVENT.startTimingIfSync();
         final Entity entity = event.getTargetEntity();
         Player player = null;
@@ -782,8 +770,10 @@ public class EntityEventHandler {
             GPTimings.ENTITY_TELEPORT_EVENT.stopTimingIfSync();
             return;
         }
+        final Cause cause = event.getCause();
+        final EventContext context = cause.getContext();
 
-        final TeleportType type = teleportCause.getTeleportType();
+        final TeleportType type = context.require(EventContextKeys.TELEPORT_TYPE);
         final Location<World> sourceLocation = event.getFromTransform().getLocation();
         GPClaim sourceClaim = null;
         GPPlayerData playerData = null;
@@ -859,18 +849,21 @@ public class EntityEventHandler {
             // new world, check if player has world storage for it
             GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(destination.getExtent().getProperties());
 
-            // update lastActive timestamps for claims this player owns
-            WorldProperties worldProperties = destination.getExtent().getProperties();
-            UUID playerUniqueId = player.getUniqueId();
-            for (Claim claim : this.dataStore.getClaimWorldManager(worldProperties).getWorldClaims()) {
-                if (claim.getOwnerUniqueId().equals(playerUniqueId)) {
-                    // update lastActive timestamp for claim
-                    claim.getData().setDateLastActive(Instant.now());
-                    claimWorldManager.addClaim(claim, GriefPreventionPlugin.pluginCause);
-                } else if (claim.getParent().isPresent() && claim.getParent().get().getOwnerUniqueId().equals(playerUniqueId)) {
-                    // update lastActive timestamp for subdivisions if parent owner logs on
-                    claim.getData().setDateLastActive(Instant.now());
-                    claimWorldManager.addClaim(claim, GriefPreventionPlugin.pluginCause);
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                // update lastActive timestamps for claims this player owns
+                WorldProperties worldProperties = destination.getExtent().getProperties();
+                UUID playerUniqueId = player.getUniqueId();
+                Sponge.getCauseStackManager().pushCause(GriefPreventionPlugin.instance);
+                for (Claim claim : this.dataStore.getClaimWorldManager(worldProperties).getWorldClaims()) {
+                    if (claim.getOwnerUniqueId().equals(playerUniqueId)) {
+                        // update lastActive timestamp for claim
+                        claim.getData().setDateLastActive(Instant.now());
+                        claimWorldManager.addClaim(claim, Sponge.getCauseStackManager().getCurrentCause());
+                    } else if (claim.getParent().isPresent() && claim.getParent().get().getOwnerUniqueId().equals(playerUniqueId)) {
+                        // update lastActive timestamp for subdivisions if parent owner logs on
+                        claim.getData().setDateLastActive(Instant.now());
+                        claimWorldManager.addClaim(claim, Sponge.getCauseStackManager().getCurrentCause());
+                    }
                 }
             }
         }

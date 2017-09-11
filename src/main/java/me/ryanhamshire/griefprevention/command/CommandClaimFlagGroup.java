@@ -30,13 +30,14 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.util.PermissionUtils;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
@@ -129,7 +130,10 @@ public class CommandClaimFlagGroup extends ClaimFlagBase implements CommandExecu
             }
         }
 
-        claim.setPermission(subj, group, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(src);
+            claim.setPermission(subj, group, ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Sponge.getCauseStackManager().getCurrentCause());
+        }
         return CommandResult.success();
     }
 }

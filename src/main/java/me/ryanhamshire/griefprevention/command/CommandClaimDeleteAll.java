@@ -39,8 +39,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
@@ -68,11 +67,15 @@ public class CommandClaimDeleteAll implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getInternalClaims()), Cause.of(NamedCause.source(src)));
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not delete all claims. A plugin has denied it."))));
-            return CommandResult.success();
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(src);
+            GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(playerData.getInternalClaims()), Sponge.getCauseStackManager().getCurrentCause());
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                player
+                    .sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not delete all claims. A plugin has denied it."))));
+                return CommandResult.success();
+            }
         }
 
         // delete all that player's claims

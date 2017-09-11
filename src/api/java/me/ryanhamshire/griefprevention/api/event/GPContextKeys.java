@@ -24,12 +24,19 @@
  */
 package me.ryanhamshire.griefprevention.api.event;
 
-public final class GPNamedCause {
+import org.spongepowered.api.event.cause.EventContextKey;
+import org.spongepowered.api.plugin.PluginContainer;
 
-    /**
-     * Used by claim cleanup task for expiring claims.
-     */
-    public static final String CHEST_CLAIM_EXPIRED = "ChestClaimExpired";
+public final class GPContextKeys {
 
-    public static final String PLAYER_CLAIM_EXPIRED = "PlayerClaimExpired";
+    public static final EventContextKey<PluginContainer> CHEST_CLAIM_EXPIRED = EventContextKey.builder(PluginContainer.class)
+        .name("ChestClaimExpired")
+        .id("griefprevention:chest_claim_expired")
+        .build();
+
+    public static final EventContextKey<PluginContainer> PLAYER_CLAIM_EXPIRED = EventContextKey.builder(PluginContainer.class)
+        .name("PlayerClaimExpired")
+        .id("griefprevention:player_claim_expired")
+        .build();
+
 }

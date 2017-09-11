@@ -41,6 +41,7 @@ import me.ryanhamshire.griefprevention.util.ClaimClickData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
@@ -585,14 +586,17 @@ public class ClaimFlagBase {
                 }
                 claimContext = CommandHelper.validateCustomContext(src, claim, "override");
             }
-            GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(claim, this.subject, claimFlag, sourceId, targetId, toggleType ? newValue : flagValue, claimContext, Cause.source(src).build());
-            Sponge.getEventManager().post(event);
-            if (event.isCancelled()) {
-                return;
-            }
-            FlagResult result = CommandHelper.applyFlagPermission(src, this.subject, "ALL", claim, flagPermission, source, "any", toggleType ? newValue : flagValue, claimContext, flagType, null, true);
-            if (result.successful()) {
-                showFlagPermissions(src, claim, displayType, source);
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(src);
+                GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(claim, this.subject, claimFlag, sourceId, targetId, toggleType ? newValue : flagValue, claimContext, Sponge.getCauseStackManager().getCurrentCause());
+                Sponge.getEventManager().post(event);
+                if (event.isCancelled()) {
+                    return;
+                }
+                FlagResult result = CommandHelper.applyFlagPermission(src, this.subject, "ALL", claim, flagPermission, source, "any", toggleType ? newValue : flagValue, claimContext, flagType, null, true);
+                if (result.successful()) {
+                    showFlagPermissions(src, claim, displayType, source);
+                }
             }
         };
     }

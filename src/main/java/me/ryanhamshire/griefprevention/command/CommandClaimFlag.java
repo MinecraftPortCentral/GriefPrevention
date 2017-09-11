@@ -31,6 +31,7 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandMessageFormatting;
 import org.spongepowered.api.command.CommandResult;
@@ -39,7 +40,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.text.Text;
@@ -141,7 +142,11 @@ public class CommandClaimFlag extends ClaimFlagBase implements CommandExecutor {
                     }
                 }
 
-                claim.setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", ClaimFlag.getEnum(flag), source, target, value, claimContext, reasonText, Cause.source(src).build());
+                try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                    Sponge.getCauseStackManager().pushCause(src);
+                    claim.setPermission(GriefPreventionPlugin.GLOBAL_SUBJECT, "ALL", ClaimFlag.getEnum(flag), source, target, value, claimContext,
+                        reasonText, Sponge.getCauseStackManager().getCurrentCause());
+                }
                 return CommandResult.success();
             }
 

@@ -29,6 +29,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.ClaimEvent;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.EventContext;
 import org.spongepowered.api.event.impl.AbstractEvent;
 import org.spongepowered.api.text.Text;
 
@@ -65,7 +66,7 @@ public class GPClaimEvent extends AbstractEvent implements ClaimEvent {
     @Override
     public Cause getCause() {
         if (this.cause == null) {
-            return GriefPreventionPlugin.pluginCause;
+            return Cause.of(EventContext.empty(), GriefPreventionPlugin.instance);
         }
 
         return this.cause;

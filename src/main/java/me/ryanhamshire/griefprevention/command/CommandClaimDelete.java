@@ -34,14 +34,14 @@ import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
@@ -87,31 +87,37 @@ public class CommandClaimDelete implements CommandExecutor {
                 playerData.warnedAboutMajorDeletion = true;
             } else {
 
-                ClaimResult claimResult = GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(src)), !this.deleteTopLevelClaim);
-                if (!claimResult.successful()) {
-                    player.sendMessage(Text.of(TextColors.RED, claimResult.getMessage().orElse(Text.of("Could not delete claim. A plugin has denied it."))));
-                    return CommandResult.success();
-                }
+                try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                    Sponge.getCauseStackManager().pushCause(src);
+                    ClaimResult
+                        claimResult =
+                        GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Sponge.getCauseStackManager().getCurrentCause(), !this.deleteTopLevelClaim);
+                    if (!claimResult.successful()) {
+                        player.sendMessage(
+                            Text.of(TextColors.RED, claimResult.getMessage().orElse(Text.of("Could not delete claim. A plugin has denied it."))));
+                        return CommandResult.success();
+                    }
 
-                claim.removeSurfaceFluids(null);
-                // clear permissions
-                GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-                // if in a creative mode world, /restorenature the claim
-                if (GriefPreventionPlugin.instance
+                    claim.removeSurfaceFluids(null);
+                    // clear permissions
+                    GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+                    // if in a creative mode world, /restorenature the claim
+                    if (GriefPreventionPlugin.instance
                         .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                    GriefPreventionPlugin.instance.restoreClaim(claim, 0);
-                }
+                        GriefPreventionPlugin.instance.restoreClaim(claim, 0);
+                    }
 
-                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDeleted.toText());
-                GriefPreventionPlugin.addLogEntry(
+                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDeleted.toText());
+                    GriefPreventionPlugin.addLogEntry(
                         player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
-                                + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
+                        + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
                         CustomLogEntryTypes.AdminActivity);
 
-                // revert any current visualization
-                playerData.revertActiveVisual(player);
+                    // revert any current visualization
+                    playerData.revertActiveVisual(player);
 
-                playerData.warnedAboutMajorDeletion = false;
+                    playerData.warnedAboutMajorDeletion = false;
+                }
             }
         }
 

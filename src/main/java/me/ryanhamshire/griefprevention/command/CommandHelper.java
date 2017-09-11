@@ -69,8 +69,7 @@ import org.spongepowered.api.data.property.entity.EyeLocationProperty;
 import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
@@ -142,8 +141,10 @@ public class CommandHelper {
         } else {
             // delete it
             claim.removeSurfaceFluids(null);
-            GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Cause.of(NamedCause.source(player)), !deleteTopLevelClaim);
-
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(player);
+                GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, Sponge.getCauseStackManager().getCurrentCause(), !deleteTopLevelClaim);
+            }
             // if in a creative mode world, restore the claim area
             if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
                 GriefPreventionPlugin.addLogEntry(
@@ -767,25 +768,30 @@ public class CommandHelper {
                 return;
             }
 
-            final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
-            final double salePrice = claim.getEconomyData().getSalePrice();
-            final TransactionResult ownerResult = ownerAccount.deposit(defaultCurrency, BigDecimal.valueOf(salePrice), Cause.source(src).build());
-            Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
-            final TransactionResult transactionResult = playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(salePrice), Cause.source(src).build());
-            final Text message = GriefPreventionPlugin.instance.messageData.economyClaimBuyConfirmed
+            try (CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
+                final double salePrice = claim.getEconomyData().getSalePrice();
+                Sponge.getCauseStackManager().pushCause(src);
+                final TransactionResult ownerResult = ownerAccount.deposit(defaultCurrency, BigDecimal.valueOf(salePrice), Sponge.getCauseStackManager().getCurrentCause());
+                Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
+                final TransactionResult
+                    transactionResult =
+                    playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(salePrice), Sponge.getCauseStackManager().getCurrentCause());
+                final Text message = GriefPreventionPlugin.instance.messageData.economyClaimBuyConfirmed
                     .apply(ImmutableMap.of(
-                    "sale_price", salePrice)).build();
-            final Text saleMessage = GriefPreventionPlugin.instance.messageData.economyClaimSold
+                        "sale_price", salePrice)).build();
+                final Text saleMessage = GriefPreventionPlugin.instance.messageData.economyClaimSold
                     .apply(ImmutableMap.of(
-                    "amount", salePrice,
-                    "balance", ownerAccount.getBalance(defaultCurrency))).build();
-            if (ownerPlayer != null) {
-                ownerPlayer.sendMessage(saleMessage);
+                        "amount", salePrice,
+                        "balance", ownerAccount.getBalance(defaultCurrency))).build();
+                if (ownerPlayer != null) {
+                    ownerPlayer.sendMessage(saleMessage);
+                }
+                claim.getEconomyData().setForSale(false);
+                claim.getEconomyData().setSalePrice(0);
+                claim.getData().save();
+                GriefPreventionPlugin.sendMessage(src, message);
             }
-            claim.getEconomyData().setForSale(false);
-            claim.getEconomyData().setSalePrice(0);
-            claim.getData().save();
-            GriefPreventionPlugin.sendMessage(src, message);
         };
     }
 
@@ -991,35 +997,41 @@ public class CommandHelper {
             targetClaims.add(claim);
         }
 
-        GPUserTrustClaimEvent.Add event = new GPUserTrustClaimEvent.Add(targetClaims, Cause.of(NamedCause.source(player)), ImmutableList.of(user.getUniqueId()), trustType);
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not trust user '" + user.getName() + "'. A plugin has denied it."))));
-            return;
-        }
-
-        for (Claim currentClaim : targetClaims) {
-            GPClaim gpClaim = (GPClaim) currentClaim;
-            final List<UUID> trustList = gpClaim.getUserTrustList(trustType);
-            if (trustList.contains(user.getUniqueId())) {
-                final Text message = GriefPreventionPlugin.instance.messageData.trustAlreadyHas
-                        .apply(ImmutableMap.of(
-                        "target", user.getName(),
-                        "type", trustType.name())).build();
-                GriefPreventionPlugin.sendMessage(player, message);
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(player);
+            GPUserTrustClaimEvent.Add
+                event =
+                new GPUserTrustClaimEvent.Add(targetClaims, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(user.getUniqueId()), trustType);
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                player.sendMessage(Text.of(TextColors.RED,
+                    event.getMessage().orElse(Text.of("Could not trust user '" + user.getName() + "'. A plugin has denied it."))));
                 return;
             }
 
-            trustList.add(user.getUniqueId());
-            gpClaim.getInternalClaimData().setRequiresSave(true);
-            gpClaim.getInternalClaimData().save();
-        }
+            for (Claim currentClaim : targetClaims) {
+                GPClaim gpClaim = (GPClaim) currentClaim;
+                final List<UUID> trustList = gpClaim.getUserTrustList(trustType);
+                if (trustList.contains(user.getUniqueId())) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.trustAlreadyHas
+                        .apply(ImmutableMap.of(
+                            "target", user.getName(),
+                            "type", trustType.name())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                    return;
+                }
 
-        final Text message = GriefPreventionPlugin.instance.messageData.trustGrant
+                trustList.add(user.getUniqueId());
+                gpClaim.getInternalClaimData().setRequiresSave(true);
+                gpClaim.getInternalClaimData().save();
+            }
+
+            final Text message = GriefPreventionPlugin.instance.messageData.trustGrant
                 .apply(ImmutableMap.of(
-                "target", user.getName(),
-                "type", trustType.name())).build();
-        GriefPreventionPlugin.sendMessage(player, message);
+                    "target", user.getName(),
+                    "type", trustType.name())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
+        }
     }
 
     public static void handleGroupTrustCommand(Player player, TrustType trustType, String group) {
@@ -1066,11 +1078,16 @@ public class CommandHelper {
             targetClaims.add(claim);
         }
 
-        GPGroupTrustClaimEvent.Add event = new GPGroupTrustClaimEvent.Add(targetClaims, Cause.of(NamedCause.source(player)), ImmutableList.of(group), trustType);
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            player.sendMessage(Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not trust group '" + group + "'. A plugin has denied it."))));
-            return;
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(player);
+            GPGroupTrustClaimEvent.Add event =
+                new GPGroupTrustClaimEvent.Add(targetClaims, Sponge.getCauseStackManager().getCurrentCause(), ImmutableList.of(group), trustType);
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                player.sendMessage(
+                    Text.of(TextColors.RED, event.getMessage().orElse(Text.of("Could not trust group '" + group + "'. A plugin has denied it."))));
+                return;
+            }
         }
 
         final String permission = getTrustPermission(trustType);
@@ -1165,37 +1182,49 @@ public class CommandHelper {
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(claim.getWorld(), claim.getOwnerUniqueId());
         if (playerData.canIgnoreClaim(claim) || claim.getOwnerUniqueId().equals(playerData.playerID) || claim.getUserTrusts(TrustType.MANAGER).contains(playerData.playerID)) {
             final UniqueAccount playerAccount = economyService.getOrCreateAccount(playerData.playerID).get();
-            if (command.equalsIgnoreCase("withdraw")) {
-                TransactionResult result = bankAccount.withdraw(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Cause.of(NamedCause.source(src)));
-                if (result.getResult() == ResultType.SUCCESS) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimBankWithdraw
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(src);
+                Sponge.getCauseStackManager().addContext(GriefPreventionPlugin.PLUGIN_CONTEXT, GriefPreventionPlugin.instance);
+                if (command.equalsIgnoreCase("withdraw")) {
+                    TransactionResult
+                        result =
+                        bankAccount.withdraw(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Sponge.getCauseStackManager().getCurrentCause());
+                    if (result.getResult() == ResultType.SUCCESS) {
+                        final Text message = GriefPreventionPlugin.instance.messageData.claimBankWithdraw
                             .apply(ImmutableMap.of(
-                            "amount", amount)).build();
-                    GriefPreventionPlugin.sendMessage(src, message);
-                    playerAccount.deposit(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), GriefPreventionPlugin.pluginCause);
-                    claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.WITHDRAW_SUCCESS, playerData.playerID, Instant.now(), amount));
-                } else {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimBankWithdrawNoFunds
+                                "amount", amount)).build();
+                        GriefPreventionPlugin.sendMessage(src, message);
+                        playerAccount.deposit(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Sponge.getCauseStackManager().getCurrentCause());
+                        claim.getData().getEconomyData().addBankTransaction(
+                            new GPBankTransaction(BankTransactionType.WITHDRAW_SUCCESS, playerData.playerID, Instant.now(), amount));
+                    } else {
+                        final Text message = GriefPreventionPlugin.instance.messageData.claimBankWithdrawNoFunds
                             .apply(ImmutableMap.of(
-                            "balance", bankAccount.getBalance(economyService.getDefaultCurrency()),
-                            "amount", amount)).build();
-                    GriefPreventionPlugin.sendMessage(src, message);
-                    claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.WITHDRAW_FAIL, playerData.playerID, Instant.now(), amount));
-                    return;
-                }
-            } else if (command.equalsIgnoreCase("deposit")) {
-                TransactionResult result = playerAccount.withdraw(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Cause.of(NamedCause.source(src)));
-                if (result.getResult() == ResultType.SUCCESS) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimBankDeposit
+                                "balance", bankAccount.getBalance(economyService.getDefaultCurrency()),
+                                "amount", amount)).build();
+                        GriefPreventionPlugin.sendMessage(src, message);
+                        claim.getData().getEconomyData()
+                            .addBankTransaction(new GPBankTransaction(BankTransactionType.WITHDRAW_FAIL, playerData.playerID, Instant.now(), amount));
+                        return;
+                    }
+                } else if (command.equalsIgnoreCase("deposit")) {
+                    TransactionResult
+                        result =
+                        playerAccount.withdraw(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Sponge.getCauseStackManager().getCurrentCause());
+                    if (result.getResult() == ResultType.SUCCESS) {
+                        final Text message = GriefPreventionPlugin.instance.messageData.claimBankDeposit
                             .apply(ImmutableMap.of(
-                            "amount", amount)).build();
-                    GriefPreventionPlugin.sendMessage(src, message);
-                    bankAccount.deposit(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Cause.of(NamedCause.source(src)));
-                    claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.DEPOSIT_SUCCESS, playerData.playerID, Instant.now(), amount));
-                } else {
-                    GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimBankDepositNoFunds.toText());
-                    claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.DEPOSIT_FAIL, playerData.playerID, Instant.now(), amount));
-                    return;
+                                "amount", amount)).build();
+                        GriefPreventionPlugin.sendMessage(src, message);
+                        bankAccount.deposit(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Sponge.getCauseStackManager().getCurrentCause());
+                        claim.getData().getEconomyData().addBankTransaction(
+                            new GPBankTransaction(BankTransactionType.DEPOSIT_SUCCESS, playerData.playerID, Instant.now(), amount));
+                    } else {
+                        GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimBankDepositNoFunds.toText());
+                        claim.getData().getEconomyData()
+                            .addBankTransaction(new GPBankTransaction(BankTransactionType.DEPOSIT_FAIL, playerData.playerID, Instant.now(), amount));
+                        return;
+                    }
                 }
             }
         } else {

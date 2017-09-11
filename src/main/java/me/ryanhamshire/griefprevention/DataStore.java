@@ -53,8 +53,8 @@ import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.SubjectData;
 import org.spongepowered.api.service.user.UserStorageService;
@@ -372,18 +372,17 @@ public abstract class DataStore {
         claim.updateClaimStorageData();
     }
 
-    public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Cause cause) {
-        return createClaim(world, point1, point2, claimType, ownerUniqueId, cuboid, null, cause);
+    public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid) {
+        return createClaim(world, point1, point2, claimType, ownerUniqueId, cuboid, null);
     }
 
-    public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Claim parent, Cause cause) {
+    public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Claim parent) {
         ClaimResult claimResult = Claim.builder()
                 .bounds(point1, point2)
                 .world(world)
                 .type(claimType)
                 .owner(ownerUniqueId)
                 .parent(parent)
-                .cause(cause)
                 .build();
 
         return claimResult;
@@ -408,10 +407,14 @@ public abstract class DataStore {
             return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND);
         }
 
-        GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(claimsToDelete), Cause.of(NamedCause.source(src)));
-        Sponge.getEventManager().post(event);
-        if (event.isCancelled()) {
-            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(Text.of("Could not delete all admin claims. A plugin has denied it.")));
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(src);
+            GPDeleteClaimEvent event = new GPDeleteClaimEvent(ImmutableList.copyOf(claimsToDelete), Sponge.getCauseStackManager().getCurrentCause());
+            Sponge.getEventManager().post(event);
+            if (event.isCancelled()) {
+                return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED,
+                    event.getMessage().orElse(Text.of("Could not delete all admin claims. A plugin has denied it.")));
+            }
         }
 
         for (Claim claim : claimsToDelete) {

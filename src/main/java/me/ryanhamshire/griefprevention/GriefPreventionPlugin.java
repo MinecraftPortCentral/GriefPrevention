@@ -166,12 +166,8 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
-import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.event.block.TargetBlockEvent;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.cause.EventContextKey;
 import org.spongepowered.api.event.cause.entity.damage.DamageType;
-import org.spongepowered.api.event.entity.TargetEntityEvent;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
@@ -223,11 +219,14 @@ public class GriefPreventionPlugin {
     // for convenience, a reference to the instance of this plugin
     public static GriefPreventionPlugin instance;
     public static final String MOD_ID = "GriefPrevention";
+    public static final EventContextKey<GriefPreventionPlugin> PLUGIN_CONTEXT = EventContextKey.builder(GriefPreventionPlugin.class)
+        .name(MOD_ID)
+        .id(MOD_ID)
+        .build();
     public static final String API_VERSION = GriefPreventionPlugin.class.getPackage().getSpecificationVersion();
     public static final String IMPLEMENTATION_NAME = GriefPreventionPlugin.class.getPackage().getImplementationTitle();
     public static final String IMPLEMENTATION_VERSION =  GriefPreventionPlugin.class.getPackage().getImplementationVersion();
     public static String SPONGE_VERSION = "unknown";
-    public static Cause pluginCause;
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
     @Inject @ConfigDir(sharedRoot = false)
@@ -696,7 +695,6 @@ public class GriefPreventionPlugin {
                 .register();
         }
         instance = this;
-        pluginCause = Cause.of(NamedCause.source(this.pluginContainer));
         this.getLogger().info("Grief Prevention boot start.");
         this.getLogger().info("Finished loading configuration.");
 
