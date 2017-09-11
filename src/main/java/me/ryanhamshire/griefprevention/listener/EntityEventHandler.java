@@ -783,6 +783,9 @@ public class EntityEventHandler {
         GPPlayerData playerData = null;
         if (player != null) {
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            // Reset interact cache to avoid players attempting to bypass protection
+            playerData.lastInteractItemBlockResult = Tristate.UNDEFINED;
+            playerData.lastInteractItemEntityResult = Tristate.UNDEFINED;
             sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
         } else {
             sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
