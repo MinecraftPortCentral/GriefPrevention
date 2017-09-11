@@ -438,6 +438,8 @@ public class FlatFileDataStore extends DataStore {
         if (!claim.isWilderness()) {
             claimStorage.migrateSubdivision(claim);
         }
+
+        this.claimLoadCount++;
         return claim;
     }
 
