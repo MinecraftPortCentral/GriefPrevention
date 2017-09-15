@@ -41,6 +41,7 @@ import me.ryanhamshire.griefprevention.event.GPBorderClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.provider.MCClansApiProvider;
+import me.ryanhamshire.griefprevention.util.CauseContextHelper;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
@@ -121,7 +122,7 @@ public class EntityEventHandler {
         Location<World> location = event.getExplosion().getLocation();
         GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location, false, null);
 
-        User user = event.getCause().first(User.class).orElse(null);
+        User user = CauseContextHelper.getEventUser(event);
         Explosive explosive = null;
         if (event.getExplosion() instanceof Explosion) {
             explosive = ((Explosion) event.getExplosion()).getSourceExplosive().orElse(null);
@@ -155,7 +156,7 @@ public class EntityEventHandler {
             return;
         }
 
-        User user = event.getCause().first(User.class).orElse(null);
+        final User user = CauseContextHelper.getEventUser(event);
         Iterator<Entity> iterator = event.getEntities().iterator();
         GPClaim targetClaim = null;
         while (iterator.hasNext()) {
@@ -183,7 +184,7 @@ public class EntityEventHandler {
             return;
         }
 
-        User user = event.getCause().first(User.class).orElse(null);
+        final User user = CauseContextHelper.getEventUser(event);
         event.filterEntities(new Predicate<Entity>() {
             GPClaim targetClaim = null;
 
@@ -251,7 +252,7 @@ public class EntityEventHandler {
     }
 
     public boolean protectEntity(Event event, Entity targetEntity, Cause cause, DamageSource damageSource) {
-        User user = cause.first(User.class).orElse(null);
+        User user = CauseContextHelper.getEventUser(event);
         Player player = cause.first(Player.class).orElse(null);
         Entity sourceEntity = null;
         EntityDamageSource entityDamageSource = null;
@@ -883,8 +884,9 @@ public class EntityEventHandler {
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onEntityCollideEntity(CollideEntityEvent event, @First User user) {
-        if (event.getEntities().isEmpty()) {
+    public void onEntityCollideEntity(CollideEntityEvent event) {
+        final User user = CauseContextHelper.getEventUser(event);
+        if (user == null || event.getEntities().isEmpty()) {
             return;
         }
 
@@ -925,7 +927,11 @@ public class EntityEventHandler {
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onProjectileImpactEntity(CollideEntityEvent.Impact event, @First User user) {
+    public void onProjectileImpactEntity(CollideEntityEvent.Impact event) {
+        final User user = CauseContextHelper.getEventUser(event);
+        if (user == null) {
+            return;
+        }
         GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
             GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.stopTimingIfSync();
