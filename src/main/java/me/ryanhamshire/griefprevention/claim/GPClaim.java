@@ -1301,7 +1301,11 @@ public class GPClaim implements Claim {
 
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
-        //if (!this.isSubdivision() || (this.isSubdivision() && overlapClaim.isSubdivision())) {
+
+        // checkArea refreshes the current chunk hashes so it is important
+        // to make a copy before making the call
+        final Set<Long> currentChunkHashes = new HashSet<>(this.chunkHashes);
+
         final ClaimResult result = this.checkArea(true);
         if (!result.successful()) {
             this.lesserBoundaryCorner = currentLesserCorner;
@@ -1324,22 +1328,21 @@ public class GPClaim implements Claim {
             return claimResult;
         }
 
-        Set<Long> currentChunkHashes = this.getChunkHashes(false);
         // This needs to be adjusted before we check for overlaps
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
 
         // resize validated, remove invalid chunkHashes
-        Set<Long> newChunkHashes = this.getChunkHashes(true);
         if (this.parent == null) {
-            currentChunkHashes.removeAll(newChunkHashes);
             for (Long chunkHash : currentChunkHashes) {
                 Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk != null && claimsInChunk.size() > 0) {
                     claimsInChunk.remove(this);
                 }
             }
+
+            final Set<Long> newChunkHashes = this.getChunkHashes(true);
             // add new chunk hashes
             for (Long chunkHash : newChunkHashes) {
                 Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
@@ -1347,7 +1350,7 @@ public class GPClaim implements Claim {
                     claimsInChunk = new HashSet<>();
                     claimWorldManager.getInternalChunksToClaimsMap().put(chunkHash, claimsInChunk);
                 }
-    
+
                 claimsInChunk.add(this);
             }
         }
@@ -1434,6 +1437,11 @@ public class GPClaim implements Claim {
         Location<World> newGreaterCorner = new Location<World>(this.world, bigX, bigY, bigZ);
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
+
+        // checkArea refreshes the current chunk hashes so it is important
+        // to make a copy before making the call
+        final Set<Long> currentChunkHashes = new HashSet<>(this.chunkHashes);
+
         final ClaimResult result = this.checkArea(true);
         if (!result.successful()) {
             this.lesserBoundaryCorner = currentLesserCorner;
@@ -1460,17 +1468,16 @@ public class GPClaim implements Claim {
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
         // resize validated, remove invalid chunkHashes
-        Set<Long> currentChunkHashes = this.getChunkHashes(false);
-        Set<Long> newChunkHashes = this.getChunkHashes(true);
-        GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
         if (this.parent == null) {
-            currentChunkHashes.removeAll(newChunkHashes);
             for (Long chunkHash : currentChunkHashes) {
                 Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);
                 if (claimsInChunk != null && claimsInChunk.size() > 0) {
                     claimsInChunk.remove(this);
                 }
             }
+
+            final Set<Long> newChunkHashes = this.getChunkHashes(true);
             // add new chunk hashes
             for (Long chunkHash : newChunkHashes) {
                 Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(chunkHash);

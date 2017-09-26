@@ -869,10 +869,12 @@ public class EntityEventHandler {
             }
         }
 
-        if (toClaim.isTown()) {
-            playerData.inTown = true;
-        } else {
-            playerData.inTown = false;
+        if (playerData != null) {
+            if (toClaim.isTown()) {
+                playerData.inTown = true;
+            } else {
+                playerData.inTown = false;
+            }
         }
         // TODO
         /*if (event.getCause().first(PortalTeleportCause.class).isPresent()) {
