@@ -268,7 +268,7 @@ public class GPClaimManager implements ClaimManager {
             return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
-        this.deleteClaim(claim, deleteChildren);
+        this.deleteClaimInternal(claim, deleteChildren);
         return new GPClaimResult(claim, ClaimResultType.SUCCESS);
     }
 
