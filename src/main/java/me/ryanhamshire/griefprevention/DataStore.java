@@ -105,7 +105,6 @@ public abstract class DataStore {
     // path information, for where stuff stored on disk is well... stored
     public final static Path dataLayerFolderPath = GriefPreventionPlugin.instance.getConfigPath();
     public final static Path globalPlayerDataPath = dataLayerFolderPath.resolve("GlobalPlayerData");
-    final static Path messagesFilePath = dataLayerFolderPath.resolve("message.conf");
     final static Path softMuteFilePath = dataLayerFolderPath.resolve("softMute.txt");
     final static Path bannedWordsFilePath = dataLayerFolderPath.resolve("bannedWords.txt");
 
