@@ -145,9 +145,11 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
+import org.apache.commons.lang3.LocaleUtils;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform.Component;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.asset.Asset;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.command.CommandException;
@@ -1702,9 +1704,6 @@ public class GriefPreventionPlugin {
             if (Files.notExists(DataStore.dataLayerFolderPath)) {
                 Files.createDirectories(DataStore.dataLayerFolderPath);
             }
-            if (Files.notExists(DataStore.messagesFilePath)) {
-                Files.createFile(DataStore.messagesFilePath);
-            }
             /*if (this.dataStore != null) {
                 this.dataStore.loadMessages();
             }*/
@@ -1718,9 +1717,25 @@ public class GriefPreventionPlugin {
             }
 
             Path rootConfigPath = this.getConfigPath().resolve("worlds");
-            messageStorage = new MessageStorage(DataStore.messagesFilePath);
-            messageData = messageStorage.getConfig();
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
+            String localeString = DataStore.globalConfig.getConfig().message.locale;
+            try {
+                LocaleUtils.toLocale(localeString);
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+                this.logger.error("Could not validate the locale '" + localeString + "'. Defaulting to 'en_US'...");
+                localeString = "en_US";
+            }
+            final Path localePath = this.getConfigPath().resolve("lang").resolve(localeString + ".conf");
+            if (!localePath.toFile().exists()) {
+                // Check for a default locale asset and copy to lang folder
+                final Asset asset = this.pluginContainer.getAsset("lang/" + localeString + ".conf").orElse(null);
+                if (asset != null) {
+                    asset.copyToDirectory(localePath.getParent());
+                }
+            }
+            messageStorage = new MessageStorage(localePath);
+            messageData = messageStorage.getConfig();
             DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
             wildernessCuboids = DataStore.globalConfig.getConfig().playerdata.wildernessCuboids;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.GOLDEN_SHOVEL);
