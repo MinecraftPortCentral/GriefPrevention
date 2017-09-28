@@ -28,6 +28,7 @@ package me.ryanhamshire.griefprevention.listener;
 import com.flowpowered.math.vector.Vector3d;
 import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.DataStore;
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
@@ -113,12 +114,11 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityExplosionPre(ExplosionEvent.Pre event) {
-        GPTimings.ENTITY_EXPLOSION_PRE_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
-            GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
+        if (!GPFlags.EXPLOSION || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
 
+        GPTimings.ENTITY_EXPLOSION_PRE_EVENT.startTimingIfSync();
         Location<World> location = event.getExplosion().getLocation();
         GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location, false, null);
 
@@ -150,12 +150,11 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityExplosionDetonate(ExplosionEvent.Detonate event) {
-        GPTimings.ENTITY_EXPLOSION_DETONATE_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
-            GPTimings.ENTITY_EXPLOSION_DETONATE_EVENT.stopTimingIfSync();
+        if (!GPFlags.EXPLOSION || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
 
+        GPTimings.ENTITY_EXPLOSION_DETONATE_EVENT.startTimingIfSync();
         final User user = CauseContextHelper.getEventUser(event);
         Iterator<Entity> iterator = event.getEntities().iterator();
         GPClaim targetClaim = null;
@@ -173,17 +172,16 @@ public class EntityEventHandler {
     // when a creature spawns...
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntitySpawn(SpawnEntityEvent event, @Root Object sourceCause) {
-        if (event instanceof DropItemEvent || event.getEntities().isEmpty()) {
+        if (!GPFlags.ENTITY_SPAWN || event instanceof DropItemEvent || event.getEntities().isEmpty()) {
+            return;
+        }
+
+        final World world = event.getEntities().get(0).getWorld();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
         GPTimings.ENTITY_SPAWN_EVENT.startTimingIfSync();
-        final World world = event.getEntities().get(0).getWorld();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.ENTITY_SPAWN_EVENT.stopTimingIfSync();
-            return;
-        }
-
         final User user = CauseContextHelper.getEventUser(event);
         event.filterEntities(new Predicate<Entity>() {
             GPClaim targetClaim = null;
@@ -225,12 +223,11 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityAttack(AttackEntityEvent event, @First DamageSource damageSource) {
-        GPTimings.ENTITY_ATTACK_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
-            GPTimings.ENTITY_ATTACK_EVENT.stopTimingIfSync();
+        if (!GPFlags.ENTITY_DAMAGE || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.ENTITY_ATTACK_EVENT.startTimingIfSync();
         if (protectEntity(event, event.getTargetEntity(), event.getCause(), damageSource)) {
             event.setCancelled(true);
         }
@@ -239,12 +236,11 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityDamage(DamageEntityEvent event, @First DamageSource damageSource) {
-        GPTimings.ENTITY_DAMAGE_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
-            GPTimings.ENTITY_DAMAGE_EVENT.stopTimingIfSync();
+        if (!GPFlags.ENTITY_DAMAGE || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.ENTITY_DAMAGE_EVENT.startTimingIfSync();
         if (protectEntity(event, event.getTargetEntity(), event.getCause(), damageSource)) {
             event.setCancelled(true);
         }
@@ -434,12 +430,11 @@ public class EntityEventHandler {
 
     @Listener(order = Order.POST)
     public void onEntityDamageMonitor(DamageEntityEvent event) {
-        GPTimings.ENTITY_DAMAGE_MONITOR_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
-            GPTimings.ENTITY_DAMAGE_MONITOR_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.ENTITY_DAMAGE_MONITOR_EVENT.startTimingIfSync();
         //FEATURE: prevent players who very recently participated in pvp combat from hiding inventory to protect it from looting
         //FEATURE: prevent players who are in pvp combat from logging out to avoid being defeated
 
@@ -519,17 +514,16 @@ public class EntityEventHandler {
     // when an entity drops items on death
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityDropItemDeath(DropItemEvent.Destruct event, @Root Living livingEntity) {
-        if (event.getEntities().isEmpty()) {
+        if (!GPFlags.ITEM_DROP || event.getEntities().isEmpty()) {
+            return;
+        }
+
+        final World world = event.getEntities().get(0).getWorld();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
         GPTimings.ENTITY_DROP_ITEM_DEATH_EVENT.startTimingIfSync();
-        final World world = event.getEntities().get(0).getWorld();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.ENTITY_DROP_ITEM_DEATH_EVENT.stopTimingIfSync();
-            return;
-        }
-
         // special rule for creative worlds: killed entities don't drop items or experience orbs
         if (GriefPreventionPlugin.instance.claimModeIsActive(livingEntity.getLocation().getExtent().getProperties(), ClaimsMode.Creative)) {
             event.setCancelled(true);
@@ -543,13 +537,12 @@ public class EntityEventHandler {
     // when an entity dies...
     @Listener(order = Order.LAST)
     public void onEntityDeath(DestructEntityEvent.Death event) {
-        GPTimings.ENTITY_DEATH_EVENT.startTimingIfSync();
-        Living entity = event.getTargetEntity();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetEntity().getWorld().getProperties())) {
-            GPTimings.ENTITY_DEATH_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.ENTITY_DEATH_EVENT.startTimingIfSync();
+        final Living entity = event.getTargetEntity();
         if (!(entity instanceof Player) || !event.getCause().first(EntityDamageSource.class).isPresent()) {
             GPTimings.ENTITY_DEATH_EVENT.stopTimingIfSync();
             return;
@@ -565,13 +558,12 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityMove(MoveEntityEvent event){
-        GPTimings.ENTITY_MOVE_EVENT.startTimingIfSync();
-        Entity entity = event.getTargetEntity();
-        if (event.getFromTransform().getLocation().getBlockPosition().equals(event.getToTransform().getLocation().getBlockPosition())) {
-            GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
+        if ((!GPFlags.ENTER_CLAIM && !GPFlags.EXIT_CLAIM) || event.getFromTransform().getLocation().getBlockPosition().equals(event.getToTransform().getLocation().getBlockPosition())) {
             return;
         }
 
+        GPTimings.ENTITY_MOVE_EVENT.startTimingIfSync();
+        final Entity entity = event.getTargetEntity();
         World world = event.getTargetEntity().getWorld();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
@@ -618,7 +610,7 @@ public class EntityEventHandler {
             fromClaim = this.dataStore.getClaimAt(fromLocation);
         }
 
-        if (playerData != null && playerData.lastClaim != null) {
+        if (GPFlags.ENTER_CLAIM && playerData != null && playerData.lastClaim != null) {
             final GPClaim lastClaim = (GPClaim) playerData.lastClaim.get();
             if (lastClaim != null && lastClaim != fromClaim) {
                 if (GPPermissionHandler.getClaimPermission(event, toLocation, toClaim, GPPermissions.ENTER_CLAIM, entity, entity, player) == Tristate.FALSE) {
@@ -692,13 +684,13 @@ public class EntityEventHandler {
             boolean enterCancelled = false;
             boolean exitCancelled = false;
             // enter
-            if (GPPermissionHandler.getClaimPermission(event, toLocation, toClaim, GPPermissions.ENTER_CLAIM, entity, entity, user) == Tristate.FALSE) {
+            if (GPFlags.ENTER_CLAIM && GPPermissionHandler.getClaimPermission(event, toLocation, toClaim, GPPermissions.ENTER_CLAIM, entity, entity, user) == Tristate.FALSE) {
                 event.setCancelled(true);
                 enterCancelled = true;
             }
 
             // exit
-            if (GPPermissionHandler.getClaimPermission(event, fromLocation, fromClaim, GPPermissions.EXIT_CLAIM, entity, entity, user) == Tristate.FALSE) {
+            if (GPFlags.EXIT_CLAIM && GPPermissionHandler.getClaimPermission(event, fromLocation, fromClaim, GPPermissions.EXIT_CLAIM, entity, entity, user) == Tristate.FALSE) {
                 event.setCancelled(true);
                 exitCancelled = true;
             }
@@ -756,6 +748,10 @@ public class EntityEventHandler {
     // when a player teleports
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityTeleport(MoveEntityEvent.Teleport event) {
+        if (!GPFlags.ENTITY_TELEPORT_FROM && !GPFlags.ENTITY_TELEPORT_TO) {
+            return;
+        }
+
         GPTimings.ENTITY_TELEPORT_EVENT.startTimingIfSync();
         final Entity entity = event.getTargetEntity();
         Player player = null;
@@ -789,9 +785,9 @@ public class EntityEventHandler {
         }
 
         if (sourceClaim != null) {
-            if (GPPermissionHandler.getClaimPermission(event, sourceLocation, sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
+            if (GPFlags.ENTITY_TELEPORT_FROM && GPPermissionHandler.getClaimPermission(event, sourceLocation, sourceClaim, GPPermissions.ENTITY_TELEPORT_FROM, type, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                 boolean cancelled = true;
-                if (type.equals(TeleportTypes.PORTAL)) {
+                if (GPFlags.PORTAL_USE && type.equals(TeleportTypes.PORTAL)) {
                     Tristate result = GPPermissionHandler.getClaimPermission(event, sourceLocation, sourceClaim, GPPermissions.PORTAL_USE, type, entity, user);
                     if (result == Tristate.TRUE) {
                         cancelled = false;
@@ -821,7 +817,7 @@ public class EntityEventHandler {
         final Location<World> destination = event.getToTransform().getLocation();
         final GPClaim toClaim = this.dataStore.getClaimAt(destination, false, null);
         if (toClaim != null) {
-            if (GPPermissionHandler.getClaimPermission(event, destination, toClaim, GPPermissions.ENTITY_TELEPORT_TO, type, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
+            if (GPFlags.ENTITY_TELEPORT_TO && GPPermissionHandler.getClaimPermission(event, destination, toClaim, GPPermissions.ENTITY_TELEPORT_TO, type, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                 boolean cancelled = true;
                 if (type.equals(TeleportTypes.PORTAL)) {
                     if (GPPermissionHandler.getClaimPermission(event, destination, toClaim, GPPermissions.PORTAL_USE, type, entity, user, TrustType.ACCESSOR, true) == Tristate.TRUE) {
@@ -887,18 +883,21 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityCollideEntity(CollideEntityEvent event) {
+        if (!GPFlags.ENTITY_COLLIDE_ENTITY) {
+            return;
+        }
+
         final User user = CauseContextHelper.getEventUser(event);
         if (user == null || event.getEntities().isEmpty()) {
             return;
         }
 
-        GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
         final World world = event.getEntities().get(0).getWorld();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.ENTITY_COLLIDE_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
         Object rootCause = event.getCause().root();
         event.filterEntities(new Predicate<Entity>() {
             @Override
@@ -930,16 +929,16 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onProjectileImpactEntity(CollideEntityEvent.Impact event) {
-        final User user = CauseContextHelper.getEventUser(event);
-        if (user == null) {
-            return;
-        }
-        GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
-            GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.stopTimingIfSync();
+        if (!GPFlags.PROJECTILE_IMPACT_ENTITY) {
             return;
         }
 
+        final User user = CauseContextHelper.getEventUser(event);
+        if (user == null || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
+            return;
+        }
+
+        GPTimings.PROJECTILE_IMPACT_ENTITY_EVENT.startTimingIfSync();
         Object source = event.getCause().root();
         Location<World> impactPoint = event.getImpactPoint();
         GPClaim targetClaim = null;

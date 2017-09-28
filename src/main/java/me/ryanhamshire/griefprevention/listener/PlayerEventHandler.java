@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import io.github.nucleuspowered.nucleus.api.chat.NucleusChatChannel;
 import me.ryanhamshire.griefprevention.DataStore;
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
@@ -578,6 +579,10 @@ public class PlayerEventHandler {
     // when a player uses a slash command...
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerCommand(SendCommandEvent event, @First Player player) {
+        if (!GPFlags.COMMAND_EXECUTE && !GPFlags.COMMAND_EXECUTE_PVP) {
+            return;
+        }
+
         GPTimings.PLAYER_COMMAND_EVENT.startTimingIfSync();
         String command = event.getCommand();
         String[] args = event.getArguments().split(" ");
@@ -619,7 +624,7 @@ public class PlayerEventHandler {
         String argument = "";
         for (String arg : args) {
             argument = argument + "." + arg;
-            if (GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, null, commandPermission + argument, player) == Tristate.FALSE) {
+            if (GPFlags.COMMAND_EXECUTE && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, null, commandPermission + argument, player) == Tristate.FALSE) {
                 final Text denyMessage = GriefPreventionPlugin.instance.messageData.commandBlocked
                         .apply(ImmutableMap.of(
                         "command", command,
@@ -628,7 +633,7 @@ public class PlayerEventHandler {
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
-            } else if (playerData != null && (playerData.inPvpCombat(player.getWorld())) && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission + argument, player) == Tristate.FALSE) {
+            } else if (GPFlags.COMMAND_EXECUTE_PVP && playerData != null && (playerData.inPvpCombat(player.getWorld())) && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission + argument, player) == Tristate.FALSE) {
                 final Text denyMessage = GriefPreventionPlugin.instance.messageData.pvpCommandBanned
                         .apply(ImmutableMap.of(
                         "command", command)).build();
@@ -639,7 +644,7 @@ public class PlayerEventHandler {
             }
         }
         // second check the full command
-        if (GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getCause().root(), commandPermission, player) == Tristate.FALSE) {
+        if (GPFlags.COMMAND_EXECUTE && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getCause().root(), commandPermission, player) == Tristate.FALSE) {
             final Text denyMessage = GriefPreventionPlugin.instance.messageData.commandBlocked
                     .apply(ImmutableMap.of(
                     "command", command,
@@ -648,7 +653,7 @@ public class PlayerEventHandler {
             event.setCancelled(true);
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
-        } else if (playerData != null && (playerData.inPvpCombat(player.getWorld())) && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission, player) == Tristate.FALSE) {
+        } else if (GPFlags.COMMAND_EXECUTE_PVP && playerData != null && (playerData.inPvpCombat(player.getWorld())) && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission, player) == Tristate.FALSE) {
             final Text denyMessage = GriefPreventionPlugin.instance.messageData.pvpCommandBanned
                     .apply(ImmutableMap.of(
                     "command", command)).build();
@@ -1113,6 +1118,10 @@ public class PlayerEventHandler {
     // when a player drops an item
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerDispenseItem(DropItemEvent.Dispense event, @Root Entity spawncause) {
+        if (!GPFlags.ITEM_DROP) {
+            return;
+        }
+
         GPTimings.PLAYER_DISPENSE_ITEM_EVENT.startTimingIfSync();
         final Cause cause = event.getCause();
 
@@ -1195,12 +1204,11 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractInventoryOpen(InteractInventoryEvent.Open event, @First Player player) {
-        GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.stopTimingIfSync();
+        if (!GPFlags.INTERACT_INVENTORY || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.startTimingIfSync();
         final Cause cause = event.getCause();
         final EventContext context = cause.getContext();
         final BlockSnapshot blockSnapshot = context.get(EventContextKeys.BLOCK_HIT).orElse(BlockSnapshot.NONE);
@@ -1233,12 +1241,11 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractInventoryClick(ClickInventoryEvent event, @First Player player) {
-        GPTimings.PLAYER_INTERACT_INVENTORY_CLICK_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_INTERACT_INVENTORY_CLICK_EVENT.stopTimingIfSync();
+        if (!GPFlags.INTERACT_INVENTORY_CLICK || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.PLAYER_INTERACT_INVENTORY_CLICK_EVENT.startTimingIfSync();
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -1279,14 +1286,12 @@ public class PlayerEventHandler {
     // when a player interacts with an entity...
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractEntity(InteractEntityEvent.Primary event, @First Player player) {
-        GPTimings.PLAYER_INTERACT_ENTITY_PRIMARY_EVENT.startTimingIfSync();
-        Entity targetEntity = event.getTargetEntity();
-
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_INTERACT_ENTITY_PRIMARY_EVENT.stopTimingIfSync();
+        if (!GPFlags.INTERACT_ENTITY_PRIMARY || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        final Entity targetEntity = event.getTargetEntity();
+        GPTimings.PLAYER_INTERACT_ENTITY_PRIMARY_EVENT.startTimingIfSync();
         Location<World> location = targetEntity.getLocation();
         GPClaim claim = this.dataStore.getClaimAt(location);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -1311,14 +1316,12 @@ public class PlayerEventHandler {
     // when a player interacts with an entity...
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractEntity(InteractEntityEvent.Secondary event, @First Player player) {
-        GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.startTimingIfSync();
-        Entity targetEntity = event.getTargetEntity();
-
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
+        if (!GPFlags.INTERACT_ENTITY_SECONDARY || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        final Entity targetEntity = event.getTargetEntity();
+        GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.startTimingIfSync();
         Location<World> location = targetEntity.getLocation();
         GPClaim claim = this.dataStore.getClaimAt(location);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -1391,7 +1394,7 @@ public class PlayerEventHandler {
     public void onPlayerInteractItem(InteractItemEvent event, @Root Player player) {
         final World world = player.getWorld();
         final ItemType playerItem = event.getItemStack().getType();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
+        if ((!GPFlags.INTERACT_ITEM_PRIMARY && !GPFlags.INTERACT_ITEM_SECONDARY) || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
@@ -1559,13 +1562,12 @@ public class PlayerEventHandler {
     // when a player picks up an item...
     @Listener(order = Order.LAST, beforeModifications = true)
     public void onPlayerPickupItem(ChangeInventoryEvent.Pickup event, @Root Player player) {
-        GPTimings.PLAYER_PICKUP_ITEM_EVENT.startTimingIfSync();
-        World world = player.getWorld();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
+        if (!GPFlags.ITEM_PICKUP || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.PLAYER_PICKUP_ITEM_EVENT.startTimingIfSync();
+        final World world = player.getWorld();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         Location<World> location = player.getLocation();
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
@@ -1602,11 +1604,11 @@ public class PlayerEventHandler {
     // when a player switches in-hand items
     @Listener
     public void onPlayerChangeHeldItem(ChangeInventoryEvent.Held event, @First Player player) {
-        GPTimings.PLAYER_CHANGE_HELD_ITEM_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_CHANGE_HELD_ITEM_EVENT.stopTimingIfSync();
             return;
         }
+
+        GPTimings.PLAYER_CHANGE_HELD_ITEM_EVENT.startTimingIfSync();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         int count = 0;
@@ -1664,12 +1666,11 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerUseItem(UseItemStackEvent.Start event, @First Player player) {
-        GPTimings.PLAYER_USE_ITEM_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
+        if (!GPFlags.ITEM_USE || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.PLAYER_USE_ITEM_EVENT.startTimingIfSync();
         Location<World> location = player.getLocation();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
@@ -1692,12 +1693,11 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractBlockPrimary(InteractBlockEvent.Primary.MainHand event, @First Player player) {
-        GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.startTimingIfSync();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
+        if (!GPFlags.INTERACT_BLOCK_PRIMARY || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.startTimingIfSync();
         final BlockSnapshot clickedBlock = event.getTargetBlock();
         final Location<World> location = clickedBlock.getLocation().orElse(null);
         if (location == null) {
@@ -1734,12 +1734,11 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event, @First Player player) {
-        GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.startTimingIfSync();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.startTimingIfSync();
         BlockSnapshot clickedBlock = event.getTargetBlock();
         HandType handType = event.getHandType();
         ItemStack itemInHand = player.getItemInHand(handType).orElse(null);
@@ -1765,13 +1764,13 @@ public class PlayerEventHandler {
 
         GPClaim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location, false);
         final TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
-        if (playerData != null) {
+        if (GPFlags.INTERACT_BLOCK_SECONDARY && playerData != null) {
             final TrustType trustType = (tileEntity != null && tileEntity instanceof IInventory) ? TrustType.CONTAINER : TrustType.ACCESSOR;
             Tristate result = GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.INTERACT_BLOCK_SECONDARY, player, event.getTargetBlock(), player, trustType, true);
             if (result == Tristate.FALSE) {
                 // if player is holding an item, check if it can be placed
                 if (itemInHand != null) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player, TrustType.BUILDER, true) == Tristate.TRUE) {
+                    if (GPFlags.BLOCK_PLACE && GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player, TrustType.BUILDER, true) == Tristate.TRUE) {
                         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                         playerData.setLastInteractData(playerClaim);
                         return;

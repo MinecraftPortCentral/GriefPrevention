@@ -36,6 +36,38 @@ import java.util.Optional;
 
 public class GPFlags {
 
+    public static boolean BLOCK_BREAK;
+    public static boolean BLOCK_PLACE;
+    public static boolean COMMAND_EXECUTE;
+    public static boolean COMMAND_EXECUTE_PVP;
+    public static boolean ENTER_CLAIM;
+    public static boolean ENTITY_COLLIDE_BLOCK;
+    public static boolean ENTITY_COLLIDE_ENTITY;
+    public static boolean ENTITY_DAMAGE;
+    public static boolean ENTITY_RIDING;
+    public static boolean ENTITY_SPAWN;
+    public static boolean ENTITY_TELEPORT_FROM;
+    public static boolean ENTITY_TELEPORT_TO;
+    public static boolean EXIT_CLAIM;
+    public static boolean EXPLOSION;
+    public static boolean EXPLOSION_SURFACE;
+    public static boolean FIRE_SPREAD;
+    public static boolean INTERACT_BLOCK_PRIMARY;
+    public static boolean INTERACT_BLOCK_SECONDARY;
+    public static boolean INTERACT_ENTITY_PRIMARY;
+    public static boolean INTERACT_ENTITY_SECONDARY;
+    public static boolean INTERACT_INVENTORY;
+    public static boolean INTERACT_ITEM_PRIMARY;
+    public static boolean INTERACT_ITEM_SECONDARY;
+    public static boolean INTERACT_INVENTORY_CLICK;
+    public static boolean ITEM_DROP;
+    public static boolean ITEM_PICKUP;
+    public static boolean ITEM_SPAWN;
+    public static boolean ITEM_USE;
+    public static boolean LIQUID_FLOW;
+    public static boolean PORTAL_USE;
+    public static boolean PROJECTILE_IMPACT_BLOCK;
+    public static boolean PROJECTILE_IMPACT_ENTITY;
     public static final BiMap<String, EnumCreatureType> SPAWN_TYPES = HashBiMap.create();
 
     static {
@@ -43,6 +75,41 @@ public class GPFlags {
         SPAWN_TYPES.put("animal", EnumCreatureType.CREATURE);
         SPAWN_TYPES.put("aquatic", EnumCreatureType.WATER_CREATURE);
         SPAWN_TYPES.put("monster", EnumCreatureType.MONSTER);
+    }
+
+    public static void populateFlagStatus() {
+        BLOCK_BREAK = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.BLOCK_BREAK.toString());
+        BLOCK_PLACE = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.BLOCK_PLACE.toString());
+        COMMAND_EXECUTE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.COMMAND_EXECUTE.toString());
+        COMMAND_EXECUTE_PVP  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.COMMAND_EXECUTE_PVP.toString());
+        ENTER_CLAIM  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTER_CLAIM.toString());
+        ENTITY_COLLIDE_BLOCK  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString());
+        ENTITY_COLLIDE_ENTITY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString());
+        ENTITY_DAMAGE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_DAMAGE.toString());
+        ENTITY_RIDING  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_RIDING.toString());
+        ENTITY_SPAWN  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_SPAWN.toString());
+        ENTITY_TELEPORT_FROM  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_TELEPORT_FROM.toString());
+        ENTITY_TELEPORT_TO  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_TELEPORT_TO.toString());
+        EXIT_CLAIM  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.EXIT_CLAIM.toString());
+        EXPLOSION  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.EXPLOSION.toString());
+        EXPLOSION_SURFACE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.EXPLOSION_SURFACE.toString());
+        FIRE_SPREAD  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.FIRE_SPREAD.toString());
+        INTERACT_BLOCK_PRIMARY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString());
+        INTERACT_BLOCK_SECONDARY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString());
+        INTERACT_ENTITY_PRIMARY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString());
+        INTERACT_ENTITY_SECONDARY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString());
+        INTERACT_INVENTORY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_INVENTORY.toString());
+        INTERACT_INVENTORY_CLICK  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_INVENTORY_CLICK.toString());
+        INTERACT_ITEM_PRIMARY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_ITEM_PRIMARY.toString());
+        INTERACT_ITEM_SECONDARY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.INTERACT_ITEM_SECONDARY.toString());
+        ITEM_DROP  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ITEM_DROP.toString());
+        ITEM_PICKUP  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ITEM_PICKUP.toString());
+        ITEM_SPAWN  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ITEM_SPAWN.toString());
+        ITEM_USE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ITEM_USE.toString());
+        LIQUID_FLOW  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.LIQUID_FLOW.toString());
+        PORTAL_USE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.PORTAL_USE.toString());
+        PROJECTILE_IMPACT_BLOCK  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString());
+        PROJECTILE_IMPACT_ENTITY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString());
     }
 
     public static String getEntitySpawnFlag(ClaimFlag flag, String target) {

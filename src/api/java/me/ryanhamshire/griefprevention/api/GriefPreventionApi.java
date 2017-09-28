@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.api;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
 import me.ryanhamshire.griefprevention.api.economy.BankTransaction;
@@ -78,6 +79,14 @@ public interface GriefPreventionApi {
      * @return true if enabled, false if not
      */
     boolean isWildernessCuboidsEnabled();
+
+    /**
+     * Checks if the protection module is enabled for flag.
+     * 
+     * @param flag The claim flag to check
+     * @return true if enabled, false if not
+     */
+    boolean isProtectionModuleEnabled(ClaimFlag flag);
 
     /**
      * Gets the global {@link PlayerData} for specified {@link UUID}.

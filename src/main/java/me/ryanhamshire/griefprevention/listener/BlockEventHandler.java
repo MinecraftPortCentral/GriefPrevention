@@ -28,6 +28,7 @@ package me.ryanhamshire.griefprevention.listener;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.DataStore;
+import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
@@ -158,7 +159,7 @@ public class BlockEventHandler {
                         continue;
                     }
                 }
-                if (context.containsKey(EventContextKeys.FIRE_SPREAD)) {
+                if (GPFlags.FIRE_SPREAD && context.containsKey(EventContextKeys.FIRE_SPREAD)) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -310,9 +311,10 @@ public class BlockEventHandler {
             return;
         }
         // ignore falling blocks
-        if (source instanceof EntityFallingBlock) {
+        if (!GPFlags.ENTITY_COLLIDE_BLOCK || source instanceof EntityFallingBlock) {
             return;
         }
+
         GPTimings.BLOCK_COLLIDE_EVENT.startTimingIfSync();
         final BlockType blockType = event.getTargetBlock().getType();
         if (event.getTargetSide().equals(Direction.UP) || blockType.equals(BlockTypes.AIR) 
@@ -380,7 +382,7 @@ public class BlockEventHandler {
                 GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                 return;
             }
-            if (event.getTargetBlock().getType() == BlockTypes.PORTAL) {
+            if (GPFlags.PORTAL_USE && event.getTargetBlock().getType() == BlockTypes.PORTAL) {
                 if (GPPermissionHandler.getClaimPermission(event, event.getTargetLocation(), targetClaim, GPPermissions.PORTAL_USE, source, event.getTargetBlock(), user) == Tristate.TRUE) {
                     GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
                     return;
@@ -414,16 +416,20 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onProjectileImpactBlock(CollideBlockEvent.Impact event) {
+        if (!GPFlags.PROJECTILE_IMPACT_BLOCK) {
+            return;
+        }
+
         final User user = CauseContextHelper.getEventUser(event);
         if (user == null) {
             return;
         }
-        GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.startTimingIfSync();
+
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getImpactPoint().getExtent().getProperties())) {
-            GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.startTimingIfSync();
         final Cause cause = event.getCause();
         Object source = cause.root();
         Location<World> impactPoint = event.getImpactPoint();
@@ -448,13 +454,12 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onExplosion(ExplosionEvent.Post event) {
-        GPTimings.EXPLOSION_EVENT.startTimingIfSync();
         final World world = event.getExplosion().getWorld();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
+        if (!GPFlags.EXPLOSION || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
+        GPTimings.EXPLOSION_EVENT.startTimingIfSync();
         Object source = event.getCause().root();
         final User user = CauseContextHelper.getEventUser(event);
         GPClaim targetClaim = null;
@@ -466,7 +471,7 @@ public class BlockEventHandler {
             }
 
             targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), false, targetClaim);
-            if (location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot, user, true) == Tristate.FALSE) {
+            if (GPFlags.EXPLOSION_SURFACE && location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot, user, true) == Tristate.FALSE) {
                 event.setCancelled(true);
                 GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
                 return;
@@ -489,18 +494,16 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockBreak(ChangeBlockEvent.Break event) {
-        GPTimings.BLOCK_BREAK_EVENT.startTimingIfSync();
-        if (event instanceof ExplosionEvent) {
-            GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
+        if (!GPFlags.BLOCK_BREAK || event instanceof ExplosionEvent) {
             return;
         }
 
         final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.BLOCK_BREAK_EVENT.startTimingIfSync();
         Object source = event.getCause().root();
         final User user = CauseContextHelper.getEventUser(event);
         GPClaim sourceClaim = null;
@@ -551,13 +554,12 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
-        GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
         final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
         Object source = event.getCause().root();
         GPClaim sourceClaim = null;
         LocatableBlock locatable = null;
@@ -603,35 +605,37 @@ public class BlockEventHandler {
                 continue;
             }
 
-            // check overrides
-            Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_PLACE, source, block, user, TrustType.BUILDER, true);
-            if (result != Tristate.UNDEFINED) {
-                if (result == Tristate.TRUE) {
+            if (GPFlags.BLOCK_PLACE) {
+                // Allow blocks to grow within claims
+                if (user == null && sourceClaim != null && sourceClaim.getUniqueId().equals(targetClaim.getUniqueId())) {
                     GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                    continue;
+                    return;
                 }
-
-                // TODO - make sure this doesn't spam
-                /*if (source instanceof Player) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.permissionBuild
-                            .apply(ImmutableMap.of(
-                            "player", Text.of(targetClaim.getOwnerName())
-                    )).build();
-                    GriefPreventionPlugin.sendClaimDenyMessage(targetClaim, (Player) source, message);
-                }*/
-                event.setCancelled(true);
-                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                return;
-            }
-
-            // Allow blocks to grow within claims
-            if (user == null && sourceClaim != null && sourceClaim.getUniqueId().equals(targetClaim.getUniqueId())) {
-                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                return;
+    
+                // check overrides
+                Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_PLACE, source, block, user, TrustType.BUILDER, true);
+                if (result != Tristate.UNDEFINED) {
+                    if (result == Tristate.TRUE) {
+                        GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                        continue;
+                    }
+    
+                    // TODO - make sure this doesn't spam
+                    /*if (source instanceof Player) {
+                        final Text message = GriefPreventionPlugin.instance.messageData.permissionBuild
+                                .apply(ImmutableMap.of(
+                                "player", Text.of(targetClaim.getOwnerName())
+                        )).build();
+                        GriefPreventionPlugin.sendClaimDenyMessage(targetClaim, (Player) source, message);
+                    }*/
+                    event.setCancelled(true);
+                    GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                    return;
+                }
             }
 
             // warn players when they place TNT above sea level, since it doesn't destroy blocks there
-            if (player != null && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, event.getCause().root(), block.getState(), user) == Tristate.FALSE && block.getState().getType() == BlockTypes.TNT &&
+            if (GPFlags.EXPLOSION_SURFACE && player != null && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, event.getCause().root(), block.getState(), user) == Tristate.FALSE && block.getState().getType() == BlockTypes.TNT &&
                     !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
                     block.getPosition().getY() > GriefPreventionPlugin.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&
                     targetClaim.isWilderness()) {
@@ -734,12 +738,12 @@ public class BlockEventHandler {
         if (user == null) {
             return;
         }
-        GPTimings.SIGN_CHANGE_EVENT.startTimingIfSync();
+
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetTile().getLocation().getExtent().getProperties())) {
-            GPTimings.SIGN_CHANGE_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.SIGN_CHANGE_EVENT.startTimingIfSync();
         Location<World> location = event.getTargetTile().getLocation();
         // Prevent users exploiting signs
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location, false, null);
