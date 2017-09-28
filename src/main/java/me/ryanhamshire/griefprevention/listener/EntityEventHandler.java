@@ -202,13 +202,6 @@ public class EntityEventHandler {
                     if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                         return true;
                     }
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, user, location, user) == Tristate.TRUE) {
-                        return true;
-                    }
-                    // If we reached this point, XP orbs shouldn't be allowed to spawn
-                    if (entity instanceof EntityXPOrb) {
-                        return false;
-                    }
                     permission = GPPermissions.ITEM_SPAWN;
                 }
                 // Always allow pixelmon spawns from pokeballs
