@@ -28,6 +28,7 @@ import me.ryanhamshire.griefprevention.configuration.category.BanCategory;
 import me.ryanhamshire.griefprevention.configuration.category.LoggingCategory;
 import me.ryanhamshire.griefprevention.configuration.category.MessageCategory;
 import me.ryanhamshire.griefprevention.configuration.category.MigratorCategory;
+import me.ryanhamshire.griefprevention.configuration.category.ModuleCategory;
 import me.ryanhamshire.griefprevention.configuration.category.PlayerDataCategory;
 import me.ryanhamshire.griefprevention.configuration.category.SpamCategory;
 import me.ryanhamshire.griefprevention.configuration.category.ThreadCategory;
@@ -51,6 +52,8 @@ public class GlobalConfig extends ConfigBase {
             "List of migrators that convert other protection data into GP claim data." + 
             "\nNote: These migrators will NOT change or delete your data. It simply reads and creates new data for GriefPrevention.")
     public MigratorCategory migrator = new MigratorCategory();
+    @Setting(value = "modules")
+    public ModuleCategory modules = new ModuleCategory();
     @Setting
     public ThreadCategory thread = new ThreadCategory();
 }

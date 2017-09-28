@@ -77,7 +77,6 @@ public class FlagCategory extends ConfigCategory {
         defaultAdminFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultAdminFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
         defaultAdminFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
-        defaultAdminFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultAdminFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultAdminFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultAdminFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
@@ -111,7 +110,6 @@ public class FlagCategory extends ConfigCategory {
         defaultBasicFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultBasicFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
         defaultBasicFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
-        defaultBasicFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultBasicFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultBasicFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultBasicFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
@@ -145,7 +143,6 @@ public class FlagCategory extends ConfigCategory {
         defaultTownFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultTownFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
         defaultTownFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
-        defaultTownFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), false);
         defaultTownFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultTownFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultTownFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
@@ -156,7 +153,7 @@ public class FlagCategory extends ConfigCategory {
         defaultTownFlags.put(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString(), false);
 
         defaultWildernessFlags.put(ClaimFlag.BLOCK_BREAK.toString(), true);
-        defaultWildernessFlags.put(ClaimFlag.BLOCK_PLACE.toString(), true);;
+        defaultWildernessFlags.put(ClaimFlag.BLOCK_PLACE.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
@@ -179,7 +176,6 @@ public class FlagCategory extends ConfigCategory {
         defaultWildernessFlags.put(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), true);
-        defaultWildernessFlags.put(ClaimFlag.INTERACT_INVENTORY.toString(), true);;
         defaultWildernessFlags.put(ClaimFlag.ITEM_DROP.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ITEM_SPAWN.toString(), true);

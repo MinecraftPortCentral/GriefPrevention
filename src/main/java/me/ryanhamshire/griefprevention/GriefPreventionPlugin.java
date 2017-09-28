@@ -1739,6 +1739,7 @@ public class GriefPreventionPlugin {
             messageStorage = new MessageStorage(localePath);
             messageData = messageStorage.getConfig();
             DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
+            GPFlags.populateFlagStatus();
             wildernessCuboids = DataStore.globalConfig.getConfig().playerdata.wildernessCuboids;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.GOLDEN_SHOVEL);
             this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.STICK);
