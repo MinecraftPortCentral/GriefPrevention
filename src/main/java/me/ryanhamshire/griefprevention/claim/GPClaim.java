@@ -1222,12 +1222,12 @@ public class GPClaim implements Claim {
         Location<World> endCorner = null;
         GPPlayerData playerData = null;
         Player player = null;
-        final Cause cause = Sponge.getCauseStackManager().getCurrentCause();
-        if (!(cause.root() instanceof Player)) {
+        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
+        if (!(root instanceof Player)) {
             startCorner = new Location<World>(this.world, newx1, newy1, newz1);
             endCorner = new Location<World>(this.world, newx2, newy2, newz2);
         } else {
-            player = (Player) cause.root();
+            player = (Player) root;
             playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             startCorner = playerData.lastShovelLocation;
             endCorner = playerData.endShovelLocation;
@@ -1402,12 +1402,12 @@ public class GPClaim implements Claim {
         Location<World> endCorner = null;
         GPPlayerData playerData = null;
         Player player = null;
-        final Cause cause = Sponge.getCauseStackManager().getCurrentCause();
-        if (!(cause.root() instanceof Player)) {
+        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
+        if (!(root instanceof Player)) {
             startCorner = new Location<World>(this.world, smallX, smallY, smallZ);
             endCorner = new Location<World>(this.world, bigX, bigY, bigZ);
         } else {
-            player = (Player) cause.root();
+            player = (Player) root;
             playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             startCorner = playerData.lastShovelLocation;
             endCorner = playerData.endShovelLocation;
@@ -2800,8 +2800,7 @@ public class GPClaim implements Claim {
         }
 
         CommandSource commandSource = Sponge.getServer().getConsole();
-        final Cause cause = Sponge.getCauseStackManager().getCurrentCause();
-        Object root = cause.root();
+        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
         if (root instanceof CommandSource) {
             commandSource = (CommandSource) root;
         }
@@ -2842,10 +2841,6 @@ public class GPClaim implements Claim {
             result.complete(new GPFlagResult(FlagResultType.TARGET_NOT_VALID));
             return result;
         }
-        /*if (!ClaimContexts.CONTEXT_LIST.contains(context) && context != this.getContext()) {
-            result.complete(new GPFlagResult(FlagResultType.CONTEXT_NOT_VALID));
-            return result;
-        }*/
 
         GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, source, target, value, context);
         Sponge.getEventManager().post(event);
@@ -2855,7 +2850,7 @@ public class GPClaim implements Claim {
         }
 
         CommandSource commandSource = Sponge.getServer().getConsole();
-        Object root = Sponge.getCauseStackManager().getCurrentCause();
+        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
         if (root instanceof CommandSource) {
             commandSource = (CommandSource) root;
         }
