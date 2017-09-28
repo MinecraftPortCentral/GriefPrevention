@@ -30,6 +30,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.Claim.Builder;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
 import me.ryanhamshire.griefprevention.api.economy.BankTransaction;
@@ -69,6 +70,11 @@ public class GPApiProvider implements GriefPreventionApi {
     @Override
     public boolean isWildernessCuboidsEnabled() {
         return GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.wildernessCuboids;
+    }
+
+    @Override
+    public boolean isProtectionModuleEnabled(ClaimFlag flag) {
+        return GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(flag.toString());
     }
 
     @Override
