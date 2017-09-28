@@ -99,6 +99,7 @@ public class GPPermissionHandler {
         }
 
         GPPlayerData playerData = null;
+        eventUser = null;
         if (user != null) {
             eventUser = user;
             if (user instanceof Player) {
