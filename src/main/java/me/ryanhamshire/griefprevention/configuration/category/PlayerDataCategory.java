@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.configuration.category;
 
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
@@ -32,22 +33,21 @@ public class PlayerDataCategory extends ConfigCategory {
 
     @Setting(value = "use-global-storage", comment = "Whether player data should be stored globally. False will store all data per world.")
     public boolean useGlobalPlayerDataStorage = true;
-    @Setting(value = "wilderness-cuboids", comment = "Whether to allow 3d cuboids to be created in wilderness.\nIf set to true, claim blocks will use the chunk count system to balance 3d claiming."
-            + "\nIf false, the standard 2d block count system will be used and 3d claims created in wilderness by admins will be free."
-            + "\nNote: Setting this to false will still allow users to create sub 3D claims in their 2D claims.")
-    public boolean wildernessCuboids = false;
-    @Setting(value = "migration-3d-rate", comment = "The rate to multiply each accrued claim blocks total by."
+    @Setting(value = "claim-block-system", comment = "Determines which claim block system to use for claims. (Default: AREA)\nIf set to VOLUME, claim blocks will use the chunk count system to balance 3d claiming."
+            + "\nIf set to AREA, the standard 2d block count system will be used.")
+    public ClaimBlockSystem claimBlockSystem = ClaimBlockSystem.AREA;
+    @Setting(value = "migrate-volume-rate", comment = "The rate to multiply each accrued claim blocks total by."
             + "\nSet to a value greater than -1 to enable. (Default: 256)."
-            + "\nNote: This is only run one time to migrate player claimblock data to new system."
+            + "\nNote: This should only be used when migrating from area (2D system) to volume (3D system)."
             + "\nEach chunk is worth 65,536 blocks in the new system compared to 256 in old."
-            + "\nNote: This requires 'wilderness-cuboids' to be enabled.")
-    public int migration3dRate = -1;
-    @Setting(value = "migration-2d-rate", comment = "The rate to divide each accrued claim blocks total by."
+            + "\nThis requires 'claim-block-system' to be set to VOLUME.")
+    public int migrateVolumeRate = -1;
+    @Setting(value = "migrate-area-rate", comment = "The rate to divide each accrued claim blocks total by."
             + "\nSet to a value greater than -1 to enable. (Default: 256)."
-            + "\nNote: This should only be used when migrating from the chunk count system back to classic 2d."
+            + "\nNote: This should only be used when migrating from volume (3D system) to area (2D system)."
             + "\nIn this system, a chunk costs 256 blocks."
-            + "\nNote: This requires 'wilderness-cuboids' to be disabled.")
-    public int migration2dRate = -1;
+            + "\nThis requires 'claim-block-system' to be set to AREA.")
+    public int migrateAreaRate = -1;
     @Setting(value = "reset-migrations", comment = "If enabled, resets all playerdata migration flags to allow for another migration."
             + "\nNote: Use this with caution as it can easily mess up claim block data. It is highly recommended to backup before using.")
     public boolean resetMigrations = false;

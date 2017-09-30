@@ -216,12 +216,6 @@ public class CommandTrustList implements CommandExecutor {
         return TextColors.GOLD;
     }
 
-    private static Consumer<CommandSource> createUserInfoConsumer(CommandSource src, GPClaim claim, User user, TrustType type) {
-        return consumer -> {
-            
-        };
-    }
-
     private static Consumer<CommandSource> createTrustConsumer(CommandSource src, GPClaim claim, Player player, TrustType type) {
         return consumer -> {
             showTrustList(src, claim, player, type);

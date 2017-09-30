@@ -77,7 +77,6 @@ public class Visualization {
     private BlockType fillerMaterial; // used for 3d cuboids
     private BlockSnapshot.Builder snapshotBuilder;
     public boolean displaySubdivisions = false;
-    private boolean hasCUISupport = false;
     private int STEP = 10;
 
     public Visualization(VisualizationType type) {
@@ -261,17 +260,17 @@ public class Visualization {
     // for around 100 blocks of the locality
     private void addClaimElements(int height, Location<World> locality, GPPlayerData playerData) {
         this.initBlockVisualTypes(type);
-        Location<World> smallXsmallZ = this.claim.getLesserBoundaryCorner();
-        Location<World> bigXbigZ = this.claim.getGreaterBoundaryCorner();
-        World world = smallXsmallZ.getExtent();
+        Location<World> lesser = this.claim.getLesserBoundaryCorner();
+        Location<World> greater = this.claim.getGreaterBoundaryCorner();
+        World world = lesser.getExtent();
         boolean liquidTransparent = locality.getBlock().getType().getProperty(MatterProperty.class).isPresent() ? false : true;
 
-        this.smallx = smallXsmallZ.getBlockX();
-        this.smally = this.claim.cuboid ? smallXsmallZ.getBlockY() : 0;
-        this.smallz = smallXsmallZ.getBlockZ();
-        this.bigx = bigXbigZ.getBlockX();
-        this.bigy = this.claim.cuboid ? bigXbigZ.getBlockY() : 0;
-        this.bigz = bigXbigZ.getBlockZ();
+        this.smallx = lesser.getBlockX();
+        this.smally = this.useCuboidVisual() ? lesser.getBlockY() : 0;
+        this.smallz = lesser.getBlockZ();
+        this.bigx = greater.getBlockX();
+        this.bigy = this.useCuboidVisual() ? greater.getBlockY() : 0;
+        this.bigz = greater.getBlockZ();
         this.minx = this.claim.cuboid ? this.smallx : locality.getBlockX() - 75;
         this.minz = this.claim.cuboid ? this.smallz : locality.getBlockZ() - 75;
         this.maxx = this.claim.cuboid ? this.bigx : locality.getBlockX() + 75;
@@ -295,7 +294,7 @@ public class Visualization {
             STEP = 0;
         }
 
-        if (this.claim.cuboid) {
+        if (this.useCuboidVisual()) {
             this.addVisuals3D(claim, playerData);
         } else {
             this.addVisuals2D(claim, height, liquidTransparent);
@@ -544,4 +543,16 @@ public class Visualization {
         return visualization;
     }
 
+    private boolean useCuboidVisual() {
+        if (this.claim.cuboid) {
+            return true;
+        }
+
+        final GPPlayerData ownerData = this.claim.getOwnerPlayerData();
+        if (ownerData != null && ownerData.getMinClaimLevel() > 0 || ownerData.getMaxClaimLevel() < 255) {
+            return true;
+        }
+
+        return false;
+    }
 }

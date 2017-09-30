@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
@@ -236,7 +237,7 @@ public class GriefPreventionPlugin {
     private Path configPath;
     public MessageStorage messageStorage;
     public MessageDataConfig messageData;
-    public static boolean wildernessCuboids;
+    public static ClaimBlockSystem CLAIM_BLOCK_SYSTEM;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
     public static final String CONFIG_HEADER = "4.1.0\n"
@@ -808,11 +809,11 @@ public class GriefPreventionPlugin {
 
         final boolean resetMigration = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations;
         final int resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
-        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate;
-        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate;
+        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate;
+        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate;
         boolean migrate = false;
-        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && !GriefPreventionPlugin.wildernessCuboids) 
-                || (migration3dRate > -1 && GriefPreventionPlugin.wildernessCuboids)) {
+        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) 
+                || (migration3dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME)) {
             migrate = true;
         }
 
@@ -843,8 +844,8 @@ public class GriefPreventionPlugin {
             }
             GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations = false;
             GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData = -1;
-            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate = -1;
-            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate = -1;
+            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate = -1;
+            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate = -1;
             GriefPreventionPlugin.getGlobalConfig().save();
         }
 
@@ -1740,7 +1741,7 @@ public class GriefPreventionPlugin {
             messageData = messageStorage.getConfig();
             DataStore.USE_GLOBAL_PLAYER_STORAGE = DataStore.globalConfig.getConfig().playerdata.useGlobalPlayerDataStorage;
             GPFlags.populateFlagStatus();
-            wildernessCuboids = DataStore.globalConfig.getConfig().playerdata.wildernessCuboids;
+            CLAIM_BLOCK_SYSTEM = DataStore.globalConfig.getConfig().playerdata.claimBlockSystem;
             this.modificationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.modificationTool).orElse(ItemTypes.GOLDEN_SHOVEL);
             this.investigationTool = Sponge.getRegistry().getType(ItemType.class, DataStore.globalConfig.getConfig().claim.investigationTool).orElse(ItemTypes.STICK);
             this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;
@@ -1761,10 +1762,12 @@ public class GriefPreventionPlugin {
                         dimPath.resolve(world.getProperties().getWorldName()).resolve("world.conf")));
 
                 // refresh player data
-                for (GPClaimManager claimWorldManager : GriefPreventionPlugin.instance.dataStore.claimWorldManagers.values()) {
-                    for (GPPlayerData playerData : claimWorldManager.getPlayerDataMap().values()) {
-                        playerData.refreshPlayerOptions();
+                final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
+                for (GPPlayerData playerData : claimManager.getPlayerDataMap().values()) {
+                    if (playerData.playerID.equals(WORLD_USER_UUID) || playerData.playerID.equals(ADMIN_USER_UUID) || playerData.playerID.equals(PUBLIC_UUID)) {
+                        continue;
                     }
+                    playerData.refreshPlayerOptions();
                 }
             }
         } catch (Exception e) {
@@ -1990,7 +1993,7 @@ public class GriefPreventionPlugin {
         }
 
         // it's too expensive to do this for huge claims
-        if (claim.getClaimBlocks() > (wildernessCuboids ? 2560000 : 10000)) {
+        if (claim.getClaimBlocks() > (CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? 2560000 : 10000)) {
             return;
         }
 

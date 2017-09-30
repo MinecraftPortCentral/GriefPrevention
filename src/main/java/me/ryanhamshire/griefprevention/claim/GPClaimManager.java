@@ -34,6 +34,7 @@ import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
@@ -381,7 +382,7 @@ public class GPClaimManager implements ClaimManager {
         World world = Sponge.getServer().getWorld(worldProperties.getUniqueId()).get();
         Location<World> lesserCorner = new Location<World>(world, -30000000, 0, -30000000);
         Location<World> greaterCorner = new Location<World>(world, 29999999, 255, 29999999);
-        GPClaim wilderness = new GPClaim(lesserCorner, greaterCorner, UUID.randomUUID(), ClaimType.WILDERNESS, null);
+        GPClaim wilderness = new GPClaim(lesserCorner, greaterCorner, UUID.randomUUID(), ClaimType.WILDERNESS, null, false);
         wilderness.setOwnerUniqueId(GriefPreventionPlugin.WORLD_USER_UUID);
         wilderness.initializeClaimData(null);
         DATASTORE.writeClaimToStorage(wilderness);
@@ -536,17 +537,17 @@ public class GPClaimManager implements ClaimManager {
             }
         }
         // migrate playerdata to new claim block system
-        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate;
-        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate;
+        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate;
+        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate;
         final int resetClaimBlockData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
 
         if (migration3dRate <= -1 && migration2dRate <= -1 && resetClaimBlockData <= -1) {
             return;
         }
-        if (GriefPreventionPlugin.wildernessCuboids && migration2dRate >= 0) {
+        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME && migration2dRate >= 0) {
             return;
         }
-        if (!GriefPreventionPlugin.wildernessCuboids && migration3dRate >= 0) {
+        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA && migration3dRate >= 0) {
             return;
         }
 

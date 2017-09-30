@@ -28,6 +28,7 @@ package me.ryanhamshire.griefprevention;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
@@ -40,10 +41,8 @@ import me.ryanhamshire.griefprevention.configuration.TownStorageData;
 import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.migrator.RedProtectMigrator;
-import me.ryanhamshire.griefprevention.util.BlockUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -286,11 +285,11 @@ public class FlatFileDataStore extends DataStore {
     void loadPlayerData(WorldProperties worldProperties, File[] files) throws Exception {
         final boolean resetMigration = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations;
         final int resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
-        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration2dRate;
-        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migration3dRate;
+        final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate;
+        final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate;
         boolean migrate = false;
-        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && !GriefPreventionPlugin.wildernessCuboids) 
-                || (migration3dRate > -1 && GriefPreventionPlugin.wildernessCuboids)) {
+        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) 
+                || (migration3dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME)) {
             // load all player data if migrating
             migrate = true;
         }
@@ -345,7 +344,6 @@ public class FlatFileDataStore extends DataStore {
         final ClaimType type = claimStorage.getConfig().getType();
         final UUID parent = claimStorage.getConfig().getParent().orElse(null);
         final String fileName = claimFile.getName();
-        final GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(worldProperties);
         final World world = Sponge.getServer().loadWorld(worldProperties).orElse(null);
         if (world == null) {
             throw new Exception("World [Name: " + worldProperties.getWorldName() + "][UUID: " + worldProperties.getUniqueId().toString() + "] is not loaded.");
@@ -357,17 +355,6 @@ public class FlatFileDataStore extends DataStore {
             Files.move(claimStorage.filePath, newPath.resolve(fileName));
             claimStorage.filePath = newPath.resolve(fileName);
             claimStorage = new ClaimStorageData(claimStorage.filePath, worldProperties.getUniqueId());
-            // Validate 2D Y space and if between bedrock and sky, convert to 3D
-            if (!claimStorage.getConfig().isCuboid()) {
-                int adjustedY = claimStorage.getConfig().getLesserBoundaryCornerPos().getY() - activeConfig.getConfig().claim.extendIntoGroundDistance;
-                if (adjustedY > 0) {
-                    claimStorage.getConfig().setCuboid(true);
-                    final Vector3i greaterBounderCorner = claimStorage.getConfig().getGreaterBoundaryCornerPos();
-                    final Vector3i greaterCorner = new Vector3i(greaterBounderCorner.getX(), world.getDimension().getBuildHeight() - 1, greaterBounderCorner.getZ());
-                    claimStorage.getConfig().setGreaterBoundaryCorner(BlockUtils.positionToString(greaterCorner));
-                    claimStorage.save();
-                }
-            }
         }
 
         // identify world the claim is in
@@ -386,13 +373,6 @@ public class FlatFileDataStore extends DataStore {
             throw new Exception("Claim file '" + claimFile.getName() + "' has corrupted data and cannot be loaded. Skipping...");
         }
 
-        if (!claimStorage.getConfig().isCuboid()) {
-            final int extendIntoGround = activeConfig.getConfig().claim.extendIntoGroundDistance;
-            if (extendIntoGround == 255 || ((lesserCorner.getY() - extendIntoGround) <= 0)) {
-                lesserCorner = new Vector3i(lesserCorner.getX(), 0, lesserCorner.getZ());
-                greaterCorner = new Vector3i(greaterCorner.getX(), world.getDimension().getBuildHeight() - 1, greaterCorner.getZ());
-            }
-        }
         Location<World> lesserBoundaryCorner = new Location<World>(world, lesserCorner);
         Location<World> greaterBoundaryCorner = new Location<World>(world, greaterCorner);
 
@@ -404,12 +384,9 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // instantiate
-        claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType(), ownerID);
-        claim.world = lesserBoundaryCorner.getExtent();
-        claim.cuboid = claimStorage.getConfig().isCuboid();
+        claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType(), ownerID, claimStorage.getConfig().isCuboid());
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
-        claim.context = new Context("gp_claim", claim.id.toString());
         final GPClaimManager claimManager = this.getClaimWorldManager(worldProperties);
 
         // add parent claim first

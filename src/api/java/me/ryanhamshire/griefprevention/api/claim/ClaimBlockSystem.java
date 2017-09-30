@@ -22,38 +22,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.event;
+package me.ryanhamshire.griefprevention.api.claim;
 
-import me.ryanhamshire.griefprevention.api.claim.Claim;
-import me.ryanhamshire.griefprevention.api.event.ResizeClaimEvent;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
+public enum ClaimBlockSystem {
 
-public class GPResizeClaimEvent extends GPClaimEvent implements ResizeClaimEvent {
-
-    private Claim resizedClaim;
-    private Location<World> startCorner;
-    private Location<World> endCorner;
-
-    public GPResizeClaimEvent(Claim claim, Cause cause, Location<World> startCorner, Location<World> endCorner, Claim resizedClaim) {
-        super(claim, cause);
-        this.resizedClaim = resizedClaim;
-    }
-
-    @Override
-    public Location<World> getStartCorner() {
-        return this.startCorner;
-    }
-
-    @Override
-    public Location<World> getEndCorner() {
-        return this.endCorner;
-    }
-
-    @Override
-    public Claim getResizedClaim() {
-        return this.resizedClaim;
-    }
-
+    /**
+     * Uses {@link Claim#getArea()} to determine the cost of a claim.
+     * Note: This only accounts for x and z.
+     */
+    AREA,
+    /**
+     * Uses {@link Claim#getVolume()} to determine the cost of a claim.
+     * Note: This accounts for x, y, and z.
+     */
+    VOLUME
 }
