@@ -526,16 +526,23 @@ public interface Claim extends ContextSource {
     /**
      * Checks if the location is within this claim.
      * 
-     * Note: If ignoreHeight is true, this will only check
-     * x and z coordinates of location. This is usually done
-     * for 2D claims.
+     * Note: This always includes children.
      * 
      * @param location
-     * @param ignoreHeight
+     * @return Whether this claim contains the passed location
+     */
+    default boolean contains(Location<World> location) {
+        return this.contains(location, false);
+    }
+
+    /**
+     * Checks if the location is within this claim.
+     * 
+     * @param location
      * @param excludeChildren
      * @return Whether this claim contains the passed location
      */
-    boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeChildren);
+    boolean contains(Location<World> location, boolean excludeChildren);
 
     /**
      * Checks if this claim overlaps another.

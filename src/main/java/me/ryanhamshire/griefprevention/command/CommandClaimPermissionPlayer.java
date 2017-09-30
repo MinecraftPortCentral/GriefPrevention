@@ -71,7 +71,7 @@ public class CommandClaimPermissionPlayer implements CommandExecutor {
         User user = args.<User>getOne("user").orElse(null);
         String value = args.<String>getOne("value").orElse(null);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
                 .apply(ImmutableMap.of(
                 "type", claim.getType().name())).build();

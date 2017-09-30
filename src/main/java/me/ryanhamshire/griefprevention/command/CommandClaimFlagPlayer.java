@@ -88,7 +88,7 @@ public class CommandClaimFlagPlayer extends ClaimFlagBase implements CommandExec
         Tristate value = ctx.<Tristate>getOne("value").orElse(null);
         String context = ctx.<String>getOne("context").orElse(null);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
 
         String reason = ctx.<String>getOne("reason").orElse(null);
         Text reasonText = null;

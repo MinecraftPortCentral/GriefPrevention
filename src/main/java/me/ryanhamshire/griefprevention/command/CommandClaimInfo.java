@@ -100,7 +100,7 @@ public class CommandClaimInfo implements CommandExecutor {
         boolean isAdmin = src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
         Claim claim = null;
         if (player != null && claimIdentifier == null) {
-            claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), false, null);
+            claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
         } else {
             GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getLocation().getExtent().getProperties());
             UUID uuid = null;
@@ -168,7 +168,7 @@ public class CommandClaimInfo implements CommandExecutor {
         String containerGroups = "";
         String managerGroups = "";
 
-        double claimY = 65.0D;
+        double claimY = gpClaim.getOwnerPlayerData() == null ? 65.0D : (gpClaim.getOwnerPlayerData().getMinClaimLevel() > 65.0D ? gpClaim.getOwnerPlayerData().getMinClaimLevel() : 65);
         if (gpClaim.isCuboid()) {
             claimY = gpClaim.lesserBoundaryCorner.getY();
         }

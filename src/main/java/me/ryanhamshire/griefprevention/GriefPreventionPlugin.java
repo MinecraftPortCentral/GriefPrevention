@@ -1820,7 +1820,7 @@ public class GriefPreventionPlugin {
         }
 
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         // if pvp rules are disabled in claim, do nothing
         if (!claim.pvpRulesApply()) {
             return;
@@ -1872,7 +1872,7 @@ public class GriefPreventionPlugin {
         Location<World> candidateLocation = player.getLocation();
         while (true) {
             GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-            GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+            GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
 
             // if there's a claim here, keep looking
             if (!claim.isWilderness()) {

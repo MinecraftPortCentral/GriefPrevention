@@ -618,7 +618,7 @@ public class PlayerEventHandler {
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         // if requires access trust, check for permission
         Location<World> location = player.getLocation();
-        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
         String commandPermission = pluginId + "." + command;
 
         // first check the args
@@ -1009,7 +1009,7 @@ public class PlayerEventHandler {
         World world = event.getTargetEntity().getWorld();
         if (world != null) {
             GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(world.getProperties());
-            GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+            GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation());
             if ((claim.pvpRulesApply() && activeConfig.getConfig().pvp.protectItemsOnDeathPvp) ||
                     (!claim.isPvpEnabled() && activeConfig.getConfig().general.protectItemsOnDeathNonPvp)) {
                 playerData.dropsAreUnlocked = false;
@@ -1162,7 +1162,7 @@ public class PlayerEventHandler {
 
         for (Entity entityItem : event.getEntities()) {
             Location<World> location = entityItem.getLocation();
-            GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+            GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
             if (claim != null) {
                 final Tristate override = GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ITEM_DROP,  user, entityItem, user, playerData, true);
                 if (override != Tristate.UNDEFINED) {
@@ -1419,7 +1419,7 @@ public class PlayerEventHandler {
                 : blockSnapshot != BlockSnapshot.NONE ? blockSnapshot.getLocation().get() 
                         : interactPoint != null ? new Location<World>(world, interactPoint) 
                                 : player.getLocation();
-        final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
         if ((itemInHand == ItemTypes.NONE || playerItem instanceof ItemFood) && blockSnapshot == BlockSnapshot.NONE && entity == null) {
             return;
         }
@@ -1571,7 +1571,7 @@ public class PlayerEventHandler {
         final World world = player.getWorld();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         Location<World> location = player.getLocation();
-        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
         if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_PICKUP, player, event.getTargetEntity(), player, true) == Tristate.FALSE) {
             event.setCancelled(true);
             GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
@@ -1674,7 +1674,7 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_USE_ITEM_EVENT.startTimingIfSync();
         Location<World> location = player.getLocation();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(location.getExtent(), player.getUniqueId());
-        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
 
         final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType(), player, TrustType.ACCESSOR, true);
         if (result == Tristate.FALSE) {
@@ -1711,7 +1711,7 @@ public class PlayerEventHandler {
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
-        final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
         final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, TrustType.BUILDER, true);
         if (result == Tristate.FALSE) {
             if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player, TrustType.BUILDER, true) == Tristate.TRUE) {
@@ -1763,7 +1763,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        GPClaim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location, false);
+        GPClaim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location);
         final TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
         if (GPFlags.INTERACT_BLOCK_SECONDARY && playerData != null) {
             final TrustType trustType = (tileEntity != null && tileEntity instanceof IInventory) ? TrustType.CONTAINER : TrustType.ACCESSOR;
@@ -2111,8 +2111,8 @@ public class PlayerEventHandler {
                         new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), newx2, newy2, newz2), ClaimType.BASIC, oldClaim.isCuboid());
                 }
                 // if the new claim is smaller
-                if (!newClaim.contains(oldClaim.getLesserBoundaryCorner(), true, false)
-                        || !newClaim.contains(oldClaim.getGreaterBoundaryCorner(), true, false)) {
+                if (!newClaim.contains(oldClaim.getLesserBoundaryCorner())
+                        || !newClaim.contains(oldClaim.getGreaterBoundaryCorner())) {
                     smaller = true;
 
                     // remove surface fluids about to be unclaimed
@@ -2224,7 +2224,7 @@ public class PlayerEventHandler {
         // otherwise, since not currently resizing a claim, must be starting
         // a resize, creating a new claim, town, or creating a subdivision
 
-        GPClaim claim = this.dataStore.getClaimAt(location, true);
+        GPClaim claim = this.dataStore.getClaimAt(location);
         // if within an existing claim, he's not creating a new one
         if (!claim.isWilderness()) {
             // if the player has permission to edit the claim or subdivision
@@ -2664,7 +2664,7 @@ public class PlayerEventHandler {
         while (blockRay.hasNext()) {
             BlockRayHit<World> blockRayHit = blockRay.next();
             Location<World> location = blockRayHit.getLocation();
-            claim = this.dataStore.getClaimAt(location, false, null);
+            claim = this.dataStore.getClaimAt(location);
             if (claim != null && !claim.isWilderness() && (playerData.visualBlocks == null || (claim.id != playerData.visualClaimId))) {
                 playerData.lastValidInspectLocation = location;
                 return claim;

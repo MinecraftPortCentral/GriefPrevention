@@ -49,17 +49,11 @@ public interface ClaimManager {
     /**
      * Gets the {@link Claim} at specified {@link Location}.
      * 
-     * Note: If ignoreHeight is true, this means that a location
-     * under an existing claim will return the claim. This also
-     * assumes that the claim does not extend to bedrock. This should
-     * always be set to false for cuboid claims.
-     * 
      * @param location The starting location to check
-     * @param ignoreHeight Whether to ignore Y-axis while checking under claim.
      * @return The claim if available, otherwise returns the wilderness claim
      * if none were found.
      */
-    Claim getClaimAt(Location<World> location, boolean ignoreHeight);
+    Claim getClaimAt(Location<World> location);
 
     /**
      * Gets the {@link Claim} with specified {@link UUID}.

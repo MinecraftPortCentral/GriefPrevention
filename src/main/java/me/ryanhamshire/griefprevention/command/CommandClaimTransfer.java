@@ -40,7 +40,7 @@ public class CommandClaimTransfer implements CommandExecutor {
 
         // which claim is the user in?
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), true);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         UUID ownerId = claim.getOwnerUniqueId();
 
         if (claim == null || claim.isWilderness()) {

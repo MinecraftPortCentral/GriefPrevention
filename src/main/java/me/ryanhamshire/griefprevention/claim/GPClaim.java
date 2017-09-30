@@ -452,7 +452,7 @@ public class GPClaim implements Claim {
                 for (int y = seaLevel - 1; y <= lesser.getExtent().getDimension().getBuildHeight(); y++) {
                     // dodge the exclusion claim
                     BlockSnapshot block = lesser.getExtent().createSnapshot(x, y, z);
-                    if (exclusionClaim != null && exclusionClaim.contains(block.getLocation().get(), true, false)) {
+                    if (exclusionClaim != null && exclusionClaim.contains(block.getLocation().get(), false)) {
                         continue;
                     }
 
@@ -610,21 +610,16 @@ public class GPClaim implements Claim {
         return Text.of(this.getOwnerPlayerData().getPlayerName());
     }
 
-    // whether or not a location is in a claim
-    // ignoreHeight = true means location UNDER the claim will return TRUE
-    // excludeChildren = true means that locations inside subdivisions of the claim will return FALSE
     @Override
-    public boolean contains(Location<World> location, boolean ignoreHeight, boolean excludeChildren) {
-        if (this.isCuboid()) {
-            return this.contains(location);
-        }
-
+    public boolean contains(Location<World> location, boolean excludeChildren) {
         int x = location.getBlockX();
         int y = location.getBlockY();
         int z = location.getBlockZ();
 
         // main check
-        boolean inClaim = (ignoreHeight || y >= this.lesserBoundaryCorner.getY()) &&
+        boolean inClaim = (
+                y >= this.lesserBoundaryCorner.getBlockY()) &&
+                y < this.greaterBoundaryCorner.getBlockY() + 1 &&
                 x >= this.lesserBoundaryCorner.getBlockX() &&
                 x < this.greaterBoundaryCorner.getBlockX() + 1 &&
                 z >= this.lesserBoundaryCorner.getBlockZ() &&
@@ -637,8 +632,8 @@ public class GPClaim implements Claim {
         // additional check for children claims, you're only in a child claim when you're also in its parent claim
         // NOTE: if a player creates children then resizes the parent claim,
         // it's possible that a child can reach outside of its parent's boundaries. so this check is important!
-        if (this.parent != null && (this.getData() == null || (this.getData() != null && this.getData().doesInheritParent()))) {
-            return this.parent.contains(location, ignoreHeight, false);
+        if (!excludeChildren && this.parent != null && (this.getData() == null || (this.getData() != null && this.getData().doesInheritParent()))) {
+            return this.parent.contains(location, false);
         }
 
         return true;
@@ -660,23 +655,6 @@ public class GPClaim implements Claim {
         return result;
     }
 
-    // 3d cuboid check
-    public boolean contains(Location<World> location) {
-        int x = location.getBlockX();
-        int y = location.getBlockY();
-        int z = location.getBlockZ();
-
-        boolean inClaim = (
-                x >= this.lesserBoundaryCorner.getBlockX() &&
-                x <= this.greaterBoundaryCorner.getBlockX() &&
-                y >= this.lesserBoundaryCorner.getBlockY() &&
-                y <= this.greaterBoundaryCorner.getBlockY() &&
-                z >= this.lesserBoundaryCorner.getBlockZ() &&
-                z <= this.greaterBoundaryCorner.getBlockZ());
-
-        return inClaim;
-    }
-
     @Override
     public boolean overlaps(Claim other) {
         GPClaim otherClaim = (GPClaim) other;
@@ -690,7 +668,7 @@ public class GPClaim implements Claim {
         }
 
         //verify that no claim's lesser boundary point is inside this new claim, to cover the "existing claim is entirely inside new claim" case
-        if(this.contains(otherClaim.getLesserBoundaryCorner(), true, false)) {
+        if(this.contains(otherClaim.getLesserBoundaryCorner(), false)) {
             return true;
         }
 
@@ -710,18 +688,17 @@ public class GPClaim implements Claim {
         final int bigX = otherClaim.getGreaterBoundaryCorner().getBlockX();
         final int bigY = otherClaim.getGreaterBoundaryCorner().getBlockY();
         final int bigZ = otherClaim.getGreaterBoundaryCorner().getBlockZ();
-        final boolean ignoreHeight = otherClaim.isCuboid() ? false : true;
 
-        if(this.contains(otherClaim.lesserBoundaryCorner, ignoreHeight, false)) {
+        if(this.contains(otherClaim.lesserBoundaryCorner, false)) {
             return true;
         }
-        if(this.contains(otherClaim.greaterBoundaryCorner, ignoreHeight, false)) {
+        if(this.contains(otherClaim.greaterBoundaryCorner, false)) {
             return true;
         }
-        if(this.contains(new Location<World>(this.world, smallX, 0, bigZ), true, false)) {
+        if(this.contains(new Location<World>(this.world, smallX, 0, bigZ), false)) {
             return true;
         }
-        if(this.contains(new Location<World>(this.world, bigX, 0, smallZ), true, false)) {
+        if(this.contains(new Location<World>(this.world, bigX, 0, smallZ), false)) {
             return true;
         }
 
@@ -751,18 +728,15 @@ public class GPClaim implements Claim {
             inArea = true;
 
         if (inArea) {
-            if (this.cuboid && otherClaim.cuboid) {
-                // check height
-                if ((this.lesserBoundaryCorner.getBlockY() >= smallY &&
-                     this.lesserBoundaryCorner.getBlockY() <= bigY) ||
-                    (this.greaterBoundaryCorner.getBlockY() <= smallY &&
-                     this.greaterBoundaryCorner.getBlockY() >= smallY)) {
-                    return true;
-                }
-
-                return false;
+            // check height
+            if ((this.lesserBoundaryCorner.getBlockY() >= smallY &&
+                 this.lesserBoundaryCorner.getBlockY() <= bigY) ||
+                (this.greaterBoundaryCorner.getBlockY() <= smallY &&
+                 this.greaterBoundaryCorner.getBlockY() >= smallY)) {
+                return true;
             }
-            return true;
+
+            return false;
         }
 
         return false;
@@ -771,20 +745,17 @@ public class GPClaim implements Claim {
     @Override
     public boolean isInside(Claim claim) {
         final GPClaim otherClaim = (GPClaim) claim;
-        final boolean ignoreHeight = this.isCuboid() ? false : true;
-        if(!otherClaim.contains(this.lesserBoundaryCorner, ignoreHeight, false)) {
+        if(!otherClaim.contains(this.lesserBoundaryCorner)) {
             return false;
         }
-        if(!otherClaim.contains(this.greaterBoundaryCorner, ignoreHeight, false)) {
+        if(!otherClaim.contains(this.greaterBoundaryCorner)) {
             return false;
         }
 
-        final int lesserY = ignoreHeight ? 0 : this.lesserBoundaryCorner.getBlockY();
-        final int greaterY = ignoreHeight ? 0 : this.greaterBoundaryCorner.getBlockY();
-        if(!otherClaim.contains(new Location<World>(this.world, this.lesserBoundaryCorner.getBlockX(), lesserY, this.greaterBoundaryCorner.getBlockZ()), true, false)) {
+        if(!otherClaim.contains(new Location<World>(this.world, this.lesserBoundaryCorner.getBlockX(), this.lesserBoundaryCorner.getBlockY(), this.greaterBoundaryCorner.getBlockZ()))) {
             return false;
         }
-        if(!otherClaim.contains(new Location<World>(this.world, this.greaterBoundaryCorner.getBlockX(), greaterY, this.lesserBoundaryCorner.getBlockZ()), true, false)) {
+        if(!otherClaim.contains(new Location<World>(this.world, this.greaterBoundaryCorner.getBlockX(), this.greaterBoundaryCorner.getBlockY(), this.lesserBoundaryCorner.getBlockZ()))) {
             return false;
         }
 
@@ -813,6 +784,17 @@ public class GPClaim implements Claim {
         }
 
         return chunks;
+    }
+
+    public boolean canIgnoreHeight() {
+        if (this.isCuboid()) {
+            return false;
+        }
+        if (this.ownerPlayerData != null && (this.ownerPlayerData.getMinClaimLevel() > 0 || this.ownerPlayerData.getMaxClaimLevel() < 255)) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override

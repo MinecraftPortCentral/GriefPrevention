@@ -120,7 +120,7 @@ public class EntityEventHandler {
 
         GPTimings.ENTITY_EXPLOSION_PRE_EVENT.startTimingIfSync();
         Location<World> location = event.getExplosion().getLocation();
-        GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location, false, null);
+        GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location);
 
         User user = CauseContextHelper.getEventUser(event);
         Explosive explosive = null;
@@ -160,7 +160,7 @@ public class EntityEventHandler {
         GPClaim targetClaim = null;
         while (iterator.hasNext()) {
             Entity entity = iterator.next();
-            targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, targetClaim);
+            targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), targetClaim);
 
             if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, GPPermissions.ENTITY_DAMAGE, event.getCause().root(), entity, user) == Tristate.FALSE) {
                 iterator.remove();
@@ -188,7 +188,7 @@ public class EntityEventHandler {
 
             @Override
             public boolean test(Entity entity) {
-                targetClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, targetClaim);
+                targetClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), targetClaim);
                 if (targetClaim == null) {
                     return true;
                 }
@@ -269,7 +269,7 @@ public class EntityEventHandler {
             return false;
         }
 
-        GPClaim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), false, playerData != null ? playerData.lastClaim.get() : null);
+        GPClaim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), playerData != null ? playerData.lastClaim.get() : null);
         Tristate result = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, user, true);
         if (result == Tristate.FALSE) {
             return true;
@@ -366,7 +366,7 @@ public class EntityEventHandler {
                 }
 
                 // FEATURE: prevent players from engaging in PvP combat inside land claims (when it's disabled)
-                GPClaim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), false, attackerData.lastClaim.get());
+                GPClaim attackerClaim = this.dataStore.getClaimAt(attacker.getLocation(), attackerData.lastClaim.get());
                 if (!attackerData.canIgnoreClaim(attackerClaim)) {
                     try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                         Sponge.getCauseStackManager().pushCause(entityDamageSource);
@@ -384,7 +384,7 @@ public class EntityEventHandler {
                             }
                         }
 
-                        GPClaim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim.get());
+                        GPClaim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), defenderData.lastClaim.get());
                         if (defenderClaim != null && !defenderData.inPvpCombat(defender.getWorld()) && defenderClaim.protectPlayersInClaim()) {
                             defenderData.lastClaim = new WeakReference<>(defenderClaim);
                             GPAttackPlayerEvent
@@ -446,7 +446,7 @@ public class EntityEventHandler {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(defender.getWorld(), defender.getUniqueId());
-        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, defender.getLocation(), false);
+        GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, defender.getLocation());
         EntityDamageSource entityDamageSource = (EntityDamageSource) event.getCause().root();
 
         //if not in a pvp rules world, do nothing
@@ -479,8 +479,8 @@ public class EntityEventHandler {
 
         GPPlayerData defenderData = this.dataStore.getOrCreatePlayerData(defender.getWorld().getProperties(), defender.getUniqueId());
         GPPlayerData attackerData = this.dataStore.getOrCreatePlayerData(attacker.getWorld().getProperties(), attacker.getUniqueId());
-        GPClaim attackerClaim = this.dataStore.getClaimAtPlayer(attackerData, attacker.getLocation(), false);
-        GPClaim defenderClaim = this.dataStore.getClaimAtPlayer(defenderData, defender.getLocation(), false);
+        GPClaim attackerClaim = this.dataStore.getClaimAtPlayer(attackerData, attacker.getLocation());
+        GPClaim defenderClaim = this.dataStore.getClaimAtPlayer(defenderData, defender.getLocation());
 
         if (attacker != defender) {
             long now = Calendar.getInstance().getTimeInMillis();
@@ -582,8 +582,8 @@ public class EntityEventHandler {
 
         if (player == null && owner == null) {
             // Handle border event without player
-            GPClaim fromClaim = this.dataStore.getClaimAt(fromLocation, false, null);
-            GPClaim toClaim = this.dataStore.getClaimAt(toLocation, false, null);
+            GPClaim fromClaim = this.dataStore.getClaimAt(fromLocation);
+            GPClaim toClaim = this.dataStore.getClaimAt(toLocation);
             if (fromClaim != toClaim) {
                 GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim);
                 Sponge.getEventManager().post(gpEvent);
@@ -772,9 +772,9 @@ public class EntityEventHandler {
             // Reset interact cache to avoid players attempting to bypass protection
             playerData.lastInteractItemBlockResult = Tristate.UNDEFINED;
             playerData.lastInteractItemEntityResult = Tristate.UNDEFINED;
-            sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+            sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         } else {
-            sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
+            sourceClaim = this.dataStore.getClaimAt(sourceLocation);
         }
 
         if (sourceClaim != null) {
@@ -808,7 +808,7 @@ public class EntityEventHandler {
         }
 
         final Location<World> destination = event.getToTransform().getLocation();
-        final GPClaim toClaim = this.dataStore.getClaimAt(destination, false, null);
+        final GPClaim toClaim = this.dataStore.getClaimAt(destination);
         if (toClaim != null) {
             if (GPFlags.ENTITY_TELEPORT_TO && GPPermissionHandler.getClaimPermission(event, destination, toClaim, GPPermissions.ENTITY_TELEPORT_TO, type, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                 boolean cancelled = true;
@@ -905,7 +905,7 @@ public class EntityEventHandler {
                         return false;
                     }
 
-                    final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false);
+                    final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation());
                     if (claim.isWilderness()) {
                         return true;
                     }
@@ -936,7 +936,7 @@ public class EntityEventHandler {
         Location<World> impactPoint = event.getImpactPoint();
         GPClaim targetClaim = null;
         for (Entity entity : event.getEntities()) {
-            targetClaim = this.dataStore.getClaimAt(impactPoint, false, targetClaim);
+            targetClaim = this.dataStore.getClaimAt(impactPoint, targetClaim);
             final Tristate result = GPPermissionHandler.getClaimPermission(event, impactPoint, targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, source, entity, user, TrustType.ACCESSOR, true);
             if (result == Tristate.FALSE) {
                 if (GPPermissionHandler.getClaimPermission(event, impactPoint, targetClaim, GPPermissions.PROJECTILE_IMPACT_ENTITY, source, entity, user) == Tristate.TRUE) {

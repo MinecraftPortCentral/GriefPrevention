@@ -119,7 +119,7 @@ public class CommandClaimFlag extends ClaimFlagBase implements CommandExecutor {
         this.subject = GriefPreventionPlugin.GLOBAL_SUBJECT;
         this.friendlySubjectName = "ALL";
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         if (claim != null) {
             if (flag == null && value == null && src.hasPermission(GPPermissions.COMMAND_LIST_CLAIM_FLAGS)) {
                 showFlagPermissions(src, claim, FlagType.ALL, source);

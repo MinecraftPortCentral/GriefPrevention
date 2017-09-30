@@ -131,7 +131,7 @@ public class BlockEventHandler {
                 return;
             }
     
-            GPClaim sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, null);
+            GPClaim sourceClaim = this.dataStore.getClaimAt(sourceLocation);
             GPClaim targetClaim = null;
             List<Location<World>> sourceLocations = event.getLocations();
             if (pistonExtend) {
@@ -143,7 +143,7 @@ public class BlockEventHandler {
                 sourceLocations.add(dirLoc);
             }
             for (Location<World> location : sourceLocations) {
-                targetClaim = this.dataStore.getClaimAt(location, false, targetClaim);
+                targetClaim = this.dataStore.getClaimAt(location, targetClaim);
 
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -178,7 +178,7 @@ public class BlockEventHandler {
             GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(event.getLocations().get(0).getExtent(), user.getUniqueId());
             GPClaim targetClaim = null;
             for (Location<World> location : event.getLocations()) {
-                targetClaim = this.dataStore.getClaimAt(location, false, targetClaim);
+                targetClaim = this.dataStore.getClaimAt(location, targetClaim);
 
                 if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -239,10 +239,10 @@ public class BlockEventHandler {
 
             sourceLocation = player.getLocation();
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-            sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+            sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         } else {
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(sourceLocation.getExtent(), user.getUniqueId());
-            sourceClaim = this.dataStore.getClaimAt(sourceLocation, false, playerData.lastClaim.get());
+            sourceClaim = this.dataStore.getClaimAt(sourceLocation, playerData.lastClaim.get());
         }
 
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
@@ -256,7 +256,7 @@ public class BlockEventHandler {
             Direction direction = iterator.next();
             Location<World> location = sourceLocation.getBlockRelative(direction);
             Vector3i pos = location.getBlockPosition();
-            targetClaim = this.dataStore.getClaimAt(location, false, targetClaim);
+            targetClaim = this.dataStore.getClaimAt(location, targetClaim);
             if (sourceClaim.isWilderness() && targetClaim.isWilderness()) {
                 if (playerData != null) {
                     playerData.setLastInteractData(targetClaim);
@@ -351,9 +351,9 @@ public class BlockEventHandler {
         GPClaim targetClaim = null;
         if (user instanceof Player) {
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(event.getTargetLocation().getExtent(), user.getUniqueId());
-            targetClaim = this.dataStore.getClaimAtPlayer(playerData, event.getTargetLocation(), false);
+            targetClaim = this.dataStore.getClaimAtPlayer(playerData, event.getTargetLocation());
         } else {
-            targetClaim = this.dataStore.getClaimAt(event.getTargetLocation(), false, null);
+            targetClaim = this.dataStore.getClaimAt(event.getTargetLocation());
         }
 
         Tristate result = GPPermissionHandler.getFlagOverride(event, event.getTargetLocation(), targetClaim, GPPermissions.ENTITY_COLLIDE_BLOCK, source, event.getTargetBlock(), user, playerData, true);
@@ -437,9 +437,9 @@ public class BlockEventHandler {
         GPPlayerData playerData = null;
         if (user instanceof Player) {
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(event.getTargetLocation().getExtent(), user.getUniqueId());
-            targetClaim = this.dataStore.getClaimAtPlayer(playerData, impactPoint, false);
+            targetClaim = this.dataStore.getClaimAtPlayer(playerData, impactPoint);
         } else {
-            targetClaim = this.dataStore.getClaimAt(impactPoint, false, null);
+            targetClaim = this.dataStore.getClaimAt(impactPoint);
         }
 
         Tristate result = GPPermissionHandler.getClaimPermission(event, impactPoint, targetClaim, GPPermissions.PROJECTILE_IMPACT_BLOCK, source, event.getTargetBlock(), user, TrustType.ACCESSOR, true);
@@ -470,7 +470,7 @@ public class BlockEventHandler {
                 continue;
             }
 
-            targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), false, targetClaim);
+            targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), targetClaim);
             if (GPFlags.EXPLOSION_SURFACE && location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot, user, true) == Tristate.FALSE) {
                 event.setCancelled(true);
                 GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
@@ -512,9 +512,9 @@ public class BlockEventHandler {
             locatable = (LocatableBlock) source;
             if (user != null && user instanceof Player) {
                 final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(locatable.getWorld(), user.getUniqueId());
-                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), false, playerData.lastClaim.get());
+                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), playerData.lastClaim.get());
             } else {
-                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), false, null);
+                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation());
             }
         } else {
             sourceClaim = this.getSourceClaim(event.getCause());
@@ -528,7 +528,7 @@ public class BlockEventHandler {
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : transactions) {
             Location<World> location = transaction.getOriginal().getLocation().orElse(null);
-            targetClaim = this.dataStore.getClaimAt(location, false, targetClaim);
+            targetClaim = this.dataStore.getClaimAt(location, targetClaim);
             if (locatable != null && targetClaim.isWilderness()) {
                 continue;
             }
@@ -568,9 +568,9 @@ public class BlockEventHandler {
             locatable = (LocatableBlock) source;
             if (user != null && user instanceof Player) {
                 final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(locatable.getWorld(), user.getUniqueId());
-                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), false, playerData.lastClaim.get());
+                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), playerData.lastClaim.get());
             } else {
-                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), false, null);
+                sourceClaim = this.dataStore.getClaimAt(locatable.getLocation());
             }
         } else {
             sourceClaim = this.getSourceClaim(event.getCause());
@@ -600,7 +600,7 @@ public class BlockEventHandler {
                 continue;
             }
 
-            targetClaim = this.dataStore.getClaimAt(location, false, targetClaim);
+            targetClaim = this.dataStore.getClaimAt(location, targetClaim);
             if (locatable != null && targetClaim.isWilderness()) {
                 continue;
             }
@@ -714,7 +714,7 @@ public class BlockEventHandler {
                             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimAutomaticNotification.toText());
 
                             // show the player the protected area
-                            GPClaim newClaim = this.dataStore.getClaimAt(block.getLocation().get(), false, null);
+                            GPClaim newClaim = this.dataStore.getClaimAt(block.getLocation().get());
                             Visualization visualization = new Visualization(newClaim, VisualizationType.CLAIM);
                             visualization.createClaimBlockVisuals(block.getPosition().getY(), player.getLocation(), playerData);
                             visualization.apply(player);
@@ -750,7 +750,7 @@ public class BlockEventHandler {
         GPTimings.SIGN_CHANGE_EVENT.startTimingIfSync();
         Location<World> location = event.getTargetTile().getLocation();
         // Prevent users exploiting signs
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location, false, null);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location);
         if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_SECONDARY, user, location.getBlock(), user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
             if (user instanceof Player) {
                 event.setCancelled(true);
@@ -820,18 +820,18 @@ public class BlockEventHandler {
 
         GPClaim sourceClaim = null;
         if (blockSource != null) {
-            sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get(), false, null);
+            sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get());
         } else if (entitySource != null) {
             Entity entity = entitySource;
             if (entity instanceof Player) {
                 Player player = (Player) entity;
                 GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-                sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+                sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation());
             } else {
-                sourceClaim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
+                sourceClaim = this.dataStore.getClaimAt(entity.getLocation());
             }
         } else if (locatableBlock != null) {
-            sourceClaim = this.dataStore.getClaimAt(locatableBlock.getLocation(), false, null);
+            sourceClaim = this.dataStore.getClaimAt(locatableBlock.getLocation());
         }
 
         return sourceClaim;
