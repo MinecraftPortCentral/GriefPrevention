@@ -30,6 +30,7 @@ import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -181,17 +182,12 @@ public class BlockUtils {
         return meta;
     }
 
-    public static int getBlockArea(World world, Vector3i lesser, Vector3i greater, boolean cuboid) {
+    public static int getClaimBlockCost(World world, Vector3i lesser, Vector3i greater, boolean cuboid) {
         final int claimWidth = greater.getX() - lesser.getX() + 1;
+        final int claimHeight = greater.getY() - lesser.getY() + 1;
         final int claimLength = greater.getZ() - lesser.getZ() + 1;
-        if (!GriefPreventionPlugin.wildernessCuboids) {
+        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) {
             return claimWidth * claimLength;
-        }
-
-        // 2D claims are always 256 in height
-        int claimHeight = 256;
-        if (cuboid) {
-            claimHeight = greater.getY() - lesser.getY() + 1;
         }
 
         return claimLength * claimWidth * claimHeight;

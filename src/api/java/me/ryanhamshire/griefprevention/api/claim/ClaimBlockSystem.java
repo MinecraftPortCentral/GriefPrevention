@@ -22,35 +22,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.api.event;
+package me.ryanhamshire.griefprevention.api.claim;
 
-import me.ryanhamshire.griefprevention.api.claim.Claim;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
-
-public interface ResizeClaimEvent extends ClaimEvent {
+public enum ClaimBlockSystem {
 
     /**
-     * The start corner location for resize.
-     * 
-     * @return The start location
+     * Uses {@link Claim#getArea()} to determine the cost of a claim.
+     * Note: This only accounts for x and z.
      */
-    Location<World> getStartCorner();
-
+    AREA,
     /**
-     * The end corner location to resize to.
-     * 
-     * @return The end corner location
+     * Uses {@link Claim#getVolume()} to determine the cost of a claim.
+     * Note: This accounts for x, y, and z.
      */
-    Location<World> getEndCorner();
-
-    /**
-     * The attempted resized claim.
-     * 
-     * Note: The original claim is only resized if event isn't cancelled.
-     * This claim just represents a temporary one before final checks.
-     * 
-     * @return The resized claim
-     */
-    Claim getResizedClaim();
+    VOLUME
 }

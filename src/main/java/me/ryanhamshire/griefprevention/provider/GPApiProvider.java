@@ -30,6 +30,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.Claim.Builder;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
@@ -47,7 +48,7 @@ import java.util.UUID;
 
 public class GPApiProvider implements GriefPreventionApi {
 
-    public static final double API_VERSION = 0.7;
+    public static final double API_VERSION = 0.8;
 
     public GPApiProvider() {
     }
@@ -68,8 +69,8 @@ public class GPApiProvider implements GriefPreventionApi {
     }
 
     @Override
-    public boolean isWildernessCuboidsEnabled() {
-        return GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.wildernessCuboids;
+    public ClaimBlockSystem getClaimBlockSystem() {
+        return GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.claimBlockSystem;
     }
 
     @Override

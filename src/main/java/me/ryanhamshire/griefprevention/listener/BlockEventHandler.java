@@ -665,8 +665,12 @@ public class BlockEventHandler {
                 // FEATURE: automatically create a claim when a player who has no claims
                 // places a chest otherwise if there's no claim, the player is placing a chest, and new player automatic claims are enabled
                 // if the chest is too deep underground, don't create the claim and explain why
-                if (block.getPosition().getY() < activeConfig.getConfig().claim.maxClaimDepth) {
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChestTooDeep.toText());
+                if (block.getPosition().getY() < playerData.getMinClaimLevel() || block.getPosition().getY() > playerData.getMaxClaimLevel()) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimChestOutsideLevel
+                            .apply(ImmutableMap.of(
+                            "min-claim-level", playerData.getMinClaimLevel(),
+                            "max-claim-level", playerData.getMaxClaimLevel())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
                     GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
                     return;
                 }

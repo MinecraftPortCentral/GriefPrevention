@@ -22,37 +22,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.ryanhamshire.griefprevention.event;
+package me.ryanhamshire.griefprevention.api.event;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
-import me.ryanhamshire.griefprevention.api.event.ResizeClaimEvent;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-public class GPResizeClaimEvent extends GPClaimEvent implements ResizeClaimEvent {
+/**
+ * An event that is fired before a {@link Claim} is changed.
+ * 
+ * Note: Canceling this event will prevent claim change.
+ */
+public interface ChangeClaimEvent extends ClaimEvent {
 
-    private Claim resizedClaim;
-    private Location<World> startCorner;
-    private Location<World> endCorner;
-
-    public GPResizeClaimEvent(Claim claim, Location<World> startCorner, Location<World> endCorner, Claim resizedClaim) {
-        super(claim);
-        this.resizedClaim = resizedClaim;
+    interface Type extends ChangeClaimEvent {
+        /**
+         * Gets the original {@link ClaimType}.
+         * 
+         * @return The original claim type
+         */
+        ClaimType getOriginalType();
+    
+        /**
+         * Gets the new {@link ClaimType}.
+         * 
+         * @return The new claim type
+         */
+        ClaimType getType();
     }
 
-    @Override
-    public Location<World> getStartCorner() {
-        return this.startCorner;
-    }
+    interface Resize extends ChangeClaimEvent {
+        /**
+         * The start corner location for resize.
+         * 
+         * @return The start location
+         */
+        Location<World> getStartCorner();
 
-    @Override
-    public Location<World> getEndCorner() {
-        return this.endCorner;
-    }
+        /**
+         * The end corner location to resize to.
+         * 
+         * @return The end corner location
+         */
+        Location<World> getEndCorner();
 
-    @Override
-    public Claim getResizedClaim() {
-        return this.resizedClaim;
+        /**
+         * The attempted resized claim.
+         * 
+         * Note: The original claim is only resized if event isn't cancelled.
+         * This claim just represents a temporary one before final checks.
+         * 
+         * @return The resized claim
+         */
+        Claim getResizedClaim();
     }
-
 }

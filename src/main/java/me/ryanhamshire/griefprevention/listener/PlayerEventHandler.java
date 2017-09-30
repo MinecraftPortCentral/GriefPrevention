@@ -38,6 +38,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.IpBanInfo;
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
@@ -1626,7 +1627,7 @@ public class PlayerEventHandler {
                 }
 
                 // tell him how many claim blocks he has available
-                if (GriefPreventionPlugin.wildernessCuboids) {
+                if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME) {
                     final Text message = GriefPreventionPlugin.instance.messageData.playerRemainingBlocks3d
                             .apply(ImmutableMap.of(
                             "remaining-chunks", playerData.getRemainingChunks(),
@@ -2159,7 +2160,7 @@ public class PlayerEventHandler {
                     playerData.lastShovelLocation = null;
                     playerData.endShovelLocation = null;
                     // inform about success, visualize, communicate remaining blocks available
-                    if (GriefPreventionPlugin.wildernessCuboids) {
+                    if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME) {
                         final double claimableChunks = claimBlocksRemaining / 65536.0;
                         final Map<String, ?> params = ImmutableMap.of(
                                 "remaining-chunks", Math.round(claimableChunks * 100.0)/100.0, 
@@ -2224,18 +2225,6 @@ public class PlayerEventHandler {
         // a resize, creating a new claim, town, or creating a subdivision
 
         GPClaim claim = this.dataStore.getClaimAt(location, true);
-        // check if cuboids are allowed
-        if (!GriefPreventionPlugin.wildernessCuboids && playerData.getClaimCreateMode() == 1) {
-            if ((claim.isWilderness() && playerData.shovelMode != ShovelMode.Admin) 
-                    || (!claim.isWilderness() && !playerData.canIgnoreClaim(claim) && !player.getUniqueId().equals(claim.getOwnerUniqueId()))) {
-                playerData.lastShovelLocation = null;
-                playerData.claimSubdividing = null;
-                playerData.claimResizing = null;
-                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateCuboidDisabled.toText());
-                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                return;
-            }
-        }
         // if within an existing claim, he's not creating a new one
         if (!claim.isWilderness()) {
             // if the player has permission to edit the claim or subdivision
@@ -2312,6 +2301,23 @@ public class PlayerEventHandler {
                     }
                     // if it's the first click, he's trying to start a new subdivision
                     if (playerData.lastShovelLocation == null) {
+                        if (playerData.shovelMode != ShovelMode.Admin && location.getBlockY() < playerData.getMinClaimLevel()) {
+                            final Text message = GriefPreventionPlugin.instance.messageData.claimBelowLevel
+                                    .apply(ImmutableMap.of(
+                                    "claim-level", playerData.getMinClaimLevel())).build();
+                            GriefPreventionPlugin.sendMessage(player, message);
+                            GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                            return;
+                        }
+                        if (playerData.shovelMode != ShovelMode.Admin && location.getBlockY() > playerData.getMaxClaimLevel()) {
+                            final Text message = GriefPreventionPlugin.instance.messageData.claimAboveLevel
+                                    .apply(ImmutableMap.of(
+                                    "claim-level", playerData.getMaxClaimLevel())).build();
+                            GriefPreventionPlugin.sendMessage(player, message);
+                            GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                            return;
+                        }
+
                         // if the clicked claim was a subdivision, tell him
                         // he can't start a new subdivision here
                         if (claim.isSubdivision()) {
@@ -2352,10 +2358,10 @@ public class PlayerEventHandler {
                         }
 
                         Vector3i lesserBoundaryCorner = new Vector3i(playerData.lastShovelLocation.getBlockX(), 
-                                playerData.optionClaimCreateMode == 1 ? playerData.lastShovelLocation.getBlockY() : 0,
+                                playerData.optionClaimCreateMode == 1 ? playerData.lastShovelLocation.getBlockY() : playerData.getMinClaimLevel(),
                                 playerData.lastShovelLocation.getBlockZ());
                         Vector3i greaterBoundaryCorner = new Vector3i(location.getBlockX(), 
-                                playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
+                                playerData.optionClaimCreateMode == 1 ? location.getBlockY() : playerData.getMaxClaimLevel(),
                                         location.getBlockZ());
 
                         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
@@ -2463,6 +2469,23 @@ public class PlayerEventHandler {
                 }
             }
 
+            if (playerData.shovelMode != ShovelMode.Admin && location.getBlockY() < playerData.getMinClaimLevel()) {
+                final Text message = GriefPreventionPlugin.instance.messageData.claimBelowLevel
+                        .apply(ImmutableMap.of(
+                        "claim-level", playerData.getMinClaimLevel())).build();
+                GriefPreventionPlugin.sendMessage(player, message);
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
+            if (playerData.shovelMode != ShovelMode.Admin && location.getBlockY() > playerData.getMaxClaimLevel()) {
+                final Text message = GriefPreventionPlugin.instance.messageData.claimAboveLevel
+                        .apply(ImmutableMap.of(
+                        "claim-level", playerData.getMaxClaimLevel())).build();
+                GriefPreventionPlugin.sendMessage(player, message);
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
+
             playerData.revertActiveVisual(player);
             // remember it, and start him on the new claim
             playerData.lastShovelLocation = location;
@@ -2500,11 +2523,11 @@ public class PlayerEventHandler {
             final boolean cuboid = playerData.optionClaimCreateMode == 1;
             Vector3i lesserBoundary = new Vector3i(
                     lastShovelLocation.getBlockX(),
-                    cuboid ? lastShovelLocation.getBlockY() : 0,
+                    cuboid ? lastShovelLocation.getBlockY() : playerData.getMinClaimLevel(),
                     lastShovelLocation.getBlockZ());
             Vector3i greaterBoundary = new Vector3i(
                     location.getBlockX(),
-                    cuboid ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1,
+                    cuboid ? location.getBlockY() : playerData.getMaxClaimLevel(),
                     location.getBlockZ());
             // try to create a new claim
             ClaimResult result = this.dataStore.createClaim(

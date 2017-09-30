@@ -43,10 +43,6 @@ public class ClaimCategory extends ConfigCategory {
     public boolean deliverManuals = false;
     @Setting(value = "auto-nature-restore", comment = "Whether survival claims will be automatically restored to nature when auto-deleted.")
     public boolean claimAutoNatureRestore = false;
-    @Setting(value = "extend-into-ground-distance", comment = "How far below the shoveled block a new claim will reach. Set to 255 if you want to always extend to bedrock.")
-    public int extendIntoGroundDistance = 255;
-    @Setting(value = "claim-max-depth", comment = "Limit on how deep claims can go.")
-    public int maxClaimDepth = 0;
     @Setting(value = "investigation-tool", comment = "The item used to investigate claims with a right-click.")
     public String investigationTool = "minecraft:stick";
     @Setting(value = "modification-tool", comment = "The item used to create/resize claims with a right click.")

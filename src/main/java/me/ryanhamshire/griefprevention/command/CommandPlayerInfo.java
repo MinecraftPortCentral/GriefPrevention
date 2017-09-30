@@ -29,6 +29,7 @@ import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
@@ -110,56 +111,60 @@ public class CommandPlayerInfo implements CommandExecutor {
         Text claimTaxRate = Text.of(
                 TextColors.GRAY, "BASIC", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateBasic, 
                 TextColors.GRAY, " SUB", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateSubdivision);
-        Text currentClaimTaxRate = Text.of(TextColors.YELLOW, "Current Claim Tax Rate", TextColors.WHITE, " : ", TextColors.RED, "N/A");
+        Text currentTaxRateText = Text.of(TextColors.YELLOW, "Current Claim Tax Rate", TextColors.WHITE, " : ", TextColors.RED, "N/A");
         if (src instanceof Player) {
             Player player = (Player) src;
             if (player.getUniqueId().equals(user.getUniqueId())) {
                 final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
                 if (claim != null && !claim.isWilderness()) {
                     final double playerTaxRate = GPOptionHandler.getClaimOptionDouble(user, claim, GPOptions.Type.TAX_RATE, playerData);
-                    currentClaimTaxRate = Text.of(
+                    currentTaxRateText = Text.of(
                             TextColors.YELLOW, "Current Claim Tax Rate", TextColors.WHITE, " : ",
                             TextColors.GREEN, playerTaxRate);
                 }
             }
         }
         final Text WHITE_SEMI_COLON = Text.of(TextColors.WHITE, " : ");
-        final double claimableChunks = GriefPreventionPlugin.wildernessCuboids ? (playerData.getRemainingClaimBlocks() / 65536.0) : (playerData.getRemainingClaimBlocks() / 256.0);
-        List<Text> claimsTextList = Lists.newArrayList();
-        if (GriefPreventionPlugin.getGlobalConfig().getConfig().claim.bankTaxSystem) {
-            claimsTextList.add(Text.of(
-                    TextColors.YELLOW, "UUID", WHITE_SEMI_COLON, TextColors.GRAY, user.getUniqueId(), "\n",
-                    TextColors.YELLOW, "World", WHITE_SEMI_COLON, TextColors.GRAY, worldProperties.getWorldName(), "\n",
-                    TextColors.YELLOW, "Claim Size Limits", WHITE_SEMI_COLON, claimSizeLimit, "\n",
-                    TextColors.YELLOW, "Initial Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
-                    TextColors.YELLOW, "Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
-                    TextColors.YELLOW, "Max Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionMaxAccruedBlocks, "\n",
-                    TextColors.YELLOW, "Bonus Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getBonusClaimBlocks(), "\n",
-                    TextColors.YELLOW, "Remaining Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getRemainingClaimBlocks(), "\n", 
-                    TextColors.YELLOW, "Abandoned Return Ratio", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAbandonedReturnRatio(), "\n",
-                    TextColors.YELLOW, "Global Town Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, townTaxRate, "\n",
-                    TextColors.YELLOW, "Global Claim Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, claimTaxRate, "\n",
-                    currentClaimTaxRate, "\n",
-                    TextColors.YELLOW, "Total Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks + playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks(), "\n",
-                    TextColors.YELLOW, "Total Claimable Chunks", WHITE_SEMI_COLON, TextColors.GREEN, Math.round(claimableChunks * 100.0)/100.0, "\n",
-                    TextColors.YELLOW, "Total Claims", WHITE_SEMI_COLON, TextColors.GREEN, claimList.size(), "\n",
-                    TextColors.YELLOW, "Total Tax", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getTotalTax()));
-        } else {
-            claimsTextList.add(Text.of(
-                    TextColors.YELLOW, "UUID", WHITE_SEMI_COLON, TextColors.GRAY, user.getUniqueId(), "\n",
-                    TextColors.YELLOW, "World", WHITE_SEMI_COLON, TextColors.GRAY, worldProperties.getWorldName(), "\n",
-                    TextColors.YELLOW, "Claim Size Limits", WHITE_SEMI_COLON, claimSizeLimit, "\n",
-                    TextColors.YELLOW, "Initial Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks, "\n",
-                    TextColors.YELLOW, "Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")", "\n",
-                    TextColors.YELLOW, "Max Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionMaxAccruedBlocks, "\n",
-                    TextColors.YELLOW, "Bonus Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getBonusClaimBlocks(), "\n",
-                    TextColors.YELLOW, "Remaining Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getRemainingClaimBlocks(), "\n", 
-                    TextColors.YELLOW, "Abandoned Return Ratio", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAbandonedReturnRatio(), "\n",
-                    TextColors.YELLOW, "Total Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks + playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks(), "\n",
-                    TextColors.YELLOW, "Total Claimable Chunks", WHITE_SEMI_COLON, TextColors.GREEN, Math.round(claimableChunks * 100.0)/100.0, "\n",
-                    TextColors.YELLOW, "Total Claims", WHITE_SEMI_COLON, TextColors.GREEN, claimList.size()));
-        }
+        final double claimableChunks = GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? (playerData.getRemainingClaimBlocks() / 65536.0) : (playerData.getRemainingClaimBlocks() / 256.0);
+        final Text uuidText = Text.of(TextColors.YELLOW, "UUID", WHITE_SEMI_COLON, TextColors.GRAY, user.getUniqueId());
+        final Text worldText = Text.of(TextColors.YELLOW, "World", WHITE_SEMI_COLON, TextColors.GRAY, worldProperties.getWorldName());
+        final Text sizeLimitText = Text.of(TextColors.YELLOW, "Claim Size Limits", WHITE_SEMI_COLON, claimSizeLimit);
+        final Text initialBlockText = Text.of(TextColors.YELLOW, "Initial Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks);
+        final Text accruedBlockText = Text.of(TextColors.YELLOW, "Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")");
+        final Text maxAccruedBlockText = Text.of(TextColors.YELLOW, "Max Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionMaxAccruedBlocks);
+        final Text bonusBlockText = Text.of(TextColors.YELLOW, "Bonus Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getBonusClaimBlocks());
+        final Text remainingBlockText = Text.of(TextColors.YELLOW, "Remaining Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getRemainingClaimBlocks());
+        final Text minLevelText = Text.of(TextColors.YELLOW, "Minimum Claim Level", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getMinClaimLevel());
+        final Text maxLevelText = Text.of(TextColors.YELLOW, "Maximum Claim Level", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getMaxClaimLevel());
+        final Text abandonRatioText = Text.of(TextColors.YELLOW, "Abandoned Return Ratio", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAbandonedReturnRatio());
+        final Text globalTownTaxText = Text.of(TextColors.YELLOW, "Global Town Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, townTaxRate);
+        final Text globalClaimTaxText = Text.of(TextColors.YELLOW, "Global Claim Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, claimTaxRate);
+        final Text totalTaxText = Text.of(TextColors.YELLOW, "Total Tax", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getTotalTax());
+        final Text totalBlockText = Text.of(TextColors.YELLOW, "Total Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks + playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks());
+        final Text totalClaimableChunkText = Text.of(TextColors.YELLOW, "Total Claimable Chunks", WHITE_SEMI_COLON, TextColors.GREEN, Math.round(claimableChunks * 100.0)/100.0);
+        final Text totalClaimText = Text.of(TextColors.YELLOW, "Total Claims", WHITE_SEMI_COLON, TextColors.GREEN, claimList.size());
 
+        List<Text> claimsTextList = Lists.newArrayList();
+        claimsTextList.add(uuidText);
+        claimsTextList.add(worldText);
+        claimsTextList.add(sizeLimitText);
+        claimsTextList.add(initialBlockText);
+        claimsTextList.add(accruedBlockText);
+        claimsTextList.add(maxAccruedBlockText);
+        claimsTextList.add(bonusBlockText);
+        claimsTextList.add(remainingBlockText);
+        claimsTextList.add(minLevelText);
+        claimsTextList.add(maxLevelText);
+        claimsTextList.add(abandonRatioText);
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().claim.bankTaxSystem) {
+            claimsTextList.add(currentTaxRateText);
+            claimsTextList.add(globalTownTaxText);
+            claimsTextList.add(globalClaimTaxText);
+            claimsTextList.add(totalTaxText);
+        }
+        claimsTextList.add(totalBlockText);
+        claimsTextList.add(totalClaimableChunkText);
+        claimsTextList.add(totalClaimText);
         JoinData joinData = user.getOrCreate(JoinData.class).orElse(null);
         if (joinData != null && joinData.lastPlayed().exists()) {
             Date lastActive = null;

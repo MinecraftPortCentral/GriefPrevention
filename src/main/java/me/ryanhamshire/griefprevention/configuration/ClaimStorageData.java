@@ -243,11 +243,8 @@ public class ClaimStorageData {
                         }
         
                         // instantiate
-                        GPClaim subdivision = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, ClaimType.SUBDIVISION, ownerID);
-                        subdivision.world = lesserBoundaryCorner.getExtent();
-                        subdivision.cuboid = claimData.isCuboid();
+                        GPClaim subdivision = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, ClaimType.SUBDIVISION, ownerID, claimData.isCuboid());
                         subdivision.parent = parent;
-                        subdivision.context = new Context("gp_claim", claimId.toString());
                         subdivision.setClaimStorage(claimStorage);
                         subdivision.setClaimData(claimData);
                         claimData.setParent(parent.id);

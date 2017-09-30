@@ -511,9 +511,6 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
 
     @Override
     public boolean requiresClaimBlocks() {
-        if (!GriefPreventionPlugin.wildernessCuboids && this.isCuboid) {
-            return false;
-        }
         return this.requiresClaimBlocks;
     }
 
