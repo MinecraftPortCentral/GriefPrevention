@@ -54,7 +54,7 @@ public class CommandClaimSpawn implements CommandExecutor {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         if (player.hasPermission(GPPermissions.COMMAND_CLAIM_SPAWN) && claim != null || playerData.canIgnoreClaim(claim)) {
             if (!claim.isUserTrusted(player, TrustType.ACCESSOR)) {
                 GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionAccess.toText());

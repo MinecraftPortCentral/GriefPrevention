@@ -442,21 +442,21 @@ public class GPClaimManager implements ClaimManager {
         this.worldProperties = null;
     }
 
-    public Claim getClaimAtPlayer(GPPlayerData playerData, Location<World> location, boolean ignoreHeight) {
-        return this.getClaimAt(location, ignoreHeight, (GPClaim) playerData.lastClaim.get());
+    public Claim getClaimAtPlayer(GPPlayerData playerData, Location<World> location) {
+        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get());
     }
 
     @Override
-    public Claim getClaimAt(Location<World> location, boolean ignoreHeight) {
-        return this.getClaimAt(location, ignoreHeight, null);
+    public Claim getClaimAt(Location<World> location) {
+        return this.getClaimAt(location, null);
     }
 
     // gets the claim at a specific location
     // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
-    public Claim getClaimAt(Location<World> location, boolean ignoreHeight,  GPClaim cachedClaim) {
+    public Claim getClaimAt(Location<World> location, GPClaim cachedClaim) {
         GPTimings.CLAIM_GETCLAIM.startTimingIfSync();
         // check cachedClaim guess first. if the location is inside it, we're done
-        if (cachedClaim != null && !cachedClaim.isWilderness() && cachedClaim.contains(location, ignoreHeight, true)) {
+        if (cachedClaim != null && !cachedClaim.isWilderness() && cachedClaim.contains(location, true)) {
             GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return cachedClaim;
         }
@@ -470,7 +470,7 @@ public class GPClaimManager implements ClaimManager {
         // TODO change to check deepest level and work its way up to root
         for (Claim claim : claimsInChunk) {
             final GPClaim gpClaim = (GPClaim) claim;
-            if (gpClaim.contains(location, gpClaim.isCuboid() ? false : ignoreHeight, false)) {
+            if (gpClaim.contains(location)) {
                 // when we find a top level claim, if the location is in one of its children,
                 // return the child claim, not the top level claim
                 for (int i = 0; i < gpClaim.children.size(); i++) {
@@ -480,18 +480,18 @@ public class GPClaimManager implements ClaimManager {
                         GPClaim innerChild = (GPClaim) child.children.get(j);
                         for (int k = 0; k < innerChild.children.size(); k++) {
                             Claim subChild = innerChild.children.get(k);
-                            if (subChild.contains(location, subChild.isCuboid() ? false : ignoreHeight, false)) {
+                            if (subChild.contains(location)) {
                                 GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                                 return subChild;
                             }
                         }
 
-                        if (innerChild.contains(location, innerChild.isCuboid() ? false : ignoreHeight, false)) {
+                        if (innerChild.contains(location)) {
                             GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                             return innerChild;
                         }
                     }
-                    if (child.contains(location, child.isCuboid() ? false : ignoreHeight, false)) {
+                    if (child.contains(location)) {
                         GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                         return child;
                     }

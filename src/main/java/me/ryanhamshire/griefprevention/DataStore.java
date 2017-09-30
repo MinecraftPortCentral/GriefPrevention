@@ -554,26 +554,18 @@ public abstract class DataStore {
     }
 
     public GPClaim getClaimAtPlayer(GPPlayerData playerData, Location<World> location) {
-        return this.getClaimAtPlayer(playerData, location, false);
-    }
-
-    public GPClaim getClaimAtPlayer(GPPlayerData playerData, Location<World> location, boolean ignoreHeight) {
         GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAtPlayer(playerData, location, ignoreHeight);
+        return (GPClaim) claimManager.getClaimAtPlayer(playerData, location);
     }
 
     public GPClaim getClaimAt(Location<World> location) {
-        return this.getClaimAt(location, false);
+        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
+        return (GPClaim) claimManager.getClaimAt(location, null);
     }
 
-    public GPClaim getClaimAt(Location<World> location, boolean ignoreHeight) {
+    public GPClaim getClaimAt(Location<World> location, GPClaim cachedClaim) {
         GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAt(location, ignoreHeight);
-    }
-
-    public GPClaim getClaimAt(Location<World> location, boolean ignoreHeight, GPClaim cachedClaim) {
-        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAt(location, ignoreHeight, cachedClaim);
+        return (GPClaim) claimManager.getClaimAt(location, cachedClaim);
     }
 
     public GPPlayerData getPlayerData(World world, UUID playerUniqueId) {

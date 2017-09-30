@@ -50,7 +50,7 @@ public class CommandClaimGreeting implements CommandExecutor {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         if (claim != null) {
             if (claim.allowEdit(player) != null) {
                 GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionEditClaim.toText());
