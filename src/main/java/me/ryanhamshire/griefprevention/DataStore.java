@@ -343,8 +343,13 @@ public abstract class DataStore {
     // extends a claim to a new depth
     // respects the max depth config variable
     public void extendClaim(GPClaim claim, int newDepth) {
-        if (newDepth < GriefPreventionPlugin.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth) {
-            newDepth = GriefPreventionPlugin.getActiveConfig(claim.world.getProperties()).getConfig().claim.maxClaimDepth;
+        final GPPlayerData playerData = claim.getOwnerPlayerData();
+        if (playerData == null) {
+            return;
+        }
+
+        if (newDepth < playerData.getMinClaimLevel()) {
+            newDepth = playerData.getMinClaimLevel();
         }
 
         if (claim.isSubdivision()) {

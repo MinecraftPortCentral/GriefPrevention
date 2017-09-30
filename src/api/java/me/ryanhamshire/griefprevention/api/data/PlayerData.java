@@ -62,19 +62,26 @@ public interface PlayerData {
     int getBlocksAccruedPerHour();
 
     /**
-     * Gets the maximum amount of claim blocks a player
+     * Gets the max amount of claim blocks a player
      * can hold.
      * 
-     * @return The maximum amount of claim blocks
+     * @return The max amount of claim blocks
      */
     int getMaxAccruedClaimBlocks();
+
+    /**
+     * Gets the max level for claim creation.
+     * 
+     * @return The max level
+     */
+    int getMaxClaimLevel();
 
     /**
      * Gets the max size limit of x, in blocks, for claim
      * creation.
      * 
      * @param type The claim type to check
-     * @return The maximum size of x for claim creation
+     * @return The max size of x
      */
     int getMaxClaimX(ClaimType type);
 
@@ -85,7 +92,7 @@ public interface PlayerData {
      * Note: This option is ignored for 2D claims.
      * 
      * @param type The claim type to check
-     * @return The maximum size of y for claim creation
+     * @return The max size of y
      */
     int getMaxClaimY(ClaimType type);
 
@@ -94,36 +101,43 @@ public interface PlayerData {
      * creation.
      * 
      * @param type The claim type to check
-     * @return The maximum size of z for claim creation
+     * @return The max size of z
      */
     int getMaxClaimZ(ClaimType type);
 
     /**
-     * Gets the min size limit of x, in blocks, for claim
+     * Gets the minimum level for claim creation.
+     * 
+     * @return The minimum level
+     */
+    int getMinClaimLevel();
+
+    /**
+     * Gets the minimum size limit of x, in blocks, for claim
      * creation.
      * 
      * @param type The claim type to check
-     * @return The minimum size of x for claim creation
+     * @return The minimum size of x
      */
     int getMinClaimX(ClaimType type);
 
     /**
-     * Gets the min size limit of y, in blocks, for claim
+     * Gets the minimum size limit of y, in blocks, for claim
      * creation.
      * 
      * Note: This option is ignored for 2D claims.
      * 
      * @param type The claim type to check
-     * @return The minimum size of y for claim creation
+     * @return The minimum size of y
      */
     int getMinClaimY(ClaimType type);
 
     /**
-     * Gets the min size limit of z, in blocks, for claim
+     * Gets the minimum size limit of z, in blocks, for claim
      * creation.
      * 
      * @param type The claim type to check
-     * @return The minimum size of z for claim creation
+     * @return The minimum size of z
      */
     int getMinClaimZ(ClaimType type);
 

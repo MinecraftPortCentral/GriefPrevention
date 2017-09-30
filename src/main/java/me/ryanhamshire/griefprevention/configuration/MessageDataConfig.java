@@ -141,8 +141,8 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-chest-full")
     public TextTemplate claimChestFull = TextTemplate.of(TextColors.RED, "This chest is full.");
 
-    @Setting("claim-chest-too-deep")
-    public TextTemplate claimChestTooDeep = TextTemplate.of(TextColors.RED, "This chest can't be protected because it's too deep underground. Consider moving it.");
+    @Setting("claim-chest-outside-level")
+    public TextTemplate claimChestOutsideLevel = TextTemplate.of(TextColors.RED, "This chest can't be protected as the position is outside your claim level limits of ", TextTemplate.arg("min-claim-level").color(TextColors.GREEN), " and ", TextTemplate.arg("max-claim-level").color(TextColors.GREEN), ". (/playerinfo)");
 
     @Setting("claim-children-warning")
     public TextTemplate claimChildrenWarning = TextTemplate.of("This claim includes child claims.  If you're sure you want to delete it, use /DeleteClaim again.");
@@ -290,6 +290,12 @@ public class MessageDataConfig extends ConfigCategory {
 
     @Setting("claim-tax-past-due")
     public TextTemplate claimTaxPastDue = TextTemplate.of(TextColors.RED, "You currently have a past due tax balance of ", TextColors.GOLD, TextTemplate.arg("balance_due"), TextColors.RED, " that must be paid by ", TextColors.AQUA, TextTemplate.arg("due_date"), TextColors.RED, ". Failure to pay off your tax balance will result in losing your property.");
+
+    @Setting("claim-above-level")
+    public TextTemplate claimAboveLevel = TextTemplate.of(TextColors.RED, "Unable to claim block as it is above your maximum claim level limit of ", TextTemplate.arg("claim-level").color(TextColors.GREEN), ". (/playerinfo)");
+
+    @Setting("claim-below-level")
+    public TextTemplate claimBelowLevel = TextTemplate.of(TextColors.RED, "Unable to claim block as it is below your minimum claim level limit of ", TextTemplate.arg("claim-level").color(TextColors.GREEN), ". (/playerinfo)");
 
     @Setting("claim-too-far")
     public TextTemplate claimTooFar = TextTemplate.of(TextColors.RED, "That's too far away.");

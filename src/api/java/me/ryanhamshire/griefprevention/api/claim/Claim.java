@@ -1013,6 +1013,14 @@ public interface Claim extends ContextSource {
         Builder bounds(Vector3i point1, Vector3i point2);
 
         /**
+         * Toggles whether this claim is cuboid
+         * 
+         * @param cuboid Whether claim is cuboid
+         * @return The builder
+         */
+        Builder cuboid(boolean cuboid);
+
+        /**
          * The owner of claim.
          * 
          * Note: {@link ClaimType#ADMIN} does not use owners.
@@ -1114,6 +1122,14 @@ public interface Claim extends ContextSource {
          * @param allowResize Whether claim can be resized.
          */
         Builder resizable(boolean allowResize);
+
+        /**
+         * Whether to check for min/max level restrictions.
+         * 
+         * @param checkLevel Whether to check for level restrictions.
+         * @return The builder
+         */
+        Builder levelRestrictions(boolean checkLevel);
 
         /**
          * Whether to check for min/max size restrictions.

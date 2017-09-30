@@ -25,32 +25,56 @@
 package me.ryanhamshire.griefprevention.api.event;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-public interface ResizeClaimEvent extends ClaimEvent {
+/**
+ * An event that is fired before a {@link Claim} is changed.
+ * 
+ * Note: Canceling this event will prevent claim change.
+ */
+public interface ChangeClaimEvent extends ClaimEvent {
 
-    /**
-     * The start corner location for resize.
-     * 
-     * @return The start location
-     */
-    Location<World> getStartCorner();
+    interface Type extends ChangeClaimEvent {
+        /**
+         * Gets the original {@link ClaimType}.
+         * 
+         * @return The original claim type
+         */
+        ClaimType getOriginalType();
+    
+        /**
+         * Gets the new {@link ClaimType}.
+         * 
+         * @return The new claim type
+         */
+        ClaimType getType();
+    }
 
-    /**
-     * The end corner location to resize to.
-     * 
-     * @return The end corner location
-     */
-    Location<World> getEndCorner();
+    interface Resize extends ChangeClaimEvent {
+        /**
+         * The start corner location for resize.
+         * 
+         * @return The start location
+         */
+        Location<World> getStartCorner();
 
-    /**
-     * The attempted resized claim.
-     * 
-     * Note: The original claim is only resized if event isn't cancelled.
-     * This claim just represents a temporary one before final checks.
-     * 
-     * @return The resized claim
-     */
-    Claim getResizedClaim();
+        /**
+         * The end corner location to resize to.
+         * 
+         * @return The end corner location
+         */
+        Location<World> getEndCorner();
+
+        /**
+         * The attempted resized claim.
+         * 
+         * Note: The original claim is only resized if event isn't cancelled.
+         * This claim just represents a temporary one before final checks.
+         * 
+         * @return The resized claim
+         */
+        Claim getResizedClaim();
+    }
 }

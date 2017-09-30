@@ -2,6 +2,7 @@ package me.ryanhamshire.griefprevention.permission;
 
 import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 
 import java.util.Map;
 
@@ -33,6 +34,7 @@ public class GPOptions {
     public static final String CREATE_CLAIM_LIMIT_TOWN = "griefprevention.create-claim-limit-town";
     public static final String INITIAL_CLAIM_BLOCKS = "griefprevention.initial-claim-blocks";
     public static final String MAX_ACCRUED_BLOCKS = "griefprevention.max-accrued-claim-blocks";
+    public static final String MAX_CLAIM_LEVEL = "griefprevention.max-claim-level";
     public static final String MAX_CLAIM_SIZE_BASIC_X = "griefprevention.max-claim-size-basic-x";
     public static final String MAX_CLAIM_SIZE_BASIC_Y = "griefprevention.max-claim-size-basic-y";
     public static final String MAX_CLAIM_SIZE_BASIC_Z = "griefprevention.max-claim-size-basic-z";
@@ -42,6 +44,7 @@ public class GPOptions {
     public static final String MAX_CLAIM_SIZE_TOWN_X = "griefprevention.max-claim-size-town-x";
     public static final String MAX_CLAIM_SIZE_TOWN_Y = "griefprevention.max-claim-size-town-y";
     public static final String MAX_CLAIM_SIZE_TOWN_Z = "griefprevention.max-claim-size-town-z";
+    public static final String MIN_CLAIM_LEVEL = "griefprevention.min-claim-level";
     public static final String MIN_CLAIM_SIZE_BASIC_X = "griefprevention.min-claim-size-basic-x";
     public static final String MIN_CLAIM_SIZE_BASIC_Y = "griefprevention.min-claim-size-basic-y";
     public static final String MIN_CLAIM_SIZE_BASIC_Z = "griefprevention.min-claim-size-basic-z";
@@ -73,12 +76,13 @@ public class GPOptions {
 
     public static final double DEFAULT_ABANDON_RETURN_RATIO_BASIC = 1.0;
     public static final double DEFAULT_ABANDON_RETURN_RATIO_TOWN = 1.0;
-    public static final int DEFAULT_BLOCKS_ACCRUED_PER_HOUR = GriefPreventionPlugin.wildernessCuboids ? 30720 : 120;
+    public static final int DEFAULT_BLOCKS_ACCRUED_PER_HOUR = GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? 30720 : 120;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_BASIC = 20;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION = 10;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_TOWN = 1;
-    public static final int DEFAULT_INITIAL_CLAIM_BLOCKS = GriefPreventionPlugin.wildernessCuboids ? 25600 : 100;
-    public static final int DEFAULT_MAX_ACCRUED_BLOCKS = GriefPreventionPlugin.wildernessCuboids ? 20480000 : 80000;
+    public static final int DEFAULT_INITIAL_CLAIM_BLOCKS = GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? 25600 : 100;
+    public static final int DEFAULT_MAX_ACCRUED_BLOCKS = GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? 20480000 : 80000;
+    public static final int DEFAULT_MAX_CLAIM_LEVEL = 255;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_X= 5000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_BASIC_Z = 5000;
@@ -88,6 +92,7 @@ public class GPOptions {
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X= 1000;
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z = 1000;
+    public static final int DEFAULT_MIN_CLAIM_LEVEL = 0;
     public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_X= 10;
     public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Y = 5;
     public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Z = 10;
@@ -129,6 +134,8 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(INITIAL_CLAIM_BLOCKS, (double) GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS);
         // The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.
         DEFAULT_OPTIONS.put(MAX_ACCRUED_BLOCKS, (double) GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS);
+        // The max level where a claim can be created.
+        DEFAULT_OPTIONS.put(MAX_CLAIM_LEVEL, (double) GPOptions.DEFAULT_MAX_CLAIM_LEVEL);
         // The max size of x, in blocks, that a basic claim can be, 100 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_BASIC_X, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_X);
         // The max size of y, in blocks, that a basic claim can be, 256 by default.
@@ -147,6 +154,8 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Y, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y);
         // The max size of z, in blocks, that a subdivision can be, 100 by default.
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Z, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z);
+        // The min level where a claim can be created.
+        DEFAULT_OPTIONS.put(MIN_CLAIM_LEVEL, (double) GPOptions.DEFAULT_MIN_CLAIM_LEVEL);
         // The min size of x, in blocks, that a basic claim can be, 10 by default.
         DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_X, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_X);
         // The min size of y, in blocks, that a basic claim can be, 10 by default.

@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.api;
 
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
@@ -71,14 +72,11 @@ public interface GriefPreventionApi {
     boolean isEnabled(WorldProperties worldProperties);
 
     /**
-     * Checks to see if cuboids are allowed in wilderness.
+     * Gets the claim block system used.
      * 
-     * Note: If false, claims use area which only checks x and z.
-     *  If true, claims use volume which checks x, y, and z.
-     * 
-     * @return true if enabled, false if not
+     * @return The claim block system
      */
-    boolean isWildernessCuboidsEnabled();
+    ClaimBlockSystem getClaimBlockSystem();
 
     /**
      * Checks if the protection module is enabled for flag.

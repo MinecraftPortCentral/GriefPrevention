@@ -35,6 +35,7 @@ import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimContexts;
 import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
@@ -53,11 +54,11 @@ import me.ryanhamshire.griefprevention.configuration.IClaimData;
 import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.configuration.TownDataConfig;
 import me.ryanhamshire.griefprevention.configuration.TownStorageData;
+import me.ryanhamshire.griefprevention.event.GPChangeClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPCreateClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPFlagClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPGroupTrustClaimEvent;
-import me.ryanhamshire.griefprevention.event.GPResizeClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPTransferClaimEvent;
 import me.ryanhamshire.griefprevention.event.GPUserTrustClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
@@ -148,13 +149,13 @@ public class GPClaim implements Claim {
 
     private GPPlayerData ownerPlayerData;
     private Account economyAccount;
-    private static final int MAX_AREA = GriefPreventionPlugin.wildernessCuboids ? 2560000 : 10000;
+    private static final int MAX_AREA = GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? 2560000 : 10000;
 
-    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId) {
-        this(world, point1, point2, type, ownerUniqueId, null);
+    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, boolean cuboid) {
+        this(world, point1, point2, type, ownerUniqueId, cuboid, null);
     }
 
-    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, GPClaim parent) {
+    public GPClaim(World world, Vector3i point1, Vector3i point2, ClaimType type, UUID ownerUniqueId, boolean cuboid, GPClaim parent) {
         int smallx, bigx, smally, bigy, smallz, bigz;
         int x1 = point1.getX();
         int x2 = point2.getX();
@@ -202,7 +203,7 @@ public class GPClaim implements Claim {
         this.type = type;
         this.id = UUID.randomUUID();
         this.context = new Context("gp_claim", this.id.toString());
-        this.cuboid = smally != 0 || bigy != 255;
+        this.cuboid = cuboid;
         this.parent = parent;
         this.hashCode = this.id.hashCode();
         this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
@@ -215,12 +216,11 @@ public class GPClaim implements Claim {
 
     // Used for visualizations
     public GPClaim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, ClaimType type, boolean cuboid) {
-        this(lesserBoundaryCorner, greaterBoundaryCorner, UUID.randomUUID(), type, null);
-        this.cuboid = cuboid;
+        this(lesserBoundaryCorner, greaterBoundaryCorner, UUID.randomUUID(), type, null, cuboid);
     }
 
     // Used at server startup
-    public GPClaim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, ClaimType type, UUID ownerUniqueId) {
+    public GPClaim(Location<World> lesserBoundaryCorner, Location<World> greaterBoundaryCorner, UUID claimId, ClaimType type, UUID ownerUniqueId, boolean cuboid) {
         // id
         this.id = claimId;
 
@@ -233,6 +233,7 @@ public class GPClaim implements Claim {
             this.ownerPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
         }
         this.type = type;
+        this.cuboid = cuboid;
         this.context = new Context("gp_claim", this.id.toString());
         this.hashCode = this.id.hashCode();
         this.worldClaimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
@@ -500,7 +501,7 @@ public class GPClaim implements Claim {
 
     @Override
     public int getClaimBlocks() {
-        if (GriefPreventionPlugin.wildernessCuboids) {
+        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME) {
             return this.getVolume();
         }
 
@@ -519,11 +520,7 @@ public class GPClaim implements Claim {
     public int getVolume() {
         final int claimWidth = this.greaterBoundaryCorner.getBlockX() - this.lesserBoundaryCorner.getBlockX() + 1;
         final int claimLength = this.greaterBoundaryCorner.getBlockZ() - this.lesserBoundaryCorner.getBlockZ() + 1;
-        // 2D claims are always 256 in height
-        int claimHeight = 256;
-        if (this.cuboid) {
-            claimHeight = this.greaterBoundaryCorner.getBlockY() - this.lesserBoundaryCorner.getBlockY() + 1;
-        }
+        final int claimHeight = this.greaterBoundaryCorner.getBlockY() - this.lesserBoundaryCorner.getBlockY() + 1;
 
         return claimWidth * claimLength * claimHeight;
     }
@@ -1270,13 +1267,13 @@ public class GPClaim implements Claim {
 
         // check player has enough claim blocks
         if ((this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
-            final int newArea = BlockUtils.getBlockArea(this.world, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition(), this.cuboid);
-            final int currentArea = BlockUtils.getBlockArea(this.world, currentLesserCorner.getBlockPosition(), currentGreaterCorner.getBlockPosition(), this.cuboid);
-            if (newArea > currentArea) {
-                final int remainingClaimBlocks = this.ownerPlayerData.getRemainingClaimBlocks() - (newArea - currentArea);
+            final int newCost = BlockUtils.getClaimBlockCost(this.world, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition(), this.cuboid);
+            final int currentCost = BlockUtils.getClaimBlockCost(this.world, currentLesserCorner.getBlockPosition(), currentGreaterCorner.getBlockPosition(), this.cuboid);
+            if (newCost > currentCost) {
+                final int remainingClaimBlocks = this.ownerPlayerData.getRemainingClaimBlocks() - (newCost - currentCost);
                 if (remainingClaimBlocks < 0) {
                     if (player != null) {
-                        if (GriefPreventionPlugin.wildernessCuboids) {
+                        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME) {
                             final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
                             final Map<String, ?> params = ImmutableMap.of(
                                     "chunks", Math.round(claimableChunks * 100.0)/100.0,
@@ -1311,7 +1308,7 @@ public class GPClaim implements Claim {
             return result;
         }
 
-        GPResizeClaimEvent event = new GPResizeClaimEvent(this, cause, startCorner, endCorner, this);
+        GPChangeClaimEvent.Resize event = new GPChangeClaimEvent.Resize(this, startCorner, endCorner, this, cause);
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
             this.lesserBoundaryCorner = currentLesserCorner;
@@ -1446,8 +1443,8 @@ public class GPClaim implements Claim {
             return result;
         }
 
-        GPResizeClaimEvent event = new GPResizeClaimEvent(this, cause, startCorner, endCorner, 
-                new GPClaim(newLesserCorner.copy(), newGreaterCorner.copy(), this.type, this.cuboid));
+        GPChangeClaimEvent.Resize event = new GPChangeClaimEvent.Resize(this, startCorner, endCorner, 
+                new GPClaim(newLesserCorner.copy(), newGreaterCorner.copy(), this.type, this.cuboid), cause);
         SpongeImpl.postEvent(event);
         if (event.isCancelled()) {
             this.lesserBoundaryCorner = currentLesserCorner;
@@ -1846,6 +1843,16 @@ public class GPClaim implements Claim {
     public ClaimResult changeType(ClaimType type, Optional<UUID> ownerUniqueId) {
         if (type == this.type) {
             return new GPClaimResult(ClaimResultType.SUCCESS);
+        }
+
+        Cause cause = GriefPreventionPlugin.pluginCause;
+        if (ownerUniqueId.isPresent()) {
+            cause = Cause.source(GriefPreventionPlugin.getOrCreateUser(ownerUniqueId.get())).build();
+        }
+        GPChangeClaimEvent.Type event = new GPChangeClaimEvent.Type(this, type, cause);
+        Sponge.getEventManager().post(event);
+        if (event.isCancelled()) {
+            return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
         switch (type) {
@@ -2397,13 +2404,15 @@ public class GPClaim implements Claim {
 
         private UUID ownerUniqueId;
         private ClaimType type = ClaimType.BASIC;
+        private boolean cuboid = false;
         private boolean requiresClaimBlocks = true;
         private boolean denyMessages = true;
         private boolean expire = true;
         private boolean resizable = true;
         private boolean inherit = true;
         private boolean overrides = true;
-        private Boolean sizeRestrictions;
+        private boolean levelRestrictions = true;
+        private boolean sizeRestrictions = true;
         private World world;
         private Vector3i point1;
         private Vector3i point2;
@@ -2421,6 +2430,12 @@ public class GPClaim implements Claim {
         public Builder bounds(Vector3i point1, Vector3i point2) {
             this.point1 = point1;
             this.point2 = point2;
+            return this;
+        }
+
+        @Override
+        public Builder cuboid(boolean cuboid) {
+            this.cuboid = cuboid;
             return this;
         }
 
@@ -2449,8 +2464,14 @@ public class GPClaim implements Claim {
         }
 
         @Override
-        public Builder sizeRestrictions(boolean checkSizeRestrictions) {
-            this.sizeRestrictions = checkSizeRestrictions;
+        public Builder levelRestrictions(boolean checkLevel) {
+            this.levelRestrictions = checkLevel;
+            return this;
+        }
+
+        @Override
+        public Builder sizeRestrictions(boolean checkSize) {
+            this.sizeRestrictions = checkSize;
             return this;
         }
 
@@ -2517,6 +2538,7 @@ public class GPClaim implements Claim {
         public Builder reset() {
             this.ownerUniqueId = null;
             this.type = ClaimType.BASIC;
+            this.cuboid = false;
             this.world = null;
             this.point1 = null;
             this.point2 = null;
@@ -2534,40 +2556,31 @@ public class GPClaim implements Claim {
             if (this.type == ClaimType.SUBDIVISION) {
                 checkNotNull(this.parent);
             }
-            if (this.sizeRestrictions == null) {
-                this.sizeRestrictions = this.type == ClaimType.ADMIN ? false : true;
+            if (this.type == ClaimType.ADMIN || this.type == ClaimType.WILDERNESS) {
+                this.sizeRestrictions = false;
+                this.levelRestrictions = false;
             }
 
-            GPClaim claim = new GPClaim(this.world, this.point1, this.point2, this.type, this.ownerUniqueId);
+            GPClaim claim = new GPClaim(this.world, this.point1, this.point2, this.type, this.ownerUniqueId, this.cuboid);
             claim.parent = (GPClaim) this.parent;
             Player player = null;
             if (this.cause.root() instanceof Player) {
                 player = (Player) this.cause.root();
             }
             GPPlayerData playerData = null;
-            if (!GriefPreventionPlugin.wildernessCuboids && claim.cuboid) {
-                boolean ignoreClaims = false;
-                if (this.ownerUniqueId != null) {
-                    playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
-                    if (playerData.canIgnoreClaim(claim)) {
-                        ignoreClaims = true;
-                    }
-                }
-                if (!ignoreClaims) {
-                    if (claim.parent == null && !claim.isAdminClaim()) {
-                        return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
-                    }
-                    if (claim.parent != null && !claim.getOwnerUniqueId().equals(claim.parent.getOwnerUniqueId())) {
-                        return new GPClaimResult(claim, ClaimResultType.WRONG_CLAIM_TYPE);
-                    }
-                }
-                // 3D claims are always free when wilderness cuboids is disabled
-                this.requiresClaimBlocks = false;
-            }
 
             if (this.ownerUniqueId != null) {
                 if (playerData == null) {
                     playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, this.ownerUniqueId);
+                }
+
+                if (this.levelRestrictions) {
+                    if (claim.getLesserBoundaryCorner().getBlockY() < playerData.getMinClaimLevel()) {
+                        return new GPClaimResult(claim, ClaimResultType.BELOW_MIN_LEVEL);
+                    }
+                    if (claim.getGreaterBoundaryCorner().getBlockY() > playerData.getMaxClaimLevel()) {
+                        return new GPClaimResult(claim, ClaimResultType.ABOVE_MAX_LEVEL);
+                    }
                 }
 
                 if (this.sizeRestrictions) {
@@ -2587,11 +2600,11 @@ public class GPClaim implements Claim {
 
                 // check player has enough claim blocks
                 if ((claim.isBasicClaim() || claim.isTown()) && this.requiresClaimBlocks) {
-                    final int area = BlockUtils.getBlockArea(this.world, claim.lesserBoundaryCorner.getBlockPosition(), claim.greaterBoundaryCorner.getBlockPosition(), claim.cuboid);
-                    final int remainingClaimBlocks = playerData.getRemainingClaimBlocks() - area;
+                    final int claimCost = BlockUtils.getClaimBlockCost(this.world, claim.lesserBoundaryCorner.getBlockPosition(), claim.greaterBoundaryCorner.getBlockPosition(), claim.cuboid);
+                    final int remainingClaimBlocks = playerData.getRemainingClaimBlocks() - claimCost;
                     if (remainingClaimBlocks < 0) {
                         if (player != null) {
-                            if (GriefPreventionPlugin.wildernessCuboids) {
+                            if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME) {
                                 final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
                                 final Map<String, ?> params = ImmutableMap.of(
                                         "chunks", Math.round(claimableChunks * 100.0)/100.0,

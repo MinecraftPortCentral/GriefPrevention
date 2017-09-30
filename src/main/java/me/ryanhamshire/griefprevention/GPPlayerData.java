@@ -204,6 +204,7 @@ public class GPPlayerData implements PlayerData {
     public int optionCreateClaimLimitTown = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_TOWN;
     public int optionInitialClaimBlocks = GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS;
     public int optionMaxAccruedBlocks = GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS;
+    public int optionMaxClaimLevel = GPOptions.DEFAULT_MAX_CLAIM_LEVEL;
     public int optionMaxClaimSizeBasicX = GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_X;
     public int optionMaxClaimSizeBasicY = GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Y;
     public int optionMaxClaimSizeBasicZ = GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_Z;
@@ -213,6 +214,7 @@ public class GPPlayerData implements PlayerData {
     public int optionMaxClaimSizeSubX = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_X;
     public int optionMaxClaimSizeSubY = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y;
     public int optionMaxClaimSizeSubZ = GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z;
+    public int optionMinClaimLevel = GPOptions.DEFAULT_MIN_CLAIM_LEVEL;
     public int optionMinClaimSizeBasicX = GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_X;
     public int optionMinClaimSizeBasicY = GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Y;
     public int optionMinClaimSizeBasicZ = GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Z;
@@ -270,6 +272,10 @@ public class GPPlayerData implements PlayerData {
             this.optionCreateClaimLimitTown = PlayerUtils.getOptionIntValue(subject, GPOptions.CREATE_CLAIM_LIMIT_TOWN, this.optionCreateClaimLimitTown);
             this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.INITIAL_CLAIM_BLOCKS, this.optionInitialClaimBlocks);
             this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_ACCRUED_BLOCKS, this.optionMaxAccruedBlocks);
+            this.optionMaxClaimLevel = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_LEVEL, this.optionMaxClaimLevel);
+            if (this.optionMaxClaimLevel > 255) {
+                this.optionMaxClaimLevel = 255;
+            }
             this.optionMaxClaimSizeBasicX = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_X, this.optionMaxClaimSizeBasicX);
             this.optionMaxClaimSizeBasicY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_Y, this.optionMaxClaimSizeBasicY);
             this.optionMaxClaimSizeBasicZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_Z, this.optionMaxClaimSizeBasicZ);
@@ -279,6 +285,10 @@ public class GPPlayerData implements PlayerData {
             this.optionMaxClaimSizeSubX = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_X, this.optionMaxClaimSizeSubX);
             this.optionMaxClaimSizeSubY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Y, this.optionMaxClaimSizeSubY);
             this.optionMaxClaimSizeSubZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Z, this.optionMaxClaimSizeSubZ);
+            this.optionMinClaimLevel = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_LEVEL, this.optionMinClaimLevel);
+            if (this.optionMinClaimLevel < 0) {
+                this.optionMinClaimLevel = 0;
+            }
             this.optionMinClaimSizeBasicX = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_X, this.optionMinClaimSizeBasicX);
             this.optionMinClaimSizeBasicY = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_Y, this.optionMinClaimSizeBasicY);
             this.optionMinClaimSizeBasicZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_Z, this.optionMinClaimSizeBasicZ);
@@ -684,6 +694,16 @@ public class GPPlayerData implements PlayerData {
         }
 
         return 0;
+    }
+
+    @Override
+    public int getMaxClaimLevel() {
+        return this.optionMaxClaimLevel;
+    }
+
+    @Override
+    public int getMinClaimLevel() {
+        return this.optionMinClaimLevel;
     }
 
     public Subject getPlayerSubject() {
