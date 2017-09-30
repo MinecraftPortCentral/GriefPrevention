@@ -98,7 +98,7 @@ class RestoreNatureExecutionTask implements Runnable {
             for (Entity entity : chunk.get().getEntities()) {
                 if (!(entity instanceof Player || entity instanceof Animal)) {
                     // hanging entities (paintings, item frames) are protected when they're in land claims
-                    if (!(entity instanceof Hanging) || GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, null) == null) {
+                    if (!(entity instanceof Hanging) || GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation()) == null) {
                         // everything else is removed
                         entity.remove();
                     }

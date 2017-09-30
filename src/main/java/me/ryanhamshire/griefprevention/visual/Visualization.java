@@ -349,7 +349,7 @@ public class Visualization {
 
         for (int i = 0; i < this.newElements.size(); i++) {
             BlockSnapshot element = this.newElements.get(i).getFinal();
-            if (!claim.contains(element.getLocation().get(), true, false)) {
+            if (!claim.contains(element.getLocation().get())) {
                 this.newElements.remove(i--);
             }
         }

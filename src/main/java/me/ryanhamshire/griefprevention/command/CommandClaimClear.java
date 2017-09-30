@@ -69,7 +69,7 @@ public class CommandClaimClear implements CommandExecutor {
 
         if (claimId == null) {
             if (src instanceof Player) {
-                GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(((Player) src).getLocation(), false, null);
+                GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(((Player) src).getLocation());
                 if (sourceClaim != null) {
                     claimId = sourceClaim.getUniqueId().toString();
                 }
@@ -116,14 +116,14 @@ public class CommandClaimClear implements CommandExecutor {
 
             if (isPixelmonAnimal) {
                 if (parts[1].equalsIgnoreCase(mcEntity.getName().toLowerCase())) {
-                    GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
+                    GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation());
                     if (claim != null && claim.getUniqueId().equals(claimUniqueId)) {
                         mcEntity.setDead();
                         count++;
                     }
                 }
             } else if (creatureType != null && SpongeImplHooks.isCreatureOfType(mcEntity, creatureType)) {
-                GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
+                GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation());
                 if (claim != null && claim.getUniqueId().equals(claimUniqueId)) {
                     // check modId
                     String mod = ((SpongeEntityType) entity.getType()).getModId();
@@ -137,7 +137,7 @@ public class CommandClaimClear implements CommandExecutor {
                     continue;
                 }
 
-                GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
+                GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation());
                 if (claim != null && claim.getUniqueId().equals(claimUniqueId)) {
                     mcEntity.setDead();
                     count++;

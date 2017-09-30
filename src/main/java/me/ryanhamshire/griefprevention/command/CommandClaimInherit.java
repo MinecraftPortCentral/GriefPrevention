@@ -47,7 +47,7 @@ public class CommandClaimInherit implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation(), false, null);
+        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
         if (claim.parent == null) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandInherit.toText());
             return CommandResult.success();

@@ -48,7 +48,7 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
                 return;
             }
 
-            GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+            GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
             if (sourceClaim != null) {
                 if (playerData == null || playerData.canIgnoreClaim(sourceClaim)) {
                     return;
@@ -73,7 +73,7 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
                     return false;
                 }
 
-                GPClaim playerClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation(), false);
+                GPClaim playerClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
                 if (playerClaim != null && playerClaim.id.equals(UUID.fromString(context.getValue()))) {
                     return true;
                 }
