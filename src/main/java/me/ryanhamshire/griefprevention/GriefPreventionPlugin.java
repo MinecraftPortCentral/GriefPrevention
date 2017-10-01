@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import static org.spongepowered.api.command.args.GenericArguments.catalogedElement;
 import static org.spongepowered.api.command.args.GenericArguments.choices;
 import static org.spongepowered.api.command.args.GenericArguments.doubleNum;
 import static org.spongepowered.api.command.args.GenericArguments.integer;
@@ -47,7 +46,6 @@ import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
-import me.ryanhamshire.griefprevention.command.ClaimFlagBase;
 import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandon;
@@ -169,12 +167,9 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
-import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.event.block.TargetBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.cause.entity.damage.DamageType;
-import org.spongepowered.api.event.entity.TargetEntityEvent;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
@@ -220,7 +215,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "4.1.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "4.1.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPreventionPlugin {
 
     // for convenience, a reference to the instance of this plugin
@@ -240,7 +235,7 @@ public class GriefPreventionPlugin {
     public static ClaimBlockSystem CLAIM_BLOCK_SYSTEM;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
-    public static final String CONFIG_HEADER = "4.1.0\n"
+    public static final String CONFIG_HEADER = "4.1.1\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us on Discord or drop by our forums and leave a post.\n"
             + "# Discord: https://discord.gg/jy4FQDz\n"
@@ -389,8 +384,8 @@ public class GriefPreventionPlugin {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
                     spongeBuild = Integer.parseInt(build);
-                    if (spongeBuild < 2597) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2597+.");
+                    if (spongeBuild < 2652) {
+                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2652+.");
                         return false;
                     }
                 } catch (NumberFormatException e) {
@@ -2006,7 +2001,7 @@ public class GriefPreventionPlugin {
     public void restoreChunk(Chunk chunk, int miny, boolean aggressiveMode, long delayInTicks, Player player) {
         // build a snapshot of this chunk, including 1 block boundary outside of
         // the chunk all the way around
-        int maxHeight = chunk.getWorld().getDimension().getBuildHeight();
+        int maxHeight = chunk.getWorld().getDimension().getBuildHeight() - 1;
         BlockSnapshot[][][] snapshots = new BlockSnapshot[18][maxHeight][18];
         BlockSnapshot startBlock = chunk.createSnapshot(0, 0, 0);
         Location<World> startLocation =

@@ -1124,29 +1124,24 @@ public class PlayerEventHandler {
             return;
         }
 
-        GPTimings.PLAYER_DISPENSE_ITEM_EVENT.startTimingIfSync();
-
-        Entity entity = spawncause.getEntity();
+        final Entity entity = spawncause.getEntity();
         if (!(entity instanceof User)) {
-            GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
             return;
         }
 
-        Object source = event.getCause().root();
-        User user = (User) entity;
+        final User user = (User) entity;
         final World world = entity.getWorld();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
             return;
         }
 
         // in creative worlds, dropping items is blocked
         if (GriefPreventionPlugin.instance.claimModeIsActive(world.getProperties(), ClaimsMode.Creative)) {
             event.setCancelled(true);
-            GPTimings.PLAYER_DISPENSE_ITEM_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.PLAYER_DISPENSE_ITEM_EVENT.startTimingIfSync();
         Player player = user instanceof Player ? (Player) user : null;
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
 
@@ -1248,7 +1243,6 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_INTERACT_INVENTORY_CLICK_EVENT.startTimingIfSync();
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
-        final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         final boolean isDrop = event instanceof ClickInventoryEvent.Drop;
         for (SlotTransaction transaction : event.getTransactions()) {
             if (transaction.getOriginal() == ItemStackSnapshot.NONE) {
@@ -2087,7 +2081,7 @@ public class PlayerEventHandler {
                 }
     
                 newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
-                newy2 = playerData.optionClaimCreateMode == 1 ? location.getBlockY() : player.getWorld().getDimension().getBuildHeight() - 1;
+                newy2 = location.getBlockY();
             }
 
             // special rule for making a top-level claim smaller. to check this, verifying the old claim's corners are inside the new claim's boundaries.
@@ -2137,17 +2131,8 @@ public class PlayerEventHandler {
                         ownerID = playerData.claimResizing.parent.getOwnerUniqueId();
                     }
 
-                    // clean up
-                    playerData.claimResizing = null;
-                    playerData.lastShovelLocation = null;
-                    playerData.endShovelLocation = null;
-                    // inform about success, visualize, communicate remaining blocks available
-                    if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME) {
-                        final double claimableChunks = claimBlocksRemaining / 65536.0;
-                        final Map<String, ?> params = ImmutableMap.of(
-                                "remaining-chunks", Math.round(claimableChunks * 100.0)/100.0, 
-                                "remaining-blocks", claimBlocksRemaining);
-                        GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_RESIZE_SUCCESS_3D, GriefPreventionPlugin.instance.messageData.claimResizeSuccess3d, params);
+                    if (ownerID.equals(player.getUniqueId())) {
+                        claimBlocksRemaining = playerData.getRemainingClaimBlocks();
                     } else {
                         GPPlayerData ownerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), ownerID);
                         claimBlocksRemaining = ownerData.getRemainingClaimBlocks();
@@ -2185,7 +2170,7 @@ public class PlayerEventHandler {
                 // if resizing someone else's claim, make a log entry
                 if (!playerID.equals(claim.getOwnerUniqueId()) && !claim.getParent().isPresent()) {
                     GriefPreventionPlugin.addLogEntry(player.getName() + " resized " + claim.getOwnerName() + "'s claim at "
-                            + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + ".");
+                                                      + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + ".");
                 }
 
                 // if increased to a sufficiently large size and no children yet, send children instructions
@@ -2208,18 +2193,20 @@ public class PlayerEventHandler {
                     List<Claim> claims = new ArrayList<>();
                     claims.add(overlapClaim);
                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
-                }
-                if (claimResult.getResultType() == ClaimResultType.CLAIM_EVENT_CANCELLED) {
+                } else {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
                     if (this.worldEditProvider != null) {
                         this.worldEditProvider.stopVisualDrag(player);
                         this.worldEditProvider.revertVisuals(player, playerData, null);
                         this.worldEditProvider.revertVisuals(player, playerData, playerData.claimResizing.getUniqueId());
                     }
+                    playerData.revertActiveVisual(player);
                 }
+
+                playerData.lastShovelLocation = null;
+                playerData.claimResizing = null;
+                playerData.claimSubdividing = null;
                 event.setCancelled(true);
-                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-                return;
             }
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
@@ -2635,9 +2622,9 @@ public class PlayerEventHandler {
         // visualize boundary
         if (claim.id != playerData.visualClaimId) {
             int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : clickedBlock.getLocation().get().getBlockY();
+            playerData.revertActiveVisual(player);
             claim.getVisualizer().createClaimBlockVisuals(playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData);
             claim.getVisualizer().apply(player);
-            playerData.revertActiveVisual(player);
             if (this.worldEditProvider != null) {
                 worldEditProvider.visualizeClaim(claim, player, playerData, true);
             }

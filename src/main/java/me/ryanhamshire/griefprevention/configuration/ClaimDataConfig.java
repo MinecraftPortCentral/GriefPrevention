@@ -26,7 +26,6 @@ package me.ryanhamshire.griefprevention.configuration;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Maps;
-import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.EconomyData;
 import me.ryanhamshire.griefprevention.claim.GPClaim;

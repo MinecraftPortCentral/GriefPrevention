@@ -36,7 +36,6 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.util.Functional;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -140,6 +139,7 @@ public class ClaimStorageData {
 
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bind(claimData);
+            this.configMapper.getInstance().setClaimStorageData(this);
             reload();
             ((EconomyDataConfig) this.configMapper.getInstance().getEconomyData()).activeConfig = GriefPreventionPlugin.getActiveConfig(worldUniqueId);
         } catch (Exception e) {
