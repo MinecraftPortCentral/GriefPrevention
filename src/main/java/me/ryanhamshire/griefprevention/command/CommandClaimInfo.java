@@ -484,10 +484,6 @@ public class CommandClaimInfo implements CommandExecutor {
         }
         if (claim.isWilderness()) {
             textList.remove(bankInfo);
-            textList.remove(claimAccessors);
-            textList.remove(claimBuilders);
-            textList.remove(claimContainers);
-            textList.remove(claimCoowners);
             textList.remove(claimInherit);
             textList.remove(claimTypeInfo);
             textList.remove(dateLastActive);
