@@ -278,7 +278,7 @@ public class BlockUtils {
 
         unloadChunk(chunk);
         org.spongepowered.api.world.Chunk fillerChunk = (org.spongepowered.api.world.Chunk) chunkProviderServer.chunkGenerator.provideChunk(chunk.xPosition, chunk.zPosition);
-        int maxBuildHeight = fillerChunk.getWorld().getDimension().getBuildHeight();
+        int maxBuildHeight = fillerChunk.getWorld().getDimension().getBuildHeight() - 1;
         BlockSnapshot[][][] snapshots = new BlockSnapshot[18][maxBuildHeight][18];
         BlockSnapshot startBlock = fillerChunk.createSnapshot(0, 0, 0);
         Location<World> startLocation =

@@ -193,7 +193,6 @@ public class EntityEventHandler {
                     return true;
                 }
 
-                final Location<World> location = entity.getLocation();
                 String permission = GPPermissions.ENTITY_SPAWN;
                 if (entity instanceof EntityItem || entity instanceof EntityXPOrb) {
                     if (user == null) {

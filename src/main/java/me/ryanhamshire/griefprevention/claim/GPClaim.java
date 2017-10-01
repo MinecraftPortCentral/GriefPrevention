@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.api.claim.ClaimContexts;
@@ -448,7 +449,7 @@ public class GPClaim implements Claim {
 
         for (int x = lesser.getBlockX(); x <= greater.getBlockX(); x++) {
             for (int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++) {
-                for (int y = seaLevel - 1; y <= lesser.getExtent().getDimension().getBuildHeight(); y++) {
+                for (int y = seaLevel - 1; y < lesser.getExtent().getDimension().getBuildHeight(); y++) {
                     // dodge the exclusion claim
                     BlockSnapshot block = lesser.getExtent().createSnapshot(x, y, z);
                     if (exclusionClaim != null && exclusionClaim.contains(block.getLocation().get(), false)) {
@@ -484,7 +485,7 @@ public class GPClaim implements Claim {
 
         for (int x = lesser.getBlockX(); x <= greater.getBlockX(); x++) {
             for (int z = lesser.getBlockZ(); z <= greater.getBlockZ(); z++) {
-                for (int y = seaLevel - 1; y <= lesser.getExtent().getDimension().getBuildHeight(); y++) {
+                for (int y = seaLevel - 1; y < lesser.getExtent().getDimension().getBuildHeight(); y++) {
                     // dodge the exclusion claim
                     BlockState block = lesser.getExtent().getBlock(x, y, z);
 
@@ -1198,14 +1199,16 @@ public class GPClaim implements Claim {
 
         Location<World> startCorner = null;
         Location<World> endCorner = null;
-        GPPlayerData playerData = null;
         Player player = null;
+        GPPlayerData playerData = null;
+        if (!this.isAdminClaim() && this.ownerUniqueId != null) {
+            playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, this.ownerUniqueId);
+        }
         if (!(cause.root() instanceof Player)) {
             startCorner = new Location<World>(this.world, newx1, newy1, newz1);
             endCorner = new Location<World>(this.world, newx2, newy2, newz2);
         } else {
             player = (Player) cause.root();
-            playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             startCorner = playerData.lastShovelLocation;
             endCorner = playerData.endShovelLocation;
         }
@@ -1242,6 +1245,13 @@ public class GPClaim implements Claim {
             smally = 2;
         }
 
+        // Auto-adjust Y levels for 2D claims
+        if (playerData != null && playerData.shovelMode != ShovelMode.Admin) {
+            smally = playerData.getMinClaimLevel();
+        }
+        if (playerData != null && playerData.shovelMode != ShovelMode.Admin) {
+            bigy = playerData.getMaxClaimLevel();
+        }
         Location<World> currentLesserCorner = this.getLesserBoundaryCorner();
         Location<World> currentGreaterCorner = this.getGreaterBoundaryCorner();
         Location<World> newLesserCorner = new Location<World>(this.world, smallx, smally, smallz);
@@ -1377,14 +1387,16 @@ public class GPClaim implements Claim {
 
         Location<World> startCorner = null;
         Location<World> endCorner = null;
-        GPPlayerData playerData = null;
         Player player = null;
+        GPPlayerData playerData = null;
+        if (!this.isAdminClaim() && this.ownerUniqueId != null) {
+            playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, this.ownerUniqueId);
+        }
         if (!(cause.root() instanceof Player)) {
             startCorner = new Location<World>(this.world, smallX, smallY, smallZ);
             endCorner = new Location<World>(this.world, bigX, bigY, bigZ);
         } else {
             player = (Player) cause.root();
-            playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
             startCorner = playerData.lastShovelLocation;
             endCorner = playerData.endShovelLocation;
         }
@@ -1392,6 +1404,20 @@ public class GPClaim implements Claim {
         // make sure resize doesn't cross paths
         if (smallX >= bigX || smallY >= bigY || smallZ >= bigZ) {
             return new GPClaimResult(this, ClaimResultType.OVERLAPPING_CLAIM);
+        }
+        if (playerData != null && playerData.shovelMode != ShovelMode.Admin && smallY < playerData.getMinClaimLevel()) {
+            final Text message = GriefPreventionPlugin.instance.messageData.claimBelowLevel
+                    .apply(ImmutableMap.of(
+                    "claim-level", playerData.getMinClaimLevel())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
+            return new GPClaimResult(ClaimResultType.BELOW_MIN_LEVEL);
+        }
+        if (playerData != null && playerData.shovelMode != ShovelMode.Admin && bigY > playerData.getMaxClaimLevel()) {
+            final Text message = GriefPreventionPlugin.instance.messageData.claimAboveLevel
+                    .apply(ImmutableMap.of(
+                    "claim-level", playerData.getMaxClaimLevel())).build();
+            GriefPreventionPlugin.sendMessage(player, message);
+            return new GPClaimResult(ClaimResultType.ABOVE_MAX_LEVEL);
         }
         // check if child extends past parent limits
         if (this.parent != null) {
