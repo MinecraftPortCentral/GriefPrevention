@@ -24,29 +24,104 @@
  */
 package me.ryanhamshire.griefprevention.api.claim;
 
+import me.ryanhamshire.griefprevention.api.data.PlayerData;
+
 /**
- * 
+ * Used to provide more information to a plugin when a claim
+ * action is successful or cancelled.
  */
 public enum ClaimResultType {
 
     /**
-     * Returns no claim in result.
+     * Returned if a claim already exists.
      */
     CLAIM_ALREADY_EXISTS,
+
+    /**
+     * Returned if a claim is not found.
+     */
     CLAIM_NOT_FOUND,
+
+    /**
+     * Returned if claims are not enabled in a world.
+     */
     CLAIMS_DISABLED,
+
+    /**
+     * Returned if a claim's y level goes above a
+     * {@link Player}'s {@link PlayerData#getMaxClaimLevel()}.
+     */
     ABOVE_MAX_LEVEL,
+
+    /**
+     * Returned if a claim's y level goes below a
+     * {@link Player}'s {@link PlayerData#getMinClaimLevel()}.
+     */
     BELOW_MIN_LEVEL,
+
+    /**
+     * Returned if a claim's x size goes below a
+     * {@link Player}'s {@link PlayerData#getMinClaimX(ClaimType)}.
+     */
     BELOW_MIN_SIZE_X,
+
+    /**
+     * Returned if a claim's y size goes below a
+     * {@link Player}'s {@link PlayerData#getMinClaimY(ClaimType)}.
+     */
     BELOW_MIN_SIZE_Y,
+
+    /**
+     * Returned if a claim's z size goes below a
+     * {@link Player}'s {@link PlayerData#getMinClaimZ(ClaimType)}.
+     */
     BELOW_MIN_SIZE_Z,
+
+    /**
+     * Returned if a {@link Player} attempts to create a
+     * claim past their {@link PlayerData#getCreateClaimLimit()}.
+     */
     EXCEEDS_MAX_CLAIM_LIMIT,
+
+    /**
+     * Returned if a claim's x size exceeds a
+     * {@link Player}'s {@link PlayerData#getMaxClaimX(ClaimType)}.
+     */
     EXCEEDS_MAX_SIZE_X,
+
+    /**
+     * Returned if a claim's y size exceeds a
+     * {@link Player}'s {@link PlayerData#getMaxClaimY(ClaimType)}.
+     */
     EXCEEDS_MAX_SIZE_Y,
+
+    /**
+     * Returned if a claim's z size exceeds a
+     * {@link Player}'s {@link PlayerData#getMaxClaimZ(ClaimType)}.
+     */
     EXCEEDS_MAX_SIZE_Z,
+
+    /**
+     * Returned if a {@link Player} doesn't have enough claim blocks
+     * to perform a claim action.
+     */
     INSUFFICIENT_CLAIM_BLOCKS,
+
+    /**
+     * Returned if a {@link Player} doesn't have enough funds
+     * to perform an economy action.
+     */
     NOT_ENOUGH_FUNDS,
+
+    /**
+     * Returned if a claim action requires an owner's permission.
+     */
     REQUIRES_OWNER,
+
+    /**
+     * Returned if an attempted claim action uses wrong
+     * {@link ClaimType}.
+     */
     WRONG_CLAIM_TYPE,
 
     /**

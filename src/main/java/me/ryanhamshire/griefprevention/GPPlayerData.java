@@ -39,6 +39,7 @@ import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import net.minecraft.world.chunk.Chunk;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -245,6 +246,7 @@ public class GPPlayerData implements PlayerData {
 
     public boolean dataInitialized = false;
     public boolean showVisualFillers = true;
+    private boolean checkedDimensionHeight = false;
 
     public GPPlayerData(WorldProperties worldProperties, UUID playerUniqueId, PlayerStorageData playerStorage, GriefPreventionConfig<?> activeConfig, List<Claim> claims) {
         this.worldProperties = worldProperties;
@@ -273,9 +275,6 @@ public class GPPlayerData implements PlayerData {
             this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.INITIAL_CLAIM_BLOCKS, this.optionInitialClaimBlocks);
             this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_ACCRUED_BLOCKS, this.optionMaxAccruedBlocks);
             this.optionMaxClaimLevel = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_LEVEL, this.optionMaxClaimLevel);
-            if (this.optionMaxClaimLevel > 255) {
-                this.optionMaxClaimLevel = 255;
-            }
             this.optionMaxClaimSizeBasicX = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_X, this.optionMaxClaimSizeBasicX);
             this.optionMaxClaimSizeBasicY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_Y, this.optionMaxClaimSizeBasicY);
             this.optionMaxClaimSizeBasicZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_BASIC_Z, this.optionMaxClaimSizeBasicZ);
@@ -286,9 +285,6 @@ public class GPPlayerData implements PlayerData {
             this.optionMaxClaimSizeSubY = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Y, this.optionMaxClaimSizeSubY);
             this.optionMaxClaimSizeSubZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MAX_CLAIM_SIZE_SUBDIVISION_Z, this.optionMaxClaimSizeSubZ);
             this.optionMinClaimLevel = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_LEVEL, this.optionMinClaimLevel);
-            if (this.optionMinClaimLevel < 0) {
-                this.optionMinClaimLevel = 0;
-            }
             this.optionMinClaimSizeBasicX = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_X, this.optionMinClaimSizeBasicX);
             this.optionMinClaimSizeBasicY = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_Y, this.optionMinClaimSizeBasicY);
             this.optionMinClaimSizeBasicZ = PlayerUtils.getOptionIntValue(subject, GPOptions.MIN_CLAIM_SIZE_BASIC_Z, this.optionMinClaimSizeBasicZ);
@@ -316,6 +312,13 @@ public class GPPlayerData implements PlayerData {
             this.canManageWilderness = subject.hasPermission(GPPermissions.MANAGE_WILDERNESS);
             this.playerName = CommandHelper.lookupPlayerName(this.playerID);
             this.dataInitialized = true;
+            this.checkedDimensionHeight = false;
+            if (this.optionMaxClaimLevel > 255 || this.optionMaxClaimLevel <= 0 || this.optionMaxClaimLevel < this.optionMinClaimLevel) {
+                this.optionMaxClaimLevel = 255;
+            }
+            if (this.optionMinClaimLevel < 0 || this.optionMinClaimLevel >= 255 || this.optionMinClaimLevel > this.optionMaxClaimLevel) {
+                this.optionMinClaimLevel = 0;
+            }
         });
     }
 
@@ -698,6 +701,16 @@ public class GPPlayerData implements PlayerData {
 
     @Override
     public int getMaxClaimLevel() {
+        if (!this.checkedDimensionHeight) {
+            final World world = Sponge.getServer().getWorld(this.worldProperties.getUniqueId()).orElse(null);
+            if (world != null) {
+                final int buildHeight = world.getDimension().getBuildHeight() - 1;
+                if (buildHeight < this.optionMaxClaimLevel) {
+                    this.optionMaxClaimLevel = buildHeight;
+                }
+            }
+            this.checkedDimensionHeight = true;
+        }
         return this.optionMaxClaimLevel;
     }
 

@@ -552,6 +552,10 @@ public class Visualization {
         if (ownerData != null && ownerData.getMinClaimLevel() > 0 || ownerData.getMaxClaimLevel() < 255) {
             return true;
         }
+        // Claim could of been created with different min/max levels, so check Y values
+        if (this.claim.getLesserBoundaryCorner().getBlockY() > 0 || this.claim.getGreaterBoundaryCorner().getBlockY() < 255) {
+            return true;
+        }
 
         return false;
     }

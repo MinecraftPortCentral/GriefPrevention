@@ -25,7 +25,6 @@
  */
 package me.ryanhamshire.griefprevention;
 
-import static org.spongepowered.api.command.args.GenericArguments.catalogedElement;
 import static org.spongepowered.api.command.args.GenericArguments.choices;
 import static org.spongepowered.api.command.args.GenericArguments.doubleNum;
 import static org.spongepowered.api.command.args.GenericArguments.integer;
@@ -47,7 +46,6 @@ import me.ryanhamshire.griefprevention.claim.ClaimContextCalculator;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
-import me.ryanhamshire.griefprevention.command.ClaimFlagBase;
 import me.ryanhamshire.griefprevention.command.CommandAccessTrust;
 import me.ryanhamshire.griefprevention.command.CommandAdjustBonusClaimBlocks;
 import me.ryanhamshire.griefprevention.command.CommandClaimAbandon;
@@ -216,7 +214,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "4.2.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "4.3.0", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPreventionPlugin {
 
     // for convenience, a reference to the instance of this plugin
@@ -239,7 +237,7 @@ public class GriefPreventionPlugin {
     public static ClaimBlockSystem CLAIM_BLOCK_SYSTEM;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
-    public static final String CONFIG_HEADER = "4.2.0\n"
+    public static final String CONFIG_HEADER = "4.3.0\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us on Discord or drop by our forums and leave a post.\n"
             + "# Discord: https://discord.gg/jy4FQDz\n"
@@ -2004,7 +2002,7 @@ public class GriefPreventionPlugin {
     public void restoreChunk(Chunk chunk, int miny, boolean aggressiveMode, long delayInTicks, Player player) {
         // build a snapshot of this chunk, including 1 block boundary outside of
         // the chunk all the way around
-        int maxHeight = chunk.getWorld().getDimension().getBuildHeight();
+        int maxHeight = chunk.getWorld().getDimension().getBuildHeight() - 1;
         BlockSnapshot[][][] snapshots = new BlockSnapshot[18][maxHeight][18];
         BlockSnapshot startBlock = chunk.createSnapshot(0, 0, 0);
         Location<World> startLocation =

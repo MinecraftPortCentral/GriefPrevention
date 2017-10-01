@@ -693,11 +693,11 @@ public class BlockEventHandler {
                         else {
                             Vector3i lesserBoundary = new Vector3i(
                                 block.getPosition().getX() - radius,
-                                0,
+                                playerData.getMinClaimLevel(),
                                 block.getPosition().getZ() - radius);
                             Vector3i greaterBoundary = new Vector3i(
                                 block.getPosition().getX() + radius,
-                                player.getWorld().getDimension().getBuildHeight() - 1,
+                                playerData.getMaxClaimLevel(),
                                 block.getPosition().getZ() + radius);
                             // as long as the automatic claim overlaps another existing
                             // claim, shrink it note that since the player had permission to place the
