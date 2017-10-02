@@ -1850,7 +1850,7 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
-        UUID newOwnerUUID = ownerUniqueId.orElse(null);
+        UUID newOwnerUUID = ownerUniqueId.orElse(this.ownerUniqueId);
         switch (type) {
             case ADMIN : 
                 if (this.parent != null && this.parent.isAdminClaim()) {
@@ -1909,7 +1909,7 @@ public class GPClaim implements Claim {
             }
         }
         if (type != ClaimType.ADMIN) {
-            final List<Claim> newPlayerClaims = claimWorldManager.getInternalPlayerClaims(this.ownerUniqueId);
+            final List<Claim> newPlayerClaims = claimWorldManager.getInternalPlayerClaims(newOwnerUUID);
             if (newPlayerClaims != null && !newPlayerClaims.contains(this)) {
                 newPlayerClaims.add(this);
             }
