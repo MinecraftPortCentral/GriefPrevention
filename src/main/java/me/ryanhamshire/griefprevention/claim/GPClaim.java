@@ -1863,15 +1863,17 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
+        UUID newOwnerUUID = ownerUniqueId.orElse(this.ownerUniqueId);
         switch (type) {
             case ADMIN : 
                 if (this.parent != null && this.parent.isAdminClaim()) {
                     final Text message = Text.of(TextColors.RED, "Admin claims cannot have direct admin children claims.");
                     return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
                 }
+                newOwnerUUID = GriefPreventionPlugin.ADMIN_USER_UUID;
                 break;
             case BASIC :
-                if (this.isAdminClaim() && !ownerUniqueId.isPresent()) {
+                if (this.isAdminClaim() && newOwnerUUID == null) {
                     return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to basic. Owner is required."));
                 }
                 if (this.parent != null && this.parent.isBasicClaim()) {
@@ -1912,34 +1914,39 @@ public class GPClaim implements Claim {
         }
 
         final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-        final UUID ownerUUID = ownerUniqueId.orElse(GriefPreventionPlugin.ADMIN_USER_UUID);
-        final List<Claim> playerClaims = claimWorldManager.getInternalPlayerClaims(ownerUUID);
-        if (type == ClaimType.ADMIN) {
-            if (playerClaims != null) {
-                playerClaims.remove(this);
+        // If switched to admin or new owner, remove from player claim list
+        if (type == ClaimType.ADMIN || !this.ownerUniqueId.equals(newOwnerUUID)) {
+            final List<Claim> currentPlayerClaims = claimWorldManager.getInternalPlayerClaims(this.ownerUniqueId);
+            if (currentPlayerClaims != null) {
+                currentPlayerClaims.remove(this);
             }
-        } else {
-            if (playerClaims != null && !playerClaims.contains(this)) {
-                playerClaims.add(this);
+        }
+        if (!this.ownerUniqueId.equals(newOwnerUUID) && type != ClaimType.ADMIN) {
+            final List<Claim> newPlayerClaims = claimWorldManager.getInternalPlayerClaims(newOwnerUUID);
+            if (newPlayerClaims != null && !newPlayerClaims.contains(this)) {
+                newPlayerClaims.add(this);
             }
         }
 
-        final GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(ownerUUID);
-        final Player player = Sponge.getServer().getPlayer(ownerUUID).orElse(null);
-        if (player != null) {
-            playerData.revertActiveVisual(player);
+        if (!this.isAdminClaim() && this.ownerPlayerData != null) {
+            final Player player = Sponge.getServer().getPlayer(this.ownerUniqueId).orElse(null);
+            if (player != null) {
+                this.ownerPlayerData.revertActiveVisual(player);
+            }
         }
+
         // revert visuals for all players watching this claim
         List<UUID> playersWatching = new ArrayList<>(this.playersWatching);
         for (UUID playerUniqueId : playersWatching) {
             final Player spongePlayer = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
+            final GPPlayerData playerData = claimWorldManager.getOrCreatePlayerData(playerUniqueId);
             if (spongePlayer != null) {
                 playerData.revertActiveVisual(spongePlayer);
             }
         }
 
-        if (ownerUUID != GriefPreventionPlugin.ADMIN_USER_UUID) {
-            this.setOwnerUniqueId(ownerUUID);
+        if (!newOwnerUUID.equals(GriefPreventionPlugin.ADMIN_USER_UUID)) {
+            this.setOwnerUniqueId(newOwnerUUID);
         }
         this.setType(type);
         this.visualization = null;

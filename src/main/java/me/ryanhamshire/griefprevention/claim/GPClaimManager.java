@@ -367,12 +367,17 @@ public class GPClaimManager implements ClaimManager {
     }
 
     public List<Claim> getInternalPlayerClaims(UUID playerUniqueId) {
-        return this.getPlayerDataMap().get(playerUniqueId).getInternalClaims();
+        final GPPlayerData playerData = this.getPlayerDataMap().get(playerUniqueId);
+        if (playerData == null) {
+            return new ArrayList<>();
+        }
+        return playerData.getInternalClaims();
     }
 
     @Nullable
     public List<Claim> getPlayerClaims(UUID playerUniqueId) {
-        if (this.getPlayerDataMap().get(playerUniqueId) == null) {
+        final GPPlayerData playerData = this.getPlayerDataMap().get(playerUniqueId);
+        if (playerData == null) {
             return ImmutableList.of();
         }
         return ImmutableList.copyOf(this.getPlayerDataMap().get(playerUniqueId).getInternalClaims());
