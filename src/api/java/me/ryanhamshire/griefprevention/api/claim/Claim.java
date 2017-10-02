@@ -28,6 +28,7 @@ import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.data.ClaimData;
 import me.ryanhamshire.griefprevention.api.data.EconomyData;
+import me.ryanhamshire.griefprevention.api.data.PlayerData;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -1131,7 +1132,16 @@ public interface Claim extends ContextSource {
         Builder resizable(boolean allowResize);
 
         /**
-         * Whether to check for min/max level restrictions.
+         * Whether to check {@link PlayerData#getCreateClaimLimit()}.
+         * 
+         * @param checkCreate Whether to check for claim creation restrictions.
+         * @return The builder
+         */
+        Builder createLimitRestrictions(boolean checkCreateLimit);
+
+        /**
+         * Whether to check {@link PlayerData#getMinClaimLevel()} and 
+         * {@link PlayerData#getMaxClaimLevel()}.
          * 
          * @param checkLevel Whether to check for level restrictions.
          * @return The builder
