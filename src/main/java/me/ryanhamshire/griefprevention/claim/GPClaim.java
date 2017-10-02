@@ -2413,6 +2413,7 @@ public class GPClaim implements Claim {
         private boolean resizable = true;
         private boolean inherit = true;
         private boolean overrides = true;
+        private boolean createLimitRestrictions = true;
         private boolean levelRestrictions = true;
         private boolean sizeRestrictions = true;
         private World world;
@@ -2461,6 +2462,12 @@ public class GPClaim implements Claim {
         @Override
         public Builder world(World world) {
             this.world = world;
+            return this;
+        }
+
+        @Override
+        public Builder createLimitRestrictions(boolean checkCreateLimit) {
+            this.createLimitRestrictions = checkCreateLimit;
             return this;
         }
 
@@ -2587,7 +2594,7 @@ public class GPClaim implements Claim {
                 }
 
                 final User user = GriefPreventionPlugin.getOrCreateUser(this.ownerUniqueId);
-                if (!user.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
+                if (this.createLimitRestrictions && !user.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
                     final Double createClaimLimit = GPOptionHandler.getClaimOptionDouble(user, claim, GPOptions.Type.CLAIM_LIMIT, playerData);
                     if (createClaimLimit != null && createClaimLimit > 0 && (playerData.getInternalClaims().size() + 1) >= createClaimLimit.intValue()) {
                         return new GPClaimResult(claim, ClaimResultType.EXCEEDS_MAX_CLAIM_LIMIT);
