@@ -51,8 +51,8 @@ public class PlayerDataCategory extends ConfigCategory {
     @Setting(value = "reset-migrations", comment = "If enabled, resets all playerdata migration flags to allow for another migration."
             + "\nNote: Use this with caution as it can easily mess up claim block data. It is highly recommended to backup before using.")
     public boolean resetMigrations = false;
-    @Setting(value = "reset-claim-block-data", comment = "If enabled, resets all playerdata claimblock data with value specified."
-            + "\nExample: If set to 100, every player will start with 100 claim blocks."
-            + "\nNote: This will all reset bonus claim blocks to 0. It is highly recommended to backup before using.")
-    public int resetClaimBlockData = -1;
+    @Setting(value = "reset-accrued-claim-blocks", comment = "If enabled, resets all playerdata accrued claim blocks to match total cost of claims owned."
+            + "\nExample: If a player has 5 basic claims with a total cost of 1000, this will set their accrued claim blocks to 1000."
+            + "\nNote: This will also reset all bonus claim blocks to 0. It is highly recommended to backup before using.")
+    public boolean resetAccruedClaimBlocks = false;
 }

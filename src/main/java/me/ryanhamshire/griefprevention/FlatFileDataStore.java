@@ -284,11 +284,11 @@ public class FlatFileDataStore extends DataStore {
 
     void loadPlayerData(WorldProperties worldProperties, File[] files) throws Exception {
         final boolean resetMigration = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations;
-        final int resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
+        final boolean resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetAccruedClaimBlocks;
         final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate;
         final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate;
         boolean migrate = false;
-        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) 
+        if (resetMigration || resetClaimData || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) 
                 || (migration3dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME)) {
             // load all player data if migrating
             migrate = true;
