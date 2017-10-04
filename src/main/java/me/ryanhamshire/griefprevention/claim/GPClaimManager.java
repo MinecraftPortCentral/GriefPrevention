@@ -544,9 +544,9 @@ public class GPClaimManager implements ClaimManager {
         // migrate playerdata to new claim block system
         final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate;
         final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate;
-        final int resetClaimBlockData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
+        final boolean resetClaimBlockData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetAccruedClaimBlocks;
 
-        if (migration3dRate <= -1 && migration2dRate <= -1 && resetClaimBlockData <= -1) {
+        if (migration3dRate <= -1 && migration2dRate <= -1 && !resetClaimBlockData) {
             return;
         }
         if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME && migration2dRate >= 0) {
@@ -561,8 +561,8 @@ public class GPClaimManager implements ClaimManager {
             final int accruedBlocks = playerStorage.getConfig().getAccruedClaimBlocks();
             int newAccruedBlocks = accruedBlocks;
             // first check reset
-            if (resetClaimBlockData > -1) {
-                newAccruedBlocks = resetClaimBlockData;
+            if (resetClaimBlockData) {
+                newAccruedBlocks = playerData.getTotalClaimsCost();
                 playerStorage.getConfig().setBonusClaimBlocks(0);
             } else if (migration3dRate > -1 && !playerStorage.getConfig().hasMigratedBlocks()) {
                 newAccruedBlocks = accruedBlocks * migration3dRate;

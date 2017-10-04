@@ -409,6 +409,22 @@ public class GPPlayerData implements PlayerData {
         return remainingBlocks;
     }
 
+    public int getTotalClaimsCost() {
+        int totalCost = 0;
+        for (Claim claim : this.claimList) {
+            if (claim.isSubdivision()) {
+                continue;
+            }
+
+            final GPClaim gpClaim = (GPClaim) claim;
+            if ((gpClaim.parent == null || gpClaim.parent.isAdminClaim()) && claim.getData().requiresClaimBlocks()) {
+                totalCost += claim.getClaimBlocks();
+            }
+        }
+
+        return totalCost;
+    }
+
     public double getRemainingChunks() {
         final double remainingChunks = this.getRemainingClaimBlocks() / 65536.0;
         return Math.round(remainingChunks * 100.0)/100.0;
