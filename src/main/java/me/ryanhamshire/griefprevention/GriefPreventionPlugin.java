@@ -803,11 +803,11 @@ public class GriefPreventionPlugin {
         }
 
         final boolean resetMigration = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations;
-        final int resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData;
+        final boolean resetClaimData = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetAccruedClaimBlocks;
         final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate;
         final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate;
         boolean migrate = false;
-        if (resetMigration || resetClaimData > -1 || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) 
+        if (resetMigration || resetClaimData || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) 
                 || (migration3dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME)) {
             migrate = true;
         }
@@ -838,7 +838,7 @@ public class GriefPreventionPlugin {
                 }
             }
             GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetMigrations = false;
-            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetClaimBlockData = -1;
+            GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.resetAccruedClaimBlocks = false;
             GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate = -1;
             GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate = -1;
             GriefPreventionPlugin.getGlobalConfig().save();
