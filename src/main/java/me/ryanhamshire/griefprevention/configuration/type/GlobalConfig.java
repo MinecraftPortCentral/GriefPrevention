@@ -49,8 +49,8 @@ public class GlobalConfig extends ConfigBase {
     @Setting
     public MessageCategory message = new MessageCategory();
     @Setting(comment = 
-            "List of migrators that convert other protection data into GP claim data." + 
-            "\nNote: These migrators will NOT change or delete your data. It simply reads and creates new data for GriefPrevention.")
+            "List of migrators that convert old or other protection data into the current GP claim data format." + 
+            "\nNote: It is recommended to backup data before using.")
     public MigratorCategory migrator = new MigratorCategory();
     @Setting(value = "modules")
     public ModuleCategory modules = new ModuleCategory();

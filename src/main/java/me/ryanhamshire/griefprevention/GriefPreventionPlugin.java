@@ -845,6 +845,10 @@ public class GriefPreventionPlugin {
             GriefPreventionPlugin.getGlobalConfig().save();
         }
 
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.classicMigrator) {
+            GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.classicMigrator = false;
+            GriefPreventionPlugin.getGlobalConfig().save();
+        }
         // unless claim block accrual is disabled, start the recurring per 10
         // minute event to give claim blocks to online players
         DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null);
