@@ -787,17 +787,25 @@ public class BlockEventHandler {
     public GPClaim getSourceClaim(Cause cause) {
         BlockSnapshot blockSource = cause.first(BlockSnapshot.class).orElse(null);
         LocatableBlock locatableBlock = null;
+        TileEntity tileEntitySource = null;
         Entity entitySource = null;
         if (blockSource == null) {
             locatableBlock = cause.first(LocatableBlock.class).orElse(null);
             if (locatableBlock == null) {
                 entitySource = cause.first(Entity.class).orElse(null);
             }
+            if (locatableBlock == null && entitySource == null) {
+                tileEntitySource = cause.first(TileEntity.class).orElse(null);
+            }
         }
 
         GPClaim sourceClaim = null;
         if (blockSource != null) {
             sourceClaim = this.dataStore.getClaimAt(blockSource.getLocation().get());
+        } else if (locatableBlock != null) {
+            sourceClaim = this.dataStore.getClaimAt(locatableBlock.getLocation());
+        } else if (tileEntitySource != null) {
+            sourceClaim = this.dataStore.getClaimAt(tileEntitySource.getLocation());
         } else if (entitySource != null) {
             Entity entity = entitySource;
             if (entity instanceof Player) {
@@ -807,8 +815,6 @@ public class BlockEventHandler {
             } else {
                 sourceClaim = this.dataStore.getClaimAt(entity.getLocation());
             }
-        } else if (locatableBlock != null) {
-            sourceClaim = this.dataStore.getClaimAt(locatableBlock.getLocation());
         }
 
         return sourceClaim;

@@ -42,6 +42,7 @@ import org.spongepowered.api.CatalogType;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityType;
 import org.spongepowered.api.entity.Item;
@@ -603,6 +604,12 @@ public class GPPermissionHandler {
                 String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
                 populateEventSourceTarget(id, isSource);
                 return id.toLowerCase();
+            } else if (obj instanceof TileEntity) {
+                TileEntity tileEntity = (TileEntity) obj;
+                String id = tileEntity.getType().getId().toLowerCase();
+                System.out.println("id = " + id);
+                populateEventSourceTarget(id, isSource);
+                return tileEntity.getType().getId().toLowerCase();
             } else if (obj instanceof ItemStack) {
                 ItemStack itemstack = (ItemStack) obj;
                 String id = "";
