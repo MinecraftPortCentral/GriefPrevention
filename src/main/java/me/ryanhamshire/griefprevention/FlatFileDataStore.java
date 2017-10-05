@@ -386,7 +386,7 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // Validate Y values for older builds which would set both lesser and greater Y to same value
-        if (!cuboid && lesserCorner.getY() == greaterCorner.getY()) {
+        if (!cuboid && GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.classicMigrator) {
             // fix Y boundaries
             lesserCorner = new Vector3i(lesserCorner.getX(), 0, lesserCorner.getZ());
             greaterCorner = new Vector3i(greaterCorner.getX(), world.getDimension().getBuildHeight() - 1, greaterCorner.getZ());
