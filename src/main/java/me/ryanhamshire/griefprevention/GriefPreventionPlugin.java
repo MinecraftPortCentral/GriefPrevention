@@ -309,27 +309,33 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, String source, String target, User user, String permission, Tristate result) {
+    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, String source, String target, Subject subject, String permission, Tristate result) {
         for (GPDebugData debugEntry : GriefPreventionPlugin.instance.getDebugUserMap().values()) {
             final CommandSource debugSource = debugEntry.getSource();
             final User debugUser = debugEntry.getTarget();
             if (debugUser != null) {
-                if (user == null || !user.getUniqueId().equals(debugUser.getUniqueId())) {
+                if (subject == null || !subject.getIdentifier().equals(debugUser.getUniqueId())) {
                     continue;
                 }
             }
 
+            String messageUser = subject.getIdentifier();
+            if (subject instanceof User) {
+                messageUser = ((User) subject).getName();
+            }
             // record
             if (debugEntry.isRecording()) {
-                permission = permission.replace("griefprevention.flag.", "");
-                final String messageEvent = GPPermissionHandler.getFlagFromPermission(permission).toString();
+                String messageEvent = permission;
+                if (!permission.contains("trust.")) {
+                    permission = permission.replace("griefprevention.flag.", "");
+                    messageEvent = GPPermissionHandler.getFlagFromPermission(permission).toString();
+                }
                 final String messageSource = source == null ? "none" : source;
                 String messageTarget = target == null ? "none" : target;
                 if (messageTarget.endsWith(".0")) {
                     messageTarget = messageTarget.substring(0, messageTarget.length() - 2);
                 }
                 final String messageLocation = location == null ? "none" : location.getBlockPosition().toString();
-                final String messageUser = user == null ? "none" : user.getName();
                 debugEntry.addRecord(messageEvent, messageSource, messageTarget, messageLocation, messageUser, result);
                 continue;
             }
@@ -337,7 +343,7 @@ public class GriefPreventionPlugin {
             final Text textEvent = Text.of(GP_TEXT, TextColors.GRAY, "Event: ", TextColors.GREEN, event.getClass().getSimpleName().replace('$', '.').replace(".Impl", ""), "\n");
             final Text textCause = Text.of(GP_TEXT, TextColors.GRAY, "Cause: ", TextColors.LIGHT_PURPLE, GPPermissionHandler.getPermissionIdentifier(event.getCause().root()), "\n");
             final Text textLocation = Text.of(GP_TEXT, TextColors.GRAY, "Location: ", TextColors.WHITE, location == null ? "NONE" : location.getBlockPosition());
-            final Text textUser = Text.of(TextColors.GRAY, "User: ", TextColors.GOLD, user.getName(), "\n");
+            final Text textUser = Text.of(TextColors.GRAY, "User: ", TextColors.GOLD, messageUser, "\n");
             final Text textLocationAndUser = Text.of(textLocation, " ", textUser);
             Text textContext = null;
             Text textPermission = null;
@@ -384,13 +390,8 @@ public class GriefPreventionPlugin {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
                     spongeBuild = Integer.parseInt(build);
-<<<<<<< HEAD
                     if (spongeBuild < 2637) {
                         this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2637+.");
-=======
-                    if (spongeBuild < 2688) {
-                        this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires build 2624+.");
->>>>>>> 5d272a5... Check for TE sources. Fixes #481
                         return false;
                     }
                 } catch (NumberFormatException e) {

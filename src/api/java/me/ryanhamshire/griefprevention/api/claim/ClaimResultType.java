@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.api.claim;
 
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
+import org.spongepowered.api.entity.living.player.Player;
 
 /**
  * Used to provide more information to a plugin when a claim
