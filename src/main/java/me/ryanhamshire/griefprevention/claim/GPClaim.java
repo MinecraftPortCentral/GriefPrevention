@@ -2015,10 +2015,11 @@ public class GPClaim implements Claim {
             return true;
         }
 
+        if (this.isPublicTrusted(type)) {
+            return true;
+        }
+
         if (type == TrustType.ACCESSOR) {
-            if (this.claimData.getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-                return true;
-            }
             if (this.claimData.getAccessors().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2032,9 +2033,6 @@ public class GPClaim implements Claim {
                 return true;
             }
         } else if (type == TrustType.BUILDER) {
-            if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-                return true;
-            }
             if (this.claimData.getBuilders().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2042,9 +2040,6 @@ public class GPClaim implements Claim {
                 return true;
             }
         } else if (type == TrustType.CONTAINER) {
-            if (this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-                return true;
-            }
             if (this.claimData.getContainers().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2055,9 +2050,6 @@ public class GPClaim implements Claim {
                 return true;
             }
         } else if (type == TrustType.MANAGER) {
-            if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
-                return true;
-            }
             if (this.claimData.getManagers().contains(user.getUniqueId())) {
                 return true;
             }
@@ -2072,8 +2064,49 @@ public class GPClaim implements Claim {
             return true;
         }
 
-        if (this.parent != null) {
+        // Only check parent if this claim inherits
+        if (this.parent != null && this.getData().doesInheritParent()) {
             return this.parent.isUserTrusted(user, type, contexts);
+        }
+
+        return false;
+    }
+
+    private boolean isPublicTrusted(TrustType type) {
+        if (type == TrustType.ACCESSOR) {
+            if (this.claimData.getAccessors().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+            if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+            if (this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+            if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+        } else if (type == TrustType.BUILDER) {
+            if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+            if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+        } else if (type == TrustType.CONTAINER) {
+            if (this.claimData.getContainers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+            if (this.claimData.getBuilders().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+            if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
+        } else if (type == TrustType.MANAGER) {
+            if (this.claimData.getManagers().contains(GriefPreventionPlugin.PUBLIC_UUID)) {
+                return true;
+            }
         }
 
         return false;
