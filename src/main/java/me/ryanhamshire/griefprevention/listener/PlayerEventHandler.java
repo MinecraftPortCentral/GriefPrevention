@@ -1410,7 +1410,7 @@ public class PlayerEventHandler {
                 : blockSnapshot != BlockSnapshot.NONE ? blockSnapshot.getLocation().get() 
                         : interactPoint != null ? new Location<World>(world, interactPoint) 
                                 : player.getLocation();
-        final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
+        final GPClaim claim = this.dataStore.getClaimAt(location);
         if ((itemInHand == ItemTypes.NONE || playerItem instanceof ItemFood) && blockSnapshot == BlockSnapshot.NONE && entity == null) {
             return;
         }
@@ -1702,7 +1702,7 @@ public class PlayerEventHandler {
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
-        final GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
+        final GPClaim claim = this.dataStore.getClaimAt(location);
         final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, TrustType.BUILDER, true);
         if (result == Tristate.FALSE) {
             if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player, TrustType.BUILDER, true) == Tristate.TRUE) {
@@ -1754,7 +1754,7 @@ public class PlayerEventHandler {
             return;
         }
 
-        GPClaim playerClaim = this.dataStore.getClaimAtPlayer(playerData, location);
+        final GPClaim playerClaim = this.dataStore.getClaimAt(location);
         final TileEntity tileEntity = clickedBlock.getLocation().get().getTileEntity().orElse(null);
         if (GPFlags.INTERACT_BLOCK_SECONDARY && playerData != null) {
             final TrustType trustType = (tileEntity != null && tileEntity instanceof IInventory) ? TrustType.CONTAINER : TrustType.ACCESSOR;
@@ -1870,7 +1870,7 @@ public class PlayerEventHandler {
             }
 
             // if the clicked block is in a claim, visualize that claim and deliver an error message
-            GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
+            final GPClaim claim = this.dataStore.getClaimAt(location);
             if (!claim.isWilderness()) {
                 final Text message = GriefPreventionPlugin.instance.messageData.blockClaimed
                         .apply(ImmutableMap.of(
