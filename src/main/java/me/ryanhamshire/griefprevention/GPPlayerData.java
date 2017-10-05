@@ -311,14 +311,14 @@ public class GPPlayerData implements PlayerData {
             this.canManageAdminClaims = subject.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
             this.canManageWilderness = subject.hasPermission(GPPermissions.MANAGE_WILDERNESS);
             this.playerName = CommandHelper.lookupPlayerName(this.playerID);
-            this.dataInitialized = true;
-            this.checkedDimensionHeight = false;
             if (this.optionMaxClaimLevel > 255 || this.optionMaxClaimLevel <= 0 || this.optionMaxClaimLevel < this.optionMinClaimLevel) {
                 this.optionMaxClaimLevel = 255;
             }
             if (this.optionMinClaimLevel < 0 || this.optionMinClaimLevel >= 255 || this.optionMinClaimLevel > this.optionMaxClaimLevel) {
                 this.optionMinClaimLevel = 0;
             }
+            this.dataInitialized = true;
+            this.checkedDimensionHeight = false;
         });
     }
 
