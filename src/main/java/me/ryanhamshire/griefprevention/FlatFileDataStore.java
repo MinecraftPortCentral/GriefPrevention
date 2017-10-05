@@ -378,12 +378,19 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // boundaries
+        final boolean cuboid = claimStorage.getConfig().isCuboid();
         Vector3i lesserCorner = claimStorage.getConfig().getLesserBoundaryCornerPos();
         Vector3i greaterCorner = claimStorage.getConfig().getGreaterBoundaryCornerPos();
         if (lesserCorner == null || greaterCorner == null) {
             throw new Exception("Claim file '" + claimFile.getName() + "' has corrupted data and cannot be loaded. Skipping...");
         }
 
+        // Validate Y values for older builds which would set both lesser and greater Y to same value
+        if (!cuboid && lesserCorner.getY() == greaterCorner.getY()) {
+            // fix Y boundaries
+            lesserCorner = new Vector3i(lesserCorner.getX(), 0, lesserCorner.getZ());
+            greaterCorner = new Vector3i(greaterCorner.getX(), 255, greaterCorner.getZ());
+        }
         Location<World> lesserBoundaryCorner = new Location<World>(world, lesserCorner);
         Location<World> greaterBoundaryCorner = new Location<World>(world, greaterCorner);
 
@@ -395,7 +402,7 @@ public class FlatFileDataStore extends DataStore {
         }
 
         // instantiate
-        claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType(), ownerID, claimStorage.getConfig().isCuboid());
+        claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType(), ownerID, cuboid);
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
         final GPClaimManager claimManager = this.getClaimWorldManager(worldProperties);
