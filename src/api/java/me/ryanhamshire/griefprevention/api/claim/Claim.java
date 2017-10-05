@@ -1035,10 +1035,10 @@ public interface Claim extends ContextSource {
         /**
          * Whether to check {@link PlayerData#getCreateClaimLimit()}.
          * 
-         * @param checkCreate Whether to check for claim creation restrictions.
+         * @param checkLimit Whether to check for claim creation restrictions.
          * @return The builder
          */
-        Builder createLimitRestrictions(boolean checkCreateLimit);
+        Builder createLimitRestrictions(boolean checkLimit);
 
         /**
          * Whether to check {@link PlayerData#getMinClaimLevel()} and 

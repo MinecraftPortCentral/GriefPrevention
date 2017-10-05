@@ -120,7 +120,7 @@ public class GPDebugData {
         debugOutput.add("| Time elapsed | " + elapsed + " seconds" + "|");
         debugOutput.add("");
         debugOutput.add("### Output") ;
-        debugOutput.add("| Flag  | Source | Target | Location | User | Result |");
+        debugOutput.add("| Flag/Trust  | Source | Target | Location | User | Result |");
         debugOutput.add("|-------|--------|--------|----------|------|--------|");
 
         debugOutput.addAll(this.records);

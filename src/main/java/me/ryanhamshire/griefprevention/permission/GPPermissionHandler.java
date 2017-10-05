@@ -36,6 +36,7 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.api.CatalogType;
@@ -78,7 +79,7 @@ public class GPPermissionHandler {
 
     private static Event currentEvent;
     private static Location<World> eventLocation;
-    private static User eventUser;
+    private static Subject eventSubject;
     private static String eventSource = "none";
     private static String eventTarget = "none";
 
@@ -92,13 +93,13 @@ public class GPPermissionHandler {
 
     public static Tristate getClaimPermission(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user, TrustType type, boolean checkOverride) {
         if (claim == null) {
-            return processResult(claim, flagPermission, Tristate.TRUE);
+            return Tristate.TRUE;
         }
 
         GPPlayerData playerData = null;
-        eventUser = null;
+        eventSubject = null;
         if (user != null) {
-            eventUser = user;
+            eventSubject = user;
             if (user instanceof Player) {
                 playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, user.getUniqueId());
             }
@@ -164,12 +165,12 @@ public class GPPermissionHandler {
 
         // Check for ignoreclaims after override checks
         if (playerData != null && playerData.canIgnoreClaim(claim)) {
-            return processResult(claim, flagPermission, Tristate.TRUE);
+            return processResult(claim, "trust.ignore", Tristate.TRUE, user);
         }
         if (user != null) {
             if (type != null) {
                 if (claim.isUserTrusted(user, type)) {
-                    return Tristate.TRUE;
+                    return processResult(claim, "trust." + type.toString().toLowerCase(), Tristate.TRUE, user);
                 }
             }
             return getUserPermission(user, claim, targetPermission, targetModPermission, targetMetaPermission, playerData);
@@ -234,18 +235,18 @@ public class GPPermissionHandler {
 
         Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
         if (value != Tristate.UNDEFINED) {
-            return processResult(claim, permission, value);
+            return processResult(claim, permission, value, GriefPreventionPlugin.GLOBAL_SUBJECT);
         }
         if (targetMetaPermission != null) {
             value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetMetaPermission);
             if (value != Tristate.UNDEFINED) {
-                return processResult(claim, targetMetaPermission, value);
+                return processResult(claim, targetMetaPermission, value, GriefPreventionPlugin.GLOBAL_SUBJECT);
             }
         }
         if (targetModPermission != null) {
             value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, targetModPermission);
             if (value != Tristate.UNDEFINED) {
-                return processResult(claim, targetModPermission, value);
+                return processResult(claim, targetModPermission, value, GriefPreventionPlugin.GLOBAL_SUBJECT);
             }
         }
 
@@ -278,15 +279,15 @@ public class GPPermissionHandler {
         // check persisted/transient default data
         Tristate value = GriefPreventionPlugin.GLOBAL_SUBJECT.getPermissionValue(contexts, permission);
         if (value != Tristate.UNDEFINED) {
-            return processResult(claim, permission, value);
+            return processResult(claim, permission, value, GriefPreventionPlugin.GLOBAL_SUBJECT);
         }
 
-        return processResult(claim, permission, Tristate.UNDEFINED);
+        return processResult(claim, permission, Tristate.UNDEFINED, GriefPreventionPlugin.GLOBAL_SUBJECT);
     }
 
     private static Tristate getFlagOverride(GPClaim claim, Subject subject, User user, GPPlayerData playerData, String flagPermission, String targetModPermission, String targetMetaPermission) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
-            return processResult(claim, flagPermission, Tristate.UNDEFINED);
+            return Tristate.UNDEFINED;
         }
 
         Player player = null;
@@ -346,12 +347,12 @@ public class GPPermissionHandler {
             }
         }
 
-        return processResult(claim, flagPermission, Tristate.UNDEFINED, user);
+        return Tristate.UNDEFINED;
     }
 
     public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user, GPPlayerData playerData, boolean checkWildernessOverride) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
-            return processResult(claim, flagPermission, Tristate.UNDEFINED);
+            return Tristate.UNDEFINED;
         }
 
         if (checkWildernessOverride && !claim.isWilderness()) {
@@ -363,7 +364,7 @@ public class GPPermissionHandler {
 
         currentEvent = event;
         eventLocation = location;
-        eventUser = user;
+        eventSubject = user;
         Player player = null;
         final Subject subject = user != null ? user : GriefPreventionPlugin.GLOBAL_SUBJECT;
         String targetModPermission = null;
@@ -456,7 +457,7 @@ public class GPPermissionHandler {
             }
         }
 
-        return processResult(claim, flagPermission, Tristate.UNDEFINED, user);
+        return Tristate.UNDEFINED;
     }
 
     // used by Flag API
@@ -491,25 +492,21 @@ public class GPPermissionHandler {
         return subject.getPermissionValue(contexts, targetPermission);
     }
 
-    public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue) {
-        return processResult(claim, permission, permissionValue, eventUser);
-    }
-
-    public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue, User user) {
+    public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue, Subject subject) {
         if (GriefPreventionPlugin.debugActive) {
-            if (user == null) {
-                if (eventUser != null) {
-                    user = eventUser;
+            if (subject == null) {
+                if (eventSubject != null) {
+                    subject = eventSubject;
                 } else if (currentEvent.getCause().root() instanceof User) {
-                    user = (User) currentEvent.getCause().root();
+                    subject = (Subject) currentEvent.getCause().root();
                 }
             }
             if (currentEvent instanceof CollideEvent || currentEvent instanceof NotifyNeighborBlockEvent) {
                 if (claim.getWorld().getProperties().getTotalTime() % 100 == 0L) {
-                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, user, permission, permissionValue);
+                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, subject, permission, permissionValue);
                 }
             } else {
-                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, user, permission, permissionValue);
+                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, subject, permission, permissionValue);
             }
         }
 
@@ -540,6 +537,9 @@ public class GPPermissionHandler {
                     }
                 }
 
+                if (id.contains("unknown") && SpongeImplHooks.isFakePlayer(mcEntity)) {
+                    id = "fakeplayer:" + ((EntityPlayer) obj).getName().toLowerCase();
+                }
                 populateEventSourceTarget(id, isSource);
                 if (!isSource && targetEntity instanceof Living) {
                     for (EnumCreatureType type : EnumCreatureType.values()) {
@@ -564,33 +564,33 @@ public class GPPermissionHandler {
                 populateEventSourceTarget(id, isSource);
                 return ((EntityType) obj).getId();
             } else if (obj instanceof BlockType) {
-                String id = ((BlockType) obj).getId();
+                final String id = ((BlockType) obj).getId();
                 populateEventSourceTarget(id, isSource);
                 return id;
             } else if (obj instanceof BlockSnapshot) {
-                BlockSnapshot blockSnapshot = (BlockSnapshot) obj;
-                BlockState blockstate = blockSnapshot.getState();
-                String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                final BlockSnapshot blockSnapshot = (BlockSnapshot) obj;
+                final BlockState blockstate = blockSnapshot.getState();
+                final String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
                 populateEventSourceTarget(id, isSource);
                 return id.toLowerCase();
             } else if (obj instanceof BlockState) {
-                BlockState blockstate = (BlockState) obj;
-                String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                final BlockState blockstate = (BlockState) obj;
+                final String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
                 populateEventSourceTarget(id, isSource);
                 return id.toLowerCase();
             } else if (obj instanceof LocatableBlock) {
-                LocatableBlock locatableBlock = (LocatableBlock) obj;
-                BlockState blockstate = locatableBlock.getBlockState();
-                String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                final LocatableBlock locatableBlock = (LocatableBlock) obj;
+                final BlockState blockstate = locatableBlock.getBlockState();
+                final String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
                 populateEventSourceTarget(id, isSource);
                 return id.toLowerCase();
             } else if (obj instanceof TileEntity) {
                 TileEntity tileEntity = (TileEntity) obj;
-                String id = tileEntity.getType().getId().toLowerCase();
+                final String id = tileEntity.getType().getId().toLowerCase();
                 populateEventSourceTarget(id, isSource);
-                return tileEntity.getType().getId().toLowerCase();
+                return id;
             } else if (obj instanceof ItemStack) {
-                ItemStack itemstack = (ItemStack) obj;
+                final ItemStack itemstack = (ItemStack) obj;
                 String id = "";
                 if (itemstack.getItem() instanceof ItemBlock) {
                     ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
@@ -604,13 +604,13 @@ public class GPPermissionHandler {
                 populateEventSourceTarget(id, isSource);
                 return id.toLowerCase();
             } else if (obj instanceof ItemType) {
-                String id = ((ItemType) obj).getId().toLowerCase();
+                final String id = ((ItemType) obj).getId().toLowerCase();
                 populateEventSourceTarget(id, isSource);
                 return id;
             } else if (obj instanceof EntityDamageSource) {
                 final EntityDamageSource damageSource = (EntityDamageSource) obj;
-                if (eventUser == null && damageSource.getSource() instanceof User) {
-                    eventUser = (User) damageSource.getSource();
+                if (eventSubject == null && damageSource.getSource() instanceof User) {
+                    eventSubject = (User) damageSource.getSource();
                 }
 
                 final String id = damageSource.getSource().getType().getId();
