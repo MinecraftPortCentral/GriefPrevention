@@ -587,7 +587,6 @@ public class GPPermissionHandler {
             } else if (obj instanceof TileEntity) {
                 TileEntity tileEntity = (TileEntity) obj;
                 String id = tileEntity.getType().getId().toLowerCase();
-                System.out.println("id = " + id);
                 populateEventSourceTarget(id, isSource);
                 return tileEntity.getType().getId().toLowerCase();
             } else if (obj instanceof ItemStack) {
