@@ -389,7 +389,7 @@ public class FlatFileDataStore extends DataStore {
         if (!cuboid && lesserCorner.getY() == greaterCorner.getY()) {
             // fix Y boundaries
             lesserCorner = new Vector3i(lesserCorner.getX(), 0, lesserCorner.getZ());
-            greaterCorner = new Vector3i(greaterCorner.getX(), 255, greaterCorner.getZ());
+            greaterCorner = new Vector3i(greaterCorner.getX(), world.getDimension().getBuildHeight() - 1, greaterCorner.getZ());
         }
         Location<World> lesserBoundaryCorner = new Location<World>(world, lesserCorner);
         Location<World> greaterBoundaryCorner = new Location<World>(world, greaterCorner);
