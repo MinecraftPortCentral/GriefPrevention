@@ -85,6 +85,7 @@ public class CommandClaimWorldEdit implements CommandExecutor {
         final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
             .bounds(lesser, greater)
             .cause(cause)
+            .cuboid(playerData.optionClaimCreateMode == 1)
             .owner(player.getUniqueId())
             .sizeRestrictions(true)
             .type(PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode))
