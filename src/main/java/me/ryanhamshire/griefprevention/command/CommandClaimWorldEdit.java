@@ -86,6 +86,7 @@ public class CommandClaimWorldEdit implements CommandExecutor {
             Sponge.getCauseStackManager().pushCause(player);
             final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
                 .bounds(lesser, greater)
+                .cuboid(playerData.optionClaimCreateMode == 1)
                 .owner(player.getUniqueId())
                 .sizeRestrictions(true)
                 .type(PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode))

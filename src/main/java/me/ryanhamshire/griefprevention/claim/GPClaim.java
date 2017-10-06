@@ -1193,71 +1193,46 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult resize(int newx1, int newx2, int newy1, int newy2, int newz1, int newz2) {
+    public ClaimResult resize(int smallX, int smallY, int smallZ, int bigX, int bigY, int bigZ) {
         if (this.cuboid) {
-            return resizeCuboid(newx1, newx2, newy1, newy2, newz1, newz2);
+            return resizeCuboid(smallX, smallY, smallZ, bigX, bigY, bigZ);
         }
 
         Location<World> startCorner = null;
         Location<World> endCorner = null;
-        Player player = null;
         GPPlayerData playerData = null;
-        if (!this.isAdminClaim() && this.ownerUniqueId != null) {
+        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
+        final Player player = root instanceof Player ? (Player) root : null;
+        if (player != null) {
+            playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
+        } else if (!this.isAdminClaim() && this.ownerUniqueId != null) {
             playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, this.ownerUniqueId);
         }
-        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
-        if (!(root instanceof Player)) {
-            startCorner = new Location<World>(this.world, newx1, newy1, newz1);
-            endCorner = new Location<World>(this.world, newx2, newy2, newz2);
+
+        if (playerData == null) {
+            startCorner = new Location<World>(this.world, smallX, smallY, smallZ);
+            endCorner = new Location<World>(this.world, bigX, bigY, bigZ);
         } else {
-            player = (Player) root;
             startCorner = playerData.lastShovelLocation;
             endCorner = playerData.endShovelLocation;
         }
 
-        int smallx, bigx, smally, bigy, smallz, bigz;
-
-        // determine small versus big inputs
-        if (newx1 < newx2) {
-            smallx = newx1;
-            bigx = newx2;
-        } else {
-            smallx = newx2;
-            bigx = newx1;
-        }
-
-        if (newy1 < newy2) {
-            smally = newy1;
-            bigy = newy2;
-        } else {
-            smally = newy2;
-            bigy = newy1;
-        }
-
-        if (newz1 < newz2) {
-            smallz = newz1;
-            bigz = newz2;
-        } else {
-            smallz = newz2;
-            bigz = newz1;
-        }
-
         // creative mode claims always go to bedrock
         if (GriefPreventionPlugin.instance.claimModeIsActive(this.world.getProperties(), ClaimsMode.Creative)) {
-            smally = 2;
+            smallY = 2;
         }
 
         // Auto-adjust Y levels for 2D claims
         if (playerData != null && playerData.shovelMode != ShovelMode.Admin) {
-            smally = playerData.getMinClaimLevel();
+            smallY = playerData.getMinClaimLevel();
         }
         if (playerData != null && playerData.shovelMode != ShovelMode.Admin) {
-            bigy = playerData.getMaxClaimLevel();
+            bigY = playerData.getMaxClaimLevel();
         }
         Location<World> currentLesserCorner = this.getLesserBoundaryCorner();
         Location<World> currentGreaterCorner = this.getGreaterBoundaryCorner();
-        Location<World> newLesserCorner = new Location<World>(this.world, smallx, smally, smallz);
-        Location<World> newGreaterCorner = new Location<World>(this.world, bigx, bigy, bigz);
+        Location<World> newLesserCorner = new Location<World>(this.world, smallX, smallY, smallZ);
+        Location<World> newGreaterCorner = new Location<World>(this.world, bigX, bigY, bigZ);
 
         // check player has enough claim blocks
         if ((this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
@@ -1355,51 +1330,22 @@ public class GPClaim implements Claim {
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
-    public ClaimResult resizeCuboid(int newx1, int newy1, int newz1, int newx2, int newy2, int newz2) {
-        int smallX = this.lesserBoundaryCorner.getBlockX();
-        int smallY = this.lesserBoundaryCorner.getBlockY();
-        int smallZ = this.lesserBoundaryCorner.getBlockZ();
-        int bigX = this.greaterBoundaryCorner.getBlockX();
-        int bigY = this.greaterBoundaryCorner.getBlockY();
-        int bigZ = this.greaterBoundaryCorner.getBlockZ();
-
-        if (newx1 == smallX) {
-            smallX = newx2;
-        } else {
-            bigX = newx2;
-        }
-
-        if (newy1 == smallY) {
-            smallY = newy2;
-        } else {
-            bigY = newy2;
-        }
-
-        if (newz1 == smallZ) {
-            smallZ = newz2;
-        } else {
-            bigZ = newz2;
-        }
-        newx1 = smallX;
-        newy1 = smallY;
-        newz1 = smallZ;
-        newx2 = bigX;
-        newy2 = bigY;
-        newz2 = bigZ;
-
+    public ClaimResult resizeCuboid(int smallX, int smallY, int smallZ, int bigX, int bigY, int bigZ) {
         Location<World> startCorner = null;
         Location<World> endCorner = null;
-        Player player = null;
         GPPlayerData playerData = null;
-        if (!this.isAdminClaim() && this.ownerUniqueId != null) {
+        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
+        final Player player = root instanceof Player ? (Player) root : null;
+        if (player != null) {
+            playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, player.getUniqueId());
+        } else if (!this.isAdminClaim() && this.ownerUniqueId != null) {
             playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(this.world, this.ownerUniqueId);
         }
-        final Object root = Sponge.getCauseStackManager().getCurrentCause().root();
-        if (!(root instanceof Player)) {
+
+        if (playerData == null) {
             startCorner = new Location<World>(this.world, smallX, smallY, smallZ);
             endCorner = new Location<World>(this.world, bigX, bigY, bigZ);
         } else {
-            player = (Player) root;
             startCorner = playerData.lastShovelLocation;
             endCorner = playerData.endShovelLocation;
         }
