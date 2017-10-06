@@ -383,6 +383,7 @@ public abstract class DataStore {
     public ClaimResult createClaim(World world, Vector3i point1, Vector3i point2, ClaimType claimType, UUID ownerUniqueId, boolean cuboid, Claim parent, Cause cause) {
         ClaimResult claimResult = Claim.builder()
                 .bounds(point1, point2)
+                .cuboid(cuboid)
                 .world(world)
                 .type(claimType)
                 .owner(ownerUniqueId)

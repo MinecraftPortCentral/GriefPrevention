@@ -2022,66 +2022,37 @@ public class PlayerEventHandler {
             int newx1, newx2, newz1, newz2, newy1, newy2;
             int smallX = 0, smallY = 0, smallZ = 0, bigX = 0, bigY = 0, bigZ = 0;
 
-            if (playerData.claimResizing.isCuboid()) {
-                newx1 = playerData.lastShovelLocation.getBlockX();
-                newx2 = location.getBlockX();
-                newy1 = playerData.lastShovelLocation.getBlockY();
-                newy2 = location.getBlockY();
-                newz1 = playerData.lastShovelLocation.getBlockZ();
-                newz2 = location.getBlockZ();
-                Location<World> lesserBoundaryCorner = playerData.claimResizing.getLesserBoundaryCorner();
-                Location<World> greaterBoundaryCorner = playerData.claimResizing.getGreaterBoundaryCorner();
-                smallX = lesserBoundaryCorner.getBlockX();
-                smallY = lesserBoundaryCorner.getBlockY();
-                smallZ = lesserBoundaryCorner.getBlockZ();
-                bigX = greaterBoundaryCorner.getBlockX();
-                bigY = greaterBoundaryCorner.getBlockY();
-                bigZ = greaterBoundaryCorner.getBlockZ();
+            newx1 = playerData.lastShovelLocation.getBlockX();
+            newx2 = location.getBlockX();
+            newy1 = playerData.lastShovelLocation.getBlockY();
+            newy2 = location.getBlockY();
+            newz1 = playerData.lastShovelLocation.getBlockZ();
+            newz2 = location.getBlockZ();
+            Location<World> lesserBoundaryCorner = playerData.claimResizing.getLesserBoundaryCorner();
+            Location<World> greaterBoundaryCorner = playerData.claimResizing.getGreaterBoundaryCorner();
+            smallX = lesserBoundaryCorner.getBlockX();
+            smallY = lesserBoundaryCorner.getBlockY();
+            smallZ = lesserBoundaryCorner.getBlockZ();
+            bigX = greaterBoundaryCorner.getBlockX();
+            bigY = greaterBoundaryCorner.getBlockY();
+            bigZ = greaterBoundaryCorner.getBlockZ();
 
-                if (newx1 == smallX) {
-                    smallX = newx2;
-                } else {
-                    bigX = newx2;
-                }
-
-                if (newy1 == smallY) {
-                    smallY = newy2;
-                } else {
-                    bigY = newy2;
-                }
-
-                if (newz1 == smallZ) {
-                    smallZ = newz2;
-                } else {
-                    bigZ = newz2;
-                }
+            if (newx1 == smallX) {
+                smallX = newx2;
             } else {
-                if (playerData.lastShovelLocation.getBlockX() == playerData.claimResizing.getLesserBoundaryCorner().getBlockX()) {
-                    newx1 = location.getBlockX();
-                } else {
-                    newx1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockX();
-                }
-    
-                if (playerData.lastShovelLocation.getBlockX() == playerData.claimResizing.getGreaterBoundaryCorner().getBlockX()) {
-                    newx2 = location.getBlockX();
-                } else {
-                    newx2 = playerData.claimResizing.getGreaterBoundaryCorner().getBlockX();
-                }
-    
-                if (playerData.lastShovelLocation.getBlockZ() == playerData.claimResizing.getLesserBoundaryCorner().getBlockZ()) {
-                    newz1 = location.getBlockZ();
-                } else {
-                    newz1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockZ();
-                }
-    
-                if (playerData.lastShovelLocation.getBlockZ() == playerData.claimResizing.getGreaterBoundaryCorner().getBlockZ()) {
-                    newz2 = location.getBlockZ();
-                } else {
-                    newz2 = playerData.claimResizing.getGreaterBoundaryCorner().getBlockZ();
-                }
-    
-                newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
-                newy2 = location.getBlockY();
+                bigX = newx2;
+            }
+
+            if (newy1 == smallY) {
+                smallY = newy2;
+            } else {
+                bigY = newy2;
+            }
+
+            if (newz1 == smallZ) {
+                smallZ = newz2;
+            } else {
+                bigZ = newz2;
             }
 
             // special rule for making a top-level claim smaller. to check this, verifying the old claim's corners are inside the new claim's boundaries.
@@ -2089,18 +2060,10 @@ public class PlayerEventHandler {
             GPClaim oldClaim = playerData.claimResizing;
             boolean smaller = false;
             if (oldClaim.parent == null) {
-                GPClaim newClaim = null;
                 // temporary claim instance, just for checking contains()
-                if (oldClaim.isCuboid()) {
-                    newClaim = new GPClaim(
+                GPClaim newClaim = new GPClaim(
                             new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), smallX, smallY, smallZ),
                             new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), bigX, bigY, bigZ), ClaimType.BASIC, oldClaim.isCuboid());
-
-                } else {
-                    newClaim = new GPClaim(
-                        new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), newx1, newy1, newz1),
-                        new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), newx2, newy2, newz2), ClaimType.BASIC, oldClaim.isCuboid());
-                }
                 // if the new claim is smaller
                 if (!newClaim.contains(oldClaim.getLesserBoundaryCorner())
                         || !newClaim.contains(oldClaim.getGreaterBoundaryCorner())) {
@@ -2115,10 +2078,10 @@ public class PlayerEventHandler {
             ClaimResult claimResult = null;
             if (playerData.claimResizing.isCuboid()) {
                 // 3D resize
-                claimResult = playerData.claimResizing.resizeCuboid(newx1, newy1, newz1, newx2, newy2, newz2, Cause.of(NamedCause.source(player)));
+                claimResult = playerData.claimResizing.resizeCuboid(smallX, smallY, smallZ, bigX, bigY, bigZ, Cause.of(NamedCause.source(player)));
             } else {
                 // 2D resize
-                claimResult = playerData.claimResizing.resize(newx1, newx2, newy1, newy2, newz1, newz2, Cause.of(NamedCause.source(player)));
+                claimResult = playerData.claimResizing.resize(smallX, smallY, smallZ, bigX, bigY, bigZ, Cause.of(NamedCause.source(player)));
             }
 
             if (claimResult.successful()) {
