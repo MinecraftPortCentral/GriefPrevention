@@ -95,12 +95,17 @@ public class GPApiProvider implements GriefPreventionApi {
 
     @Override
     public Optional<PlayerData> getGlobalPlayerData(UUID playerUniqueId) {
-        return Optional.ofNullable(DataStore.GLOBAL_PLAYER_DATA.get(playerUniqueId));
+        final WorldProperties worldProperties = Sponge.getServer().getDefaultWorld().orElse(null);
+        if (worldProperties == null) {
+            return Optional.empty();
+        }
+
+        return this.getWorldPlayerData(worldProperties, playerUniqueId);
     }
 
     @Override
     public Optional<PlayerData> getWorldPlayerData(WorldProperties worldProperties, UUID playerUniqueId) {
-        return Optional.ofNullable(GriefPreventionPlugin.instance.dataStore.getPlayerData(worldProperties, playerUniqueId));
+        return Optional.ofNullable(GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(worldProperties, playerUniqueId));
     }
 
     @Override
