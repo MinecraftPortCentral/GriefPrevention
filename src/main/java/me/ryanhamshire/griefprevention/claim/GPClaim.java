@@ -1193,7 +1193,38 @@ public class GPClaim implements Claim {
     }
 
     @Override
-    public ClaimResult resize(int smallX, int smallY, int smallZ, int bigX, int bigY, int bigZ) {
+    public ClaimResult resize(int x1, int x2, int y1, int y2, int z1, int z2) {
+        int smallx, bigx, smally, bigy, smallz, bigz;
+
+        // determine small versus big inputs
+        if (x1 < x2) {
+            smallx = x1;
+            bigx = x2;
+        } else {
+            smallx = x2;
+            bigx = x1;
+        }
+
+        if (y1 < y2) {
+            smally = y1;
+            bigy = y2;
+        } else {
+            smally = y2;
+            bigy = y1;
+        }
+
+        if (z1 < z2) {
+            smallz = z1;
+            bigz = z2;
+        } else {
+            smallz = z2;
+            bigz = z1;
+        }
+
+        return this.resizeInternal(smallx, smally, smallz, bigx, bigy, bigz);
+    }
+
+    public ClaimResult resizeInternal(int smallX, int smallY, int smallZ, int bigX, int bigY, int bigZ) {
         if (this.cuboid) {
             return resizeCuboid(smallX, smallY, smallZ, bigX, bigY, bigZ);
         }
@@ -2117,6 +2148,10 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
+        if (type == TrustType.NONE) {
+            return this.removeAllTrustsFromUser(uuid);
+        }
+
         this.getUserTrustList(type).remove(uuid);
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
@@ -2127,6 +2162,13 @@ public class GPClaim implements Claim {
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        if (type == TrustType.NONE) {
+            for (UUID uuid : uuids) {
+                this.removeAllTrustsFromUser(uuid);
+            }
+            return new GPClaimResult(this, ClaimResultType.SUCCESS);
         }
 
         List<UUID> userList = this.getUserTrustList(type);
@@ -2181,6 +2223,10 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
+        if (type == TrustType.NONE) {
+            return this.removeAllTrustsFromGroup(group);
+        }
+
         this.getGroupTrustList(type).remove(group);
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
@@ -2191,6 +2237,13 @@ public class GPClaim implements Claim {
         Sponge.getEventManager().post(event);
         if (event.isCancelled()) {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
+        }
+
+        if (type == TrustType.NONE) {
+            for (String group : groups) {
+                this.removeAllTrustsFromGroup(group);
+            }
+            return new GPClaimResult(this, ClaimResultType.SUCCESS);
         }
 
         List<String> groupList = this.getGroupTrustList(type);
@@ -2262,7 +2315,26 @@ public class GPClaim implements Claim {
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
+    public ClaimResult removeAllTrustsFromUser(UUID userUniqueId) {
+        for (TrustType type : TrustType.values()) {
+            this.getUserTrustList(type).remove(userUniqueId);
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
+    public ClaimResult removeAllTrustsFromGroup(String group) {
+        for (TrustType type : TrustType.values()) {
+            this.getGroupTrustList(type).remove(group);
+        }
+
+        return new GPClaimResult(this, ClaimResultType.SUCCESS);
+    }
+
     public List<UUID> getUserTrustList(TrustType type) {
+        if (type == TrustType.NONE) {
+            return new ArrayList<>();
+        }
         if (type == TrustType.ACCESSOR) {
             return this.claimData.getAccessors();
         }

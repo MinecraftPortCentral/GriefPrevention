@@ -2082,7 +2082,7 @@ public class PlayerEventHandler {
                         playerData.claimResizing.resizeCuboid(smallX, smallY, smallZ, bigX, bigY, bigZ);
                 } else {
                     // 2D resize
-                    claimResult = playerData.claimResizing.resize(smallX, smallY, smallZ, bigX, bigY, bigZ);
+                    claimResult = playerData.claimResizing.resizeInternal(smallX, smallY, smallZ, bigX, bigY, bigZ);
                 }
 
                 if (claimResult.successful()) {
