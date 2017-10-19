@@ -503,6 +503,8 @@ public class GPPermissionHandler {
                     subject = eventSubject;
                 } else if (currentEvent.getCause().root() instanceof User) {
                     subject = (Subject) currentEvent.getCause().root();
+                } else {
+                    subject = GriefPreventionPlugin.GLOBAL_SUBJECT;
                 }
             }
             if (currentEvent instanceof CollideEvent || currentEvent instanceof NotifyNeighborBlockEvent) {
