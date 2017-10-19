@@ -2135,6 +2135,8 @@ public class GPClaim implements Claim {
             userList.add(uuid);
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2153,6 +2155,8 @@ public class GPClaim implements Claim {
             }
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2165,10 +2169,15 @@ public class GPClaim implements Claim {
         }
 
         if (type == TrustType.NONE) {
-            return this.removeAllTrustsFromUser(uuid);
+            final ClaimResult result = this.removeAllTrustsFromUser(uuid);
+            this.claimData.setRequiresSave(true);
+            this.claimData.save();
+            return result;
         }
 
         this.getUserTrustList(type).remove(uuid);
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2184,6 +2193,9 @@ public class GPClaim implements Claim {
             for (UUID uuid : uuids) {
                 this.removeAllTrustsFromUser(uuid);
             }
+
+            this.claimData.setRequiresSave(true);
+            this.claimData.save();
             return new GPClaimResult(this, ClaimResultType.SUCCESS);
         }
 
@@ -2194,6 +2206,8 @@ public class GPClaim implements Claim {
             }
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2210,6 +2224,8 @@ public class GPClaim implements Claim {
             groupList.add(group);
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2228,6 +2244,8 @@ public class GPClaim implements Claim {
             }
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2240,10 +2258,15 @@ public class GPClaim implements Claim {
         }
 
         if (type == TrustType.NONE) {
-            return this.removeAllTrustsFromGroup(group);
+            final ClaimResult result = this.removeAllTrustsFromGroup(group);
+            this.claimData.setRequiresSave(true);
+            this.claimData.save();
+            return result;
         }
 
         this.getGroupTrustList(type).remove(group);
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2259,6 +2282,9 @@ public class GPClaim implements Claim {
             for (String group : groups) {
                 this.removeAllTrustsFromGroup(group);
             }
+
+            this.claimData.setRequiresSave(true);
+            this.claimData.save();
             return new GPClaimResult(this, ClaimResultType.SUCCESS);
         }
 
@@ -2269,6 +2295,8 @@ public class GPClaim implements Claim {
             }
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2296,6 +2324,8 @@ public class GPClaim implements Claim {
             this.getGroupTrustList(type).clear();
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2312,6 +2342,8 @@ public class GPClaim implements Claim {
             this.getUserTrustList(type).clear();
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
@@ -2328,6 +2360,8 @@ public class GPClaim implements Claim {
             this.getGroupTrustList(type).clear();
         }
 
+        this.claimData.setRequiresSave(true);
+        this.claimData.save();
         return new GPClaimResult(this, ClaimResultType.SUCCESS);
     }
 
