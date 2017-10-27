@@ -31,7 +31,9 @@ import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
+import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
@@ -600,12 +602,7 @@ public class BlockEventHandler {
     
                 // check overrides
                 Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_PLACE, source, block, user, TrustType.BUILDER, true);
-                if (result != Tristate.UNDEFINED) {
-                    if (result == Tristate.TRUE) {
-                        GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                        continue;
-                    }
-    
+                if (result != Tristate.TRUE) {
                     // TODO - make sure this doesn't spam
                     /*if (source instanceof Player) {
                         final Text message = GriefPreventionPlugin.instance.messageData.permissionBuild
@@ -667,10 +664,19 @@ public class BlockEventHandler {
                 if (playerData.getInternalClaims().size() == 0) {
                     // radius == 0 means protect ONLY the chest
                     if (activeConfig.getConfig().claim.claimRadius == 0) {
-                        this.dataStore.createClaim(
-                                block.getLocation().get().getExtent(), 
-                                block.getPosition(), block.getPosition(), ClaimType.BASIC, player.getUniqueId(), false, Cause.of(NamedCause.source(player)));
-                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChestConfirmation.toText());
+                        final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
+                                .bounds(block.getPosition(), block.getPosition())
+                                .cuboid(false)
+                                .owner(player.getUniqueId())
+                                .sizeRestrictions(false)
+                                .type(ClaimType.BASIC)
+                                .world(block.getLocation().get().getExtent())
+                                .build();
+                        if (result.successful()) {
+                            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChestConfirmation.toText());
+                            GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                            return;
+                        }
                     }
 
                     // otherwise, create a claim in the area around the chest
@@ -686,22 +692,31 @@ public class BlockEventHandler {
                         // as long as the automatic claim overlaps another existing
                         // claim, shrink it note that since the player had permission to place the
                         // chest, at the very least, the automatic claim will include the chest
-                        while (radius >= 0 && !this.dataStore.createClaim(block.getLocation().get().getExtent(),
-                                lesserBoundary,
-                                greaterBoundary,
-                                ClaimType.BASIC,
-                                player.getUniqueId(), false, Cause.of(NamedCause.source(player))).successful()) {
+                        while (radius >= 0) {
+                            ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
+                                    .bounds(lesserBoundary, greaterBoundary)
+                                    .cuboid(false)
+                                    .owner(player.getUniqueId())
+                                    .sizeRestrictions(false)
+                                    .type(ClaimType.BASIC)
+                                    .world(block.getLocation().get().getExtent())
+                                    .build();
+                            if (!result.successful()) {
                                 radius--;
+                            } else {
+                                // notify and explain to player
+                                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimAutomaticNotification.toText());
+
+                                // show the player the protected area
+                                GPClaim newClaim = this.dataStore.getClaimAt(block.getLocation().get());
+                                Visualization visualization = new Visualization(newClaim, VisualizationType.CLAIM);
+                                visualization.createClaimBlockVisuals(block.getPosition().getY(), player.getLocation(), playerData);
+                                visualization.apply(player);
+
+                                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                                return;
+                            }
                         }
-
-                        // notify and explain to player
-                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimAutomaticNotification.toText());
-
-                        // show the player the protected area
-                        GPClaim newClaim = this.dataStore.getClaimAt(block.getLocation().get());
-                        Visualization visualization = new Visualization(newClaim, VisualizationType.CLAIM);
-                        visualization.createClaimBlockVisuals(block.getPosition().getY(), player.getLocation(), playerData);
-                        visualization.apply(player);
                     }
 
                     if (player.hasPermission(GPPermissions.CLAIM_SHOW_TUTORIAL)) {
