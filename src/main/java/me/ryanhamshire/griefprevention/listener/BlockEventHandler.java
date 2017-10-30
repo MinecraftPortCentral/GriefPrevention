@@ -664,8 +664,10 @@ public class BlockEventHandler {
                 if (playerData.getInternalClaims().size() == 0) {
                     // radius == 0 means protect ONLY the chest
                     if (activeConfig.getConfig().claim.claimRadius == 0) {
+                        final Cause cause = Cause.source(player).build();
                         final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
                                 .bounds(block.getPosition(), block.getPosition())
+                                .cause(cause)
                                 .cuboid(false)
                                 .owner(player.getUniqueId())
                                 .sizeRestrictions(false)
@@ -693,8 +695,10 @@ public class BlockEventHandler {
                         // claim, shrink it note that since the player had permission to place the
                         // chest, at the very least, the automatic claim will include the chest
                         while (radius >= 0) {
+                            Cause cause = Cause.source(player).build();
                             ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
                                     .bounds(lesserBoundary, greaterBoundary)
+                                    .cause(cause)
                                     .cuboid(false)
                                     .owner(player.getUniqueId())
                                     .sizeRestrictions(false)
