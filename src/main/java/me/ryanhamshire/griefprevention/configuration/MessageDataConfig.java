@@ -126,6 +126,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-bank-deposit-no-funds")
     public TextTemplate claimBankDepositNoFunds = TextTemplate.of(TextColors.RED, "You do not have enough funds to deposit into the bank.");
 
+    @Setting("claim-bank-no-permission")
+    public TextTemplate claimBankNoPermission = TextTemplate.of(TextColors.RED, "You don't have permission to manage", TextTemplate.arg("owner"), "'s claim bank.");
+
     @Setting("claim-bank-withdraw")
     public TextTemplate claimBankWithdraw = TextTemplate.of(TextColors.GREEN, "Successful withdraw of ", TextTemplate.arg("amount").color(TextColors.GOLD), " from bank.");
 

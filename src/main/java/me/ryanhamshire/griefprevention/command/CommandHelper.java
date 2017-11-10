@@ -1162,8 +1162,10 @@ public class CommandHelper {
 
         final String command = args.<String>getOne("command").orElse(null);
         final double amount = args.<Double>getOne("amount").get();
+
+        final UUID playerSource = ((Player) src).getUniqueId();
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(claim.getWorld(), claim.getOwnerUniqueId());
-        if (playerData.canIgnoreClaim(claim) || claim.getOwnerUniqueId().equals(playerData.playerID) || claim.getUserTrusts(TrustType.MANAGER).contains(playerData.playerID)) {
+        if (playerData.canIgnoreClaim(claim) || claim.getOwnerUniqueId().equals(playerSource) || claim.getUserTrusts(TrustType.MANAGER).contains(playerData.playerID)) {
             final UniqueAccount playerAccount = economyService.getOrCreateAccount(playerData.playerID).get();
             if (command.equalsIgnoreCase("withdraw")) {
                 TransactionResult result = bankAccount.withdraw(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Cause.of(NamedCause.source(src)));
@@ -1199,7 +1201,10 @@ public class CommandHelper {
                 }
             }
         } else {
-            
+            final Text message = GriefPreventionPlugin.instance.messageData.claimBankNoPermission
+                    .apply(ImmutableMap.of(
+                            "owner", claim.getOwnerName())).build();
+            GriefPreventionPlugin.sendMessage(src, message);
         }
     }
 
