@@ -605,7 +605,7 @@ public class EntityEventHandler {
         if (GPFlags.ENTER_CLAIM && playerData != null && playerData.lastClaim != null) {
             final GPClaim lastClaim = (GPClaim) playerData.lastClaim.get();
             if (lastClaim != null && lastClaim != fromClaim) {
-                if (GPPermissionHandler.getClaimPermission(event, toLocation, toClaim, GPPermissions.ENTER_CLAIM, entity, entity, player) == Tristate.FALSE) {
+                if (GPPermissionHandler.getClaimPermission(event, toLocation, toClaim, GPPermissions.ENTER_CLAIM, entity, entity, player, TrustType.ACCESSOR, false) == Tristate.FALSE) {
                     Location<World> claimCorner = lastClaim.lesserBoundaryCorner.setPosition(new Vector3d(toClaim.lesserBoundaryCorner.getX(), player.getLocation().getY(), toClaim.greaterBoundaryCorner.getZ()));
                     Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(claimCorner, 9, 9).orElse(player.getWorld().getSpawnLocation());
                     event.setToTransform(player.getTransform().setLocation(safeLocation));
