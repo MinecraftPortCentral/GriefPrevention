@@ -112,13 +112,13 @@ public class CommandTrustAll implements CommandExecutor {
                 }
             }
         } else {
-            if (!PermissionUtils.hasSubject(group)) {
+            if (!PermissionUtils.hasGroupSubject(group)) {
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
                 return CommandResult.success();
             }
 
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
-                final Subject subject = PermissionUtils.getSubject(group);
+                final Subject subject = PermissionUtils.getGroupSubject(group);
                 Sponge.getCauseStackManager().pushCause(player);
                 GPGroupTrustClaimEvent.Add
                     event = new GPGroupTrustClaimEvent.Add(claimList, ImmutableList.of(group), TrustType.NONE);

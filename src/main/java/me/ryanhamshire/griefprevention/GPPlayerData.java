@@ -260,7 +260,7 @@ public class GPPlayerData implements PlayerData {
     public void refreshPlayerOptions() {
         GriefPreventionPlugin.instance.executor.execute(() -> {
             if (this.playerSubject == null || this.playerSubject.get() == null) {
-                Subject subject = PermissionUtils.getSubject(this.playerID.toString());
+                Subject subject = PermissionUtils.getUserSubject(this.playerID.toString());
                 this.playerSubject = new WeakReference<>(subject);
             }
             final Subject subject = this.playerSubject.get();

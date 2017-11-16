@@ -1044,12 +1044,12 @@ public class CommandHelper {
             return;
         }
 
-        if (!PermissionUtils.hasSubject(group)) {
+        if (!PermissionUtils.hasGroupSubject(group)) {
             GriefPreventionPlugin.sendMessage(player, invalidGroup);
             return;
         }
 
-        Subject subject = PermissionUtils.getSubject(group);
+        Subject subject = PermissionUtils.getGroupSubject(group);
         // determine which claim the player is standing in
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());

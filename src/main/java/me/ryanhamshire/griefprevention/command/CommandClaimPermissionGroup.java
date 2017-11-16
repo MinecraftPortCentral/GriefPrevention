@@ -72,12 +72,12 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
         String group = args.<String>getOne("group").orElse(null);
         String value = args.<String>getOne("value").orElse(null);
 
-        if (!PermissionUtils.hasSubject(group)) {
+        if (!PermissionUtils.hasGroupSubject(group)) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
             return CommandResult.success();
         }
 
-        final Subject subj = PermissionUtils.getSubject(group);
+        final Subject subj = PermissionUtils.getGroupSubject(group);
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage

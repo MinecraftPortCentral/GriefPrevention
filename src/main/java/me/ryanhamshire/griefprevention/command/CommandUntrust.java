@@ -131,7 +131,7 @@ public class CommandUntrust implements CommandExecutor {
             } else {
                 Set<Context> contexts = new HashSet<>();
                 contexts.add(claim.getContext());
-                if (!PermissionUtils.hasSubject(group)) {
+                if (!PermissionUtils.hasGroupSubject(group)) {
                     for (TrustType trustType : TrustType.values()) {
                         claim.getGroupTrustList(trustType).remove(group);
                         claim.getInternalClaimData().setRequiresSave(true);
@@ -141,7 +141,7 @@ public class CommandUntrust implements CommandExecutor {
                     return CommandResult.success();
                 }
 
-                final Subject subject = PermissionUtils.getSubject(group);
+                final Subject subject = PermissionUtils.getGroupSubject(group);
                 GPGroupTrustClaimEvent.Remove event = new GPGroupTrustClaimEvent.Remove(claim,
                     ImmutableList.of(group), TrustType.NONE);
                 Sponge.getEventManager().post(event);

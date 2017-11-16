@@ -114,12 +114,12 @@ public class CommandUntrustAll implements CommandExecutor {
                     this.removeAllUserTrust(claim, user);
                 }
             } else {
-                if (!PermissionUtils.hasSubject(group)) {
+                if (!PermissionUtils.hasGroupSubject(group)) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
                     return CommandResult.success();
                 }
 
-                final Subject subject = PermissionUtils.getSubject(group);
+                final Subject subject = PermissionUtils.getGroupSubject(group);
                 GPGroupTrustClaimEvent.Remove
                     event = new GPGroupTrustClaimEvent.Remove(claimList, ImmutableList.of(group), TrustType.NONE);
                 Sponge.getEventManager().post(event);

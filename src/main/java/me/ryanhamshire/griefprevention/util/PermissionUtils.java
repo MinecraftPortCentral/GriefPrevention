@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutionException;
 
 public class PermissionUtils {
 
-    public static boolean hasSubject(String identifier) {
+    public static boolean hasGroupSubject(String identifier) {
         try {
             return GriefPreventionPlugin.instance.permissionService.getGroupSubjects().hasSubject(identifier).get();
         } catch (InterruptedException e) {
@@ -41,7 +41,27 @@ public class PermissionUtils {
         }
     }
 
-    public static Subject getSubject(String identifier) {
+    public static boolean hasUserSubject(String identifier) {
+        try {
+            return GriefPreventionPlugin.instance.permissionService.getUserSubjects().hasSubject(identifier).get();
+        } catch (InterruptedException e) {
+            return false;
+        } catch (ExecutionException e) {
+            return false;
+        }
+    }
+
+    public static Subject getGroupSubject(String identifier) {
+        try {
+            return GriefPreventionPlugin.instance.permissionService.getGroupSubjects().loadSubject(identifier).get();
+        } catch (InterruptedException e) {
+            return null;
+        } catch (ExecutionException e) {
+            return null;
+        }
+    }
+
+    public static Subject getUserSubject(String identifier) {
         try {
             return GriefPreventionPlugin.instance.permissionService.getUserSubjects().loadSubject(identifier).get();
         } catch (InterruptedException e) {

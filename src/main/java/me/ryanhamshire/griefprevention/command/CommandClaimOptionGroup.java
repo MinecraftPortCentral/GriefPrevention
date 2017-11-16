@@ -81,12 +81,12 @@ public class CommandClaimOptionGroup implements CommandExecutor {
         String group = args.<String>getOne("group").orElse(null);
         Double value = args.<Double>getOne("value").orElse(null);
 
-        if (!PermissionUtils.hasSubject(group)) {
+        if (!PermissionUtils.hasGroupSubject(group)) {
             GriefPreventionPlugin.sendMessage(player,GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());
             return CommandResult.success();
         }
 
-        final Subject subj = PermissionUtils.getSubject(group);
+        final Subject subj = PermissionUtils.getGroupSubject(group);
         final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
                 .apply(ImmutableMap.of(
                 "type", claim.getType().name())).build();

@@ -2095,11 +2095,11 @@ public class GPClaim implements Claim {
             return false;
         }
 
-        if (!PermissionUtils.hasSubject(group)) {
+        if (!PermissionUtils.hasGroupSubject(group)) {
             return false;
         }
 
-        final Subject subj = PermissionUtils.getSubject(group);
+        final Subject subj = PermissionUtils.getGroupSubject(group);
         Set<Context> contexts = new HashSet<>();
         contexts.add(this.getContext());
 

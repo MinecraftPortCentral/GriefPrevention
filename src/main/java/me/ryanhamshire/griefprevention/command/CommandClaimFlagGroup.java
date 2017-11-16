@@ -82,7 +82,7 @@ public class CommandClaimFlagGroup extends ClaimFlagBase implements CommandExecu
             source = null;
         }
 
-        if (!PermissionUtils.hasSubject(group)) {
+        if (!PermissionUtils.hasGroupSubject(group)) {
             final Text message = GriefPreventionPlugin.instance.messageData.commandGroupInvalid
                     .apply(ImmutableMap.of(
                     "group", group)).build();
@@ -105,7 +105,7 @@ public class CommandClaimFlagGroup extends ClaimFlagBase implements CommandExecu
             reasonText = TextSerializers.FORMATTING_CODE.deserialize(reason);
         }
 
-        final Subject subj = PermissionUtils.getSubject(group);
+        final Subject subj = PermissionUtils.getGroupSubject(group);
         this.subject = subj;
         this.friendlySubjectName = group;
         if (flag == null && value == null) {
