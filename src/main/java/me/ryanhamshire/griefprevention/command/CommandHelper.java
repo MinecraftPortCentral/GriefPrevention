@@ -629,6 +629,7 @@ public class CommandHelper {
     }
 
     public static List<Text> generateClaimTextList(List<Text> claimsTextList, List<Claim> claimList, String worldName, User user, CommandSource src, Consumer<CommandSource> returnCommand, boolean canListOthers, boolean listChildren) {
+        final User sourceUser = src instanceof User ? (User) src : null;
         if (claimList.size() > 0) {
             for (Claim playerClaim : claimList) {
                 GPClaim claim = (GPClaim) playerClaim;
@@ -636,7 +637,7 @@ public class CommandHelper {
                     continue;
                 }
                 // Only list claims trusted
-                if (user != null && !claim.isUserTrusted(user, TrustType.ACCESSOR) && !canListOthers) {
+                if (sourceUser != null && !claim.isUserTrusted(sourceUser, TrustType.ACCESSOR) && !canListOthers) {
                     continue;
                 }
 
