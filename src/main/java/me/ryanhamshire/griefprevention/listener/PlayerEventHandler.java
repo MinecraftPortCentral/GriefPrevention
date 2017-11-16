@@ -2412,7 +2412,7 @@ public class PlayerEventHandler {
                 }
 
                 if (createClaimLimit > 0 &&
-                        (playerData.getInternalClaims().size() + 1) >= playerData.optionCreateClaimLimitBasic) {
+                        (playerData.getInternalClaims().size() + 1) > playerData.optionCreateClaimLimitBasic) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit.toText());
                     GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                     return;
