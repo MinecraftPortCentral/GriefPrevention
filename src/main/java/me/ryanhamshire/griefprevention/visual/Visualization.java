@@ -549,7 +549,7 @@ public class Visualization {
         }
 
         final GPPlayerData ownerData = this.claim.getOwnerPlayerData();
-        if (ownerData != null && ownerData.getMinClaimLevel() > 0 || ownerData.getMaxClaimLevel() < 255) {
+        if (ownerData != null && (ownerData.getMinClaimLevel() > 0 || ownerData.getMaxClaimLevel() < 255)) {
             return true;
         }
         // Claim could of been created with different min/max levels, so check Y values
