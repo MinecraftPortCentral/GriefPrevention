@@ -333,7 +333,7 @@ public class FlatFileDataStore extends DataStore {
         GPClaim claim;
 
         boolean isTown = claimFile.toPath().getParent().endsWith("town");
-        //boolean isTownChild = claimFile.toPath().getParent().getParent().endsWith("town");
+        boolean writeToStorage = false;
         ClaimStorageData claimStorage = null;
         if (isTown) {
             claimStorage = new TownStorageData(claimFile.toPath(), worldProperties.getUniqueId());
@@ -362,8 +362,7 @@ public class FlatFileDataStore extends DataStore {
         if (!worldProperties.getUniqueId().equals(worldUniqueId)) {
             GriefPreventionPlugin.addLogEntry("Found mismatch world UUID in " + type.name().toLowerCase() + " claim file " + claimFile + ". Expected " + worldProperties.getUniqueId() + ", found " + worldUniqueId + ". Updating file with correct UUID...", CustomLogEntryTypes.Exception);
             claimStorage.getConfig().setWorldUniqueId(worldProperties.getUniqueId());
-            claimStorage.getConfig().setRequiresSave(true);
-            claimStorage.save();
+            writeToStorage = true;
         }
 
         // boundaries
@@ -379,6 +378,7 @@ public class FlatFileDataStore extends DataStore {
             // fix Y boundaries
             lesserCorner = new Vector3i(lesserCorner.getX(), 0, lesserCorner.getZ());
             greaterCorner = new Vector3i(greaterCorner.getX(), world.getDimension().getBuildHeight() - 1, greaterCorner.getZ());
+            writeToStorage = true;
         }
         Location<World> lesserBoundaryCorner = new Location<World>(world, lesserCorner);
         Location<World> greaterBoundaryCorner = new Location<World>(world, greaterCorner);
@@ -407,7 +407,7 @@ public class FlatFileDataStore extends DataStore {
             claim.parent = parentClaim;
         }
 
-        claimManager.addClaim(claim, false);
+        claimManager.addClaim(claim, writeToStorage);
         if (!claim.isWilderness()) {
             claimStorage.migrateSubdivision(claim);
         }
