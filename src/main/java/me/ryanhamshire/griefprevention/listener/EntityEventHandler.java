@@ -762,7 +762,7 @@ public class EntityEventHandler {
         final Cause cause = event.getCause();
         final EventContext context = cause.getContext();
 
-        final TeleportType type = context.require(EventContextKeys.TELEPORT_TYPE);
+        final TeleportType type = context.get(EventContextKeys.TELEPORT_TYPE).orElse(TeleportTypes.ENTITY_TELEPORT);
         final Location<World> sourceLocation = event.getFromTransform().getLocation();
         GPClaim sourceClaim = null;
         GPPlayerData playerData = null;
