@@ -1551,7 +1551,7 @@ public class PlayerEventHandler {
 
     // when a player picks up an item...
     @Listener(order = Order.LAST, beforeModifications = true)
-    public void onPlayerPickupItem(ChangeInventoryEvent.Pickup event, @Root Player player) {
+    public void onPlayerPickupItem(ChangeInventoryEvent.Pickup.Pre event, @Root Player player) {
         if (!GPFlags.ITEM_PICKUP || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
