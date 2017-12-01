@@ -429,6 +429,7 @@ public class GPClaimManager implements ClaimManager {
             GPClaim gpClaim = (GPClaim) claim;
             gpClaim.save();
         }
+        this.theWildernessClaim.save();
 
         for (GPPlayerData playerData : this.getPlayerDataMap().values()) {
             playerData.getStorageData().save();
