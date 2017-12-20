@@ -88,7 +88,7 @@ import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
-import org.spongepowered.api.world.BlockChangeFlag;
+import org.spongepowered.api.world.BlockChangeFlags;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
@@ -459,7 +459,7 @@ public class GPClaim implements Claim {
 
                     if (block.getState().getType() == BlockTypes.LAVA || block.getState().getType() == BlockTypes.FLOWING_WATER
                             || block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.FLOWING_LAVA) {
-                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, BlockChangeFlag.PHYSICS);
+                        block.withState(BlockTypes.AIR.getDefaultState()).restore(true, BlockChangeFlags.PHYSICS);
                     }
                 }
             }

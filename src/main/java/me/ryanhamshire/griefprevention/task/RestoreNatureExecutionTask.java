@@ -40,7 +40,7 @@ import org.spongepowered.api.entity.living.animal.Animal;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.util.Direction;
-import org.spongepowered.api.world.BlockChangeFlag;
+import org.spongepowered.api.world.BlockChangeFlags;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -88,7 +88,7 @@ class RestoreNatureExecutionTask implements Runnable {
                     int originalMeta = BlockUtils.getBlockStateMeta(blockUpdate.getState());
                     int newMeta = BlockUtils.getBlockStateMeta(currentBlock);
                     if (!blockUpdate.getState().getType().equals(currentBlock.getType()) || originalMeta != newMeta) {
-                        blockUpdate.restore(true, BlockChangeFlag.PHYSICS);
+                        blockUpdate.restore(true, BlockChangeFlags.PHYSICS);
                     }
                 }
             }
