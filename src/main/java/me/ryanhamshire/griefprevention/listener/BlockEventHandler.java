@@ -493,6 +493,11 @@ public class BlockEventHandler {
         GPTimings.BLOCK_BREAK_EVENT.startTimingIfSync();
         Object source = event.getCause().root();
         User user = event.getCause().first(User.class).orElse(null);
+        // ignore falling blocks when there is no user
+        // avoids dupes with falling blocks such as Dragon Egg
+        if (user == null && source instanceof EntityFallingBlock) {
+            return;
+        }
         GPClaim sourceClaim = null;
         LocatableBlock locatable = null;
         if (source instanceof LocatableBlock) {
