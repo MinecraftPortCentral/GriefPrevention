@@ -910,7 +910,7 @@ public class GPClaim implements Claim {
             return value.asBoolean();
         }
 
-        return ((IMixinWorldServer) this.world).getActiveConfig().getConfig().getWorld().getPVPEnabled();
+        return this.world.getProperties().isPVPEnabled();
     }
 
     public void setPvpOverride(Tristate value) {

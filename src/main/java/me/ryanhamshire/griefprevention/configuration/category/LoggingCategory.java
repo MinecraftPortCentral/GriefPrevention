@@ -34,7 +34,7 @@ public class LoggingCategory extends ConfigCategory {
     public int loggingDaysToKeep = 7;
     @Setting(value = "admin-activity", comment = "Log admin activity.")
     public boolean loggingAdminActivity = false;
-    @Setting(value = "social-acitivity", comment = "Log social activity.")
+    @Setting(value = "social-activity", comment = "Log social activity.")
     public boolean loggingSocialActions = false;
     @Setting(value = "suspicious-activity", comment = "Log suspicious activity.")
     public boolean loggingSuspiciousActivity = false;
