@@ -350,7 +350,7 @@ public class Visualization {
         for (int i = 0; i < this.newElements.size(); i++) {
             BlockSnapshot element = this.newElements.get(i).getFinal();
             if (!claim.contains(element.getLocation().get())) {
-                this.newElements.remove(i--);
+                this.newElements.remove(i);
             }
         }
 
@@ -489,7 +489,7 @@ public class Visualization {
         for (int i = 0; i < elements.size(); i++) {
             Location<World> location = elements.get(i).getFinal().getLocation().get();
             if (location.getX() < minx || location.getX() > maxx || location.getZ() < minz || location.getZ() > maxz) {
-                elements.remove(i--);
+                elements.remove(i);
             }
         }
     }

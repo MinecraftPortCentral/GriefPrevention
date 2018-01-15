@@ -85,7 +85,7 @@ public class ClaimFlagBase {
     }
 
     protected String filterMeta(ItemStack stack, String id) {
-        if (stack != null && stack.getItem() != null) {
+        if (stack != null && stack.getType() != null) {
             final int meta = ((net.minecraft.item.ItemStack)(Object) stack).getItemDamage();
             if (meta == 0) {
                 return GPPermissionHandler.getIdentifierWithoutMeta(id);

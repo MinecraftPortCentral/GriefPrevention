@@ -53,7 +53,7 @@ public class PlayerUtils {
     public static boolean hasItemInOneHand(Player player, ItemType itemType) {
         ItemStack mainHand = player.getItemInHand(HandTypes.MAIN_HAND).orElse(null);
         ItemStack offHand = player.getItemInHand(HandTypes.OFF_HAND).orElse(null);
-        if ((mainHand != null && mainHand.getItem().equals(itemType)) || (offHand != null && offHand.getItem().equals(itemType))) {
+        if ((mainHand != null && mainHand.getType().equals(itemType)) || (offHand != null && offHand.getType().equals(itemType))) {
             return true;
         }
 

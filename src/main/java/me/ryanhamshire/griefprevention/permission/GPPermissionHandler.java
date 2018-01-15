@@ -594,13 +594,13 @@ public class GPPermissionHandler {
             } else if (obj instanceof ItemStack) {
                 final ItemStack itemstack = (ItemStack) obj;
                 String id = "";
-                if (itemstack.getItem() instanceof ItemBlock) {
-                    ItemBlock itemBlock = (ItemBlock) itemstack.getItem();
+                if (itemstack.getType() instanceof ItemBlock) {
+                    ItemBlock itemBlock = (ItemBlock) itemstack.getType();
                     net.minecraft.item.ItemStack nmsStack = (net.minecraft.item.ItemStack)(Object) itemstack;
                     BlockState blockState = ((BlockState) itemBlock.getBlock().getStateFromMeta(nmsStack.getItemDamage()));
                     id = blockState.getType().getId() + "." + nmsStack.getItemDamage();
                 } else {
-                    id = itemstack.getItem().getId() + "." + ((net.minecraft.item.ItemStack)(Object) itemstack).getItemDamage();
+                    id = itemstack.getType().getId() + "." + ((net.minecraft.item.ItemStack)(Object) itemstack).getItemDamage();
                 }
 
                 populateEventSourceTarget(id, isSource);
