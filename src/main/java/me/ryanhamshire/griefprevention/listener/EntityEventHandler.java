@@ -881,16 +881,24 @@ public class EntityEventHandler {
 
         GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
         Object rootCause = event.getCause().root();
+        final boolean isRootLiving = rootCause instanceof EntityLivingBase;
+        final boolean isRootEntityItem = rootCause instanceof EntityItem;
+        final boolean isRootEntityItemFrame = rootCause instanceof EntityItemFrame;
+
         event.filterEntities(new Predicate<Entity>() {
             @Override
             public boolean test(Entity entity) {
                 if (rootCause == entity) {
                     return true;
                 }
+                // Ignore entity items colliding with other items
+                if (isRootEntityItem && entity instanceof EntityItem) {
+                    return true;
+                }
 
-                if (!(rootCause instanceof EntityLivingBase)) {
+                if (!isRootLiving) {
                     // Avoid living entities breaking itemframes
-                    if (rootCause instanceof EntityItemFrame && entity instanceof EntityLiving) {
+                    if (isRootEntityItemFrame && entity instanceof EntityLiving) {
                         return false;
                     }
 
