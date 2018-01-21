@@ -2162,7 +2162,9 @@ public class PlayerEventHandler {
                         if (this.worldEditProvider != null) {
                             this.worldEditProvider.stopVisualDrag(player);
                             this.worldEditProvider.revertVisuals(player, playerData, null);
-                            this.worldEditProvider.revertVisuals(player, playerData, playerData.claimResizing.getUniqueId());
+                            if (playerData != null && playerData.claimResizing != null) {
+                                this.worldEditProvider.revertVisuals(player, playerData, playerData.claimResizing.getUniqueId());
+                            }
                         }
                         playerData.revertActiveVisual(player);
                     }
