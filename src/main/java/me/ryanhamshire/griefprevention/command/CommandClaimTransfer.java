@@ -54,7 +54,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         if (!isAdmin && claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimTransferAdmin.toText());
             return CommandResult.empty();
-        } else if (!isAdmin && claim.isUserTrusted(player, TrustType.MANAGER)) {
+        } else if (!isAdmin && !player.getUniqueId().equals(ownerId) && claim.isUserTrusted(player, TrustType.MANAGER)) {
             if (claim.parent == null) {
                 // Managers can only transfer child claims
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
