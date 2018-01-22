@@ -1210,12 +1210,6 @@ public class PlayerEventHandler {
 
         final Location<World> location = blockSnapshot.getLocation().get();
         final GPClaim claim = this.dataStore.getClaimAt(location);
-        final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        if (playerData.lastInteractItemBlockResult == Tristate.TRUE) {
-            GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.stopTimingIfSync();
-            return;
-        }
-
         final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INVENTORY_OPEN, player, blockSnapshot, player, TrustType.CONTAINER, true);
         if (result == Tristate.FALSE) {
             Text message = GriefPreventionPlugin.instance.messageData.permissionInventoryOpen
