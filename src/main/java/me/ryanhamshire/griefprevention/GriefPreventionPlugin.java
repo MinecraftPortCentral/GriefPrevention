@@ -311,19 +311,32 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, String source, String target, Subject subject, String permission, Tristate result) {
+    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, Subject eventSubject, String sourceId, String targetId, Subject permissionSubject, String permission, Tristate result) {
         for (GPDebugData debugEntry : GriefPreventionPlugin.instance.getDebugUserMap().values()) {
             final CommandSource debugSource = debugEntry.getSource();
             final User debugUser = debugEntry.getTarget();
             if (debugUser != null) {
-                if (subject == null || !subject.getIdentifier().equals(debugUser.getUniqueId())) {
+                if (permissionSubject == null) {
+                    continue;
+                }
+                // Check event source user
+                if (eventSubject != null) {
+                    if (!eventSubject.getIdentifier().equals(debugUser.getUniqueId().toString())) {
+                        continue;
+                    }
+                } else if (!permissionSubject.getIdentifier().equals(debugUser.getUniqueId().toString())) {
                     continue;
                 }
             }
 
-            String messageUser = subject.getIdentifier();
-            if (subject instanceof User) {
-                messageUser = ((User) subject).getName();
+            String messageUser = "";
+            if (eventSubject != null && eventSubject instanceof User) {
+                messageUser = ((User) eventSubject).getName();
+            } else {
+                messageUser = permissionSubject.getIdentifier();
+                if (permissionSubject instanceof User) {
+                    messageUser = ((User) permissionSubject).getName();
+                }
             }
             // record
             if (debugEntry.isRecording()) {
@@ -332,8 +345,8 @@ public class GriefPreventionPlugin {
                     permission = permission.replace("griefprevention.flag.", "");
                     messageEvent = GPPermissionHandler.getFlagFromPermission(permission).toString();
                 }
-                final String messageSource = source == null ? "none" : source;
-                String messageTarget = target == null ? "none" : target;
+                final String messageSource = sourceId == null ? "none" : sourceId;
+                String messageTarget = targetId == null ? "none" : targetId;
                 if (messageTarget.endsWith(".0")) {
                     messageTarget = messageTarget.substring(0, messageTarget.length() - 2);
                 }
@@ -349,8 +362,8 @@ public class GriefPreventionPlugin {
             final Text textLocationAndUser = Text.of(textLocation, " ", textUser);
             Text textContext = null;
             Text textPermission = null;
-            if (target != null) {
-                textContext = Text.of(GP_TEXT, TextColors.GRAY, "Target: ", TextColors.YELLOW, GPPermissionHandler.getPermissionIdentifier(target), "\n");
+            if (targetId != null) {
+                textContext = Text.of(GP_TEXT, TextColors.GRAY, "Target: ", TextColors.YELLOW, GPPermissionHandler.getPermissionIdentifier(targetId), "\n");
             }
             if (permission != null) {
                 textPermission = Text.of(GP_TEXT, TextColors.GRAY, "Permission: ", TextColors.RED, permission, "\n");

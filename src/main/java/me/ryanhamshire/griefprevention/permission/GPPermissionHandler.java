@@ -80,8 +80,8 @@ public class GPPermissionHandler {
     private static Event currentEvent;
     private static Location<World> eventLocation;
     private static Subject eventSubject;
-    private static String eventSource = "none";
-    private static String eventTarget = "none";
+    private static String eventSourceId = "none";
+    private static String eventTargetId = "none";
 
     public static Tristate getClaimPermission(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user) {
         return getClaimPermission(event, location, claim, flagPermission, source, target, user, null, false);
@@ -492,23 +492,23 @@ public class GPPermissionHandler {
         return subject.getPermissionValue(contexts, targetPermission);
     }
 
-    public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue, Subject subject) {
+    public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue, Subject permissionSubject) {
         if (GriefPreventionPlugin.debugActive) {
-            if (subject == null) {
+            if (permissionSubject == null) {
                 if (eventSubject != null) {
-                    subject = eventSubject;
+                    permissionSubject = eventSubject;
                 } else if (currentEvent.getCause().root() instanceof User) {
-                    subject = (Subject) currentEvent.getCause().root();
+                    permissionSubject = (Subject) currentEvent.getCause().root();
                 } else {
-                    subject = GriefPreventionPlugin.GLOBAL_SUBJECT;
+                    permissionSubject = GriefPreventionPlugin.GLOBAL_SUBJECT;
                 }
             }
             if (currentEvent instanceof CollideEvent || currentEvent instanceof NotifyNeighborBlockEvent) {
                 if (claim.getWorld().getProperties().getTotalTime() % 100 == 0L) {
-                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, subject, permission, permissionValue);
+                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, permissionValue);
                 }
             } else {
-                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSource, eventTarget, subject, permission, permissionValue);
+                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, permissionValue);
             }
         }
 
@@ -724,9 +724,9 @@ public class GPPermissionHandler {
 
     private static void populateEventSourceTarget(String id, boolean isSource) {
         if (isSource) {
-            eventSource = id.toLowerCase();
+            eventSourceId = id.toLowerCase();
         } else {
-            eventTarget = id.toLowerCase();
+            eventTargetId = id.toLowerCase();
         }
     }
 }
