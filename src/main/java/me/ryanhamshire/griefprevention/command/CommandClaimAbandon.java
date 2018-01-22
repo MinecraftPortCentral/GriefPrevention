@@ -77,7 +77,7 @@ public class CommandClaimAbandon implements CommandExecutor {
         if (claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonClaimMissing.toText());
             return CommandResult.success();
-        } else if (!isAdmin && claim.isUserTrusted(player, TrustType.MANAGER)) {
+        } else if (!isAdmin && !player.getUniqueId().equals(ownerId) && claim.isUserTrusted(player, TrustType.MANAGER)) {
             if (claim.parent == null) {
                 // Managers can only abandon child claims
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
