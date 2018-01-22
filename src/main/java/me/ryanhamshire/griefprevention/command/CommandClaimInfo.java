@@ -650,7 +650,7 @@ public class CommandClaimInfo implements CommandExecutor {
             }
 
             final Player player = (Player) src;
-            if (((GPClaim) gpClaim).allowEdit(player) != null) {
+            if (!isAdmin && ((GPClaim) gpClaim).allowEdit(player) != null) {
                 src.sendMessage(GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
                 return;
             }

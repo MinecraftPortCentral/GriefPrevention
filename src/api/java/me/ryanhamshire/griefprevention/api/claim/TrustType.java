@@ -48,7 +48,8 @@ public enum TrustType {
      */
     BUILDER,
     /**
-     * Allows a user to give the same level of trust to others.
+     * Allows full access to claim including management.
+     * Note: Managers can only transfer and abandon children claims.
      */
     MANAGER
 }

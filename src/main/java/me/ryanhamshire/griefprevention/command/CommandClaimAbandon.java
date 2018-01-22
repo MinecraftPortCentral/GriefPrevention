@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
@@ -73,10 +74,17 @@ public class CommandClaimAbandon implements CommandExecutor {
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
         UUID ownerId = claim.getOwnerUniqueId();
 
+        final boolean isAdmin = playerData.canIgnoreClaim(claim);
         if (claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonClaimMissing.toText());
             return CommandResult.success();
-        } else if (!playerData.canIgnoreClaim(claim) && (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)))) {
+        } else if (!isAdmin && claim.isUserTrusted(player, TrustType.MANAGER)) {
+            if (claim.parent == null) {
+                // Managers can only abandon child claims
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
+                return CommandResult.success();
+            }
+        } else if (!isAdmin && (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)))) {
             // verify ownership
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
             return CommandResult.success();

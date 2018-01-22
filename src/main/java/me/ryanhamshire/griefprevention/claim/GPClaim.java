@@ -537,15 +537,13 @@ public class GPClaim implements Claim {
     }
 
     public Text allowEdit(User user) {
-        if (this.isUserTrusted(user, TrustType.BUILDER)) {
+        if (this.isUserTrusted(user, TrustType.MANAGER)) {
             return null;
         }
 
         // anyone with deleteclaims permission can modify non-admin claims at any time
-        else {
-            if (user.hasPermission(GPPermissions.COMMAND_DELETE_CLAIMS)) {
-                return null;
-            }
+        if (user.hasPermission(GPPermissions.COMMAND_DELETE_CLAIMS)) {
+            return null;
         }
 
         if (this.parent != null && this.getData().doesInheritParent()) {
@@ -2419,11 +2417,9 @@ public class GPClaim implements Claim {
         List<UUID> trustList = new ArrayList<>();
         if (type == TrustType.ACCESSOR) {
             trustList.addAll(this.claimData.getAccessors());
-        }
-        if (type == TrustType.CONTAINER) {
+        } else if (type == TrustType.CONTAINER) {
             trustList.addAll(this.claimData.getContainers());
-        }
-        if (type == TrustType.BUILDER) {
+        } else if (type == TrustType.BUILDER) {
             trustList.addAll(this.claimData.getBuilders());
         } else {
             trustList.addAll(this.claimData.getManagers());
@@ -2449,11 +2445,9 @@ public class GPClaim implements Claim {
         List<String> trustList = new ArrayList<>();
         if (type == TrustType.ACCESSOR) {
             trustList.addAll(this.claimData.getAccessorGroups());
-        }
-        if (type == TrustType.CONTAINER) {
+        } else if (type == TrustType.CONTAINER) {
             trustList.addAll(this.claimData.getContainerGroups());
-        }
-        if (type == TrustType.BUILDER) {
+        } else if (type == TrustType.BUILDER) {
             trustList.addAll(this.claimData.getBuilderGroups());
         } else {
             trustList.addAll(this.claimData.getManagerGroups());

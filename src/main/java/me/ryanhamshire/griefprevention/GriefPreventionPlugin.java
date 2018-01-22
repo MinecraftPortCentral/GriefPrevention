@@ -1204,7 +1204,7 @@ public class GriefPreventionPlugin {
                         user(Text.of("user")),
                         string(Text.of("group"))))
                 .executor(new CommandPermissionTrust())
-                .build(), "permissiontrust", "pt");
+                .build(), "permissiontrust", "pt", "managertrust", "mt");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Gets information about a player"))
