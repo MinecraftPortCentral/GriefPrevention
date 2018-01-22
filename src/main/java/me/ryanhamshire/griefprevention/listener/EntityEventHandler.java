@@ -53,6 +53,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import nl.riebie.mcclans.api.ClanPlayer;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.explosive.Explosive;
@@ -171,9 +172,18 @@ public class EntityEventHandler {
 
     // when a creature spawns...
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onEntitySpawn(SpawnEntityEvent event, @Root Object sourceCause) {
-        if (!GPFlags.ENTITY_SPAWN || event instanceof DropItemEvent || event.getEntities().isEmpty()) {
+    public void onEntitySpawn(SpawnEntityEvent event, @Root Object source) {
+        if (!GPFlags.ENTITY_SPAWN || event.getEntities().isEmpty()) {
             return;
+        }
+        if (event instanceof DropItemEvent) {
+            if (!GPFlags.ITEM_SPAWN) {
+                return;
+            }
+            // only handle item spawns from non-living
+            if (source instanceof Living) {
+                return;
+            }
         }
 
         final World world = event.getEntities().get(0).getWorld();
@@ -201,9 +211,25 @@ public class EntityEventHandler {
                     if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                         return true;
                     }
+                    if (!GPFlags.ITEM_SPAWN) {
+                        return true;
+                    }
                     permission = GPPermissions.ITEM_SPAWN;
+                    if (source instanceof BlockSnapshot) {
+                        final Tristate result = GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, GPPermissions.BLOCK_BREAK, source, entity, user, true);
+                        if (result != Tristate.UNDEFINED) {
+                            if (result == Tristate.TRUE) {
+                                // Check if item drop is allowed
+                                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
+                                    return false;
+                                }
+                                return true;
+                            }
+                            return false;
+                        }
+                    }
                 }
-                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, sourceCause, entity, user, true) == Tristate.FALSE) {
+                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
                     return false;
                 }
                 return true;
