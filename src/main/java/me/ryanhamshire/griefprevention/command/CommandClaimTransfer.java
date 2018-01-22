@@ -4,6 +4,7 @@ import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
+import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
@@ -48,12 +49,18 @@ public class CommandClaimTransfer implements CommandExecutor {
             return CommandResult.empty();
         }
 
-        boolean isAdmin = playerData.canIgnoreClaim(claim);
+        final boolean isAdmin = playerData.canIgnoreClaim(claim);
         // check permission
         if (!isAdmin && claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.permissionClaimTransferAdmin.toText());
             return CommandResult.empty();
-        } else if (!isAdmin && (claim.allowEdit(player) != null || (!claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)))) {
+        } else if (!isAdmin && claim.isUserTrusted(player, TrustType.MANAGER)) {
+            if (claim.parent == null) {
+                // Managers can only transfer child claims
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
+                return CommandResult.success();
+            }
+        } else if (!isAdmin && !claim.isAdminClaim() && !player.getUniqueId().equals(ownerId)) {
             // verify ownership
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
             return CommandResult.success();

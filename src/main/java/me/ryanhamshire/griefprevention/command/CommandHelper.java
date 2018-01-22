@@ -41,7 +41,6 @@ import me.ryanhamshire.griefprevention.api.claim.FlagResult;
 import me.ryanhamshire.griefprevention.api.claim.FlagResultType;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.api.economy.BankTransactionType;
-import me.ryanhamshire.griefprevention.claim.ClaimsMode;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPFlagResult;
 import me.ryanhamshire.griefprevention.command.ClaimFlagBase.FlagType;
@@ -62,7 +61,6 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandMapping;
-import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.data.property.entity.EyeLocationProperty;
@@ -118,62 +116,6 @@ public class CommandHelper {
         } else {
             throw new CommandException(Text.of("You must be a player to run this command!"));
         }
-    }
-
-    public static CommandResult abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-
-        // which claim is being abandoned?
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
-        if (claim.isWilderness()) {
-            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonClaimMissing.toText());
-        }
-
-        // verify ownership
-        else if (claim.allowEdit(player) != null) {
-            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
-        }
-
-        // warn if has children and we're not explicitly deleting a top level claim
-        else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
-            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonTopLevel.toText());
-            return CommandResult.empty();
-        } else {
-            // delete it
-            claim.removeSurfaceFluids(null);
-            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
-                Sponge.getCauseStackManager().pushCause(player);
-                GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, !deleteTopLevelClaim);
-            }
-            // if in a creative mode world, restore the claim area
-            if (GriefPreventionPlugin.instance.claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                GriefPreventionPlugin.addLogEntry(
-                        player.getName() + " abandoned a claim @ " + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
-                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCleanupWarning.toText());
-                GriefPreventionPlugin.instance.restoreClaim(claim, 20L * 60 * 2);
-            }
-
-            // adjust claim blocks when abandoning a top level claim
-            if (!claim.isSubdivision() && !claim.isAdminClaim()) {
-                playerData.setAccruedClaimBlocks(
-                        playerData.getAccruedClaimBlocks() - (int) Math
-                                .ceil((claim.getClaimBlocks() * (1 - playerData.optionAbandonReturnRatioBasic))));
-
-                // tell the player how many claim blocks he has left
-                int remainingBlocks = playerData.getRemainingClaimBlocks();
-                final Text message = GriefPreventionPlugin.instance.messageData.claimAbandonSuccess
-                        .apply(ImmutableMap.of(
-                        "remaining-blocks", remainingBlocks)).build();
-                GriefPreventionPlugin.sendMessage(player, message);
-            }
-
-            // revert any current visualization
-            playerData.revertActiveVisual(player);
-            playerData.warnedAboutMajorDeletion = false;
-        }
-
-        return CommandResult.success();
-
     }
 
     // helper method to resolve a player name from the player's UUID
