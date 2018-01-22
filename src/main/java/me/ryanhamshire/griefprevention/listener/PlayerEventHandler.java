@@ -1234,8 +1234,8 @@ public class PlayerEventHandler {
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final boolean isDrop = event instanceof ClickInventoryEvent.Drop;
-        final ItemStackSnapshot cursorItem = event.getCursorTransaction().getFinal();
-        // check cursor item
+        final ItemStackSnapshot cursorItem = event.getCursorTransaction().getOriginal();
+        // check if original cursor item can be dropped
         if (isDrop && cursorItem != ItemStackSnapshot.NONE) {
             if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_DROP, player, cursorItem, player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                 Text message = GriefPreventionPlugin.instance.messageData.permissionItemDrop
