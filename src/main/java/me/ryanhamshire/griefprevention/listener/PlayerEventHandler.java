@@ -1244,6 +1244,20 @@ public class PlayerEventHandler {
         final Location<World> location = player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final boolean isDrop = event instanceof ClickInventoryEvent.Drop;
+        final ItemStackSnapshot cursorItem = event.getCursorTransaction().getFinal();
+        // check cursor item
+        if (isDrop && cursorItem != ItemStackSnapshot.NONE) {
+            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_DROP, player, cursorItem, player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
+                Text message = GriefPreventionPlugin.instance.messageData.permissionItemDrop
+                        .apply(ImmutableMap.of(
+                        "owner", claim.getOwnerName(),
+                        "item", cursorItem.getType().getId())).build();
+                GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
+                event.setCancelled(true);
+                GPTimings.PLAYER_INTERACT_INVENTORY_CLICK_EVENT.stopTimingIfSync();
+                return;
+            }
+        }
         for (SlotTransaction transaction : event.getTransactions()) {
             if (transaction.getOriginal() == ItemStackSnapshot.NONE) {
                 continue;
