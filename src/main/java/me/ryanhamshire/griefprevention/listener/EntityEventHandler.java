@@ -51,6 +51,7 @@ import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.ContainerPlayer;
 import nl.riebie.mcclans.api.ClanPlayer;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -181,7 +182,7 @@ public class EntityEventHandler {
                 return;
             }
             // only handle item spawns from non-living
-            if (source instanceof Living) {
+            if (source instanceof Living || event.getCause().containsType(ContainerPlayer.class)) {
                 return;
             }
         }
