@@ -165,6 +165,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-create-success")
     public TextTemplate claimCreateSuccess = TextTemplate.of(TextColors.GREEN, TextTemplate.arg("type"), " created!  Use /trust to share it with friends.");
 
+    @Setting("claim-create-error-result")
+    public TextTemplate claimCreateErrorResult = TextTemplate.of(TextColors.RED, "Unable to create claim due to error result ", TextTemplate.arg("result"), ".");
+
     @Setting("claim-cleanup-warning")
     public TextTemplate claimCleanupWarning = TextTemplate.of("The land you've unclaimed may be changed by other players or cleaned up by administrators.  If you've built something there you want to keep, you should reclaim it.");
 

@@ -2346,7 +2346,10 @@ public class PlayerEventHandler {
                                     claims.add(gpClaim);
                                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                                 } else {
-                                    GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.RED, "Unable able to create claim due to result " + result.getResultType()));
+                                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateErrorResult
+                                            .apply(ImmutableMap.of(
+                                            "result", result.getResultType().toString())).build();
+                                    GriefPreventionPlugin.sendMessage(player, message);
                                 }
                                 event.setCancelled(true);
                                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
@@ -2511,6 +2514,11 @@ public class PlayerEventHandler {
                     List<Claim> claims = new ArrayList<>();
                     claims.add(overlapClaim);
                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
+                } else {
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateErrorResult
+                            .apply(ImmutableMap.of(
+                            "result", result.getResultType().toString())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
                 }
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;
