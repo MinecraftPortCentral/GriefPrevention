@@ -498,6 +498,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("permission-build")
     public TextTemplate permissionBuild = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("player").color(TextColors.GOLD), "'s permission to build.");
 
+    @Setting("permission-build-near-claim")
+    public TextTemplate permissionBuildNearClaim = TextTemplate.of(TextColors.RED, "You don't have ", TextTemplate.arg("owner").color(TextColors.GOLD), "'s permission to build near claim.");
+
     @Setting("permission-claim-create")
     public TextTemplate permissionClaimCreate = TextTemplate.of(TextColors.RED, "You don't have permission to claim land.");
 

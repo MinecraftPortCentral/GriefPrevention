@@ -62,7 +62,7 @@ import java.util.Optional;
 
 public class BlockUtils {
 
-    private static final Direction[] CARDINAL_DIRECTIONS = new Direction[] {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+    public static final Direction[] CARDINAL_DIRECTIONS = new Direction[] {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
     private static final int NUM_XZ_BITS = 4;
     private static final int NUM_SHORT_Y_BITS = 8;
     private static final short XZ_MASK = 0xF;
