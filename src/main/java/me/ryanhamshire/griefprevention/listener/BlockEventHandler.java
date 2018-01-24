@@ -599,7 +599,7 @@ public class BlockEventHandler {
                 for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
                     Location<World> loc = location.getBlockRelative(direction);
                     final GPClaim claim = this.dataStore.getClaimAt(loc, targetClaim);
-                    if (!claim.isWilderness()) {
+                    if (!claim.isWilderness() && !targetClaim.equals(claim)) {
                         Tristate result = GPPermissionHandler.getClaimPermission(event, loc, claim, GPPermissions.BLOCK_BREAK, source, block, user, TrustType.BUILDER, true);
                         if (result != Tristate.TRUE) {
                             final Text message = GriefPreventionPlugin.instance.messageData.permissionBuildNearClaim
