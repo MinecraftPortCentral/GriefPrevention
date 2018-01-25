@@ -615,7 +615,7 @@ public class BlockEventHandler {
                     Location<World> loc = location.getBlockRelative(direction);
                     final GPClaim claim = this.dataStore.getClaimAt(loc, targetClaim);
                     if (!claim.isWilderness() && !targetClaim.equals(claim)) {
-                        Tristate result = GPPermissionHandler.getClaimPermission(event, loc, claim, GPPermissions.BLOCK_BREAK, source, block, user, TrustType.BUILDER, true);
+                        Tristate result = GPPermissionHandler.getClaimPermission(event, loc, claim, GPPermissions.BLOCK_BREAK, source, loc.getBlock(), user, TrustType.BUILDER, true);
                         if (result != Tristate.TRUE) {
                             final Text message = GriefPreventionPlugin.instance.messageData.permissionBuildNearClaim
                                     .apply(ImmutableMap.of(

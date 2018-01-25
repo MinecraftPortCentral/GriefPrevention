@@ -217,16 +217,20 @@ public class EntityEventHandler {
                     }
                     permission = GPPermissions.ITEM_SPAWN;
                     if (source instanceof BlockSnapshot) {
-                        final Tristate result = GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, GPPermissions.BLOCK_BREAK, source, entity, user, true);
-                        if (result != Tristate.UNDEFINED) {
-                            if (result == Tristate.TRUE) {
-                                // Check if item drop is allowed
-                                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
-                                    return false;
+                        final BlockSnapshot block = (BlockSnapshot) source;
+                        final Location<World> location = block.getLocation().orElse(null);
+                        if (location != null) {
+                            final Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, block, user, true);
+                            if (result != Tristate.UNDEFINED) {
+                                if (result == Tristate.TRUE) {
+                                    // Check if item drop is allowed
+                                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
+                                        return false;
+                                    }
+                                    return true;
                                 }
-                                return true;
+                                return false;
                             }
-                            return false;
                         }
                     }
                 }
