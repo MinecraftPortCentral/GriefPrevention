@@ -47,10 +47,12 @@ import net.minecraft.world.gen.ChunkProviderServer;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.blockray.BlockRay;
 import org.spongepowered.api.util.blockray.BlockRayHit;
+import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.common.interfaces.IMixinChunk;
@@ -420,5 +422,23 @@ public class BlockUtils {
         }
 
         return Optional.empty();
+    }
+
+    public static boolean isLiquidSource(Object source) {
+        if (source instanceof BlockSnapshot) {
+            final BlockSnapshot blockSnapshot = (BlockSnapshot) source;
+            MatterProperty matterProperty = blockSnapshot.getState().getProperty(MatterProperty.class).orElse(null);
+            if (matterProperty != null && matterProperty.getValue() == MatterProperty.Matter.LIQUID) {
+                return true;
+            }
+        }
+        if (source instanceof LocatableBlock) {
+            final LocatableBlock locatableBlock = (LocatableBlock) source;
+            MatterProperty matterProperty = locatableBlock.getBlockState().getProperty(MatterProperty.class).orElse(null);
+            if (matterProperty != null && matterProperty.getValue() == MatterProperty.Matter.LIQUID) {
+                return true;
+            }
+        }
+        return false;
     }
 }

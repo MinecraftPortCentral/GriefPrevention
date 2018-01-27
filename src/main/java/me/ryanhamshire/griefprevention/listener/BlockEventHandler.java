@@ -121,11 +121,12 @@ public class BlockEventHandler {
             }
         }
 
-        LocatableBlock locatableBlock = cause.first(LocatableBlock.class).orElse(null);
-        TileEntity tileEntity = cause.first(TileEntity.class).orElse(null);
-        Object rootCause = cause.root();
-        Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
+        final LocatableBlock locatableBlock = cause.first(LocatableBlock.class).orElse(null);
+        final TileEntity tileEntity = cause.first(TileEntity.class).orElse(null);
+        final Object source = cause.root();
+        final Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
         final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
+        final boolean isLiquidSource = BlockUtils.isLiquidSource(source);
 
         if (sourceLocation != null) {
             if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
@@ -162,14 +163,22 @@ public class BlockEventHandler {
                     }
                 }
                 if (GPFlags.FIRE_SPREAD && context.containsKey(EventContextKeys.FIRE_SPREAD)) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
 
-                if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.FALSE) {
+                if (isLiquidSource) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user, true) == Tristate.FALSE) {
+                        event.setCancelled(true);
+                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                        return;
+                    }
+                    continue;
+                }
+                if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -192,15 +201,24 @@ public class BlockEventHandler {
                 }
 
                 if (context.containsKey(EventContextKeys.FIRE_SPREAD)) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, rootCause, location.getBlock(), user, true) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
 
+                if (isLiquidSource) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user, true) == Tristate.FALSE) {
+                        event.setCancelled(true);
+                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                        return;
+                    }
+                    continue;
+                }
+
                 boolean userAllowed = false;
-                boolean canBreak = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, rootCause, location.getBlock(), user) == Tristate.TRUE;
+                boolean canBreak = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.TRUE;
                 if (hasFakePlayer) {
                     if (!canBreak) {
                         userAllowed = false;
@@ -505,8 +523,12 @@ public class BlockEventHandler {
             return;
         }
 
+        final Object source = event.getSource();
+        if (BlockUtils.isLiquidSource(source)) {
+            return;
+        }
+
         GPTimings.BLOCK_BREAK_EVENT.startTimingIfSync();
-        Object source = event.getCause().root();
         final User user = CauseContextHelper.getEventUser(event);
         // ignore falling blocks when there is no user
         // avoids dupes with falling blocks such as Dragon Egg
@@ -567,9 +589,9 @@ public class BlockEventHandler {
         }
 
         GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
-        Object source = event.getCause().root();
         GPClaim sourceClaim = null;
         LocatableBlock locatable = null;
+        final Object source = event.getSource();
         final User user = CauseContextHelper.getEventUser(event);
         if (source instanceof LocatableBlock) {
             locatable = (LocatableBlock) source;
