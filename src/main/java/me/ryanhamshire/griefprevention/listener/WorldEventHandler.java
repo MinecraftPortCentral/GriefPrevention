@@ -72,7 +72,7 @@ public class WorldEventHandler {
             TaxApplyTask taxTask = new TaxApplyTask(event.getTargetWorld().getProperties());
             int taxHour = GriefPreventionPlugin.getActiveConfig(event.getTargetWorld().getProperties()).getConfig().claim.taxApplyHour;
             long delay = TaskUtils.computeDelay(taxHour, 0, 0);
-            Sponge.getScheduler().createTaskBuilder().async().delay(delay, TimeUnit.SECONDS).interval(1, TimeUnit.DAYS).execute(taxTask).submit(GriefPreventionPlugin.instance);
+            Sponge.getScheduler().createTaskBuilder().delay(delay, TimeUnit.SECONDS).interval(1, TimeUnit.DAYS).execute(taxTask).submit(GriefPreventionPlugin.instance);
         }
     }
 
