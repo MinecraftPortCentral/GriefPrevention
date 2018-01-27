@@ -124,6 +124,7 @@ public class GPFlags {
             case EXIT_CLAIM:
             case INTERACT_ENTITY_PRIMARY:
             case INTERACT_ENTITY_SECONDARY:
+            case ITEM_SPAWN:
             case PROJECTILE_IMPACT_ENTITY:
                 String claimFlag = flag.toString();
                 // first check for valid SpawnType
