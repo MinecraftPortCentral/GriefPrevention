@@ -561,6 +561,9 @@ public class BlockEventHandler {
             if (locatable != null && targetClaim.isWilderness()) {
                 continue;
             }
+            if (location == null || location.getBlockType() == BlockTypes.AIR) {
+                continue;
+            }
 
             // check overrides
             Tristate value = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, transaction.getOriginal(), user, TrustType.BUILDER, true);
