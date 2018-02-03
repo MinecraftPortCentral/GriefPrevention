@@ -2943,13 +2943,15 @@ public class GPClaim implements Claim {
         }
 
         CompletableFuture<FlagResult> result = new CompletableFuture<>();
-        if (source != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(source))) {
-            result.complete(new GPFlagResult(FlagResultType.SOURCE_NOT_VALID));
-            return result;
-        }
-        if (target != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(target))) {
-            result.complete(new GPFlagResult(FlagResultType.TARGET_NOT_VALID));
-            return result;
+        if (flag != ClaimFlag.COMMAND_EXECUTE && flag != ClaimFlag.COMMAND_EXECUTE_PVP) {
+            if (source != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(source))) {
+                result.complete(new GPFlagResult(FlagResultType.SOURCE_NOT_VALID));
+                return result;
+            }
+            if (target != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(target))) {
+                result.complete(new GPFlagResult(FlagResultType.TARGET_NOT_VALID));
+                return result;
+            }
         }
 
         GPFlagClaimEvent.Set event = new GPFlagClaimEvent.Set(this, subject, flag, source, target, value, context);
