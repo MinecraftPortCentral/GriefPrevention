@@ -561,7 +561,7 @@ public class BlockEventHandler {
             if (locatable != null && targetClaim.isWilderness()) {
                 continue;
             }
-            if (location == null || location.getBlockType() == BlockTypes.AIR) {
+            if (location == null || transaction.getOriginal().getState().getType() == BlockTypes.AIR) {
                 continue;
             }
 
