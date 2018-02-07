@@ -65,7 +65,7 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 GPClaim claim = iterator.next();
                 final GPPlayerData playerData = claim.getOwnerPlayerData();
                 // skip administrative claims
-                if (claim.isAdminClaim() || claim.getInternalClaimData().allowExpiration() || playerData == null) {
+                if (claim.isAdminClaim() || !claim.getInternalClaimData().allowExpiration() || playerData == null) {
                     continue;
                 }
 
