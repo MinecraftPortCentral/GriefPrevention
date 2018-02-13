@@ -781,7 +781,7 @@ public class GriefPreventionPlugin {
                 .getOrCreate(GameProfile.of(GriefPreventionPlugin.WORLD_USER_UUID, GriefPreventionPlugin.WORLD_USER_NAME));
 
         // run cleanup task
-        int cleanupTaskInterval = GriefPreventionPlugin.getGlobalConfig().getConfig().claim.cleanupTaskInterval;
+        int cleanupTaskInterval = GriefPreventionPlugin.getGlobalConfig().getConfig().claim.expirationCleanupInterval;
         if (cleanupTaskInterval > 0) {
             CleanupUnusedClaimsTask cleanupTask = new CleanupUnusedClaimsTask();
             Sponge.getScheduler().createTaskBuilder().delay(cleanupTaskInterval, TimeUnit.MINUTES).execute(cleanupTask)

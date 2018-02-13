@@ -167,9 +167,14 @@ public class GPPermissionHandler {
             }
         }
 
-        // Check for ignoreclaims after override checks
-        if (playerData != null && playerData.canIgnoreClaim(claim)) {
-            return processResult(claim, "trust.ignore", Tristate.TRUE, user);
+        if (playerData != null) {
+            if (playerData.debugClaimPermissions) {
+                return getClaimFlagPermission(claim, targetPermission, targetModPermission, targetMetaPermission);
+            }
+             // Check for ignoreclaims after override and debug checks
+            if (playerData.canIgnoreClaim(claim)) {
+                return processResult(claim, "trust.ignore", Tristate.TRUE, user);
+            }
         }
         if (user != null) {
             if (type != null) {
