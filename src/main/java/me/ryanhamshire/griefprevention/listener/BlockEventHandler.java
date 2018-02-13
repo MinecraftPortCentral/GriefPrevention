@@ -574,6 +574,9 @@ public class BlockEventHandler {
                 // check surrounding blocks for access
                 for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
                     Location<World> loc = location.getBlockRelative(direction);
+                    if (!(loc.getBlockType() instanceof BlockContainer)) {
+                        continue;
+                    }
                     final GPClaim claim = this.dataStore.getClaimAt(loc, targetClaim);
                     if (!claim.isWilderness() && !targetClaim.equals(claim)) {
                         Tristate result = GPPermissionHandler.getClaimPermission(event, loc, claim, GPPermissions.BLOCK_BREAK, source, loc.getBlock(), user, TrustType.BUILDER, true);
@@ -662,6 +665,9 @@ public class BlockEventHandler {
                 // check surrounding blocks for access
                 for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
                     Location<World> loc = location.getBlockRelative(direction);
+                    if (!(loc.getBlockType() instanceof BlockContainer)) {
+                        continue;
+                    }
                     final GPClaim claim = this.dataStore.getClaimAt(loc, targetClaim);
                     if (!claim.isWilderness() && !targetClaim.equals(claim)) {
                         Tristate result = GPPermissionHandler.getClaimPermission(event, loc, claim, GPPermissions.BLOCK_BREAK, source, loc.getBlock(), user, TrustType.BUILDER, true);
