@@ -46,6 +46,7 @@ import me.ryanhamshire.griefprevention.util.CauseContextHelper;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import me.ryanhamshire.griefprevention.visual.VisualizationType;
 import net.minecraft.block.BlockBasePressurePlate;
+import net.minecraft.block.BlockContainer;
 import net.minecraft.entity.item.EntityFallingBlock;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.inventory.IInventory;
