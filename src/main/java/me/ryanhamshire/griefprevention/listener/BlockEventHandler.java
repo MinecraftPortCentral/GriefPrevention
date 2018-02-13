@@ -499,16 +499,20 @@ public class BlockEventHandler {
             return;
         }
         GPClaim sourceClaim = null;
+        GPPlayerData playerData = null;
         LocatableBlock locatable = null;
         if (source instanceof LocatableBlock) {
             locatable = (LocatableBlock) source;
             if (user != null && user instanceof Player) {
-                final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(locatable.getWorld(), user.getUniqueId());
+                playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(locatable.getWorld(), user.getUniqueId());
                 sourceClaim = this.dataStore.getClaimAt(locatable.getLocation(), playerData.lastClaim.get());
             } else {
                 sourceClaim = this.dataStore.getClaimAt(locatable.getLocation());
             }
         } else {
+            if (source instanceof Player) {
+                playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(event.getTargetWorld(), user.getUniqueId());
+            }
             sourceClaim = this.getSourceClaim(event.getCause());
         }
         if (sourceClaim == null) {
@@ -528,6 +532,26 @@ public class BlockEventHandler {
                 continue;
             }
 
+            // Don't allow players to break blocks next to land they do not own
+            if (GPFlags.BLOCK_BREAK && source instanceof Player && !playerData.canIgnoreClaim(targetClaim)) {
+                // check surrounding blocks for access
+                for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
+                    Location<World> loc = location.getBlockRelative(direction);
+                    final GPClaim claim = this.dataStore.getClaimAt(loc, targetClaim);
+                    if (!claim.isWilderness() && !targetClaim.equals(claim)) {
+                        Tristate result = GPPermissionHandler.getClaimPermission(event, loc, claim, GPPermissions.BLOCK_BREAK, source, loc.getBlock(), user, TrustType.BUILDER, true);
+                        if (result != Tristate.TRUE) {
+                            final Text message = GriefPreventionPlugin.instance.messageData.permissionBuildNearClaim
+                                    .apply(ImmutableMap.of(
+                                    "owner", claim.getOwnerName())).build();
+                            GriefPreventionPlugin.sendClaimDenyMessage(claim, (Player) source, message);
+                            event.setCancelled(true);
+                            GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
+                            return;
+                        }
+                    }
+                }
+            }
             // check overrides
             Tristate value = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, transaction.getOriginal(), user, TrustType.BUILDER, true);
             if (value == Tristate.FALSE) {
@@ -597,7 +621,7 @@ public class BlockEventHandler {
 
             targetClaim = this.dataStore.getClaimAt(location, targetClaim);
             // Don't allow players to place blocks next to land they do not own
-            if (GPFlags.BLOCK_PLACE && GPFlags.BLOCK_BREAK && source instanceof Player) {
+            if (GPFlags.BLOCK_PLACE && GPFlags.BLOCK_BREAK && source instanceof Player && !playerData.canIgnoreClaim(targetClaim)) {
                 // check surrounding blocks for access
                 for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
                     Location<World> loc = location.getBlockRelative(direction);

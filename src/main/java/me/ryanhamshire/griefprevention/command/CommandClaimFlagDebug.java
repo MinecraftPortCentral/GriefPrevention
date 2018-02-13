@@ -49,9 +49,11 @@ public class CommandClaimFlagDebug implements CommandExecutor {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        playerData.executingClaimDebug = true;
         GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         if (claim.allowEdit(player) != null) {
             GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionEditClaim.toText());
+            playerData.executingClaimDebug = false;
             return CommandResult.success();
         }
 
@@ -63,6 +65,7 @@ public class CommandClaimFlagDebug implements CommandExecutor {
             GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.WHITE, "Claim flags debug ", TextColors.GREEN, "ON"));
         }
 
+        playerData.executingClaimDebug = false;
         return CommandResult.success();
     }
 }
