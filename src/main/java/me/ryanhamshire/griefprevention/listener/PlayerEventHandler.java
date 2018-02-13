@@ -619,13 +619,25 @@ public class PlayerEventHandler {
         // if requires access trust, check for permission
         Location<World> location = player.getLocation();
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
+        if (playerData.canIgnoreClaim(claim)) {
+            GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
+            return;
+        }
         String commandPermission = pluginId + "." + command;
 
         // first check the args
         String argument = "";
         for (String arg : args) {
             argument = argument + "." + arg;
-            if (GPFlags.COMMAND_EXECUTE && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, null, commandPermission + argument, player) == Tristate.FALSE) {
+        }
+
+        if (GPFlags.COMMAND_EXECUTE) {
+            final Tristate result = GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getSource(), commandPermission + argument, player);
+            if (result == Tristate.TRUE) {
+                GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
+                return;
+            }
+            if (result == Tristate.FALSE) {
                 final Text denyMessage = GriefPreventionPlugin.instance.messageData.commandBlocked
                         .apply(ImmutableMap.of(
                         "command", command,
@@ -634,7 +646,15 @@ public class PlayerEventHandler {
                 event.setCancelled(true);
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
-            } else if (GPFlags.COMMAND_EXECUTE_PVP && playerData != null && (playerData.inPvpCombat(player.getWorld())) && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission + argument, player) == Tristate.FALSE) {
+            }
+        }
+        if (GPFlags.COMMAND_EXECUTE_PVP && playerData != null && (playerData.inPvpCombat(player.getWorld()))) {
+            final Tristate result = GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, event.getSource(), commandPermission + argument, player);
+            if (result == Tristate.TRUE) {
+                GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
+                return;
+            }
+            if (result == Tristate.FALSE) {
                 final Text denyMessage = GriefPreventionPlugin.instance.messageData.pvpCommandBanned
                         .apply(ImmutableMap.of(
                         "command", command)).build();
@@ -643,25 +663,6 @@ public class PlayerEventHandler {
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
                 return;
             }
-        }
-        // second check the full command
-        if (GPFlags.COMMAND_EXECUTE && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getCause().root(), commandPermission, player) == Tristate.FALSE) {
-            final Text denyMessage = GriefPreventionPlugin.instance.messageData.commandBlocked
-                    .apply(ImmutableMap.of(
-                    "command", command,
-                    "owner", claim.getOwnerName())).build();
-            GriefPreventionPlugin.sendMessage(player, denyMessage);
-            event.setCancelled(true);
-            GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
-            return;
-        } else if (GPFlags.COMMAND_EXECUTE_PVP && playerData != null && (playerData.inPvpCombat(player.getWorld())) && GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, null, commandPermission, player) == Tristate.FALSE) {
-            final Text denyMessage = GriefPreventionPlugin.instance.messageData.pvpCommandBanned
-                    .apply(ImmutableMap.of(
-                    "command", command)).build();
-            GriefPreventionPlugin.sendMessage(event.getCause().first(Player.class).get(), denyMessage);
-            event.setCancelled(true);
-            GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
-            return;
         }
 
         // if a whisper

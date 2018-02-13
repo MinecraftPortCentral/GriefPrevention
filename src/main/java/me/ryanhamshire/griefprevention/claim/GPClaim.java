@@ -1966,30 +1966,25 @@ public class GPClaim implements Claim {
             return false;
         }
 
-        if (user.getUniqueId().equals(this.getOwnerUniqueId())) {
-            return true;
-        }
-
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
-        if (this.isAdminClaim() && playerData.canManageAdminClaims) {
-            if (playerData.debugClaimPermissions) {
-                return false;
+        if (!playerData.executingClaimDebug && !playerData.debugClaimPermissions) {
+            if (user.getUniqueId().equals(this.getOwnerUniqueId())) {
+                return true;
             }
-
-            return true;
-        }
-        if (this.isWilderness() && playerData.canManageWilderness) {
-            if (playerData.debugClaimPermissions) {
-                return false;
+            if (this.isAdminClaim() && playerData.canManageAdminClaims) {
+                return true;
             }
-
-            return true;
+            if (this.isWilderness() && playerData.canManageWilderness) {
+                return true;
+            }
+            if (playerData.canIgnoreClaim(this)) {
+                return true;
+            }
         }
 
-        if (playerData.canIgnoreClaim(this)) {
+        if (type == null) {
             return true;
         }
-
         if (this.isPublicTrusted(type)) {
             return true;
         }

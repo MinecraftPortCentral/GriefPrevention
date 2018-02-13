@@ -119,12 +119,14 @@ public class GPPermissionHandler {
             Pattern p = Pattern.compile("\\.[\\d+]*$");
             Matcher m = p.matcher(targetId);
             String targetMeta = "";
-            if (m.find()) {
-                targetMeta = m.group(0);
-                targetId = targetId.replace(targetMeta, "");
-            }
-            if (!targetMeta.isEmpty()) {
-                targetMetaPermission = flagPermission + "." + targetId.replace(":", ".") + targetMeta;
+            if (!flagPermission.contains("command-execute")) {
+                if (m.find()) {
+                    targetMeta = m.group(0);
+                    targetId = targetId.replace(targetMeta, "");
+                }
+                if (!targetMeta.isEmpty()) {
+                    targetMetaPermission = flagPermission + "." + targetId.replace(":", ".") + targetMeta;
+                }
             }
             if (!sourceId.isEmpty()) {
                 targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId + targetMeta;
@@ -165,6 +167,9 @@ public class GPPermissionHandler {
 
         if (playerData != null) {
             if (playerData.debugClaimPermissions) {
+                if (user != null && type != null && claim.isUserTrusted(user, type)) {
+                    return processResult(claim, "trust." + type.toString().toLowerCase(), Tristate.TRUE, user);
+                }
                 return getClaimFlagPermission(claim, targetPermission, targetModPermission, targetMetaPermission);
             }
              // Check for ignoreclaims after override and debug checks

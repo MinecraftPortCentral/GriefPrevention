@@ -140,6 +140,8 @@ public class GPPlayerData implements PlayerData {
     public boolean ignoreClaims = false;
 
     public boolean debugClaimPermissions = false;
+    // true while /cfd command is executing
+    public boolean executingClaimDebug = false;
     // the last claim this player was in, that we know of
     public WeakReference<GPClaim> lastClaim = new WeakReference<>(null);
 
