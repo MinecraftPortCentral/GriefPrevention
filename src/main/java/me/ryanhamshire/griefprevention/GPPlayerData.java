@@ -294,7 +294,8 @@ public class GPPlayerData implements PlayerData {
             this.optionClaimCreateMode = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_CREATE_MODE, this.optionClaimCreateMode);
             this.optionClaimExpirationChest = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_CHEST, this.optionClaimExpirationChest);
             this.optionClaimExpirationBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_BASIC, this.optionClaimExpirationBasic);
-            this.optionClaimExpirationTown = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_TOWN, this.optionClaimExpirationTown);
+            this.optionClaimExpirationTown = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_TOWN, this.optionClaimExpirationTown);
+            this.optionClaimExpirationSubdivision = PlayerUtils.getOptionIntValue(subject, GPOptions.CLAIM_EXPIRATION_SUBDIVISION, this.optionClaimExpirationSubdivision);
             this.optionTaxExpirationBasic = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_BASIC, this.optionTaxExpirationBasic);
             this.optionTaxExpirationSubdivision = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_BASIC, this.optionTaxExpirationSubdivision);
             this.optionTaxExpirationTown = PlayerUtils.getOptionIntValue(subject, GPOptions.TAX_EXPIRATION_BASIC, this.optionTaxExpirationTown);
