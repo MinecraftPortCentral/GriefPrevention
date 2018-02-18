@@ -24,7 +24,6 @@
  */
 package me.ryanhamshire.griefprevention.util;
 
-import net.minecraft.entity.player.EntityPlayer;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Event;
@@ -32,38 +31,28 @@ import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.EventContext;
 import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.world.ExplosionEvent;
-import org.spongepowered.common.SpongeImplHooks;
 
 public class CauseContextHelper {
 
     public static User getEventUser(Event event) {
         final Cause cause = event.getCause();
         final EventContext context = event.getContext();
-        User user = null;
-        if (cause != null) {
-            user = cause.first(User.class).orElse(null);
-            if (user instanceof EntityPlayer & SpongeImplHooks.isFakePlayer((EntityPlayer) user)) {
-                user = null;
+        final User contextUser = context.get(EventContextKeys.NOTIFIER)
+                .orElse(context.get(EventContextKeys.OWNER)
+                        .orElse(context.get(EventContextKeys.CREATOR)
+                                .orElse(cause.first(User.class).orElse(null))));
+        if (contextUser != null) {
+            return contextUser;
+        }
+
+        if (event instanceof ExplosionEvent) {
+            // Check igniter
+            final Living living = context.get(EventContextKeys.IGNITER).orElse(null);
+            if (living != null && living instanceof User) {
+                return (User) living;
             }
         }
 
-        if (user == null) {
-            user = context.get(EventContextKeys.NOTIFIER)
-                    .orElse(context.get(EventContextKeys.OWNER)
-                            .orElse(context.get(EventContextKeys.CREATOR)
-                                    .orElse(null)));
-        }
-
-        if (user == null) {
-            if (event instanceof ExplosionEvent) {
-                // Check igniter
-                final Living living = context.get(EventContextKeys.IGNITER).orElse(null);
-                if (living != null && living instanceof User) {
-                    user = (User) living;
-                }
-            }
-        }
-
-        return user;
+        return null;
     }
 }
