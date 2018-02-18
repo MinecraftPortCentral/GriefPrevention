@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.util;
 
+import net.minecraft.entity.player.EntityPlayer;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Event;
@@ -31,6 +32,7 @@ import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.EventContext;
 import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.world.ExplosionEvent;
+import org.spongepowered.common.SpongeImplHooks;
 
 public class CauseContextHelper {
 
@@ -40,6 +42,9 @@ public class CauseContextHelper {
         User user = null;
         if (cause != null) {
             user = cause.first(User.class).orElse(null);
+            if (user instanceof EntityPlayer & SpongeImplHooks.isFakePlayer((EntityPlayer) user)) {
+                user = null;
+            }
         }
 
         if (user == null) {
