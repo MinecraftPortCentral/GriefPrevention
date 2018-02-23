@@ -42,7 +42,7 @@ public class CauseContextHelper {
         User user = null;
         if (cause != null) {
             user = cause.first(User.class).orElse(null);
-            if (user != null && user instanceof EntityPlayer & SpongeImplHooks.isFakePlayer((EntityPlayer) user) && user.getName().startsWith("[")) {
+            if (user != null && user instanceof EntityPlayer && SpongeImplHooks.isFakePlayer((EntityPlayer) user) && user.getName().startsWith("[")) {
                 user = null;
             }
         }
