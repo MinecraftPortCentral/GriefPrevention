@@ -718,19 +718,16 @@ public class EntityEventHandler {
             boolean exitCancelled = false;
             // enter
             if (GPFlags.ENTER_CLAIM && GPPermissionHandler.getClaimPermission(event, toLocation, toClaim, GPPermissions.ENTER_CLAIM, entity, entity, user) == Tristate.FALSE) {
-                event.setCancelled(true);
                 enterCancelled = true;
+                gpEvent.setCancelled(true);
             }
 
             // exit
             if (GPFlags.EXIT_CLAIM && GPPermissionHandler.getClaimPermission(event, fromLocation, fromClaim, GPPermissions.EXIT_CLAIM, entity, entity, user) == Tristate.FALSE) {
-                event.setCancelled(true);
                 exitCancelled = true;
-            }
-
-            if (enterCancelled || exitCancelled) {
                 gpEvent.setCancelled(true);
             }
+
             Sponge.getEventManager().post(gpEvent);
             if (gpEvent.isCancelled()) {
                 final Text cancelMessage = gpEvent.getMessage().orElse(null);
