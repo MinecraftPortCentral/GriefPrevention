@@ -615,18 +615,17 @@ public class EntityEventHandler {
             GPClaim fromClaim = this.dataStore.getClaimAt(fromLocation);
             GPClaim toClaim = this.dataStore.getClaimAt(toLocation);
             if (fromClaim != toClaim) {
+                GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim);
                 // enter
                 if (GPFlags.ENTER_CLAIM && GPPermissionHandler.getClaimPermission(event, toLocation, toClaim, GPPermissions.ENTER_CLAIM, entity, entity, null) == Tristate.FALSE) {
-                    event.setCancelled(true);
+                    gpEvent.setCancelled(true);
                 }
 
                 // exit
                 if (GPFlags.EXIT_CLAIM && GPPermissionHandler.getClaimPermission(event, fromLocation, fromClaim, GPPermissions.EXIT_CLAIM, entity, entity, null) == Tristate.FALSE) {
-                    event.setCancelled(true);
+                    gpEvent.setCancelled(true);
                 }
 
-                GPBorderClaimEvent gpEvent = new GPBorderClaimEvent(entity, fromClaim, toClaim);
-                gpEvent.setCancelled(event.isCancelled());
                 Sponge.getEventManager().post(gpEvent);
                 if (gpEvent.isCancelled()) {
                     event.setCancelled(true);
