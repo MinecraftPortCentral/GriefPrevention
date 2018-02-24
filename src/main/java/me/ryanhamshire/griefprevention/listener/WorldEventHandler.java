@@ -90,6 +90,10 @@ public class WorldEventHandler {
 
     @Listener
     public void onWorldSave(SaveWorldEvent.Post event) {
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
+            return;
+        }
+
         GPTimings.WORLD_SAVE_EVENT.startTimingIfSync();
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
         if (claimWorldManager == null) {
