@@ -81,6 +81,7 @@ import org.spongepowered.api.data.type.HandType;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
+import org.spongepowered.api.entity.living.ArmorStand;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.CauseStackManager;
@@ -1506,6 +1507,9 @@ public class PlayerEventHandler {
         // cache secondary item checks
         if (entity != null) {
             playerData.lastInteractItemEntityResult = GPPermissionHandler.getClaimPermission(event, location, claim, ENTITY_PERMISSION, playerItem, entity, player, TrustType.ACCESSOR, false);
+            if (playerData.lastInteractItemEntityResult == Tristate.TRUE && entity instanceof ArmorStand) {
+                playerData.lastInteractItemEntityResult = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INVENTORY_OPEN, playerItem, entity, player, TrustType.CONTAINER, false);
+            }
         } else {
             playerData.lastInteractItemEntityResult = Tristate.UNDEFINED;
         }
