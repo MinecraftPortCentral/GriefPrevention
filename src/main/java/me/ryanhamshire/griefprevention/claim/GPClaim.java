@@ -1252,10 +1252,10 @@ public class GPClaim implements Claim {
         }
 
         // Auto-adjust Y levels for 2D claims
-        if (playerData != null && playerData.shovelMode != ShovelMode.Admin) {
+        if (playerData != null) {
             smallY = playerData.getMinClaimLevel();
         }
-        if (playerData != null && playerData.shovelMode != ShovelMode.Admin) {
+        if (playerData != null) {
             bigY = playerData.getMaxClaimLevel();
         }
         Location<World> currentLesserCorner = this.getLesserBoundaryCorner();
