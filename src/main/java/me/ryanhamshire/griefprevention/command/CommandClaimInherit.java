@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import org.spongepowered.api.command.CommandException;
@@ -47,7 +48,14 @@ public class CommandClaimInherit implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+        final Text result = claim.allowEdit(player);
+        if (result != null) {
+            GriefPreventionPlugin.sendMessage(player, result);
+            return CommandResult.success();
+        }
+
         if (claim.parent == null) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandInherit.toText());
             return CommandResult.success();

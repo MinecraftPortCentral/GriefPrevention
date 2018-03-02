@@ -48,7 +48,7 @@ public class CommandIgnorePlayer implements CommandExecutor {
         }
 
         // validate target player
-        Player targetPlayer = args.<Player>getOne("player").get();
+        final Player targetPlayer = args.<Player>getOne("player").get();
         if (targetPlayer.hasPermission(GPPermissions.NOT_IGNORABLE)) {
             try {
                 throw new CommandException(GriefPreventionPlugin.instance.messageData.permissionPlayerNotIgnorable.toText());

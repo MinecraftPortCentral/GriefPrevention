@@ -62,19 +62,8 @@ public class CommandTrustList implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
-
-        // if no claim here, error message
-        if (claim == null) {
-            try {
-                throw new CommandException(GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
-            } catch (CommandException e) {
-                src.sendMessage(e.getText());
-                return CommandResult.success();
-            }
-        }
-
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         showTrustList(src, claim, player, TrustType.NONE);
         return CommandResult.success();
 

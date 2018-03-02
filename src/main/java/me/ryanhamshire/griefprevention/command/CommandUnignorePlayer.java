@@ -48,11 +48,9 @@ public class CommandUnignorePlayer implements CommandExecutor {
             return CommandResult.success();
         }
 
-        // validate target player
-        User targetPlayer = args.<User>getOne("player").get();
-
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
+        final User targetPlayer = args.<User>getOne("player").get();
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
         if (ignoreStatus == null || ignoreStatus == true) {
             try {
                 throw new CommandException(GriefPreventionPlugin.instance.messageData.playerNotIgnoring.toText());

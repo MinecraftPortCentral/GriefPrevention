@@ -53,6 +53,11 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
             }
         }
 
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(worldProperties)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
+            return CommandResult.success();
+        }
+
         // parse the adjustment amount
         int newAmount = args.<Integer>getOne("amount").get();
         User user = args.<User>getOne("user").get();

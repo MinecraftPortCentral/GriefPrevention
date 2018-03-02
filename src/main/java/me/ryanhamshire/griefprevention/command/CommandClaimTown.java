@@ -47,7 +47,7 @@ public class CommandClaimTown implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.Town;
         playerData.claimSubdividing = null;
         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimModeTown.toText());

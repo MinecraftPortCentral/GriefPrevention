@@ -33,22 +33,22 @@ public class CommandClaimTransfer implements CommandExecutor {
             return CommandResult.success();
         }
 
-        User targetPlayer = args.<User>getOne("user").orElse(null);
+        final User targetPlayer = args.<User>getOne("user").orElse(null);
         if (targetPlayer == null) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandPlayerInvalid.toText());
             return CommandResult.success();
         }
 
         // which claim is the user in?
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
-        UUID ownerId = claim.getOwnerUniqueId();
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
 
         if (claim == null || claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
             return CommandResult.empty();
         }
 
+        final UUID ownerId = claim.getOwnerUniqueId();
         final boolean isAdmin = playerData.canIgnoreClaim(claim);
         // check permission
         if (!isAdmin && claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
@@ -67,7 +67,7 @@ public class CommandClaimTransfer implements CommandExecutor {
         }
 
         // change ownership
-        ClaimResult claimResult = claim.transferOwner(targetPlayer.getUniqueId());
+        final ClaimResult claimResult = claim.transferOwner(targetPlayer.getUniqueId());
         if (!claimResult.successful()) {
             PlayerData targetPlayerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), targetPlayer.getUniqueId());
             if (claimResult.getResultType() == ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS) {

@@ -49,16 +49,17 @@ public class CommandTownTag implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         if (claim == null || !claim.isInTown()) {
             GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.townNotIn.toText());
             return CommandResult.empty();
         }
-        GPClaim town = claim.getTownClaim();
 
-        if (town.allowEdit(player) != null) {
-            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionEditClaim.toText());
+        final GPClaim town = claim.getTownClaim();
+        final Text result = town.allowEdit(player);
+        if (result != null) {
+            GriefPreventionPlugin.sendMessage(src, result);
             return CommandResult.success();
         }
 

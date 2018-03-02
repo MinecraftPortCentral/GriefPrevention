@@ -31,7 +31,6 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -44,12 +43,6 @@ public class CommandClaimDeleteAllAdmin implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
-        try {
-            ctx.checkPermission(src, GPPermissions.COMMAND_DELETE_ADMIN_CLAIMS);
-        } catch (CommandException e) {
-            src.sendMessage(e.getText());
-            return CommandResult.success();
-        }
         Player player;
         try {
             player = GriefPreventionPlugin.checkPlayer(src);

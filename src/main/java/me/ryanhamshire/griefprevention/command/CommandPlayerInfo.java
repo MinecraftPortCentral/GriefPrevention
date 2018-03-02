@@ -76,8 +76,7 @@ public class CommandPlayerInfo implements CommandExecutor {
         }
 
         // otherwise if no permission to delve into another player's claims data or self
-        if ((user != null && user != src && !src.hasPermission(GPPermissions.COMMAND_PLAYER_INFO_OTHERS)) ||
-                !src.hasPermission(GPPermissions.COMMAND_PLAYER_INFO_BASE)) {
+        if ((user != null && user != src && !src.hasPermission(GPPermissions.COMMAND_PLAYER_INFO_OTHERS))) {
             try {
                 throw new CommandPermissionException();
             } catch (CommandPermissionException e) {

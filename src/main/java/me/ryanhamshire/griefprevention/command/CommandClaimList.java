@@ -32,7 +32,6 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandPermissionException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
@@ -91,26 +90,19 @@ public class CommandClaimList implements CommandExecutor {
             worldProperties = Sponge.getServer().getDefaultWorld().get();
         }
 
-        // otherwise if no permission to delve into another player's claims data or self
-        if (!src.hasPermission(GPPermissions.COMMAND_CLAIM_LIST)) {
-            try {
-                throw new CommandPermissionException();
-            } catch (CommandPermissionException e) {
-                src.sendMessage(e.getText());
-                return CommandResult.success();
-            }
+        if (worldProperties == null || !GriefPreventionPlugin.instance.claimsEnabledForWorld(worldProperties)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
+            return CommandResult.success();
         }
 
         String arguments = "";
         if (user != null) {
             arguments = user.getName();
         }
-        if (worldProperties != null) {
-            if (arguments.isEmpty()) {
-                arguments = worldProperties.getWorldName();
-            } else {
-                arguments += " " + worldProperties.getWorldName();
-            }
+        if (arguments.isEmpty()) {
+            arguments = worldProperties.getWorldName();
+        } else {
+            arguments += " " + worldProperties.getWorldName();
         }
 
         this.canListOthers = src.hasPermission(GPPermissions.LIST_OTHER_CLAIMS);

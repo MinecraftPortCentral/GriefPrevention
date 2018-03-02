@@ -53,28 +53,25 @@ public class CommandClaimSpawn implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
-        if (player.hasPermission(GPPermissions.COMMAND_CLAIM_SPAWN) && claim != null || playerData.canIgnoreClaim(claim)) {
-            if (!claim.isUserTrusted(player, TrustType.ACCESSOR)) {
-                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionAccess.toText());
-                return CommandResult.success();
-            }
-
-            Vector3i spawnPos = claim.getData().getSpawnPos().orElse(null);
-            if (spawnPos == null) {
-                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandSpawnNotSet.toText());
-                return CommandResult.success();
-            }
-            Location<World> spawnLocation = new Location<World>(claim.getWorld(), spawnPos);
-            player.setLocation(spawnLocation);
-            final Text message = GriefPreventionPlugin.instance.messageData.commandSpawnTeleport
-                    .apply(ImmutableMap.of(
-                    "location", spawnPos)).build();
-            GriefPreventionPlugin.sendMessage(src, message);
-        } else {
-            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+        if (!playerData.canIgnoreClaim(claim) && !claim.isUserTrusted(player, TrustType.ACCESSOR) && !player.hasPermission(GPPermissions.COMMAND_DELETE_CLAIMS)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionAccess.toText());
+            return CommandResult.success();
         }
+
+        final Vector3i spawnPos = claim.getData().getSpawnPos().orElse(null);
+        if (spawnPos == null) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandSpawnNotSet.toText());
+            return CommandResult.success();
+        }
+
+        final Location<World> spawnLocation = new Location<World>(claim.getWorld(), spawnPos);
+        player.setLocation(spawnLocation);
+        final Text message = GriefPreventionPlugin.instance.messageData.commandSpawnTeleport
+                .apply(ImmutableMap.of(
+                "location", spawnPos)).build();
+        GriefPreventionPlugin.sendMessage(src, message);
 
         return CommandResult.success();
     }

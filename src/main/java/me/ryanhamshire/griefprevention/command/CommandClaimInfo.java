@@ -90,30 +90,45 @@ public class CommandClaimInfo implements CommandExecutor {
         Player player = null;
         if (src instanceof Player) {
             player = (Player) src;
+            if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
+                return CommandResult.success();
+            }
         }
 
         if (player == null && claimIdentifier == null) {
-            src.sendMessage(Text.of("No valid player or claim id found."));
+            src.sendMessage(Text.of(TextColors.RED, "No valid player or claim UUID found."));
             return CommandResult.success();
         }
 
         boolean isAdmin = src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
         Claim claim = null;
-        if (player != null && claimIdentifier == null) {
-            claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
-        } else {
-            GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getLocation().getExtent().getProperties());
-            UUID uuid = null;
-            try {
-                uuid = UUID.fromString(claimIdentifier);
-                claim = claimManager.getClaimByUUID(uuid).orElse(null);
-            } catch (IllegalArgumentException e) {
-                
+        if (claimIdentifier == null) {
+            if (player != null) {
+                claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+            } else {
+                src.sendMessage(Text.of(TextColors.RED, "Claim UUID is required if executing from non-player source."));
+                return CommandResult.success();
             }
-            if (uuid == null) {
-                final List<Claim> claimList = claimManager.getClaimsByName(claimIdentifier);
-                if (!claimList.isEmpty()) {
-                    claim = claimList.get(0);
+        } else {
+            for (World world : Sponge.getServer().getWorlds()) {
+                if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
+                    continue;
+                }
+
+                final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
+                UUID uuid = null;
+                try {
+                    uuid = UUID.fromString(claimIdentifier);
+                    claim = claimManager.getClaimByUUID(uuid).orElse(null);
+                } catch (IllegalArgumentException e) {
+                    
+                }
+                if (uuid == null) {
+                    final List<Claim> claimList = claimManager.getClaimsByName(claimIdentifier);
+                    if (!claimList.isEmpty()) {
+                        claim = claimList.get(0);
+                    }
                 }
             }
         }
@@ -216,6 +231,7 @@ public class CommandClaimInfo implements CommandExecutor {
         final List<UUID> builderList = gpClaim.getUserTrustList(TrustType.BUILDER, true);
         final List<UUID> containerList = gpClaim.getUserTrustList(TrustType.CONTAINER, true);
         final List<UUID> managerList = gpClaim.getUserTrustList(TrustType.MANAGER, true);
+        System.out.println("Accessors = " + accessorList);
         for (UUID uuid : accessorList) {
             User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             accessors += user.getName() + " ";

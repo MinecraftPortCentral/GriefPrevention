@@ -70,9 +70,9 @@ public class CommandClaimAbandon implements CommandExecutor {
         }
 
         // which claim is being abandoned?
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
-        UUID ownerId = claim.getOwnerUniqueId();
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+        final UUID ownerId = claim.getOwnerUniqueId();
 
         final boolean isAdmin = playerData.canIgnoreClaim(claim);
         if (claim.isWilderness()) {
