@@ -66,6 +66,7 @@ public class CommandClaimOptionPlayer implements CommandExecutor {
         if (option != null && !option.startsWith("griefprevention.")) {
             option = "griefprevention." + option;
         }
+
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
 
@@ -78,8 +79,8 @@ public class CommandClaimOptionPlayer implements CommandExecutor {
             return CommandResult.success();
         }
 
-        User user = args.<User>getOne("user").orElse(null);
-        Double value = args.<Double>getOne("value").orElse(null);
+        final User user = args.<User>getOne("user").orElse(null);
+        final Double value = args.<Double>getOne("value").orElse(null);
         final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
                 .apply(ImmutableMap.of(
                 "type", claim.getType().name())).build();

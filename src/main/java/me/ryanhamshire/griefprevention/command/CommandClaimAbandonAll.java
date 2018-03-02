@@ -54,8 +54,9 @@ public class CommandClaimAbandonAll implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
+
         // count claims
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         int originalClaimCount = playerData.getInternalClaims().size();
 
         // check count

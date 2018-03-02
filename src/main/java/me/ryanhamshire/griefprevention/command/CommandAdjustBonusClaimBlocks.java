@@ -52,6 +52,10 @@ public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
                 worldProperties = Sponge.getServer().getDefaultWorld().get();
             }
         }
+        if (worldProperties == null || !GriefPreventionPlugin.instance.claimsEnabledForWorld(worldProperties)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
+            return CommandResult.success();
+        }
 
         // parse the adjustment amount
         int adjustment = args.<Integer>getOne("amount").get();

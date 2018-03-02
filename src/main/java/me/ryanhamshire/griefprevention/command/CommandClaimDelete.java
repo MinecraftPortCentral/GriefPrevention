@@ -62,63 +62,65 @@ public class CommandClaimDelete implements CommandExecutor {
             src.sendMessage(e.getText());
             return CommandResult.success();
         }
+
         // determine which claim the player is standing in
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
 
         if (claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
-        } else {
-            final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimDelete
-                    .apply(ImmutableMap.of(
-                    "type", claim.getType().name())).build();
+            return CommandResult.success();
+        }
 
-            if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_ADMIN)) {
-                GriefPreventionPlugin.sendMessage(player, message);
+        final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimDelete
+                .apply(ImmutableMap.of(
+                "type", claim.getType().name())).build();
+
+        if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_ADMIN)) {
+            GriefPreventionPlugin.sendMessage(player, message);
+            return CommandResult.success();
+        }
+        if (claim.isBasicClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_BASIC)) {
+            GriefPreventionPlugin.sendMessage(player, message);
+            return CommandResult.success();
+        }
+
+        if (!this.deleteTopLevelClaim && !claim.isTown() && claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChildrenWarning.toText());
+            playerData.warnedAboutMajorDeletion = true;
+            return CommandResult.success();
+        }
+
+        try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+            Sponge.getCauseStackManager().pushCause(src);
+            ClaimResult
+                claimResult =
+                GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, !this.deleteTopLevelClaim);
+            if (!claimResult.successful()) {
+                player.sendMessage(
+                    Text.of(TextColors.RED, claimResult.getMessage().orElse(Text.of("Could not delete claim. A plugin has denied it."))));
                 return CommandResult.success();
             }
-            if (claim.isBasicClaim() && !player.hasPermission(GPPermissions.DELETE_CLAIM_BASIC)) {
-                GriefPreventionPlugin.sendMessage(player, message);
-                return CommandResult.success();
+
+            claim.removeSurfaceFluids(null);
+            // clear permissions
+            GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
+            // if in a creative mode world, /restorenature the claim
+            if (GriefPreventionPlugin.instance
+                .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
+                GriefPreventionPlugin.instance.restoreClaim(claim, 0);
             }
 
-            if (!this.deleteTopLevelClaim && !claim.isTown() && claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
-                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimChildrenWarning.toText());
-                playerData.warnedAboutMajorDeletion = true;
-            } else {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDeleted.toText());
+            GriefPreventionPlugin.addLogEntry(
+                player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
+                + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
+                CustomLogEntryTypes.AdminActivity);
 
-                try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
-                    Sponge.getCauseStackManager().pushCause(src);
-                    ClaimResult
-                        claimResult =
-                        GriefPreventionPlugin.instance.dataStore.deleteClaim(claim, !this.deleteTopLevelClaim);
-                    if (!claimResult.successful()) {
-                        player.sendMessage(
-                            Text.of(TextColors.RED, claimResult.getMessage().orElse(Text.of("Could not delete claim. A plugin has denied it."))));
-                        return CommandResult.success();
-                    }
+            // revert any current visualization
+            playerData.revertActiveVisual(player);
 
-                    claim.removeSurfaceFluids(null);
-                    // clear permissions
-                    GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().clearPermissions(ImmutableSet.of(claim.getContext()));
-                    // if in a creative mode world, /restorenature the claim
-                    if (GriefPreventionPlugin.instance
-                        .claimModeIsActive(claim.getLesserBoundaryCorner().getExtent().getProperties(), ClaimsMode.Creative)) {
-                        GriefPreventionPlugin.instance.restoreClaim(claim, 0);
-                    }
-
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDeleted.toText());
-                    GriefPreventionPlugin.addLogEntry(
-                        player.getName() + " deleted " + claim.getOwnerName() + "'s claim at "
-                        + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
-                        CustomLogEntryTypes.AdminActivity);
-
-                    // revert any current visualization
-                    playerData.revertActiveVisual(player);
-
-                    playerData.warnedAboutMajorDeletion = false;
-                }
-            }
+            playerData.warnedAboutMajorDeletion = false;
         }
 
         return CommandResult.success();

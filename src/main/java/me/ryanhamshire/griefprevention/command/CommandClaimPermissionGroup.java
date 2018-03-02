@@ -64,13 +64,14 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
             return CommandResult.success();
         }
 
-        String permission = args.<String>getOne("permission").orElse(null);
+        final String permission = args.<String>getOne("permission").orElse(null);
         if (permission != null && !player.hasPermission(permission)) {
             GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionAssignWithoutHaving.toText());
             return CommandResult.success();
         }
-        String group = args.<String>getOne("group").orElse(null);
-        String value = args.<String>getOne("value").orElse(null);
+
+        final String group = args.<String>getOne("group").orElse(null);
+        final String value = args.<String>getOne("value").orElse(null);
 
         if (!PermissionUtils.hasGroupSubject(group)) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandGroupInvalid.toText());

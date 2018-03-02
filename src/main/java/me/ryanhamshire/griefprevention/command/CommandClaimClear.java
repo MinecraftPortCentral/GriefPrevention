@@ -28,6 +28,7 @@ package me.ryanhamshire.griefprevention.command;
 import me.ryanhamshire.griefprevention.GPFlags;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.IEntityOwnable;
 import org.spongepowered.api.Sponge;
@@ -67,20 +68,35 @@ public class CommandClaimClear implements CommandExecutor {
             return CommandResult.success();
         }
 
-        if (claimId == null) {
-            if (src instanceof Player) {
-                GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(((Player) src).getLocation());
-                if (sourceClaim != null) {
-                    claimId = sourceClaim.getUniqueId().toString();
-                }
-            }
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(worldProperties)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
+            return CommandResult.success();
         }
 
+        Player player = null;
         UUID claimUniqueId = null;
-        try {
-            claimUniqueId = UUID.fromString(claimId);
-        } catch (IllegalArgumentException e) {
-            return CommandResult.success();
+        if (src instanceof Player) {
+            player = (Player) src;
+            GPClaim claim = null;
+            if (claimId == null) {
+                claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+                final Text result = claim.allowEdit(player);
+                if (result != null) {
+                    GriefPreventionPlugin.sendMessage(player, result);
+                    return CommandResult.success();
+                }
+                claimUniqueId = claim.getUniqueId();
+            } else {
+                if (!player.hasPermission(GPPermissions.COMMAND_DELETE_CLAIMS)) {
+                    GriefPreventionPlugin.sendMessage(player, Text.of(TextColors.RED, "Only administrators may clear claims by UUID."));
+                    return CommandResult.success();
+                }
+                try {
+                    claimUniqueId = UUID.fromString(claimId);
+                } catch (IllegalArgumentException e) {
+                    return CommandResult.success();
+                }
+            }
         }
 
         // Unfortunately this is required until Pixelmon registers their entities correctly in FML

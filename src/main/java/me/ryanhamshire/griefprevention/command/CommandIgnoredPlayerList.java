@@ -50,7 +50,7 @@ public class CommandIgnoredPlayerList implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         StringBuilder builder = new StringBuilder();
         for (Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet()) {
             if (entry.getValue() != null) {

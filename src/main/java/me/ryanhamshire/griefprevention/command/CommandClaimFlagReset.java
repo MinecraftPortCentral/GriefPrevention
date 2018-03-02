@@ -52,8 +52,8 @@ public class CommandClaimFlagReset implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimResetFlags
                 .apply(ImmutableMap.of(
                 "type", claim.getType().name())).build();

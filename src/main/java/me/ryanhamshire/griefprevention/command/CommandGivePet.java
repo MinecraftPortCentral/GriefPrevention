@@ -47,7 +47,7 @@ public class CommandGivePet implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
         // special case: cancellation
         if (args.getOne("player").orElse(false).equals(true)) {
@@ -57,7 +57,7 @@ public class CommandGivePet implements CommandExecutor {
         }
 
         // find the specified player
-        User targetPlayer = args.<User>getOne("player").get();
+        final User targetPlayer = args.<User>getOne("player").get();
 
         // remember the player's ID for later pet transfer
         playerData.petGiveawayRecipient = targetPlayer;

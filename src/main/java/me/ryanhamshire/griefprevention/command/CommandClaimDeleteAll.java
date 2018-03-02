@@ -56,9 +56,9 @@ public class CommandClaimDeleteAll implements CommandExecutor {
         }
 
         // try to find that player
-        User otherPlayer = ctx.<User>getOne("player").get();
+        final User otherPlayer = ctx.<User>getOne("player").get();
         // count claims
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         int originalClaimCount = playerData.getInternalClaims().size();
 
         // check count

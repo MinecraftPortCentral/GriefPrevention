@@ -47,7 +47,7 @@ public class CommandClaimBasic implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.shovelMode = ShovelMode.Basic;
         playerData.claimSubdividing = null;
         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimModeBasic.toText());

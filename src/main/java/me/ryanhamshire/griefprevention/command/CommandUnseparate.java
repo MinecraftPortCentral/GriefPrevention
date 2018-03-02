@@ -47,9 +47,8 @@ public class CommandUnseparate implements CommandExecutor {
             return CommandResult.success();
         }
 
-        // validate target players
-        User targetPlayer = args.<User>getOne("player1").get();
-        User targetPlayer2 = args.<User>getOne("player2").get();
+        final User targetPlayer = args.<User>getOne("player1").get();
+        final User targetPlayer2 = args.<User>getOne("player2").get();
         GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), targetPlayer, targetPlayer2, IgnoreMode.None);
         GriefPreventionPlugin.instance.setIgnoreStatus(player.getWorld(), targetPlayer2, targetPlayer, IgnoreMode.None);
         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.playerUnseparate.toText());

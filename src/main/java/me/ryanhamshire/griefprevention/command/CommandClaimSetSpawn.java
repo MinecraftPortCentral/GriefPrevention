@@ -27,9 +27,7 @@ package me.ryanhamshire.griefprevention.command;
 import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -50,22 +48,19 @@ public class CommandClaimSetSpawn implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
-        if (player.hasPermission(GPPermissions.COMMAND_CLAIM_SET_SPAWN) && claim != null || playerData.canIgnoreClaim(claim)) {
-            if (!claim.isUserTrusted(player, TrustType.BUILDER)) {
-                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionAccess.toText());
-                return CommandResult.success();
-            }
-
-            claim.getInternalClaimData().setSpawnPos(player.getLocation().getBlockPosition());
-            final Text message = GriefPreventionPlugin.instance.messageData.commandSpawnSet
-                    .apply(ImmutableMap.of(
-                    "location", player.getLocation().getBlockPosition())).build();
-            GriefPreventionPlugin.sendMessage(src, message);
-        } else {
-            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+        final Text result = claim.allowEdit(player);
+        if (result != null) {
+            GriefPreventionPlugin.sendMessage(player, result);
+            return CommandResult.success();
         }
+
+        claim.getInternalClaimData().setSpawnPos(player.getLocation().getBlockPosition());
+        final Text message = GriefPreventionPlugin.instance.messageData.commandSpawnSet
+                .apply(ImmutableMap.of(
+                "location", player.getLocation().getBlockPosition())).build();
+        GriefPreventionPlugin.sendMessage(src, message);
 
         return CommandResult.success();
     }

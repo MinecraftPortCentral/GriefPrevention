@@ -904,6 +904,10 @@ public class CommandHelper {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandPlayerInvalid.toText());
             return;
         }
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
+            return;
+        }
 
         // determine which claim the player is standing in
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -986,9 +990,12 @@ public class CommandHelper {
             GriefPreventionPlugin.sendMessage(player, invalidGroup);
             return;
         }
-
         if (!PermissionUtils.hasGroupSubject(group)) {
             GriefPreventionPlugin.sendMessage(player, invalidGroup);
+            return;
+        }
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
             return;
         }
 

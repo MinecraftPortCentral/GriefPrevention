@@ -1094,7 +1094,7 @@ public class GriefPreventionPlugin {
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Puts your claim up for sale. Use /claimsell amount. Requires an economy plugin"))
-                .permission(GPPermissions.COMMAND_SELL_CLAIM_BLOCKS)
+                .permission(GPPermissions.COMMAND_CLAIM_SELL)
                 .arguments(GenericArguments.firstParsing(doubleNum(Text.of("price")), string(Text.of("cancel"))))
                 .executor(new CommandClaimSell())
                 .build(), "claimsell");
@@ -1795,9 +1795,13 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public static Player checkPlayer(CommandSource source) throws CommandException {
-        if (source instanceof Player) {
-            return ((Player) source);
+    public static Player checkPlayer(CommandSource src) throws CommandException {
+        if (src instanceof Player) {
+            final Player player = (Player) src;
+            if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+                throw new CommandException(GriefPreventionPlugin.instance.messageData.claimDisabledWorld.toText());
+            }
+            return player;
         } else {
             throw new CommandException(Text.of("You must be a player to run this command!"));
         }
