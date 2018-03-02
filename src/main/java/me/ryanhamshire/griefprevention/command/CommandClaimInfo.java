@@ -231,7 +231,6 @@ public class CommandClaimInfo implements CommandExecutor {
         final List<UUID> builderList = gpClaim.getUserTrustList(TrustType.BUILDER, true);
         final List<UUID> containerList = gpClaim.getUserTrustList(TrustType.CONTAINER, true);
         final List<UUID> managerList = gpClaim.getUserTrustList(TrustType.MANAGER, true);
-        System.out.println("Accessors = " + accessorList);
         for (UUID uuid : accessorList) {
             User user = GriefPreventionPlugin.getOrCreateUser(uuid);
             accessors += user.getName() + " ";
