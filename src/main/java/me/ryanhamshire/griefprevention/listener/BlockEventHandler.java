@@ -128,6 +128,7 @@ public class BlockEventHandler {
         final Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
         final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
         final boolean isLiquidSource = BlockUtils.isLiquidSource(source);
+        final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
 
         if (sourceLocation != null) {
             if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
@@ -163,14 +164,13 @@ public class BlockEventHandler {
                         continue;
                     }
                 }
-                if (GPFlags.FIRE_SPREAD && context.containsKey(EventContextKeys.FIRE_SPREAD)) {
+                if (GPFlags.FIRE_SPREAD && isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
-
                 if (isLiquidSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
@@ -201,7 +201,7 @@ public class BlockEventHandler {
                     continue;
                 }
 
-                if (context.containsKey(EventContextKeys.FIRE_SPREAD)) {
+                if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user, true) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -338,7 +338,7 @@ public class BlockEventHandler {
 
         GPTimings.BLOCK_COLLIDE_EVENT.startTimingIfSync();
         final BlockType blockType = event.getTargetBlock().getType();
-        if (event.getTargetSide().equals(Direction.UP) || blockType.equals(BlockTypes.AIR) 
+        if (blockType.equals(BlockTypes.AIR) 
                 || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetLocation().getExtent().getProperties())) {
             GPTimings.BLOCK_COLLIDE_EVENT.stopTimingIfSync();
             return;
