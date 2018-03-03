@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.util;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.tileentity.TileEntity;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Event;
@@ -48,10 +49,19 @@ public class CauseContextHelper {
         }
 
         if (user == null) {
-            user = context.get(EventContextKeys.NOTIFIER)
-                    .orElse(context.get(EventContextKeys.OWNER)
-                            .orElse(context.get(EventContextKeys.CREATOR)
-                                    .orElse(null)));
+            // Always use owner for ticking TE's
+            // See issue MinecraftPortCentral/GriefPrevention#610 for more information
+            if (cause.root() instanceof TileEntity) {
+                user = context.get(EventContextKeys.OWNER)
+                        .orElse(context.get(EventContextKeys.NOTIFIER)
+                                .orElse(context.get(EventContextKeys.CREATOR)
+                                        .orElse(null)));
+            } else {
+                user = context.get(EventContextKeys.NOTIFIER)
+                        .orElse(context.get(EventContextKeys.OWNER)
+                                .orElse(context.get(EventContextKeys.CREATOR)
+                                        .orElse(null)));
+            }
         }
 
         if (user == null) {
