@@ -94,7 +94,6 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.common.SpongeImpl;
-import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 
 import java.io.File;
 import java.io.IOException;
@@ -1826,41 +1825,13 @@ public class GPClaim implements Claim {
         }
 
         UUID newOwnerUUID = ownerUniqueId.orElse(this.ownerUniqueId);
-        switch (type) {
-            case ADMIN : 
-                if (this.parent != null && this.parent.isAdminClaim()) {
-                    final Text message = Text.of(TextColors.RED, "Admin claims cannot have direct admin children claims.");
-                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
-                }
-                newOwnerUUID = GriefPreventionPlugin.ADMIN_USER_UUID;
-                break;
-            case BASIC :
-                if (this.isAdminClaim() && newOwnerUUID == null) {
-                    return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to basic. Owner is required."));
-                }
-                if (this.parent != null && this.parent.isBasicClaim()) {
-                    final Text message = Text.of(TextColors.RED, "Basic claims cannot have direct basic children claims.");
-                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
-                }
-                break;
-            case SUBDIVISION :
-                if (this.parent == null) {
-                    final Text message = Text.of(TextColors.RED, "Subdivisions cannot be created in the wilderness.");
-                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
-                }
-                if (this.isAdminClaim() && !ownerUniqueId.isPresent()) {
-                    return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to subdivision. Owner is required."));
-                }
-                break;
-            case TOWN :
-                if (this.parent != null && this.parent.isTown()) {
-                    final Text message = Text.of(TextColors.RED, "Towns cannot contain children towns.");
-                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
-                }
-                break;
-            case WILDERNESS :
-                final Text message = Text.of(TextColors.RED, "You cannot change a claim to WILDERNESS.");
-                return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+        final ClaimResult result = this.validateClaimType(type, newOwnerUUID, null);
+        if (!result.successful()) {
+            return result;
+        }
+
+        if (type == ClaimType.ADMIN) {
+            newOwnerUUID = GriefPreventionPlugin.ADMIN_USER_UUID;
         }
 
         final String fileName = this.getClaimStorage().filePath.getFileName().toString();
@@ -1914,6 +1885,65 @@ public class GPClaim implements Claim {
         this.visualization = null;
         this.getInternalClaimData().setRequiresSave(true);
         this.getClaimStorage().save();
+        return new GPClaimResult(ClaimResultType.SUCCESS);
+    }
+
+    public ClaimResult validateClaimType(ClaimType type, UUID newOwnerUUID, GPPlayerData playerData) {
+        boolean isAdmin = false;
+        if (playerData != null && (playerData.canManageAdminClaims || playerData.canIgnoreClaim(this))) {
+            isAdmin = true;
+        }
+
+        switch (type) {
+            case ADMIN : 
+                if (!isAdmin) {
+                    final Text message = Text.of(TextColors.RED, "You do not have administrative permissions to change type to ADMIN.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                if (this.parent != null && this.parent.isAdminClaim()) {
+                    final Text message = Text.of(TextColors.RED, "Admin claims cannot have direct admin children claims.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                break;
+            case BASIC :
+                if (this.isAdminClaim() && newOwnerUUID == null) {
+                    return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to basic. Owner is required."));
+                }
+                if (this.parent != null && this.parent.isBasicClaim()) {
+                    final Text message = Text.of(TextColors.RED, "Basic claims cannot have direct basic children claims.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                for (Claim child : this.children) {
+                    if (!child.isSubdivision()) {
+                        final Text message = Text.of(TextColors.RED, "Basic claims can only contain subdivisions.");
+                        return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                    }
+                }
+                break;
+            case SUBDIVISION :
+                if (!this.children.isEmpty()) {
+                    final Text message = Text.of(TextColors.RED, "Subdivisions cannot contain children claims.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                if (this.parent == null) {
+                    final Text message = Text.of(TextColors.RED, "Subdivisions cannot be created in the wilderness.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                if (this.isAdminClaim() && newOwnerUUID == null) {
+                    return new GPClaimResult(ClaimResultType.REQUIRES_OWNER, Text.of(TextColors.RED, "Could not convert admin claim to subdivision. Owner is required."));
+                }
+                break;
+            case TOWN :
+                if (this.parent != null && this.parent.isTown()) {
+                    final Text message = Text.of(TextColors.RED, "Towns cannot contain children towns.");
+                    return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+                }
+                break;
+            case WILDERNESS :
+                final Text message = Text.of(TextColors.RED, "You cannot change a claim to WILDERNESS.");
+                return new GPClaimResult(ClaimResultType.WRONG_CLAIM_TYPE, message);
+        }
+
         return new GPClaimResult(ClaimResultType.SUCCESS);
     }
 

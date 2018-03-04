@@ -102,10 +102,12 @@ public class CommandClaimInfo implements CommandExecutor {
         }
 
         boolean isAdmin = src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
+        GPPlayerData playerData = null;
         Claim claim = null;
         if (claimIdentifier == null) {
             if (player != null) {
                 claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+                playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             } else {
                 src.sendMessage(Text.of(TextColors.RED, "Claim UUID is required if executing from non-player source."));
                 return CommandResult.success();
@@ -150,7 +152,6 @@ public class CommandClaimInfo implements CommandExecutor {
         UUID ownerUniqueId = claim.getOwnerUniqueId();
 
         if (!isAdmin) {
-            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             isAdmin = playerData.canIgnoreClaim(gpClaim);
         }
         // if not owner of claim, validate perms
@@ -344,16 +345,10 @@ public class CommandClaimInfo implements CommandExecutor {
             Text subTypeText = Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket);
             Text townTypeText = Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket);
             if (!claim.isAdminClaim()) {
-                boolean click = false;
-                if (!isAdmin) {
-                    adminShowText = Text.of(TextColors.RED, "You do not have administrative permissions to change type to ADMIN.");
-                } else if (gpClaim.parent != null && gpClaim.parent.isAdminClaim()) {
-                    adminShowText = Text.of(TextColors.RED, "Admin claims cannot have direct admin children claims.");
-                } else {
-                    adminShowText = Text.of("Click here to change claim to ", TextColors.RED, "ADMIN ", TextColors.RESET, "type.");
-                    click = true;
-                }
-                if (click) {
+                final Text message = ((GPClaim) claim).validateClaimType(ClaimType.ADMIN, ownerUniqueId, playerData).getMessage().orElse(null);
+                adminShowText = message != null ? message : Text.of("Click here to change claim to ", TextColors.RED, "ADMIN ", TextColors.RESET, "type.");
+
+                if (message == null) {
                     adminTypeText = Text.builder()
                         .append(Text.of(claim.getType() == ClaimType.ADMIN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "ADMIN")))
                         .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.ADMIN, isAdmin)))
@@ -365,44 +360,47 @@ public class CommandClaimInfo implements CommandExecutor {
                 }
             }
             if (!claim.isBasicClaim()) {
-                if (gpClaim.parent != null && gpClaim.parent.isBasicClaim()) {
-                    basicShowText = Text.of(TextColors.RED, "Basic claims cannot have direct basic children claims.");
-                    basicTypeText = Text.builder()
-                            .append(Text.of(claim.getType() == ClaimType.BASIC ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "BASIC")))
-                            .onHover(TextActions.showText(basicShowText)).build();
-                } else {
-                    basicShowText = Text.of("Click here to change claim to ", TextColors.GREEN, "BASIC ", TextColors.RESET, "type.");
+                final Text message = ((GPClaim) claim).validateClaimType(ClaimType.BASIC, ownerUniqueId, playerData).getMessage().orElse(null);
+                basicShowText = message != null ? message : Text.of("Click here to change claim to ", TextColors.YELLOW, "BASIC ", TextColors.RESET, "type.");
+
+                if (message == null) {
                     basicTypeText = Text.builder()
                             .append(Text.of(claim.getType() == ClaimType.BASIC ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "BASIC")))
                             .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.BASIC, isAdmin)))
                             .onHover(TextActions.showText(basicShowText)).build();
+                } else {
+                    basicTypeText = Text.builder()
+                            .append(Text.of(claim.getType() == ClaimType.BASIC ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "BASIC")))
+                            .onHover(TextActions.showText(basicShowText)).build();
                 }
             }
             if (!claim.isSubdivision()) {
-                if (gpClaim.parent == null) {
-                    subdivisionShowText = Text.of(TextColors.RED, "Subdivisions cannot be created in the wilderness.");
-                    subTypeText = Text.builder()
-                            .append(Text.of(claim.getType() == ClaimType.SUBDIVISION ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "SUBDIVISION")))
-                            .onHover(TextActions.showText(subdivisionShowText)).build();
-                } else {
-                    subdivisionShowText = Text.of("Click here to change claim to ", TextColors.AQUA, "SUBDIVISION ", TextColors.RESET, "type.");
+                final Text message = ((GPClaim) claim).validateClaimType(ClaimType.SUBDIVISION, ownerUniqueId, playerData).getMessage().orElse(null);
+                subdivisionShowText = message != null ? message : Text.of("Click here to change claim to ", TextColors.AQUA, "SUBDIVISION ", TextColors.RESET, "type.");
+
+                if (message == null) {
                     subTypeText = Text.builder()
                             .append(Text.of(claim.getType() == ClaimType.SUBDIVISION ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "SUBDIVISION")))
                             .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.SUBDIVISION, isAdmin)))
                             .onHover(TextActions.showText(subdivisionShowText)).build();
+                } else {
+                    subTypeText = Text.builder()
+                            .append(Text.of(claim.getType() == ClaimType.SUBDIVISION ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "SUBDIVISION")))
+                            .onHover(TextActions.showText(subdivisionShowText)).build();
                 }
             }
             if (!claim.isTown()) {
-                if (gpClaim.parent != null && gpClaim.parent.isTown()) {
-                    townShowText = Text.of(TextColors.RED, "Towns cannot contain children towns.");
-                    townTypeText = Text.builder()
-                            .append(Text.of(claim.getType() == ClaimType.TOWN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "TOWN")))
-                            .onHover(TextActions.showText(townShowText)).build();
-                } else {
-                    townShowText = Text.of("Click here to change claim to ", TextColors.GREEN, "TOWN ", TextColors.RESET, "type.");
+                final Text message = ((GPClaim) claim).validateClaimType(ClaimType.TOWN, ownerUniqueId, playerData).getMessage().orElse(null);
+                townShowText = message != null ? message : Text.of("Click here to change claim to ", TextColors.GREEN, "TOWN ", TextColors.RESET, "type.");
+
+                if (message == null) {
                     townTypeText = Text.builder()
                             .append(Text.of(claim.getType() == ClaimType.TOWN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "TOWN")))
                             .onClick(TextActions.executeCallback(createClaimTypeConsumer(src, claim, ClaimType.TOWN, isAdmin)))
+                            .onHover(TextActions.showText(townShowText)).build();
+                } else {
+                    townTypeText = Text.builder()
+                            .append(Text.of(claim.getType() == ClaimType.TOWN ? Text.of(whiteOpenBracket, gpClaim.getFriendlyNameType(true), whiteCloseBracket) : Text.of(TextColors.GRAY, "TOWN")))
                             .onHover(TextActions.showText(townShowText)).build();
                 }
             }
