@@ -1227,6 +1227,28 @@ public class PlayerEventHandler {
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
+    public void onPlayerInteractInventoryClose(InteractInventoryEvent.Close event, @Root Player player) {
+        final ItemStackSnapshot cursor = event.getCursorTransaction().getOriginal();
+        if (cursor == ItemStackSnapshot.NONE || !GPFlags.ITEM_DROP || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
+        GPTimings.PLAYER_INTERACT_INVENTORY_CLOSE_EVENT.startTimingIfSync();
+        final Location<World> location = player.getLocation();
+        final GPClaim claim = this.dataStore.getClaimAt(location);
+        if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_DROP, player, cursor, player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
+            Text message = GriefPreventionPlugin.instance.messageData.permissionItemDrop
+                    .apply(ImmutableMap.of(
+                    "owner", claim.getOwnerName(),
+                    "item", cursor.getType().getId())).build();
+            GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
+            event.setCancelled(true);
+        }
+
+        GPTimings.PLAYER_INTERACT_INVENTORY_CLOSE_EVENT.stopTimingIfSync();
+    }
+
+    @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractInventoryClick(ClickInventoryEvent event, @First Player player) {
         if (!GPFlags.INTERACT_INVENTORY_CLICK || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
