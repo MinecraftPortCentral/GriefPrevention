@@ -327,6 +327,10 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockCollide(CollideBlockEvent event, @Root Entity source) {
+        if (event instanceof CollideBlockEvent.Impact) {
+            return;
+        }
+
         final User user = CauseContextHelper.getEventUser(event);
         if (user == null) {
             return;
