@@ -44,6 +44,7 @@ public class ModuleCategory {
         protection.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
         protection.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
         protection.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        protection.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
         protection.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), true);
         protection.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), true);
         protection.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);

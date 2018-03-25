@@ -41,6 +41,7 @@ public class GPFlags {
     public static boolean COMMAND_EXECUTE;
     public static boolean COMMAND_EXECUTE_PVP;
     public static boolean ENTER_CLAIM;
+    public static boolean ENTITY_CHUNK_SPAWN;
     public static boolean ENTITY_COLLIDE_BLOCK;
     public static boolean ENTITY_COLLIDE_ENTITY;
     public static boolean ENTITY_DAMAGE;
@@ -83,6 +84,7 @@ public class GPFlags {
         COMMAND_EXECUTE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.COMMAND_EXECUTE.toString());
         COMMAND_EXECUTE_PVP  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.COMMAND_EXECUTE_PVP.toString());
         ENTER_CLAIM  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTER_CLAIM.toString());
+        ENTITY_CHUNK_SPAWN  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_CHUNK_SPAWN.toString());
         ENTITY_COLLIDE_BLOCK  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString());
         ENTITY_COLLIDE_ENTITY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString());
         ENTITY_DAMAGE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ENTITY_DAMAGE.toString());
@@ -115,6 +117,7 @@ public class GPFlags {
     public static String getEntitySpawnFlag(ClaimFlag flag, String target) {
         switch (flag) {
             case ENTER_CLAIM:
+            case ENTITY_CHUNK_SPAWN:
             case ENTITY_COLLIDE_ENTITY:
             case ENTITY_DAMAGE:
             case ENTITY_RIDING:

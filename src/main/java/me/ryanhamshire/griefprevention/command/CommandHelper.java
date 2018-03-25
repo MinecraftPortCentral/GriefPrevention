@@ -167,10 +167,10 @@ public class CommandHelper {
             case INTERACT_BLOCK_PRIMARY :
             case INTERACT_BLOCK_SECONDARY :
                 return validateBlockTarget(target);
+            case ENTITY_CHUNK_SPAWN :
+            case ENTITY_SPAWN :
             case INTERACT_ENTITY_PRIMARY :
             case INTERACT_ENTITY_SECONDARY :
-                return validateEntityTarget(target);
-            case ENTITY_SPAWN :
                 return validateEntityTarget(target);
             case ITEM_DROP :
             case ITEM_PICKUP :
@@ -1391,6 +1391,11 @@ public class CommandHelper {
                 return Text.of("Controls whether an entity can enter claim.\n",
                         TextColors.AQUA, "Note", TextColors.WHITE, " : If you want to use this for players, it is recommended to use \n", 
                         "the '/cfg' command with the group the player is in.");
+            case ENTITY_CHUNK_SPAWN :
+                return Text.of("Controls whether an entity can be spawned during chunk load.\n",
+                        TextColors.AQUA, "Note", TextColors.WHITE, " : This will remove all saved entities within a chunk after it loads.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent horses from spawning in chunks enter\n",
+                        TextColors.GREEN, "/cf entity-chunk-spawn minecraft:horse false");
             case ENTITY_COLLIDE_BLOCK :
                 return Text.of("Controls whether an entity can collide with a block.\n",
                         TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent entity collisions with dirt blocks, enter\n",

@@ -58,6 +58,7 @@ public class FlagCategory extends ConfigCategory {
         defaultAdminFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
         defaultAdminFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
         defaultAdminFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
         defaultAdminFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), false);
         defaultAdminFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), false);
         defaultAdminFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
@@ -91,6 +92,7 @@ public class FlagCategory extends ConfigCategory {
         defaultBasicFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
         defaultBasicFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
         defaultBasicFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultBasicFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
         defaultBasicFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), false);
         defaultBasicFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), false);
         defaultBasicFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
@@ -124,6 +126,7 @@ public class FlagCategory extends ConfigCategory {
         defaultTownFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
         defaultTownFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
         defaultTownFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultTownFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
         defaultTownFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), false);
         defaultTownFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), false);
         defaultTownFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
@@ -157,6 +160,7 @@ public class FlagCategory extends ConfigCategory {
         defaultWildernessFlags.put(ClaimFlag.COMMAND_EXECUTE.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ENTER_CLAIM.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ENTITY_COLLIDE_ENTITY.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ENTITY_DAMAGE.toString(), true);
@@ -209,18 +213,30 @@ public class FlagCategory extends ConfigCategory {
     }
 
     public Map<String, Boolean> getAdminDefaults() {
+        if (!this.defaultAdminFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
+            this.defaultAdminFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        }
         return this.defaultAdminFlags;
     }
 
     public Map<String, Boolean> getBasicDefaults() {
+        if (!this.defaultBasicFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
+            this.defaultBasicFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        }
         return this.defaultBasicFlags;
     }
 
     public Map<String, Boolean> getTownDefaults() {
+        if (!this.defaultTownFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
+            this.defaultTownFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        }
         return this.defaultTownFlags;
     }
 
     public Map<String, Boolean> getWildernessDefaults() {
+        if (!this.defaultWildernessFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
+            this.defaultWildernessFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        }
         return this.defaultWildernessFlags;
     }
 

@@ -50,6 +50,10 @@ public enum ClaimFlag {
      */
     ENTER_CLAIM("enter-claim"),
     /**
+     * Used to allow or deny an entity spawn during chunk load.
+     */
+    ENTITY_CHUNK_SPAWN("entity-chunk-spawn"),
+    /**
      * Used to allow or deny a collision with a block.
      */
     ENTITY_COLLIDE_BLOCK("collide-block"),

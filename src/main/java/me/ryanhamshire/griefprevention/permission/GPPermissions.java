@@ -184,6 +184,7 @@ public class GPPermissions {
     public static final String COMMAND_EXECUTE = "griefprevention.flag.command-execute";
     public static final String COMMAND_EXECUTE_PVP = "griefprevention.flag.command-execute-pvp";
     public static final String ENTER_CLAIM = "griefprevention.flag.enter-claim";
+    public static final String ENTITY_CHUNK_SPAWN = "griefprevention.flag.entity-chunk-spawn";
     public static final String ENTITY_COLLIDE_BLOCK = "griefprevention.flag.collide-block";
     public static final String ENTITY_COLLIDE_ENTITY = "griefprevention.flag.collide-entity";
     public static final String ENTITY_DAMAGE = "griefprevention.flag.entity-damage";

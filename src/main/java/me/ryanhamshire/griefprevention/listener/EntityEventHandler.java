@@ -171,10 +171,13 @@ public class EntityEventHandler {
         GPTimings.ENTITY_EXPLOSION_DETONATE_EVENT.stopTimingIfSync();
     }
 
-    // when a creature spawns...
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntitySpawn(SpawnEntityEvent event, @Root Object source) {
         if (!GPFlags.ENTITY_SPAWN || event.getEntities().isEmpty()) {
+            return;
+        }
+        final boolean isChunkSpawn = event instanceof SpawnEntityEvent.ChunkLoad;
+        if (isChunkSpawn && !GPFlags.ENTITY_CHUNK_SPAWN) {
             return;
         }
         if (event instanceof DropItemEvent) {
@@ -205,7 +208,11 @@ public class EntityEventHandler {
                 }
 
                 String permission = GPPermissions.ENTITY_SPAWN;
-                if (entity instanceof EntityItem || entity instanceof EntityXPOrb) {
+                if (isChunkSpawn) {
+                    permission = GPPermissions.ENTITY_CHUNK_SPAWN;
+                }
+
+                if (!isChunkSpawn && (entity instanceof EntityItem || entity instanceof EntityXPOrb)) {
                     if (user == null) {
                         return true;
                     }

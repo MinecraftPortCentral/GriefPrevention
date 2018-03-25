@@ -625,31 +625,33 @@ public abstract class DataStore {
         Set<Context> contexts = new HashSet<>();
         contexts.add(ClaimContexts.ADMIN_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        final Map<String, Boolean> adminDefaults = GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().flags.getAdminDefaults();
+        final GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(world.getProperties());
+        final Map<String, Boolean> adminDefaults = activeConfig.getConfig().flags.getAdminDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.ADMIN, adminDefaults);
         this.setFlagDefaultPermissions(contexts, adminDefaults);
         this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(ClaimContexts.BASIC_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        final Map<String, Boolean> basicDefaults = GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().flags.getBasicDefaults();
+        final Map<String, Boolean> basicDefaults = activeConfig.getConfig().flags.getBasicDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.BASIC, basicDefaults);
         this.setFlagDefaultPermissions(contexts, basicDefaults);
         this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(ClaimContexts.TOWN_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        final Map<String, Boolean> townDefaults = GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().flags.getTownDefaults();
+        final Map<String, Boolean> townDefaults = activeConfig.getConfig().flags.getTownDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.TOWN, townDefaults);
         this.setFlagDefaultPermissions(contexts, townDefaults);
         this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(ClaimContexts.WILDERNESS_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
-        final Map<String, Boolean> wildernessDefaults = GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().flags.getWildernessDefaults();
+        final Map<String, Boolean> wildernessDefaults = activeConfig.getConfig().flags.getWildernessDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.WILDERNESS, wildernessDefaults);
         this.setFlagDefaultPermissions(contexts, wildernessDefaults);
         this.setOptionDefaultPermissions(contexts);
+        activeConfig.save();
     }
 
     private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Boolean> defaultFlags) {
