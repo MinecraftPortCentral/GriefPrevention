@@ -123,6 +123,9 @@ public class CommandClaimInfo implements CommandExecutor {
                 try {
                     uuid = UUID.fromString(claimIdentifier);
                     claim = claimManager.getClaimByUUID(uuid).orElse(null);
+                    if (claim != null) {
+                        break;
+                    }
                 } catch (IllegalArgumentException e) {
                     
                 }
