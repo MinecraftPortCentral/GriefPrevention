@@ -150,6 +150,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-children-warning")
     public TextTemplate claimChildrenWarning = TextTemplate.of("This claim includes child claims.  If you're sure you want to delete it, use /DeleteClaim again.");
 
+    @Setting("claim-create-only-subdivision")
+    public TextTemplate claimCreateOnlySubdivision = TextTemplate.of(TextColors.RED, "Unable to create claim. Only subdivisions can be created at a single block location.");
+
     @Setting("claim-create-cuboid-disabled")
     public TextTemplate claimCreateCuboidDisabled = TextTemplate.of(TextColors.RED, "The creation of 3D cuboid claims has been disabled by an administrator.\nYou can only create 3D claims as an Admin or on a 2D claim that you own.");
 
@@ -267,6 +270,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting(MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D)
     public TextTemplate claimSizeNeedBlocks3d = TextTemplate.of(TextColors.RED, "You don't have enough blocks for this claim size.\nYou need ", TextTemplate.arg("chunks").color(TextColors.GREEN), " more chunks. (", TextTemplate.arg("blocks").color(TextColors.WHITE), " blocks)");
 
+    @Setting("claim-resize-same-location")
+    public TextTemplate claimResizeSameLocation = TextTemplate.of(TextColors.RED, "You must select a different block location to resize claim.");
+
     @Setting("claim-resize-overlap-subdivision")
     public TextTemplate claimResizeOverlapSubdivision = TextTemplate.of(TextColors.RED, "You can't create a subdivision here because it would overlap another subdivision.  Consider /abandonclaim to delete it, or use " + "your shovel at a corner to resize it.");
 
@@ -297,10 +303,10 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-tax-past-due")
     public TextTemplate claimTaxPastDue = TextTemplate.of(TextColors.RED, "You currently have a past due tax balance of ", TextColors.GOLD, TextTemplate.arg("balance_due"), TextColors.RED, " that must be paid by ", TextColors.AQUA, TextTemplate.arg("due_date"), TextColors.RED, ". Failure to pay off your tax balance will result in losing your property.");
 
-    @Setting("claim-above-level")
+    @Setting(MessageStorage.CLAIM_ABOVE_LEVEL)
     public TextTemplate claimAboveLevel = TextTemplate.of(TextColors.RED, "Unable to claim block as it is above your maximum claim level limit of ", TextTemplate.arg("claim-level").color(TextColors.GREEN), ". (/playerinfo)");
 
-    @Setting("claim-below-level")
+    @Setting(MessageStorage.CLAIM_BELOW_LEVEL)
     public TextTemplate claimBelowLevel = TextTemplate.of(TextColors.RED, "Unable to claim block as it is below your minimum claim level limit of ", TextTemplate.arg("claim-level").color(TextColors.GREEN), ". (/playerinfo)");
 
     @Setting("claim-too-far")

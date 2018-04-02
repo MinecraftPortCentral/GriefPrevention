@@ -54,7 +54,9 @@ public class MessageStorage {
     public static final String BLOCK_SALE_VALUE = "block-sale-value";
     public static final String BOOK_TOOLS = "book-tools";
     public static final String CLAIM_ABANDON_SUCCESS = "claim-abandon-success";
+    public static final String CLAIM_ABOVE_LEVEL = "claim-above-level";
     public static final String CLAIM_BANK_INFO = "claim-bank-info";
+    public static final String CLAIM_BELOW_LEVEL = "claim-below-level";
     public static final String CLAIM_SIZE_NEED_BLOCKS_2D = "claim-size-need-blocks-2d";
     public static final String CLAIM_SIZE_NEED_BLOCKS_3D = "claim-size-need-blocks-3d";
     public static final String CLAIM_RESIZE_SUCCESS_2D = "claim-resize-success-2d";

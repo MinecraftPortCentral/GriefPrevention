@@ -2372,11 +2372,6 @@ public class PlayerEventHandler {
                                     List<Claim> claims = new ArrayList<>();
                                     claims.add(gpClaim);
                                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
-                                } else {
-                                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateErrorResult
-                                            .apply(ImmutableMap.of(
-                                            "result", result.getResultType().toString())).build();
-                                    GriefPreventionPlugin.sendMessage(player, message);
                                 }
                                 event.setCancelled(true);
                                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
@@ -2431,6 +2426,7 @@ public class PlayerEventHandler {
             return;
         } else if (playerData.shovelMode == ShovelMode.Subdivide && playerData.lastShovelLocation != null) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateSubdivisionFail.toText());
+            playerData.lastShovelLocation = null;
             GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
             return;
         }
@@ -2482,6 +2478,11 @@ public class PlayerEventHandler {
                 return;
             }
 
+            if (playerData.shovelMode == ShovelMode.Subdivide && claim.isWilderness()) {
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateSubdivisionFail.toText());
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
             playerData.revertActiveVisual(player);
             // remember it, and start him on the new claim
             playerData.lastShovelLocation = location;
@@ -2526,11 +2527,16 @@ public class PlayerEventHandler {
                     cuboid ? location.getBlockY() : playerData.getMaxClaimLevel(),
                     location.getBlockZ());
             // try to create a new claim
-            ClaimResult result = this.dataStore.createClaim(
-                    player.getWorld(),
-                    lesserBoundary,
-                    greaterBoundary,
-                    PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode), player.getUniqueId(), cuboid);
+            ClaimResult result = null;
+            try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
+                Sponge.getCauseStackManager().pushCause(player);
+                Sponge.getCauseStackManager().addContext(EventContextKeys.PLUGIN, GriefPreventionPlugin.instance.pluginContainer);
+                result = this.dataStore.createClaim(
+                        player.getWorld(),
+                        lesserBoundary,
+                        greaterBoundary,
+                        PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode), player.getUniqueId(), cuboid);
+            }
 
             GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
             // if it didn't succeed, tell the player why
@@ -2541,11 +2547,6 @@ public class PlayerEventHandler {
                     List<Claim> claims = new ArrayList<>();
                     claims.add(overlapClaim);
                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
-                } else {
-                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateErrorResult
-                            .apply(ImmutableMap.of(
-                            "result", result.getResultType().toString())).build();
-                    GriefPreventionPlugin.sendMessage(player, message);
                 }
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;
