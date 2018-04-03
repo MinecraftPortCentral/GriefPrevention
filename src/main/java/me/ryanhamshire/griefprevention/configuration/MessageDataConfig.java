@@ -208,7 +208,7 @@ public class MessageDataConfig extends ConfigCategory {
     public TextTemplate claimCreateInsufficientBlocks3d = TextTemplate.of(TextColors.RED, "You don't have enough blocks to claim this area.\nYou need ", TextTemplate.arg("remaining-chunks").color(TextColors.GOLD), " more chunks. (", TextTemplate.arg("remaining-blocks").color(TextColors.WHITE), " blocks)");
 
     @Setting("claim-create-subdivision-fail")
-    public TextTemplate claimCreateSubdivisionFail = TextTemplate.of("No claim exists at selected corner. Please click a valid opposite corner within parent claim in order to create your subdivision.");
+    public TextTemplate claimCreateSubdivisionFail = TextTemplate.of(TextColors.RED, "No claim exists at selected corner. Please click a valid block location within parent claim in order to create your subdivision.");
 
     @Setting("claim-delete-all-admin-success")
     public TextTemplate claimDeleteAllAdminSuccess = TextTemplate.of("Deleted all administrative claims.");

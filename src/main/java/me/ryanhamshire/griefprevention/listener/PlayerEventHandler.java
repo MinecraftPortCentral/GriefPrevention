@@ -2111,15 +2111,7 @@ public class PlayerEventHandler {
             ClaimResult claimResult = null;
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().pushCause(player);
-                if (playerData.claimResizing.isCuboid()) {
-                    // 3D resize
-                    claimResult =
-                        playerData.claimResizing.resizeCuboid(smallX, smallY, smallZ, bigX, bigY, bigZ);
-                } else {
-                    // 2D resize
-                    claimResult = playerData.claimResizing.resizeInternal(smallX, smallY, smallZ, bigX, bigY, bigZ);
-                }
-
+                claimResult = playerData.claimResizing.resize(smallX, bigX, smallY, bigY, smallZ, bigZ);
                 if (claimResult.successful()) {
                     Claim claim = (GPClaim) claimResult.getClaim().get();
                     // decide how many claim blocks are available for more resizing
@@ -2193,19 +2185,11 @@ public class PlayerEventHandler {
                         claims.add(overlapClaim);
                         CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                     } else {
-                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
-                        if (this.worldEditProvider != null) {
-                            this.worldEditProvider.stopVisualDrag(player);
-                            this.worldEditProvider.revertVisuals(player, playerData, null);
-                            if (playerData != null && playerData.claimResizing != null) {
-                                this.worldEditProvider.revertVisuals(player, playerData, playerData.claimResizing.getUniqueId());
-                            }
+                        if (!claimResult.getMessage().isPresent()) {
+                            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
                         }
-                        playerData.revertActiveVisual(player);
                     }
 
-                    playerData.lastShovelLocation = null;
-                    playerData.claimResizing = null;
                     playerData.claimSubdividing = null;
                     event.setCancelled(true);
                     GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
