@@ -165,14 +165,14 @@ public class BlockEventHandler {
                     }
                 }
                 if (GPFlags.FIRE_SPREAD && isFireSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user, true) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
-                if (isLiquidSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user, true) == Tristate.FALSE) {
+                if (GPFlags.LIQUID_FLOW && isLiquidSource) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
@@ -201,16 +201,16 @@ public class BlockEventHandler {
                     continue;
                 }
 
-                if (isFireSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user, true) == Tristate.FALSE) {
+                if (GPFlags.FIRE_SPREAD && isFireSource) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
 
-                if (isLiquidSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user, true) == Tristate.FALSE) {
+                if (GPFlags.LIQUID_FLOW && isLiquidSource) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
