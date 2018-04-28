@@ -129,6 +129,14 @@ public class BlockEventHandler {
         final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
         final boolean isLiquidSource = BlockUtils.isLiquidSource(source);
         final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
+        if (!GPFlags.LIQUID_FLOW && isLiquidSource) {
+            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+            return;
+        }
+        if (!GPFlags.FIRE_SPREAD && isFireSource) {
+            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+            return;
+        }
 
         if (sourceLocation != null) {
             if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
@@ -164,14 +172,14 @@ public class BlockEventHandler {
                         continue;
                     }
                 }
-                if (GPFlags.FIRE_SPREAD && isFireSource) {
+                if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
-                if (GPFlags.LIQUID_FLOW && isLiquidSource) {
+                if (isLiquidSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -201,7 +209,7 @@ public class BlockEventHandler {
                     continue;
                 }
 
-                if (GPFlags.FIRE_SPREAD && isFireSource) {
+                if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -209,7 +217,7 @@ public class BlockEventHandler {
                     }
                 }
 
-                if (GPFlags.LIQUID_FLOW && isLiquidSource) {
+                if (isLiquidSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
