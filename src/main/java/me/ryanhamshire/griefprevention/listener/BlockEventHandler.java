@@ -725,7 +725,7 @@ public class BlockEventHandler {
             }
 
             // warn players when they place TNT above sea level, since it doesn't destroy blocks there
-            if (GPFlags.EXPLOSION_SURFACE && player != null && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, event.getCause().root(), block.getState(), user) == Tristate.FALSE && block.getState().getType() == BlockTypes.TNT &&
+            if (GPFlags.EXPLOSION_SURFACE && player != null && block.getState().getType() == BlockTypes.TNT && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, event.getCause().root(), block.getState(), user) == Tristate.FALSE &&
                     !block.getLocation().get().getExtent().getDimension().getType().equals(DimensionTypes.NETHER) &&
                     block.getPosition().getY() > GriefPreventionPlugin.instance.getSeaLevel(block.getLocation().get().getExtent()) - 5 &&
                     targetClaim.isWilderness()) {
