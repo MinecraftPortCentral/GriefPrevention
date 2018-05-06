@@ -49,6 +49,35 @@ public class GPOptionHandler {
     }
 
     public static Double getClaimOptionDouble(Subject subject, Claim claim, String option, GPPlayerData playerData) {
+        if (!option.startsWith("griefprevention.")) {
+            option = "griefprevention." + option;
+        }
+
+        // Handle global options (no context needed)
+        switch(option) {
+            case GPOptions.ABANDON_RETURN_RATIO_BASIC:
+                return playerData.optionAbandonReturnRatioBasic;
+            case GPOptions.ABANDON_RETURN_RATIO_TOWN:
+                return playerData.optionAbandonReturnRatioTown;
+            case GPOptions.BLOCKS_ACCRUED_PER_HOUR:
+                return (double) playerData.optionBlocksAccruedPerHour;
+            case GPOptions.CLAIM_EXPIRATION_BASIC:
+                return (double) playerData.optionClaimExpirationBasic;
+            case GPOptions.CLAIM_EXPIRATION_CHEST:
+                return (double) playerData.optionClaimExpirationChest;
+            case GPOptions.CLAIM_EXPIRATION_SUBDIVISION:
+                return (double) playerData.optionClaimExpirationSubdivision;
+            case GPOptions.CLAIM_EXPIRATION_TOWN:
+                return (double) playerData.optionClaimExpirationTown;
+            case GPOptions.CREATE_CLAIM_LIMIT_BASIC:
+                return (double) playerData.optionCreateClaimLimitBasic;
+            case GPOptions.CREATE_CLAIM_LIMIT_SUBDIVISION:
+                return (double) playerData.optionCreateClaimLimitSubdivision;
+            case GPOptions.CREATE_CLAIM_LIMIT_TOWN:
+                return (double) playerData.optionCreateClaimLimitTown;
+        }
+
+        // Handle claim context options
         if (claim == null) {
             if (playerData.lastShovelLocation != null) {
                 GPClaim parentClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(playerData.lastShovelLocation);
@@ -56,10 +85,6 @@ public class GPOptionHandler {
             } else {
                 return null;
             }
-        }
-
-        if (!option.startsWith("griefprevention.")) {
-            option = "griefprevention." + option;
         }
 
         Double adminValue = GPOptions.DEFAULT_OPTIONS.get(option);
@@ -85,11 +110,36 @@ public class GPOptionHandler {
             return adminValue;
         }
 
-        if (optionValue > adminValue) {
-            return adminValue;
+        switch(option) {
+            case GPOptions.MAX_CLAIM_LEVEL:
+            case GPOptions.MAX_CLAIM_SIZE_BASIC_X:
+            case GPOptions.MAX_CLAIM_SIZE_BASIC_Y:
+            case GPOptions.MAX_CLAIM_SIZE_BASIC_Z:
+            case GPOptions.MAX_CLAIM_SIZE_TOWN_X:
+            case GPOptions.MAX_CLAIM_SIZE_TOWN_Y:
+            case GPOptions.MAX_CLAIM_SIZE_TOWN_Z:
+            case GPOptions.TAX_EXPIRATION_BASIC:
+            case GPOptions.TAX_EXPIRATION_BASIC_DAYS_KEEP:
+            case GPOptions.TAX_EXPIRATION_SUBDIVISION:
+            case GPOptions.TAX_EXPIRATION_SUBDIVISION_DAYS_KEEP:
+            case GPOptions.TAX_EXPIRATION_TOWN:
+            case GPOptions.TAX_EXPIRATION_TOWN_DAYS_KEEP:
+                if (optionValue > adminValue) {
+                    return adminValue;
+                }
+            case GPOptions.MIN_CLAIM_LEVEL:
+            case GPOptions.MIN_CLAIM_SIZE_BASIC_X:
+            case GPOptions.MIN_CLAIM_SIZE_BASIC_Y:
+            case GPOptions.MIN_CLAIM_SIZE_BASIC_Z:
+            case GPOptions.MIN_CLAIM_SIZE_TOWN_X:
+            case GPOptions.MIN_CLAIM_SIZE_TOWN_Y:
+            case GPOptions.MIN_CLAIM_SIZE_TOWN_Z:
+                if (optionValue < adminValue) {
+                    return adminValue;
+                }
+            default:
+                return optionValue;
         }
-
-        return optionValue;
     }
 
     private static String checkClaimOption(GPOptions.Type type, Claim claim) {

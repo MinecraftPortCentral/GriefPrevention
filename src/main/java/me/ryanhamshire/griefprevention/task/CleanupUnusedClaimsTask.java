@@ -34,8 +34,6 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
-import me.ryanhamshire.griefprevention.permission.GPOptions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -85,11 +83,9 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                     Sponge.getCauseStackManager().addContext(GPContextKeys.CHEST_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer);
                     // if this claim is a chest claim and those are set to expire
-                    Double
-                        claimExpirationChest =
-                        GPOptionHandler.getClaimOptionDouble(playerData.getPlayerSubject(), claim, GPOptions.CLAIM_EXPIRATION_CHEST, playerData);
+                    final int claimExpirationChest = playerData.getChestClaimExpiration();
                     if (claim.getArea() <= areaOfDefaultClaim && claimExpirationChest > 0) {
-                        if (claimLastActive.plus(Duration.ofDays(claimExpirationChest.intValue()))
+                        if (claimLastActive.plus(Duration.ofDays(claimExpirationChest))
                             .isBefore(Instant.now())) {
                             Sponge.getCauseStackManager().addContext(GPContextKeys.CHEST_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer);
 
@@ -107,11 +103,8 @@ public class CleanupUnusedClaimsTask implements Runnable {
                         }
                     }
 
-                    Double
-                        claimExpirationBasic =
-                        GPOptionHandler.getClaimOptionDouble(playerData.getPlayerSubject(), claim, GPOptions.CLAIM_EXPIRATION_BASIC, playerData);
-                    if (claimExpirationBasic > 0) {
-                        if (claimLastActive.plus(Duration.ofDays(claimExpirationBasic.intValue()))
+                    if (playerData.optionClaimExpirationBasic > 0) {
+                        if (claimLastActive.plus(Duration.ofDays(playerData.optionClaimExpirationBasic))
                             .isBefore(Instant.now())) {
                             Sponge.getCauseStackManager().addContext(GPContextKeys.PLAYER_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer);
 

@@ -2431,11 +2431,6 @@ public class PlayerEventHandler {
                 } else if (playerData.shovelMode == ShovelMode.Subdivide) {
                     createClaimLimit = playerData.optionCreateClaimLimitSubdivision;
                 }
-    
-                GPClaim parentClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location);
-                if (!parentClaim.isWilderness()) {
-                    createClaimLimit = GPOptionHandler.getClaimOptionDouble(player, parentClaim, GPOptions.Type.CLAIM_LIMIT, playerData).intValue();
-                }
 
                 if (createClaimLimit > 0 &&
                         (playerData.getInternalClaims().size() + 1) > playerData.optionCreateClaimLimitBasic) {

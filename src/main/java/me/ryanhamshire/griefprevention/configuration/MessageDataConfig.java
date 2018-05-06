@@ -369,6 +369,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("command-claim-name")
     public TextTemplate commandClaimName = TextTemplate.of(TextColors.GREEN, "Set claim name to ", TextTemplate.arg("name"), ".");
 
+    @Setting("command-option-exceeds-admin")
+    public TextTemplate commandOptionExceedsAdmin = TextTemplate.of(TextColors.RED, "Option value of ", TextTemplate.arg("original_value").color(TextColors.GREEN), " exceeds admin set value of '", TextTemplate.arg("admin_value").color(TextColors.GREEN),"'. Adjusting to admin value...");
+
     @Setting("command-option-invalid-claim")
     public TextTemplate commandOptionInvalidClaim = TextTemplate.of(TextColors.RED, "This command cannot be used in subdivisions.");
 
@@ -599,6 +602,9 @@ public class MessageDataConfig extends ConfigCategory {
 
     @Setting("permission-grant")
     public TextTemplate permissionGrant = TextTemplate.of(TextColors.RED, "You can't grant a permission you don't have yourself.");
+
+    @Setting("permission-global-option")
+    public TextTemplate permissionGlobalOption = TextTemplate.of(TextColors.RED, "You don't have permission to manage global options.");
 
     @Setting("permission-group-option")
     public TextTemplate permissionGroupOption = TextTemplate.of(TextColors.RED, "You don't have permission to assign an option to a group.");

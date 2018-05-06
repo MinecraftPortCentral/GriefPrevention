@@ -143,11 +143,12 @@ public class TaxApplyTask implements Runnable {
                         }
                     }
                 }
-                final double totalTaxOwed = claim.getData().getEconomyData().getTaxBalance() + taxOwed;
-                claim.getData().getEconomyData().setTaxBalance(totalTaxOwed);
-                claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_FAIL, Instant.now(), taxOwed));
+                final double totalTaxOwed = claim.getEconomyData().getTaxBalance() + taxOwed;
+                claim.getEconomyData().setTaxBalance(totalTaxOwed);
+                claim.getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_FAIL, Instant.now(), taxOwed));
             } else {
-                claim.getData().getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxOwed));
+                claim.getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxOwed));
+                claim.getEconomyData().setTaxPastDueDate(null);
                 if (inTown) {
                     final GPClaim town = claim.getTownClaim();
                     town.getData()

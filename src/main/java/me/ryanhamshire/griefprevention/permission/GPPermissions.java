@@ -132,7 +132,7 @@ public class GPPermissions {
     public static final String MANAGE_FLAG_DEFAULTS = "griefprevention.admin.flag-defaults";
     public static final String MANAGE_FLAG_OVERRIDES = "griefprevention.admin.flag-overrides";
     public static final String MANAGE_WILDERNESS = "griefprevention.admin.claim.wilderness";
-    public static final String MANAGE_PERMISSION_OPTIONS = "griefprevention.admin.claim.manage.options";
+    public static final String MANAGE_GLOBAL_OPTIONS = "griefprevention.admin.claim.option.global";
     public static final String COMMAND_IGNORE_CLAIMS = "griefprevention.admin.claim.command.ignore.base";
     public static final String IGNORE_CLAIMS_BASIC = "griefprevention.admin.claim.command.ignore.basic";
     public static final String IGNORE_CLAIMS_ADMIN = "griefprevention.admin.claim.command.ignore.admin";

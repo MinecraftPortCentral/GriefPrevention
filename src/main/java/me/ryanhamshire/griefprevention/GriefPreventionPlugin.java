@@ -1789,6 +1789,8 @@ public class GriefPreventionPlugin {
                     }
                     playerData.refreshPlayerOptions();
                 }
+                // refresh default permissions
+                this.dataStore.setupDefaultPermissions(world);
             }
         } catch (Exception e) {
             e.printStackTrace();

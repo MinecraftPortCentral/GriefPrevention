@@ -29,6 +29,8 @@ import com.google.common.collect.Lists;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -65,32 +67,55 @@ public class CommandClaimOption implements CommandExecutor {
         if (option != null && !option.startsWith("griefprevention.")) {
             option = "griefprevention." + option;
         }
-        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
-        if (claim.isSubdivision()) {
-            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandOptionInvalidClaim.toText());
+
+        final boolean isGlobalOption = GPOptions.GLOBAL_OPTIONS.contains(option);
+        // Check if global option
+        if (isGlobalOption && !player.hasPermission(GPPermissions.MANAGE_GLOBAL_OPTIONS)) {
+            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionGlobalOption.toText());
             return CommandResult.success();
         }
 
-        if (!playerData.canManageOption(player, claim, true)) {
-            GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionGroupOption.toText());
-            return CommandResult.success();
-        }
-
-        Double value = args.<Double>getOne("value").orElse(null);
-        final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
-                .apply(ImmutableMap.of(
-                "type", claim.getType().name())).build();
-        if (claim.isWilderness() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
-            GriefPreventionPlugin.sendMessage(src, message);
-            return CommandResult.success();
-        } else if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
-            GriefPreventionPlugin.sendMessage(src, message);
-            return CommandResult.success();
-        }
-
+        final Double value = args.<Double>getOne("value").orElse(null);
         Set<Context> contexts = new HashSet<>();
-        contexts.add(claim.getContext());
+        if (!isGlobalOption) {
+            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+            final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+            if (claim.isSubdivision()) {
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.commandOptionInvalidClaim.toText());
+                return CommandResult.success();
+            }
+
+            if (!playerData.canManageOption(player, claim, true)) {
+                GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionGroupOption.toText());
+                return CommandResult.success();
+            }
+
+            final Text message = GriefPreventionPlugin.instance.messageData.permissionClaimManage
+                    .apply(ImmutableMap.of(
+                    "type", claim.getType().name())).build();
+            if (claim.isWilderness() && !player.hasPermission(GPPermissions.MANAGE_WILDERNESS)) {
+                GriefPreventionPlugin.sendMessage(src, message);
+                return CommandResult.success();
+            } else if (claim.isAdminClaim() && !player.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS)) {
+                GriefPreventionPlugin.sendMessage(src, message);
+                return CommandResult.success();
+            }
+
+            // Validate new value against admin set value
+            if (option != null && value != null) {
+                Double tempValue = GPOptionHandler.getClaimOptionDouble(player, claim, option, playerData);
+                if (tempValue != value) {
+                    final Text message2 = GriefPreventionPlugin.instance.messageData.commandOptionExceedsAdmin
+                            .apply(ImmutableMap.of(
+                            "original_value", value,
+                            "admin_value", tempValue)).build();
+                    GriefPreventionPlugin.sendMessage(src, message2);
+                    return CommandResult.success();
+                }
+                contexts.add(claim.getContext());
+            }
+        }
+
         if (option == null || value == null) {
             List<Object[]> optionList = Lists.newArrayList();
             Map<String, String> options = GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().getOptions(contexts);
@@ -108,7 +133,7 @@ public class CommandClaimOption implements CommandExecutor {
                     .title(Text.of("Claim Options")).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(finalTexts);
             paginationBuilder.sendTo(src);
             return CommandResult.success();
-        }
+       }
 
        final String flagOption = option;
        GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().setOption(contexts, option, value.toString())

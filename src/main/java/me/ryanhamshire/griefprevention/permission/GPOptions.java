@@ -4,6 +4,8 @@ import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class GPOptions {
@@ -24,6 +26,8 @@ public class GPOptions {
     }
 
     public static final Map<String, Double> DEFAULT_OPTIONS = Maps.newHashMap();
+    // All options in this list can only be used globally
+    public static final List<String> GLOBAL_OPTIONS = new ArrayList<>();
 
     public static final String INVALID_OPTION = "invalid-option";
     public static final String ABANDON_RETURN_RATIO_BASIC = "griefprevention.abandon-return-ratio-basic";
@@ -202,5 +206,17 @@ public class GPOptions {
             // The default trust level between clan members for all member claims. 0: None, 1: Access, 2: Container, 3: Builder
             DEFAULT_OPTIONS.put(MEMBER_TRUST_LEVEL, 1.0);
         }
+
+        GLOBAL_OPTIONS.add(ABANDON_RETURN_RATIO_BASIC);
+        GLOBAL_OPTIONS.add(GPOptions.ABANDON_RETURN_RATIO_BASIC);
+        GLOBAL_OPTIONS.add(GPOptions.ABANDON_RETURN_RATIO_TOWN);
+        GLOBAL_OPTIONS.add(GPOptions.BLOCKS_ACCRUED_PER_HOUR);
+        GLOBAL_OPTIONS.add(GPOptions.CLAIM_EXPIRATION_BASIC);
+        GLOBAL_OPTIONS.add(GPOptions.CLAIM_EXPIRATION_CHEST);
+        GLOBAL_OPTIONS.add(GPOptions.CLAIM_EXPIRATION_SUBDIVISION);
+        GLOBAL_OPTIONS.add(GPOptions.CLAIM_EXPIRATION_TOWN);
+        GLOBAL_OPTIONS.add(GPOptions.CREATE_CLAIM_LIMIT_BASIC);
+        GLOBAL_OPTIONS.add(GPOptions.CREATE_CLAIM_LIMIT_SUBDIVISION);
+        GLOBAL_OPTIONS.add(GPOptions.CREATE_CLAIM_LIMIT_TOWN);
     }
 }

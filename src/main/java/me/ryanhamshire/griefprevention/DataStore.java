@@ -629,28 +629,25 @@ public abstract class DataStore {
         final Map<String, Boolean> adminDefaults = activeConfig.getConfig().flags.getAdminDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.ADMIN, adminDefaults);
         this.setFlagDefaultPermissions(contexts, adminDefaults);
-        this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(ClaimContexts.BASIC_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
         final Map<String, Boolean> basicDefaults = activeConfig.getConfig().flags.getBasicDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.BASIC, basicDefaults);
         this.setFlagDefaultPermissions(contexts, basicDefaults);
-        this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(ClaimContexts.TOWN_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
         final Map<String, Boolean> townDefaults = activeConfig.getConfig().flags.getTownDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.TOWN, townDefaults);
         this.setFlagDefaultPermissions(contexts, townDefaults);
-        this.setOptionDefaultPermissions(contexts);
         contexts = new HashSet<>();
         contexts.add(ClaimContexts.WILDERNESS_DEFAULT_CONTEXT);
         contexts.add(world.getContext());
         final Map<String, Boolean> wildernessDefaults = activeConfig.getConfig().flags.getWildernessDefaults();
         CLAIM_FLAG_DEFAULTS.put(ClaimType.WILDERNESS, wildernessDefaults);
         this.setFlagDefaultPermissions(contexts, wildernessDefaults);
-        this.setOptionDefaultPermissions(contexts);
+        this.setOptionDefaultPermissions();
         activeConfig.save();
     }
 
@@ -681,8 +678,9 @@ public abstract class DataStore {
         });
     }
 
-    private void setOptionDefaultPermissions(Set<Context> contexts) {
+    private void setOptionDefaultPermissions() {
         GriefPreventionPlugin.instance.executor.execute(() -> {
+            final Set<Context> contexts = new HashSet<>();
             SubjectData globalSubjectData = GriefPreventionPlugin.GLOBAL_SUBJECT.getTransientSubjectData();
             for (Map.Entry<String, Double> optionEntry : GPOptions.DEFAULT_OPTIONS.entrySet()) {
                 globalSubjectData.setOption(contexts, optionEntry.getKey(), Double.toString(optionEntry.getValue()));
