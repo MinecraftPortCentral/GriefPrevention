@@ -921,7 +921,7 @@ public class EntityEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onEntityCollideEntity(CollideEntityEvent event) {
-        if (!GPFlags.ENTITY_COLLIDE_ENTITY) {
+        if (!GPFlags.ENTITY_COLLIDE_ENTITY || event instanceof CollideEntityEvent.Impact) {
             return;
         }
 
@@ -937,7 +937,7 @@ public class EntityEventHandler {
 
         GPTimings.ENTITY_COLLIDE_EVENT.startTimingIfSync();
         Object rootCause = event.getCause().root();
-        final boolean isRootLiving = rootCause instanceof EntityLivingBase;
+        //final boolean isRootLiving = rootCause instanceof EntityLivingBase;
         final boolean isRootEntityItem = rootCause instanceof EntityItem;
         final boolean isRootEntityItemFrame = rootCause instanceof EntityItemFrame;
 
@@ -952,12 +952,13 @@ public class EntityEventHandler {
                     return true;
                 }
 
-                if (!isRootLiving) {
-                    // Avoid living entities breaking itemframes
-                    if (isRootEntityItemFrame && entity instanceof EntityLiving) {
-                        return false;
-                    }
+                // Avoid living entities breaking itemframes
+                if (isRootEntityItemFrame && entity instanceof EntityLiving) {
+                    return false;
+                }
 
+                // Disable as this causes heavy latency on servers with many entities
+                /*if (!isRootLiving) {
                     final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation());
                     if (claim.isWilderness()) {
                         return true;
@@ -966,7 +967,7 @@ public class EntityEventHandler {
                     if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), claim, GPPermissions.ENTITY_COLLIDE_ENTITY, rootCause, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                         return false;
                     }
-                }
+                }*/
                 return true;
             }
         });
