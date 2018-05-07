@@ -1364,7 +1364,7 @@ public class PlayerEventHandler {
                 if (playerData.petGiveawayRecipient != null) {
                     SpongeEntityType spongeEntityType = ((SpongeEntityType) spongeEntity.getType());
                     if (spongeEntityType == null || spongeEntityType.equals(EntityTypes.UNKNOWN) || !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
-                        final Text message = GriefPreventionPlugin.instance.messageData.townName
+                        final Text message = GriefPreventionPlugin.instance.messageData.commandPetInvalid
                                 .apply(ImmutableMap.of(
                                 "type", spongeEntity.getType().getId())).build();
                         GriefPreventionPlugin.sendMessage(player, message);
@@ -1707,7 +1707,7 @@ public class PlayerEventHandler {
                 return;
             }
 
-            final Text message = GriefPreventionPlugin.instance.messageData.townName
+            final Text message = GriefPreventionPlugin.instance.messageData.permissionItemUse
                     .apply(ImmutableMap.of(
                     "item", event.getItemStackInUse().getType().getId())).build();
             GriefPreventionPlugin.sendClaimDenyMessage(claim, player,  message);
