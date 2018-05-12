@@ -127,7 +127,7 @@ public class BlockEventHandler {
         final Object source = cause.root();
         final Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
         final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
-        final boolean isLiquidSource = BlockUtils.isLiquidSource(source);
+        final boolean isLiquidSource = context.containsKey(EventContextKeys.LIQUID_FLOW);
         final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
         if (!GPFlags.LIQUID_FLOW && isLiquidSource) {
             GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -537,7 +537,8 @@ public class BlockEventHandler {
         }
 
         final Object source = event.getSource();
-        if (BlockUtils.isLiquidSource(source)) {
+        final boolean isLiquidSource = event.getContext().containsKey(EventContextKeys.LIQUID_FLOW);
+        if (isLiquidSource) {
             return;
         }
 
