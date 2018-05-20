@@ -56,6 +56,7 @@ import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.item.ItemType;
+import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.plugin.PluginContainer;
@@ -653,6 +654,8 @@ public class GPPermissionHandler {
                 final String id = ((PluginContainer) obj).getId();
                 populateEventSourceTarget(id, isSource);
                 return id;
+            } else if (obj instanceof Inventory) {
+                return ((Inventory) obj).getArchetype().getId();
             }
         }
 

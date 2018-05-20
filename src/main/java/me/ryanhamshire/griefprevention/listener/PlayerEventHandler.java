@@ -39,6 +39,7 @@ import me.ryanhamshire.griefprevention.IpBanInfo;
 import me.ryanhamshire.griefprevention.ShovelMode;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResultType;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
@@ -50,7 +51,6 @@ import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
@@ -66,6 +66,7 @@ import net.minecraft.entity.passive.EntityHorse;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemFood;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -584,6 +585,8 @@ public class PlayerEventHandler {
         if (!GPFlags.COMMAND_EXECUTE && !GPFlags.COMMAND_EXECUTE_PVP) {
             return;
         }
+        final boolean commandExecuteSourceBlacklisted = GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.COMMAND_EXECUTE.toString(),event.getSource(), player.getWorld().getProperties());
+        final boolean commandExecutePvpSourceBlacklisted = GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.COMMAND_EXECUTE_PVP.toString(),event.getSource(), player.getWorld().getProperties());
 
         GPTimings.PLAYER_COMMAND_EVENT.startTimingIfSync();
         String command = event.getCommand();
@@ -632,7 +635,7 @@ public class PlayerEventHandler {
             argument = argument + "." + arg;
         }
 
-        if (GPFlags.COMMAND_EXECUTE) {
+        if (GPFlags.COMMAND_EXECUTE && !commandExecuteSourceBlacklisted && !GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.COMMAND_EXECUTE.toString(), commandPermission + argument, player.getWorld().getProperties())) {
             final Tristate result = GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getSource(), commandPermission + argument, player);
             if (result == Tristate.TRUE) {
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
@@ -649,7 +652,7 @@ public class PlayerEventHandler {
                 return;
             }
         }
-        if (GPFlags.COMMAND_EXECUTE_PVP && playerData != null && (playerData.inPvpCombat(player.getWorld()))) {
+        if (GPFlags.COMMAND_EXECUTE_PVP && !commandExecutePvpSourceBlacklisted && playerData != null && (playerData.inPvpCombat(player.getWorld())) && !GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), commandPermission + argument, player.getWorld().getProperties())) {
             final Tristate result = GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE_PVP, event.getSource(), commandPermission + argument, player);
             if (result == Tristate.TRUE) {
                 GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
@@ -1153,6 +1156,10 @@ public class PlayerEventHandler {
         }
 
         for (Entity entityItem : event.getEntities()) {
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), entityItem, world.getProperties())) {
+                continue;
+            }
+
             Location<World> location = entityItem.getLocation();
             GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
             if (claim != null) {
@@ -1201,15 +1208,17 @@ public class PlayerEventHandler {
             return;
         }
 
-        GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.startTimingIfSync();
         final Cause cause = event.getCause();
         final EventContext context = cause.getContext();
         final BlockSnapshot blockSnapshot = context.get(EventContextKeys.BLOCK_HIT).orElse(BlockSnapshot.NONE);
         if (blockSnapshot == BlockSnapshot.NONE) {
-            GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.stopTimingIfSync();
+            return;
+        }
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_INVENTORY.toString(), blockSnapshot, player.getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.PLAYER_INTERACT_INVENTORY_OPEN_EVENT.startTimingIfSync();
         final Location<World> location = blockSnapshot.getLocation().get();
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INVENTORY_OPEN, player, blockSnapshot, player, TrustType.CONTAINER, true);
@@ -1230,6 +1239,9 @@ public class PlayerEventHandler {
     public void onPlayerInteractInventoryClose(InteractInventoryEvent.Close event, @Root Player player) {
         final ItemStackSnapshot cursor = event.getCursorTransaction().getOriginal();
         if (cursor == ItemStackSnapshot.NONE || !GPFlags.ITEM_DROP || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), cursor, player.getWorld().getProperties())) {
             return;
         }
 
@@ -1260,7 +1272,7 @@ public class PlayerEventHandler {
         final boolean isDrop = event instanceof ClickInventoryEvent.Drop;
         final ItemStackSnapshot cursorItem = event.getCursorTransaction().getOriginal();
         // check if original cursor item can be dropped
-        if (isDrop && cursorItem != ItemStackSnapshot.NONE) {
+        if (isDrop && cursorItem != ItemStackSnapshot.NONE && !GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), cursorItem, player.getWorld().getProperties())) {
             if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_DROP, player, cursorItem, player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                 Text message = GriefPreventionPlugin.instance.messageData.permissionItemDrop
                         .apply(ImmutableMap.of(
@@ -1277,6 +1289,10 @@ public class PlayerEventHandler {
                 continue;
             }
 
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), transaction.getOriginal(), player.getWorld().getProperties())) {
+                continue;
+            }
+
             final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INVENTORY_CLICK, player, transaction.getOriginal(), player, TrustType.CONTAINER, true);
             if (result == Tristate.FALSE) {
                 Text message = GriefPreventionPlugin.instance.messageData.permissionInteractItem
@@ -1290,6 +1306,10 @@ public class PlayerEventHandler {
             }
 
             if (isDrop && transaction.getFinal() != ItemStackSnapshot.NONE) {
+                if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), transaction.getFinal(), player.getWorld().getProperties())) {
+                    continue;
+                }
+
                 if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_DROP, player, transaction.getFinal(), player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                     Text message = GriefPreventionPlugin.instance.messageData.permissionItemDrop
                             .apply(ImmutableMap.of(
@@ -1313,6 +1333,10 @@ public class PlayerEventHandler {
         }
 
         final Entity targetEntity = event.getTargetEntity();
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), targetEntity, player.getWorld().getProperties())) {
+            return;
+        }
+
         GPTimings.PLAYER_INTERACT_ENTITY_PRIMARY_EVENT.startTimingIfSync();
         Location<World> location = targetEntity.getLocation();
         GPClaim claim = this.dataStore.getClaimAt(location);
@@ -1343,6 +1367,10 @@ public class PlayerEventHandler {
         }
 
         final Entity targetEntity = event.getTargetEntity();
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), targetEntity, player.getWorld().getProperties())) {
+            return;
+        }
+
         GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.startTimingIfSync();
         Location<World> location = targetEntity.getLocation();
         GPClaim claim = this.dataStore.getClaimAt(location);
@@ -1415,13 +1443,20 @@ public class PlayerEventHandler {
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractItem(InteractItemEvent event, @Root Player player) {
         final World world = player.getWorld();
+        final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         final ItemType playerItem = event.getItemStack().getType();
         if ((!GPFlags.INTERACT_ITEM_PRIMARY && !GPFlags.INTERACT_ITEM_SECONDARY) || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
+            playerData.lastInteractItemBlockResult = Tristate.TRUE;
+            return;
+        }
+        final boolean itemPrimaryBlacklisted = GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), playerItem, player.getWorld().getProperties());
+        final boolean itemSecondaryBlacklisted = GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), playerItem, player.getWorld().getProperties());
+        if (itemPrimaryBlacklisted && itemSecondaryBlacklisted) {
+            playerData.lastInteractItemBlockResult = Tristate.TRUE;
             return;
         }
 
         final HandInteractEvent handEvent = (HandInteractEvent) event;
-        final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         // always reset last interact result
         playerData.lastInteractItemBlockResult = Tristate.UNDEFINED;
         playerData.lastInteractItemEntityResult = Tristate.UNDEFINED;
@@ -1444,15 +1479,55 @@ public class PlayerEventHandler {
         if ((itemInHand == ItemTypes.NONE || playerItem instanceof ItemFood) && blockSnapshot == BlockSnapshot.NONE && entity == null) {
             return;
         }
+
+        final boolean blockBreakBlacklisted = blockSnapshot == null ? false : GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), blockSnapshot, player.getWorld().getProperties());
+        final boolean blockPrimaryBlacklisted = blockSnapshot == null ? false : GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), blockSnapshot, player.getWorld().getProperties());
+        final boolean blockSecondaryBlacklisted = blockSnapshot == null ? false : GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), blockSnapshot, player.getWorld().getProperties());
+        final boolean entityPrimaryBlacklisted = entity == null ? false : GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), entity, player.getWorld().getProperties());
+        final boolean entitySecondaryBlacklisted = entity == null ? false : GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), entity, player.getWorld().getProperties());
+
         final String ITEM_PERMISSION = primaryEvent ? GPPermissions.INTERACT_ITEM_PRIMARY : GPPermissions.INTERACT_ITEM_SECONDARY;
         final String BLOCK_PERMISSION = primaryEvent ? GPPermissions.INTERACT_BLOCK_PRIMARY : GPPermissions.INTERACT_BLOCK_SECONDARY;
         final String ENTITY_PERMISSION = primaryEvent ? GPPermissions.INTERACT_ENTITY_PRIMARY : GPPermissions.INTERACT_ENTITY_SECONDARY;
+
+        final boolean itemSecondaryBlock = ITEM_PERMISSION.equalsIgnoreCase(GPPermissions.INTERACT_ITEM_SECONDARY) && itemInHand.getType() instanceof ItemBlock;
+        final boolean blockPrimary = BLOCK_PERMISSION.equalsIgnoreCase(GPPermissions.INTERACT_BLOCK_PRIMARY);
+        final boolean entityPrimary = ENTITY_PERMISSION.equalsIgnoreCase(GPPermissions.INTERACT_ENTITY_PRIMARY);
+
+        if ((itemPrimaryBlacklisted && ITEM_PERMISSION.equals(GPPermissions.INTERACT_ITEM_PRIMARY)) || (itemSecondaryBlacklisted && ITEM_PERMISSION.equals(GPPermissions.INTERACT_ITEM_SECONDARY))) {
+            playerData.lastInteractItemBlockResult = Tristate.TRUE;
+            return;
+        }
+        if (itemSecondaryBlock && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), itemInHand, player.getWorld().getProperties())) {
+            playerData.lastInteractItemBlockResult = Tristate.TRUE;
+            return;
+        }
+        if (((blockPrimaryBlacklisted || blockBreakBlacklisted) && BLOCK_PERMISSION.equals(GPPermissions.INTERACT_BLOCK_PRIMARY)) || (blockSecondaryBlacklisted && BLOCK_PERMISSION.equals(GPPermissions.INTERACT_BLOCK_SECONDARY))) {
+            playerData.lastInteractItemBlockResult = Tristate.TRUE;
+            return;
+        }
+        if (blockPrimary && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), blockSnapshot, player.getWorld().getProperties())) {
+            playerData.lastInteractItemBlockResult = Tristate.TRUE;
+            return;
+        }
+        if ((entityPrimaryBlacklisted && ENTITY_PERMISSION.equals(GPPermissions.INTERACT_ENTITY_PRIMARY)) || (entitySecondaryBlacklisted && ENTITY_PERMISSION.equals(GPPermissions.INTERACT_ENTITY_SECONDARY))) {
+            playerData.lastInteractItemEntityResult = Tristate.TRUE;
+            return;
+        }
+        if (entityPrimary && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ENTITY_DAMAGE.toString(), entity, player.getWorld().getProperties())) {
+            playerData.lastInteractItemEntityResult = Tristate.TRUE;
+            return;
+        }
 
         Tristate override = Tristate.UNDEFINED;
         if (itemInHand != ItemTypes.NONE) {
             override = GPPermissionHandler.getFlagOverride(event, location, claim, ITEM_PERMISSION, player, playerItem, player, playerData, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
+                    playerData.lastInteractItemBlockResult = Tristate.TRUE;
+                    return;
+                }
+                if (itemSecondaryBlock && GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.BLOCK_PLACE, player, itemInHand, player, playerData, true) == Tristate.TRUE) {
                     playerData.lastInteractItemBlockResult = Tristate.TRUE;
                     return;
                 }
@@ -1479,6 +1554,10 @@ public class PlayerEventHandler {
                     playerData.lastInteractItemEntityResult = Tristate.TRUE;
                     return;
                 }
+                if (entityPrimary && GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.ENTITY_DAMAGE, player, entity, player, playerData, true) == Tristate.TRUE) {
+                    playerData.lastInteractItemEntityResult = Tristate.TRUE;
+                    return;
+                }
 
                 playerData.lastInteractItemEntityResult = Tristate.FALSE;
                 if (!claim.isWilderness()) {
@@ -1497,6 +1576,10 @@ public class PlayerEventHandler {
             override = GPPermissionHandler.getFlagOverride(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, player, playerData, true);
             if (override != Tristate.UNDEFINED) {
                 if (override == Tristate.TRUE) {
+                    playerData.lastInteractItemBlockResult = Tristate.TRUE;
+                    return;
+                }
+                if (blockPrimary && GPPermissionHandler.getFlagOverride(event, location, claim, GPPermissions.BLOCK_BREAK, player, blockSnapshot, player, playerData, true) == Tristate.TRUE) {
                     playerData.lastInteractItemBlockResult = Tristate.TRUE;
                     return;
                 }
@@ -1519,6 +1602,16 @@ public class PlayerEventHandler {
 
         Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, ITEM_PERMISSION, player, playerItem, player, TrustType.ACCESSOR, false);
         if (result == Tristate.FALSE) {
+            if (itemSecondaryBlock) {
+                if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_PLACE, player, itemInHand, player, TrustType.ACCESSOR, false) == Tristate.TRUE) {
+                    if (entity != null) {
+                        playerData.lastInteractItemEntityResult = Tristate.TRUE;
+                    } else if (blockSnapshot != null) {
+                        playerData.lastInteractItemBlockResult = Tristate.TRUE;
+                    }
+                    return;
+                }
+            }
             if (entity != null) {
                 playerData.lastInteractItemEntityResult = Tristate.FALSE;
             } else if (blockSnapshot != null) {
@@ -1541,7 +1634,11 @@ public class PlayerEventHandler {
                 tileEntity = claim.world.getTileEntity(blockSnapshot.getLocation().get().getBlockPosition()).orElse(null);
             }
             final TrustType trustType = tileEntity != null ? TrustType.CONTAINER : TrustType.ACCESSOR;
-            playerData.lastInteractItemBlockResult = GPPermissionHandler.getClaimPermission(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, player, trustType, false);
+            Tristate blockResult = GPPermissionHandler.getClaimPermission(event, location, claim, BLOCK_PERMISSION, playerItem, blockSnapshot, player, trustType, false);
+            if (blockResult == Tristate.FALSE && BLOCK_PERMISSION == GPPermissions.INTERACT_BLOCK_PRIMARY) {
+                blockResult = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, blockSnapshot, player, trustType, false);
+            }
+            playerData.lastInteractItemBlockResult = blockResult;
         } else {
             playerData.lastInteractItemBlockResult = Tristate.UNDEFINED;
         }
@@ -1588,6 +1685,9 @@ public class PlayerEventHandler {
     @Listener(order = Order.LAST, beforeModifications = true)
     public void onPlayerPickupItem(ChangeInventoryEvent.Pickup.Pre event, @Root Player player) {
         if (!GPFlags.ITEM_PICKUP || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_PICKUP.toString(), event.getTargetEntity(), player.getWorld().getProperties())) {
             return;
         }
 
@@ -1694,6 +1794,9 @@ public class PlayerEventHandler {
         if (!GPFlags.ITEM_USE || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_USE.toString(), event.getItemStackInUse().getType(), player.getWorld().getProperties())) {
+            return;
+        }
 
         GPTimings.PLAYER_USE_ITEM_EVENT.startTimingIfSync();
         Location<World> location = player.getLocation();
@@ -1721,6 +1824,9 @@ public class PlayerEventHandler {
         if (!GPFlags.INTERACT_BLOCK_PRIMARY || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), event.getTargetBlock().getState(), player.getWorld().getProperties())) {
+            return;
+        }
 
         GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.startTimingIfSync();
         final BlockSnapshot clickedBlock = event.getTargetBlock();
@@ -1738,6 +1844,9 @@ public class PlayerEventHandler {
         final GPClaim claim = this.dataStore.getClaimAt(location);
         final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_BLOCK_PRIMARY, player, clickedBlock.getState(), player, TrustType.BUILDER, true);
         if (result == Tristate.FALSE) {
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), clickedBlock.getState(), player.getWorld().getProperties())) {
+                return;
+            }
             if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player, TrustType.BUILDER, true) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 playerData.setLastInteractData(claim);
@@ -1760,6 +1869,9 @@ public class PlayerEventHandler {
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractBlockSecondary(InteractBlockEvent.Secondary event, @First Player player) {
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), event.getTargetBlock().getState(), player.getWorld().getProperties())) {
             return;
         }
 
@@ -1795,6 +1907,9 @@ public class PlayerEventHandler {
             if (result == Tristate.FALSE) {
                 // if player is holding an item, check if it can be placed
                 if (itemInHand != null) {
+                    if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), itemInHand, player.getWorld().getProperties())) {
+                        return;
+                    }
                     if (GPFlags.BLOCK_PLACE && GPPermissionHandler.getClaimPermission(event, location, playerClaim, GPPermissions.BLOCK_PLACE, player, itemInHand, player, TrustType.BUILDER, true) == Tristate.TRUE) {
                         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                         playerData.setLastInteractData(playerClaim);

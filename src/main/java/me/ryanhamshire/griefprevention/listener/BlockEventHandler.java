@@ -33,6 +33,7 @@ import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GPTimings;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
@@ -106,6 +107,10 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPre(ChangeBlockEvent.Pre event) {
+        if (GriefPreventionPlugin.isSourceIdBlacklisted("block-pre", event.getSource(), event.getLocations().get(0).getExtent().getProperties())) {
+            return;
+        }
+
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
         final Cause cause = event.getCause();
         final EventContext context = event.getContext();
@@ -249,16 +254,23 @@ public class BlockEventHandler {
     // Handle fluids flowing into claims
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockNotify(NotifyNeighborBlockEvent event) {
-        final User user = CauseContextHelper.getEventUser(event);
-        if (user == null) {
-            return;
-        }
         GPTimings.BLOCK_NOTIFY_EVENT.startTimingIfSync();
         LocatableBlock locatableBlock = event.getCause().first(LocatableBlock.class).orElse(null);
         TileEntity tileEntity = event.getCause().first(TileEntity.class).orElse(null);
         Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
         GPClaim sourceClaim = null;
         GPPlayerData playerData = null;
+        if (sourceLocation != null) {
+            if (GriefPreventionPlugin.isSourceIdBlacklisted("block-notify", event.getSource(), sourceLocation.getExtent().getProperties())) {
+                GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
+                return;
+            }
+        }
+
+        final User user = CauseContextHelper.getEventUser(event);
+        if (user == null) {
+            return;
+        }
         if (sourceLocation == null) {
             Player player = event.getCause().first(Player.class).orElse(null);
             if (player == null) {
@@ -338,13 +350,16 @@ public class BlockEventHandler {
         if (event instanceof CollideBlockEvent.Impact) {
             return;
         }
+        // ignore falling blocks
+        if (!GPFlags.ENTITY_COLLIDE_BLOCK || source instanceof EntityFallingBlock) {
+            return;
+        }
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
+            return;
+        }
 
         final User user = CauseContextHelper.getEventUser(event);
         if (user == null) {
-            return;
-        }
-        // ignore falling blocks
-        if (!GPFlags.ENTITY_COLLIDE_BLOCK || source instanceof EntityFallingBlock) {
             return;
         }
 
@@ -449,7 +464,12 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onProjectileImpactBlock(CollideBlockEvent.Impact event) {
-        if (!GPFlags.PROJECTILE_IMPACT_BLOCK) {
+        if (!GPFlags.PROJECTILE_IMPACT_BLOCK || !(event.getSource() instanceof Entity)) {
+            return;
+        }
+
+        final Entity source = (Entity) event.getSource();
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
             return;
         }
 
@@ -463,8 +483,6 @@ public class BlockEventHandler {
         }
 
         GPTimings.PROJECTILE_IMPACT_BLOCK_EVENT.startTimingIfSync();
-        final Cause cause = event.getCause();
-        Object source = cause.root();
         Location<World> impactPoint = event.getImpactPoint();
         GPClaim targetClaim = null;
         GPPlayerData playerData = null;
@@ -492,8 +510,12 @@ public class BlockEventHandler {
             return;
         }
 
+        final Object source = event.getCause().root();
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.EXPLOSION.toString(), source, event.getExplosion().getWorld().getProperties())) {
+            return;
+        }
+
         GPTimings.EXPLOSION_EVENT.startTimingIfSync();
-        Object source = event.getCause().root();
         final User user = CauseContextHelper.getEventUser(event);
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
@@ -537,6 +559,10 @@ public class BlockEventHandler {
         }
 
         final Object source = event.getSource();
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), source, world.getProperties())) {
+            return;
+        }
+
         final boolean isLiquidSource = event.getContext().containsKey(EventContextKeys.LIQUID_FLOW);
         if (isLiquidSource) {
             return;
@@ -574,6 +600,10 @@ public class BlockEventHandler {
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : transactions) {
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), transaction.getOriginal(), world.getProperties())) {
+                continue;
+            }
+
             Location<World> location = transaction.getOriginal().getLocation().orElse(null);
             targetClaim = this.dataStore.getClaimAt(location, targetClaim);
             if (locatable != null && targetClaim.isWilderness()) {
@@ -631,6 +661,9 @@ public class BlockEventHandler {
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), event.getSource(), world.getProperties())) {
+            return;
+        }
 
         GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
         GPClaim sourceClaim = null;
@@ -667,7 +700,11 @@ public class BlockEventHandler {
 
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-            BlockSnapshot block = transaction.getFinal();
+            final BlockSnapshot block = transaction.getFinal();
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), block, world.getProperties())) {
+                continue;
+            }
+
             Location<World> location = block.getLocation().orElse(null);
             if (location == null) {
                 continue;

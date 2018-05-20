@@ -115,6 +115,7 @@ import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.configuration.MessageDataConfig;
 import me.ryanhamshire.griefprevention.configuration.MessageStorage;
+import me.ryanhamshire.griefprevention.configuration.category.BlacklistCategory;
 import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
 import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
 import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
@@ -144,6 +145,7 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.LocaleUtils;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform.Component;
@@ -2121,5 +2123,77 @@ public class GriefPreventionPlugin {
                 return null;
             }
         }
+    }
+
+    public static boolean isSourceIdBlacklisted(String flag, Object source, WorldProperties worldProperties) {
+        final GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(worldProperties);
+        final String id = GPPermissionHandler.getPermissionIdentifier(source);
+        final String idNoMeta = GPPermissionHandler.getIdentifierWithoutMeta(id);
+
+        // Check global
+        final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
+        final List<String> globalSourceBlacklist = blacklistCategory.getGlobalSourceBlacklist();
+        if (globalSourceBlacklist == null) {
+            return false;
+        }
+        for (String str : globalSourceBlacklist) {
+            if (FilenameUtils.wildcardMatch(id, str)) {
+                return true;
+            }
+            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                return true;
+            }
+        }
+        // Check flag
+        final List<String> flagBlacklist = blacklistCategory.getFlagBlacklist(flag);
+        if (flagBlacklist == null) {
+            return false;
+        }
+        for (String str : flagBlacklist) {
+            if (FilenameUtils.wildcardMatch(id, str)) {
+                return true;
+            }
+            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean isTargetIdBlacklisted(String flag, Object target, WorldProperties worldProperties) {
+        final GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(worldProperties);
+        final String id = GPPermissionHandler.getPermissionIdentifier(target);
+        final String idNoMeta = GPPermissionHandler.getIdentifierWithoutMeta(id);
+
+        // Check global
+        final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
+        final List<String> globalTargetBlacklist = blacklistCategory.getGlobalTargetBlacklist();
+        if (globalTargetBlacklist == null) {
+            return false;
+        }
+        for (String str : globalTargetBlacklist) {
+            if (FilenameUtils.wildcardMatch(id, str)) {
+                return true;
+            }
+            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                return true;
+            }
+        }
+        // Check flag
+        final List<String> flagBlacklist = blacklistCategory.getFlagBlacklist(flag);
+        if (flagBlacklist == null) {
+            return false;
+        }
+        for (String str : flagBlacklist) {
+            if (FilenameUtils.wildcardMatch(id, str)) {
+                return true;
+            }
+            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

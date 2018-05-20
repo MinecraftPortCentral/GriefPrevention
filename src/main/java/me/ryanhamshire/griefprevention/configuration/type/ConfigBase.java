@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.configuration.type;
 
+import me.ryanhamshire.griefprevention.configuration.category.BlacklistCategory;
 import me.ryanhamshire.griefprevention.configuration.category.ClaimCategory;
 import me.ryanhamshire.griefprevention.configuration.category.EconomyCategory;
 import me.ryanhamshire.griefprevention.configuration.category.FlagCategory;
@@ -34,6 +35,12 @@ import ninja.leaping.configurate.objectmapping.Setting;
 
 public abstract class ConfigBase {
 
+    @Setting(value = "blacklist", comment = "Controls which item/block/entity id's are blacklisted from events either on a per-flag basis or globally. " 
+            + "\nNote: Id's support wildcards '?' and '*' by using Apache's wildcard matcher." 
+            + "\nThe wildcard '?' represents a single character."
+            + "\nThe wildcard '*' represents zero or more characters."
+            + "\nFor more information on usage, see https://commons.apache.org/proper/commons-io/javadocs/api-2.5/org/apache/commons/io/FilenameUtils.html#wildcardMatch(java.lang.String,%20java.lang.String)")
+    public BlacklistCategory blacklist = new BlacklistCategory();
     @Setting
     public ClaimCategory claim = new ClaimCategory();
     @Setting
