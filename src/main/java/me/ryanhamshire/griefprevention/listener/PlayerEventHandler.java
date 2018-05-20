@@ -1490,7 +1490,7 @@ public class PlayerEventHandler {
         final String BLOCK_PERMISSION = primaryEvent ? GPPermissions.INTERACT_BLOCK_PRIMARY : GPPermissions.INTERACT_BLOCK_SECONDARY;
         final String ENTITY_PERMISSION = primaryEvent ? GPPermissions.INTERACT_ENTITY_PRIMARY : GPPermissions.INTERACT_ENTITY_SECONDARY;
 
-        final boolean itemSecondaryBlock = ITEM_PERMISSION.equalsIgnoreCase(GPPermissions.INTERACT_ITEM_SECONDARY) && itemInHand.getType() instanceof ItemBlock;
+        final boolean itemSecondaryBlock = itemInHand == null ? false : ITEM_PERMISSION.equalsIgnoreCase(GPPermissions.INTERACT_ITEM_SECONDARY) && itemInHand.getType() instanceof ItemBlock;
         final boolean blockPrimary = BLOCK_PERMISSION.equalsIgnoreCase(GPPermissions.INTERACT_BLOCK_PRIMARY);
         final boolean entityPrimary = ENTITY_PERMISSION.equalsIgnoreCase(GPPermissions.INTERACT_ENTITY_PRIMARY);
 
