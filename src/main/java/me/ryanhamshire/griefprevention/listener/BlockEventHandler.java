@@ -357,6 +357,9 @@ public class BlockEventHandler {
         if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
             return;
         }
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), event.getTargetBlock(), source.getWorld().getProperties())) {
+            return;
+        }
 
         final User user = CauseContextHelper.getEventUser(event);
         if (user == null) {
