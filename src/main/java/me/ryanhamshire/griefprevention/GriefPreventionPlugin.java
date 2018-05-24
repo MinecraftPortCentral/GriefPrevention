@@ -147,6 +147,7 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.LocaleUtils;
+import org.bstats.sponge.Metrics;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform.Component;
 import org.spongepowered.api.Sponge;
@@ -232,6 +233,7 @@ public class GriefPreventionPlugin {
     public static String SPONGE_VERSION = "unknown";
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
+    @Inject private Metrics metrics;
     @Inject @ConfigDir(sharedRoot = false)
     private Path configPath;
     public MessageStorage messageStorage;
@@ -830,7 +832,7 @@ public class GriefPreventionPlugin {
         final int migration2dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateAreaRate;
         final int migration3dRate = GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.migrateVolumeRate;
         boolean migrate = false;
-        if (resetMigration || resetClaimData || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA) 
+        if (resetMigration || resetClaimData || (migration2dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA)
                 || (migration3dRate > -1 && GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME)) {
             migrate = true;
         }
@@ -1169,7 +1171,7 @@ public class GriefPreventionPlugin {
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Sets a permission on a group with a claim context"))
                 .permission(GPPermissions.COMMAND_CLAIM_PERMISSION_GROUP)
-                .arguments(string(Text.of("group")), 
+                .arguments(string(Text.of("group")),
                         optional(GenericArguments.seq(string(Text.of("permission")), string(Text.of("value")))))
                 .executor(new CommandClaimPermissionGroup())
                 .build(), "claimpermissiongroup", "cpg");
