@@ -139,6 +139,8 @@ shadowJar {
         include dependency("org.bstats:bstats-sponge:1.2")
     }
 
+    relocate "org.bstats", "me.ryanhamshire.griefprevention.shade.org.bstats"
+
     exclude "dummyThing"
 	afterEvaluate {
         from zipTree(reobfJar.jar)
