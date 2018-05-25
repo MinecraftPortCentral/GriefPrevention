@@ -144,6 +144,9 @@ public class FlatFileDataStore extends DataStore {
             if (!Files.exists(newWorldDataPath.resolve("ClaimData"))) {
                 Files.createDirectories(newWorldDataPath.resolve("ClaimData"));
             }
+            if (!Files.exists(newWorldDataPath.resolve("ClaimData").resolve("wilderness"))) {
+                Files.createDirectories(newWorldDataPath.resolve("ClaimData").resolve("wilderness"));
+            }
             if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
                 if (!globalPlayerDataPath.toFile().exists()) {
                     Files.createDirectories(globalPlayerDataPath);
@@ -180,6 +183,18 @@ public class FlatFileDataStore extends DataStore {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        // Load wilderness claim first
+        final Path wildernessFilePath = newWorldDataPath.resolve("ClaimData").resolve("wilderness").resolve(worldProperties.getUniqueId().toString());
+        if (Files.exists(wildernessFilePath)) {
+            try {
+                this.loadClaim(wildernessFilePath.toFile(), worldProperties, worldProperties.getUniqueId());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            claimWorldManager.createWildernessClaim(worldProperties);
         }
 
         // Load Claim Data
@@ -331,6 +346,10 @@ public class FlatFileDataStore extends DataStore {
             throws Exception {
         GPClaim claim;
 
+        final GPClaimManager claimManager = this.getClaimWorldManager(worldProperties);
+        if (claimManager.getWildernessClaim() != null && claimManager.getWildernessClaim().getUniqueId().equals(claimId)) {
+            return null;
+        }
         boolean isTown = claimFile.toPath().getParent().endsWith("town");
         boolean writeToStorage = false;
         ClaimStorageData claimStorage = null;
@@ -393,7 +412,6 @@ public class FlatFileDataStore extends DataStore {
         claim = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, claimStorage.getConfig().getType(), ownerID, cuboid);
         claim.setClaimStorage(claimStorage);
         claim.setClaimData(claimStorage.getConfig());
-        final GPClaimManager claimManager = this.getClaimWorldManager(worldProperties);
 
         // add parent claim first
         if (parent != null) {

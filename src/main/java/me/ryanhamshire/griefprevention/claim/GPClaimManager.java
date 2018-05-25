@@ -387,7 +387,8 @@ public class GPClaimManager implements ClaimManager {
         World world = Sponge.getServer().getWorld(worldProperties.getUniqueId()).get();
         Location<World> lesserCorner = new Location<World>(world, -30000000, 0, -30000000);
         Location<World> greaterCorner = new Location<World>(world, 29999999, 255, 29999999);
-        GPClaim wilderness = new GPClaim(lesserCorner, greaterCorner, UUID.randomUUID(), ClaimType.WILDERNESS, null, false);
+        // Use world UUID as wilderness claim ID
+        GPClaim wilderness = new GPClaim(lesserCorner, greaterCorner, worldProperties.getUniqueId(), ClaimType.WILDERNESS, null, false);
         wilderness.setOwnerUniqueId(GriefPreventionPlugin.WORLD_USER_UUID);
         wilderness.initializeClaimData(null);
         DATASTORE.writeClaimToStorage(wilderness);
