@@ -44,6 +44,7 @@ import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.provider.MCClansApiProvider;
 import me.ryanhamshire.griefprevention.util.CauseContextHelper;
+import me.ryanhamshire.griefprevention.util.EntityUtils;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
@@ -665,6 +666,9 @@ public class EntityEventHandler {
                 Sponge.getEventManager().post(gpEvent);
                 if (gpEvent.isCancelled()) {
                     event.setCancelled(true);
+                    if (EntityUtils.getOwnerUniqueId(entity) == null) {
+                        ((net.minecraft.entity.Entity) entity).setDead();
+                    }
                 }
             }
             GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
@@ -718,6 +722,9 @@ public class EntityEventHandler {
             Sponge.getEventManager().post(gpEvent);
             if (gpEvent.isCancelled()) {
                 event.setCancelled(true);
+                if (EntityUtils.getOwnerUniqueId(entity) == null) {
+                    ((net.minecraft.entity.Entity) entity).setDead();
+                }
                 final Text cancelMessage = gpEvent.getMessage().orElse(null);
                 if (player != null && cancelMessage != null) {
                     player.sendMessage(cancelMessage);
@@ -782,6 +789,9 @@ public class EntityEventHandler {
                 }
 
                 event.setCancelled(true);
+                if (EntityUtils.getOwnerUniqueId(entity) == null) {
+                    ((net.minecraft.entity.Entity) entity).setDead();
+                }
                 GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
                 return;
             }
@@ -853,9 +863,6 @@ public class EntityEventHandler {
         GPPlayerData playerData = null;
         if (player != null) {
             playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-            // Reset interact cache to avoid players attempting to bypass protection
-            playerData.lastInteractItemBlockResult = Tristate.UNDEFINED;
-            playerData.lastInteractItemEntityResult = Tristate.UNDEFINED;
             sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation());
         } else {
             sourceClaim = this.dataStore.getClaimAt(sourceLocation);

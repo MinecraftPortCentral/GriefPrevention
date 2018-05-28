@@ -186,8 +186,6 @@ public class GPPlayerData implements PlayerData {
     // profanity warning, once per play session
     public boolean profanityWarned = false;
 
-    public Tristate lastInteractItemEntityResult = Tristate.UNDEFINED;
-    public Tristate lastInteractItemBlockResult = Tristate.UNDEFINED;
     public boolean lastInteractResult = false;
     public int lastTickCounter = 0;
     public UUID lastInteractClaim = GriefPreventionPlugin.PUBLIC_UUID;

@@ -115,6 +115,7 @@ public class BlockEventHandler {
         final Cause cause = event.getCause();
         final EventContext context = event.getContext();
         final User user = CauseContextHelper.getEventUser(event);
+        final World world = event.getLocations().get(0).getExtent();
         boolean hasFakePlayer = context.containsKey(EventContextKeys.FAKE_PLAYER);
         if (user != null) {
             if (context.containsKey(EventContextKeys.PLAYER_BREAK) && !hasFakePlayer) {
@@ -148,7 +149,11 @@ public class BlockEventHandler {
                 GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
-    
+
+            GPPlayerData playerData = null;
+            if (user != null) {
+                playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(world, user.getUniqueId());
+            }
             GPClaim sourceClaim = this.dataStore.getClaimAt(sourceLocation);
             GPClaim targetClaim = null;
             List<Location<World>> sourceLocations = event.getLocations();
@@ -162,7 +167,11 @@ public class BlockEventHandler {
             }
             for (Location<World> location : sourceLocations) {
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
-
+                // If a player successfully interacted with a block recently such as a pressure plate, ignore check
+                // This fixes issues such as pistons not being able to extend
+                if (user != null && playerData.checkLastInteraction(targetClaim, user)) {
+                    continue;
+                }
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     continue;
@@ -200,11 +209,15 @@ public class BlockEventHandler {
                 }
             }
         } else if (user != null) {
-            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(event.getLocations().get(0).getExtent(), user.getUniqueId());
+            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(event.getLocations().get(0).getExtent(), user.getUniqueId());
             GPClaim targetClaim = null;
             for (Location<World> location : event.getLocations()) {
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
-
+                // If a player successfully interacted with a block recently such as a pressure plate, ignore check
+                // This fixes issues such as pistons not being able to extend
+                if (playerData.checkLastInteraction(targetClaim, user)) {
+                    continue;
+                }
                 if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     continue;
@@ -566,10 +579,11 @@ public class BlockEventHandler {
             return;
         }
 
-        final boolean isLiquidSource = event.getContext().containsKey(EventContextKeys.LIQUID_FLOW);
+        // TODO FIX liquid_flow context leaking in sponge
+        /*final boolean isLiquidSource = event.getContext().containsKey(EventContextKeys.LIQUID_FLOW);
         if (isLiquidSource) {
             return;
-        }
+        }*/
 
         GPTimings.BLOCK_BREAK_EVENT.startTimingIfSync();
         final User user = CauseContextHelper.getEventUser(event);

@@ -552,6 +552,8 @@ public class GPPermissionHandler {
 
                 if (id.contains("unknown") && SpongeImplHooks.isFakePlayer(mcEntity)) {
                     id = "fakeplayer:" + ((EntityPlayer) obj).getName().toLowerCase();
+                } else if (id.equals("unknown:unknown") && obj instanceof EntityPlayer) {
+                    id = "minecraft:player";
                 }
                 populateEventSourceTarget(id, isSource);
                 if (!isSource && targetEntity instanceof Living) {
