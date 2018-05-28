@@ -268,8 +268,32 @@ public class PlayerEventHandler {
             event.setChannel(player.getMessageChannel());
         }
 
+        // troll and excessive profanity filter
+        boolean isSoftMuted = this.dataStore.isSoftMuted(player.getUniqueId());
+        if (!isSoftMuted && !player.hasPermission(GPPermissions.OVERRIDE_PROFANITY) && GriefPreventionPlugin.containsProfanity(message)) {
+            // limit recipients to sender
+            event.setChannel(player.getMessageChannel());
+
+            // if player not new warn for the first infraction per play session.
+            if (!playerData.profanityWarned) {
+                playerData.profanityWarned = true;
+                GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.playerNoProfanity.toText());
+                event.setCancelled(true);
+                GPTimings.PLAYER_CHAT_EVENT.stopTimingIfSync();
+                return;
+            }
+
+            // otherwise assume chat troll and mute all chat from this sender until an admin says otherwise
+            else {
+                GriefPreventionPlugin
+                        .addLogEntry("Auto-muted new player " + player.getName() + " for profanity shortly after join.  Use /SoftMute to undo.");
+                this.dataStore.addSoftMute(player.getUniqueId());
+                isSoftMuted = true;
+            }
+        }
+
         // soft muted messages go out to all soft muted players
-        else if (this.dataStore.isSoftMuted(player.getUniqueId())) {
+        if (isSoftMuted) {
             String notificationMessage = "(Muted " + player.getName() + "): " + message;
             Set<CommandSource> recipientsToKeep = new HashSet<>();
             for (MessageReceiver recipient : recipients) {
@@ -282,32 +306,6 @@ public class PlayerEventHandler {
             event.setChannel(new FixedMessageChannel(recipientsToKeep));
 
             GriefPreventionPlugin.addLogEntry(notificationMessage, CustomLogEntryTypes.Debug, false);
-        }
-
-        // troll and excessive profanity filter
-        else if (!player.hasPermission(GPPermissions.SPAM) && this.dataStore.bannedWordFinder.hasMatch(message)) {
-            // limit recipients to sender
-            event.setChannel(player.getMessageChannel());
-
-            // if player not new warn for the first infraction per play session.
-            /*Optional<AchievementData> data = player.get(AchievementData.class);
-            if (data.isPresent() && player.getAchievementData().achievements().contains(Achievements.MINE_WOOD)) {
-                if (!playerData.profanityWarned) {
-                    playerData.profanityWarned = true;
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.playerNoProfanity.toText());
-                    event.setCancelled(true);
-                    GPTimings.PLAYER_CHAT_EVENT.stopTimingIfSync();
-                    return;
-                }
-            }*/
-
-            // otherwise assume chat troll and mute all chat from this sender
-            // until an admin says otherwise
-            /*else {
-                GriefPrevention
-                        .AddLogEntry("Auto-muted new player " + player.getName() + " for profanity shortly after join.  Use /SoftMute to undo.");
-                GriefPrevention.instance.dataStore.toggleSoftMute(player.getUniqueId());
-            }*/
         }
 
         // remaining messages
@@ -368,7 +366,7 @@ public class PlayerEventHandler {
             return false;
 
         // if the player has permission to spam, don't bother even examining the message
-        if (player.hasPermission(GPPermissions.SPAM))
+        if (player.hasPermission(GPPermissions.OVERRIDE_SPAM))
             return false;
 
         boolean spam = false;
@@ -801,7 +799,7 @@ public class PlayerEventHandler {
             long now = Calendar.getInstance().getTimeInMillis();
 
             // if allowed to join and login cooldown enabled
-            if (GriefPreventionPlugin.getGlobalConfig().getConfig().spam.loginCooldown > 0 && !player.hasPermission(GPPermissions.SPAM)) {
+            if (GriefPreventionPlugin.getGlobalConfig().getConfig().spam.loginCooldown > 0 && !player.hasPermission(GPPermissions.OVERRIDE_SPAM)) {
                 // determine how long since last login and cooldown remaining
                 Date lastLoginThisSession = lastLoginThisServerSessionMap.get(player.getUniqueId());
                 if (lastLoginThisSession != null) {

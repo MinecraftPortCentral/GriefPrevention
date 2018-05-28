@@ -26,6 +26,7 @@
 package me.ryanhamshire.griefprevention.command;
 
 import com.google.common.collect.ImmutableMap;
+import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -50,9 +51,10 @@ public class CommandSoftMute implements CommandExecutor {
 
         // find the specified player
         User targetPlayer = args.<User>getOne("player").get();
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld().getProperties(), targetPlayer.getUniqueId());
 
         // toggle mute for player
-        boolean isMuted = GriefPreventionPlugin.instance.dataStore.toggleSoftMute(targetPlayer.getUniqueId());
+        final boolean isMuted = GriefPreventionPlugin.instance.dataStore.toggleSoftMute(targetPlayer.getUniqueId());
         if (isMuted) {
             final Text message = GriefPreventionPlugin.instance.messageData.playerSoftMuted
                     .apply(ImmutableMap.of(
@@ -63,6 +65,7 @@ public class CommandSoftMute implements CommandExecutor {
                     .apply(ImmutableMap.of(
                     "player", targetPlayer.getName())).build();
             GriefPreventionPlugin.sendMessage(player, message);
+            playerData.profanityWarned = false;
         }
 
         return CommandResult.success();

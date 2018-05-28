@@ -931,7 +931,7 @@ public class BlockEventHandler {
 
         String signMessage = lines.toString();
         // prevent signs with blocked IP addresses
-        if (!user.hasPermission(GPPermissions.SPAM) && GriefPreventionPlugin.instance.containsBlockedIP(signMessage)) {
+        if (!user.hasPermission(GPPermissions.OVERRIDE_SPAM) && GriefPreventionPlugin.instance.containsBlockedIP(signMessage)) {
             event.setCancelled(true);
             GPTimings.SIGN_CHANGE_EVENT.stopTimingIfSync();
             return;

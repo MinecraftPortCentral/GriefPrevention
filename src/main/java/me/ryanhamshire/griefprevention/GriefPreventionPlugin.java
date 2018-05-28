@@ -1731,17 +1731,10 @@ public class GriefPreventionPlugin {
             if (Files.notExists(DataStore.dataLayerFolderPath)) {
                 Files.createDirectories(DataStore.dataLayerFolderPath);
             }
-            /*if (this.dataStore != null) {
-                this.dataStore.loadMessages();
-            }*/
-            if (Files.notExists(DataStore.bannedWordsFilePath)) {
-                if (this.dataStore != null) {
-                    this.dataStore.loadBannedWords();
-                }
-            }
             if (Files.notExists(DataStore.softMuteFilePath)) {
                 Files.createFile(DataStore.softMuteFilePath);
             }
+            DataStore.loadBannedWords();
 
             Path rootConfigPath = this.getConfigPath().resolve("worlds");
             DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
@@ -2193,6 +2186,19 @@ public class GriefPreventionPlugin {
             }
             if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
                 return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean containsProfanity(String message) {
+        final String[] words = message.split("\\s+");
+        for (String banned : DataStore.bannedWords) {
+            for (String word : words) {
+                if (FilenameUtils.wildcardMatch(word, banned)) {
+                    return true;
+                }
             }
         }
 

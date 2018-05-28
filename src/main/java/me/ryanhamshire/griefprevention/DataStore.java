@@ -48,7 +48,6 @@ import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
-import me.ryanhamshire.griefprevention.util.WordFinder;
 import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandSource;
@@ -75,6 +74,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -124,11 +124,10 @@ public abstract class DataStore {
     static final String SUBDIVISION_VIDEO_URL_RAW = "http://bit.ly/mcgpsub";
 
     public static boolean generateMessages = true;
-    // matcher for banned words
-    public WordFinder bannedWordFinder;
+    public static List<String> bannedWords = new ArrayList<>();
 
     // list of UUIDs which are soft-muted
-    ConcurrentHashMap<UUID, Boolean> softMuteMap = new ConcurrentHashMap<UUID, Boolean>();
+    Set<UUID> softMuteMap = ConcurrentHashMap.newKeySet();
 
     protected int getSchemaVersion() {
         if (this.currentSchemaVersion >= 0) {
@@ -189,7 +188,7 @@ public abstract class DataStore {
 
                     // push it into the map
                     if (playerID != null) {
-                        this.softMuteMap.put(playerID, true);
+                        this.softMuteMap.add(playerID);
                     }
 
                     // move to the next
@@ -209,7 +208,7 @@ public abstract class DataStore {
         }
     }
 
-    public void loadBannedWords() {
+    public static void loadBannedWords() {
         try {
             File bannedWordsFile = bannedWordsFilePath.toFile();
             boolean regenerateDefaults = false;
@@ -218,7 +217,7 @@ public abstract class DataStore {
                 regenerateDefaults = true;
             }
 
-            List<String> bannedWords = Files.readLines(bannedWordsFile, Charset.forName("UTF-8"));
+            bannedWords = Files.readLines(bannedWordsFile, Charset.forName("UTF-8"));
             if (regenerateDefaults || bannedWords.isEmpty()) {
                 String defaultWords =
                         "nigger\nniggers\nniger\nnigga\nnigers\nniggas\n" +
@@ -226,31 +225,40 @@ public abstract class DataStore {
                                 "cunt\ncunts\nwhore\nwhores\nslut\nsluts\n";
                 Files.write(defaultWords, bannedWordsFile, Charset.forName("UTF-8"));
             }
-            this.bannedWordFinder = new WordFinder(Files.readLines(bannedWordsFile, Charset.forName("UTF-8")));
         } catch (Exception e) {
             GriefPreventionPlugin.addLogEntry("Failed to read from the banned words data file: " + e.toString());
             e.printStackTrace();
-            this.bannedWordFinder = new WordFinder(new ArrayList<String>());
         }
     }
 
     // updates soft mute map and data file
     public boolean toggleSoftMute(UUID playerID) {
-        boolean newValue = !this.isSoftMuted(playerID);
+        boolean muted = this.isSoftMuted(playerID);
 
-        this.softMuteMap.put(playerID, newValue);
+        if (muted) {
+            this.softMuteMap.remove(playerID);
+        } else {
+            this.softMuteMap.add(playerID);
+        }
+
         this.saveSoftMutes();
 
-        return newValue;
+        return !muted;
+    }
+
+    public void addSoftMute(UUID playerID) {
+        this.softMuteMap.add(playerID);
+        this.saveSoftMutes();
+    }
+
+    // updates soft mute map and data file
+    public void removeSoftMute(UUID playerID) {
+        this.softMuteMap.remove(playerID);
+        this.saveSoftMutes();
     }
 
     public boolean isSoftMuted(UUID playerID) {
-        Boolean mapEntry = this.softMuteMap.get(playerID);
-        if (mapEntry == null || mapEntry == Boolean.FALSE) {
-            return false;
-        }
-
-        return true;
+        return this.softMuteMap.contains(playerID);
     }
 
     private void saveSoftMutes() {
@@ -262,11 +270,11 @@ public abstract class DataStore {
             softMuteFile.createNewFile();
             outStream = new BufferedWriter(new FileWriter(softMuteFile));
 
-            for (Map.Entry<UUID, Boolean> entry : softMuteMap.entrySet()) {
-                if (entry.getValue().booleanValue()) {
-                    outStream.write(entry.getKey().toString());
-                    outStream.newLine();
-                }
+            final Iterator<UUID> iterator = softMuteMap.iterator();
+            while (iterator.hasNext()) {
+                final UUID uuid = iterator.next();
+                outStream.write(uuid.toString());
+                outStream.newLine();
             }
 
         }

@@ -159,7 +159,8 @@ public class GPPermissions {
     public static final String COMMAND_UNSEPARATE_PLAYERS = "griefprevention.admin.chat.command.unseparate";
     public static final String COMMAND_SOFT_MUTE_PLAYER = "griefprevention.admin.chat.command.softmute";
     public static final String NOT_IGNORABLE = "griefprevention.admin.chat.not-ignorable";
-    public static final String SPAM = "griefprevention.admin.chat.spam-override";
+    public static final String OVERRIDE_SPAM = "griefprevention.admin.chat.spam-override";
+    public static final String OVERRIDE_PROFANITY = "griefprevention.admin.chat.profanity-override";
     public static final String EAVES_DROP = "griefprevention.admin.chat.eavesdrop";
 
     // Misc
