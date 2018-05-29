@@ -75,7 +75,6 @@ import org.spongepowered.api.event.cause.EventContext;
 import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.world.ExplosionEvent;
-import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Direction;
@@ -90,19 +89,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 
 //event handlers related to blocks
 public class BlockEventHandler {
 
     // convenience reference to singleton datastore
     private final DataStore dataStore;
-    private final UserStorageService userStorageService;
 
     // constructor
     public BlockEventHandler(DataStore dataStore) {
         this.dataStore = dataStore;
-        this.userStorageService = Sponge.getServiceManager().provide(UserStorageService.class).get();
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
@@ -111,19 +107,21 @@ public class BlockEventHandler {
             return;
         }
 
-        GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
+        final World world = event.getLocations().get(0).getExtent();
+        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
+            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+            return;
+        }
+
         final Cause cause = event.getCause();
         final EventContext context = event.getContext();
         final User user = CauseContextHelper.getEventUser(event);
-        final World world = event.getLocations().get(0).getExtent();
         boolean hasFakePlayer = context.containsKey(EventContextKeys.FAKE_PLAYER);
         if (user != null) {
             if (context.containsKey(EventContextKeys.PLAYER_BREAK) && !hasFakePlayer) {
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
             if (context.containsKey(EventContextKeys.PISTON_RETRACT)) {
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                 return;
             }
         }
@@ -136,20 +134,14 @@ public class BlockEventHandler {
         final boolean isLiquidSource = context.containsKey(EventContextKeys.LIQUID_FLOW);
         final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
         if (!GPFlags.LIQUID_FLOW && isLiquidSource) {
-            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
             return;
         }
         if (!GPFlags.FIRE_SPREAD && isFireSource) {
-            GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
         if (sourceLocation != null) {
-            if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
-                GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                return;
-            }
-
             GPPlayerData playerData = null;
             if (user != null) {
                 playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(world, user.getUniqueId());
@@ -169,27 +161,23 @@ public class BlockEventHandler {
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
                 // If a player successfully interacted with a block recently such as a pressure plate, ignore check
                 // This fixes issues such as pistons not being able to extend
-                if (user != null && playerData.checkLastInteraction(targetClaim, user)) {
+                if (user != null && playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
                     continue;
                 }
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     continue;
                 }
                 if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     continue;
                 }
                 if (user != null && pistonExtend) {
                     if (targetClaim.isUserTrusted(user, TrustType.ACCESSOR)) {
-                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
                 if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
-                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
@@ -204,33 +192,26 @@ public class BlockEventHandler {
                 if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     continue;
                 }
             }
         } else if (user != null) {
-            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(event.getLocations().get(0).getExtent(), user.getUniqueId());
+            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(world, user.getUniqueId());
             GPClaim targetClaim = null;
             for (Location<World> location : event.getLocations()) {
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
                 // If a player successfully interacted with a block recently such as a pressure plate, ignore check
                 // This fixes issues such as pistons not being able to extend
-                if (playerData.checkLastInteraction(targetClaim, user)) {
+                if (playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
                     continue;
                 }
                 if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    continue;
-                }
-                if (playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     continue;
                 }
 
                 if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
-                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         continue;
                     }
                 }
@@ -256,7 +237,6 @@ public class BlockEventHandler {
 
                 if (!userAllowed) {
                     event.setCancelled(true);
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                     continue;
                 }
             }
