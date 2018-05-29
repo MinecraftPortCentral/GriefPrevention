@@ -102,12 +102,11 @@ public class CommandClaimInfo implements CommandExecutor {
         }
 
         boolean isAdmin = src.hasPermission(GPPermissions.COMMAND_ADMIN_CLAIMS);
-        GPPlayerData playerData = null;
+        final GPPlayerData playerData = player != null ? GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId()) : null;
         Claim claim = null;
         if (claimIdentifier == null) {
             if (player != null) {
                 claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
-                playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             } else {
                 src.sendMessage(Text.of(TextColors.RED, "Claim UUID is required if executing from non-player source."));
                 return CommandResult.success();
