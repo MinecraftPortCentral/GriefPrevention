@@ -83,6 +83,7 @@ public class GPPermissionHandler {
     private static Subject eventSubject;
     private static String eventSourceId = "none";
     private static String eventTargetId = "none";
+    private static final Pattern PATTERN_META = Pattern.compile("\\.[\\d+]*$");
 
     public static Tristate getClaimPermission(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user) {
         return getClaimPermission(event, location, claim, flagPermission, source, target, user, null, false);
@@ -117,16 +118,15 @@ public class GPPermissionHandler {
             String[] parts = targetId.split(":");
             String targetMod = parts[0];
             // move target meta to end of permission
-            Pattern p = Pattern.compile("\\.[\\d+]*$");
-            Matcher m = p.matcher(targetId);
+            Matcher m = PATTERN_META.matcher(targetId);
             String targetMeta = "";
             if (!flagPermission.contains("command-execute")) {
                 if (m.find()) {
                     targetMeta = m.group(0);
-                    targetId = targetId.replace(targetMeta, "");
+                    targetId = StringUtils.replace(targetId, targetMeta, "");
                 }
                 if (!targetMeta.isEmpty()) {
-                    targetMetaPermission = flagPermission + "." + targetId.replace(":", ".") + targetMeta;
+                    targetMetaPermission = flagPermission + "." + StringUtils.replace(targetId, ":", ".") + targetMeta;
                 }
             }
             if (!sourceId.isEmpty()) {
@@ -391,15 +391,14 @@ public class GPPermissionHandler {
                 String targetMod = parts[0];
                 if (!sourceId.isEmpty()) {
                     // move target meta to end of permission
-                    Pattern p = Pattern.compile("\\.[\\d+]*$");
-                    Matcher m = p.matcher(targetId);
+                    Matcher m = PATTERN_META.matcher(targetId);
                     String targetMeta = "";
                     if (m.find()) {
                         targetMeta = m.group(0);
-                        targetId = targetId.replace(targetMeta, "");
+                        targetId = StringUtils.replace(targetId, targetMeta, "");
                     }
                     if (!targetMeta.isEmpty()) {
-                        targetMetaPermission = flagPermission + "." + targetId.replace(":", ".") + targetMeta;
+                        targetMetaPermission = flagPermission + "." + StringUtils.replace(targetId, ":", ".") + targetMeta;
                     }
                     targetModPermission = flagPermission + "." + targetMod + ".source." + sourceId + targetMeta;
                     targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
@@ -488,7 +487,7 @@ public class GPPermissionHandler {
                 String targetMeta = "";
                 if (m.find()) {
                     targetMeta = m.group(0);
-                    targetId = targetId.replace(targetMeta, "");
+                    targetId = StringUtils.replace(targetId, targetMeta, "");
                 }
                 targetModPermission = flagBasePermission + "." + targetMod + ".source." + sourceId + targetMeta;
                 targetModPermission = StringUtils.replace(targetModPermission, ":", ".");
@@ -585,7 +584,12 @@ public class GPPermissionHandler {
             } else if (obj instanceof BlockSnapshot) {
                 final BlockSnapshot blockSnapshot = (BlockSnapshot) obj;
                 final BlockState blockstate = blockSnapshot.getState();
-                final String id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                String id = "";
+                if (currentEvent != null && !(currentEvent instanceof ChangeBlockEvent.Pre)) {
+                    id = blockstate.getType().getId() + "." + BlockUtils.getBlockStateMeta(blockstate);
+                } else {
+                    id = blockstate.getType().getId();
+                }
                 populateEventSourceTarget(id, isSource);
                 return id.toLowerCase();
             } else if (obj instanceof BlockState) {
@@ -683,20 +687,20 @@ public class GPPermissionHandler {
     }
 
     public static String getTargetPermission(String flagPermission) {
-        flagPermission = flagPermission.replace("griefprevention.flag.", "");
+        flagPermission = StringUtils.replace(flagPermission, "griefprevention.flag.", "");
         boolean found = false;
         for (ClaimFlag flag : ClaimFlag.values()) {
             if (flagPermission.contains(flag.toString() + ".")) {
                 found = true;
             }
-            flagPermission = flagPermission.replace(flag.toString() + ".", "");
+            flagPermission = StringUtils.replace(flagPermission, flag.toString() + ".", "");
         }
         if (!found) {
             return null;
         }
         final int sourceIndex = flagPermission.indexOf(".source.");
         if (sourceIndex != -1) {
-            flagPermission = flagPermission.replace(flagPermission.substring(sourceIndex, flagPermission.length()), "");
+            flagPermission = StringUtils.replace(flagPermission, flagPermission.substring(sourceIndex, flagPermission.length()), "");
         }
 
         return flagPermission;
@@ -710,13 +714,12 @@ public class GPPermissionHandler {
         if (!targetId.isEmpty()) {
             if (!sourceId.isEmpty()) {
                 // move target meta to end of permission
-                Pattern p = Pattern.compile("\\.[\\d+]*$");
-                Matcher m = p.matcher(targetId);
+                Matcher m = PATTERN_META.matcher(targetId);
                 String targetMeta = "";
                 if (m.find()) {
                     targetMeta = m.group(0);
-                    targetId = targetId.replace(targetMeta, "");
-        }
+                    targetId = StringUtils.replace(targetId, targetMeta, "");
+                }
                 targetPermission += "." + targetId + ".source." + sourceId + targetMeta;
             } else {
                 targetPermission += "." + targetId;
@@ -727,12 +730,11 @@ public class GPPermissionHandler {
     }
 
     public static String getIdentifierWithoutMeta(String targetId) {
-        Pattern p = Pattern.compile("\\.[\\d+]*$");
-        Matcher m = p.matcher(targetId);
+        Matcher m = PATTERN_META.matcher(targetId);
         String targetMeta = "";
         if (m.find()) {
             targetMeta = m.group(0);
-            targetId = targetId.replace(targetMeta, "");
+            StringUtils.replace(targetId, targetMeta, "");
         }
         return targetId;
     }

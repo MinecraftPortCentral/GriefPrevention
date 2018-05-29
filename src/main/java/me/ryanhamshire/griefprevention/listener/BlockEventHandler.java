@@ -267,7 +267,6 @@ public class BlockEventHandler {
     // Handle fluids flowing into claims
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockNotify(NotifyNeighborBlockEvent event) {
-        GPTimings.BLOCK_NOTIFY_EVENT.startTimingIfSync();
         LocatableBlock locatableBlock = event.getCause().first(LocatableBlock.class).orElse(null);
         TileEntity tileEntity = event.getCause().first(TileEntity.class).orElse(null);
         Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
@@ -275,7 +274,6 @@ public class BlockEventHandler {
         GPPlayerData playerData = null;
         if (sourceLocation != null) {
             if (GriefPreventionPlugin.isSourceIdBlacklisted("block-notify", event.getSource(), sourceLocation.getExtent().getProperties())) {
-                GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
                 return;
             }
         }
@@ -287,7 +285,6 @@ public class BlockEventHandler {
         if (sourceLocation == null) {
             Player player = event.getCause().first(Player.class).orElse(null);
             if (player == null) {
-                GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
                 return;
             }
 
@@ -300,10 +297,10 @@ public class BlockEventHandler {
         }
 
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(sourceLocation.getExtent().getProperties())) {
-            GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
             return;
         }
 
+        GPTimings.BLOCK_NOTIFY_EVENT.startTimingIfSync();
         Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
         GPClaim targetClaim = null;
         while (iterator.hasNext()) {
@@ -319,19 +316,6 @@ public class BlockEventHandler {
             } else if (!sourceClaim.isWilderness() && targetClaim.isWilderness()) {
                 if (playerData != null) {
                     playerData.setLastInteractData(targetClaim);
-                }
-
-                UUID creator = location.getExtent().getCreator(pos).orElse(null);
-                if (creator == null) {
-                    // check notifier
-                    creator = location.getExtent().getNotifier(pos).orElse(null);
-                }
-
-                if (creator != null) {
-                    User creatorUser = this.userStorageService.get(creator).orElse(null);
-                    if (!sourceClaim.isUserTrusted(creatorUser, TrustType.ACCESSOR)) {
-                        iterator.remove();
-                    }
                 }
                 continue;
             } else if (sourceClaim.id.equals(targetClaim.id)) {

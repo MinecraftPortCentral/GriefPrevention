@@ -461,16 +461,16 @@ public class GPClaimManager implements ClaimManager {
     // gets the claim at a specific location
     // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
     public Claim getClaimAt(Location<World> location, GPClaim cachedClaim) {
-        GPTimings.CLAIM_GETCLAIM.startTimingIfSync();
+        //GPTimings.CLAIM_GETCLAIM.startTimingIfSync();
         // check cachedClaim guess first. if the location is inside it, we're done
         if (cachedClaim != null && !cachedClaim.isWilderness() && cachedClaim.contains(location, true)) {
-            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
+           // GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return cachedClaim;
         }
 
         Set<Claim> claimsInChunk = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(location.getBlockX() >> 4, location.getBlockZ() >> 4));
         if (claimsInChunk == null) {
-            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
+            //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return this.getWildernessClaim();
         }
 
@@ -488,28 +488,28 @@ public class GPClaimManager implements ClaimManager {
                         for (int k = 0; k < innerChild.children.size(); k++) {
                             Claim subChild = innerChild.children.get(k);
                             if (subChild.contains(location)) {
-                                GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
+                               // GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                                 return subChild;
                             }
                         }
 
                         if (innerChild.contains(location)) {
-                            GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
+                            //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                             return innerChild;
                         }
                     }
                     if (child.contains(location)) {
-                        GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
+                        //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                         return child;
                     }
                 }
 
-                GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
+                //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                 return gpClaim;
             }
         }
 
-        GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
+        //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
         // if no claim found, return the world claim
         return this.getWildernessClaim();
     }
