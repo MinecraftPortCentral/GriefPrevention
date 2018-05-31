@@ -735,7 +735,7 @@ public class GPPermissionHandler {
         String targetMeta = "";
         if (m.find()) {
             targetMeta = m.group(0);
-            StringUtils.replace(targetId, targetMeta, "");
+            targetId = StringUtils.replace(targetId, targetMeta, "");
         }
         return targetId;
     }
