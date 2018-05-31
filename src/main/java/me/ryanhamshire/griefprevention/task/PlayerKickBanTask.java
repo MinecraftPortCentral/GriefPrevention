@@ -25,21 +25,20 @@
  */
 package me.ryanhamshire.griefprevention.task;
 
-
-import com.mojang.authlib.GameProfile;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.UserListBansEntry;
-import net.minecraft.util.text.TextComponentTranslation;
+import me.ryanhamshire.griefprevention.GPPlayerData;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.service.ban.BanService;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.common.SpongeImpl;
+import org.spongepowered.api.util.ban.Ban;
+import org.spongepowered.api.util.ban.BanTypes;
 
 //kicks or bans a player
 //need a task for this because async threads (like the chat event handlers) can't kick or ban.
 //but they CAN schedule a task to run in the main thread to do that job
 public class PlayerKickBanTask implements Runnable {
+
+    private final BanService banService = Sponge.getServiceManager().getRegistration(BanService.class).get().getProvider();
 
     // player to kick or ban
     private Player player;
@@ -48,13 +47,12 @@ public class PlayerKickBanTask implements Runnable {
     private Text reason;
 
     // source of ban
-    @SuppressWarnings("unused")
-    private String source;
+    private Text source;
 
     // whether to ban
     private boolean ban;
 
-    public PlayerKickBanTask(Player player, Text reason, String source, boolean ban) {
+    public PlayerKickBanTask(Player player, Text reason, Text source, boolean ban) {
         this.player = player;
         this.reason = reason;
         this.source = source;
@@ -64,17 +62,16 @@ public class PlayerKickBanTask implements Runnable {
     @Override
     public void run() {
         if (this.ban) {
-            MinecraftServer minecraftserver = SpongeImpl.getServer();
-            GameProfile gameprofile = minecraftserver.getPlayerProfileCache().getGameProfileForUsername(player.getName());
-
-            UserListBansEntry userlistbansentry = new UserListBansEntry(gameprofile, null, ((EntityPlayer) player).getName(),
-                    null, this.reason.toPlain());
-            minecraftserver.getPlayerList().getBannedPlayers().addEntry(userlistbansentry);
-            EntityPlayerMP entityplayermp = minecraftserver.getPlayerList().getPlayerByUsername(this.player.getName());
-
-            if (entityplayermp != null) {
-                entityplayermp.connection.disconnect(new TextComponentTranslation("You are banned from this server."));
-            }
+            final Ban banProfile = Ban.builder()
+                    .type(BanTypes.PROFILE)
+                    .source(this.source)
+                    .profile(player.getProfile())
+                    .reason(this.reason)
+                    .build();
+            this.banService.addBan(banProfile);
+            this.player.kick(this.reason);
+        } else {
+            this.player.kick(this.reason);
         }
     }
 }

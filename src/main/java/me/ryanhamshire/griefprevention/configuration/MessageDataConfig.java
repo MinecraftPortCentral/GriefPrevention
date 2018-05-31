@@ -61,9 +61,6 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("avoid-grief-claim-land")
     public TextTemplate avoidGriefClaimLand = TextTemplate.of(TextColors.GREEN, "Prevent grief!  If you claim your land, you will be grief-proof.");
 
-    @Setting(value = "ban-message")
-    public TextTemplate banMessage = TextTemplate.of("Banned for spam.");
-
     @Setting("block-change-from-wilderness")
     public TextTemplate blockChangeFromWilderness = TextTemplate.of(TextColors.RED, "Claim blocks are not allowed to be changed from wilderness.");
 
@@ -716,6 +713,15 @@ public class MessageDataConfig extends ConfigCategory {
 
     @Setting("restore-nature-fillmode-active")
     public TextTemplate restoreNatureFillModeActive = TextTemplate.of(TextColors.GREEN, "Fill mode activated with radius ", TextTemplate.arg("radius"), ". Right click an area to fill.");
+
+    @Setting(value = "smart-ban-message")
+    public TextTemplate smartBanMessage = TextTemplate.of("Attempted to bypass an existing ban.");
+
+    @Setting(value = "spam-ban-message")
+    public TextTemplate spamBanMessage = TextTemplate.of("Banned for spam.");
+
+    @Setting(value = "spam-kick-message")
+    public TextTemplate spamKickMessage = TextTemplate.of("Kicked for spam.");
 
     @Setting("town-create-not-enough-funds")
     public TextTemplate townCreateNotEnoughFunds = TextTemplate.of(TextColors.RED, "You do not have enough funds to create this town for ", TextTemplate.arg("create_cost").color(TextColors.GOLD), ". You currently have a balance of ", TextTemplate.arg("balance").color(TextColors.GOLD), " and need ", TextTemplate.arg("amount_needed").color(TextColors.GOLD), " more for creation.");

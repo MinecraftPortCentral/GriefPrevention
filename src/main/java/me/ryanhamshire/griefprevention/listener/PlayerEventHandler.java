@@ -118,6 +118,7 @@ import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
 import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.service.ban.BanService;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.channel.MessageChannel;
@@ -141,6 +142,7 @@ import org.spongepowered.common.entity.SpongeEntityType;
 import org.spongepowered.common.interfaces.entity.IMixinEntity;
 
 import java.lang.ref.WeakReference;
+import java.net.InetAddress;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -161,6 +163,7 @@ public class PlayerEventHandler {
 
     private final DataStore dataStore;
     private final WorldEditApiProvider worldEditProvider;
+    private final BanService banService;
 
     // list of temporarily banned ip's
     private ArrayList<IpBanInfo> tempBannedIps = new ArrayList<IpBanInfo>();
@@ -178,6 +181,7 @@ public class PlayerEventHandler {
     public PlayerEventHandler(DataStore dataStore, GriefPreventionPlugin plugin) {
         this.dataStore = dataStore;
         this.worldEditProvider = GriefPreventionPlugin.instance.worldEditProvider;
+        this.banService = Sponge.getServiceManager().getRegistration(BanService.class).get().getProvider();
     }
 
     // when a player chats, monitor for spam
@@ -487,14 +491,14 @@ public class PlayerEventHandler {
 
                     // kick and ban
                     PlayerKickBanTask task =
-                            new PlayerKickBanTask(player, GriefPreventionPlugin.instance.messageData.banMessage.toText(), "GriefPrevention Anti-Spam", true);
+                            new PlayerKickBanTask(player, GriefPreventionPlugin.instance.messageData.spamBanMessage.toText(), Text.of("GriefPrevention Anti-Spam"), true);
                     Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPreventionPlugin.instance);
                 } else {
                     // log entry
                     GriefPreventionPlugin.addLogEntry("Kicking " + player.getName() + " for spam.", CustomLogEntryTypes.AdminActivity);
 
                     // just kick
-                    PlayerKickBanTask task = new PlayerKickBanTask(player, Text.of(""), "GriefPrevention Anti-Spam", false);
+                    PlayerKickBanTask task = new PlayerKickBanTask(player, GriefPreventionPlugin.instance.messageData.spamKickMessage.toText(), Text.of("GriefPrevention Anti-Spam"), false);
                     Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(1).execute(task).submit(GriefPreventionPlugin.instance);
                 }
 
@@ -793,6 +797,7 @@ public class PlayerEventHandler {
             return;
         }
 
+        final InetAddress ipAddress = event.getConnection().getAddress().getAddress();
         // all this is anti-spam code
         if (GriefPreventionPlugin.getGlobalConfig().getConfig().spam.monitorEnabled) {
             // FEATURE: login cooldown to prevent login/logout spam with custom clients
@@ -819,9 +824,9 @@ public class PlayerEventHandler {
             }
 
             // if logging-in account is banned, remember IP address for later
-            /*if (GriefPrevention.instance.config_smartBan && event.getResult() == Result.KICK_BANNED) {
-                this.tempBannedIps.add(new IpBanInfo(event.getAddress(), now + this.MILLISECONDS_IN_DAY, player.getName()));
-            }*/
+            if (GriefPreventionPlugin.getGlobalConfig().getConfig().general.smartBan && (this.banService.isBanned(player.getProfile()) || this.banService.isBanned(ipAddress))) {
+                this.tempBannedIps.add(new IpBanInfo(ipAddress, now + this.MILLISECONDS_IN_DAY, player.getName()));
+            }
         }
 
         // remember the player's ip address
@@ -829,7 +834,7 @@ public class PlayerEventHandler {
         final UUID playerUniqueId = player.getUniqueId();
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(worldProperties, playerUniqueId);
         playerData.receivedDropUnlockAdvertisement = false;
-        playerData.ipAddress = event.getConnection().getAddress().getAddress();
+        playerData.ipAddress = ipAddress;
         final GPClaimManager claimWorldManager = this.dataStore.getClaimWorldManager(worldProperties);
         final Instant dateNow = Instant.now();
         for (Claim claim : claimWorldManager.getWorldClaims()) {
@@ -912,49 +917,46 @@ public class PlayerEventHandler {
                 }
 
                 // if we find a match
-                else if (address.equals(playerData.ipAddress.toString())) {/*
-                    UserStorage storage = event.getGame().getServiceManager().provideUnchecked(UserStorage.class);
+                else if (address.equals(playerData.ipAddress.toString())) {
                     // if the account associated with the IP ban has been
                     // pardoned, remove all ip bans for that ip and we're done
-                    User bannedPlayer = storage.get(info.bannedAccountName).get();
-                    /*if (!bannedPlayer.isBanned()) {
+                    if (!banService.isBanned(player.getProfile()) && !banService.isBanned(playerData.ipAddress)) {
                         for (int j = 0; j < this.tempBannedIps.size(); j++) {
                             IpBanInfo info2 = this.tempBannedIps.get(j);
                             if (info2.address.toString().equals(address)) {
-                                User bannedAccount = storage.get(info2.bannedAccountName).get();
-                                bannedAccount.setBanned(false);
                                 this.tempBannedIps.remove(j--);
                             }
                         }
 
                         break;
-                    */}
+                    }
+                }
 
-                    // otherwise if that account is still banned, ban this
-                    // account, too
-                    else {
-                        GriefPreventionPlugin.addLogEntry("Auto-banned " + player.getName()
-                                + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " ("
-                                + info.address.toString() + ").", CustomLogEntryTypes.AdminActivity);
+                // otherwise if that account is still banned, ban this
+                // account, too
+                else {
+                    GriefPreventionPlugin.addLogEntry("Auto-banned " + player.getName()
+                            + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " ("
+                            + info.address.toString() + ").", CustomLogEntryTypes.AdminActivity);
 
-                        // notify any online ops
-                        /*Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
-                        for (Player otherPlayer : players) {
-                            if (otherPlayer.isOp()) {
-                                GriefPrevention.sendMessage(otherPlayer, TextMode.Success, Messages.AutoBanNotify, player.getName(),
-                                        info.bannedAccountName);
-                            }
-                        }*/
+                    // notify any online ops
+                    /*Collection<Player> players = (Collection<Player>) Sponge.getGame().getServer().getOnlinePlayers();
+                    for (Player otherPlayer : players) {
+                        if (otherPlayer.isOp()) {
+                            GriefPrevention.sendMessage(otherPlayer, TextMode.Success, Messages.AutoBanNotify, player.getName(),
+                                    info.bannedAccountName);
+                        }
+                    }*/
 
-                        // ban player
-                        PlayerKickBanTask task =
-                                new PlayerKickBanTask(player, Text.of(""), "GriefPrevention Smart Ban - Shared Login:" + info.bannedAccountName, true);
-                        Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPreventionPlugin.instance);
+                    // ban player
+                    PlayerKickBanTask task =
+                            new PlayerKickBanTask(player, GriefPreventionPlugin.instance.messageData.smartBanMessage.toText(), Text.of("GriefPrevention Smart Ban - Shared Login:" + info.bannedAccountName), true);
+                    Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(10).execute(task).submit(GriefPreventionPlugin.instance);
 
-                        // silence join message
-                        event.setMessage(Text.of());
+                    // silence join message
+                    event.setMessage(Text.of());
 
-                        break;
+                    break;
                 }
             }
         }
@@ -1045,11 +1047,9 @@ public class PlayerEventHandler {
         UUID playerID = player.getUniqueId();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), playerID);
         boolean isBanned = false;
-/*        if (playerData.wasKicked) {
-            isBanned = player.isBanned();
-        } else {
-            isBanned = false;
-        }*/
+        if (playerData.wasKicked) {
+            isBanned = this.banService.isBanned(player.getProfile()) || (playerData.ipAddress != null && this.banService.isBanned(playerData.ipAddress));
+        }
 
         // if banned, add IP to the temporary IP ban list
         if (isBanned && playerData.ipAddress != null) {
