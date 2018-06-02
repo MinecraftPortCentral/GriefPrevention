@@ -155,9 +155,6 @@ public class BlockEventHandler {
                 }
 
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
-                if (targetClaim.isWilderness()) {
-                    continue;
-                }
                 if (location.getBlockType() == BlockTypes.AIR) {
                     continue;
                 }
