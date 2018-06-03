@@ -233,6 +233,10 @@ public class EntityEventHandler {
                     permission = GPPermissions.ENTITY_CHUNK_SPAWN;
                 }
 
+                if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
+                    return true;
+                }
+
                 if (!isChunkSpawn && (entity instanceof EntityItem || entity instanceof EntityXPOrb)) {
                     if (user == null) {
                         return true;
@@ -241,9 +245,6 @@ public class EntityEventHandler {
                         return true;
                     }
                     if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_SPAWN.toString(), entity, world.getProperties())) {
-                        return true;
-                    }
-                    if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                         return true;
                     }
                     permission = GPPermissions.ITEM_SPAWN;

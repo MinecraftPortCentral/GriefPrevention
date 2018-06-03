@@ -1467,11 +1467,6 @@ public class PlayerEventHandler {
 
         final Vector3d interactPoint = event.getInteractionPoint().orElse(null);
         final Entity entity = context.get(EventContextKeys.ENTITY_HIT).orElse(null);
-        if (entity != null || (blockSnapshot != null && blockSnapshot != BlockSnapshot.NONE)) {
-            // Handle this in interact block/entity events
-            return;
-        }
-
         final Location<World> location = entity != null ? entity.getLocation() 
                 : blockSnapshot != BlockSnapshot.NONE ? blockSnapshot.getLocation().get() 
                         : interactPoint != null ? new Location<World>(world, interactPoint) 
