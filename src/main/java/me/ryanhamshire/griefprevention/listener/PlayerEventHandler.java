@@ -1444,6 +1444,12 @@ public class PlayerEventHandler {
     public void onPlayerInteractItem(InteractItemEvent event, @Root Player player) {
         final World world = player.getWorld();
         final ItemType playerItem = event.getItemStack().getType();
+        final HandInteractEvent handEvent = (HandInteractEvent) event;
+        final ItemStack itemInHand = player.getItemInHand(handEvent.getHandType()).orElse(ItemStack.empty());
+        if (itemInHand.isEmpty() || playerItem instanceof ItemFood) {
+            return;
+        }
+
         if ((!GPFlags.INTERACT_ITEM_PRIMARY && !GPFlags.INTERACT_ITEM_SECONDARY) || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
@@ -1454,9 +1460,6 @@ public class PlayerEventHandler {
             return;
         }
 
-        final HandInteractEvent handEvent = (HandInteractEvent) event;
-        // always reset last interact result
-        final ItemStack itemInHand = player.getItemInHand(handEvent.getHandType()).orElse(ItemStack.empty());
         final boolean primaryEvent = event instanceof InteractItemEvent.Primary ? true : false;
         final Cause cause = event.getCause();
         final EventContext context = cause.getContext();
@@ -1472,9 +1475,6 @@ public class PlayerEventHandler {
                         : interactPoint != null ? new Location<World>(world, interactPoint) 
                                 : player.getLocation();
         final GPClaim claim = this.dataStore.getClaimAt(location);
-        if ((itemInHand.isEmpty() || playerItem instanceof ItemFood) && blockSnapshot == BlockSnapshot.NONE && entity == null) {
-            return;
-        }
 
         final String ITEM_PERMISSION = primaryEvent ? GPPermissions.INTERACT_ITEM_PRIMARY : GPPermissions.INTERACT_ITEM_SECONDARY;
         if ((itemPrimaryBlacklisted && ITEM_PERMISSION.equals(GPPermissions.INTERACT_ITEM_PRIMARY)) || (itemSecondaryBlacklisted && ITEM_PERMISSION.equals(GPPermissions.INTERACT_ITEM_SECONDARY))) {
