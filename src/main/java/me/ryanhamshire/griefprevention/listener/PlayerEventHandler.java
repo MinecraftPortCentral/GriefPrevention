@@ -1658,7 +1658,7 @@ public class PlayerEventHandler {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 return;
             }
-            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, source, clickedBlock.getState(), player, TrustType.BUILDER, true) == Tristate.TRUE) {
+            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.BLOCK_BREAK, player, clickedBlock.getState(), player, TrustType.BUILDER, true) == Tristate.TRUE) {
                 GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
                 playerData.setLastInteractData(claim);
                 return;
