@@ -2123,13 +2123,19 @@ public class GriefPreventionPlugin {
     }
 
     public static boolean isSourceIdBlacklisted(String flag, Object source, WorldProperties worldProperties) {
+        final List<String> flagList = GPBlacklists.blacklistMap.get(flag);
+        final boolean checkFlag = flagList != null && !flagList.isEmpty();
+        if (!checkFlag && !GPBlacklists.GLOBAL_SOURCE) {
+            return false;
+        }
+
         final GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(worldProperties);
         final String id = GPPermissionHandler.getPermissionIdentifier(source);
         final String idNoMeta = GPPermissionHandler.getIdentifierWithoutMeta(id);
 
         // Check global
-        final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
         if (GPBlacklists.GLOBAL_SOURCE) {
+            final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
             final List<String> globalSourceBlacklist = blacklistCategory.getGlobalSourceBlacklist();
             if (globalSourceBlacklist == null) {
                 return false;
@@ -2144,16 +2150,14 @@ public class GriefPreventionPlugin {
             }
         }
         // Check flag
-        final List<String> flagBlacklist = blacklistCategory.getFlagBlacklist(flag);
-        if (flagBlacklist == null) {
-            return false;
-        }
-        for (String str : flagBlacklist) {
-            if (FilenameUtils.wildcardMatch(id, str)) {
-                return true;
-            }
-            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
-                return true;
+        if (checkFlag) {
+            for (String str : flagList) {
+                if (FilenameUtils.wildcardMatch(id, str)) {
+                    return true;
+                }
+                if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                    return true;
+                }
             }
         }
 
@@ -2161,13 +2165,19 @@ public class GriefPreventionPlugin {
     }
 
     public static boolean isTargetIdBlacklisted(String flag, Object target, WorldProperties worldProperties) {
+        final List<String> flagList = GPBlacklists.blacklistMap.get(flag);
+        final boolean checkFlag = flagList != null && !flagList.isEmpty();
+        if (!checkFlag && !GPBlacklists.GLOBAL_TARGET) {
+            return false;
+        }
+
         final GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(worldProperties);
         final String id = GPPermissionHandler.getPermissionIdentifier(target);
         final String idNoMeta = GPPermissionHandler.getIdentifierWithoutMeta(id);
 
         // Check global
-        final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
         if (GPBlacklists.GLOBAL_TARGET) {
+            final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
             final List<String> globalTargetBlacklist = blacklistCategory.getGlobalTargetBlacklist();
             if (globalTargetBlacklist == null) {
                 return false;
@@ -2182,16 +2192,14 @@ public class GriefPreventionPlugin {
             }
         }
         // Check flag
-        final List<String> flagBlacklist = blacklistCategory.getFlagBlacklist(flag);
-        if (flagBlacklist == null) {
-            return false;
-        }
-        for (String str : flagBlacklist) {
-            if (FilenameUtils.wildcardMatch(id, str)) {
-                return true;
-            }
-            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
-                return true;
+        if (checkFlag) {
+            for (String str : flagList) {
+                if (FilenameUtils.wildcardMatch(id, str)) {
+                    return true;
+                }
+                if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                    return true;
+                }
             }
         }
 

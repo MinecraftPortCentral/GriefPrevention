@@ -107,7 +107,7 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPre(ChangeBlockEvent.Pre event) {
-        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_PRE) && GriefPreventionPlugin.isSourceIdBlacklisted("block-pre", event.getSource(), event.getLocations().get(0).getExtent().getProperties())) {
+        if (GriefPreventionPlugin.isSourceIdBlacklisted("block-pre", event.getSource(), event.getLocations().get(0).getExtent().getProperties())) {
             return;
         }
 
@@ -150,7 +150,7 @@ public class BlockEventHandler {
             final Player player = (Player) source;
             GPClaim targetClaim = null;
             for (Location<World> location : event.getLocations()) {
-                if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.BLOCK_BREAK) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
+                if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                    return;
                 }
@@ -301,7 +301,7 @@ public class BlockEventHandler {
         GPClaim sourceClaim = null;
         GPPlayerData playerData = null;
         if (sourceLocation != null) {
-            if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_NOTIFY) && GriefPreventionPlugin.isSourceIdBlacklisted("block-notify", event.getSource(), sourceLocation.getExtent().getProperties())) {
+            if (GriefPreventionPlugin.isSourceIdBlacklisted("block-notify", event.getSource(), sourceLocation.getExtent().getProperties())) {
                 return;
             }
         }
@@ -379,10 +379,10 @@ public class BlockEventHandler {
         if (!GPFlags.ENTITY_COLLIDE_BLOCK || source instanceof EntityFallingBlock) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.ENTITY_COLLIDE_BLOCK) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.ENTITY_COLLIDE_BLOCK) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), event.getTargetBlock(), source.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), event.getTargetBlock(), source.getWorld().getProperties())) {
             return;
         }
 
@@ -497,7 +497,7 @@ public class BlockEventHandler {
         }
 
         final Entity source = (Entity) event.getSource();
-        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.PROJECTILE_IMPACT_BLOCK) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
             return;
         }
 
@@ -539,7 +539,7 @@ public class BlockEventHandler {
         }
 
         final Object source = event.getCause().root();
-        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.EXPLOSION) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.EXPLOSION.toString(), source, event.getExplosion().getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.EXPLOSION.toString(), source, event.getExplosion().getWorld().getProperties())) {
             return;
         }
 
@@ -591,7 +591,7 @@ public class BlockEventHandler {
         }
 
         final Object source = event.getSource();
-        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_BREAK) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), source, world.getProperties())) {
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), source, world.getProperties())) {
             return;
         }
 
@@ -626,7 +626,7 @@ public class BlockEventHandler {
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : transactions) {
-            if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.BLOCK_BREAK) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), transaction.getOriginal(), world.getProperties())) {
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), transaction.getOriginal(), world.getProperties())) {
                 continue;
             }
 
@@ -664,7 +664,7 @@ public class BlockEventHandler {
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_PLACE) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), event.getSource(), world.getProperties())) {
+        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), event.getSource(), world.getProperties())) {
             return;
         }
 
@@ -704,7 +704,7 @@ public class BlockEventHandler {
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
             final BlockSnapshot block = transaction.getFinal();
-            if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.BLOCK_PLACE) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), block, world.getProperties())) {
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), block, world.getProperties())) {
                 continue;
             }
 

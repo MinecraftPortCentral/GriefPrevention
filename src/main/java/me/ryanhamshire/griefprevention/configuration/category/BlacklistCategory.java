@@ -37,115 +37,115 @@ import javax.annotation.Nullable;
 public class BlacklistCategory extends ConfigCategory {
 
     @Setting(value = "global-source", comment = "A global list of source id's that are ignored by events. \nNote: This only affects events where the id specified is the source.")
-    private List<String> globalSourceBlacklist = new ArrayList<>();
+    public List<String> globalSourceBlacklist = new ArrayList<>();
 
     @Setting(value = "global-target", comment = "A global list of target id's that are ignored by events. \nNote: This only affects events where the id specified is the target.")
-    private List<String> globalTargetBlacklist = new ArrayList<>();
+    public List<String> globalTargetBlacklist = new ArrayList<>();
 
     @Setting(value = "block-pre")
-    private List<String> blacklistBlockPre = new ArrayList<>();
+    public List<String> blacklistBlockPre = new ArrayList<>();
 
     @Setting(value = "block-break")
-    private List<String> blacklistBlockBreak = new ArrayList<>();
+    public List<String> blacklistBlockBreak = new ArrayList<>();
 
     @Setting(value = "block-notify")
-    private List<String> blacklistBlockNotify = new ArrayList<>();
+    public List<String> blacklistBlockNotify = new ArrayList<>();
 
     @Setting(value = "block-place")
-    private List<String> blacklistBlockPlace = new ArrayList<>();
+    public List<String> blacklistBlockPlace = new ArrayList<>();
 
     @Setting(value = "command-execute")
-    private List<String> blacklistCommandExecute = new ArrayList<>();
+    public List<String> blacklistCommandExecute = new ArrayList<>();
 
     @Setting(value = "command-execute-pvp")
-    private List<String> blacklistCommandExecutePvp = new ArrayList<>();
+    public List<String> blacklistCommandExecutePvp = new ArrayList<>();
 
     @Setting(value = "enter-claim")
-    private List<String> blacklistEnterClaim = new ArrayList<>();
+    public List<String> blacklistEnterClaim = new ArrayList<>();
 
     @Setting(value = "entity-chunk-spawn")
-    private List<String> blacklistEntityChunkSpawn = new ArrayList<>();
+    public List<String> blacklistEntityChunkSpawn = new ArrayList<>();
 
     @Setting(value = "entity-collide-block")
-    private List<String> blacklistEntityCollideBlock = new ArrayList<>();
+    public List<String> blacklistEntityCollideBlock = new ArrayList<>();
 
     @Setting(value = "entity-collide-entity")
-    private List<String> blacklistEntityCollideEntity = new ArrayList<>();
+    public List<String> blacklistEntityCollideEntity = new ArrayList<>();
 
     @Setting(value = "entity-damage")
-    private List<String> blacklistEntityDamage = new ArrayList<>();
+    public List<String> blacklistEntityDamage = new ArrayList<>();
 
     @Setting(value = "entity-riding")
-    private List<String> blacklistEntityRiding = new ArrayList<>();
+    public List<String> blacklistEntityRiding = new ArrayList<>();
 
     @Setting(value = "entity-spawn")
-    private List<String> blacklistEntitySpawn = new ArrayList<>();
+    public List<String> blacklistEntitySpawn = new ArrayList<>();
 
     @Setting(value = "entity-teleport-from")
-    private List<String> blacklistEntityTeleportFrom = new ArrayList<>();
+    public List<String> blacklistEntityTeleportFrom = new ArrayList<>();
 
     @Setting(value = "entity-teleport-to")
-    private List<String> blacklistEntityTeleportTo = new ArrayList<>();
+    public List<String> blacklistEntityTeleportTo = new ArrayList<>();
 
     @Setting(value = "exit-claim")
-    private List<String> blacklistExitClaim = new ArrayList<>();
+    public List<String> blacklistExitClaim = new ArrayList<>();
 
     @Setting(value = "explosion")
-    private List<String> blacklistExplosion = new ArrayList<>();
+    public List<String> blacklistExplosion = new ArrayList<>();
 
     @Setting(value = "explosion-surface")
-    private List<String> blacklistExplosionSurface = new ArrayList<>();
+    public List<String> blacklistExplosionSurface = new ArrayList<>();
 
     @Setting(value = "fire-spread")
-    private List<String> blacklistFireSpread = new ArrayList<>();
+    public List<String> blacklistFireSpread = new ArrayList<>();
 
     @Setting(value = "interact-block-primary")
-    private List<String> blacklistInteractBlockPrimary = new ArrayList<>();
+    public List<String> blacklistInteractBlockPrimary = new ArrayList<>();
 
     @Setting(value = "interact-block-secondary")
-    private List<String> blacklistInteractBlockSecondary = new ArrayList<>();
+    public List<String> blacklistInteractBlockSecondary = new ArrayList<>();
 
     @Setting(value = "interact-entity-primary")
-    private List<String> blacklistInteractEntityPrimary = new ArrayList<>();
+    public List<String> blacklistInteractEntityPrimary = new ArrayList<>();
 
     @Setting(value = "interact-entity-secondary")
-    private List<String> blacklistInteractEntitySecondary = new ArrayList<>();
+    public List<String> blacklistInteractEntitySecondary = new ArrayList<>();
 
     @Setting(value = "interact-inventory")
-    private List<String> blacklistInteractInventory = new ArrayList<>();
+    public List<String> blacklistInteractInventory = new ArrayList<>();
 
     @Setting(value = "interact-item-primary")
-    private List<String> blacklistInteractItemPrimary = new ArrayList<>();
+    public List<String> blacklistInteractItemPrimary = new ArrayList<>();
 
     @Setting(value = "interact-item-secondary")
-    private List<String> blacklistInteractItemSecondary = new ArrayList<>();
+    public List<String> blacklistInteractItemSecondary = new ArrayList<>();
 
     @Setting(value = "interact-inventory-click")
-    private List<String> blacklistInteractInventoryClick = new ArrayList<>();
+    public List<String> blacklistInteractInventoryClick = new ArrayList<>();
 
     @Setting(value = "item-drop")
-    private List<String> blacklistItemDrop = new ArrayList<>();
+    public List<String> blacklistItemDrop = new ArrayList<>();
 
     @Setting(value = "item-pickup")
-    private List<String> blacklistItemPickup = new ArrayList<>();
+    public List<String> blacklistItemPickup = new ArrayList<>();
 
     @Setting(value = "item-spawn")
-    private List<String> blacklistItemSpawn = new ArrayList<>();
+    public List<String> blacklistItemSpawn = new ArrayList<>();
 
     @Setting(value = "item-use")
-    private List<String> blacklistItemUse = new ArrayList<>();
+    public List<String> blacklistItemUse = new ArrayList<>();
 
     @Setting(value = "liquid-flow")
-    private List<String> blacklistLiquidFlow = new ArrayList<>();
+    public List<String> blacklistLiquidFlow = new ArrayList<>();
 
     @Setting(value = "portal-use")
-    private List<String> blacklistPortalUse = new ArrayList<>();
+    public List<String> blacklistPortalUse = new ArrayList<>();
 
     @Setting(value = "projectile-impact-block")
-    private List<String> blacklistProjectileImpactBlock = new ArrayList<>();
+    public List<String> blacklistProjectileImpactBlock = new ArrayList<>();
 
     @Setting(value = "projectile-impact-entity")
-    private List<String> blacklistProjectileImpactEntity = new ArrayList<>();
+    public List<String> blacklistProjectileImpactEntity = new ArrayList<>();
 
     public List<String> getGlobalSourceBlacklist() {
         return this.globalSourceBlacklist;
@@ -155,6 +155,7 @@ public class BlacklistCategory extends ConfigCategory {
         return this.globalTargetBlacklist;
     }
 
+    // Used by API
     @Nullable
     public List<String> getFlagBlacklist(String flag) {
         if (flag.equalsIgnoreCase("block-pre")) {

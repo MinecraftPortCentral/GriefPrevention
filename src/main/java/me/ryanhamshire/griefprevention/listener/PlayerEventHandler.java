@@ -588,8 +588,8 @@ public class PlayerEventHandler {
         if (!GPFlags.COMMAND_EXECUTE && !GPFlags.COMMAND_EXECUTE_PVP) {
             return;
         }
-        final boolean commandExecuteSourceBlacklisted = (GPBlacklists.GLOBAL_SOURCE || GPBlacklists.COMMAND_EXECUTE) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.COMMAND_EXECUTE.toString(),event.getSource(), player.getWorld().getProperties());
-        final boolean commandExecutePvpSourceBlacklisted = (GPBlacklists.GLOBAL_SOURCE || GPBlacklists.COMMAND_EXECUTE_PVP) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.COMMAND_EXECUTE_PVP.toString(),event.getSource(), player.getWorld().getProperties());
+        final boolean commandExecuteSourceBlacklisted = GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.COMMAND_EXECUTE.toString(),event.getSource(), player.getWorld().getProperties());
+        final boolean commandExecutePvpSourceBlacklisted = GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.COMMAND_EXECUTE_PVP.toString(),event.getSource(), player.getWorld().getProperties());
 
         GPTimings.PLAYER_COMMAND_EVENT.startTimingIfSync();
         String command = event.getCommand();
@@ -638,8 +638,8 @@ public class PlayerEventHandler {
             argument = argument + "." + arg;
         }
 
-        final boolean commandExecuteTargetBlacklisted = (GPBlacklists.GLOBAL_TARGET || GPBlacklists.COMMAND_EXECUTE) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.COMMAND_EXECUTE.toString(), commandPermission + argument, player.getWorld().getProperties());
-        final boolean commandExecutePvpTargetBlacklisted = (GPBlacklists.GLOBAL_TARGET || GPBlacklists.COMMAND_EXECUTE_PVP) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), commandPermission + argument, player.getWorld().getProperties());
+        final boolean commandExecuteTargetBlacklisted = GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.COMMAND_EXECUTE.toString(), commandPermission + argument, player.getWorld().getProperties());
+        final boolean commandExecutePvpTargetBlacklisted = GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.COMMAND_EXECUTE_PVP.toString(), commandPermission + argument, player.getWorld().getProperties());
         if (GPFlags.COMMAND_EXECUTE && !commandExecuteSourceBlacklisted && !commandExecuteTargetBlacklisted) {
             final Tristate result = GPPermissionHandler.getClaimPermission(event, player.getLocation(), claim, GPPermissions.COMMAND_EXECUTE, event.getSource(), commandPermission + argument, player);
             if (result == Tristate.TRUE) {
@@ -1157,7 +1157,7 @@ public class PlayerEventHandler {
         }
 
         for (Entity entityItem : event.getEntities()) {
-            if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.ITEM_DROP) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), entityItem, world.getProperties())) {
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), entityItem, world.getProperties())) {
                 continue;
             }
 
@@ -1215,7 +1215,7 @@ public class PlayerEventHandler {
         if (blockSnapshot == BlockSnapshot.NONE) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_INVENTORY) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_INVENTORY.toString(), blockSnapshot, player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_INVENTORY.toString(), blockSnapshot, player.getWorld().getProperties())) {
             return;
         }
 
@@ -1242,7 +1242,7 @@ public class PlayerEventHandler {
         if (cursor == ItemStackSnapshot.NONE || !GPFlags.ITEM_DROP || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.ITEM_DROP) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), cursor, player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), cursor, player.getWorld().getProperties())) {
             return;
         }
 
@@ -1274,7 +1274,7 @@ public class PlayerEventHandler {
         final ItemStackSnapshot cursorItem = event.getCursorTransaction().getOriginal();
         // check if original cursor item can be dropped
         if (isDrop && cursorItem != ItemStackSnapshot.NONE) {
-            final boolean itemDropBlacklisted = (GPBlacklists.GLOBAL_TARGET || GPBlacklists.ITEM_DROP) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), cursorItem, player.getWorld().getProperties());
+            final boolean itemDropBlacklisted = GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), cursorItem, player.getWorld().getProperties());
             if (!itemDropBlacklisted && GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_DROP, player, cursorItem, player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                 Text message = GriefPreventionPlugin.instance.messageData.permissionItemDrop
                         .apply(ImmutableMap.of(
@@ -1291,7 +1291,7 @@ public class PlayerEventHandler {
                 continue;
             }
 
-            if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_INVENTORY_CLICK) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), transaction.getOriginal(), player.getWorld().getProperties())) {
+            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_INVENTORY_CLICK.toString(), transaction.getOriginal(), player.getWorld().getProperties())) {
                 continue;
             }
 
@@ -1308,7 +1308,7 @@ public class PlayerEventHandler {
             }
 
             if (isDrop && transaction.getFinal() != ItemStackSnapshot.NONE) {
-                if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.ITEM_DROP) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), transaction.getFinal(), player.getWorld().getProperties())) {
+                if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_DROP.toString(), transaction.getFinal(), player.getWorld().getProperties())) {
                     continue;
                 }
 
@@ -1338,7 +1338,7 @@ public class PlayerEventHandler {
         final HandType handType = event.getHandType();
         final ItemStack itemInHand = player.getItemInHand(handType).orElse(ItemStack.empty());
         final Object source = !itemInHand.isEmpty() ? itemInHand : player;
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_ENTITY_PRIMARY) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), targetEntity, player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_PRIMARY.toString(), targetEntity, player.getWorld().getProperties())) {
             return;
         }
 
@@ -1370,7 +1370,7 @@ public class PlayerEventHandler {
         final HandType handType = event.getHandType();
         final ItemStack itemInHand = player.getItemInHand(handType).orElse(ItemStack.empty());
         final Object source = !itemInHand.isEmpty() ? itemInHand : player;
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_ENTITY_SECONDARY) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), targetEntity, player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ENTITY_SECONDARY.toString(), targetEntity, player.getWorld().getProperties())) {
             return;
         }
 
@@ -1458,8 +1458,8 @@ public class PlayerEventHandler {
             return;
         }
 
-        final boolean itemPrimaryBlacklisted = (GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_ITEM_PRIMARY) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), playerItem, player.getWorld().getProperties());
-        final boolean itemSecondaryBlacklisted = (GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_ITEM_SECONDARY) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), playerItem, player.getWorld().getProperties());
+        final boolean itemPrimaryBlacklisted = GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), playerItem, player.getWorld().getProperties());
+        final boolean itemSecondaryBlacklisted = GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), playerItem, player.getWorld().getProperties());
         if (itemPrimaryBlacklisted && itemSecondaryBlacklisted) {
             return;
         }
@@ -1502,7 +1502,7 @@ public class PlayerEventHandler {
         if (!GPFlags.ITEM_PICKUP || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.ITEM_PICKUP) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_PICKUP.toString(), event.getTargetEntity(), player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_PICKUP.toString(), event.getTargetEntity(), player.getWorld().getProperties())) {
             return;
         }
 
@@ -1609,7 +1609,7 @@ public class PlayerEventHandler {
         if (!GPFlags.ITEM_USE || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.ITEM_USE) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_USE.toString(), event.getItemStackInUse().getType(), player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ITEM_USE.toString(), event.getItemStackInUse().getType(), player.getWorld().getProperties())) {
             return;
         }
 
@@ -1639,7 +1639,7 @@ public class PlayerEventHandler {
         if (!GPFlags.INTERACT_BLOCK_PRIMARY || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_BLOCK_PRIMARY) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), event.getTargetBlock().getState(), player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_PRIMARY.toString(), event.getTargetBlock().getState(), player.getWorld().getProperties())) {
             return;
         }
 
@@ -1687,7 +1687,7 @@ public class PlayerEventHandler {
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
-        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.INTERACT_BLOCK_SECONDARY) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), event.getTargetBlock().getState(), player.getWorld().getProperties())) {
+        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_BLOCK_SECONDARY.toString(), event.getTargetBlock().getState(), player.getWorld().getProperties())) {
             return;
         }
 
@@ -1722,7 +1722,7 @@ public class PlayerEventHandler {
             if (result == Tristate.FALSE) {
                 // if player is holding an item, check if it can be placed
                 if (GPFlags.BLOCK_PLACE && !itemInHand.isEmpty() && itemInHand instanceof ItemBlock) {
-                    if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.BLOCK_PLACE) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), itemInHand, player.getWorld().getProperties())) {
+                    if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), itemInHand, player.getWorld().getProperties())) {
                         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                         return;
                     }
