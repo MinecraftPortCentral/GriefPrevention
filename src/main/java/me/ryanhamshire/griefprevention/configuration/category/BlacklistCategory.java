@@ -147,9 +147,6 @@ public class BlacklistCategory extends ConfigCategory {
     @Setting(value = "projectile-impact-entity")
     private List<String> blacklistProjectileImpactEntity = new ArrayList<>();
 
-    public List<String> getBlockBreakBlacklist() {
-        return this.blacklistBlockBreak;
-    }
     public List<String> getGlobalSourceBlacklist() {
         return this.globalSourceBlacklist;
     }

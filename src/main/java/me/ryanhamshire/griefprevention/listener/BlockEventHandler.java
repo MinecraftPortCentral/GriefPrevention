@@ -39,6 +39,7 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
+import me.ryanhamshire.griefprevention.permission.GPBlacklists;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.BlockPosCache;
@@ -106,7 +107,7 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPre(ChangeBlockEvent.Pre event) {
-        if (GriefPreventionPlugin.isSourceIdBlacklisted("block-pre", event.getSource(), event.getLocations().get(0).getExtent().getProperties())) {
+        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_PRE) && GriefPreventionPlugin.isSourceIdBlacklisted("block-pre", event.getSource(), event.getLocations().get(0).getExtent().getProperties())) {
             return;
         }
 
@@ -149,7 +150,7 @@ public class BlockEventHandler {
             final Player player = (Player) source;
             GPClaim targetClaim = null;
             for (Location<World> location : event.getLocations()) {
-                if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
+                if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.BLOCK_BREAK) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                    return;
                 }
@@ -300,7 +301,7 @@ public class BlockEventHandler {
         GPClaim sourceClaim = null;
         GPPlayerData playerData = null;
         if (sourceLocation != null) {
-            if (GriefPreventionPlugin.isSourceIdBlacklisted("block-notify", event.getSource(), sourceLocation.getExtent().getProperties())) {
+            if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_NOTIFY) && GriefPreventionPlugin.isSourceIdBlacklisted("block-notify", event.getSource(), sourceLocation.getExtent().getProperties())) {
                 return;
             }
         }
@@ -378,10 +379,10 @@ public class BlockEventHandler {
         if (!GPFlags.ENTITY_COLLIDE_BLOCK || source instanceof EntityFallingBlock) {
             return;
         }
-        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
+        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.ENTITY_COLLIDE_BLOCK) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
             return;
         }
-        if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), event.getTargetBlock(), source.getWorld().getProperties())) {
+        if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.ENTITY_COLLIDE_BLOCK) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ENTITY_COLLIDE_BLOCK.toString(), event.getTargetBlock(), source.getWorld().getProperties())) {
             return;
         }
 
@@ -496,7 +497,7 @@ public class BlockEventHandler {
         }
 
         final Entity source = (Entity) event.getSource();
-        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
+        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.PROJECTILE_IMPACT_BLOCK) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), source.getType().getId(), source.getWorld().getProperties())) {
             return;
         }
 
@@ -538,7 +539,7 @@ public class BlockEventHandler {
         }
 
         final Object source = event.getCause().root();
-        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.EXPLOSION.toString(), source, event.getExplosion().getWorld().getProperties())) {
+        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.EXPLOSION) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.EXPLOSION.toString(), source, event.getExplosion().getWorld().getProperties())) {
             return;
         }
 
@@ -590,7 +591,7 @@ public class BlockEventHandler {
         }
 
         final Object source = event.getSource();
-        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), source, world.getProperties())) {
+        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_BREAK) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), source, world.getProperties())) {
             return;
         }
 
@@ -625,7 +626,7 @@ public class BlockEventHandler {
         List<Transaction<BlockSnapshot>> transactions = event.getTransactions();
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : transactions) {
-            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), transaction.getOriginal(), world.getProperties())) {
+            if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.BLOCK_BREAK) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), transaction.getOriginal(), world.getProperties())) {
                 continue;
             }
 
@@ -663,7 +664,7 @@ public class BlockEventHandler {
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
-        if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), event.getSource(), world.getProperties())) {
+        if ((GPBlacklists.GLOBAL_SOURCE || GPBlacklists.BLOCK_PLACE) && GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), event.getSource(), world.getProperties())) {
             return;
         }
 
@@ -703,7 +704,7 @@ public class BlockEventHandler {
         GPClaim targetClaim = null;
         for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
             final BlockSnapshot block = transaction.getFinal();
-            if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), block, world.getProperties())) {
+            if ((GPBlacklists.GLOBAL_TARGET || GPBlacklists.BLOCK_PLACE) && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), block, world.getProperties())) {
                 continue;
             }
 

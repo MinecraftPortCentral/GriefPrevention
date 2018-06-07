@@ -127,6 +127,7 @@ import me.ryanhamshire.griefprevention.listener.PlayerEventHandler;
 import me.ryanhamshire.griefprevention.listener.WorldEventHandler;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.logging.CustomLogger;
+import me.ryanhamshire.griefprevention.permission.GPBlacklists;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
@@ -1789,6 +1790,7 @@ public class GriefPreventionPlugin {
                 // refresh default permissions
                 this.dataStore.setupDefaultPermissions(world);
             }
+            GPBlacklists.populateBlacklistStatus();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -2127,16 +2129,18 @@ public class GriefPreventionPlugin {
 
         // Check global
         final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
-        final List<String> globalSourceBlacklist = blacklistCategory.getGlobalSourceBlacklist();
-        if (globalSourceBlacklist == null) {
-            return false;
-        }
-        for (String str : globalSourceBlacklist) {
-            if (FilenameUtils.wildcardMatch(id, str)) {
-                return true;
+        if (GPBlacklists.GLOBAL_SOURCE) {
+            final List<String> globalSourceBlacklist = blacklistCategory.getGlobalSourceBlacklist();
+            if (globalSourceBlacklist == null) {
+                return false;
             }
-            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
-                return true;
+            for (String str : globalSourceBlacklist) {
+                if (FilenameUtils.wildcardMatch(id, str)) {
+                    return true;
+                }
+                if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                    return true;
+                }
             }
         }
         // Check flag
@@ -2163,16 +2167,18 @@ public class GriefPreventionPlugin {
 
         // Check global
         final BlacklistCategory blacklistCategory = activeConfig.getConfig().blacklist;
-        final List<String> globalTargetBlacklist = blacklistCategory.getGlobalTargetBlacklist();
-        if (globalTargetBlacklist == null) {
-            return false;
-        }
-        for (String str : globalTargetBlacklist) {
-            if (FilenameUtils.wildcardMatch(id, str)) {
-                return true;
+        if (GPBlacklists.GLOBAL_TARGET) {
+            final List<String> globalTargetBlacklist = blacklistCategory.getGlobalTargetBlacklist();
+            if (globalTargetBlacklist == null) {
+                return false;
             }
-            if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
-                return true;
+            for (String str : globalTargetBlacklist) {
+                if (FilenameUtils.wildcardMatch(id, str)) {
+                    return true;
+                }
+                if (FilenameUtils.wildcardMatch(idNoMeta, str)) {
+                    return true;
+                }
             }
         }
         // Check flag
