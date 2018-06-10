@@ -217,6 +217,10 @@ public class EntityEventHandler {
 
             @Override
             public boolean test(Entity entity) {
+                if (entity instanceof EntityXPOrb) {
+                    return true;
+                }
+
                 if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.ENTITY_SPAWN.toString(), entity, world.getProperties())) {
                     return true;
                 }
@@ -238,7 +242,7 @@ public class EntityEventHandler {
                     return true;
                 }
 
-                if (!isChunkSpawn && (entity instanceof EntityItem || entity instanceof EntityXPOrb)) {
+                if (entity instanceof EntityItem) {
                     if (user == null) {
                         return true;
                     }
@@ -269,7 +273,10 @@ public class EntityEventHandler {
                             }
                         }
                     }
+
+                    return true;
                 }
+
                 if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
                     return false;
                 }
