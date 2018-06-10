@@ -197,7 +197,7 @@ if (project.hasProperty('forgeJenkinsPass')) {
     task changelog(type: JenkinsChangelog) {
         outputs.upToDateWhen { false } // Refresh changelog for every build
 
-        serverRoot = 'http://ci.jenkins.minecraftforge.net/'
+        serverRoot = 'http://jenkins.minecraftforge.net/'
         jobName = 'griefprevention'
         targetBuild = project.buildNumber
         authName = 'console_script'
