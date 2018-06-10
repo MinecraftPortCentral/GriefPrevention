@@ -53,6 +53,7 @@ import net.minecraft.entity.item.EntityFallingBlock;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.tileentity.TileEntityChest;
+import net.minecraft.tileentity.TileEntityPiston;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -660,6 +661,12 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
+        final Object source = event.getSource();
+        // Pistons are handled in onBlockPre
+        if (source instanceof TileEntityPiston) {
+            return;
+        }
+
         final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
@@ -671,7 +678,6 @@ public class BlockEventHandler {
         GPTimings.BLOCK_PLACE_EVENT.startTimingIfSync();
         GPClaim sourceClaim = null;
         LocatableBlock locatable = null;
-        final Object source = event.getSource();
         final User user = CauseContextHelper.getEventUser(event);
         if (source instanceof LocatableBlock) {
             locatable = (LocatableBlock) source;
