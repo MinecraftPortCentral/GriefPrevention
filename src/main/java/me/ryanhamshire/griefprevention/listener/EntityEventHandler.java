@@ -242,7 +242,7 @@ public class EntityEventHandler {
                     return true;
                 }
 
-                if (entity instanceof EntityItem) {
+                if (!isChunkSpawn && entity instanceof EntityItem) {
                     if (user == null) {
                         return true;
                     }
