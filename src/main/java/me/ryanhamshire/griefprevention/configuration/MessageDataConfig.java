@@ -405,6 +405,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("confirm-fluid-removal")
     public TextTemplate confirmFluidRemoval = TextTemplate.of("Abandoning this claim will remove lava inside the claim.  If you're sure, use /AbandonClaim again.");
 
+    @Setting("context-invalid")
+    public TextTemplate contextInvalid = TextTemplate.of(TextColors.RED, "Context '", TextTemplate.arg("context").color(TextColors.AQUA), "' is invalid.");
+
     @Setting("cuboid-claim-disabled")
     public TextTemplate claimCuboidDisabled = TextTemplate.of(TextColors.GREEN, "Now claiming in 2D mode.");
 

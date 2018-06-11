@@ -408,7 +408,7 @@ public class GriefPreventionPlugin {
                 try {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
-                    final int minSpongeBuild = 3069;
+                    final int minSpongeBuild = 3152;
                     final int spongeBuild = Integer.parseInt(build);
                     if (spongeBuild < minSpongeBuild) {
                         this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires"
@@ -1546,7 +1546,8 @@ public class GriefPreventionPlugin {
                             choices(Text.of("option"), optionChoices),
                             GenericArguments.firstParsing(
                                     doubleNum(Text.of("value")),
-                                    integer(Text.of("value")))))))
+                                    integer(Text.of("value"))),
+                            optional(onlyOne(string(Text.of("context"))))))))
                 .executor(new CommandClaimOption())
                 .build(), "claimoption", "co");
 

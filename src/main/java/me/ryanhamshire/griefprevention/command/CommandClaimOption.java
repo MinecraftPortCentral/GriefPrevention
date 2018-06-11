@@ -68,7 +68,16 @@ public class CommandClaimOption implements CommandExecutor {
             option = "griefprevention." + option;
         }
 
-        final boolean isGlobalOption = GPOptions.GLOBAL_OPTIONS.contains(option);
+        final String context = args.<String>getOne("context").orElse(null);
+        if (context != null && !context.equalsIgnoreCase("default")) {
+            final Text message = GriefPreventionPlugin.instance.messageData.contextInvalid
+                    .apply(ImmutableMap.of(
+                    "context", context)).build();
+            GriefPreventionPlugin.sendMessage(src, message);
+            return CommandResult.success();
+        }
+
+        final boolean isGlobalOption = GPOptions.GLOBAL_OPTIONS.contains(option) || context != null;
         // Check if global option
         if (isGlobalOption && !player.hasPermission(GPPermissions.MANAGE_GLOBAL_OPTIONS)) {
             GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.permissionGlobalOption.toText());
@@ -104,7 +113,7 @@ public class CommandClaimOption implements CommandExecutor {
             // Validate new value against admin set value
             if (option != null && value != null) {
                 Double tempValue = GPOptionHandler.getClaimOptionDouble(player, claim, option, playerData);
-                if (tempValue != value) {
+                if (tempValue > value || tempValue < value) {
                     final Text message2 = GriefPreventionPlugin.instance.messageData.commandOptionExceedsAdmin
                             .apply(ImmutableMap.of(
                             "original_value", value,
@@ -139,7 +148,11 @@ public class CommandClaimOption implements CommandExecutor {
        GriefPreventionPlugin.GLOBAL_SUBJECT.getSubjectData().setOption(contexts, option, value.toString())
            .thenAccept(consumer -> {
                if (consumer.booleanValue()) {
-                   GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, flagOption, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, GriefPreventionPlugin.GLOBAL_SUBJECT.getIdentifier(), TextColors.WHITE, "."));
+                   if (context != null) {
+                       GriefPreventionPlugin.sendMessage(src, Text.of("Set ", TextColors.LIGHT_PURPLE,"default", TextColors.WHITE, " option ", TextColors.AQUA, flagOption, TextColors.WHITE, " to ", TextColors.GREEN, value));
+                   } else {
+                       GriefPreventionPlugin.sendMessage(src, Text.of("Set option ", TextColors.AQUA, flagOption, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, GriefPreventionPlugin.GLOBAL_SUBJECT.getIdentifier(), TextColors.WHITE, "."));
+                   }
                } else {
                    GriefPreventionPlugin.sendMessage(src, Text.of(TextColors.RED, "The permission plugin failed to set the option."));
                }
