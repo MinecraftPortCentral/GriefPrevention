@@ -37,6 +37,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.util.Tristate;
@@ -44,6 +45,7 @@ import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -136,7 +138,7 @@ public class PlayerUtils {
         return result == null ? null : result.hitVec;
     }
 
-    public static int getOptionIntValue(Subject subject, String key, int defaultValue) {
+    public static int getOptionIntValue(Set<Context> contexts, Subject subject, String key, int defaultValue) {
         String optionValue = subject.getOption(key).orElse(null);
         if (optionValue != null) {
             try {
@@ -151,7 +153,7 @@ public class PlayerUtils {
         return defaultValue;
     }
 
-    public static double getOptionDoubleValue(Subject subject, String key, double defaultValue) {
+    public static double getOptionDoubleValue(Set<Context> contexts, Subject subject, String key, double defaultValue) {
         String optionValue = subject.getOption(key).orElse(null);
         if (optionValue != null) {
             try {

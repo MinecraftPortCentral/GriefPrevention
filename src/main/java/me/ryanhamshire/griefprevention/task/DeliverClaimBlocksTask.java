@@ -66,7 +66,7 @@ public class DeliverClaimBlocksTask implements Runnable {
                     }
 
                     Player player = (Player) entity;
-                    int accrualPerHour = PlayerUtils.getOptionIntValue(player, GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
+                    int accrualPerHour = PlayerUtils.getOptionIntValue(player.getActiveContexts(), player, GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
                     if (accrualPerHour > 0) {
                         DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(player);
                         Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(i++).execute(newTask)
