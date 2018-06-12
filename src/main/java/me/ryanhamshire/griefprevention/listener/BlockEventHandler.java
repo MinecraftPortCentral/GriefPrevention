@@ -150,6 +150,7 @@ public class BlockEventHandler {
         if (isForgePlayerBreak && !hasFakePlayer && source instanceof Player) {
             final Player player = (Player) source;
             GPClaim targetClaim = null;
+            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(world, player.getUniqueId());
             for (Location<World> location : event.getLocations()) {
                 if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -160,9 +161,14 @@ public class BlockEventHandler {
                 if (location.getBlockType() == BlockTypes.AIR) {
                     continue;
                 }
+                if (!checkSurroundings(event, location, player, playerData, targetClaim)) {
+                    event.setCancelled(true);
+                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                    return;
+                }
 
                 // check overrides
-                final Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, player, location.getBlock(), player, TrustType.BUILDER, true);
+                final Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), player, TrustType.BUILDER, true);
                 if (result != Tristate.TRUE) {
                     final Text message = GriefPreventionPlugin.instance.messageData.permissionBuild
                             .apply(ImmutableMap.of(
@@ -723,6 +729,11 @@ public class BlockEventHandler {
             if (locatable != null && targetClaim.isWilderness()) {
                 continue;
             }
+            if (!checkSurroundings(event, location, player, playerData, targetClaim)) {
+                event.setCancelled(true);
+                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
+                return;
+            }
 
             if (GPFlags.BLOCK_PLACE) {
                 // Allow blocks to grow within claims
@@ -976,10 +987,12 @@ public class BlockEventHandler {
     }
 
     // TODO: Add configuration for distance between claims
-    @SuppressWarnings("unused")
     private boolean checkSurroundings(org.spongepowered.api.event.Event event, Location<World> location, Player player, GPPlayerData playerData, GPClaim targetClaim) {
+        if (playerData == null) {
+            return true;
+        }
         // Don't allow players to break blocks next to land they do not own
-        if (GPFlags.BLOCK_BREAK && !playerData.canIgnoreClaim(targetClaim)) {
+        if (!playerData.canIgnoreClaim(targetClaim)) {
             // check surrounding blocks for access
             for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
                 Location<World> loc = location.getBlockRelative(direction);
@@ -994,7 +1007,6 @@ public class BlockEventHandler {
                                 .apply(ImmutableMap.of(
                                 "owner", claim.getOwnerName())).build();
                         GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
-                        GPTimings.BLOCK_BREAK_EVENT.stopTimingIfSync();
                         return false;
                     }
                 }
