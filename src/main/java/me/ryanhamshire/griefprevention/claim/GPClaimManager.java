@@ -213,7 +213,7 @@ public class GPClaimManager implements ClaimManager {
             claim.parent.children.add(claim);
             this.worldClaims.remove(claim);
             this.deleteChunkHashes((GPClaim) claim);
-            if (!claim.isAdminClaim() && claim.isInTown() && !claim.getTownClaim().getOwnerUniqueId().equals(claim.getOwnerUniqueId())) {
+            if (!claim.isAdminClaim() && (!claim.isInTown() || !claim.getTownClaim().getOwnerUniqueId().equals(claim.getOwnerUniqueId()))) {
                 final GPPlayerData playerData = this.getPlayerDataMap().get(claim.getOwnerUniqueId());
                 List<Claim> playerClaims = playerData.getInternalClaims();
                 if (!playerClaims.contains(claim)) {
