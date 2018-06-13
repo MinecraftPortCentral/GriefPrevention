@@ -1839,6 +1839,10 @@ public class GPClaim implements Claim {
 
     @Override
     public ClaimResult changeType(ClaimType type, Optional<UUID> ownerUniqueId) {
+        return changeType(type, ownerUniqueId, null);
+    }
+
+    public ClaimResult changeType(ClaimType type, Optional<UUID> ownerUniqueId, CommandSource src) {
         if (type == this.type) {
             return new GPClaimResult(ClaimResultType.SUCCESS);
         }
@@ -1849,8 +1853,10 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_EVENT_CANCELLED, event.getMessage().orElse(null));
         }
 
+        final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+        final GPPlayerData sourcePlayerData = src != null && src instanceof Player ? claimWorldManager.getOrCreatePlayerData(((Player) src).getUniqueId()) : null;
         UUID newOwnerUUID = ownerUniqueId.orElse(this.ownerUniqueId);
-        final ClaimResult result = this.validateClaimType(type, newOwnerUUID, null);
+        final ClaimResult result = this.validateClaimType(type, newOwnerUUID, sourcePlayerData);
         if (!result.successful()) {
             return result;
         }
@@ -1871,7 +1877,6 @@ public class GPClaim implements Claim {
             return new GPClaimResult(ClaimResultType.CLAIM_NOT_FOUND, Text.of(e.getMessage()));
         }
 
-        final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
         // If switched to admin or new owner, remove from player claim list
         if (type == ClaimType.ADMIN || !this.ownerUniqueId.equals(newOwnerUUID)) {
             final List<Claim> currentPlayerClaims = claimWorldManager.getInternalPlayerClaims(this.ownerUniqueId);

@@ -665,7 +665,7 @@ public class CommandClaimInfo implements CommandExecutor {
                 src.sendMessage(GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
                 return;
             }
-            final ClaimResult result = claim.changeType(clicked, Optional.of(((Player) src).getUniqueId()));
+            final ClaimResult result = claim.changeType(clicked, Optional.of(player.getUniqueId()), src);
             if (result.successful()) {
                 CommandHelper.executeCommand(src, "claiminfo", gpClaim.getUniqueId().toString());
                 //src.sendMessage(Text.of(TextColors.GREEN, "Successfully changed claim type to ", claim.getFriendlyNameType(), TextColors.GREEN, "." ));
