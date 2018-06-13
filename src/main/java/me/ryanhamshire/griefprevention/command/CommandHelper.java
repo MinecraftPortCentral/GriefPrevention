@@ -585,7 +585,8 @@ public class CommandHelper {
 
                 final double teleportHeight = claim.getOwnerPlayerData() == null ? 65.0D : (claim.getOwnerPlayerData().getMinClaimLevel() > 65.0D ? claim.getOwnerPlayerData().getMinClaimLevel() : 65);
                 Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), teleportHeight, claim.greaterBoundaryCorner.getPosition().getZ()));
-                Text claimName = claim.getData().getName().orElse(claim.getFriendlyNameType());
+                Text claimName = claim.getData().getName().orElse(Text.of());
+                Text teleportName = claim.getData().getName().orElse(claim.getFriendlyNameType());
                 Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, claim.getOwnerName(), "\n");
                 Text claimTypeInfo = Text.of(TextColors.YELLOW, "Type", TextColors.WHITE, " : ", 
                         claim.getFriendlyNameType(), " ", TextColors.GRAY, claim.isCuboid() ? "3D " : "2D ",
@@ -597,7 +598,7 @@ public class CommandHelper {
                         claimTypeInfo,
                         clickInfo).build();
 
-                Text claimInfoCommandClick = Text.builder().append(claimName)
+                Text claimInfoCommandClick = Text.builder().append(claim.getFriendlyNameType())
                 .onClick(TextActions.executeCallback(CommandHelper.createCommandConsumer(src, "claiminfo", claim.id.toString(), createReturnClaimListConsumer(src, returnCommand))))
                 .onHover(TextActions.showText(basicInfo))
                 .build();
@@ -605,16 +606,16 @@ public class CommandHelper {
                 Text claimCoordsTPClick = Text.builder().append(Text.of(
                         TextColors.WHITE, "[", TextColors.LIGHT_PURPLE, "TP", TextColors.WHITE, "]"))
                 .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(src, southWest, claim)))
-                .onHover(TextActions.showText(Text.of("Click here to teleport to ", claimName, " ", southWest.getBlockPosition(), " in world ", TextColors.GOLD, claim.getWorld().getProperties().getWorldName(), TextColors.WHITE, ".")))
+                .onHover(TextActions.showText(Text.of("Click here to teleport to ", teleportName, " ", southWest.getBlockPosition(), " in ", TextColors.LIGHT_PURPLE, claim.getWorld().getProperties().getWorldName(), TextColors.WHITE, ".")))
                 .build();
 
                 Text claimSpawn = null;
                 if (claim.getData().getSpawnPos().isPresent()) {
                     Vector3i spawnPos = claim.getData().getSpawnPos().get();
                     Location<World> spawnLoc = new Location<>(claim.getWorld(), spawnPos);
-                    claimSpawn = Text.builder().append(Text.of(TextColors.WHITE, "[", TextColors.LIGHT_PURPLE, "Spawn", TextColors.WHITE, "]"))
+                    claimSpawn = Text.builder().append(Text.of(TextColors.WHITE, "[", TextColors.LIGHT_PURPLE, "TP", TextColors.WHITE, "]"))
                             .onClick(TextActions.executeCallback(CommandHelper.createTeleportConsumer(src, spawnLoc, claim)))
-                            .onHover(TextActions.showText(Text.of("Click here to teleport to ", claimName, "'s spawn @ ", spawnPos, " in world ", TextColors.GOLD, claim.getWorld().getProperties().getWorldName(), TextColors.WHITE, ".")))
+                            .onHover(TextActions.showText(Text.of("Click here to teleport to ", teleportName, "'s spawn @ ", spawnPos, " in ", TextColors.LIGHT_PURPLE, claim.getWorld().getProperties().getWorldName(), TextColors.WHITE, ".")))
                             .build();
                 } else {
                     claimSpawn = claimCoordsTPClick;
@@ -640,16 +641,20 @@ public class CommandHelper {
                             .onHover(TextActions.showText(Text.of("Click here to view child claim list."))).build();
                     claimsTextList.add(Text.builder()
                             .append(Text.of(
+                                    claimSpawn, " ",
                                     claimInfoCommandClick, TextColors.WHITE, " : ", 
+                                    TextColors.GOLD, claim.getOwnerName(), " ",
                                     children, " ",
-                                    claimSpawn, " ", 
+                                    claimName.isEmpty() ? "" : claimName, " ",
                                     buyClaim))
                             .build());
                 } else {
                    claimsTextList.add(Text.builder()
                            .append(Text.of(
-                                   claimInfoCommandClick, TextColors.WHITE, " : ", 
                                    claimSpawn, " ", 
+                                   claimInfoCommandClick, TextColors.WHITE, " : ", 
+                                   TextColors.GOLD, claim.getOwnerName(), " ",
+                                   claimName.isEmpty() ? "" : claimName, " ",
                                    buyClaim))
                            .build());
                 }
