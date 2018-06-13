@@ -51,7 +51,6 @@ import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.permission.GPBlacklists;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
@@ -1468,7 +1467,7 @@ public class PlayerEventHandler {
         final Cause cause = event.getCause();
         final EventContext context = cause.getContext();
         final BlockSnapshot blockSnapshot = context.get(EventContextKeys.BLOCK_HIT).orElse(BlockSnapshot.NONE);
-        if (investigateClaim(player, blockSnapshot, itemInHand)) {
+        if (investigateClaim(event, player, blockSnapshot, itemInHand)) {
             return;
         }
 
@@ -2490,7 +2489,7 @@ public class PlayerEventHandler {
     }
 
     // helper methods for player events
-    private boolean investigateClaim(Player player, BlockSnapshot clickedBlock, ItemStack itemInHand) {
+    private boolean investigateClaim(InteractItemEvent event, Player player, BlockSnapshot clickedBlock, ItemStack itemInHand) {
         GPTimings.PLAYER_INVESTIGATE_CLAIM.startTimingIfSync();
 
         // if he's investigating a claim
@@ -2499,9 +2498,14 @@ public class PlayerEventHandler {
             return false;
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        // if holding shift (sneaking), show all claims in area
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        if (event instanceof InteractItemEvent.Primary) {
+            playerData.revertActiveVisual(player);
+            GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
+            return false;
+        }
 
+        // if holding shift (sneaking), show all claims in area
         GPClaim claim = null;
         if (!clickedBlock.getLocation().isPresent()) {
             claim = this.findNearbyClaim(player);
