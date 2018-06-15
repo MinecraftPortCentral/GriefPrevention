@@ -42,6 +42,11 @@ public class CommandSetAccruedClaimBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+            src.sendMessage(Text.of(TextColors.RED, "This command is not available while server is in economy mode."));
+            return CommandResult.success();
+        }
+
         WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(null);
         Player player = src instanceof Player ? (Player)src : null;
         if (worldProperties == null) {

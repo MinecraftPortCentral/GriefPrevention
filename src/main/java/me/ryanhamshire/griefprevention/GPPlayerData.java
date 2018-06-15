@@ -46,6 +46,8 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.service.context.Context;
+import org.spongepowered.api.service.economy.Currency;
+import org.spongepowered.api.service.economy.account.Account;
 import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
@@ -54,6 +56,7 @@ import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.SpongeImpl;
 
 import java.lang.ref.WeakReference;
+import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.Date;
@@ -204,6 +207,8 @@ public class GPPlayerData implements PlayerData {
     public int optionCreateClaimLimitBasic = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_BASIC;
     public int optionCreateClaimLimitSubdivision = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION;
     public int optionCreateClaimLimitTown = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_TOWN;
+    public double optionEconomyClaimBlockCost = GPOptions.DEFAULT_ECONOMY_CLAIM_BLOCK_COST;
+    public double optionEconomyClaimBlockSell = GPOptions.DEFAULT_ECONOMY_CLAIM_BLOCK_SELL;
     public int optionInitialClaimBlocks = GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS;
     public int optionMaxAccruedBlocks = GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS;
     public int optionMaxClaimLevel = GPOptions.DEFAULT_MAX_CLAIM_LEVEL;
@@ -274,6 +279,8 @@ public class GPPlayerData implements PlayerData {
             this.optionCreateClaimLimitBasic = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.CREATE_CLAIM_LIMIT_BASIC, this.optionCreateClaimLimitBasic);
             this.optionCreateClaimLimitSubdivision = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.CREATE_CLAIM_LIMIT_SUBDIVISION, this.optionCreateClaimLimitSubdivision);
             this.optionCreateClaimLimitTown = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.CREATE_CLAIM_LIMIT_TOWN, this.optionCreateClaimLimitTown);
+            this.optionEconomyClaimBlockCost = PlayerUtils.getOptionDoubleValue(activeContexts, subject, GPOptions.ECONOMY_CLAIM_BLOCK_COST, this.optionEconomyClaimBlockCost);
+            this.optionEconomyClaimBlockSell = PlayerUtils.getOptionDoubleValue(activeContexts, subject, GPOptions.ECONOMY_CLAIM_BLOCK_SELL, this.optionEconomyClaimBlockSell);
             this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.INITIAL_CLAIM_BLOCKS, this.optionInitialClaimBlocks);
             this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.MAX_ACCRUED_BLOCKS, this.optionMaxAccruedBlocks);
             this.optionMaxClaimLevel = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.MAX_CLAIM_LEVEL, this.optionMaxClaimLevel);
@@ -398,14 +405,25 @@ public class GPPlayerData implements PlayerData {
     @Override
     public int getRemainingClaimBlocks() {
         int remainingBlocks = this.optionInitialClaimBlocks + this.getAccruedClaimBlocks() + this.getBonusClaimBlocks();
-        for (Claim claim : this.claimList) {
-            if (claim.isSubdivision()) {
-                continue;
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+            final Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(this.playerID).orElse(null);
+            if (playerAccount == null) {
+                return 0;
             }
 
-            GPClaim gpClaim = (GPClaim) claim;
-            if ((gpClaim.parent == null || gpClaim.parent.isAdminClaim()) && claim.getData().requiresClaimBlocks()) {
-                remainingBlocks -= claim.getClaimBlocks();
+            final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
+            final BigDecimal currentFunds = playerAccount.getBalance(defaultCurrency);
+            remainingBlocks =  (int) Math.round((currentFunds.doubleValue() / this.optionEconomyClaimBlockCost));
+        } else {
+            for (Claim claim : this.claimList) {
+                if (claim.isSubdivision()) {
+                    continue;
+                }
+    
+                GPClaim gpClaim = (GPClaim) claim;
+                if ((gpClaim.parent == null || gpClaim.parent.isAdminClaim()) && claim.getData().requiresClaimBlocks()) {
+                    remainingBlocks -= claim.getClaimBlocks();
+                }
             }
         }
 
@@ -738,6 +756,16 @@ public class GPPlayerData implements PlayerData {
     @Override
     public int getMinClaimLevel() {
         return this.optionMinClaimLevel;
+    }
+
+    @Override
+    public double getEconomyClaimBlockCost() {
+        return this.optionEconomyClaimBlockCost;
+    }
+
+    @Override
+    public double getEconomyClaimBlockReturn() {
+        return this.optionEconomyClaimBlockSell;
     }
 
     public Subject getPlayerSubject() {

@@ -25,7 +25,6 @@
 package me.ryanhamshire.griefprevention.provider;
 
 import com.google.common.collect.ImmutableList;
-import me.ryanhamshire.griefprevention.DataStore;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
@@ -48,7 +47,7 @@ import java.util.UUID;
 
 public class GPApiProvider implements GriefPreventionApi {
 
-    public static final double API_VERSION = 0.9;
+    public static final double API_VERSION = 0.10;
 
     public GPApiProvider() {
     }
@@ -71,6 +70,11 @@ public class GPApiProvider implements GriefPreventionApi {
     @Override
     public ClaimBlockSystem getClaimBlockSystem() {
         return GriefPreventionPlugin.getGlobalConfig().getConfig().playerdata.claimBlockSystem;
+    }
+
+    @Override
+    public boolean isEconomyModeEnabled() {
+        return GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode;
     }
 
     @Override

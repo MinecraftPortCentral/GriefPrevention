@@ -79,6 +79,16 @@ public enum ClaimResultType {
     BELOW_MIN_SIZE_Z,
 
     /**
+     * Returned if no economy account was found.
+     */
+    ECONOMY_ACCOUNT_NOT_FOUND,
+
+    /**
+     * Returned if a {@link Player} attempts to purchase land without enough funds.
+     */
+    ECONOMY_NOT_ENOUGH_FUNDS,
+
+    /**
      * Returned if a {@link Player} attempts to create a
      * claim past their {@link PlayerData#getCreateClaimLimit()}.
      */

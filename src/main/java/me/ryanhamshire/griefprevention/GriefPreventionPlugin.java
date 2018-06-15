@@ -216,7 +216,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(id = "griefprevention", name = "GriefPrevention", version = "4.3.0", description = "This plugin is designed to prevent all forms of grief.")
+@Plugin(id = "griefprevention", name = "GriefPrevention", version = "4.3.1", description = "This plugin is designed to prevent all forms of grief.")
 public class GriefPreventionPlugin {
 
     // for convenience, a reference to the instance of this plugin
@@ -240,7 +240,7 @@ public class GriefPreventionPlugin {
     public static ClaimBlockSystem CLAIM_BLOCK_SYSTEM;
     //java.util.concurrent.ScheduledExecutorService executor = Executors.newScheduledThreadPool(
 
-    public static final String CONFIG_HEADER = "4.3.0\n"
+    public static final String CONFIG_HEADER = "4.3.1\n"
             + "# If you need help with the configuration or have any questions related to GriefPrevention,\n"
             + "# join us on Discord or drop by our forums and leave a post.\n"
             + "# Discord: https://discord.gg/jy4FQDz\n"
@@ -743,8 +743,22 @@ public class GriefPreventionPlugin {
 
         this.loadConfig();
         this.customLogger = new CustomLogger();
-        this.executor = Executors.newFixedThreadPool(GriefPreventionPlugin.getGlobalConfig().getConfig().thread.numExecutorThreads);
         this.economyService = Sponge.getServiceManager().provide(EconomyService.class);
+        // if economy is enabled
+        if (this.economyService.isPresent()) {
+            this.logger.info("GriefPrevention economy integration enabled.");
+            if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                this.logger.info("Economy mode enabled!. Claimblocks will be disabled...");
+            }
+            this.logger.info(
+                    "Hooked into economy: " + Sponge.getServiceManager().getRegistration(EconomyService.class).get().getPlugin().getId() + ".");
+            this.logger.info("Ready to buy/sell claim blocks!");
+        } else if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+            this.logger.error("Unable to initialize plugin. GriefPrevention economy mode enabled but no economy plugin was found.");
+            return;
+        }
+
+        this.executor = Executors.newFixedThreadPool(GriefPreventionPlugin.getGlobalConfig().getConfig().thread.numExecutorThreads);
         if (Sponge.getPluginManager().getPlugin("mcclans").isPresent()) {
             this.clanApiProvider = new MCClansApiProvider();
         }
@@ -767,6 +781,7 @@ public class GriefPreventionPlugin {
             }
         }
 
+        this.registerBaseCommands();
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
         Sponge.getEventManager().registerListeners(this, new BlockEventHandler(dataStore));
         Sponge.getEventManager().registerListeners(this, new PlayerEventHandler(dataStore, this));
@@ -793,14 +808,6 @@ public class GriefPreventionPlugin {
                     .submit(GriefPreventionPlugin.instance);
         }
 
-        // if economy is enabled
-        if (this.economyService.isPresent()) {
-            GriefPreventionPlugin.addLogEntry("GriefPrevention economy integration enabled.");
-            GriefPreventionPlugin.addLogEntry(
-                    "Hooked into economy: " + Sponge.getServiceManager().getRegistration(EconomyService.class).get().getPlugin().getId() + ".");
-            GriefPreventionPlugin.addLogEntry("Ready to buy/sell claim blocks!");
-        }
-
         // load ignore lists for any already-online players
         Collection<Player> players = Sponge.getGame().getServer().getOnlinePlayers();
         for (Player player : players) {
@@ -811,7 +818,6 @@ public class GriefPreventionPlugin {
         // TODO - rewrite /gp command
         //Sponge.getGame().getCommandManager().register(this, CommandGriefPrevention.getCommand().getCommandSpec(),
         //CommandGriefPrevention.getCommand().getAliases());
-        registerBaseCommands();
         this.dataStore.loadClaimTemplates();
     }
 

@@ -417,6 +417,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("cuboid-claim-enabled")
     public TextTemplate claimCuboidEnabled = TextTemplate.of(TextColors.GREEN, "Now claiming in 3D mode.");
 
+    @Setting("economy-not-enough-funds")
+    public TextTemplate economyNotEnoughFunds = TextTemplate.of(TextColors.RED, "You do not have enough funds to purchase this land. Your current economy balance is '", TextTemplate.arg("balance").color(TextColors.GOLD), "' but you require '", TextTemplate.arg("cost").color(TextColors.GREEN), "' to complete the purchase.");
+
     @Setting("economy-blocks-purchase-cost")
     public TextTemplate economyBlockPurchaseCost = TextTemplate.of("Each claim block costs ", TextTemplate.arg("cost"), ".  Your balance is ", TextTemplate.arg("balance"), ".");
 
@@ -446,6 +449,9 @@ public class MessageDataConfig extends ConfigCategory {
 
     @Setting("economy-blocks-sell-error")
     public TextTemplate economyBlockSellError = TextTemplate.of(TextColors.RED, "Could not sell blocks. Reason: ", TextTemplate.arg("reason"), ".");
+
+    @Setting("economy-claim-abandon-success")
+    public TextTemplate economyClaimAbandonSuccess = TextTemplate.of(TextColors.GREEN, "Claim(s) abandoned. You have been refunded a total of '", TextTemplate.arg("refund").color(TextColors.GOLD), "'.");
 
     @Setting("economy-claim-not-for-sale")
     public TextTemplate economyClaimNotForSale = TextTemplate.of(TextColors.RED, "This claim is not for sale.");

@@ -36,6 +36,8 @@ public class GPOptions {
     public static final String CREATE_CLAIM_LIMIT_BASIC = "griefprevention.create-claim-limit-basic";
     public static final String CREATE_CLAIM_LIMIT_SUBDIVISION = "griefprevention.create-claim-limit-subdivision";
     public static final String CREATE_CLAIM_LIMIT_TOWN = "griefprevention.create-claim-limit-town";
+    public static final String ECONOMY_CLAIM_BLOCK_COST = "griefprevention.economy-claim-block-cost";
+    public static final String ECONOMY_CLAIM_BLOCK_SELL = "griefprevention.economy-claim-block-sell";
     public static final String INITIAL_CLAIM_BLOCKS = "griefprevention.initial-claim-blocks";
     public static final String MAX_ACCRUED_BLOCKS = "griefprevention.max-accrued-claim-blocks";
     public static final String MAX_CLAIM_LEVEL = "griefprevention.max-claim-level";
@@ -84,6 +86,8 @@ public class GPOptions {
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_BASIC = 20;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION = 10;
     public static final int DEFAULT_CREATE_CLAIM_LIMIT_TOWN = 1;
+    public static final double DEFAULT_ECONOMY_CLAIM_BLOCK_COST = 1.0;
+    public static final double DEFAULT_ECONOMY_CLAIM_BLOCK_SELL = 1.0;
     public static final int DEFAULT_INITIAL_CLAIM_BLOCKS = GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? 25600 : 100;
     public static final int DEFAULT_MAX_ACCRUED_BLOCKS = GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME ? 20480000 : 80000;
     public static final int DEFAULT_MAX_CLAIM_LEVEL = 255;
@@ -134,6 +138,10 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_SUBDIVISION, (double) GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION);
         // Maximum number of towns per player.
         DEFAULT_OPTIONS.put(CREATE_CLAIM_LIMIT_TOWN, (double) GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_TOWN);
+        // The economy cost to purchase a claim block. set to zero to disable purchase.
+        DEFAULT_OPTIONS.put(ECONOMY_CLAIM_BLOCK_COST, (double) GPOptions.DEFAULT_ECONOMY_CLAIM_BLOCK_COST);
+        // The economy return on a sold claim block. set to zero to disable sale.
+        DEFAULT_OPTIONS.put(ECONOMY_CLAIM_BLOCK_SELL, (double) GPOptions.DEFAULT_ECONOMY_CLAIM_BLOCK_SELL);
         // The number of claim blocks a new player starts with.
         DEFAULT_OPTIONS.put(INITIAL_CLAIM_BLOCKS, (double) GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS);
         // The limit on accrued blocks (over time). doesn't limit purchased or admin-gifted blocks.

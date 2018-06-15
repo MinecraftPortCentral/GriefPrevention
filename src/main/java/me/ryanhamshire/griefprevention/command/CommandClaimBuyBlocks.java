@@ -28,7 +28,6 @@ package me.ryanhamshire.griefprevention.command;
 import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -41,6 +40,7 @@ import org.spongepowered.api.service.economy.account.Account;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -49,6 +49,11 @@ public class CommandClaimBuyBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+            src.sendMessage(Text.of(TextColors.RED, "This command is not available while server is in economy mode."));
+            return CommandResult.success();
+        }
+
         Player player;
         try {
             player = GriefPreventionPlugin.checkPlayer(src);
@@ -72,14 +77,14 @@ public class CommandClaimBuyBlocks implements CommandExecutor {
             return CommandResult.success();
         }
 
-        GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties());
-        if (activeConfig.getConfig().economy.economyClaimBlockCost == 0 && activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        if (playerData.optionEconomyClaimBlockCost == 0 && playerData.optionEconomyClaimBlockSell == 0) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.economyBuySellNotConfigured.toText());
             return CommandResult.success();
         }
 
         // if purchase disabled, send error message
-        if (activeConfig.getConfig().economy.economyClaimBlockCost == 0) {
+        if (playerData.optionEconomyClaimBlockCost == 0) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.economyOnlySellBlocks.toText());
             return CommandResult.success();
         }
@@ -90,13 +95,11 @@ public class CommandClaimBuyBlocks implements CommandExecutor {
         if (!blockCountOpt.isPresent()) {
             final Text message = GriefPreventionPlugin.instance.messageData.economyBlockPurchaseCost
                     .apply(ImmutableMap.of(
-                    "cost", activeConfig.getConfig().economy.economyClaimBlockCost,
+                    "cost", playerData.optionEconomyClaimBlockCost,
                     "balance", balance)).build();
             GriefPreventionPlugin.sendMessage(player, message);
             return CommandResult.success();
         } else {
-            GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-
             // try to parse number of blocks
             int blockCount = blockCountOpt.get();
 
@@ -105,7 +108,7 @@ public class CommandClaimBuyBlocks implements CommandExecutor {
                 return CommandResult.success();
             }
 
-            double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
+            double totalCost = blockCount * playerData.optionEconomyClaimBlockCost;
             // attempt to withdraw cost
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().addContext(GriefPreventionPlugin.PLUGIN_CONTEXT, GriefPreventionPlugin.instance);

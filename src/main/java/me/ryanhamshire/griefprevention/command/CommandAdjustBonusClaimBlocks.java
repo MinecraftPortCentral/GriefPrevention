@@ -37,12 +37,18 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 public class CommandAdjustBonusClaimBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) {
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+            src.sendMessage(Text.of(TextColors.RED, "This command is not available while server is in economy mode."));
+            return CommandResult.success();
+        }
+
         WorldProperties worldProperties = args.<WorldProperties> getOne("world").orElse(Sponge.getServer().getDefaultWorld().get());
 
         if (worldProperties == null) {

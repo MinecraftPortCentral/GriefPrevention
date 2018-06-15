@@ -24,6 +24,7 @@
  */
 package me.ryanhamshire.griefprevention.api.data;
 
+import me.ryanhamshire.griefprevention.api.GriefPreventionApi;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 
@@ -185,6 +186,22 @@ public interface PlayerData {
      * @return The remaining claim blocks
      */
     int getRemainingClaimBlocks();
+
+    /**
+     * Gets the economy claim block cost.
+     * 
+     * @return The economy claim block cost
+     */
+    double getEconomyClaimBlockCost();
+
+    /**
+     * Gets the economy claim block return on selling a claim block.
+     * 
+     * Note: This is only used if {@link GriefPreventionApi#isEconomyModeEnabled()} is false.
+     *      
+     * @return The economy claim block return
+     */
+    double getEconomyClaimBlockReturn();
 
     /**
      * Checks if this player can ignore a claim.

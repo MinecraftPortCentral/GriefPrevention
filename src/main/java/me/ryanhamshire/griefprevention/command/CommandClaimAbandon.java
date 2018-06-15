@@ -43,9 +43,14 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.CauseStackManager;
+import org.spongepowered.api.service.economy.Currency;
+import org.spongepowered.api.service.economy.account.Account;
+import org.spongepowered.api.service.economy.transaction.ResultType;
+import org.spongepowered.api.service.economy.transaction.TransactionResult;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -120,6 +125,38 @@ public class CommandClaimAbandon implements CommandExecutor {
                 }
             }
 
+            // this prevents blocks being gained without spending adjust claim blocks when abandoning a top level claim
+            if (!claim.isSubdivision() && !claim.isAdminClaim()) {
+                final double requiredClaimBlocks = claim.getClaimBlocks() * playerData.optionAbandonReturnRatioBasic;
+                if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                    final Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(playerData.playerID).orElse(null);
+                    if (playerAccount == null) {
+                        return CommandResult.success();
+                    }
+
+                    final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
+                    final double refund = requiredClaimBlocks * playerData.optionEconomyClaimBlockCost;
+                    final TransactionResult result = playerAccount.deposit(defaultCurrency, BigDecimal.valueOf(refund), Sponge.getCauseStackManager().getCurrentCause());
+                    if (result.getResult() == ResultType.SUCCESS) {
+                        final Text message = GriefPreventionPlugin.instance.messageData.economyClaimAbandonSuccess
+                                .apply(ImmutableMap.of(
+                                "refund", Text.of(refund)
+                        )).build();
+                        GriefPreventionPlugin.sendMessage(player, message);
+                    }
+                } else {
+                    int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - ((int) requiredClaimBlocks);
+                    playerData.setAccruedClaimBlocks(newAccruedClaimCount);
+                    // tell the player how many claim blocks he has left
+                    int remainingBlocks = playerData.getRemainingClaimBlocks();
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimAbandonSuccess
+                            .apply(ImmutableMap.of(
+                            "remaining-blocks", Text.of(remainingBlocks)
+                    )).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                }
+            }
+
             // delete it
             GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
             claimManager.deleteClaimInternal(claim, this.abandonTopClaim);
@@ -136,19 +173,6 @@ public class CommandClaimAbandon implements CommandExecutor {
                 GriefPreventionPlugin.instance.restoreClaim(claim, 20L * 60 * 2);
             }
 
-            // this prevents blocks being gained without spending adjust claim blocks when abandoning a top level claim
-            if (!claim.isSubdivision() && !claim.isAdminClaim()) {
-                int newAccruedClaimCount = playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getClaimBlocks() * (1 - playerData.optionAbandonReturnRatioBasic)));
-                playerData.setAccruedClaimBlocks(newAccruedClaimCount);
-            }
-
-            // tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks();
-            final Text message = GriefPreventionPlugin.instance.messageData.claimAbandonSuccess
-                    .apply(ImmutableMap.of(
-                    "remaining-blocks", Text.of(remainingBlocks)
-            )).build();
-            GriefPreventionPlugin.sendMessage(player, message);
             // revert any current visualization
             playerData.revertActiveVisual(player);
             playerData.warnedAboutMajorDeletion = false;

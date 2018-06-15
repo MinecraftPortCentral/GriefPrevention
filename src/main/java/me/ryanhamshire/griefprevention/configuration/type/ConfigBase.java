@@ -46,9 +46,6 @@ public class ConfigBase {
     public ClaimCategory claim = new ClaimCategory();
 
     @Setting
-    public EconomyCategory economy = new EconomyCategory();
-
-    @Setting
     public FlagCategory flags = new FlagCategory();
 
     @Setting

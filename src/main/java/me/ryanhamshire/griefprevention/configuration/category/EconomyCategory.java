@@ -30,8 +30,10 @@ import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 @ConfigSerializable
 public class EconomyCategory extends ConfigCategory {
 
-    @Setting(value = "claim-block-cost", comment = "Cost to purchase a claim block. set to zero to disable purchase.")
-    public double economyClaimBlockCost = 0;
-    @Setting(value = "claim-block-sell", comment = "Return on a sold claim block. set to zero to disable sale.")
-    public double economyClaimBlockSell = 0;
+    @Setting(value = "economy-mode", comment = "Uses economy instead of player claim blocks."
+            + "\nIf false, disables the claim block system in favor of economy.")
+    public boolean economyMode = true;
+    @Setting(value = "use-claim-block-task", comment = "Claim blocks earned will be converted to economy based on 'claim-block-cost'." 
+            + "\n(Default: false).\nNote: This setting can only be used if 'economy-mode' is true.")
+    public boolean useClaimBlockTask = false;
 }

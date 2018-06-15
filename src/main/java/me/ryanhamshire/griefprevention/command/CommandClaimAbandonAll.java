@@ -40,8 +40,14 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.CauseStackManager;
+import org.spongepowered.api.service.economy.Currency;
+import org.spongepowered.api.service.economy.account.Account;
+import org.spongepowered.api.service.economy.transaction.ResultType;
+import org.spongepowered.api.service.economy.transaction.TransactionResult;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+
+import java.math.BigDecimal;
 
 public class CommandClaimAbandonAll implements CommandExecutor {
 
@@ -78,6 +84,8 @@ public class CommandClaimAbandonAll implements CommandExecutor {
             }
         }
 
+        final boolean econMode = GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode;
+        double refund = 0;
         // adjust claim blocks
         for (Claim claim : playerData.getInternalClaims()) {
             // remove all context permissions
@@ -85,20 +93,40 @@ public class CommandClaimAbandonAll implements CommandExecutor {
             if (claim.isSubdivision() || claim.isAdminClaim() || claim.isWilderness()) {
                 continue;
             }
-            playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getClaimBlocks() * (1 - playerData.optionAbandonReturnRatioBasic))));
+            if (econMode) {
+                refund += claim.getClaimBlocks() * playerData.optionAbandonReturnRatioBasic;
+            } else {
+                playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - ((int) Math.ceil(claim.getClaimBlocks() * (1 - playerData.optionAbandonReturnRatioBasic))));
+            }
         }
 
         // delete them
         GriefPreventionPlugin.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId());
 
-        // inform the player
-        int remainingBlocks = playerData.getRemainingClaimBlocks();
-        final Text message = GriefPreventionPlugin.instance.messageData.claimAbandonSuccess
-                .apply(ImmutableMap.of(
-                "remaining-blocks", Text.of(remainingBlocks)
-        )).build();
-        GriefPreventionPlugin.sendMessage(player, message);
+        if (econMode) {
+            final Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(playerData.playerID).orElse(null);
+            if (playerAccount == null) {
+                return CommandResult.success();
+            }
 
+            final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
+            final TransactionResult result = playerAccount.deposit(defaultCurrency, BigDecimal.valueOf(refund), Sponge.getCauseStackManager().getCurrentCause());
+            if (result.getResult() == ResultType.SUCCESS) {
+                final Text message = GriefPreventionPlugin.instance.messageData.economyClaimAbandonSuccess
+                        .apply(ImmutableMap.of(
+                        "refund", Text.of(refund)
+                )).build();
+                GriefPreventionPlugin.sendMessage(player, message);
+            }
+        } else {
+            // tell the player how many claim blocks he has left
+            int remainingBlocks = playerData.getRemainingClaimBlocks();
+            final Text message = GriefPreventionPlugin.instance.messageData.claimAbandonSuccess
+                    .apply(ImmutableMap.of(
+                    "remaining-blocks", Text.of(remainingBlocks)
+            )).build();
+            GriefPreventionPlugin.sendMessage(player, message);
+        }
         // revert any current visualization
         playerData.revertActiveVisual(player);
 

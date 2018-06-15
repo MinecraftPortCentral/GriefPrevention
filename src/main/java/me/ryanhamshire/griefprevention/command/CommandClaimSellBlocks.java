@@ -28,7 +28,6 @@ package me.ryanhamshire.griefprevention.command;
 import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -40,6 +39,7 @@ import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -48,6 +48,11 @@ public class CommandClaimSellBlocks implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
+        if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+            src.sendMessage(Text.of(TextColors.RED, "This command is not available while server is in economy mode."));
+            return CommandResult.success();
+        }
+
         Player player;
         try {
             player = GriefPreventionPlugin.checkPlayer(src);
@@ -64,25 +69,24 @@ public class CommandClaimSellBlocks implements CommandExecutor {
 
         GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId());
 
-        GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties());
-        if (activeConfig.getConfig().economy.economyClaimBlockCost == 0 && activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        if (playerData.optionEconomyClaimBlockCost == 0 && playerData.optionEconomyClaimBlockSell == 0) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.economyBuySellNotConfigured.toText());
             return CommandResult.success();
         }
 
         // if selling disabled, send error message
-        if (activeConfig.getConfig().economy.economyClaimBlockSell == 0) {
+        if (playerData.optionEconomyClaimBlockSell == 0) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.economyOnlyBuyBlocks.toText());
             return CommandResult.success();
         }
 
-        GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         int availableBlocks = playerData.getRemainingClaimBlocks();
         Optional<Integer> blockCountOpt = ctx.getOne("numberOfBlocks");
         if (!blockCountOpt.isPresent()) {
             final Text message = GriefPreventionPlugin.instance.messageData.economyBlockPurchaseCost
                     .apply(ImmutableMap.of(
-                    "cost", activeConfig.getConfig().economy.economyClaimBlockSell,
+                    "cost", playerData.optionEconomyClaimBlockSell,
                     "balance", availableBlocks)).build();
             GriefPreventionPlugin.sendMessage(player, message);
             return CommandResult.success();
@@ -98,7 +102,7 @@ public class CommandClaimSellBlocks implements CommandExecutor {
             }
 
             // attempt to compute value and deposit it
-            double totalValue = blockCount * activeConfig.getConfig().economy.economyClaimBlockSell;
+            double totalValue = blockCount * playerData.optionEconomyClaimBlockSell;
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().pushCause(player);
                 Sponge.getCauseStackManager().addContext(GriefPreventionPlugin.PLUGIN_CONTEXT, GriefPreventionPlugin.instance);

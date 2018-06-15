@@ -25,6 +25,7 @@
 package me.ryanhamshire.griefprevention.configuration.type;
 
 import me.ryanhamshire.griefprevention.configuration.category.BanCategory;
+import me.ryanhamshire.griefprevention.configuration.category.EconomyCategory;
 import me.ryanhamshire.griefprevention.configuration.category.LoggingCategory;
 import me.ryanhamshire.griefprevention.configuration.category.MessageCategory;
 import me.ryanhamshire.griefprevention.configuration.category.MigratorCategory;
@@ -42,6 +43,8 @@ public class GlobalConfig extends ConfigBase {
     //@Setting
     //public DatabaseCategory database = new DatabaseCategory();
 
+    @Setting
+    public EconomyCategory economy = new EconomyCategory();
     @Setting
     public LoggingCategory logging = new LoggingCategory();
 

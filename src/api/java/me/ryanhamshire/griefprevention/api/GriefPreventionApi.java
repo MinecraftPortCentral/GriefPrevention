@@ -79,6 +79,11 @@ public interface GriefPreventionApi {
     ClaimBlockSystem getClaimBlockSystem();
 
     /**
+     * Checks if economy mode is enabled on server.
+     */
+    boolean isEconomyModeEnabled();
+
+    /**
      * Checks if the protection module is enabled for flag.
      * 
      * @param flag The claim flag to check
