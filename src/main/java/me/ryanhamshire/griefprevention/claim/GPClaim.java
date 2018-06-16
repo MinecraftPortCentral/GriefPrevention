@@ -2820,6 +2820,21 @@ public class GPClaim implements Claim {
                             playerData.claimResizing = null;
                             return new GPClaimResult(claim, ClaimResultType.ECONOMY_NOT_ENOUGH_FUNDS, message);
                         }
+
+                        final TransactionResult result = playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(requiredFunds), Sponge.getCauseStackManager().getCurrentCause());
+                        if (result.getResult() != ResultType.SUCCESS) {
+                            Text message = null;
+                            if (player != null) {
+                                message = GriefPreventionPlugin.instance.messageData.economyWithdrawError
+                                        .apply(ImmutableMap.of(
+                                        "reason", result.getResult().name())).build();
+                                GriefPreventionPlugin.sendMessage(player, message);
+                            }
+
+                            playerData.lastShovelLocation = null;
+                            playerData.claimResizing = null;
+                            return new GPClaimResult(claim, ClaimResultType.ECONOMY_TRANSACTION_ERROR, message);
+                        }
                     } else {
                         final int remainingClaimBlocks = playerData.getRemainingClaimBlocks() - claimCost;
                         if (remainingClaimBlocks < 0) {
@@ -2873,7 +2888,7 @@ public class GPClaim implements Claim {
 
             final ClaimResult claimResult = claim.checkArea(false);
             if (!claimResult.successful()) {
-                if (player != null && GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                if (player != null && (claim.isBasicClaim() || claim.isTown()) && this.requiresClaimBlocks && GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
                     EconomyUtils.depositFunds(player.getUniqueId(), requiredFunds);
                 }
                 return claimResult;
@@ -2886,7 +2901,7 @@ public class GPClaim implements Claim {
                 if (message != null && player != null) {
                     GriefPreventionPlugin.sendMessage(player, message);
                 }
-                if (player != null && GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                if (player != null && (claim.isBasicClaim() || claim.isTown()) && this.requiresClaimBlocks && GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
                     EconomyUtils.depositFunds(player.getUniqueId(), requiredFunds);
                 }
                 return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED, message);

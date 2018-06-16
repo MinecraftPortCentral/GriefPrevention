@@ -89,6 +89,16 @@ public enum ClaimResultType {
     ECONOMY_NOT_ENOUGH_FUNDS,
 
     /**
+     * Returned if a {@link Player} cancels a purchase land confirmation.
+     */
+    ECONOMY_CONFIRM_CANCELLED,
+
+    /**
+     * Returned if a transaction was unable to be completed.
+     */
+    ECONOMY_TRANSACTION_ERROR,
+
+    /**
      * Returned if a {@link Player} attempts to create a
      * claim past their {@link PlayerData#getCreateClaimLimit()}.
      */
