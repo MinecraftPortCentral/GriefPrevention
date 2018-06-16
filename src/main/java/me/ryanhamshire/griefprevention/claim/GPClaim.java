@@ -952,6 +952,16 @@ public class GPClaim implements Claim {
             }
         }
 
+        // Check limits
+        final Player currentOwner = ownerData.getPlayerSubject() instanceof Player ? (Player) ownerData.getPlayerSubject() : null;
+        final Double createClaimLimit = GPOptionHandler.getClaimOptionDouble(newOwnerData.getPlayerSubject(), this, GPOptions.Type.CLAIM_LIMIT, newOwnerData);
+        if (createClaimLimit != null && createClaimLimit > 0 && (newOwnerData.getInternalClaims().size() + 1) > createClaimLimit.intValue()) {
+            if (currentOwner != null) {
+                GriefPreventionPlugin.sendMessage(currentOwner, GriefPreventionPlugin.instance.messageData.claimTransferExceedsLimit.toText());
+            }
+            return new GPClaimResult(this, ClaimResultType.EXCEEDS_MAX_CLAIM_LIMIT, GriefPreventionPlugin.instance.messageData.claimTransferExceedsLimit.toText());
+        }
+
         // transfer
         GPTransferClaimEvent event = new GPTransferClaimEvent(this, this.getOwnerUniqueId(), newOwnerID);
         Sponge.getEventManager().post(event);
