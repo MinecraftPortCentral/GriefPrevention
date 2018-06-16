@@ -318,6 +318,9 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-transfer-success")
     public TextTemplate claimTransferSuccess = TextTemplate.of(TextColors.GREEN, "Claim transferred.");
 
+    @Setting("claim-transfer-exceeds-limit")
+    public TextTemplate claimTransferExceedsLimit = TextTemplate.of(TextColors.RED, "Claim could not be transferred as it would exceed the new owner's creation limit.");
+
     @Setting("claim-deleted")
     public TextTemplate claimDeleted = TextTemplate.of(TextColors.GREEN, "Claim deleted.");
 
