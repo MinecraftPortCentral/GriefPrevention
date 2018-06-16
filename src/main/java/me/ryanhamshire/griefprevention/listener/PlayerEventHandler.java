@@ -136,6 +136,7 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.SpongeImplHooks;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.entity.SpongeEntityType;
@@ -1029,8 +1030,12 @@ public class PlayerEventHandler {
     // when a player gets kicked...
     @Listener(order = Order.LAST)
     public void onPlayerKicked(KickPlayerEvent event) {
+        final Player player = event.getTargetEntity();
+        if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
+            return;
+        }
+
         GPTimings.PLAYER_KICK_EVENT.startTimingIfSync();
-        Player player = event.getTargetEntity();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         playerData.wasKicked = true;
         GPTimings.PLAYER_KICK_EVENT.stopTimingIfSync();
@@ -1039,13 +1044,12 @@ public class PlayerEventHandler {
     // when a player quits...
     @Listener(order= Order.LAST)
     public void onPlayerQuit(ClientConnectionEvent.Disconnect event) {
-        GPTimings.PLAYER_QUIT_EVENT.startTimingIfSync();
-        Player player = event.getTargetEntity();
-        if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
-            GPTimings.PLAYER_QUIT_EVENT.stopTimingIfSync();
+        final Player player = event.getTargetEntity();
+        if (!SpongeImpl.getServer().isServerRunning() || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             return;
         }
 
+        GPTimings.PLAYER_QUIT_EVENT.startTimingIfSync();
         UUID playerID = player.getUniqueId();
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), playerID);
         boolean isBanned = false;
