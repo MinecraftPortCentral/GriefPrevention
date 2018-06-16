@@ -2450,7 +2450,9 @@ public class PlayerEventHandler {
                     cuboid ? location.getBlockY() : playerData.getMaxClaimLevel(),
                     location.getBlockZ());
 
-            if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+            final ClaimType type = PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode);
+            if ((type == ClaimType.BASIC || type == ClaimType.TOWN) && GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                System.out.println("ECONOMY MODE!!");
                 EconomyUtils.economyCreateClaimConfirmation(player, playerData, location.getBlockY(), lesserBoundaryCorner, greaterBoundaryCorner, PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode),
                         playerData.optionClaimCreateMode == 1, playerData.claimSubdividing);
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
@@ -2466,7 +2468,7 @@ public class PlayerEventHandler {
                         player.getWorld(),
                         lesserBoundaryCorner,
                         greaterBoundaryCorner,
-                        PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode), player.getUniqueId(), cuboid);
+                        type, player.getUniqueId(), cuboid);
             }
 
             GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
