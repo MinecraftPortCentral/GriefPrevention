@@ -59,6 +59,7 @@ import me.ryanhamshire.griefprevention.provider.WorldEditApiProvider;
 import me.ryanhamshire.griefprevention.task.PlayerKickBanTask;
 import me.ryanhamshire.griefprevention.task.WelcomeTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.EconomyUtils;
 import me.ryanhamshire.griefprevention.util.PaginationUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import me.ryanhamshire.griefprevention.visual.Visualization;
@@ -2440,14 +2441,22 @@ public class PlayerEventHandler {
             }
 
             final boolean cuboid = playerData.optionClaimCreateMode == 1;
-            Vector3i lesserBoundary = new Vector3i(
+            Vector3i lesserBoundaryCorner = new Vector3i(
                     lastShovelLocation.getBlockX(),
                     cuboid ? lastShovelLocation.getBlockY() : playerData.getMinClaimLevel(),
                     lastShovelLocation.getBlockZ());
-            Vector3i greaterBoundary = new Vector3i(
+            Vector3i greaterBoundaryCorner = new Vector3i(
                     location.getBlockX(),
                     cuboid ? location.getBlockY() : playerData.getMaxClaimLevel(),
                     location.getBlockZ());
+
+            if (GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                EconomyUtils.economyCreateClaimConfirmation(player, playerData, location.getBlockY(), lesserBoundaryCorner, greaterBoundaryCorner, PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode),
+                        playerData.optionClaimCreateMode == 1, playerData.claimSubdividing);
+                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                return;
+            }
+
             // try to create a new claim
             ClaimResult result = null;
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
@@ -2455,8 +2464,8 @@ public class PlayerEventHandler {
                 Sponge.getCauseStackManager().addContext(EventContextKeys.PLUGIN, GriefPreventionPlugin.instance.pluginContainer);
                 result = this.dataStore.createClaim(
                         player.getWorld(),
-                        lesserBoundary,
-                        greaterBoundary,
+                        lesserBoundaryCorner,
+                        greaterBoundaryCorner,
                         PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode), player.getUniqueId(), cuboid);
             }
 

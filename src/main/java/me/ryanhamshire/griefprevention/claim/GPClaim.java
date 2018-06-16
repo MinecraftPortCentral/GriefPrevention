@@ -67,6 +67,7 @@ import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.EconomyUtils;
 import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import me.ryanhamshire.griefprevention.visual.VisualizationType;
@@ -2745,6 +2746,7 @@ public class GPClaim implements Claim {
                 player = (Player) cause.root();
             }
             GPPlayerData playerData = null;
+            double requiredFunds = 0;
 
             if (this.ownerUniqueId != null) {
                 if (playerData == null) {
@@ -2802,10 +2804,9 @@ public class GPClaim implements Claim {
                         }
 
                         final Currency defaultCurrency = GriefPreventionPlugin.instance.economyService.get().getDefaultCurrency();
-                        final double requiredFunds = claimCost * playerData.optionEconomyClaimBlockCost;
+                        requiredFunds = claimCost * playerData.optionEconomyClaimBlockCost;
                         final BigDecimal currentFunds = playerAccount.getBalance(defaultCurrency);
-                        final TransactionResult result = playerAccount.withdraw(defaultCurrency, BigDecimal.valueOf(requiredFunds), Sponge.getCauseStackManager().getCurrentCause());
-                        if (result.getResult() != ResultType.SUCCESS) {
+                        if (currentFunds.doubleValue() < requiredFunds) {
                             Text message = null;
                             if (player != null) {
                                 message = GriefPreventionPlugin.instance.messageData.economyNotEnoughFunds
@@ -2843,7 +2844,7 @@ public class GPClaim implements Claim {
                     }
                 }
 
-                if (claim.isTown() && GriefPreventionPlugin.instance.economyService != null && player != null) {
+                if (!GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode && claim.isTown() && GriefPreventionPlugin.instance.economyService != null && player != null) {
                     final double townCost = GriefPreventionPlugin.getGlobalConfig().getConfig().town.cost;
                     if (townCost > 0) {
                         Account playerAccount = GriefPreventionPlugin.instance.economyService.get().getOrCreateAccount(player.getUniqueId()).orElse(null);
@@ -2870,9 +2871,12 @@ public class GPClaim implements Claim {
                 }
             }
 
-            final ClaimResult result = claim.checkArea(false);
-            if (!result.successful()) {
-                return result;
+            final ClaimResult claimResult = claim.checkArea(false);
+            if (!claimResult.successful()) {
+                if (player != null && GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                    EconomyUtils.depositFunds(player.getUniqueId(), requiredFunds);
+                }
+                return claimResult;
             }
 
             GPCreateClaimEvent event = new GPCreateClaimEvent(claim);
@@ -2881,6 +2885,9 @@ public class GPClaim implements Claim {
                 final Text message = event.getMessage().orElse(null);
                 if (message != null && player != null) {
                     GriefPreventionPlugin.sendMessage(player, message);
+                }
+                if (player != null && GriefPreventionPlugin.getGlobalConfig().getConfig().economy.economyMode) {
+                    EconomyUtils.depositFunds(player.getUniqueId(), requiredFunds);
                 }
                 return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED, message);
             }
@@ -2906,8 +2913,8 @@ public class GPClaim implements Claim {
             final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
             claimManager.addClaim(claim, true);
 
-            if (result.getClaims().size() > 1) {
-                claim.migrateClaims(new ArrayList<>(result.getClaims()));
+            if (claimResult.getClaims().size() > 1) {
+                claim.migrateClaims(new ArrayList<>(claimResult.getClaims()));
             }
 
             return new GPClaimResult(claim, ClaimResultType.SUCCESS);
