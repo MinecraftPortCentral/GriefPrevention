@@ -2505,6 +2505,9 @@ public class PlayerEventHandler {
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         if (event instanceof InteractItemEvent.Primary) {
             playerData.revertActiveVisual(player);
+            if (this.worldEditProvider != null) {
+                this.worldEditProvider.revertVisuals(player, playerData, null);
+            }
             GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
             return false;
         }
