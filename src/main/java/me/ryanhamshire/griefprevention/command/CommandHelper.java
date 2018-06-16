@@ -583,8 +583,14 @@ public class CommandHelper {
                     continue;
                 }
 
-                final double teleportHeight = claim.getOwnerPlayerData() == null ? 65.0D : (claim.getOwnerPlayerData().getMinClaimLevel() > 65.0D ? claim.getOwnerPlayerData().getMinClaimLevel() : 65);
-                Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(claim.lesserBoundaryCorner.getPosition().getX(), teleportHeight, claim.greaterBoundaryCorner.getPosition().getZ()));
+                double teleportHeight = claim.getOwnerPlayerData() == null ? 65.0D : (claim.getOwnerPlayerData().getMinClaimLevel() > 65.0D ? claim.getOwnerPlayerData().getMinClaimLevel() : 65);
+                Location<World> a = claim.lesserBoundaryCorner;
+                Vector3d center = a.getPosition().add(claim.greaterBoundaryCorner.getPosition()).div(2);
+                if (teleportHeight == 65) {
+                    teleportHeight = claim.getWorld().getHighestYAt((int)center.getX(), (int)center.getZ());
+                }
+                Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(center.getX(), teleportHeight, center.getZ()));
+
                 Text claimName = claim.getData().getName().orElse(Text.of());
                 Text teleportName = claim.getData().getName().orElse(claim.getFriendlyNameType());
                 Text ownerLine = Text.of(TextColors.YELLOW, "Owner", TextColors.WHITE, " : ", TextColors.GOLD, claim.getOwnerName(), "\n");
