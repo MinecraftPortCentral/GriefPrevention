@@ -165,6 +165,9 @@ public class PlayerEventHandler {
     private final DataStore dataStore;
     private final WorldEditApiProvider worldEditProvider;
     private final BanService banService;
+    private int lastInteractItemPrimaryTick = -1;
+    private int lastInteractItemSecondaryTick = -1;
+    private boolean lastInteractItemCancelled = true;
 
     // list of temporarily banned ip's
     private ArrayList<IpBanInfo> tempBannedIps = new ArrayList<IpBanInfo>();
@@ -1449,6 +1452,12 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractItem(InteractItemEvent event, @Root Player player) {
+        if (event instanceof InteractItemEvent.Primary) {
+            lastInteractItemPrimaryTick = Sponge.getServer().getRunningTimeTicks();
+        } else {
+            lastInteractItemSecondaryTick = Sponge.getServer().getRunningTimeTicks();
+        }
+
         final World world = player.getWorld();
         final ItemType playerItem = event.getItemStack().getType();
         final HandInteractEvent handEvent = (HandInteractEvent) event;
@@ -1495,6 +1504,7 @@ public class PlayerEventHandler {
                     "item", itemInHand.getType().getId())).build();
             GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
             event.setCancelled(true);
+            lastInteractItemCancelled = false;
             return;
         }
     }
@@ -1671,13 +1681,13 @@ public class PlayerEventHandler {
                 return;
             }
 
-            /*final Text message = GriefPreventionPlugin.instance.messageData.permissionAccess
-                    .apply(ImmutableMap.of(
-                    "player", Text.of(claim.getOwnerName()))).build();
-
-            GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);*/
+            // Don't send a deny message if the player is holding an investigation tool
+            if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemPrimaryTick || lastInteractItemCancelled != false) {
+                if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
+                    this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
+                }
+            }
             event.setCancelled(true);
-            this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
             return;
         }
@@ -1736,18 +1746,15 @@ public class PlayerEventHandler {
                     }
                 }
                 // Don't send a deny message if the player is holding an investigation tool
-                if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
-                    final Text message = GriefPreventionPlugin.instance.messageData.permissionAccess
-                            .apply(ImmutableMap.of(
-                            "player", Text.of(claim.getOwnerName())
-                    )).build();
-                    GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
+                if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemSecondaryTick || lastInteractItemCancelled != false) {
+                    if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
+                        this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
+                    }
                 }
                 if (handType == HandTypes.MAIN_HAND) {
                     ((EntityPlayerMP) player).closeScreen();
                 }
                 event.setUseBlockResult(Tristate.FALSE);
-                this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
                 GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                 return;
             }
