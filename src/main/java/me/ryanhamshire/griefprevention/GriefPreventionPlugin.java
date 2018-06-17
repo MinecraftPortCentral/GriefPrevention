@@ -408,7 +408,7 @@ public class GriefPreventionPlugin {
                 try {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
-                    final int minSpongeBuild = 3195;
+                    final int minSpongeBuild = 3201;
                     final int spongeBuild = Integer.parseInt(build);
                     if (spongeBuild < minSpongeBuild) {
                         this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires"
