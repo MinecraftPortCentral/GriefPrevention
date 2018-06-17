@@ -167,7 +167,7 @@ public class PlayerEventHandler {
     private final BanService banService;
     private int lastInteractItemPrimaryTick = -1;
     private int lastInteractItemSecondaryTick = -1;
-    private boolean lastInteractItemCancelled = true;
+    private boolean lastInteractItemCancelled = false;
 
     // list of temporarily banned ip's
     private ArrayList<IpBanInfo> tempBannedIps = new ArrayList<IpBanInfo>();
@@ -1504,7 +1504,7 @@ public class PlayerEventHandler {
                     "item", itemInHand.getType().getId())).build();
             GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
             event.setCancelled(true);
-            lastInteractItemCancelled = false;
+            lastInteractItemCancelled = true;
             return;
         }
     }
@@ -1682,7 +1682,7 @@ public class PlayerEventHandler {
             }
 
             // Don't send a deny message if the player is holding an investigation tool
-            if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemPrimaryTick || lastInteractItemCancelled != false) {
+            if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemPrimaryTick || lastInteractItemCancelled != true) {
                 if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
                     this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
                 }
@@ -1746,7 +1746,7 @@ public class PlayerEventHandler {
                     }
                 }
                 // Don't send a deny message if the player is holding an investigation tool
-                if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemSecondaryTick || lastInteractItemCancelled != false) {
+                if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemSecondaryTick || lastInteractItemCancelled != true) {
                     if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
                         this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
                     }
