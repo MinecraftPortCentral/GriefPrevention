@@ -139,7 +139,7 @@ public class PlayerUtils {
     }
 
     public static int getOptionIntValue(Set<Context> contexts, Subject subject, String key, int defaultValue) {
-        String optionValue = subject.getOption(key).orElse(null);
+        String optionValue = subject.getOption(contexts, key).orElse(null);
         if (optionValue != null) {
             try {
                 return Integer.parseInt(optionValue);
@@ -154,7 +154,7 @@ public class PlayerUtils {
     }
 
     public static double getOptionDoubleValue(Set<Context> contexts, Subject subject, String key, double defaultValue) {
-        String optionValue = subject.getOption(key).orElse(null);
+        String optionValue = subject.getOption(contexts, key).orElse(null);
         if (optionValue != null) {
             try {
                 return Double.parseDouble(optionValue);
