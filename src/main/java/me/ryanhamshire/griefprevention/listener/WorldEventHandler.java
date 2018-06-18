@@ -82,10 +82,7 @@ public class WorldEventHandler {
             return;
         }
 
-        GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(event.getTargetWorld().getProperties());
-        if (!claimWorldManager.getWorldClaims().isEmpty()) {
-            event.setCancelled(true);
-        }
+        GriefPreventionPlugin.instance.dataStore.removeClaimWorldManager(event.getTargetWorld().getProperties());
     }
 
     @Listener
