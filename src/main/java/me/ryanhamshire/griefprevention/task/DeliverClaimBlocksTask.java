@@ -31,6 +31,7 @@ import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.manipulator.mutable.entity.VehicleData;
@@ -65,8 +66,9 @@ public class DeliverClaimBlocksTask implements Runnable {
                         continue;
                     }
 
-                    Player player = (Player) entity;
-                    int accrualPerHour = PlayerUtils.getOptionIntValue(player.getActiveContexts(), player, GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
+                    final Player player = (Player) entity;
+                    final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+                    final int accrualPerHour = PlayerUtils.getOptionIntValue(PermissionUtils.getActiveContexts(player, playerData), player, GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
                     if (accrualPerHour > 0) {
                         DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(player);
                         Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(i++).execute(newTask)

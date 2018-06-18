@@ -45,6 +45,7 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
                 return;
             }
             if (playerData.ignoreActiveContexts) {
+                playerData.ignoreActiveContexts = false;
                 return;
             }
 
@@ -54,9 +55,10 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
                     return;
                 }
 
-                accumulator.add(sourceClaim.getContext());
                 if (sourceClaim.parent != null && sourceClaim.getData().doesInheritParent()) {
                     accumulator.add(sourceClaim.parent.getContext());
+                } else {
+                    accumulator.add(sourceClaim.getContext());
                 }
             }
         }

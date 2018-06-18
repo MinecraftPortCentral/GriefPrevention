@@ -34,6 +34,7 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -193,13 +194,7 @@ public class GPPermissionHandler {
 
     private static Tristate getUserPermission(User user, GPClaim claim, String permission, String targetModPermission, String targetMetaPermission, GPPlayerData playerData) {
         final List<Claim> inheritParents = claim.getInheritedParents();
-        if (playerData != null) {
-            playerData.ignoreActiveContexts = true;
-        }
-        final Set<Context> contexts = new HashSet<>(user.getActiveContexts());
-        if (playerData != null) {
-            playerData.ignoreActiveContexts = false;
-        }
+        final Set<Context> contexts = new HashSet<>(PermissionUtils.getActiveContexts(user, playerData));
 
         for (Claim parentClaim : inheritParents) {
             GPClaim parent = (GPClaim) parentClaim;
@@ -303,13 +298,7 @@ public class GPPermissionHandler {
         }
 
         Player player = null;
-        if (playerData != null) {
-            playerData.ignoreActiveContexts = true;
-        }
-        Set<Context> contexts = new LinkedHashSet<>(subject.getActiveContexts());
-        if (playerData != null) {
-            playerData.ignoreActiveContexts = false;
-        }
+        Set<Context> contexts = new LinkedHashSet<>(PermissionUtils.getActiveContexts(subject, playerData));
         if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
             contexts.add(claim.world.getContext());

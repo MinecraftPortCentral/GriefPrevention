@@ -265,7 +265,7 @@ public class GPPlayerData implements PlayerData {
                 this.playerSubject = new WeakReference<>(subject);
             }
             final Subject subject = this.playerSubject.get();
-            final Set<Context> activeContexts = subject.getActiveContexts();
+            final Set<Context> activeContexts = PermissionUtils.getActiveContexts(subject, this);
             // options
             this.optionAbandonReturnRatioTown = PlayerUtils.getOptionDoubleValue(activeContexts, subject, GPOptions.ABANDON_RETURN_RATIO_TOWN, this.optionAbandonReturnRatioTown);
             this.optionAbandonReturnRatioBasic = PlayerUtils.getOptionDoubleValue(activeContexts, subject, GPOptions.ABANDON_RETURN_RATIO_BASIC, this.optionAbandonReturnRatioBasic);

@@ -398,8 +398,7 @@ public class GriefPreventionPlugin {
     @Listener
     public void onChangeServiceProvider(ChangeServiceProviderEvent event) {
         if (event.getNewProvider() instanceof PermissionService && this.validateSpongeVersion()) {
-            // TODO: Rework use of context calculator in order to support non-gp commands.
-            //((PermissionService) event.getNewProvider()).registerContextCalculator(new ClaimContextCalculator());
+            ((PermissionService) event.getNewProvider()).registerContextCalculator(new ClaimContextCalculator());
         }
     }
 
