@@ -1092,7 +1092,7 @@ public class CommandHelper {
             Player player = (Player) src;
             GPClaim gpClaim = (GPClaim) claim;
             GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());
-            if (!playerData.canIgnoreClaim(gpClaim)) {
+            if (!playerData.canIgnoreClaim(gpClaim) && !playerData.canManageAdminClaims) {
                 // if not owner of claim, validate perms
                 if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
                     if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS) || !gpClaim.isUserTrusted(player, TrustType.ACCESSOR)) {
