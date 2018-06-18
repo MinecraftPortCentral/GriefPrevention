@@ -87,6 +87,7 @@ import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 import org.spongepowered.api.util.Tristate;
+import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -586,7 +587,7 @@ public class CommandHelper {
                 double teleportHeight = claim.getOwnerPlayerData() == null ? 65.0D : (claim.getOwnerPlayerData().getMinClaimLevel() > 65.0D ? claim.getOwnerPlayerData().getMinClaimLevel() : 65);
                 Location<World> a = claim.lesserBoundaryCorner;
                 Vector3d center = a.getPosition().add(claim.greaterBoundaryCorner.getPosition()).div(2);
-                if (teleportHeight == 65) {
+                if (teleportHeight == 65 && claim.getWorld().getDimension().getType() == DimensionTypes.OVERWORLD) {
                     teleportHeight = claim.getWorld().getHighestYAt((int)center.getX(), (int)center.getZ());
                 }
                 Location<World> southWest = claim.lesserBoundaryCorner.setPosition(new Vector3d(center.getX(), teleportHeight, center.getZ()));
@@ -1105,7 +1106,7 @@ public class CommandHelper {
                 }
             }
 
-            Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location, 9, 9).orElse(null);
+            Location<World> safeLocation = Sponge.getGame().getTeleportHelper().getSafeLocation(location, 64, 16).orElse(null);
             if (safeLocation == null) {
                 player.sendMessage(
                         Text.builder().append(Text.of(TextColors.RED, "Location is not safe. "), 
