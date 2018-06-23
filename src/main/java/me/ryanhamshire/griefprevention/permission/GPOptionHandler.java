@@ -75,6 +75,10 @@ public class GPOptionHandler {
                 return (double) playerData.optionCreateClaimLimitSubdivision;
             case GPOptions.CREATE_CLAIM_LIMIT_TOWN:
                 return (double) playerData.optionCreateClaimLimitTown;
+            case GPOptions.MAX_CLAIM_LEVEL:
+                return (double) playerData.optionMaxClaimLevel;
+            case GPOptions.MIN_CLAIM_LEVEL:
+                return (double) playerData.optionMinClaimLevel;
         }
 
         // Handle claim context options
@@ -111,7 +115,6 @@ public class GPOptionHandler {
         }
 
         switch(option) {
-            case GPOptions.MAX_CLAIM_LEVEL:
             case GPOptions.MAX_CLAIM_SIZE_BASIC_X:
             case GPOptions.MAX_CLAIM_SIZE_BASIC_Y:
             case GPOptions.MAX_CLAIM_SIZE_BASIC_Z:
@@ -127,7 +130,6 @@ public class GPOptionHandler {
                 if (optionValue > adminValue) {
                     return adminValue;
                 }
-            case GPOptions.MIN_CLAIM_LEVEL:
             case GPOptions.MIN_CLAIM_SIZE_BASIC_X:
             case GPOptions.MIN_CLAIM_SIZE_BASIC_Y:
             case GPOptions.MIN_CLAIM_SIZE_BASIC_Z:
