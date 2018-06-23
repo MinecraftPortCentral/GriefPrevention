@@ -1829,12 +1829,8 @@ public class PlayerEventHandler {
             return;
         }
 
-        // can't use the shovel from too far away
-        /*if (location.getBlock().getType() == BlockTypes.AIR) {
-            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimTooFar.toText());
-            GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
-            return;
-        }*/
+        // Always cancel to avoid breaking blocks such as grass
+        event.setCancelled(true);
 
         // if the player is in restore nature mode, do only that
         UUID playerID = player.getUniqueId();
