@@ -24,6 +24,8 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.DataStore;
@@ -38,6 +40,7 @@ import me.ryanhamshire.griefprevention.event.GPFlagClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.ClaimClickData;
+import me.ryanhamshire.griefprevention.util.PaginationUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.Player;
@@ -61,7 +64,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class ClaimFlagBase {
@@ -79,6 +84,8 @@ public class ClaimFlagBase {
     protected ClaimSubjectType subjectType;
     protected Subject subject;
     protected String friendlySubjectName;
+    private final Cache<UUID, FlagType> lastActiveFlagTypeMap = Caffeine.newBuilder().expireAfterAccess(10, TimeUnit.MINUTES)
+            .build();
 
     protected ClaimFlagBase(ClaimSubjectType type) {
         this.subjectType = type;
@@ -95,6 +102,13 @@ public class ClaimFlagBase {
     }
 
     protected void showFlagPermissions(CommandSource src, GPClaim claim, FlagType flagType, String source) {
+        if (src instanceof Player) {
+            final Player player = (Player) src;
+            final FlagType lastFlagType = this.lastActiveFlagTypeMap.getIfPresent(player.getUniqueId());
+            if (lastFlagType != null && lastFlagType != flagType) {
+                PaginationUtils.resetActivePage(player.getUniqueId());
+            }
+        }
         final Text whiteOpenBracket = Text.of(TextColors.AQUA, "[");
         final Text whiteCloseBracket = Text.of(TextColors.AQUA, "]");
         final Text showAllText = Text.of("Click here to show all flag permissions for claim.");
@@ -504,7 +518,17 @@ public class ClaimFlagBase {
         PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
         PaginationList.Builder paginationBuilder = paginationService.builder()
                 .title(claimFlagHead).padding(Text.of(TextStyles.STRIKETHROUGH,"-")).contents(textList);
-        paginationBuilder.sendTo(src);
+        final PaginationList paginationList = paginationBuilder.build();
+        Integer activePage = 1;
+        if (src instanceof Player) {
+            final Player player = (Player) src;
+            activePage = PaginationUtils.getActivePage(player.getUniqueId());
+            if (activePage == null) {
+                activePage = 1;
+            }
+            this.lastActiveFlagTypeMap.put(player.getUniqueId(), flagType);
+        }
+        paginationList.sendTo(src, activePage);
     }
 
     private static Text getFlagText(String flagPermission, String baseFlag) {

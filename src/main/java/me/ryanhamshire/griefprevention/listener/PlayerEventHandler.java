@@ -59,6 +59,7 @@ import me.ryanhamshire.griefprevention.provider.WorldEditApiProvider;
 import me.ryanhamshire.griefprevention.task.PlayerKickBanTask;
 import me.ryanhamshire.griefprevention.task.WelcomeTask;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.PaginationUtils;
 import me.ryanhamshire.griefprevention.util.PlayerUtils;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import me.ryanhamshire.griefprevention.visual.VisualizationType;
@@ -620,6 +621,7 @@ public class PlayerEventHandler {
             }
         }
 
+        PaginationUtils.updateActiveCommand(player.getUniqueId(), command, event.getArguments());
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
@@ -1086,6 +1088,7 @@ public class PlayerEventHandler {
         }
 
         playerData.onDisconnect();
+        PaginationUtils.removeActivePageData(player.getUniqueId());
         if (playerData.getClaims().isEmpty()) {
             this.dataStore.clearCachedPlayerData(player.getWorld().getProperties(), playerID);
         }
