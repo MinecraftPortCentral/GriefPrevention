@@ -25,12 +25,15 @@
  */
 package me.ryanhamshire.griefprevention.command;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.util.PaginationUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -49,6 +52,8 @@ import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class CommandClaimList implements CommandExecutor {
@@ -57,6 +62,8 @@ public class CommandClaimList implements CommandExecutor {
     private boolean canListOthers;
     private boolean canListAdmin;
     private boolean displayOwned = true;
+    private final Cache<UUID, String> lastActiveClaimTypeMap = Caffeine.newBuilder().expireAfterAccess(10, TimeUnit.MINUTES)
+            .build();
 
     public CommandClaimList() {
         this.forcedType = null;
@@ -145,6 +152,14 @@ public class CommandClaimList implements CommandExecutor {
                 }
             }
         }
+        if (src instanceof Player) {
+            final Player player = (Player) src;
+            final String lastClaimType = this.lastActiveClaimTypeMap.getIfPresent(player.getUniqueId());
+            final String currentType = type == null ? "ALL" : type.toString();
+            if (lastClaimType != null && !lastClaimType.equals(currentType.toString())) {
+                PaginationUtils.resetActivePage(player.getUniqueId());
+            }
+        }
         claimsTextList = CommandHelper.generateClaimTextList(claimsTextList, claims, worldProperties.getWorldName(), user, src, createClaimListConsumer(src, user, type, worldProperties), this.canListOthers, false);
 
         final Text whiteOpenBracket = Text.of(TextColors.WHITE, "[");
@@ -189,13 +204,17 @@ public class CommandClaimList implements CommandExecutor {
         PaginationService paginationService = Sponge.getServiceManager().provide(PaginationService.class).get();
         PaginationList.Builder paginationBuilder = paginationService.builder()
                 .title(claimListHead).padding(Text.of(TextStyles.STRIKETHROUGH, "-")).contents(claimsTextList);
-        paginationBuilder.sendTo(src);
-
-        // drop the data we just loaded, if the player isn't online
-        // TODO : add task to unload data
-        //if (!user.isOnline()) {
-        //    GriefPreventionPlugin.instance.dataStore.clearCachedPlayerData(worldProperties, user.getUniqueId());
-        //}
+        final PaginationList paginationList = paginationBuilder.build();
+        Integer activePage = 1;
+        if (src instanceof Player) {
+            final Player player = (Player) src;
+            activePage = PaginationUtils.getActivePage(player.getUniqueId());
+            if (activePage == null) {
+                activePage = 1;
+            }
+            this.lastActiveClaimTypeMap.put(player.getUniqueId(), type == null ? "ALL" : type.toString());
+        }
+        paginationList.sendTo(src, activePage);
     }
 
     private Consumer<CommandSource> createClaimListConsumer(CommandSource src, User user, String type, WorldProperties worldProperties) {
