@@ -35,9 +35,8 @@ import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.ClaimTemplateStorage;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.configuration.TownStorageData;
-import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
+import me.ryanhamshire.griefprevention.configuration.type.ConfigBase;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
 import me.ryanhamshire.griefprevention.migrator.RedProtectMigrator;
 import org.spongepowered.api.Sponge;
@@ -126,13 +125,12 @@ public class FlatFileDataStore extends DataStore {
                 e.printStackTrace();
             }
         }
+
         // create/load configs
-        // create dimension config
-        DataStore.dimensionConfigMap.put(worldProperties.getUniqueId(),
-                new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, dimPath.resolve("dimension.conf")));
-        // create world config
-        DataStore.worldConfigMap.put(worldProperties.getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
-                dimPath.resolve(worldProperties.getWorldName()).resolve("world.conf")));
+        GriefPreventionConfig<ConfigBase> dimConfig = new GriefPreventionConfig<>(ConfigBase.class, dimPath.resolve("dimension.conf"), DataStore.globalConfig);
+        GriefPreventionConfig<ConfigBase> worldConfig = new GriefPreventionConfig<>(ConfigBase.class, dimPath.resolve(worldProperties.getWorldName()).resolve("world.conf"), dimConfig);
+        DataStore.dimensionConfigMap.put(worldProperties.getUniqueId(), dimConfig);
+        DataStore.worldConfigMap.put(worldProperties.getUniqueId(), worldConfig);
 
         GPClaimManager claimWorldManager = new GPClaimManager(worldProperties);
         this.claimWorldManagers.put(worldProperties.getUniqueId(), claimWorldManager);

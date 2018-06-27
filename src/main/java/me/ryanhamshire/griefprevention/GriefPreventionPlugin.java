@@ -112,13 +112,11 @@ import me.ryanhamshire.griefprevention.command.CommandUnseparate;
 import me.ryanhamshire.griefprevention.command.CommandUntrust;
 import me.ryanhamshire.griefprevention.command.CommandUntrustAll;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig.Type;
 import me.ryanhamshire.griefprevention.configuration.MessageDataConfig;
 import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.configuration.category.BlacklistCategory;
-import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
+import me.ryanhamshire.griefprevention.configuration.type.ConfigBase;
 import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
-import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
 import me.ryanhamshire.griefprevention.listener.BlockEventHandler;
 import me.ryanhamshire.griefprevention.listener.EntityEventHandler;
 import me.ryanhamshire.griefprevention.listener.MCClansEventHandler;
@@ -1739,7 +1737,7 @@ public class GriefPreventionPlugin {
             DataStore.loadBannedWords();
 
             Path rootConfigPath = this.getConfigPath().resolve("worlds");
-            DataStore.globalConfig = new GriefPreventionConfig<GlobalConfig>(Type.GLOBAL, rootConfigPath.resolve("global.conf"));
+            DataStore.globalConfig = new GriefPreventionConfig<>(GlobalConfig.class, rootConfigPath.resolve("global.conf"), null);
             String localeString = DataStore.globalConfig.getConfig().message.locale;
             try {
                 LocaleUtils.toLocale(localeString);
@@ -1775,10 +1773,11 @@ public class GriefPreventionPlugin {
                     }
                 }
 
-                DataStore.dimensionConfigMap.put(world.getProperties().getUniqueId(),
-                        new GriefPreventionConfig<DimensionConfig>(Type.DIMENSION, dimPath.resolve("dimension.conf")));
-                DataStore.worldConfigMap.put(world.getProperties().getUniqueId(), new GriefPreventionConfig<>(Type.WORLD,
-                        dimPath.resolve(world.getProperties().getWorldName()).resolve("world.conf")));
+                GriefPreventionConfig<ConfigBase> dimConfig = new GriefPreventionConfig<>(ConfigBase.class, dimPath.resolve("dimension.conf"), DataStore.globalConfig);
+                GriefPreventionConfig<ConfigBase> worldConfig = new GriefPreventionConfig<>(ConfigBase.class, dimPath.resolve(world.getProperties().getWorldName()).resolve("world.conf"), dimConfig);
+
+                DataStore.dimensionConfigMap.put(world.getProperties().getUniqueId(), dimConfig);
+                DataStore.worldConfigMap.put(world.getProperties().getUniqueId(), worldConfig);
 
                 // refresh player data
                 final GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
@@ -1980,19 +1979,18 @@ public class GriefPreventionPlugin {
         return getActiveConfig(worldProperties.getUniqueId());
     }
 
-    public static GriefPreventionConfig<?> getActiveConfig(UUID worldUniqueId) {
-        GriefPreventionConfig<WorldConfig> worldConfig = DataStore.worldConfigMap.get(worldUniqueId);
-        GriefPreventionConfig<DimensionConfig> dimConfig = DataStore.dimensionConfigMap.get(worldUniqueId);
-        if (worldConfig == null || worldConfig.getConfig() == null) {
-            return DataStore.globalConfig;
+    public static GriefPreventionConfig<? extends ConfigBase> getActiveConfig(UUID worldUniqueId) {
+        GriefPreventionConfig<ConfigBase> config = DataStore.worldConfigMap.get(worldUniqueId);
+        if (config != null) {
+            return config;
         }
-        if (worldConfig.getConfig().configEnabled) {
-            return worldConfig;
-        } else if (dimConfig.getConfig().configEnabled) {
-            return dimConfig;
-        } else {
-            return DataStore.globalConfig;
+
+        config = DataStore.dimensionConfigMap.get(worldUniqueId);
+        if (config != null) {
+            return config;
         }
+
+        return DataStore.globalConfig;
     }
 
     public static GriefPreventionConfig<GlobalConfig> getGlobalConfig() {

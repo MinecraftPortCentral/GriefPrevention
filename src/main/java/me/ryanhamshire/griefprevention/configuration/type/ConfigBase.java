@@ -33,7 +33,7 @@ import me.ryanhamshire.griefprevention.configuration.category.PvpCategory;
 import me.ryanhamshire.griefprevention.configuration.category.TownCategory;
 import ninja.leaping.configurate.objectmapping.Setting;
 
-public abstract class ConfigBase {
+public class ConfigBase {
 
     @Setting(value = "blacklist", comment = "Controls which item/block/entity id's are blacklisted from events either on a per-flag basis or globally. " 
             + "\nNote: Id's support wildcards '?' and '*' by using Apache's wildcard matcher." 
@@ -41,16 +41,22 @@ public abstract class ConfigBase {
             + "\nThe wildcard '*' represents zero or more characters."
             + "\nFor more information on usage, see https://commons.apache.org/proper/commons-io/javadocs/api-2.5/org/apache/commons/io/FilenameUtils.html#wildcardMatch(java.lang.String,%20java.lang.String)")
     public BlacklistCategory blacklist = new BlacklistCategory();
+
     @Setting
     public ClaimCategory claim = new ClaimCategory();
+
     @Setting
     public EconomyCategory economy = new EconomyCategory();
+
     @Setting
     public FlagCategory flags = new FlagCategory();
+
     @Setting
     public GeneralCategory general = new GeneralCategory();
+
     @Setting
     public PvpCategory pvp = new PvpCategory();
+
     @Setting
     public TownCategory town = new TownCategory();
 }

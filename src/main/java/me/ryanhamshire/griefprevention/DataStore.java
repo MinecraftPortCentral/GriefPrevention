@@ -42,9 +42,8 @@ import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.claim.GPClaimResult;
 import me.ryanhamshire.griefprevention.configuration.ClaimTemplateStorage;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.configuration.type.DimensionConfig;
+import me.ryanhamshire.griefprevention.configuration.type.ConfigBase;
 import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
-import me.ryanhamshire.griefprevention.configuration.type.WorldConfig;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
@@ -90,8 +89,8 @@ public abstract class DataStore {
     protected final Map<UUID, GPClaimManager> claimWorldManagers = Maps.newHashMap();
 
     // in-memory cache for claim data
-    public static Map<UUID, GriefPreventionConfig<DimensionConfig>> dimensionConfigMap = Maps.newHashMap();
-    public static Map<UUID, GriefPreventionConfig<WorldConfig>> worldConfigMap = Maps.newHashMap();
+    public static Map<UUID, GriefPreventionConfig<ConfigBase>> dimensionConfigMap = Maps.newHashMap();
+    public static Map<UUID, GriefPreventionConfig<ConfigBase>> worldConfigMap = Maps.newHashMap();
     public static Map<String, ClaimTemplateStorage> globalTemplates = new HashMap<>();
     public static GriefPreventionConfig<GlobalConfig> globalConfig;
     public static Map<UUID, GPPlayerData> GLOBAL_PLAYER_DATA = Maps.newHashMap();

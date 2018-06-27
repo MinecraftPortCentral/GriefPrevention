@@ -38,22 +38,30 @@ public class GlobalConfig extends ConfigBase {
 
     @Setting
     public BanCategory bans = new BanCategory();
+
     //@Setting
     //public DatabaseCategory database = new DatabaseCategory();
+
     @Setting
     public LoggingCategory logging = new LoggingCategory();
+
     @Setting
     public PlayerDataCategory playerdata = new PlayerDataCategory();
+
     @Setting
     public SpamCategory spam = new SpamCategory();
+
     @Setting
     public MessageCategory message = new MessageCategory();
+
     @Setting(comment = 
             "List of migrators that convert old or other protection data into the current GP claim data format." + 
             "\nNote: It is recommended to backup data before using.")
     public MigratorCategory migrator = new MigratorCategory();
+
     @Setting(value = "modules")
     public ModuleCategory modules = new ModuleCategory();
+
     @Setting
     public ThreadCategory thread = new ThreadCategory();
 }
