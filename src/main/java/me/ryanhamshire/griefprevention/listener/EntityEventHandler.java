@@ -273,8 +273,6 @@ public class EntityEventHandler {
                             }
                         }
                     }
-
-                    return true;
                 }
 
                 if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
