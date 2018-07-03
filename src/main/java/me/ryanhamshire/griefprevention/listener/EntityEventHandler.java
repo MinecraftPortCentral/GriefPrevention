@@ -61,7 +61,6 @@ import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.command.source.ConsoleSource;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
-import org.spongepowered.api.entity.explosive.Explosive;
 import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -93,7 +92,6 @@ import org.spongepowered.api.text.chat.ChatType;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.api.world.explosion.Explosion;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.SpongeImplHooks;
 import org.spongepowered.common.data.util.NbtDataUtil;
@@ -118,7 +116,7 @@ public class EntityEventHandler {
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onEntityExplosionPre(ExplosionEvent.Pre event) {
+    public void onEntityExplosionPre(ExplosionEvent.Pre event, @Root Object source) {
         if (!GPFlags.EXPLOSION || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
@@ -129,28 +127,11 @@ public class EntityEventHandler {
         GPTimings.ENTITY_EXPLOSION_PRE_EVENT.startTimingIfSync();
         Location<World> location = event.getExplosion().getLocation();
         GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location);
-
         User user = CauseContextHelper.getEventUser(event);
-        Explosive explosive = null;
-        if (event.getExplosion() instanceof Explosion) {
-            explosive = ((Explosion) event.getExplosion()).getSourceExplosive().orElse(null);
-        }
-
-        if (explosive != null) {
-            Entity entity = (Entity) explosive;
-
-            if (user == null) {
-                UUID uuid = entity.getCreator().orElse(null);
-                if (uuid != null) {
-                    user = GriefPreventionPlugin.getOrCreateUser(uuid);
-                }
-            }
-
-            if(GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION, entity, location, user, true) == Tristate.FALSE) {
-                event.setCancelled(true);
-                GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
-                return;
-            }
+        if(GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION, source, location, user, true) == Tristate.FALSE) {
+            event.setCancelled(true);
+            GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
+            return;
         }
 
         GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
