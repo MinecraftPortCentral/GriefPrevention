@@ -86,7 +86,12 @@ public class PermissionUtils {
         }
         Set<Context> activeContexts = new HashSet<>(subject.getActiveContexts());
         if (playerData != null && claim != null) {
-            activeContexts.remove(claim.getContext());
+            final Claim parent = claim.getParent().orElse(null);
+            if (parent != null && claim.getData().doesInheritParent()) {
+                activeContexts.remove(parent.getContext());
+            } else {
+                activeContexts.remove(claim.getContext());
+            }
         }
         return activeContexts;
     }
