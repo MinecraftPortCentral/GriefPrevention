@@ -194,7 +194,7 @@ public class GPPermissionHandler {
 
     private static Tristate getUserPermission(User user, GPClaim claim, String permission, String targetModPermission, String targetMetaPermission, GPPlayerData playerData) {
         final List<Claim> inheritParents = claim.getInheritedParents();
-        final Set<Context> contexts = new HashSet<>(PermissionUtils.getActiveContexts(user, playerData));
+        final Set<Context> contexts = PermissionUtils.getActiveContexts(user, playerData, claim);
 
         for (Claim parentClaim : inheritParents) {
             GPClaim parent = (GPClaim) parentClaim;
@@ -298,7 +298,7 @@ public class GPPermissionHandler {
         }
 
         Player player = null;
-        Set<Context> contexts = new LinkedHashSet<>(PermissionUtils.getActiveContexts(subject, playerData));
+        Set<Context> contexts = PermissionUtils.getActiveContexts(subject, playerData, claim);
         if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
             contexts.add(claim.world.getContext());

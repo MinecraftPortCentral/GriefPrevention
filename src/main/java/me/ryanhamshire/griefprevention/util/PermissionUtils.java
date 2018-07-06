@@ -26,9 +26,11 @@ package me.ryanhamshire.griefprevention.util;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -75,14 +77,17 @@ public class PermissionUtils {
     }
 
     public static Set<Context> getActiveContexts(Subject subject) {
-        return getActiveContexts(subject, null);
+        return getActiveContexts(subject, null, null);
     }
 
-    public static Set<Context> getActiveContexts(Subject subject, GPPlayerData playerData) {
+    public static Set<Context> getActiveContexts(Subject subject, GPPlayerData playerData, Claim claim) {
         if (playerData != null) {
             playerData.ignoreActiveContexts = true;
         }
-        final Set<Context> activeContexts = subject.getActiveContexts();
+        Set<Context> activeContexts = new HashSet<>(subject.getActiveContexts());
+        if (playerData != null && claim != null) {
+            activeContexts.remove(claim.getContext());
+        }
         return activeContexts;
     }
 }
