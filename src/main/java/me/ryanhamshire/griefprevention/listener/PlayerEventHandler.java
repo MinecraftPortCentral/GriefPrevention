@@ -2534,14 +2534,8 @@ public class PlayerEventHandler {
                 Location<World> nearbyLocation = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation : player.getLocation();
                 List<Claim> claims = this.dataStore.getNearbyClaims(nearbyLocation);
                 int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY();
-
-                boolean hideBorders = this.worldEditProvider != null &&
-                                      this.worldEditProvider.hasCUISupport(player) &&
-                                      GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.hideBorders;
-                if (!hideBorders) {
-                    Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
-                    visualization.apply(player);
-                }
+                Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
+                visualization.apply(player);
 
                 final Text message = GriefPreventionPlugin.instance.messageData.claimShowNearby
                         .apply(ImmutableMap.of(

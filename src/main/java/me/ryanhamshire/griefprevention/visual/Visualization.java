@@ -164,13 +164,18 @@ public class Visualization {
 
         // if he has any current visualization, clear it first
         //playerData.revertActiveVisual(player);
-
-        // if he's online, create a task to send him the visualization
-        if (player.isOnline() && this.elements.size() > 0
-                && this.elements.get(0).getOriginal().getLocation().get().getExtent().equals(player.getWorld())) {
-            Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(1L)
-                    .execute(new VisualizationApplicationTask(player, playerData, this, resetActive)).submit(GriefPreventionPlugin.instance);
-            //GriefPreventionPlugin.instance.executor.execute(new VisualizationApplicationTask(player, playerData, this, resetActive));
+        
+        boolean hideBorders = GriefPreventionPlugin.instance.worldEditProvider != null &&
+                GriefPreventionPlugin.instance.worldEditProvider.hasCUISupport(player) &&
+                GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.hideBorders;
+        if (!hideBorders) {
+            // if he's online, create a task to send him the visualization
+            if (player.isOnline() && this.elements.size() > 0
+                    && this.elements.get(0).getOriginal().getLocation().get().getExtent().equals(player.getWorld())) {
+                Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(1L)
+                        .execute(new VisualizationApplicationTask(player, playerData, this, resetActive)).submit(GriefPreventionPlugin.instance);
+                //GriefPreventionPlugin.instance.executor.execute(new VisualizationApplicationTask(player, playerData, this, resetActive));
+            }
         }
     }
 
