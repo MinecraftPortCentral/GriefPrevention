@@ -1529,7 +1529,7 @@ public class PlayerEventHandler {
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
         if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_PICKUP, player, event.getTargetEntity(), player, true) == Tristate.FALSE) {
             event.setCancelled(true);
-            GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
+            GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
             return;
         }
 
@@ -1636,11 +1636,6 @@ public class PlayerEventHandler {
 
         final Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType(), player, TrustType.ACCESSOR, true);
         if (result == Tristate.FALSE) {
-            if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_USE, player, event.getItemStackInUse().getType(), player) == Tristate.TRUE) {
-                GPTimings.PLAYER_USE_ITEM_EVENT.stopTimingIfSync();
-                return;
-            }
-
             final Text message = GriefPreventionPlugin.instance.messageData.permissionItemUse
                     .apply(ImmutableMap.of(
                     "item", event.getItemStackInUse().getType().getId())).build();
