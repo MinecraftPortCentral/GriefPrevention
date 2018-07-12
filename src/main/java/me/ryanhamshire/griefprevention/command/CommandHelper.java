@@ -1096,7 +1096,7 @@ public class CommandHelper {
             if (!playerData.canIgnoreClaim(gpClaim) && !playerData.canManageAdminClaims) {
                 // if not owner of claim, validate perms
                 if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-                    if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS) || !gpClaim.isUserTrusted(player, TrustType.ACCESSOR)) {
+                    if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS) && !gpClaim.isUserTrusted(player, TrustType.ACCESSOR)) {
                         player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
                         return;
                     }
