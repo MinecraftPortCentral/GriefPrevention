@@ -34,4 +34,6 @@ public class MessageCategory extends ConfigCategory {
             "Note: The language code must be lowercase and the country code must be uppercase.")
     public String locale = "en_US";
 
+    @Setting(value = "show-gp-prefix-greeting-farewell", comment = "Whether GP prefix should be shown in greeting/farewell claim messages. (Default: true)")
+    public boolean showGpPrefixGreetingFarewell = true;
 }

@@ -713,17 +713,26 @@ public class EntityEventHandler {
                 }
             } else {
                 if (playerData != null) {
+                    final boolean showGpPrefix = GriefPreventionPlugin.getGlobalConfig().getConfig().message.showGpPrefixGreetingFarewell;
                     playerData.lastClaim = new WeakReference<>(toClaim);
                     Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
                     if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
                         ChatType chatType = gpEvent.getEnterMessageChatType();
-                        player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                        if (showGpPrefix) {
+                            player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                        } else {
+                            player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : welcomeMessage));
+                        }
                     }
 
                     Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                     if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
                         ChatType chatType = gpEvent.getExitMessageChatType();
-                        player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                        if (showGpPrefix) {
+                            player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                        } else {
+                            player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : farewellMessage));
+                        }
                     }
 
                     if (toClaim.isInTown()) {
@@ -779,17 +788,26 @@ public class EntityEventHandler {
             }
 
             if (playerData != null) {
+                final boolean showGpPrefix = GriefPreventionPlugin.getGlobalConfig().getConfig().message.showGpPrefixGreetingFarewell;
                 playerData.lastClaim = new WeakReference<>(toClaim);
                 Text welcomeMessage = gpEvent.getEnterMessage().orElse(null);
                 if (welcomeMessage != null && !welcomeMessage.equals(Text.of())) {
                     ChatType chatType = gpEvent.getEnterMessageChatType();
-                    player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                    if (showGpPrefix) {
+                        player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : GriefPreventionPlugin.GP_TEXT, welcomeMessage));
+                    } else {
+                        player.sendMessage(chatType, Text.of(enterClanTag != null ? enterClanTag : welcomeMessage));
+                    }
                 }
 
                 Text farewellMessage = gpEvent.getExitMessage().orElse(null);
                 if (farewellMessage != null && !farewellMessage.equals(Text.of())) {
                     ChatType chatType = gpEvent.getExitMessageChatType();
-                    player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                    if (showGpPrefix) {
+                        player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : GriefPreventionPlugin.GP_TEXT, farewellMessage));
+                    } else {
+                        player.sendMessage(chatType, Text.of(exitClanTag != null ? exitClanTag : farewellMessage));
+                    }
                 }
 
                 if (toClaim.isInTown()) {
