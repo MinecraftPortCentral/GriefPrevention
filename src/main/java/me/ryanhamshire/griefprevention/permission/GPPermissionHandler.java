@@ -107,6 +107,9 @@ public class GPPermissionHandler {
             if (user instanceof Player) {
                 playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, user.getUniqueId());
             }
+            if (playerData != null && !playerData.debugClaimPermissions && playerData.canIgnoreClaim(claim)) {
+                return processResult(claim, "trust.ignore", Tristate.TRUE, user);
+            }
         }
         currentEvent = event;
         eventLocation = location;
@@ -174,10 +177,6 @@ public class GPPermissionHandler {
                     return processResult(claim, "trust." + type.toString().toLowerCase(), Tristate.TRUE, user);
                 }
                 return getClaimFlagPermission(claim, targetPermission, targetModPermission, targetMetaPermission);
-            }
-             // Check for ignoreclaims after override and debug checks
-            if (playerData.canIgnoreClaim(claim)) {
-                return processResult(claim, "trust.ignore", Tristate.TRUE, user);
             }
         }
         if (user != null) {
@@ -296,6 +295,9 @@ public class GPPermissionHandler {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
             return Tristate.UNDEFINED;
         }
+        if (playerData != null && !playerData.debugClaimPermissions && playerData.canIgnoreClaim(claim)) {
+            return Tristate.TRUE;
+        }
 
         Player player = null;
         Set<Context> contexts = PermissionUtils.getActiveContexts(subject, playerData, claim);
@@ -354,6 +356,9 @@ public class GPPermissionHandler {
     public static Tristate getFlagOverride(Event event, Location<World> location, GPClaim claim, String flagPermission, Object source, Object target, User user, GPPlayerData playerData, boolean checkWildernessOverride) {
         if (!claim.getInternalClaimData().allowFlagOverrides()) {
             return Tristate.UNDEFINED;
+        }
+        if (playerData != null && !playerData.debugClaimPermissions && playerData.canIgnoreClaim(claim)) {
+            return Tristate.TRUE;
         }
 
         if (checkWildernessOverride && !claim.isWilderness()) {
