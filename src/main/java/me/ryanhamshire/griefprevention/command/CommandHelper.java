@@ -576,7 +576,7 @@ public class CommandHelper {
         if (claimList.size() > 0) {
             for (Claim playerClaim : claimList) {
                 GPClaim claim = (GPClaim) playerClaim;
-                if (!listChildren && claim.isSubdivision()) {
+                if (!listChildren && claim.isSubdivision() && !claim.getData().getEconomyData().isForSale()) {
                     continue;
                 }
                 // Only list claims trusted
