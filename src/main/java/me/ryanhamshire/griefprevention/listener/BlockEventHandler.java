@@ -130,8 +130,14 @@ public class BlockEventHandler {
 
         final LocatableBlock locatableBlock = cause.first(LocatableBlock.class).orElse(null);
         final TileEntity tileEntity = cause.first(TileEntity.class).orElse(null);
+        Entity sourceEntity = null;
         final Object source = cause.root();
-        final Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
+        Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
+        if (sourceLocation == null && source instanceof Entity) {
+            // check entity
+            sourceEntity = ((Entity) source);
+            sourceLocation = sourceEntity.getLocation();
+        }
         final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
         final boolean isLiquidSource = context.containsKey(EventContextKeys.LIQUID_FLOW);
         final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
@@ -212,7 +218,7 @@ public class BlockEventHandler {
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     continue;
                 }
-                if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null) {
+                if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null && sourceEntity == null) {
                     continue;
                 }
                 if (user != null && pistonExtend) {
