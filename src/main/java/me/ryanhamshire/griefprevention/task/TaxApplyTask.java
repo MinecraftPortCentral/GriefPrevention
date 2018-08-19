@@ -114,7 +114,7 @@ public class TaxApplyTask implements Runnable {
         final Subject subject = playerData.getPlayerSubject();
         final Account claimAccount = claim.getEconomyAccount().orElse(null);
         double taxRate = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_RATE, playerData);
-        double taxOwed = (claim.getClaimBlocks() / 256) * taxRate;
+        double taxOwed = claim.getClaimBlocks() * taxRate;
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(GriefPreventionPlugin.instance);
             GPTaxClaimEvent event = new GPTaxClaimEvent(claim, taxRate, taxOwed);
