@@ -63,6 +63,7 @@ public class GPDebugData {
 
     private static final int MAX_LINES = 5000;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+    private static final Text GP_TEXT = Text.of(TextColors.RESET, "[", TextColors.AQUA, "GP", TextColors.WHITE, "] ");
 
     private final CommandSource source;
     private final List<String> header;
@@ -97,6 +98,8 @@ public class GPDebugData {
                     TextColors.GREEN, "Pasting output..."));
             this.pasteRecords();
             this.records.clear();
+            GriefPreventionPlugin.debugActive = false;
+            this.source.sendMessage(Text.of(GP_TEXT, TextColors.GRAY, "Debug ", TextColors.RED, "OFF"));
         }
     }
 
