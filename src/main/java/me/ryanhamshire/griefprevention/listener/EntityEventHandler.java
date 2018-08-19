@@ -219,10 +219,6 @@ public class EntityEventHandler {
                     permission = GPPermissions.ENTITY_CHUNK_SPAWN;
                 }
 
-                if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
-                    return true;
-                }
-
                 if (!isChunkSpawn && entity instanceof EntityItem) {
                     if (user == null) {
                         return true;
