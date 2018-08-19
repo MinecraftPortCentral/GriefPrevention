@@ -529,9 +529,12 @@ public class GPPermissionHandler {
         if (obj != null) {
             if (obj instanceof Entity) {
                 Entity targetEntity = (Entity) obj;
-                net.minecraft.entity.Entity mcEntity = (net.minecraft.entity.Entity) targetEntity;
+                net.minecraft.entity.Entity mcEntity = null;
+                if (targetEntity instanceof net.minecraft.entity.Entity) {
+                    mcEntity = (net.minecraft.entity.Entity) targetEntity;
+                }
                 String id = "";
-                if (mcEntity instanceof EntityItem) {
+                if (mcEntity != null && mcEntity instanceof EntityItem) {
                     EntityItem mcItem = (EntityItem) mcEntity;
                     net.minecraft.item.ItemStack itemStack = mcItem.getItem();
                     if (itemStack != null && itemStack.getItem() != null) {
@@ -544,13 +547,13 @@ public class GPPermissionHandler {
                     }
                 }
 
-                if (id.contains("unknown") && SpongeImplHooks.isFakePlayer(mcEntity)) {
+                if (mcEntity != null && id.contains("unknown") && SpongeImplHooks.isFakePlayer(mcEntity)) {
                     id = "fakeplayer:" + ((EntityPlayer) obj).getName().toLowerCase();
                 } else if (id.equals("unknown:unknown") && obj instanceof EntityPlayer) {
                     id = "minecraft:player";
                 }
                 populateEventSourceTarget(id, isSource);
-                if (!isSource && targetEntity instanceof Living) {
+                if (!isSource && mcEntity != null && targetEntity instanceof Living) {
                     for (EnumCreatureType type : EnumCreatureType.values()) {
                         if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
                             String[] parts = id.split(":");
