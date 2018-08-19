@@ -780,7 +780,7 @@ public class EntityEventHandler {
                 }
 
                 event.setCancelled(true);
-                if (EntityUtils.getOwnerUniqueId(entity) == null) {
+                if (!(entity instanceof Player) && EntityUtils.getOwnerUniqueId(entity) == null) {
                     ((net.minecraft.entity.Entity) entity).setDead();
                 }
                 GPTimings.ENTITY_MOVE_EVENT.stopTimingIfSync();
