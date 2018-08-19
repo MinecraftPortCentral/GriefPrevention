@@ -648,7 +648,7 @@ public class EntityEventHandler {
                 Sponge.getEventManager().post(gpEvent);
                 if (gpEvent.isCancelled()) {
                     event.setCancelled(true);
-                    if (EntityUtils.getOwnerUniqueId(entity) == null) {
+                    if (!(entity instanceof Player) && EntityUtils.getOwnerUniqueId(entity) == null) {
                         ((net.minecraft.entity.Entity) entity).setDead();
                     }
                 }
@@ -704,7 +704,7 @@ public class EntityEventHandler {
             Sponge.getEventManager().post(gpEvent);
             if (gpEvent.isCancelled()) {
                 event.setCancelled(true);
-                if (EntityUtils.getOwnerUniqueId(entity) == null) {
+                if (!(entity instanceof Player) && EntityUtils.getOwnerUniqueId(entity) == null) {
                     ((net.minecraft.entity.Entity) entity).setDead();
                 }
                 final Text cancelMessage = gpEvent.getMessage().orElse(null);
