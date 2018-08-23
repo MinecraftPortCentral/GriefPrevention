@@ -237,11 +237,11 @@ public class EntityEventHandler {
                             if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), block, world.getProperties())) {
                                 return true;
                             }
-                            final Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, block, user, true);
+                            final Tristate result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, block, user, TrustType.ACCESSOR, true);
                             if (result != Tristate.UNDEFINED) {
                                 if (result == Tristate.TRUE) {
                                     // Check if item drop is allowed
-                                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
+                                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, permission, source, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                                         return false;
                                     }
                                     return true;
@@ -252,7 +252,7 @@ public class EntityEventHandler {
                     }
                 }
 
-                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, source, entity, user, true) == Tristate.FALSE) {
+                if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, permission, source, entity, user, TrustType.ACCESSOR, true) == Tristate.FALSE) {
                     return false;
                 }
                 return true;
