@@ -132,8 +132,8 @@ public class MessageDataConfig extends ConfigCategory {
     @Setting("claim-bank-withdraw-no-funds")
     public TextTemplate claimBankWithdrawNoFunds = TextTemplate.of(TextColors.RED, "The claim bank has a remaining balance of ", TextTemplate.arg("balance").color(TextColors.GOLD), " and does not have enough funds to withdraw ", TextTemplate.arg("amount").color(TextColors.GOLD), ".");
 
-    @Setting("claim-block-limit")
-    public TextTemplate claimBlockLimit = TextTemplate.of(TextColors.RED, "You've reached your claim block limit.  You can't purchase more.");
+    @Setting("claim-block-purchase-limit")
+    public TextTemplate claimBlockPurchaseLimit = TextTemplate.of(TextColors.RED, "The new claim block total of ", TextTemplate.arg("new_total").color(TextColors.GOLD), " will exceed your claim block limit of ", TextTemplate.arg("block_limit").color(TextColors.GREEN), ". The transaction has been cancelled.");
 
     @Setting("claim-chest-confirmation")
     public TextTemplate claimChestConfirmation = TextTemplate.of(TextColors.RED, "This chest is protected.");

@@ -105,7 +105,18 @@ public class CommandClaimBuyBlocks implements CommandExecutor {
                 return CommandResult.success();
             }
 
-            double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
+            final double totalCost = blockCount * activeConfig.getConfig().economy.economyClaimBlockCost;
+            final int newClaimBlockTotal = playerData.getAccruedClaimBlocks() + blockCount;
+            if (newClaimBlockTotal > playerData.getMaxAccruedClaimBlocks()) {
+                // player has exceeded limit
+                final Text message = GriefPreventionPlugin.instance.messageData.claimBlockPurchaseLimit
+                        .apply(ImmutableMap.of(
+                            "new_total", newClaimBlockTotal,
+                            "block_limit", playerData.getMaxAccruedClaimBlocks())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
+                    return CommandResult.success();
+            }
+
             // attempt to withdraw cost
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().addContext(GriefPreventionPlugin.PLUGIN_CONTEXT, GriefPreventionPlugin.instance);
@@ -121,8 +132,9 @@ public class CommandClaimBuyBlocks implements CommandExecutor {
                     return CommandResult.success();
                 }
             }
+
             // add blocks
-            playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);
+            playerData.addAccruedClaimBlocks(blockCount);
             playerData.getStorageData().save();
 
             final Text message = GriefPreventionPlugin.instance.messageData.economyBlocksPurchaseConfirmation

@@ -439,7 +439,7 @@ public class GPPlayerData implements PlayerData {
 
     public boolean addAccruedClaimBlocks(int newAccruedClaimBlocks) {
         int currentTotal = this.getAccruedClaimBlocks();
-        if ((currentTotal + newAccruedClaimBlocks) >= this.optionMaxAccruedBlocks) {
+        if ((currentTotal + newAccruedClaimBlocks) > this.optionMaxAccruedBlocks) {
             // player has exceeded limit, set nothing
             return false;
         }
@@ -449,7 +449,7 @@ public class GPPlayerData implements PlayerData {
     }
 
     public boolean setAccruedClaimBlocks(int newAccruedClaimBlocks) {
-        if (newAccruedClaimBlocks >= this.optionMaxAccruedBlocks) {
+        if (newAccruedClaimBlocks > this.optionMaxAccruedBlocks) {
             // player has exceeded limit, set nothing
             return false;
         }
