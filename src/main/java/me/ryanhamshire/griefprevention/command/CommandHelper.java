@@ -1177,13 +1177,40 @@ public class CommandHelper {
                         result =
                         playerAccount.withdraw(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Sponge.getCauseStackManager().getCurrentCause());
                     if (result.getResult() == ResultType.SUCCESS) {
+                        double depositAmount = amount;
+                        if (claim.getData().isExpired()) {
+                            final double taxBalance = claim.getEconomyData().getTaxBalance();
+                            depositAmount -= claim.getEconomyData().getTaxBalance();
+                            if (depositAmount >= 0) {
+                                claim.getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxBalance));
+                                claim.getEconomyData().setTaxPastDueDate(null);
+                                claim.getEconomyData().setTaxBalance(0);
+                                claim.getInternalClaimData().setExpired(false);
+                                final Text message = GriefPreventionPlugin.instance.messageData.taxClaimPaidBalance
+                                        .apply(ImmutableMap.of(
+                                            "amount", taxBalance)).build();
+                                GriefPreventionPlugin.sendMessage(src, message);
+                                if (depositAmount == 0) {
+                                    return;
+                                }
+                            } else {
+                                final double newTaxBalance = Math.abs(depositAmount);
+                                claim.getEconomyData().setTaxBalance(newTaxBalance);
+                                final Text message = GriefPreventionPlugin.instance.messageData.taxClaimPaidPartial
+                                        .apply(ImmutableMap.of(
+                                            "amount", depositAmount,
+                                            "balance", newTaxBalance)).build();
+                                GriefPreventionPlugin.sendMessage(src, message);
+                                return;
+                            }
+                        }
                         final Text message = GriefPreventionPlugin.instance.messageData.claimBankDeposit
                             .apply(ImmutableMap.of(
-                                "amount", amount)).build();
+                                "amount", depositAmount)).build();
                         GriefPreventionPlugin.sendMessage(src, message);
-                        bankAccount.deposit(economyService.getDefaultCurrency(), BigDecimal.valueOf(amount), Sponge.getCauseStackManager().getCurrentCause());
+                        bankAccount.deposit(economyService.getDefaultCurrency(), BigDecimal.valueOf(depositAmount), Sponge.getCauseStackManager().getCurrentCause());
                         claim.getData().getEconomyData().addBankTransaction(
-                            new GPBankTransaction(BankTransactionType.DEPOSIT_SUCCESS, playerData.playerID, Instant.now(), amount));
+                            new GPBankTransaction(BankTransactionType.DEPOSIT_SUCCESS, playerData.playerID, Instant.now(), depositAmount));
                     } else {
                         GriefPreventionPlugin.sendMessage(src, GriefPreventionPlugin.instance.messageData.claimBankDepositNoFunds.toText());
                         claim.getData().getEconomyData()
@@ -1236,7 +1263,7 @@ public class CommandHelper {
                 for (Claim playerClaim : playerData.getInternalClaims()) {
                     GPClaim playerTown = (GPClaim) playerClaim.getTown().orElse(null);
                     if (!playerClaim.isTown() && playerTown != null && playerTown.getUniqueId().equals(claim.getUniqueId())) {
-                        taxOwed += (playerTown.getClaimBlocks() / 256) * playerTaxRate;
+                        taxOwed += playerTown.getClaimBlocks() * playerTaxRate;
                     }
                 }
             } else {

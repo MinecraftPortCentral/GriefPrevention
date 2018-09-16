@@ -138,8 +138,12 @@ public class TaxApplyTask implements Runnable {
                         //if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays + expireDaysToKeep)).isBefore(localNow)) {
                         //}
                     } else {
-                        if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays)).isBefore(localNow)) {
-                            claim.getData().setExpiration(true);
+                        if (taxExpirationDays <= 0) {
+                            claim.getInternalClaimData().setExpired(true);
+                            claim.getData().save();
+                        } else if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays)).isBefore(localNow)) {
+                            claim.getInternalClaimData().setExpired(true);
+                            claim.getData().save();
                         }
                     }
                 }
@@ -149,6 +153,8 @@ public class TaxApplyTask implements Runnable {
             } else {
                 claim.getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_SUCCESS, Instant.now(), taxOwed));
                 claim.getEconomyData().setTaxPastDueDate(null);
+                claim.getEconomyData().setTaxBalance(0);
+                claim.getInternalClaimData().setExpired(false);
                 if (inTown) {
                     final GPClaim town = claim.getTownClaim();
                     town.getData()
@@ -158,6 +164,7 @@ public class TaxApplyTask implements Runnable {
                         .get()
                         .deposit(this.economyService.getDefaultCurrency(), BigDecimal.valueOf(taxOwed), Sponge.getCauseStackManager().getCurrentCause());
                 }
+                claim.getData().save();
             }
         }
     }

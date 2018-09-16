@@ -26,6 +26,7 @@
 package me.ryanhamshire.griefprevention;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
@@ -751,6 +752,17 @@ public class GPPlayerData implements PlayerData {
         }
 
         return this.playerSubject.get();
+    }
+
+    public void sendTaxExpireMessage(Player player, GPClaim claim) {
+        final double taxRate = GPOptionHandler.getClaimOptionDouble(player, claim, GPOptions.Type.TAX_RATE, this);
+        final double taxOwed = claim.getClaimBlocks() * taxRate;
+        final double remainingDays = GPOptionHandler.getClaimOptionDouble(player, claim, GPOptions.Type.EXPIRATION_DAYS_KEEP, this);
+        final Text message = GriefPreventionPlugin.instance.messageData.taxClaimExpired
+                .apply(ImmutableMap.of(
+                "remaining_days", remainingDays,
+                "tax_owed", taxOwed)).build();
+        GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
     }
 
     public double getTotalTax() {

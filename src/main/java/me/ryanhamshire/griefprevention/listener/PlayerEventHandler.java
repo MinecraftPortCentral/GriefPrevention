@@ -1682,7 +1682,7 @@ public class PlayerEventHandler {
             // Don't send a deny message if the player is holding an investigation tool
             if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemPrimaryTick || lastInteractItemCancelled != true) {
                 if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
-                    this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
+                    this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
                 }
             }
             event.setCancelled(true);
@@ -1746,7 +1746,7 @@ public class PlayerEventHandler {
                 // Don't send a deny message if the player is holding an investigation tool
                 if (Sponge.getServer().getRunningTimeTicks() != lastInteractItemSecondaryTick || lastInteractItemCancelled != true) {
                     if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
-                        this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
+                        this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
                     }
                 }
                 if (handType == HandTypes.MAIN_HAND) {
@@ -1767,7 +1767,7 @@ public class PlayerEventHandler {
                     ((EntityPlayerMP) player).closeScreen();
                 }
                 event.setUseBlockResult(Tristate.FALSE);
-                this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
+                this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
                 GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
                 return;
             }
@@ -1783,7 +1783,7 @@ public class PlayerEventHandler {
             onPlayerHandleShovelAction(event, event.getTargetBlock(), player, handType, playerData);
             // avoid changing blocks after using a shovel
             event.setUseBlockResult(Tristate.FALSE);
-            this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, handType);
+            this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
         }
         playerData.setLastInteractData(claim);
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
@@ -2634,12 +2634,14 @@ public class PlayerEventHandler {
         }
     }
 
-    private void sendInteractBlockDenyMessage(ItemStack playerItem, BlockSnapshot blockSnapshot, GPClaim claim, Player player, HandType handType) {
+    private void sendInteractBlockDenyMessage(ItemStack playerItem, BlockSnapshot blockSnapshot, GPClaim claim, Player player, GPPlayerData playerData, HandType handType) {
         if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
             return;
         }
 
-        if (playerItem == null || playerItem == ItemTypes.NONE || playerItem.isEmpty()) {
+        if (playerData != null && claim.getData() != null && claim.getData().isExpired() && GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().claim.bankTaxSystem) {
+            playerData.sendTaxExpireMessage(player, claim);
+        } else if (playerItem == null || playerItem == ItemTypes.NONE || playerItem.isEmpty()) {
             final Text message = GriefPreventionPlugin.instance.messageData.permissionInteractBlock
                     .apply(ImmutableMap.of(
                     "owner", claim.getOwnerName(),

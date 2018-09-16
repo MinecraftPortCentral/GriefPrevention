@@ -2037,6 +2037,9 @@ public class GPClaim implements Claim {
         }
 
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
+        if (!playerData.canIgnoreClaim(this) && this.getInternalClaimData().isExpired()) {
+            return false;
+        }
         if (!playerData.executingClaimDebug && !playerData.debugClaimPermissions) {
             if (user.getUniqueId().equals(this.getOwnerUniqueId())) {
                 return true;
