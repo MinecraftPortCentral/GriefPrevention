@@ -34,8 +34,11 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
+import me.ryanhamshire.griefprevention.permission.GPOptionHandler;
+import me.ryanhamshire.griefprevention.permission.GPOptions;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.CauseStackManager;
+import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.time.Duration;
@@ -77,7 +80,8 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 if (activeConfig.getConfig().claim.claimRadius >= 0) {
                     areaOfDefaultClaim = (int) Math.pow(activeConfig.getConfig().claim.claimRadius * 2 + 1, 2);
                 }
-    
+
+                final Subject subject = playerData.getPlayerSubject();
                 Instant claimLastActive = claim.getInternalClaimData().getDateLastActive();
 
                 try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
@@ -104,21 +108,37 @@ public class CleanupUnusedClaimsTask implements Runnable {
                     }
 
                     if (playerData.optionClaimExpirationBasic > 0) {
-                        if (claimLastActive.plus(Duration.ofDays(playerData.optionClaimExpirationBasic))
-                            .isBefore(Instant.now())) {
-                            Sponge.getCauseStackManager().addContext(GPContextKeys.PLAYER_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer);
-
-                            claimManager.deleteClaim(claim);
-                            GriefPreventionPlugin.addLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "
-                                                              + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
-                                CustomLogEntryTypes.AdminActivity);
-
-                            // if configured to do so, restore the land to natural
-                            if (GriefPreventionPlugin.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative)
-                                || activeConfig.getConfig().claim.claimAutoNatureRestore) {
-                                // restore the claim area to natural state
-                                GriefPreventionPlugin.instance.restoreClaim(claim, 0);
+                        final Instant localNow = Instant.now();
+                        final boolean claimActive = !claimLastActive.plus(Duration.ofDays(playerData.optionClaimExpirationBasic)).isBefore(localNow);
+                        if (claimActive) {
+                            final boolean taxEnabled = activeConfig.getConfig().claim.bankTaxSystem;
+                            if (!taxEnabled || !claim.getData().isExpired()) {
+                                continue;
                             }
+                            final Instant taxPastDueDate = claim.getEconomyData().getTaxPastDueDate().orElse(null);
+                            if (taxPastDueDate == null) {
+                                continue;
+                            }
+
+                            final int taxExpirationDays = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_EXPIRATION, playerData).intValue();
+                            final int expireDaysToKeep = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.EXPIRATION_DAYS_KEEP, playerData).intValue();
+                            if (!taxPastDueDate.plus(Duration.ofDays(taxExpirationDays + expireDaysToKeep)).isBefore(localNow)) {
+                                continue;
+                            }
+                        }
+
+                        Sponge.getCauseStackManager().addContext(GPContextKeys.PLAYER_CLAIM_EXPIRED, GriefPreventionPlugin.instance.pluginContainer);
+
+                        claimManager.deleteClaim(claim);
+                        GriefPreventionPlugin.addLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ "
+                                                          + GriefPreventionPlugin.getfriendlyLocationString(claim.getLesserBoundaryCorner()),
+                            CustomLogEntryTypes.AdminActivity);
+
+                        // if configured to do so, restore the land to natural
+                        if (GriefPreventionPlugin.instance.claimModeIsActive(worldProperties, ClaimsMode.Creative)
+                            || activeConfig.getConfig().claim.claimAutoNatureRestore) {
+                            // restore the claim area to natural state
+                            GriefPreventionPlugin.instance.restoreClaim(claim, 0);
                         }
                     }
                 }

@@ -114,7 +114,7 @@ public class TaxApplyTask implements Runnable {
         final Subject subject = playerData.getPlayerSubject();
         final Account claimAccount = claim.getEconomyAccount().orElse(null);
         double taxRate = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_RATE, playerData);
-        double taxOwed = claim.getClaimBlocks() * taxRate;
+        double taxOwed = claim.getEconomyData().getTaxBalance() + (claim.getClaimBlocks() * taxRate);
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(GriefPreventionPlugin.instance);
             GPTaxClaimEvent event = new GPTaxClaimEvent(claim, taxRate, taxOwed);
@@ -122,32 +122,27 @@ public class TaxApplyTask implements Runnable {
             if (event.isCancelled()) {
                 return;
             }
+            final double taxBalance = claim.getEconomyData().getTaxBalance();
             taxRate = event.getTaxRate();
-            taxOwed = claim.getClaimBlocks() * taxRate;
+            taxOwed = taxBalance + (claim.getClaimBlocks() * taxRate);
 
             TransactionResult result = claimAccount.withdraw(this.economyService.getDefaultCurrency(), BigDecimal.valueOf(taxOwed), Sponge.getCauseStackManager().getCurrentCause());
             if (result.getResult() != ResultType.SUCCESS) {
                 final Instant localNow = Instant.now();
                 Instant taxPastDueDate = claim.getEconomyData().getTaxPastDueDate().orElse(null);
                 if (taxPastDueDate == null) {
-                    claim.getEconomyData().setTaxPastDueDate(Instant.now());
+                    claim.getEconomyData().setTaxPastDueDate(localNow);
                 } else {
                     final int taxExpirationDays = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.TAX_EXPIRATION, playerData).intValue();
-                    if (claim.getData().isExpired()) {
-                        final int expireDaysToKeep = GPOptionHandler.getClaimOptionDouble(subject, claim, GPOptions.Type.EXPIRATION_DAYS_KEEP, playerData).intValue();
-                        //if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays + expireDaysToKeep)).isBefore(localNow)) {
-                        //}
-                    } else {
-                        if (taxExpirationDays <= 0) {
-                            claim.getInternalClaimData().setExpired(true);
-                            claim.getData().save();
-                        } else if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays)).isBefore(localNow)) {
-                            claim.getInternalClaimData().setExpired(true);
-                            claim.getData().save();
-                        }
+                    if (taxExpirationDays <= 0) {
+                        claim.getInternalClaimData().setExpired(true);
+                        claim.getData().save();
+                    } else if (taxPastDueDate.plus(Duration.ofDays(taxExpirationDays)).isBefore(localNow)) {
+                        claim.getInternalClaimData().setExpired(true);
+                        claim.getData().save();
                     }
                 }
-                final double totalTaxOwed = claim.getEconomyData().getTaxBalance() + taxOwed;
+                final double totalTaxOwed = taxBalance + taxOwed;
                 claim.getEconomyData().setTaxBalance(totalTaxOwed);
                 claim.getEconomyData().addBankTransaction(new GPBankTransaction(BankTransactionType.TAX_FAIL, Instant.now(), taxOwed));
             } else {
