@@ -84,6 +84,7 @@ import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.living.ArmorStand;
+import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.CauseStackManager;
@@ -1388,42 +1389,43 @@ public class PlayerEventHandler {
         GPClaim claim = this.dataStore.getClaimAt(location);
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
 
-        // if entity has an owner, apply special rules
-        IMixinEntity spongeEntity = (IMixinEntity) targetEntity;
-        Optional<User> owner = spongeEntity.getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
-        if (owner.isPresent()) {
-            UUID ownerID = owner.get().getUniqueId();
-
-            // if the player interacting is the owner or an admin in ignore claims mode, always allow
-            if (player.getUniqueId().equals(ownerID) || playerData.canIgnoreClaim(claim)) {
-                // if giving away pet, do that instead
-                if (playerData.petGiveawayRecipient != null) {
-                    SpongeEntityType spongeEntityType = ((SpongeEntityType) spongeEntity.getType());
-                    if (spongeEntityType == null || spongeEntityType.equals(EntityTypes.UNKNOWN) || !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
-                        final Text message = GriefPreventionPlugin.instance.messageData.commandPetInvalid
-                                .apply(ImmutableMap.of(
-                                "type", spongeEntity.getType().getId())).build();
-                        GriefPreventionPlugin.sendMessage(player, message);
+        // if entity is living and has an owner, apply special rules
+        if (targetEntity instanceof Living) {
+            IMixinEntity spongeEntity = (IMixinEntity) targetEntity;
+            Optional<User> owner = spongeEntity.getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
+            if (owner.isPresent()) {
+                UUID ownerID = owner.get().getUniqueId();
+                // if the player interacting is the owner or an admin in ignore claims mode, always allow
+                if (player.getUniqueId().equals(ownerID) || playerData.canIgnoreClaim(claim)) {
+                    // if giving away pet, do that instead
+                    if (playerData.petGiveawayRecipient != null) {
+                        SpongeEntityType spongeEntityType = ((SpongeEntityType) spongeEntity.getType());
+                        if (spongeEntityType == null || spongeEntityType.equals(EntityTypes.UNKNOWN) || !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
+                            final Text message = GriefPreventionPlugin.instance.messageData.commandPetInvalid
+                                    .apply(ImmutableMap.of(
+                                    "type", spongeEntity.getType().getId())).build();
+                            GriefPreventionPlugin.sendMessage(player, message);
+                            playerData.petGiveawayRecipient = null;
+                            GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
+                            return;
+                        }
+                        spongeEntity.setCreator(playerData.petGiveawayRecipient.getUniqueId());
+                        if (targetEntity instanceof EntityTameable) {
+                            EntityTameable tameable = (EntityTameable) targetEntity;
+                            tameable.setOwnerId(playerData.petGiveawayRecipient.getUniqueId());
+                        } else if (targetEntity instanceof EntityHorse) {
+                            EntityHorse horse = (EntityHorse) targetEntity;
+                            horse.setOwnerUniqueId(playerData.petGiveawayRecipient.getUniqueId());
+                            horse.setHorseTamed(true);
+                        }
                         playerData.petGiveawayRecipient = null;
-                        GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
-                        return;
+                        GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandPetConfirmation.toText());
+                        event.setCancelled(true);
+                        this.sendInteractEntityDenyMessage(itemInHand, targetEntity, claim, player, handType);
                     }
-                    spongeEntity.setCreator(playerData.petGiveawayRecipient.getUniqueId());
-                    if (targetEntity instanceof EntityTameable) {
-                        EntityTameable tameable = (EntityTameable) targetEntity;
-                        tameable.setOwnerId(playerData.petGiveawayRecipient.getUniqueId());
-                    } else if (targetEntity instanceof EntityHorse) {
-                        EntityHorse horse = (EntityHorse) targetEntity;
-                        horse.setOwnerUniqueId(playerData.petGiveawayRecipient.getUniqueId());
-                        horse.setHorseTamed(true);
-                    }
-                    playerData.petGiveawayRecipient = null;
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandPetConfirmation.toText());
-                    event.setCancelled(true);
-                    this.sendInteractEntityDenyMessage(itemInHand, targetEntity, claim, player, handType);
+                    GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
+                    return;
                 }
-                GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
-                return;
             }
         }
 
