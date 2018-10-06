@@ -329,12 +329,13 @@ public class EntityEventHandler {
             return false;
         }
 
-        GPClaim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), playerData != null ? playerData.lastClaim.get() : null);
-        Tristate result = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, user, true);
+        final GPClaim claim = this.dataStore.getClaimAt(targetEntity.getLocation(), playerData != null ? playerData.lastClaim.get() : null);
+        final TrustType trustType = targetEntity instanceof Living ? TrustType.ACCESSOR : TrustType.BUILDER;
+        Tristate result = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, user, trustType, true);
         if (result == Tristate.FALSE) {
             return true;
         }
-        result = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, damageSource, targetEntity, user, true);
+        result = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, damageSource, targetEntity, user, trustType, true);
         if (result == Tristate.FALSE) {
             return true;
         }
@@ -351,7 +352,7 @@ public class EntityEventHandler {
             if (!(sourceEntity instanceof Player) && !(targetEntity instanceof Player)) {
                 if (sourceEntity instanceof User) {
                     User sourceUser = (User) sourceEntity;
-                    perm = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, sourceUser);
+                    perm = GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, sourceUser, trustType, true);
                     if (targetEntity instanceof EntityLivingBase && perm == Tristate.TRUE) {
                         return false;
                     }
@@ -372,7 +373,7 @@ public class EntityEventHandler {
                             if (user == null) {
                                 user = ((IMixinEntity) sourceEntity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
                             }
-                            if (GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, user) != Tristate.TRUE) {
+                            if (GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, sourceEntity, targetEntity, user, trustType, true) != Tristate.TRUE) {
                                 return true;
                             }
                         }
@@ -474,7 +475,7 @@ public class EntityEventHandler {
             }
         }
 
-        if (GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, user) == Tristate.FALSE) {
+        if (GPPermissionHandler.getClaimPermission(event, targetEntity.getLocation(), claim, GPPermissions.ENTITY_DAMAGE, attacker, targetEntity, user, trustType, true) == Tristate.FALSE) {
             return true;
         }
 
