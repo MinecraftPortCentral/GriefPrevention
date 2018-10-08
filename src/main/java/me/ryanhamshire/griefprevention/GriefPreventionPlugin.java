@@ -774,6 +774,7 @@ public class GriefPreventionPlugin {
         Sponge.getEventManager().registerListeners(this, new WorldEventHandler());
         if (this.nucleusApiProvider != null) {
             Sponge.getEventManager().registerListeners(this, new NucleusEventHandler());
+            this.nucleusApiProvider.registerTokens();
         }
         if (this.clanApiProvider != null) {
             Sponge.getEventManager().registerListeners(this, new MCClansEventHandler());

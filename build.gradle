@@ -85,7 +85,7 @@ dependencies {
     compile "com.squareup.okhttp3:okhttp:3.9.1"
     compile "com.squareup.okio:okio:1.13.0"
     compileOnly "org.bstats:bstats-sponge:1.2"
-    compileOnly ("io.github.nucleuspowered:nucleus-api:1.2.0-PR5-S7.0"){
+    compileOnly ("io.github.nucleuspowered:nucleus-api:1.4.0-S7.0"){
         exclude module: 'spongeapi'
     }
     compileOnly "nl.riebie:mcclans-api:1.3"
