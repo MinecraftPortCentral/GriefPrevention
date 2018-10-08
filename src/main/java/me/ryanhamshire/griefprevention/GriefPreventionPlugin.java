@@ -146,7 +146,7 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.LocaleUtils;
-import org.bstats.sponge.Metrics;
+import org.bstats.sponge.Metrics2;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform.Component;
 import org.spongepowered.api.Sponge;
@@ -232,7 +232,7 @@ public class GriefPreventionPlugin {
     public static String SPONGE_VERSION = "unknown";
     @Inject public PluginContainer pluginContainer;
     @Inject private Logger logger;
-    @Inject private Metrics metrics;
+    @Inject private Metrics2 metrics;
     @Inject @ConfigDir(sharedRoot = false)
     private Path configPath;
     public MessageStorage messageStorage;
@@ -406,7 +406,7 @@ public class GriefPreventionPlugin {
                 try {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
-                    final int minSpongeBuild = 3235;
+                    final int minSpongeBuild = 3422;
                     final int spongeBuild = Integer.parseInt(build);
                     if (spongeBuild < minSpongeBuild) {
                         this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires"

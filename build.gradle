@@ -63,10 +63,6 @@ repositories {
         name = 'worldedit'
         url = 'http://maven.sk89q.com/artifactory/repo'
     }
-    maven {
-        name = 'bstats'
-        url = 'http://repo.bstats.org/content/repositories/releases/'
-    }
 }
 
 sourceSets {
@@ -84,7 +80,6 @@ dependencies {
     compileOnly "com.googlecode.json-simple:json-simple:1.1"
     compile "com.squareup.okhttp3:okhttp:3.9.1"
     compile "com.squareup.okio:okio:1.13.0"
-    compileOnly "org.bstats:bstats-sponge:1.2"
     compileOnly ("io.github.nucleuspowered:nucleus-api:1.4.0-S7.0"){
         exclude module: 'spongeapi'
     }
@@ -139,10 +134,8 @@ shadowJar {
     dependencies {
         include dependency("com.squareup.okhttp3:okhttp:3.9.1")
         include dependency("com.squareup.okio:okio:1.13.0")
-        include dependency("org.bstats:bstats-sponge:1.2")
     }
 
-    relocate "org.bstats", "me.ryanhamshire.griefprevention.shade.org.bstats"
     relocate "okhttp3", "me.ryanhamshire.griefprevention.shade.okhttp3"
     relocate "okio", "me.ryanhamshire.griefprevention.shade.okio"
 
