@@ -314,7 +314,7 @@ public class GPPlayerData implements PlayerData {
             this.ignoreBasicClaims = subject.hasPermission(activeContexts, GPPermissions.IGNORE_CLAIMS_BASIC);
             this.canManageAdminClaims = subject.hasPermission(activeContexts, GPPermissions.COMMAND_ADMIN_CLAIMS);
             this.canManageWilderness = subject.hasPermission(activeContexts, GPPermissions.MANAGE_WILDERNESS);
-            this.playerName = CommandHelper.lookupPlayerName(this.playerID);
+            this.playerName = subject.getFriendlyIdentifier().orElse(null);
             if (this.optionMaxClaimLevel > 255 || this.optionMaxClaimLevel <= 0 || this.optionMaxClaimLevel < this.optionMinClaimLevel) {
                 this.optionMaxClaimLevel = 255;
             }
@@ -328,7 +328,10 @@ public class GPPlayerData implements PlayerData {
 
     public String getPlayerName() {
         if (this.playerName == null) {
-            return "[unknown]";
+            this.playerName = CommandHelper.lookupPlayerName(this.playerID);
+            if (this.playerName == null) {
+                this.playerName = "[unknown]";
+            }
         }
 
         return this.playerName;
