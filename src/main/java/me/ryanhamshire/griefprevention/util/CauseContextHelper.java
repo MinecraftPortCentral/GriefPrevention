@@ -40,12 +40,22 @@ public class CauseContextHelper {
     public static User getEventUser(Event event) {
         final Cause cause = event.getCause();
         final EventContext context = event.getContext();
+        // Don't attempt to set user for leaf decay
+        if (context.containsKey(EventContextKeys.LEAVES_DECAY)) {
+            return null;
+        }
+
         User user = null;
         if (cause != null) {
             user = cause.first(User.class).orElse(null);
             if (user != null && user instanceof EntityPlayer && SpongeImplHooks.isFakePlayer((EntityPlayer) user) && user.getName().startsWith("[")) {
                 user = null;
             }
+        }
+
+        // Only check notifier for fire spread
+        if (context.containsKey(EventContextKeys.FIRE_SPREAD)) {
+            return context.get(EventContextKeys.NOTIFIER).orElse(null);
         }
 
         if (user == null) {

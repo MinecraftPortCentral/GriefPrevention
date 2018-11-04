@@ -141,6 +141,7 @@ public class BlockEventHandler {
         final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
         final boolean isLiquidSource = context.containsKey(EventContextKeys.LIQUID_FLOW);
         final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
+        final boolean isLeafDecay = context.containsKey(EventContextKeys.LEAVES_DECAY);
         if (!GPFlags.LIQUID_FLOW && isLiquidSource) {
             return;
         }
@@ -218,7 +219,7 @@ public class BlockEventHandler {
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
                     continue;
                 }
-                if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null && sourceEntity == null) {
+                if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null && sourceEntity == null && !isFireSource && !isLeafDecay) {
                     continue;
                 }
                 if (user != null && pistonExtend) {
