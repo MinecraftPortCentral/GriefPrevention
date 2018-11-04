@@ -39,7 +39,6 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
-import me.ryanhamshire.griefprevention.permission.GPBlacklists;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.util.BlockPosCache;
@@ -536,7 +535,7 @@ public class BlockEventHandler {
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onExplosion(ExplosionEvent.Post event) {
+    public void onExplosionDetonate(ExplosionEvent.Detonate event) {
         final World world = event.getExplosion().getWorld();
         if (!GPFlags.EXPLOSION || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
@@ -550,31 +549,28 @@ public class BlockEventHandler {
         GPTimings.EXPLOSION_EVENT.startTimingIfSync();
         final User user = CauseContextHelper.getEventUser(event);
         GPClaim targetClaim = null;
-        for (Transaction<BlockSnapshot> transaction : event.getTransactions()) {
-            BlockSnapshot blockSnapshot = transaction.getOriginal();
-            Location<World> location = blockSnapshot.getLocation().orElse(null);
-            if (location == null) {
-                continue;
-            }
-
-            targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(blockSnapshot.getLocation().get(), targetClaim);
-            if (GPFlags.EXPLOSION_SURFACE && location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, blockSnapshot, user, true) == Tristate.FALSE) {
+        final List<Location<World>> filteredLocations = new ArrayList<>();
+        for (Location<World> location : event.getAffectedLocations()) {
+            targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location, targetClaim);
+            if (GPFlags.EXPLOSION_SURFACE && location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, location, user, true) == Tristate.FALSE) {
                 event.setCancelled(true);
-                GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
-                return;
+                break;
             }
 
-            if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION, source, blockSnapshot, user, true) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION, source, location, user, true) == Tristate.FALSE) {
                 // Avoid lagging server from large explosions.
-                if (event.getTransactions().size() > 100) {
+                if (event.getAffectedLocations().size() > 100) {
                     event.setCancelled(true);
-                    GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
-                    return;
+                    break;
                 }
-                transaction.setValid(false);
-                GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
-                return;
+                filteredLocations.add(location);
             }
+        }
+        // Workaround for SpongeForge bug
+        if (event.isCancelled()) {
+            event.getAffectedLocations().clear();
+        } else if (!filteredLocations.isEmpty()) {
+            event.getAffectedLocations().removeAll(filteredLocations);
         }
         GPTimings.EXPLOSION_EVENT.stopTimingIfSync();
     }
