@@ -1535,6 +1535,10 @@ public class CommandHelper {
                 return Text.of("Controls whether an item can be used.\n",
                         TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent usage of diamond swords, enter\n",
                         TextColors.GREEN, "/cf item-use minecraft:diamond_sword false");
+            case LEAF_DECAY :
+                return Text.of("Controls whether leaves can decay in a world.\n",
+                        TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent leaves from decaying, enter\n",
+                        TextColors.GREEN, "/cf leaf-decay any false");
             case LIQUID_FLOW :
                 return Text.of("Controls whether liquid is allowed to flow.\n",
                         TextColors.LIGHT_PURPLE, "Example", TextColors.WHITE, " : To prevent liquid flow, enter\n",

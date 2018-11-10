@@ -33,4 +33,17 @@ public class GPCreateClaimEvent extends GPClaimEvent implements CreateClaimEvent
         super(claim);
     }
 
+    public static class Pre extends GPCreateClaimEvent {
+
+        public Pre(Claim claim) {
+            super(claim);
+        }
+    }
+
+    public static class Post extends GPCreateClaimEvent {
+
+        public Post(Claim claim) {
+            super(claim);
+        }
+    }
 }

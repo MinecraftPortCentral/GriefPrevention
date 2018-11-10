@@ -26,5 +26,8 @@ package me.ryanhamshire.griefprevention.api.event;
 
 public interface DeleteClaimEvent extends ClaimEvent {
 
-    interface Abandon extends DeleteClaimEvent { }
+    /**
+     * Fired when a claim is abandoned.
+     */
+    interface Abandon extends DeleteClaimEvent {};
 }

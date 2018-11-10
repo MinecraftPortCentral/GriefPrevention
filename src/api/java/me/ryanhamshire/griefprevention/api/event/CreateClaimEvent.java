@@ -31,4 +31,13 @@ package me.ryanhamshire.griefprevention.api.event;
  */
 public interface CreateClaimEvent extends ClaimEvent {
 
+    /**
+     * Fired before the claim is created.
+     */
+    interface Pre extends CreateClaimEvent {};
+
+    /**
+     * Fired after the claim is created.
+     */
+    interface Post extends CreateClaimEvent {};
 }

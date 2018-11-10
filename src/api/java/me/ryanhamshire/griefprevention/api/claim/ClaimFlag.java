@@ -150,6 +150,10 @@ public enum ClaimFlag {
      */
     ITEM_USE("item-use"),
     /**
+     * Used to allow or deny leaves from decaying.
+     */
+    LEAF_DECAY("leaf-decay"),
+    /**
      * Used to allow or deny liquid from flowing.
      */
     LIQUID_FLOW("liquid-flow"),

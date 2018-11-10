@@ -135,6 +135,9 @@ public class BlacklistCategory extends ConfigCategory {
     @Setting(value = "item-use")
     public List<String> blacklistItemUse = new ArrayList<>();
 
+    @Setting(value = "leaf-decay")
+    public List<String> blacklistLeafDecay = new ArrayList<>();
+
     @Setting(value = "liquid-flow")
     public List<String> blacklistLiquidFlow = new ArrayList<>();
 
@@ -250,6 +253,9 @@ public class BlacklistCategory extends ConfigCategory {
         }
         if (flag.equalsIgnoreCase(ClaimFlag.ITEM_USE.toString())) {
             return this.blacklistItemUse;
+        }
+        if (flag.equalsIgnoreCase(ClaimFlag.LEAF_DECAY.toString())) {
+            return this.blacklistLeafDecay;
         }
         if (flag.equalsIgnoreCase(ClaimFlag.LIQUID_FLOW.toString())) {
             return this.blacklistLiquidFlow;

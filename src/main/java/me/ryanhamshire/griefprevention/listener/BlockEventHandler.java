@@ -226,15 +226,21 @@ public class BlockEventHandler {
                         continue;
                     }
                 }
-                if (isFireSource) {
+                if (isLeafDecay) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LEAF_DECAY, source, location.getBlock(), user) == Tristate.FALSE) {
+                        event.setCancelled(true);
+                        lastBlockPreCancelled = true;
+                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                        return;
+                    }
+                } else if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         lastBlockPreCancelled = true;
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
-                }
-                if (isLiquidSource) {
+                } else if (isLiquidSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         lastBlockPreCancelled = true;
@@ -242,8 +248,7 @@ public class BlockEventHandler {
                         return;
                     }
                     continue;
-                }
-                if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
+                } else if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
                     lastBlockPreCancelled = true;
@@ -265,16 +270,21 @@ public class BlockEventHandler {
                     continue;
                 }
 
-                if (isFireSource) {
+                if (isLeafDecay) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LEAF_DECAY, source, location.getBlock(), user) == Tristate.FALSE) {
+                        event.setCancelled(true);
+                        lastBlockPreCancelled = true;
+                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
+                        return;
+                    }
+                } else if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         lastBlockPreCancelled = true;
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
-                }
-
-                if (isLiquidSource) {
+                } else if (isLiquidSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         lastBlockPreCancelled = true;
@@ -282,9 +292,7 @@ public class BlockEventHandler {
                         return;
                     }
                     continue;
-                }
-
-                if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
+                } else if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
                     event.setCancelled(true);
                     lastBlockPreCancelled = true;
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();

@@ -82,6 +82,7 @@ public class FlagCategory extends ConfigCategory {
         defaultAdminFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultAdminFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
         defaultAdminFlags.put(ClaimFlag.ITEM_USE.toString(), true);
+        defaultAdminFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         defaultAdminFlags.put(ClaimFlag.LIQUID_FLOW.toString(), false);
         defaultAdminFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
         defaultAdminFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), false);
@@ -116,6 +117,7 @@ public class FlagCategory extends ConfigCategory {
         defaultBasicFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultBasicFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
         defaultBasicFlags.put(ClaimFlag.ITEM_USE.toString(), false);
+        defaultBasicFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         defaultBasicFlags.put(ClaimFlag.LIQUID_FLOW.toString(), false);
         defaultBasicFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
         defaultBasicFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), false);
@@ -150,6 +152,7 @@ public class FlagCategory extends ConfigCategory {
         defaultTownFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultTownFlags.put(ClaimFlag.ITEM_SPAWN.toString(), false);
         defaultTownFlags.put(ClaimFlag.ITEM_USE.toString(), false);
+        defaultTownFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         defaultTownFlags.put(ClaimFlag.LIQUID_FLOW.toString(), false);
         defaultTownFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
         defaultTownFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), false);
@@ -184,6 +187,7 @@ public class FlagCategory extends ConfigCategory {
         defaultWildernessFlags.put(ClaimFlag.ITEM_PICKUP.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ITEM_SPAWN.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.ITEM_USE.toString(), true);
+        defaultWildernessFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.LIQUID_FLOW.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.PORTAL_USE.toString(), true);
         defaultWildernessFlags.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), true);
@@ -207,35 +211,36 @@ public class FlagCategory extends ConfigCategory {
         userClaimFlags.add(ClaimFlag.ITEM_DROP.toString());
         userClaimFlags.add(ClaimFlag.ITEM_PICKUP.toString());
         userClaimFlags.add(ClaimFlag.ITEM_USE.toString());
+        userClaimFlags.add(ClaimFlag.LEAF_DECAY.toString());
         userClaimFlags.add(ClaimFlag.PORTAL_USE.toString());
         userClaimFlags.add(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString());
         userClaimFlags.add(ClaimFlag.PROJECTILE_IMPACT_ENTITY.toString());
     }
 
     public Map<String, Boolean> getAdminDefaults() {
-        if (!this.defaultAdminFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
-            this.defaultAdminFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        if (!this.defaultAdminFlags.containsKey(ClaimFlag.LEAF_DECAY.toString())) {
+            this.defaultAdminFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         }
         return this.defaultAdminFlags;
     }
 
     public Map<String, Boolean> getBasicDefaults() {
-        if (!this.defaultBasicFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
-            this.defaultBasicFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        if (!this.defaultBasicFlags.containsKey(ClaimFlag.LEAF_DECAY.toString())) {
+            this.defaultBasicFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         }
         return this.defaultBasicFlags;
     }
 
     public Map<String, Boolean> getTownDefaults() {
-        if (!this.defaultTownFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
-            this.defaultTownFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        if (!this.defaultTownFlags.containsKey(ClaimFlag.LEAF_DECAY.toString())) {
+            this.defaultTownFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         }
         return this.defaultTownFlags;
     }
 
     public Map<String, Boolean> getWildernessDefaults() {
-        if (!this.defaultWildernessFlags.containsKey(ClaimFlag.ENTITY_CHUNK_SPAWN.toString())) {
-            this.defaultWildernessFlags.put(ClaimFlag.ENTITY_CHUNK_SPAWN.toString(), true);
+        if (!this.defaultWildernessFlags.containsKey(ClaimFlag.LEAF_DECAY.toString())) {
+            this.defaultWildernessFlags.put(ClaimFlag.LEAF_DECAY.toString(), true);
         }
         return this.defaultWildernessFlags;
     }

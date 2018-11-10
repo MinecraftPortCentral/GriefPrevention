@@ -65,6 +65,7 @@ public class GPFlags {
     public static boolean ITEM_PICKUP;
     public static boolean ITEM_SPAWN;
     public static boolean ITEM_USE;
+    public static boolean LEAF_DECAY;
     public static boolean LIQUID_FLOW;
     public static boolean PORTAL_USE;
     public static boolean PROJECTILE_IMPACT_BLOCK;
@@ -108,6 +109,7 @@ public class GPFlags {
         ITEM_PICKUP  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ITEM_PICKUP.toString());
         ITEM_SPAWN  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ITEM_SPAWN.toString());
         ITEM_USE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.ITEM_USE.toString());
+        LEAF_DECAY  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.LEAF_DECAY.toString());
         LIQUID_FLOW  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.LIQUID_FLOW.toString());
         PORTAL_USE  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.PORTAL_USE.toString());
         PROJECTILE_IMPACT_BLOCK  = GriefPreventionPlugin.getGlobalConfig().getConfig().modules.isProtectionModuleEnabled(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString());

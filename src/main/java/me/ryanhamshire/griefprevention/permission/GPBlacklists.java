@@ -70,6 +70,7 @@ public class GPBlacklists {
     public static boolean ITEM_PICKUP;
     public static boolean ITEM_SPAWN;
     public static boolean ITEM_USE;
+    public static boolean LEAF_DECAY;
     public static boolean LIQUID_FLOW;
     public static boolean PORTAL_USE;
     public static boolean PROJECTILE_IMPACT_BLOCK;
@@ -110,6 +111,7 @@ public class GPBlacklists {
         ITEM_PICKUP = !blacklistCategory.getFlagBlacklist(ClaimFlag.ITEM_PICKUP.toString()).isEmpty();
         ITEM_SPAWN = !blacklistCategory.getFlagBlacklist(ClaimFlag.ITEM_SPAWN.toString()).isEmpty();
         ITEM_USE = !blacklistCategory.getFlagBlacklist(ClaimFlag.ITEM_USE.toString()).isEmpty();
+        LEAF_DECAY = !blacklistCategory.getFlagBlacklist(ClaimFlag.LEAF_DECAY.toString()).isEmpty();
         LIQUID_FLOW = !blacklistCategory.getFlagBlacklist(ClaimFlag.LIQUID_FLOW.toString()).isEmpty();
         PORTAL_USE = !blacklistCategory.getFlagBlacklist(ClaimFlag.PORTAL_USE.toString()).isEmpty();
         PROJECTILE_IMPACT_BLOCK = !blacklistCategory.getFlagBlacklist(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString()).isEmpty();
@@ -146,6 +148,7 @@ public class GPBlacklists {
         blacklistMap.put(ClaimFlag.ITEM_PICKUP.toString(), blacklistCategory.blacklistItemPickup);
         blacklistMap.put(ClaimFlag.ITEM_SPAWN.toString(), blacklistCategory.blacklistItemSpawn);
         blacklistMap.put(ClaimFlag.ITEM_USE.toString(), blacklistCategory.blacklistItemUse);
+        blacklistMap.put(ClaimFlag.LEAF_DECAY.toString(), blacklistCategory.blacklistLeafDecay);
         blacklistMap.put(ClaimFlag.LIQUID_FLOW.toString(), blacklistCategory.blacklistLiquidFlow);
         blacklistMap.put(ClaimFlag.PORTAL_USE.toString(), blacklistCategory.blacklistPortalUse);
         blacklistMap.put(ClaimFlag.PROJECTILE_IMPACT_BLOCK.toString(), blacklistCategory.blacklistProjectileImpactBlock);

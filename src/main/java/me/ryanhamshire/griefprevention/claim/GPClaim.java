@@ -2822,7 +2822,7 @@ public class GPClaim implements Claim {
                 return result;
             }
 
-            GPCreateClaimEvent event = new GPCreateClaimEvent(claim);
+            GPCreateClaimEvent.Pre event = new GPCreateClaimEvent.Pre(claim);
             Sponge.getEventManager().post(event);
             if (event.isCancelled()) {
                 final Text message = event.getMessage().orElse(null);
@@ -2857,6 +2857,16 @@ public class GPClaim implements Claim {
                 claim.migrateClaims(new ArrayList<>(result.getClaims()));
             }
 
+            GPCreateClaimEvent.Post postEvent = new GPCreateClaimEvent.Post(claim);
+            Sponge.getEventManager().post(postEvent);
+            if (postEvent.isCancelled()) {
+                final Text message = postEvent.getMessage().orElse(null);
+                if (message != null && player != null) {
+                    GriefPreventionPlugin.sendMessage(player, message);
+                }
+                claimManager.deleteClaimInternal(claim, true);
+                return new GPClaimResult(claim, ClaimResultType.CLAIM_EVENT_CANCELLED, message);
+            }
             return new GPClaimResult(claim, ClaimResultType.SUCCESS);
         }
     }
