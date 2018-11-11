@@ -78,6 +78,10 @@ public class ModuleCategory {
     public boolean isProtectionModuleEnabled(String flag) {
         final Boolean result = this.protection.get(flag);
         if (result == null) {
+            if (flag.equals(ClaimFlag.LEAF_DECAY.toString())) {
+                protection.put(ClaimFlag.LEAF_DECAY.toString(), true);
+                return true;
+            }
             return false;
         }
 

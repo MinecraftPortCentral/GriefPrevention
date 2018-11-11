@@ -140,7 +140,7 @@ public class BlockEventHandler {
         final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
         final boolean isLiquidSource = context.containsKey(EventContextKeys.LIQUID_FLOW);
         final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
-        boolean isLeafDecay = context.containsKey(EventContextKeys.LEAVES_DECAY);
+        final boolean isLeafDecay = context.containsKey(EventContextKeys.LEAVES_DECAY);
         if (!GPFlags.LEAF_DECAY && isLeafDecay) {
             return;
         }
@@ -149,10 +149,6 @@ public class BlockEventHandler {
         }
         if (!GPFlags.FIRE_SPREAD && isFireSource) {
             return;
-        }
-        if (isLeafDecay) {
-            // Player placed blocks do not decay. This is required to avoid player leaf block breaks going through leaf decay.
-            isLeafDecay = locatableBlock != null && locatableBlock.getLocation().getBlock().get(Keys.DECAYABLE).orElse(false);
         }
 
         lastBlockPreTick = Sponge.getServer().getRunningTimeTicks();
@@ -236,14 +232,12 @@ public class BlockEventHandler {
                 if (isLeafDecay) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LEAF_DECAY, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
-                        lastBlockPreCancelled = true;
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
                 } else if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
-                        lastBlockPreCancelled = true;
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
@@ -277,17 +271,9 @@ public class BlockEventHandler {
                     continue;
                 }
 
-                if (isLeafDecay) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LEAF_DECAY, source, location.getBlock(), user) == Tristate.FALSE) {
-                        event.setCancelled(true);
-                        lastBlockPreCancelled = true;
-                        GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                        return;
-                    }
-                } else if (isFireSource) {
+                if (isFireSource) {
                     if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
                         event.setCancelled(true);
-                        lastBlockPreCancelled = true;
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
