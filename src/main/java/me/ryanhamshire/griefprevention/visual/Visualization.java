@@ -293,8 +293,8 @@ public class Visualization {
         }
 
         // check CUI support
-        if (GriefPreventionPlugin.instance.worldEditProvider != null && playerData != null) {
-            GriefPreventionPlugin.instance.worldEditProvider.hasCUISupport(playerData.getPlayerName());
+        if (GriefPreventionPlugin.instance.worldEditProvider != null && playerData != null
+                && GriefPreventionPlugin.instance.worldEditProvider.hasCUISupport(playerData.getPlayerName())) {
             playerData.showVisualFillers = false;
             STEP = 0;
         }
