@@ -1355,6 +1355,9 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_INTERACT_ENTITY_PRIMARY_EVENT.startTimingIfSync();
         Location<World> location = targetEntity.getLocation();
         GPClaim claim = this.dataStore.getClaimAt(location);
+        if (event.isCancelled() && claim.getData().getPvpOverride() == Tristate.TRUE && targetEntity instanceof Player) {
+            event.setCancelled(false);
+        }
 
         Tristate result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INTERACT_ENTITY_PRIMARY, source, targetEntity, player, TrustType.ACCESSOR, true);
         if (result == Tristate.FALSE) {
