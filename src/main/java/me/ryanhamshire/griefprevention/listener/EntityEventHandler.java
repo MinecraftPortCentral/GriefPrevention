@@ -92,6 +92,7 @@ import org.spongepowered.api.text.chat.ChatType;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.explosion.Explosion;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.SpongeImplHooks;
 import org.spongepowered.common.data.util.NbtDataUtil;
@@ -116,7 +117,7 @@ public class EntityEventHandler {
     }
 
     @Listener(order = Order.FIRST, beforeModifications = true)
-    public void onEntityExplosionPre(ExplosionEvent.Pre event, @Root Object source) {
+    public void onEntityExplosionPre(ExplosionEvent.Pre event) {
         if (!GPFlags.EXPLOSION || !GriefPreventionPlugin.instance.claimsEnabledForWorld(event.getTargetWorld().getProperties())) {
             return;
         }
@@ -128,6 +129,14 @@ public class EntityEventHandler {
         Location<World> location = event.getExplosion().getLocation();
         GPClaim claim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location);
         User user = CauseContextHelper.getEventUser(event);
+        Object source = event.getSource();
+        if (source instanceof Explosion) {
+            final Explosion explosion = (Explosion) source;
+            if (explosion.getSourceExplosive().isPresent()) {
+                source = explosion.getSourceExplosive().get();
+            }
+        }
+
         if(GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION, source, location, user, true) == Tristate.FALSE) {
             event.setCancelled(true);
             GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
@@ -150,6 +159,14 @@ public class EntityEventHandler {
         final User user = CauseContextHelper.getEventUser(event);
         Iterator<Entity> iterator = event.getEntities().iterator();
         GPClaim targetClaim = null;
+        Object source = event.getSource();
+        if (source instanceof Explosion) {
+            final Explosion explosion = (Explosion) source;
+            if (explosion.getSourceExplosive().isPresent()) {
+                source = explosion.getSourceExplosive().get();
+            }
+        }
+
         while (iterator.hasNext()) {
             Entity entity = iterator.next();
             targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), targetClaim);

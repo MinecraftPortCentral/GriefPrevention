@@ -84,6 +84,7 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+import org.spongepowered.api.world.explosion.Explosion;
 import org.spongepowered.common.interfaces.world.IMixinLocation;
 
 import java.util.ArrayList;
@@ -542,7 +543,13 @@ public class BlockEventHandler {
             return;
         }
 
-        final Object source = event.getCause().root();
+        Object source = event.getSource();
+        if (source instanceof Explosion) {
+            final Explosion explosion = (Explosion) source;
+            if (explosion.getSourceExplosive().isPresent()) {
+                source = explosion.getSourceExplosive().get();
+            }
+        }
         if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.EXPLOSION.toString(), source, event.getExplosion().getWorld().getProperties())) {
             return;
         }
@@ -586,12 +593,19 @@ public class BlockEventHandler {
             return;
         }
 
+        Object source = event.getSource();
+        if (source instanceof Explosion) {
+            final Explosion explosion = (Explosion) source;
+            if (explosion.getSourceExplosive().isPresent()) {
+                source = explosion.getSourceExplosive().get();
+            }
+        }
+
         final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
         }
 
-        final Object source = event.getSource();
         if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), source, world.getProperties())) {
             return;
         }
