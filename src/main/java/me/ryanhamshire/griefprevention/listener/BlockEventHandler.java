@@ -108,6 +108,7 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPre(ChangeBlockEvent.Pre event) {
+        lastBlockPreTick = Sponge.getServer().getRunningTimeTicks();
         if (GriefPreventionPlugin.isSourceIdBlacklisted("block-pre", event.getSource(), event.getLocations().get(0).getExtent().getProperties())) {
             return;
         }
@@ -152,7 +153,6 @@ public class BlockEventHandler {
             return;
         }
 
-        lastBlockPreTick = Sponge.getServer().getRunningTimeTicks();
         lastBlockPreCancelled = false;
         final boolean isForgePlayerBreak = context.containsKey(EventContextKeys.PLAYER_BREAK);
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
