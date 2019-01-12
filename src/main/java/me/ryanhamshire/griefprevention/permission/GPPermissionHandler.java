@@ -626,13 +626,13 @@ public class GPPermissionHandler {
                 return id;
             } else if (obj instanceof EntityDamageSource) {
                 final EntityDamageSource damageSource = (EntityDamageSource) obj;
-                if (eventSubject == null && damageSource.getSource() instanceof User) {
-                    eventSubject = (User) damageSource.getSource();
+                Entity sourceEntity = damageSource.getSource();
+
+                if (eventSubject == null && sourceEntity instanceof User) {
+                    eventSubject = (User) sourceEntity;
                 }
 
-                final String id = damageSource.getSource().getType().getId();
-                populateEventSourceTarget(id, isSource);
-                return damageSource.getSource().getType().getId();
+                return getPermissionIdentifier(sourceEntity, isSource);
             } else if (obj instanceof DamageSource) {
                 final DamageSource damageSource = (DamageSource) obj;
                 String id = damageSource.getType().getId();
