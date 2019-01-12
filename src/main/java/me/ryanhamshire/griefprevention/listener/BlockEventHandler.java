@@ -548,6 +548,11 @@ public class BlockEventHandler {
             final Explosion explosion = (Explosion) source;
             if (explosion.getSourceExplosive().isPresent()) {
                 source = explosion.getSourceExplosive().get();
+            } else {
+                Entity exploder = event.getCause().first(Entity.class).orElse(null);
+                if (exploder != null) {
+                    source = exploder;
+                }
             }
         }
         if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.EXPLOSION.toString(), source, event.getExplosion().getWorld().getProperties())) {
@@ -560,12 +565,14 @@ public class BlockEventHandler {
         final List<Location<World>> filteredLocations = new ArrayList<>();
         for (Location<World> location : event.getAffectedLocations()) {
             targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(location, targetClaim);
-            if (GPFlags.EXPLOSION_SURFACE && location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel() && GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, location, user, true) == Tristate.FALSE) {
-                event.setCancelled(true);
-                break;
+            Tristate result = Tristate.UNDEFINED;
+            if (GPFlags.EXPLOSION_SURFACE && location.getPosition().getY() > ((net.minecraft.world.World) world).getSeaLevel()) {
+                result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION_SURFACE, source, location.getBlock(), user, true);
+            } else {
+                result = GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION, source, location.getBlock(), user, true);
             }
 
-            if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.EXPLOSION, source, location, user, true) == Tristate.FALSE) {
+            if (result == Tristate.FALSE) {
                 // Avoid lagging server from large explosions.
                 if (event.getAffectedLocations().size() > 100) {
                     event.setCancelled(true);
@@ -594,11 +601,9 @@ public class BlockEventHandler {
         }
 
         Object source = event.getSource();
+        // Handled in Explosion listeners
         if (source instanceof Explosion) {
-            final Explosion explosion = (Explosion) source;
-            if (explosion.getSourceExplosive().isPresent()) {
-                source = explosion.getSourceExplosive().get();
-            }
+            return;
         }
 
         final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();

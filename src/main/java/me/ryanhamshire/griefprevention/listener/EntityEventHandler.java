@@ -137,10 +137,22 @@ public class EntityEventHandler {
             final Explosion explosion = (Explosion) source;
             if (explosion.getSourceExplosive().isPresent()) {
                 source = explosion.getSourceExplosive().get();
+            } else {
+                Entity exploder = event.getCause().first(Entity.class).orElse(null);
+                if (exploder != null) {
+                    source = exploder;
+                }
             }
         }
 
-        if(GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION, source, location, user, true) == Tristate.FALSE) {
+        Tristate result = Tristate.UNDEFINED;
+        if (GPFlags.EXPLOSION_SURFACE && location.getPosition().getY() > ((net.minecraft.world.World) location.getExtent()).getSeaLevel()) {
+            result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION_SURFACE, source, location.getBlock(), user, true);
+        } else {
+            result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.EXPLOSION, source, location.getBlock(), user, true);
+        }
+
+        if(result == Tristate.FALSE) {
             event.setCancelled(true);
             GPTimings.ENTITY_EXPLOSION_PRE_EVENT.stopTimingIfSync();
             return;
@@ -167,14 +179,18 @@ public class EntityEventHandler {
             final Explosion explosion = (Explosion) source;
             if (explosion.getSourceExplosive().isPresent()) {
                 source = explosion.getSourceExplosive().get();
+            } else {
+                Entity exploder = event.getCause().first(Entity.class).orElse(null);
+                if (exploder != null) {
+                    source = exploder;
+                }
             }
         }
 
         while (iterator.hasNext()) {
             Entity entity = iterator.next();
             targetClaim =  GriefPreventionPlugin.instance.dataStore.getClaimAt(entity.getLocation(), targetClaim);
-
-            if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, GPPermissions.ENTITY_DAMAGE, event.getCause().root(), entity, user) == Tristate.FALSE) {
+            if (GPPermissionHandler.getClaimPermission(event, entity.getLocation(), targetClaim, GPPermissions.ENTITY_DAMAGE, source, entity, user) == Tristate.FALSE) {
                 iterator.remove();
             }
         }

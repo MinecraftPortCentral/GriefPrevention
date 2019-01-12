@@ -34,6 +34,7 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.TrustType;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import me.ryanhamshire.griefprevention.util.EntityUtils;
 import me.ryanhamshire.griefprevention.util.PermissionUtils;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.item.EntityItem;
@@ -548,18 +549,27 @@ public class GPPermissionHandler {
                 }
 
                 if (mcEntity != null && id.contains("unknown") && SpongeImplHooks.isFakePlayer(mcEntity)) {
-                    id = "fakeplayer:" + ((EntityPlayer) obj).getName().toLowerCase();
+                    final String modId = SpongeImplHooks.getModIdFromClass(mcEntity.getClass());
+                    id = modId + ":fakeplayer." + EntityUtils.getFriendlyName(mcEntity).toLowerCase();
                 } else if (id.equals("unknown:unknown") && obj instanceof EntityPlayer) {
                     id = "minecraft:player";
                 }
                 populateEventSourceTarget(id, isSource);
-                if (!isSource && mcEntity != null && targetEntity instanceof Living) {
-                    for (EnumCreatureType type : EnumCreatureType.values()) {
-                        if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
-                            String[] parts = id.split(":");
-                            if (parts.length > 1) {
-                                id =  parts[0] + ":" + GPFlags.SPAWN_TYPES.inverse().get(type) + ":" + parts[1];
-                                break;
+                if (mcEntity != null && targetEntity instanceof Living) {
+                    String[] parts = id.split(":");
+                    if (parts.length > 1) {
+                        final String modId = parts[0];
+                        String name = parts[1];
+                        if (modId.equalsIgnoreCase(name)) {
+                            name = EntityUtils.getFriendlyName(mcEntity).toLowerCase();
+                            populateEventSourceTarget(modId + ":" + name, isSource);
+                        }
+                        if (!isSource) {
+                            for (EnumCreatureType type : EnumCreatureType.values()) {
+                                if (SpongeImplHooks.isCreatureOfType(mcEntity, type)) {
+                                    id = modId + ":" + GPFlags.SPAWN_TYPES.inverse().get(type) + ":" + name;
+                                    break;
+                                }
                             }
                         }
                     }

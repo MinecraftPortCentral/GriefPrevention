@@ -45,4 +45,21 @@ public class EntityUtils {
 
         return ownerUniqueId;
     }
+
+    public static String getFriendlyName(net.minecraft.entity.Entity mcEntity) {
+        String entityName = mcEntity.getName();
+        final String[] parts = entityName.split(":");
+        if (parts.length > 1) {
+            entityName = parts[1];
+        }
+        if (entityName.contains(".")) {
+            if ((entityName.indexOf(".") + 1) < entityName.length()) {
+                entityName = entityName.substring(entityName.indexOf(".") + 1, entityName.length());
+            }
+        }
+
+        entityName = entityName.replace("entity", "");
+        entityName = entityName.replaceAll("[^A-Za-z0-9]", "");
+        return entityName;
+    }
 }
