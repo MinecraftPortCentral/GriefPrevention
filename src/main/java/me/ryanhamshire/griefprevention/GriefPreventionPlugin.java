@@ -314,7 +314,7 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, Subject eventSubject, String sourceId, String targetId, Subject permissionSubject, String permission, Tristate result) {
+    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, Subject eventSubject, String sourceId, String targetId, Subject permissionSubject, String permission, String trust, Tristate result) {
         for (GPDebugData debugEntry : GriefPreventionPlugin.instance.getDebugUserMap().values()) {
             final CommandSource debugSource = debugEntry.getSource();
             final User debugUser = debugEntry.getTarget();
@@ -343,18 +343,19 @@ public class GriefPreventionPlugin {
             }
             // record
             if (debugEntry.isRecording()) {
-                String messageEvent = permission;
-                if (!permission.contains("trust.")) {
-                    permission = permission.replace("griefprevention.flag.", "");
-                    messageEvent = GPPermissionHandler.getFlagFromPermission(permission).toString();
-                }
+                String messageFlag = permission;
+                permission = permission.replace("griefprevention.flag.", "");
+                messageFlag = GPPermissionHandler.getFlagFromPermission(permission).toString();
                 final String messageSource = sourceId == null ? "none" : sourceId;
                 String messageTarget = targetId == null ? "none" : targetId;
                 if (messageTarget.endsWith(".0")) {
                     messageTarget = messageTarget.substring(0, messageTarget.length() - 2);
                 }
+                if (trust == null) {
+                    trust = "none";
+                }
                 final String messageLocation = location == null ? "none" : location.getBlockPosition().toString();
-                debugEntry.addRecord(messageEvent, messageSource, messageTarget, messageLocation, messageUser, result);
+                debugEntry.addRecord(messageFlag, trust, messageSource, messageTarget, messageLocation, messageUser, result);
                 continue;
             }
 

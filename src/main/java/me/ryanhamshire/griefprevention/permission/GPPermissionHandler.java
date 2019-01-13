@@ -53,7 +53,6 @@ import org.spongepowered.api.entity.living.Living;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Event;
-import org.spongepowered.api.event.action.CollideEvent;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
@@ -108,9 +107,6 @@ public class GPPermissionHandler {
             if (user instanceof Player) {
                 playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(claim.world, user.getUniqueId());
             }
-            if (playerData != null && !playerData.debugClaimPermissions && playerData.canIgnoreClaim(claim)) {
-                return processResult(claim, "trust.ignore", Tristate.TRUE, user);
-            }
         }
         currentEvent = event;
         eventLocation = location;
@@ -156,6 +152,9 @@ public class GPPermissionHandler {
         }
 
         targetPermission = StringUtils.replace(targetPermission, ":", ".");
+        if (user != null && playerData != null && !playerData.debugClaimPermissions && playerData.canIgnoreClaim(claim)) {
+            return processResult(claim, targetPermission, "ignore", Tristate.TRUE, user);
+        }
         if (checkOverride) {
             Tristate override = Tristate.UNDEFINED;
             if (user != null) {
@@ -175,7 +174,7 @@ public class GPPermissionHandler {
         if (playerData != null) {
             if (playerData.debugClaimPermissions) {
                 if (user != null && type != null && claim.isUserTrusted(user, type)) {
-                    return processResult(claim, "trust." + type.toString().toLowerCase(), Tristate.TRUE, user);
+                    return processResult(claim, targetPermission, type.toString().toLowerCase(), Tristate.TRUE, user);
                 }
                 return getClaimFlagPermission(claim, targetPermission, targetModPermission, targetMetaPermission);
             }
@@ -183,7 +182,7 @@ public class GPPermissionHandler {
         if (user != null) {
             if (type != null) {
                 if (claim.isUserTrusted(user, type)) {
-                    return processResult(claim, "trust." + type.toString().toLowerCase(), Tristate.TRUE, user);
+                    return processResult(claim, targetPermission, type.toString().toLowerCase(), Tristate.TRUE, user);
                 }
             }
             return getUserPermission(user, claim, targetPermission, targetModPermission, targetMetaPermission, playerData);
@@ -499,6 +498,10 @@ public class GPPermissionHandler {
     }
 
     public static Tristate processResult(GPClaim claim, String permission, Tristate permissionValue, Subject permissionSubject) {
+        return processResult(claim, permission, null, permissionValue, permissionSubject);
+    }
+
+    public static Tristate processResult(GPClaim claim, String permission, String trust, Tristate permissionValue, Subject permissionSubject) {
         if (GriefPreventionPlugin.debugActive) {
             if (permissionSubject == null) {
                 if (eventSubject != null) {
@@ -509,12 +512,12 @@ public class GPPermissionHandler {
                     permissionSubject = GriefPreventionPlugin.GLOBAL_SUBJECT;
                 }
             }
-            if (currentEvent instanceof CollideEvent || currentEvent instanceof NotifyNeighborBlockEvent) {
+            if (currentEvent instanceof NotifyNeighborBlockEvent) {
                 if (claim.getWorld().getProperties().getTotalTime() % 100 == 0L) {
-                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, permissionValue);
+                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, trust, permissionValue);
                 }
             } else {
-                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, permissionValue);
+                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, trust, permissionValue);
             }
         }
 
