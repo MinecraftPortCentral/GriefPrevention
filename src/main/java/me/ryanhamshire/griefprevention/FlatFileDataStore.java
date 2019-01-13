@@ -64,6 +64,7 @@ import java.util.UUID;
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore {
 
+    private final static Path migrationVersionFilePath = dataLayerFolderPath.resolve("_migrationVersion");
     private final static Path schemaVersionFilePath = dataLayerFolderPath.resolve("_schemaVersion");
     private final static Path worldsConfigFolderPath = dataLayerFolderPath.resolve("worlds");
     public final static Path claimDataPath = Paths.get("GriefPreventionData", "ClaimData");
@@ -505,6 +506,64 @@ public class FlatFileDataStore extends DataStore {
         // if any problem, log it
         catch (Exception e) {
             GriefPreventionPlugin.addLogEntry("Unexpected exception saving schema version: " + e.getMessage());
+        }
+
+        // close the file
+        try {
+            if (outStream != null) {
+                outStream.close();
+            }
+        } catch (IOException exception) {
+        }
+
+    }
+
+    @Override
+    int getMigrationVersionFromStorage() {
+        File migrationVersionFile = migrationVersionFilePath.toFile();
+        if (migrationVersionFile.exists()) {
+            BufferedReader inStream = null;
+            int migrationVersion = 0;
+            try {
+                inStream = new BufferedReader(new FileReader(migrationVersionFile.getAbsolutePath()));
+
+                // read the version number
+                String line = inStream.readLine();
+
+                // try to parse into an int value
+                migrationVersion = Integer.parseInt(line);
+            } catch (Exception e) {
+            }
+
+            try {
+                if (inStream != null) {
+                    inStream.close();
+                }
+            } catch (IOException exception) {
+            }
+
+            return migrationVersion;
+        } else {
+            this.updateMigrationVersionInStorage(0);
+            return 0;
+        }
+    }
+
+    @Override
+    void updateMigrationVersionInStorage(int versionToSet) {
+        BufferedWriter outStream = null;
+
+        try {
+            // open the file and write the new value
+            File migrationVersionFile = migrationVersionFilePath.toFile();
+            migrationVersionFile.createNewFile();
+            outStream = new BufferedWriter(new FileWriter(migrationVersionFile));
+            outStream.write(String.valueOf(versionToSet));
+        }
+
+        // if any problem, log it
+        catch (Exception e) {
+            GriefPreventionPlugin.addLogEntry("Unexpected exception saving migration version: " + e.getMessage());
         }
 
         // close the file

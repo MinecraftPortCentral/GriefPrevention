@@ -109,13 +109,24 @@ public abstract class DataStore {
     // the latest version of the data schema implemented here
     protected static final int latestSchemaVersion = 2;
 
+    // the latest version of the data migration implemented here
+    protected static final int latestMigrationVersion = 1;
+
     // reading and writing the schema version to the data store
     abstract int getSchemaVersionFromStorage();
 
     abstract void updateSchemaVersionInStorage(int versionToSet);
 
+    // reading and writing the migration version to the data store
+    abstract int getMigrationVersionFromStorage();
+
+    abstract void updateMigrationVersionInStorage(int versionToSet);
+
     // current version of the schema of data in secondary storage
     private int currentSchemaVersion = -1; // -1 means not determined yet
+
+    // current version of the migration of data in secondary storage
+    private int currentMigrationVersion = -1; // -1 means not determined yet
 
     // video links
     public static final String SURVIVAL_VIDEO_URL_RAW = "http://bit.ly/mcgpuser";
@@ -140,6 +151,20 @@ public abstract class DataStore {
     protected void setSchemaVersion(int versionToSet) {
         this.currentSchemaVersion = versionToSet;
         this.updateSchemaVersionInStorage(versionToSet);
+    }
+
+    protected int getMigrationVersion() {
+        if (this.currentMigrationVersion >= 0) {
+            return this.currentMigrationVersion;
+        } else {
+            this.currentMigrationVersion = this.getMigrationVersionFromStorage();
+            return this.currentMigrationVersion;
+        }
+    }
+
+    protected void setMigrationVersion(int versionToSet) {
+        this.currentMigrationVersion = versionToSet;
+        this.updateMigrationVersionInStorage(versionToSet);
     }
 
     // initialization!

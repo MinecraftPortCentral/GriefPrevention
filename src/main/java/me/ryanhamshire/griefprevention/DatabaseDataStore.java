@@ -505,6 +505,15 @@ public class DatabaseDataStore extends DataStore {
     }
 
     @Override
+    int getMigrationVersionFromStorage() {
+        return -1;
+    }
+
+    @Override
+    void updateMigrationVersionInStorage(int versionToSet) {
+    }
+
+    @Override
     GPPlayerData getPlayerDataFromStorage(UUID playerID) {
         return null;
     }

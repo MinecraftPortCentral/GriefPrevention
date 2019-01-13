@@ -10,6 +10,7 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.Platform.Component;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
@@ -164,6 +165,10 @@ public class Metrics2 implements Metrics {
 
     @Listener
     public void startup(GamePreInitializationEvent event) {
+        if (!validateSpongeVersion()) {
+            return;
+        }
+
         try {
             loadConfig();
         } catch (IOException e) {
@@ -930,4 +935,26 @@ public class Metrics2 implements Metrics {
 
     }
 
+    private boolean validateSpongeVersion() {
+        if (Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getName().equals("SpongeForge")) {
+            if (Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().isPresent()) {
+                try {
+                    final String SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
+                    final String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
+                    // Metrics was updated in commit https://github.com/SpongePowered/SpongeAPI/commit/6cd66f8c86452a792acad2249050339e253638d6
+                    final int minSpongeBuild = 3423;
+                    final int spongeBuild = Integer.parseInt(build);
+                    if (spongeBuild < minSpongeBuild) {
+                        this.logger.error("Unable to initialize bstats. Detected SpongeForge build " + spongeBuild + " but bstats requires"
+                                + " build " + minSpongeBuild + "+.");
+                        return false;
+                    }
+                } catch (NumberFormatException e) {
+
+                }
+            }
+        }
+
+        return true;
+    }
 }

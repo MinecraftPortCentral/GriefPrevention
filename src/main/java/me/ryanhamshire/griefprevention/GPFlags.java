@@ -144,7 +144,11 @@ public class GPFlags {
                         SpongeEntityType spongeEntityType = (SpongeEntityType) entityType.get();
                         if (spongeEntityType.getEnumCreatureType() != null) {
                             String creatureType = SPAWN_TYPES.inverse().get(spongeEntityType.getEnumCreatureType());
-                            claimFlag += "." + parts[0] + "." + creatureType + "." + parts[1];
+                            if (parts[1].equalsIgnoreCase("pixelmon")) {
+                                claimFlag += "." + parts[0] + ".animal";
+                            } else {
+                                claimFlag += "." + parts[0] + "." + creatureType + "." + parts[1];
+                            }
                             return claimFlag;
                         } else {
                             claimFlag += "." + parts[0] + "." + parts[1];
@@ -154,7 +158,11 @@ public class GPFlags {
                     // Unfortunately this is required until Pixelmon registers their entities correctly in FML
                     if (target.contains("pixelmon")) {
                         // If target was not found in registry, assume its a pixelmon animal
-                        claimFlag += "." + parts[0] + ".animal." + parts[1];
+                        if (parts[1].equalsIgnoreCase("pixelmon")) {
+                            claimFlag += "." + parts[0] + ".animal";
+                        } else {
+                            claimFlag += "." + parts[0] + ".animal." + parts[1];
+                        }
                         return claimFlag;
                     }
                 }

@@ -563,7 +563,7 @@ public class GPPermissionHandler {
                     if (parts.length > 1) {
                         final String modId = parts[0];
                         String name = parts[1];
-                        if (modId.equalsIgnoreCase(name)) {
+                        if (modId.equalsIgnoreCase("pixelmon") && modId.equalsIgnoreCase(name)) {
                             name = EntityUtils.getFriendlyName(mcEntity).toLowerCase();
                             populateEventSourceTarget(modId + ":" + name, isSource);
                         }

@@ -3044,11 +3044,11 @@ public class GPClaim implements Claim {
 
         CompletableFuture<FlagResult> result = new CompletableFuture<>();
         if (flag != ClaimFlag.COMMAND_EXECUTE && flag != ClaimFlag.COMMAND_EXECUTE_PVP) {
-            if (source != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(source))) {
+            if (source != null && !source.contains("pixelmon") && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(source))) {
                 result.complete(new GPFlagResult(FlagResultType.SOURCE_NOT_VALID));
                 return result;
             }
-            if (target != null && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(target))) {
+            if (target != null && !target.contains("pixelmon") && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(target))) {
                 result.complete(new GPFlagResult(FlagResultType.TARGET_NOT_VALID));
                 return result;
             }
