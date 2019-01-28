@@ -1460,16 +1460,26 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractItem(InteractItemEvent event, @Root Player player) {
-        if (event instanceof InteractItemEvent.Primary) {
-            lastInteractItemPrimaryTick = Sponge.getServer().getRunningTimeTicks();
-        } else {
-            lastInteractItemSecondaryTick = Sponge.getServer().getRunningTimeTicks();
-        }
-
         final World world = player.getWorld();
         final ItemType playerItem = event.getItemStack().getType();
         final HandInteractEvent handEvent = (HandInteractEvent) event;
         final ItemStack itemInHand = player.getItemInHand(handEvent.getHandType()).orElse(ItemStack.empty());
+
+        if (event instanceof InteractItemEvent.Primary) {
+            lastInteractItemPrimaryTick = Sponge.getServer().getRunningTimeTicks();
+        } else {
+            lastInteractItemSecondaryTick = Sponge.getServer().getRunningTimeTicks();
+            if (!event.getInteractionPoint().isPresent()) {
+                if (investigateClaim(event, player, BlockSnapshot.NONE, itemInHand)) {
+                    return;
+                }
+
+                final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+                onPlayerHandleShovelAction(event, BlockSnapshot.NONE, player,  ((HandInteractEvent) event).getHandType(), playerData);
+                return;
+            }
+        }
+
         if (itemInHand.isEmpty() || playerItem instanceof ItemFood) {
             return;
         }
@@ -1488,10 +1498,6 @@ public class PlayerEventHandler {
         final Cause cause = event.getCause();
         final EventContext context = cause.getContext();
         final BlockSnapshot blockSnapshot = context.get(EventContextKeys.BLOCK_HIT).orElse(BlockSnapshot.NONE);
-        if (investigateClaim(event, player, blockSnapshot, itemInHand)) {
-            return;
-        }
-
         final Vector3d interactPoint = event.getInteractionPoint().orElse(null);
         final Entity entity = context.get(EventContextKeys.ENTITY_HIT).orElse(null);
         final Location<World> location = entity != null ? entity.getLocation() 
