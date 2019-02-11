@@ -1880,7 +1880,12 @@ public class GPClaim implements Claim {
         try {
             Files.createDirectories(newPath.getParent());
             Files.move(this.getClaimStorage().filePath, newPath);
-            this.setClaimStorage(new ClaimStorageData(newPath, this.getWorldUniqueId(), (ClaimDataConfig) this.getInternalClaimData()));
+            if (type == ClaimType.TOWN) {
+                this.setClaimStorage(new TownStorageData(newPath, this.getWorldUniqueId(), newOwnerUUID, this.cuboid));
+            } else {
+                this.setClaimStorage(new ClaimStorageData(newPath, this.getWorldUniqueId(), (ClaimDataConfig) this.getInternalClaimData()));
+            }
+            this.claimData = this.claimStorage.getConfig();
             this.getClaimStorage().save();
         } catch (IOException e) {
             e.printStackTrace();

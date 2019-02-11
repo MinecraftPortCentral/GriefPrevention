@@ -74,6 +74,7 @@ public class CommandClaimAbandon implements CommandExecutor {
         final UUID ownerId = claim.getOwnerUniqueId();
 
         final boolean isAdmin = playerData.canIgnoreClaim(claim);
+        final boolean isTown = claim.isTown();
         if (claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.commandAbandonClaimMissing.toText());
             return CommandResult.success();
@@ -152,6 +153,10 @@ public class CommandClaimAbandon implements CommandExecutor {
             // revert any current visualization
             playerData.revertActiveVisual(player);
             playerData.warnedAboutMajorDeletion = false;
+            if (isTown) {
+                playerData.inTown = false;
+                playerData.townChat = false;
+            }
         }
 
         return CommandResult.success();

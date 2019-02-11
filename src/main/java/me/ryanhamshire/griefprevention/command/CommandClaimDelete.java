@@ -66,6 +66,7 @@ public class CommandClaimDelete implements CommandExecutor {
         // determine which claim the player is standing in
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAt(player.getLocation());
+        final boolean isTown = claim.isTown();
 
         if (claim.isWilderness()) {
             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotFound.toText());
@@ -121,6 +122,10 @@ public class CommandClaimDelete implements CommandExecutor {
             playerData.revertActiveVisual(player);
 
             playerData.warnedAboutMajorDeletion = false;
+            if (isTown) {
+                playerData.inTown = false;
+                playerData.townChat = false;
+            }
         }
 
         return CommandResult.success();

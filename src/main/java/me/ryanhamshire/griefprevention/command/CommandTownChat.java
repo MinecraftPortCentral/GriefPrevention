@@ -54,6 +54,7 @@ public class CommandTownChat implements CommandExecutor {
             return CommandResult.success();
         }
 
+        playerData.inTown = true;
         playerData.townChat = !playerData.townChat;
 
         // toggle ignore claims mode on or off

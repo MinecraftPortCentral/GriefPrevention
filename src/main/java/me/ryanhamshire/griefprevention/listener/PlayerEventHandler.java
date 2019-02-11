@@ -209,6 +209,11 @@ public class PlayerEventHandler {
                 }
             }
             final GPClaim sourceClaim = this.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+            if (sourceClaim.isInTown()) {
+                playerData.inTown = true;
+            } else {
+                playerData.inTown = false;
+            }
             final GPClaim sourceTown = sourceClaim.getTownClaim();
             final Text townTag = sourceTown.getTownData().getTownTag().orElse(null);
 
