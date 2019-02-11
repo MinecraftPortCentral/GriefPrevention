@@ -46,10 +46,11 @@ public class CauseContextHelper {
         }
 
         User user = null;
+        User fakePlayer = null;
         if (cause != null) {
             user = cause.first(User.class).orElse(null);
-            if (user != null && user instanceof EntityPlayer && SpongeImplHooks.isFakePlayer((EntityPlayer) user) && user.getName().startsWith("[")) {
-                user = null;
+            if (user != null && user instanceof EntityPlayer && SpongeImplHooks.isFakePlayer((EntityPlayer) user)) {
+                fakePlayer = user;
             }
         }
 
@@ -58,10 +59,10 @@ public class CauseContextHelper {
             return context.get(EventContextKeys.NOTIFIER).orElse(null);
         }
 
-        if (user == null) {
+        if (user == null || fakePlayer != null) {
             // Always use owner for ticking TE's
             // See issue MinecraftPortCentral/GriefPrevention#610 for more information
-            if (cause.root() instanceof TileEntity) {
+            if (cause.containsType(TileEntity.class)) {
                 user = context.get(EventContextKeys.OWNER)
                         .orElse(context.get(EventContextKeys.NOTIFIER)
                                 .orElse(context.get(EventContextKeys.CREATOR)
@@ -75,6 +76,8 @@ public class CauseContextHelper {
         }
 
         if (user == null) {
+            // fall back to fakeplayer if we still don't have a user
+            user = fakePlayer;
             if (event instanceof ExplosionEvent) {
                 // Check igniter
                 final Living living = context.get(EventContextKeys.IGNITER).orElse(null);
