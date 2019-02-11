@@ -56,11 +56,13 @@ import net.minecraft.tileentity.TileEntityPiston;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -91,6 +93,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 //event handlers related to blocks
 public class BlockEventHandler {
@@ -334,19 +337,14 @@ public class BlockEventHandler {
         }
 
         GPTimings.BLOCK_NOTIFY_EVENT.startTimingIfSync();
-        Iterator<Direction> iterator = event.getNeighbors().keySet().iterator();
         GPClaim targetClaim = null;
-        while (iterator.hasNext()) {
-            Direction direction = iterator.next();
-            Location<World> location = sourceLocation.getBlockRelative(direction);
-            Vector3i pos = location.getBlockPosition();
+        List<Direction> removed = new ArrayList<>();
+        for (Map.Entry<Direction, BlockState> neighborEntry : event.getNeighbors().entrySet()) {
+            final Direction direction = neighborEntry.getKey();
+            final BlockState blockState = neighborEntry.getValue();
+            final Location<World> location = sourceLocation.getBlockRelative(direction);
             targetClaim = this.dataStore.getClaimAt(location, targetClaim);
             if (sourceClaim.isWilderness() && targetClaim.isWilderness()) {
-                if (playerData != null) {
-                    playerData.setLastInteractData(targetClaim);
-                }
-                continue;
-            } else if (!sourceClaim.isWilderness() && targetClaim.isWilderness()) {
                 if (playerData != null) {
                     playerData.setLastInteractData(targetClaim);
                 }
@@ -356,10 +354,17 @@ public class BlockEventHandler {
                     playerData.setLastInteractData(targetClaim);
                 }
                 continue;
-            } else {
-                if (playerData.checkLastInteraction(targetClaim, user)) {
+            } else if (!sourceClaim.isWilderness() && targetClaim.isWilderness()) {
+                final MatterProperty matterProperty = blockState.getProperty(MatterProperty.class).orElse(null);
+                if (matterProperty != null && matterProperty.getValue() != MatterProperty.Matter.LIQUID) {
+                    if (playerData != null) {
+                        playerData.setLastInteractData(targetClaim);
+                    }
                     continue;
                 }
+            } else if (playerData.checkLastInteraction(targetClaim, user)) {
+                continue;
+            } else  {
                 // Needed to handle levers notifying doors to open etc.
                 if (targetClaim.isUserTrusted(user, TrustType.ACCESSOR)) {
                     if (playerData != null) {
@@ -370,7 +375,11 @@ public class BlockEventHandler {
             }
 
             // no claim crossing unless trusted
-            iterator.remove();
+            removed.add(direction);
+        }
+
+        for (Direction direction : removed) {
+            event.getNeighbors().remove(direction);
         }
         GPTimings.BLOCK_NOTIFY_EVENT.stopTimingIfSync();
     }
