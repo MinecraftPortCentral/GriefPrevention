@@ -135,7 +135,8 @@ public class BlockEventHandler {
         final LocatableBlock locatableBlock = cause.first(LocatableBlock.class).orElse(null);
         final TileEntity tileEntity = cause.first(TileEntity.class).orElse(null);
         Entity sourceEntity = null;
-        final Object source = cause.root();
+        // Always use TE as source if available
+        final Object source = tileEntity != null ? tileEntity : cause.root();
         Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
         if (sourceLocation == null && source instanceof Entity) {
             // check entity
