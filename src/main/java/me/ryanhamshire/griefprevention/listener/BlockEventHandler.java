@@ -217,6 +217,15 @@ public class BlockEventHandler {
                 sourceLocations.add(dirLoc);
             }
             for (Location<World> location : sourceLocations) {
+                // Mods such as enderstorage will send chest updates to itself
+                // We must ignore cases like these to avoid issues with mod
+                if (tileEntity != null) {
+                    if (location.getPosition().equals(tileEntity.getLocation().getPosition())) {
+                        continue;
+                    }
+                }
+
+                final BlockState blockState = location.getBlock();
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
                 // If a player successfully interacted with a block recently such as a pressure plate, ignore check
                 // This fixes issues such as pistons not being able to extend
@@ -224,37 +233,40 @@ public class BlockEventHandler {
                     continue;
                 }
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
+                    GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.BUILDER.name().toLowerCase(), Tristate.TRUE);
                     continue;
                 }
                 if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null && sourceEntity == null && !isFireSource && !isLeafDecay) {
+                    GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, "owner", Tristate.TRUE);
                     continue;
                 }
                 if (user != null && pistonExtend) {
                     if (targetClaim.isUserTrusted(user, TrustType.ACCESSOR)) {
+                        GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.ACCESSOR.name().toLowerCase(), Tristate.TRUE);
                         continue;
                     }
                 }
                 if (isLeafDecay) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LEAF_DECAY, source, location.getBlock(), user) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LEAF_DECAY, source, blockState, user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
                 } else if (isFireSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, blockState, user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
                 } else if (isLiquidSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, blockState, user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         lastBlockPreCancelled = true;
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
                     continue;
-                } else if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
+                } else if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, blockState, user) == Tristate.FALSE) {
                     // PRE events can be spammy so we need to avoid sending player messages here.
                     event.setCancelled(true);
                     lastBlockPreCancelled = true;
@@ -266,6 +278,15 @@ public class BlockEventHandler {
             final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(world, user.getUniqueId());
             GPClaim targetClaim = null;
             for (Location<World> location : event.getLocations()) {
+                // Mods such as enderstorage will send chest updates to itself
+                // We must ignore cases like these to avoid issues with mod
+                if (tileEntity != null) {
+                    if (location.getPosition().equals(tileEntity.getLocation().getPosition())) {
+                        continue;
+                    }
+                }
+
+                final BlockState blockState = location.getBlock();
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
                 // If a player successfully interacted with a block recently such as a pressure plate, ignore check
                 // This fixes issues such as pistons not being able to extend
@@ -273,24 +294,25 @@ public class BlockEventHandler {
                     continue;
                 }
                 if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
+                    GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.BUILDER.name().toLowerCase(), Tristate.TRUE);
                     continue;
                 }
 
                 if (isFireSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, location.getBlock(), user) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.FIRE_SPREAD, source, blockState, user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
                 } else if (isLiquidSource) {
-                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, location.getBlock(), user) == Tristate.FALSE) {
+                    if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.LIQUID_FLOW, source, blockState, user) == Tristate.FALSE) {
                         event.setCancelled(true);
                         lastBlockPreCancelled = true;
                         GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
                         return;
                     }
                     continue;
-                } else if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, location.getBlock(), user) == Tristate.FALSE) {
+                } else if (GPPermissionHandler.getClaimPermission(event, location, targetClaim, GPPermissions.BLOCK_BREAK, source, blockState, user) == Tristate.FALSE) {
                     event.setCancelled(true);
                     lastBlockPreCancelled = true;
                     GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();

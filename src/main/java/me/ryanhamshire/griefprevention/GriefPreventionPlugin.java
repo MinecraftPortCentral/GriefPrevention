@@ -316,7 +316,9 @@ public class GriefPreventionPlugin {
         }
     }
 
-    public static void addEventLogEntry(Event event, GPClaim claim, Location<World> location, Subject eventSubject, String sourceId, String targetId, Subject permissionSubject, String permission, String trust, Tristate result) {
+    public static void addEventLogEntry(Event event, Location<World> location, String sourceId, String targetId, Subject permissionSubject, String permission, String trust, Tristate result) {
+        final String eventName = event.getClass().getSimpleName().replace('$', '.').replace(".Impl", "");
+        final String eventLocation = location == null ? "none" : location.getBlockPosition().toString();
         for (GPDebugData debugEntry : GriefPreventionPlugin.instance.getDebugUserMap().values()) {
             final CommandSource debugSource = debugEntry.getSource();
             final User debugUser = debugEntry.getTarget();
@@ -325,23 +327,14 @@ public class GriefPreventionPlugin {
                     continue;
                 }
                 // Check event source user
-                if (eventSubject != null) {
-                    if (!eventSubject.getIdentifier().equals(debugUser.getUniqueId().toString())) {
-                        continue;
-                    }
-                } else if (!permissionSubject.getIdentifier().equals(debugUser.getUniqueId().toString())) {
+                if (!permissionSubject.getIdentifier().equals(debugUser.getUniqueId().toString())) {
                     continue;
                 }
             }
 
-            String messageUser = "";
-            if (eventSubject != null && eventSubject instanceof User) {
-                messageUser = ((User) eventSubject).getName();
-            } else {
-                messageUser = permissionSubject.getIdentifier();
-                if (permissionSubject instanceof User) {
-                    messageUser = ((User) permissionSubject).getName();
-                }
+            String messageUser = permissionSubject.getIdentifier();
+            if (permissionSubject instanceof User) {
+                messageUser = ((User) permissionSubject).getName();
             }
             // record
             if (debugEntry.isRecording()) {
@@ -356,14 +349,14 @@ public class GriefPreventionPlugin {
                 if (trust == null) {
                     trust = "none";
                 }
-                final String messageLocation = location == null ? "none" : location.getBlockPosition().toString();
-                debugEntry.addRecord(messageFlag, trust, messageSource, messageTarget, messageLocation, messageUser, result);
+
+                debugEntry.addRecord(messageFlag, trust, messageSource, messageTarget, eventLocation, messageUser, result);
                 continue;
             }
 
-            final Text textEvent = Text.of(GP_TEXT, TextColors.GRAY, "Event: ", TextColors.GREEN, event.getClass().getSimpleName().replace('$', '.').replace(".Impl", ""), "\n");
-            final Text textCause = Text.of(GP_TEXT, TextColors.GRAY, "Cause: ", TextColors.LIGHT_PURPLE, GPPermissionHandler.getPermissionIdentifier(event.getCause().root()), "\n");
-            final Text textLocation = Text.of(GP_TEXT, TextColors.GRAY, "Location: ", TextColors.WHITE, location == null ? "NONE" : location.getBlockPosition());
+            final Text textEvent = Text.of(GP_TEXT, TextColors.GRAY, "Event: ", TextColors.GREEN, eventName, "\n");
+            final Text textCause = Text.of(GP_TEXT, TextColors.GRAY, "Cause: ", TextColors.LIGHT_PURPLE, sourceId, "\n");
+            final Text textLocation = Text.of(GP_TEXT, TextColors.GRAY, "Location: ", TextColors.WHITE, eventLocation == null ? "NONE" : eventLocation);
             final Text textUser = Text.of(TextColors.GRAY, "User: ", TextColors.GOLD, messageUser, "\n");
             final Text textLocationAndUser = Text.of(textLocation, " ", textUser);
             Text textContext = null;

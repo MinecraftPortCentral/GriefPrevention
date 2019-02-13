@@ -1465,25 +1465,16 @@ public class PlayerEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onPlayerInteractItem(InteractItemEvent event, @Root Player player) {
-        final World world = player.getWorld();
-        final ItemType playerItem = event.getItemStack().getType();
-        final HandInteractEvent handEvent = (HandInteractEvent) event;
-        final ItemStack itemInHand = player.getItemInHand(handEvent.getHandType()).orElse(ItemStack.empty());
-
         if (event instanceof InteractItemEvent.Primary) {
             lastInteractItemPrimaryTick = Sponge.getServer().getRunningTimeTicks();
         } else {
             lastInteractItemSecondaryTick = Sponge.getServer().getRunningTimeTicks();
-            if (!event.getInteractionPoint().isPresent()) {
-                if (investigateClaim(event, player, BlockSnapshot.NONE, itemInHand)) {
-                    return;
-                }
-
-                final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-                onPlayerHandleShovelAction(event, BlockSnapshot.NONE, player,  ((HandInteractEvent) event).getHandType(), playerData);
-                return;
-            }
         }
+
+        final World world = player.getWorld();
+        final ItemType playerItem = event.getItemStack().getType();
+        final HandInteractEvent handEvent = (HandInteractEvent) event;
+        final ItemStack itemInHand = player.getItemInHand(handEvent.getHandType()).orElse(ItemStack.empty());
 
         if (itemInHand.isEmpty() || playerItem instanceof ItemFood) {
             return;
@@ -1514,6 +1505,20 @@ public class PlayerEventHandler {
         final String ITEM_PERMISSION = primaryEvent ? GPPermissions.INTERACT_ITEM_PRIMARY : GPPermissions.INTERACT_ITEM_SECONDARY;
         if ((itemPrimaryBlacklisted && ITEM_PERMISSION.equals(GPPermissions.INTERACT_ITEM_PRIMARY)) || (itemSecondaryBlacklisted && ITEM_PERMISSION.equals(GPPermissions.INTERACT_ITEM_SECONDARY))) {
             return;
+        }
+
+        if (!primaryEvent) {
+            if (!itemInHand.isEmpty() && (itemInHand.getType().equals(GriefPreventionPlugin.instance.modificationTool) ||
+                    itemInHand.getType().equals(GriefPreventionPlugin.instance.investigationTool))) {
+                GPPermissionHandler.addEventLogEntry(event, location, itemInHand, blockSnapshot == null ? entity : blockSnapshot, player, ITEM_PERMISSION, null, Tristate.TRUE);
+                if (investigateClaim(event, player, BlockSnapshot.NONE, itemInHand)) {
+                    return;
+                }
+
+                final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+                onPlayerHandleShovelAction(event, BlockSnapshot.NONE, player,  ((HandInteractEvent) event).getHandType(), playerData);
+                return;
+            }
         }
 
         if (GPPermissionHandler.getClaimPermission(event, location, claim, ITEM_PERMISSION, player, playerItem, player, TrustType.ACCESSOR, true) == Tristate.FALSE) {

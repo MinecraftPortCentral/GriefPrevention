@@ -514,14 +514,39 @@ public class GPPermissionHandler {
             }
             if (currentEvent instanceof NotifyNeighborBlockEvent) {
                 if (claim.getWorld().getProperties().getTotalTime() % 100 == 0L) {
-                    GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, trust, permissionValue);
+                    GriefPreventionPlugin.addEventLogEntry(currentEvent, eventLocation, eventSourceId, eventTargetId, permissionSubject, permission, trust, permissionValue);
                 }
             } else {
-                GriefPreventionPlugin.addEventLogEntry(currentEvent, claim, eventLocation, eventSubject, eventSourceId, eventTargetId, permissionSubject, permission, trust, permissionValue);
+                GriefPreventionPlugin.addEventLogEntry(currentEvent, eventLocation, eventSourceId, eventTargetId, permissionSubject, permission, trust, permissionValue);
             }
         }
 
         return permissionValue;
+    }
+
+    // Used for situations where events are skipped for perf reasons
+    public static void addEventLogEntry(Event event, Location<World> location, Object source, Object target, Subject permissionSubject, String permission, String trust, Tristate result) {
+        if (GriefPreventionPlugin.debugActive) {
+            String sourceId = getPermissionIdentifier(source, true);
+            String targetPermission = permission;
+            String targetId = getPermissionIdentifier(target);
+            if (!targetId.isEmpty()) {
+                // move target meta to end of permission
+                Matcher m = PATTERN_META.matcher(targetId);
+                String targetMeta = "";
+                if (!permission.contains("command-execute")) {
+                    if (m.find()) {
+                        targetMeta = m.group(0);
+                        targetId = StringUtils.replace(targetId, targetMeta, "");
+                    }
+                }
+                targetPermission += "." + targetId + targetMeta;
+            }
+            if (permissionSubject == null) {
+                permissionSubject = GriefPreventionPlugin.GLOBAL_SUBJECT;
+            }
+            GriefPreventionPlugin.addEventLogEntry(event, location, sourceId, targetId, permissionSubject, targetPermission, trust, result);
+        }
     }
 
     public static String getPermissionIdentifier(Object obj) {
