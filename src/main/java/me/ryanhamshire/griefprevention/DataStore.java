@@ -634,14 +634,13 @@ public abstract class DataStore {
     public GPClaimManager getClaimWorldManager(WorldProperties worldProperties) {
         GPClaimManager claimWorldManager = null;
         if (worldProperties == null) {
-            claimWorldManager = this.claimWorldManagers.get(Sponge.getServer().getDefaultWorld().get().getUniqueId());
-        } else {
-            claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
+            worldProperties = Sponge.getServer().getDefaultWorld().get();
         }
+        claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
 
         if (claimWorldManager == null) {
-            claimWorldManager = new GPClaimManager(worldProperties);
-            this.claimWorldManagers.put(worldProperties.getUniqueId(), claimWorldManager);
+            registerWorld(worldProperties);
+            claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
         }
         return claimWorldManager;
     }
