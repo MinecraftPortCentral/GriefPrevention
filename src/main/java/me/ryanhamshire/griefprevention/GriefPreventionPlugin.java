@@ -172,6 +172,7 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.cause.EventContextKey;
 import org.spongepowered.api.event.cause.entity.damage.DamageType;
+import org.spongepowered.api.event.game.GameReloadEvent;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
@@ -416,6 +417,14 @@ public class GriefPreventionPlugin {
         }
 
         return true;
+    }
+
+    @Listener(order = Order.LAST)
+    public void onGameReload(GameReloadEvent event) {
+        this.loadConfig();
+        if (event.getSource() instanceof CommandSource) {
+            GriefPreventionPlugin.sendMessage((CommandSource) event.getSource(), GriefPreventionPlugin.getInstance().messageData.pluginReload.toText());
+        }
     }
 
     @Listener(order = Order.LAST)
