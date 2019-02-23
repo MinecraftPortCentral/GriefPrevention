@@ -1447,16 +1447,6 @@ public class PlayerEventHandler {
             result = GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.INVENTORY_OPEN, source, targetEntity, player, TrustType.CONTAINER, false);
         }
         if (result == Tristate.FALSE) {
-            String entityId = targetEntity.getType() != null ? targetEntity.getType().getId() : ((net.minecraft.entity.Entity) targetEntity).getName();
-            Text message = null;
-            if (!(targetEntity instanceof Player)) {
-                message = GriefPreventionPlugin.instance.messageData.permissionInteractEntity
-                        .apply(ImmutableMap.of(
-                        "owner", claim.getOwnerName(),
-                        "entity", entityId)).build();
-                GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
-            }
-
             event.setCancelled(true);
             this.sendInteractEntityDenyMessage(itemInHand, targetEntity, claim, player, handType);
             GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
@@ -2636,21 +2626,22 @@ public class PlayerEventHandler {
     }
 
     private void sendInteractEntityDenyMessage(ItemStack playerItem, Entity entity, GPClaim claim, Player player, HandType handType) {
-        if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
+        if (entity instanceof Player || (claim.getData() != null && !claim.getData().allowDenyMessages())) {
             return;
         }
 
+        final String entityId = entity.getType() != null ? entity.getType().getId() : ((net.minecraft.entity.Entity) entity).getName();
         if (playerItem == null || playerItem == ItemTypes.NONE || playerItem.isEmpty()) {
             final Text message = GriefPreventionPlugin.instance.messageData.permissionInteractEntity
                     .apply(ImmutableMap.of(
                     "owner", claim.getOwnerName(),
-                    "entity", entity.getType().getId())).build();
+                    "entity", entityId)).build();
             GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
         } else {
             final Text message = GriefPreventionPlugin.instance.messageData.permissionInteractItemEntity
                     .apply(ImmutableMap.of(
                     "item", playerItem.getType().getId(),
-                    "entity", entity.getType().getId())).build();
+                    "entity", entityId)).build();
             GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
         }
     }

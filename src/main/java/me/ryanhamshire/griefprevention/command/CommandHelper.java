@@ -148,7 +148,6 @@ public class CommandHelper {
                     validateItemTarget(target)) {
                     return true;
                 }
-
                 return false;
             case ENTER_CLAIM :
             case EXIT_CLAIM :
@@ -160,13 +159,16 @@ public class CommandHelper {
                     validateItemTarget(target)) {
                     return true;
                 }
-
                 return false;
             case INTERACT_INVENTORY :
-            case LIQUID_FLOW :
-                return validateBlockTarget(target);
+                if (validateEntityTarget(target) ||
+                    validateBlockTarget(target)) {
+                    return true;
+                }
+                return false;
             case INTERACT_BLOCK_PRIMARY :
             case INTERACT_BLOCK_SECONDARY :
+            case LIQUID_FLOW :
                 return validateBlockTarget(target);
             case ENTITY_CHUNK_SPAWN :
             case ENTITY_SPAWN :
