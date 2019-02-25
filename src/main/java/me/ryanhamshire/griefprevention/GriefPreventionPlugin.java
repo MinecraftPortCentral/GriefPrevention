@@ -423,7 +423,7 @@ public class GriefPreventionPlugin {
     public void onGameReload(GameReloadEvent event) {
         this.loadConfig();
         if (event.getSource() instanceof CommandSource) {
-            GriefPreventionPlugin.sendMessage((CommandSource) event.getSource(), GriefPreventionPlugin.getInstance().messageData.pluginReload.toText());
+            sendMessage((CommandSource) event.getSource(), this.messageData.pluginReload.toText());
         }
     }
 
