@@ -503,10 +503,12 @@ public class GPPermissionHandler {
 
     public static Tristate processResult(GPClaim claim, String permission, String trust, Tristate permissionValue, Subject permissionSubject) {
         if (GriefPreventionPlugin.debugActive) {
-            if (permissionSubject == null) {
-                if (eventSubject != null) {
-                    permissionSubject = eventSubject;
-                } else if (currentEvent.getCause().root() instanceof User) {
+            // Use the event subject always if available
+            // This prevents debug showing 'default' for users
+            if (eventSubject != null) {
+                permissionSubject = eventSubject;
+            } else if (permissionSubject == null) {
+                if (currentEvent.getCause().root() instanceof User) {
                     permissionSubject = (Subject) currentEvent.getCause().root();
                 } else {
                     permissionSubject = GriefPreventionPlugin.GLOBAL_SUBJECT;

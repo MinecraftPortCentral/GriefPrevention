@@ -40,18 +40,14 @@ import me.ryanhamshire.griefprevention.claim.GPClaim;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.event.GPAttackPlayerEvent;
 import me.ryanhamshire.griefprevention.event.GPBorderClaimEvent;
-import me.ryanhamshire.griefprevention.permission.GPBlacklists;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.provider.MCClansApiProvider;
 import me.ryanhamshire.griefprevention.util.CauseContextHelper;
 import me.ryanhamshire.griefprevention.util.EntityUtils;
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityItemFrame;
-import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.ContainerPlayer;
@@ -86,7 +82,6 @@ import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.filter.cause.First;
-import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.service.user.UserStorageService;
@@ -109,10 +104,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 
-//handles events related to entities
 public class EntityEventHandler {
 
-    // convenience reference for the singleton datastore
     private final DataStore dataStore;
 
     public EntityEventHandler(DataStore dataStore) {

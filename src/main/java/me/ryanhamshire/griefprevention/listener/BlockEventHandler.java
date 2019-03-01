@@ -87,11 +87,11 @@ import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.explosion.Explosion;
+import org.spongepowered.common.interfaces.block.IMixinBlock;
 import org.spongepowered.common.interfaces.world.IMixinLocation;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -124,26 +124,45 @@ public class BlockEventHandler {
 
         final Cause cause = event.getCause();
         final EventContext context = event.getContext();
-        final User user = CauseContextHelper.getEventUser(event);
-        final boolean hasFakePlayer = context.containsKey(EventContextKeys.FAKE_PLAYER);
-        if (user != null) {
-            if (context.containsKey(EventContextKeys.PISTON_RETRACT)) {
+        if (context.containsKey(EventContextKeys.PISTON_RETRACT)) {
+            return;
+        }
+        if (context.containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
+            return;
+        }
+
+        final TileEntity tileEntity = cause.first(TileEntity.class).orElse(null);
+        final LocatableBlock eventBlock = context.get(EventContextKeys.BLOCK_EVENT_QUEUE).orElse(null);
+        final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
+        final boolean isBlockEvent = eventBlock != null;
+        Object source = tileEntity != null ? tileEntity : cause.root();
+        Location<World> sourceLocation = null;
+        boolean isVanillaBlock = true;
+        if (!pistonExtend && isBlockEvent) {
+            isVanillaBlock = ((IMixinBlock) eventBlock.getBlockState().getType()).isVanilla();
+            if (isVanillaBlock) {
                 return;
+            }
+            if (context.containsKey(EventContextKeys.NEIGHBOR_NOTIFY_SOURCE)) {
+                source = eventBlock;
+                sourceLocation = eventBlock.getLocation();
             }
         }
 
+        final User user = CauseContextHelper.getEventUser(event);
         final LocatableBlock locatableBlock = cause.first(LocatableBlock.class).orElse(null);
-        final TileEntity tileEntity = cause.first(TileEntity.class).orElse(null);
+        final boolean hasFakePlayer = context.containsKey(EventContextKeys.FAKE_PLAYER);
         Entity sourceEntity = null;
         // Always use TE as source if available
-        final Object source = tileEntity != null ? tileEntity : cause.root();
-        Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
-        if (sourceLocation == null && source instanceof Entity) {
-            // check entity
-            sourceEntity = ((Entity) source);
-            sourceLocation = sourceEntity.getLocation();
+        if (sourceLocation == null) {
+             sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
+             if (sourceLocation == null && source instanceof Entity) {
+                 // check entity
+                 sourceEntity = ((Entity) source);
+                 sourceLocation = sourceEntity.getLocation();
+             }
         }
-        final boolean pistonExtend = context.containsKey(EventContextKeys.PISTON_EXTEND);
+
         final boolean isLiquidSource = context.containsKey(EventContextKeys.LIQUID_FLOW);
         final boolean isFireSource = isLiquidSource ? false : context.containsKey(EventContextKeys.FIRE_SPREAD);
         final boolean isLeafDecay = context.containsKey(EventContextKeys.LEAVES_DECAY);
@@ -157,6 +176,7 @@ public class BlockEventHandler {
             return;
         }
 
+        final boolean shouldLogEvent = (!isLiquidSource && !isFireSource && !isLeafDecay && !pistonExtend) || !isVanillaBlock;
         lastBlockPreCancelled = false;
         final boolean isForgePlayerBreak = context.containsKey(EventContextKeys.PLAYER_BREAK);
         GPTimings.BLOCK_PRE_EVENT.startTimingIfSync();
@@ -224,25 +244,33 @@ public class BlockEventHandler {
                         continue;
                     }
                 }
-
                 final BlockState blockState = location.getBlock();
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
-                // If a player successfully interacted with a block recently such as a pressure plate, ignore check
-                // This fixes issues such as pistons not being able to extend
-                if (user != null && !isForgePlayerBreak && playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
-                    continue;
-                }
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
-                    GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.BUILDER.name().toLowerCase(), Tristate.TRUE);
+                    if (shouldLogEvent) {
+                        GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.BUILDER.name().toLowerCase(), Tristate.TRUE);
+                    }
                     continue;
                 }
                 if (sourceClaim.getOwnerUniqueId().equals(targetClaim.getOwnerUniqueId()) && user == null && sourceEntity == null && !isFireSource && !isLeafDecay) {
-                    GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, "owner", Tristate.TRUE);
+                    if (shouldLogEvent) {
+                        GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, "owner", Tristate.TRUE);
+                    }
+                    continue;
+                }
+                // If a player successfully interacted with a block recently such as a pressure plate, ignore check
+                // This fixes issues such as pistons not being able to extend
+                if (user != null && !isForgePlayerBreak && playerData != null && playerData.checkLastInteraction(targetClaim, user)) {
+                    if (shouldLogEvent) {
+                        GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.BUILDER.name().toLowerCase(), Tristate.TRUE);
+                    }
                     continue;
                 }
                 if (user != null && pistonExtend) {
                     if (targetClaim.isUserTrusted(user, TrustType.ACCESSOR)) {
-                        GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.ACCESSOR.name().toLowerCase(), Tristate.TRUE);
+                        if (shouldLogEvent) {
+                            GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.ACCESSOR.name().toLowerCase(), Tristate.TRUE);
+                        }
                         continue;
                     }
                 }
@@ -294,7 +322,9 @@ public class BlockEventHandler {
                     continue;
                 }
                 if (targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
-                    GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.BUILDER.name().toLowerCase(), Tristate.TRUE);
+                    if (shouldLogEvent) {
+                        GPPermissionHandler.addEventLogEntry(event, location, source, blockState, user, GPPermissions.BLOCK_BREAK, TrustType.BUILDER.name().toLowerCase(), Tristate.TRUE);
+                    }
                     continue;
                 }
 
@@ -326,8 +356,16 @@ public class BlockEventHandler {
     // Handle fluids flowing into claims
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockNotify(NotifyNeighborBlockEvent event) {
+        if (event.getContext().containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
+            return;
+        }
+        final TileEntity tileEntity = event.getCause().first(TileEntity.class).orElse(null);
+        // Pistons are handled in Pre handler
+        if (tileEntity instanceof TileEntityPiston) {
+            return;
+        }
+
         LocatableBlock locatableBlock = event.getCause().first(LocatableBlock.class).orElse(null);
-        TileEntity tileEntity = event.getCause().first(TileEntity.class).orElse(null);
         Location<World> sourceLocation = locatableBlock != null ? locatableBlock.getLocation() : tileEntity != null ? tileEntity.getLocation() : null;
         GPClaim sourceClaim = null;
         GPPlayerData playerData = null;
@@ -638,6 +676,10 @@ public class BlockEventHandler {
             return;
         }
 
+        if (event.getContext().containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
+            return;
+        }
+
         final World world = event.getTransactions().get(0).getFinal().getLocation().get().getExtent();
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
             return;
@@ -712,6 +754,11 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
+        if (lastBlockPreTick == Sponge.getServer().getRunningTimeTicks() && !(event.getCause().root() instanceof Player)) {
+            event.setCancelled(lastBlockPreCancelled);
+            return;
+        }
+
         final Object source = event.getSource();
         // Pistons are handled in onBlockPre
         if (source instanceof TileEntityPiston) {
@@ -723,6 +770,10 @@ public class BlockEventHandler {
             return;
         }
         if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), event.getSource(), world.getProperties())) {
+            return;
+        }
+
+        if (event.getContext().containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
             return;
         }
 

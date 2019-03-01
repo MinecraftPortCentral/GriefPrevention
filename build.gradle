@@ -73,7 +73,7 @@ dependencies {
     apiCompile "org.spongepowered:spongeapi:$apiVersion"
 
     compileOnly sourceSets.api.output
-    compileOnly ("org.spongepowered:spongecommon:$apiVersion:dev") {
+    compileOnly ("org.spongepowered:spongecommon:$commonVersion:dev") {
         exclude module: 'testplugins'
 	}
     compileOnly "com.sk89q.worldedit:worldedit-core:6.1.4-SNAPSHOT"

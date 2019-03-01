@@ -3,7 +3,7 @@
 ##### *GriefPrevention* is a Minecraft plugin designed to protect servers from grief.
 
 
-[**Download**](https://files.minecraftforge.net/maven/me/ryanhamshire/griefprevention/)  
+[**Download**](https://ore.spongepowered.org/blood/GriefPrevention/versions) 
 [**Source**](https://github.com/MinecraftPortCentral/GriefPrevention)  
 [**Wiki**](https://github.com/MinecraftPortCentral/GriefPrevention/wiki)  
 [**Original Plugin**](http://dev.bukkit.org/bukkit-plugins/grief-prevention/)  
