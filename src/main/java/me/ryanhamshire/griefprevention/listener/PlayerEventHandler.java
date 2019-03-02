@@ -1607,7 +1607,9 @@ public class PlayerEventHandler {
         final ItemStack itemInHand = player.getItemInHand(handType).orElse(ItemStack.empty());
         if (event.getTargetBlock() != BlockSnapshot.NONE) {
             // Run our item hook since Sponge no longer fires InteractItemEvent when targetting a non-air block
-            handleItemInteract(event, player, player.getWorld(), itemInHand);
+            if (handleItemInteract(event, player, player.getWorld(), itemInHand).isCancelled()) {
+                return;
+            }
         }
 
         if (!GPFlags.INTERACT_BLOCK_PRIMARY || !GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
@@ -1753,22 +1755,22 @@ public class PlayerEventHandler {
         GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
     }
 
-    public void handleItemInteract(InteractEvent event, Player player, World world, ItemStack itemInHand) {
+    public InteractEvent handleItemInteract(InteractEvent event, Player player, World world, ItemStack itemInHand) {
         final ItemType itemType = itemInHand.getType();
         if (itemInHand.isEmpty() || itemType instanceof ItemFood) {
-            return;
+            return event;
         }
 
         final boolean primaryEvent = event instanceof InteractItemEvent.Primary || event instanceof InteractBlockEvent.Primary;
         if (!GPFlags.INTERACT_ITEM_PRIMARY && primaryEvent || !GPFlags.INTERACT_ITEM_SECONDARY && !primaryEvent || !GriefPreventionPlugin.instance.claimsEnabledForWorld(world.getProperties())) {
-            return;
+            return event;
         }
 
         if (primaryEvent && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_PRIMARY.toString(), itemInHand.getType(), world.getProperties())) {
-            return;
+            return event;
         }
         if (!primaryEvent && GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.INTERACT_ITEM_SECONDARY.toString(), itemInHand.getType(), world.getProperties())) {
-            return;
+            return event;
         }
 
         final Cause cause = event.getCause();
@@ -1789,12 +1791,12 @@ public class PlayerEventHandler {
                     itemInHand.getType().equals(GriefPreventionPlugin.instance.investigationTool))) {
                 GPPermissionHandler.addEventLogEntry(event, location, itemInHand, blockSnapshot == null ? entity : blockSnapshot, player, ITEM_PERMISSION, null, Tristate.TRUE);
                 if (investigateClaim(event, player, BlockSnapshot.NONE, itemInHand)) {
-                    return;
+                    return event;
                 }
 
                 final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
                 onPlayerHandleShovelAction(event, BlockSnapshot.NONE, player,  ((HandInteractEvent) event).getHandType(), playerData);
-                return;
+                return event;
             }
         }
 
@@ -1811,6 +1813,7 @@ public class PlayerEventHandler {
             }
             lastInteractItemCancelled = true;
         }
+        return event;
     }
 
     private void onPlayerHandleShovelAction(InteractEvent event, BlockSnapshot targetBlock, Player player, HandType handType, GPPlayerData playerData) {
