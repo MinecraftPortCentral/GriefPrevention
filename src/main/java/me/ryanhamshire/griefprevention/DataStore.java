@@ -590,17 +590,27 @@ public abstract class DataStore {
 
     public GPClaim getClaimAtPlayer(GPPlayerData playerData, Location<World> location) {
         GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAtPlayer(playerData, location);
+        return (GPClaim) claimManager.getClaimAtPlayer(location, playerData);
     }
 
     public GPClaim getClaimAt(Location<World> location) {
         GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAt(location, null);
+        return (GPClaim) claimManager.getClaimAt(location);
+    }
+
+    public GPClaim getClaimAt(Location<World> location, boolean useBorderBlockRadius) {
+        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
+        return (GPClaim) claimManager.getClaimAt(location, useBorderBlockRadius);
     }
 
     public GPClaim getClaimAt(Location<World> location, GPClaim cachedClaim) {
         GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAt(location, cachedClaim);
+        return (GPClaim) claimManager.getClaimAt(location, cachedClaim, false);
+    }
+
+    public GPClaim getClaimAt(Location<World> location, GPClaim cachedClaim, boolean useBlockBorderRadius) {
+        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
+        return (GPClaim) claimManager.getClaimAt(location, cachedClaim, useBlockBorderRadius);
     }
 
     public GPPlayerData getPlayerData(World world, UUID playerUniqueId) {

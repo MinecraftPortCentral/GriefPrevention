@@ -451,18 +451,26 @@ public class GPClaimManager implements ClaimManager {
         this.worldProperties = null;
     }
 
-    public Claim getClaimAtPlayer(GPPlayerData playerData, Location<World> location) {
-        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get());
-    }
-
     @Override
     public Claim getClaimAt(Location<World> location) {
-        return this.getClaimAt(location, null);
+        return this.getClaimAt(location, null, false);
+    }
+
+    public Claim getClaimAt(Location<World> location, boolean useBorderBlockRadius) {
+        return this.getClaimAt(location, null, useBorderBlockRadius);
+    }
+
+    public Claim getClaimAtPlayer(Location<World> location, GPPlayerData playerData) {
+        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get(), false);
+    }
+
+    public Claim getClaimAtPlayer(Location<World> location, GPPlayerData playerData, boolean useBorderBlockRadius) {
+        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get(), useBorderBlockRadius);
     }
 
     // gets the claim at a specific location
     // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
-    public Claim getClaimAt(Location<World> location, GPClaim cachedClaim) {
+    public Claim getClaimAt(Location<World> location, GPClaim cachedClaim, boolean useBorderBlockRadius) {
         //GPTimings.CLAIM_GETCLAIM.startTimingIfSync();
         // check cachedClaim guess first. if the location is inside it, we're done
         if (cachedClaim != null && !cachedClaim.isWilderness() && cachedClaim.contains(location, true)) {
@@ -470,19 +478,23 @@ public class GPClaimManager implements ClaimManager {
             return cachedClaim;
         }
 
-        final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
         Set<Claim> claimsInChunk = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(location.getBlockX() >> 4, location.getBlockZ() >> 4));
-        // if borderBlockRadius > 0, check surrounding chunks
-        for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
-            Location<World> currentLocation = location;
-            for (int i = 0; i < borderBlockRadius; i++) { // Handle depth
-                currentLocation = currentLocation.getRelative(direction); 
-                Set<Claim> relativeClaims = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(currentLocation.getBlockX() >> 4, currentLocation.getBlockZ() >> 4));
-                if (relativeClaims != null) {
-                    if (claimsInChunk == null) {
-                        claimsInChunk = new HashSet<>();
+        if (useBorderBlockRadius) {
+            final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
+            // if borderBlockRadius > 0, check surrounding chunks
+            if (borderBlockRadius > 0) {
+                for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
+                    Location<World> currentLocation = location;
+                    for (int i = 0; i < borderBlockRadius; i++) { // Handle depth
+                        currentLocation = currentLocation.getRelative(direction); 
+                        Set<Claim> relativeClaims = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(currentLocation.getBlockX() >> 4, currentLocation.getBlockZ() >> 4));
+                        if (relativeClaims != null) {
+                            if (claimsInChunk == null) {
+                                claimsInChunk = new HashSet<>();
+                            }
+                            claimsInChunk.addAll(relativeClaims);
+                        }
                     }
-                    claimsInChunk.addAll(relativeClaims);
                 }
             }
         }

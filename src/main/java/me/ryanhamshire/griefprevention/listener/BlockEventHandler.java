@@ -814,14 +814,9 @@ public class BlockEventHandler {
                 continue;
             }
 
-            targetClaim = this.dataStore.getClaimAt(location, targetClaim);
+            targetClaim = this.dataStore.getClaimAt(location, targetClaim, true);
             if (locatable != null && targetClaim.isWilderness()) {
                 continue;
-            }
-            if (!checkSurroundings(event, location, player, playerData, targetClaim)) {
-                event.setCancelled(true);
-                GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
-                return;
             }
 
             if (GPFlags.BLOCK_PLACE) {
