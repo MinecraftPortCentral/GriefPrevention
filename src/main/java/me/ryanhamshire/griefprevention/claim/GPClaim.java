@@ -614,7 +614,21 @@ public class GPClaim implements Claim {
         int y = location.getBlockY();
         int z = location.getBlockZ();
 
-        final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
+        int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
+        final User user = Sponge.getCauseStackManager().getCurrentCause().first(User.class).orElse(null);
+        if (user == null || (this.claimData != null && !this.isUserTrusted(user, TrustType.BUILDER))) {
+            if (user != null) {
+                final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
+                if (!playerData.ignoreBorderCheck) {
+                    borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
+                }
+            } else {
+                borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
+                if (borderBlockRadius < 0) {
+                    borderBlockRadius = 0;
+                }
+            }
+        }
         // main check
         boolean inClaim = (
                 y >= (this.lesserBoundaryCorner.getBlockY() - borderBlockRadius)) &&
@@ -2043,7 +2057,7 @@ public class GPClaim implements Claim {
         }
 
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
-        if (!playerData.canIgnoreClaim(this) && this.getInternalClaimData().isExpired()) {
+        if (!playerData.canIgnoreClaim(this) && this.getInternalClaimData() != null && this.getInternalClaimData().isExpired()) {
             return false;
         }
         if (!playerData.executingClaimDebug && !playerData.debugClaimPermissions) {

@@ -241,6 +241,7 @@ public class GPPlayerData implements PlayerData {
     // cached permission values
     public boolean canManageAdminClaims = false;
     public boolean canManageWilderness = false;
+    public boolean ignoreBorderCheck = false;
     public boolean ignoreAdminClaims = false;
     public boolean ignoreBasicClaims = false;
     public boolean ignoreTowns = false;
@@ -308,6 +309,7 @@ public class GPPlayerData implements PlayerData {
             this.optionTaxRateTownBasic = PlayerUtils.getOptionDoubleValue(activeContexts, subject, GPOptions.TAX_RATE_TOWN_BASIC, this.optionTaxRateTownBasic);
             this.optionTaxRateTownSubdivision = PlayerUtils.getOptionDoubleValue(activeContexts, subject, GPOptions.TAX_RATE_TOWN_BASIC, this.optionTaxRateTownSubdivision);
             // permissions
+            this.ignoreBorderCheck = subject.hasPermission(activeContexts, GPPermissions.IGNORE_BORDER_CHECK);
             this.ignoreAdminClaims = subject.hasPermission(activeContexts, GPPermissions.IGNORE_CLAIMS_ADMIN);
             this.ignoreTowns = subject.hasPermission(activeContexts, GPPermissions.IGNORE_CLAIMS_TOWN);
             this.ignoreWilderness = subject.hasPermission(activeContexts, GPPermissions.IGNORE_CLAIMS_WILDERNESS);

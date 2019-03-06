@@ -637,7 +637,7 @@ public class PlayerEventHandler {
         // if requires access trust, check for permission
         Location<World> location = player.getLocation();
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
-        if (playerData.canIgnoreClaim(claim)) {
+        if (playerData.canManageAdminClaims || playerData.canIgnoreClaim(claim)) {
             GPTimings.PLAYER_COMMAND_EVENT.stopTimingIfSync();
             return;
         }
@@ -1661,6 +1661,7 @@ public class PlayerEventHandler {
         // Run our item hook since Sponge no longer fires InteractItemEvent when targetting a non-air block
         final HandType handType = event.getHandType();
         final ItemStack itemInHand = player.getItemInHand(handType).orElse(ItemStack.empty());
+        final BlockSnapshot hitBlock = event.getContext().get(EventContextKeys.BLOCK_HIT).orElse(null);
         handleItemInteract(event, player, player.getWorld(), itemInHand);
 
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
@@ -1717,6 +1718,14 @@ public class PlayerEventHandler {
                 }
                 if (handType == HandTypes.MAIN_HAND) {
                     ((EntityPlayerMP) player).closeScreen();
+                }
+                // Special case for vanilla flower pots to fix client visual glitch
+                if (hitBlock != null && hitBlock.getState().getType() == BlockTypes.FLOWER_POT) {
+                    final EntityPlayerMP mcPlayer = (EntityPlayerMP) player;
+                    mcPlayer.sendContainerToPlayer(mcPlayer.inventoryContainer);
+                    if (tileEntity != null) {
+                        mcPlayer.connection.sendPacket(((net.minecraft.tileentity.TileEntity) tileEntity).getUpdatePacket());
+                    }
                 }
                 event.setUseBlockResult(Tristate.FALSE);
                 GPTimings.PLAYER_INTERACT_BLOCK_SECONDARY_EVENT.stopTimingIfSync();
@@ -1809,6 +1818,9 @@ public class PlayerEventHandler {
             if (event instanceof InteractBlockEvent.Secondary) {
                 ((InteractBlockEvent.Secondary) event).setUseItemResult(Tristate.FALSE);
             } else {
+                if (itemType == ItemTypes.WRITABLE_BOOK) {
+                    ((EntityPlayerMP) player).closeScreen();
+                }
                 event.setCancelled(true);
             }
             lastInteractItemCancelled = true;

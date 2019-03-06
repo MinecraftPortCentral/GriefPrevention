@@ -453,24 +453,24 @@ public class GPClaimManager implements ClaimManager {
 
     @Override
     public Claim getClaimAt(Location<World> location) {
-        return this.getClaimAt(location, null, false);
+        return this.getClaimAt(location, false);
     }
 
     public Claim getClaimAt(Location<World> location, boolean useBorderBlockRadius) {
-        return this.getClaimAt(location, null, useBorderBlockRadius);
+        return this.getClaimAt(location, null, null, useBorderBlockRadius);
     }
 
     public Claim getClaimAtPlayer(Location<World> location, GPPlayerData playerData) {
-        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get(), false);
+        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get(), playerData, false);
     }
 
     public Claim getClaimAtPlayer(Location<World> location, GPPlayerData playerData, boolean useBorderBlockRadius) {
-        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get(), useBorderBlockRadius);
+        return this.getClaimAt(location, (GPClaim) playerData.lastClaim.get(), playerData, useBorderBlockRadius);
     }
 
     // gets the claim at a specific location
     // ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
-    public Claim getClaimAt(Location<World> location, GPClaim cachedClaim, boolean useBorderBlockRadius) {
+    public Claim getClaimAt(Location<World> location, GPClaim cachedClaim, GPPlayerData playerData, boolean useBorderBlockRadius) {
         //GPTimings.CLAIM_GETCLAIM.startTimingIfSync();
         // check cachedClaim guess first. if the location is inside it, we're done
         if (cachedClaim != null && !cachedClaim.isWilderness() && cachedClaim.contains(location, true)) {
@@ -479,7 +479,7 @@ public class GPClaimManager implements ClaimManager {
         }
 
         Set<Claim> claimsInChunk = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(location.getBlockX() >> 4, location.getBlockZ() >> 4));
-        if (useBorderBlockRadius) {
+        if (useBorderBlockRadius && (playerData == null || !playerData.ignoreBorderCheck)) {
             final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
             // if borderBlockRadius > 0, check surrounding chunks
             if (borderBlockRadius > 0) {
