@@ -141,6 +141,7 @@ public class GriefPreventionConfig<T extends ConfigBase> {
 
             // merge with settings from parent
             if (this.parent != null) {
+                this.parent.reload();
                 this.data.mergeValuesFrom(this.parent.data);
             }
 

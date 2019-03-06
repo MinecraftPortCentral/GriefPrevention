@@ -35,8 +35,11 @@ public class ClaimCategory extends ConfigCategory {
 
     @Setting(value = "accesstrust-commands", comment = "The list of slashcommands requiring access trust when in a claim.")
     public List<String> accessTrustCommands = new ArrayList<>();
-    @Setting(value = "auto-claim-radius", comment = "Radius used for auto-created claims. Set to -1 to disable.")
-    public int claimRadius = 4;
+    @Setting(value = "auto-chest-claim-block-radius", comment = "Radius used (in blocks) for auto-created claim when a chest is placed. Set to -1 to disable chest claim creation.")
+    public int autoChestClaimBlockRadius = 4;
+    @Setting(value = "border-block-radius", comment = "Set claim border of specified radius (in blocks), centered on claim. If set to 1, adds an additional 1 block protected radius around claim.\n" + 
+            "Note: It is not recommended to set this value too high as performance can degrade due to deeper claim searches.")
+    public int borderBlockRadius = 0;
     @Setting(value = "expiration-cleanup-interval", comment = "The interval in minutes for cleaning up expired claims. Default: 0. Set to 0 to disable.")
     public int expirationCleanupInterval = 0;
     @Setting(value = "deliver-manuals", comment = "Send players manuals on claim creation.")

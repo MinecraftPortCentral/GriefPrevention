@@ -77,8 +77,8 @@ public class CleanupUnusedClaimsTask implements Runnable {
                 GriefPreventionConfig<?> activeConfig = GriefPreventionPlugin.getActiveConfig(worldProperties);
                 // determine area of the default chest claim
                 int areaOfDefaultClaim = 0;
-                if (activeConfig.getConfig().claim.claimRadius >= 0) {
-                    areaOfDefaultClaim = (int) Math.pow(activeConfig.getConfig().claim.claimRadius * 2 + 1, 2);
+                if (activeConfig.getConfig().claim.autoChestClaimBlockRadius >= 0) {
+                    areaOfDefaultClaim = (int) Math.pow(activeConfig.getConfig().claim.autoChestClaimBlockRadius * 2 + 1, 2);
                 }
 
                 final Subject subject = playerData.getPlayerSubject();

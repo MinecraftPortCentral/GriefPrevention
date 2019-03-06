@@ -614,14 +614,15 @@ public class GPClaim implements Claim {
         int y = location.getBlockY();
         int z = location.getBlockZ();
 
+        final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
         // main check
         boolean inClaim = (
-                y >= this.lesserBoundaryCorner.getBlockY()) &&
-                y < this.greaterBoundaryCorner.getBlockY() + 1 &&
-                x >= this.lesserBoundaryCorner.getBlockX() &&
-                x < this.greaterBoundaryCorner.getBlockX() + 1 &&
-                z >= this.lesserBoundaryCorner.getBlockZ() &&
-                z < this.greaterBoundaryCorner.getBlockZ() + 1;
+                y >= (this.lesserBoundaryCorner.getBlockY() - borderBlockRadius)) &&
+                y < (this.greaterBoundaryCorner.getBlockY() + 1 + borderBlockRadius) &&
+                x >= (this.lesserBoundaryCorner.getBlockX() - borderBlockRadius) &&
+                x < (this.greaterBoundaryCorner.getBlockX() + 1 + borderBlockRadius) &&
+                z >= (this.lesserBoundaryCorner.getBlockZ() - borderBlockRadius) &&
+                z < (this.greaterBoundaryCorner.getBlockZ() + 1 + borderBlockRadius);
 
         if (!inClaim) {
             return false;

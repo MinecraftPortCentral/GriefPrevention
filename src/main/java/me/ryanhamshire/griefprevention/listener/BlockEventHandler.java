@@ -47,7 +47,6 @@ import me.ryanhamshire.griefprevention.util.CauseContextHelper;
 import me.ryanhamshire.griefprevention.visual.Visualization;
 import me.ryanhamshire.griefprevention.visual.VisualizationType;
 import net.minecraft.block.BlockBasePressurePlate;
-import net.minecraft.block.BlockContainer;
 import net.minecraft.entity.item.EntityFallingBlock;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.inventory.IInventory;
@@ -184,7 +183,6 @@ public class BlockEventHandler {
         if (isForgePlayerBreak && !hasFakePlayer && source instanceof Player) {
             final Player player = (Player) source;
             GPClaim targetClaim = null;
-            final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(world, player.getUniqueId());
             for (Location<World> location : event.getLocations()) {
                 if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
@@ -194,11 +192,6 @@ public class BlockEventHandler {
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
                 if (location.getBlockType() == BlockTypes.AIR) {
                     continue;
-                }
-                if (!checkSurroundings(event, location, player, playerData, targetClaim)) {
-                    event.setCancelled(true);
-                    GPTimings.BLOCK_PRE_EVENT.stopTimingIfSync();
-                    return;
                 }
 
                 // check overrides
@@ -876,7 +869,7 @@ public class BlockEventHandler {
                 continue;
             }
 
-            if (targetClaim.isWilderness() && activeConfig.getConfig().claim.claimRadius > -1) {
+            if (targetClaim.isWilderness() && activeConfig.getConfig().claim.autoChestClaimBlockRadius > -1) {
                 net.minecraft.tileentity.TileEntity tileEntity = (net.minecraft.tileentity.TileEntity) block.getLocation().get().getTileEntity().orElse(null);
                 if (tileEntity == null || !(tileEntity instanceof IInventory) || !(tileEntity instanceof TileEntityChest)) {
                     GPTimings.BLOCK_PLACE_EVENT.stopTimingIfSync();
@@ -896,13 +889,13 @@ public class BlockEventHandler {
                     return;
                 }
 
-                int radius = activeConfig.getConfig().claim.claimRadius;
+                int radius = activeConfig.getConfig().claim.autoChestClaimBlockRadius;
 
                 // if the player doesn't have any claims yet, automatically create a claim centered at the chest
                 if (playerData.getInternalClaims().size() == 0) {
                     try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                         // radius == 0 means protect ONLY the chest
-                        if (activeConfig.getConfig().claim.claimRadius == 0) {
+                        if (activeConfig.getConfig().claim.autoChestClaimBlockRadius == 0) {
                             Sponge.getCauseStackManager().pushCause(player);
                             final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()
                                     .bounds(block.getPosition(), block.getPosition())
@@ -1080,34 +1073,5 @@ public class BlockEventHandler {
         }
 
         return sourceClaim;
-    }
-
-    // TODO: Add configuration for distance between claims
-    private boolean checkSurroundings(org.spongepowered.api.event.Event event, Location<World> location, Player player, GPPlayerData playerData, GPClaim targetClaim) {
-        if (playerData == null) {
-            return true;
-        }
-        // Don't allow players to break blocks next to land they do not own
-        if (!playerData.canIgnoreClaim(targetClaim)) {
-            // check surrounding blocks for access
-            for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
-                Location<World> loc = location.getBlockRelative(direction);
-                if (!(loc.getBlockType() instanceof BlockContainer)) {
-                    continue;
-                }
-                final GPClaim claim = this.dataStore.getClaimAt(loc, targetClaim);
-                if (!claim.isWilderness() && !targetClaim.equals(claim)) {
-                    Tristate result = GPPermissionHandler.getClaimPermission(event, loc, claim, GPPermissions.BLOCK_BREAK, player, loc.getBlock(), player, TrustType.BUILDER, true);
-                    if (result != Tristate.TRUE) {
-                        final Text message = GriefPreventionPlugin.instance.messageData.permissionBuildNearClaim
-                                .apply(ImmutableMap.of(
-                                "owner", claim.getOwnerName())).build();
-                        GriefPreventionPlugin.sendClaimDenyMessage(claim, player, message);
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
     }
 }

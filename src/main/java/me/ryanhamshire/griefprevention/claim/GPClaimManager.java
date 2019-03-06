@@ -44,6 +44,7 @@ import me.ryanhamshire.griefprevention.configuration.ClaimStorageData;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.PlayerStorageData;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
@@ -52,6 +53,7 @@ import org.spongepowered.api.service.economy.EconomyService;
 import org.spongepowered.api.service.economy.account.Account;
 import org.spongepowered.api.service.economy.account.UniqueAccount;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -468,7 +470,22 @@ public class GPClaimManager implements ClaimManager {
             return cachedClaim;
         }
 
+        final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
         Set<Claim> claimsInChunk = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(location.getBlockX() >> 4, location.getBlockZ() >> 4));
+        // if borderBlockRadius > 0, check surrounding chunks
+        for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
+            Location<World> currentLocation = location;
+            for (int i = 0; i < borderBlockRadius; i++) { // Handle depth
+                currentLocation = currentLocation.getRelative(direction); 
+                Set<Claim> relativeClaims = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(currentLocation.getBlockX() >> 4, currentLocation.getBlockZ() >> 4));
+                if (relativeClaims != null) {
+                    if (claimsInChunk == null) {
+                        claimsInChunk = new HashSet<>();
+                    }
+                    claimsInChunk.addAll(relativeClaims);
+                }
+            }
+        }
         if (claimsInChunk == null) {
             //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
             return this.getWildernessClaim();
