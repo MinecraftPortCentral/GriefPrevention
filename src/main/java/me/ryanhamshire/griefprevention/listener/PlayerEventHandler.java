@@ -1715,7 +1715,7 @@ public class PlayerEventHandler {
                         this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
                     }
                 }
-                if (handType == HandTypes.MAIN_HAND) {
+                if (!SpongeImplHooks.isFakePlayer(((EntityPlayerMP) player)) && handType == HandTypes.MAIN_HAND) {
                     ((EntityPlayerMP) player).closeScreen();
                 }
                 final BlockSnapshot hitBlock = event.getContext().get(EventContextKeys.BLOCK_HIT).orElse(null);
@@ -1740,7 +1740,7 @@ public class PlayerEventHandler {
             // block container use during pvp combat, same reason
             if (playerData.inPvpCombat(player.getWorld())) {
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.pvpNoContainers.toText());
-                if (handType == HandTypes.MAIN_HAND) {
+                if (!SpongeImplHooks.isFakePlayer(((EntityPlayerMP) player)) && handType == HandTypes.MAIN_HAND) {
                     ((EntityPlayerMP) player).closeScreen();
                 }
                 event.setUseBlockResult(Tristate.FALSE);
@@ -1820,7 +1820,7 @@ public class PlayerEventHandler {
             if (event instanceof InteractBlockEvent.Secondary) {
                 ((InteractBlockEvent.Secondary) event).setUseItemResult(Tristate.FALSE);
             } else {
-                if (itemType == ItemTypes.WRITABLE_BOOK) {
+                if (!SpongeImplHooks.isFakePlayer(((EntityPlayerMP) player)) && itemType == ItemTypes.WRITABLE_BOOK) {
                     ((EntityPlayerMP) player).closeScreen();
                 }
                 event.setCancelled(true);
@@ -2677,7 +2677,7 @@ public class PlayerEventHandler {
     }
 
     private void sendInteractBlockDenyMessage(ItemStack playerItem, BlockSnapshot blockSnapshot, GPClaim claim, Player player, GPPlayerData playerData, HandType handType) {
-        if (claim.getData() != null && !claim.getData().allowDenyMessages()) {
+        if (!SpongeImplHooks.isFakePlayer((net.minecraft.entity.Entity) player) && claim.getData() != null && !claim.getData().allowDenyMessages()) {
             return;
         }
 
