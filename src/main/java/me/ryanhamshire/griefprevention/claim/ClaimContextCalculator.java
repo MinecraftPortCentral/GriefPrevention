@@ -49,7 +49,10 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
                 return;
             }
 
+            boolean ignoreBorder = playerData.ignoreBorderCheck;
+            playerData.ignoreBorderCheck = false;
             GPClaim sourceClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
+            playerData.ignoreBorderCheck = ignoreBorder;
             if (sourceClaim != null) {
                 if (playerData == null || playerData.canIgnoreClaim(sourceClaim)) {
                     return;

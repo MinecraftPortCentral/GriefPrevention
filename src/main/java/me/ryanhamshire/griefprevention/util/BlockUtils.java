@@ -64,7 +64,13 @@ import java.util.Optional;
 
 public class BlockUtils {
 
-    public static final Direction[] CARDINAL_DIRECTIONS = new Direction[] {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+    public static final Direction[] CARDINAL_SET = {
+            Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST
+        };
+    public static final Direction[] ORDINAL_SET = {
+            Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST,
+            Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST,
+        };
     private static final int NUM_XZ_BITS = 4;
     private static final int NUM_SHORT_Y_BITS = 8;
     private static final short XZ_MASK = 0xF;
@@ -255,7 +261,7 @@ public class BlockUtils {
         chunkProviderServer.id2ChunkMap.remove(ChunkPos.asLong(chunk.x, chunk.z));
         ((IMixinChunk) chunk).setScheduledForUnload(-1);
         org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
-        for (Direction direction : CARDINAL_DIRECTIONS) {
+        for (Direction direction : CARDINAL_SET) {
             Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
             IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) mcWorld.getChunkProvider();
             net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
@@ -299,7 +305,7 @@ public class BlockUtils {
             world.getChunkProvider().id2ChunkMap.put(ChunkPos.asLong(chunk.x, chunk.z), chunk);
 
             org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
-            for (Direction direction : CARDINAL_DIRECTIONS) {
+            for (Direction direction : CARDINAL_SET) {
                 Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
                 IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) world.getChunkProvider();
                 net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
@@ -357,7 +363,7 @@ public class BlockUtils {
             world.getChunkProvider().id2ChunkMap.put(ChunkPos.asLong(chunk.x, chunk.z), chunk);
 
             org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
-            for (Direction direction : CARDINAL_DIRECTIONS) {
+            for (Direction direction : CARDINAL_SET) {
                 Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
                 IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) world.getChunkProvider();
                 net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive

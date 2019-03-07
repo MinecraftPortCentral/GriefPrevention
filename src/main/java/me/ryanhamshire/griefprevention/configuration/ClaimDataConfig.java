@@ -25,7 +25,6 @@
 package me.ryanhamshire.griefprevention.configuration;
 
 import com.flowpowered.math.vector.Vector3i;
-import com.google.common.collect.Maps;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.EconomyData;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
@@ -115,8 +114,6 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     private List<String> managerGroups = new ArrayList<>();
     @Setting
     private EconomyDataConfig economyData = new EconomyDataConfig();
-    @Setting
-    private Map<UUID, ClaimDataConfig> subdivisions = Maps.newHashMap();
 
     public ClaimDataConfig() {
 
@@ -441,10 +438,6 @@ public class ClaimDataConfig extends ConfigCategory implements IClaimData {
     public void setManagers(List<UUID> coowners) {
         this.requiresSave = true;
         this.managers = coowners;
-    }
-
-    public Map<UUID, ClaimDataConfig> getSubdivisions() {
-        return this.subdivisions;
     }
 
     public boolean requiresSave() {

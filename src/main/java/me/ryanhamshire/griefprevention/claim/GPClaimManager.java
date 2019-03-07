@@ -483,7 +483,7 @@ public class GPClaimManager implements ClaimManager {
             final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
             // if borderBlockRadius > 0, check surrounding chunks
             if (borderBlockRadius > 0) {
-                for (Direction direction : BlockUtils.CARDINAL_DIRECTIONS) {
+                for (Direction direction : BlockUtils.ORDINAL_SET) {
                     Location<World> currentLocation = location;
                     for (int i = 0; i < borderBlockRadius; i++) { // Handle depth
                         currentLocation = currentLocation.getRelative(direction); 

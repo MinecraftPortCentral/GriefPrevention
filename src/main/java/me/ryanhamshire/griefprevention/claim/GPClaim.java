@@ -94,6 +94,7 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.common.SpongeImpl;
+import org.spongepowered.common.SpongeImplHooks;
 
 import java.io.File;
 import java.io.IOException;
@@ -615,17 +616,14 @@ public class GPClaim implements Claim {
         int z = location.getBlockZ();
 
         int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
-        final User user = Sponge.getCauseStackManager().getCurrentCause().first(User.class).orElse(null);
-        if (user == null || (this.claimData != null && !this.isUserTrusted(user, TrustType.BUILDER))) {
-            if (user != null) {
-                final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
-                if (!playerData.ignoreBorderCheck) {
-                    borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
-                }
-            } else {
-                borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
-                if (borderBlockRadius < 0) {
-                    borderBlockRadius = 0;
+        if (borderBlockRadius > 0 && SpongeImplHooks.isMainThread()) {
+            final User user = Sponge.getCauseStackManager().getCurrentCause().first(User.class).orElse(null);
+            if (user == null || (this.claimData != null && !this.isUserTrusted(user, TrustType.BUILDER))) {
+                if (user != null) {
+                    final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
+                    if (playerData.ignoreBorderCheck) {
+                        borderBlockRadius = 0;
+                    }
                 }
             }
         }

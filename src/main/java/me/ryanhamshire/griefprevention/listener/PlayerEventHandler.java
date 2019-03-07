@@ -51,7 +51,6 @@ import me.ryanhamshire.griefprevention.command.CommandHelper;
 import me.ryanhamshire.griefprevention.configuration.GriefPreventionConfig;
 import me.ryanhamshire.griefprevention.configuration.MessageStorage;
 import me.ryanhamshire.griefprevention.logging.CustomLogEntryTypes;
-import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissionHandler;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import me.ryanhamshire.griefprevention.provider.NucleusApiProvider;
@@ -69,6 +68,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemFood;
+import net.minecraft.network.play.server.SPacketChunkData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -1661,7 +1661,6 @@ public class PlayerEventHandler {
         // Run our item hook since Sponge no longer fires InteractItemEvent when targetting a non-air block
         final HandType handType = event.getHandType();
         final ItemStack itemInHand = player.getItemInHand(handType).orElse(ItemStack.empty());
-        final BlockSnapshot hitBlock = event.getContext().get(EventContextKeys.BLOCK_HIT).orElse(null);
         handleItemInteract(event, player, player.getWorld(), itemInHand);
 
         if (!GriefPreventionPlugin.instance.claimsEnabledForWorld(player.getWorld().getProperties())) {
@@ -1719,12 +1718,15 @@ public class PlayerEventHandler {
                 if (handType == HandTypes.MAIN_HAND) {
                     ((EntityPlayerMP) player).closeScreen();
                 }
+                final BlockSnapshot hitBlock = event.getContext().get(EventContextKeys.BLOCK_HIT).orElse(null);
                 // Special case for vanilla flower pots to fix client visual glitch
+                // TODO - Fix in Forge so we can remove this hack
                 if (hitBlock != null && hitBlock.getState().getType() == BlockTypes.FLOWER_POT) {
                     final EntityPlayerMP mcPlayer = (EntityPlayerMP) player;
                     mcPlayer.sendContainerToPlayer(mcPlayer.inventoryContainer);
                     if (tileEntity != null) {
                         mcPlayer.connection.sendPacket(((net.minecraft.tileentity.TileEntity) tileEntity).getUpdatePacket());
+                        mcPlayer.connection.sendPacket(new SPacketChunkData(((net.minecraft.world.chunk.Chunk) ((IMixinEntity) player).getActiveChunk()), 1));
                     }
                 }
                 event.setUseBlockResult(Tristate.FALSE);
@@ -2072,8 +2074,8 @@ public class PlayerEventHandler {
             if (oldClaim.parent == null) {
                 // temporary claim instance, just for checking contains()
                 GPClaim newClaim = new GPClaim(
-                            new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), smallX, smallY, smallZ),
-                            new Location<World>(oldClaim.getLesserBoundaryCorner().getExtent(), bigX, bigY, bigZ), ClaimType.BASIC, oldClaim.isCuboid());
+                            new Location<World>(player.getWorld(), smallX, smallY, smallZ),
+                            new Location<World>(player.getWorld(), bigX, bigY, bigZ), ClaimType.BASIC, oldClaim.isCuboid());
                 // if the new claim is smaller
                 if (!newClaim.contains(oldClaim.getLesserBoundaryCorner())
                         || !newClaim.contains(oldClaim.getGreaterBoundaryCorner())) {

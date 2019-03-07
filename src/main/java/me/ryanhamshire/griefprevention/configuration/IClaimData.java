@@ -28,7 +28,6 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.ClaimData;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public interface IClaimData extends ClaimData {
@@ -76,6 +75,4 @@ public interface IClaimData extends ClaimData {
     void setRequiresSave(boolean flag);
 
     void setExpired(boolean expire);
-
-    Map<UUID, ClaimDataConfig> getSubdivisions();
 }
