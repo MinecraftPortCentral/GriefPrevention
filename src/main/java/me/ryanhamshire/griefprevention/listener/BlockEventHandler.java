@@ -658,6 +658,13 @@ public class BlockEventHandler {
         if (!GPFlags.BLOCK_BREAK || event instanceof ExplosionEvent) {
             return;
         }
+        if (event.getCause().root() instanceof TileEntityPiston) {
+            return;
+        }
+        if (event.getContext().containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
+            return;
+        }
+
         if (lastBlockPreTick == Sponge.getServer().getRunningTimeTicks()) {
             event.setCancelled(lastBlockPreCancelled);
             return;
@@ -666,10 +673,6 @@ public class BlockEventHandler {
         Object source = event.getSource();
         // Handled in Explosion listeners
         if (source instanceof Explosion) {
-            return;
-        }
-
-        if (event.getContext().containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
             return;
         }
 
@@ -747,14 +750,16 @@ public class BlockEventHandler {
 
     @Listener(order = Order.FIRST, beforeModifications = true)
     public void onBlockPlace(ChangeBlockEvent.Place event) {
-        if (lastBlockPreTick == Sponge.getServer().getRunningTimeTicks() && !(event.getCause().root() instanceof Player)) {
-            event.setCancelled(lastBlockPreCancelled);
-            return;
-        }
-
         final Object source = event.getSource();
         // Pistons are handled in onBlockPre
         if (source instanceof TileEntityPiston) {
+            return;
+        }
+        if (event.getContext().containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
+            return;
+        }
+        if (lastBlockPreTick == Sponge.getServer().getRunningTimeTicks() && !(event.getCause().root() instanceof Player)) {
+            event.setCancelled(lastBlockPreCancelled);
             return;
         }
 
@@ -763,10 +768,6 @@ public class BlockEventHandler {
             return;
         }
         if (GriefPreventionPlugin.isSourceIdBlacklisted(ClaimFlag.BLOCK_PLACE.toString(), event.getSource(), world.getProperties())) {
-            return;
-        }
-
-        if (event.getContext().containsKey(EventContextKeys.BLOCK_EVENT_PROCESS)) {
             return;
         }
 
