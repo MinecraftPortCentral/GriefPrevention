@@ -47,7 +47,6 @@ import me.ryanhamshire.griefprevention.configuration.type.GlobalConfig;
 import me.ryanhamshire.griefprevention.event.GPDeleteClaimEvent;
 import me.ryanhamshire.griefprevention.permission.GPOptions;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
-import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.entity.living.player.User;
@@ -57,7 +56,6 @@ import org.spongepowered.api.service.permission.SubjectData;
 import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Tristate;
-import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -553,39 +551,6 @@ public abstract class DataStore {
         }
 
         return resultNames;
-    }
-
-    // gets all the claims "near" a location
-    public List<Claim> getNearbyClaims(Location<World> location) {
-        List<Claim> claims = new ArrayList<>();
-        GPClaimManager claimWorldManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        if (claimWorldManager == null) {
-            return claims;
-        }
-
-        Optional<Chunk> lesserChunk = location.getExtent().getChunkAtBlock(location.sub(50, 0, 50).getBlockPosition());
-        Optional<Chunk> greaterChunk = location.getExtent().getChunkAtBlock(location.add(50, 0, 50).getBlockPosition());
-
-        if (lesserChunk.isPresent() && greaterChunk.isPresent()) {
-            for (int chunkX = lesserChunk.get().getPosition().getX(); chunkX <= greaterChunk.get().getPosition().getX(); chunkX++) {
-                for (int chunkZ = lesserChunk.get().getPosition().getZ(); chunkZ <= greaterChunk.get().getPosition().getZ(); chunkZ++) {
-                    Optional<Chunk> chunk = location.getExtent().getChunk(chunkX, 0, chunkZ);
-                    if (chunk.isPresent()) {
-                        Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(ChunkPos.asLong(chunkX, chunkZ));
-                        if (claimsInChunk != null) {
-                            for (Claim claim : claimsInChunk) {
-                                final GPClaim gpClaim = (GPClaim) claim;
-                                if (gpClaim.parent == null && !claims.contains(claim)) {
-                                    claims.add(claim);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return claims;
     }
 
     public GPClaim getClaimAt(Location<World> location) {

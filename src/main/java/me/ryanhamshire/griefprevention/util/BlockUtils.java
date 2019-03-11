@@ -30,8 +30,10 @@ import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimBlockSystem;
 import me.ryanhamshire.griefprevention.claim.GPClaim;
+import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -59,8 +61,11 @@ import org.spongepowered.common.interfaces.IMixinChunk;
 import org.spongepowered.common.interfaces.world.gen.IMixinChunkProviderServer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class BlockUtils {
 
@@ -446,5 +451,41 @@ public class BlockUtils {
             }
         }
         return false;
+    }
+
+    public static List<Claim> getNearbyClaims(Location<World> location) {
+        return getNearbyClaims(location, 50);
+    }
+
+    public static List<Claim> getNearbyClaims(Location<World> location, int blockDistance) {
+        List<Claim> claims = new ArrayList<>();
+        GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(location.getExtent().getProperties());
+        if (claimWorldManager == null) {
+            return claims;
+        }
+
+        org.spongepowered.api.world.Chunk lesserChunk = location.getExtent().getChunkAtBlock(location.sub(blockDistance, 0, blockDistance).getBlockPosition()).orElse(null);
+        org.spongepowered.api.world.Chunk greaterChunk = location.getExtent().getChunkAtBlock(location.add(blockDistance, 0, blockDistance).getBlockPosition()).orElse(null);
+
+        if (lesserChunk != null && greaterChunk != null) {
+            for (int chunkX = lesserChunk.getPosition().getX(); chunkX <= greaterChunk.getPosition().getX(); chunkX++) {
+                for (int chunkZ = lesserChunk.getPosition().getZ(); chunkZ <= greaterChunk.getPosition().getZ(); chunkZ++) {
+                    org.spongepowered.api.world.Chunk chunk = location.getExtent().getChunk(chunkX, 0, chunkZ).orElse(null);
+                    if (chunk != null) {
+                        Set<Claim> claimsInChunk = claimWorldManager.getInternalChunksToClaimsMap().get(ChunkPos.asLong(chunkX, chunkZ));
+                        if (claimsInChunk != null) {
+                            for (Claim claim : claimsInChunk) {
+                                final GPClaim gpClaim = (GPClaim) claim;
+                                if (gpClaim.parent == null && !claims.contains(claim)) {
+                                    claims.add(claim);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return claims;
     }
 }

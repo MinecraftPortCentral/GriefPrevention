@@ -2568,7 +2568,7 @@ public class PlayerEventHandler {
 
                 // find nearby claims
                 Location<World> nearbyLocation = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation : player.getLocation();
-                List<Claim> claims = this.dataStore.getNearbyClaims(nearbyLocation);
+                List<Claim> claims = BlockUtils.getNearbyClaims(nearbyLocation, playerData.optionSearchClaimRadius);
                 int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY();
                 Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
                 visualization.apply(player);

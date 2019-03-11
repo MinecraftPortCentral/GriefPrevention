@@ -206,6 +206,7 @@ public class GPPlayerData implements PlayerData {
     public int optionCreateClaimLimitSubdivision = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_SUBDIVISION;
     public int optionCreateClaimLimitTown = GPOptions.DEFAULT_CREATE_CLAIM_LIMIT_TOWN;
     public int optionInitialClaimBlocks = GPOptions.DEFAULT_INITIAL_CLAIM_BLOCKS;
+    public int optionSearchClaimRadius = GPOptions.DEFAULT_SEARCH_CLAIM_RADIUS;
     public int optionMaxAccruedBlocks = GPOptions.DEFAULT_MAX_ACCRUED_BLOCKS;
     public int optionMaxClaimLevel = GPOptions.DEFAULT_MAX_CLAIM_LEVEL;
     public int optionMaxClaimSizeBasicX = GPOptions.DEFAULT_MAX_CLAIM_SIZE_BASIC_X;
@@ -277,6 +278,7 @@ public class GPPlayerData implements PlayerData {
             this.optionCreateClaimLimitSubdivision = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.CREATE_CLAIM_LIMIT_SUBDIVISION, this.optionCreateClaimLimitSubdivision);
             this.optionCreateClaimLimitTown = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.CREATE_CLAIM_LIMIT_TOWN, this.optionCreateClaimLimitTown);
             this.optionInitialClaimBlocks = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.INITIAL_CLAIM_BLOCKS, this.optionInitialClaimBlocks);
+            this.optionSearchClaimRadius = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.SEARCH_CLAIM_RADIUS, this.optionSearchClaimRadius);
             this.optionMaxAccruedBlocks = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.MAX_ACCRUED_BLOCKS, this.optionMaxAccruedBlocks);
             this.optionMaxClaimLevel = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.MAX_CLAIM_LEVEL, this.optionMaxClaimLevel);
             this.optionMaxClaimSizeBasicX = PlayerUtils.getOptionIntValue(activeContexts, subject, GPOptions.MAX_CLAIM_SIZE_BASIC_X, this.optionMaxClaimSizeBasicX);

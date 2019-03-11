@@ -33,8 +33,10 @@ import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import me.ryanhamshire.griefprevention.permission.GPPermissions;
+import me.ryanhamshire.griefprevention.util.BlockUtils;
 import me.ryanhamshire.griefprevention.util.PaginationUtils;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
@@ -75,14 +77,19 @@ public class CommandClaimList implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandSource src, CommandContext ctx) {
+        Player player;
+        try {
+            player = GriefPreventionPlugin.checkPlayer(src);
+        } catch (CommandException e) {
+            src.sendMessage(e.getText());
+            return CommandResult.success();
+        }
+
         List<User> userValues = new ArrayList<>(ctx.getAll("user"));
         WorldProperties worldProperties = ctx.<WorldProperties>getOne("world").orElse(null);
         User user = null;
         if (userValues.size() > 0) {
             user = userValues.get(0);
-        }
-        if (src instanceof Player) {
-            this.displayOwned = true;
         }
 
         if (user == null) {
@@ -114,25 +121,26 @@ public class CommandClaimList implements CommandExecutor {
 
         this.canListOthers = src.hasPermission(GPPermissions.LIST_OTHER_CLAIMS);
         this.canListAdmin = src.hasPermission(GPPermissions.LIST_OTHER_CLAIMS);
-        showClaimList(src, user, this.forcedType, worldProperties);
+        showClaimList(player, user, this.forcedType, worldProperties);
         return CommandResult.success();
     }
 
-    private void showClaimList(CommandSource src, User user, ClaimType type, WorldProperties worldProperties) {
+    private void showClaimList(Player src, User user, ClaimType type, WorldProperties worldProperties) {
         List<Text> claimsTextList = new ArrayList<>();
         List<Claim> claims = new ArrayList<>();
+        final GPPlayerData sourcePlayerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(worldProperties, src.getUniqueId());
         for (World world : Sponge.getServer().getWorlds()) {
             if (!this.displayOwned && !world.getProperties().getUniqueId().equals(worldProperties.getUniqueId())) {
                 continue;
             }
-            final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
+
             // load the target player's data
             final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
             List<Claim> claimList = null;
             if (this.displayOwned) {
                 claimList = playerData.getClaims();
             } else {
-                claimList = claimWorldManager.getWorldClaims();
+                claimList = BlockUtils.getNearbyClaims(src.getLocation(), sourcePlayerData.optionSearchClaimRadius);
             }
             for (Claim claim : claimList) {
                 if (claims.contains(claim)) {
@@ -155,7 +163,7 @@ public class CommandClaimList implements CommandExecutor {
         if (src instanceof Player) {
             final Player player = (Player) src;
             final String lastClaimType = this.lastActiveClaimTypeMap.getIfPresent(player.getUniqueId());
-            final String currentType = type == null ? "ALL" : type.toString();
+            final String currentType = type == null ? "NEAR" : type.toString();
             if (lastClaimType != null && !lastClaimType.equals(currentType.toString())) {
                 PaginationUtils.resetActivePage(player.getUniqueId());
             }
@@ -165,7 +173,7 @@ public class CommandClaimList implements CommandExecutor {
         final Text whiteOpenBracket = Text.of(TextColors.WHITE, "[");
         final Text whiteCloseBracket = Text.of(TextColors.WHITE, "]");
         Text ownedShowText = Text.of("Click here to view the claims you own.");
-        Text allShowText = Text.of("Click here to show all types.");
+        Text allShowText = Text.of("Click here to show all types for nearby claims.");
         Text adminShowText = Text.of("Click here to filter by ", TextColors.RED, "ADMIN ", TextColors.RESET, "type.");
         Text basicShowText = Text.of("Click here to filter by ", TextColors.YELLOW, "BASIC ", TextColors.RESET, "type.");
         Text subdivisionShowText = Text.of("Click here to filter by ", TextColors.AQUA, "SUBDIVISION ", TextColors.RESET, "type.");
@@ -175,8 +183,8 @@ public class CommandClaimList implements CommandExecutor {
                 .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, "OWN", worldProperties)))
                 .onHover(TextActions.showText(ownedShowText)).build();
         Text allTypeText = Text.builder()
-                .append(Text.of((!this.displayOwned && type == null) ? Text.of(whiteOpenBracket, TextColors.LIGHT_PURPLE, "ALL", whiteCloseBracket) : Text.of(TextColors.GRAY, "ALL")))
-                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, "ALL", worldProperties)))
+                .append(Text.of((!this.displayOwned && type == null) ? Text.of(whiteOpenBracket, TextColors.LIGHT_PURPLE, "NEAR", whiteCloseBracket) : Text.of(TextColors.GRAY, "NEAR")))
+                .onClick(TextActions.executeCallback(createClaimListConsumer(src, user, "NEAR", worldProperties)))
                 .onHover(TextActions.showText(allShowText)).build();
         Text adminTypeText = Text.builder()
                 .append(Text.of(type == ClaimType.ADMIN ? Text.of(whiteOpenBracket, TextColors.RED, "ADMIN", whiteCloseBracket) : Text.of(TextColors.GRAY, "ADMIN")))
@@ -212,14 +220,14 @@ public class CommandClaimList implements CommandExecutor {
             if (activePage == null) {
                 activePage = 1;
             }
-            this.lastActiveClaimTypeMap.put(player.getUniqueId(), type == null ? "ALL" : type.toString());
+            this.lastActiveClaimTypeMap.put(player.getUniqueId(), type == null ? "NEAR" : type.toString());
         }
         paginationList.sendTo(src, activePage);
     }
 
-    private Consumer<CommandSource> createClaimListConsumer(CommandSource src, User user, String type, WorldProperties worldProperties) {
+    private Consumer<CommandSource> createClaimListConsumer(Player src, User user, String type, WorldProperties worldProperties) {
         return consumer -> {
-            if (type.equalsIgnoreCase("ALL")) {
+            if (type.equalsIgnoreCase("NEAR")) {
                 this.displayOwned = false;
             } else {
                 this.displayOwned = true;
@@ -228,7 +236,7 @@ public class CommandClaimList implements CommandExecutor {
         };
     }
 
-    private Consumer<CommandSource> createClaimListConsumer(CommandSource src, User user, ClaimType type, WorldProperties worldProperties) {
+    private Consumer<CommandSource> createClaimListConsumer(Player src, User user, ClaimType type, WorldProperties worldProperties) {
         return consumer -> {
             this.displayOwned = false;
             showClaimList(src, user, type, worldProperties);

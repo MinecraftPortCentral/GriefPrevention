@@ -52,16 +52,16 @@ repositories {
         url = 'http://repo.drnaylor.co.uk/artifactory/list/minecraft'
     }
     maven {
-        name = 'mcclans'
-        url = 'http://direstone.com/artifactory/libs-release-local'
-    }
-    maven {
         name = 'sonatype'
         url = 'https://oss.sonatype.org/content/repositories/releases'
     }
     maven {
         name = 'worldedit'
         url = 'http://maven.sk89q.com/artifactory/repo'
+    }
+    maven {
+        name = 'jitpack'
+        url = 'https://jitpack.io'
     }
 }
 
@@ -75,15 +75,15 @@ dependencies {
     compileOnly sourceSets.api.output
     compileOnly ("org.spongepowered:spongecommon:$commonVersion:dev") {
         exclude module: 'testplugins'
-	}
+    }
     compileOnly "com.sk89q.worldedit:worldedit-core:6.1.4-SNAPSHOT"
     compileOnly "com.googlecode.json-simple:json-simple:1.1"
     compile "com.squareup.okhttp3:okhttp:3.9.1"
     compile "com.squareup.okio:okio:1.13.0"
-    compileOnly ("io.github.nucleuspowered:nucleus-api:1.4.0-S7.0"){
+    compileOnly ("io.github.nucleuspowered:nucleus-api:1.9.1-S7.1"){
         exclude module: 'spongeapi'
     }
-    compileOnly "nl.riebie:mcclans-api:1.3"
+    compile "com.github.bloodmc:mcclans-api:develop-SNAPSHOT"
 }
 
 jar {
@@ -140,7 +140,7 @@ shadowJar {
     relocate "okio", "me.ryanhamshire.griefprevention.shade.okio"
 
     exclude "dummyThing"
-	afterEvaluate {
+    afterEvaluate {
         from zipTree(reobfJar.jar)
     }
 }
