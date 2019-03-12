@@ -120,7 +120,7 @@ public class CommandClaimPermissionGroup implements CommandExecutor {
         }
 
         subj.getSubjectData().setPermission(contexts, permission, tristateValue);
-        GriefPreventionPlugin.sendMessage(src, Text.of("Set permission ", TextColors.AQUA, permission, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on group ", TextColors.GOLD, subj.getIdentifier(), TextColors.WHITE, "."));
+        GriefPreventionPlugin.sendMessage(src, Text.of("Set permission ", TextColors.AQUA, permission, TextColors.WHITE, " to ", TextColors.GREEN, tristateValue, TextColors.WHITE, " on group ", TextColors.GOLD, subj.getIdentifier(), TextColors.WHITE, "."));
         return CommandResult.success();
     }
 

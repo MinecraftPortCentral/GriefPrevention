@@ -72,7 +72,6 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.common.SpongeImplHooks;
 
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -193,7 +192,7 @@ public class GPPermissionHandler {
 
     private static Tristate getUserPermission(User user, GPClaim claim, String permission, String targetModPermission, String targetMetaPermission, GPPlayerData playerData) {
         final List<Claim> inheritParents = claim.getInheritedParents();
-        final Set<Context> contexts = PermissionUtils.getActiveContexts(user, playerData, claim);
+        final Set<Context> contexts = PermissionUtils.getActiveContexts(user, playerData, permission);
 
         for (Claim parentClaim : inheritParents) {
             GPClaim parent = (GPClaim) parentClaim;
@@ -300,7 +299,7 @@ public class GPPermissionHandler {
         }
 
         Player player = null;
-        Set<Context> contexts = PermissionUtils.getActiveContexts(subject, playerData, claim);
+        Set<Context> contexts = PermissionUtils.getActiveContexts(subject, playerData, null);
         if (claim.isAdminClaim()) {
             contexts.add(ClaimContexts.ADMIN_OVERRIDE_CONTEXT);
             contexts.add(claim.world.getContext());
@@ -405,13 +404,7 @@ public class GPPermissionHandler {
         }
 
         flagPermission = StringUtils.replace(flagPermission, ":", ".");
-        if (playerData != null) {
-            playerData.ignoreActiveContexts = true;
-        }
-        Set<Context> contexts = new LinkedHashSet<>(subject.getActiveContexts());
-        if (playerData != null) {
-            playerData.ignoreActiveContexts = false;
-        }
+        Set<Context> contexts = PermissionUtils.getActiveContexts(subject, playerData, null);
         if (claim.isWilderness()) {
             contexts.add(ClaimContexts.WILDERNESS_OVERRIDE_CONTEXT);
             player = user instanceof Player ? (Player) user : null;

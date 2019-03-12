@@ -70,7 +70,7 @@ public class ClaimContextCalculator implements ContextCalculator<Subject> {
 
     @Override
     public boolean matches(Context context, Subject subject) {
-        if (context.equals("gp_claim")) {
+        if (context.getKey().equals("gp_claim")) {
             if (subject.getCommandSource().isPresent() && subject.getCommandSource().get() instanceof Player) {
                 Player player = (Player) subject.getCommandSource().get();
                 GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(player.getWorld(), player.getUniqueId());

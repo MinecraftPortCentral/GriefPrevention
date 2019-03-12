@@ -69,8 +69,7 @@ public class DeliverClaimBlocksTask implements Runnable {
 
                     final Player player = (Player) entity;
                     final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-                    final GPClaim claim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData, player.getLocation());
-                    final int accrualPerHour = PlayerUtils.getOptionIntValue(PermissionUtils.getActiveContexts(player, playerData, claim), player, GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
+                    final int accrualPerHour = PlayerUtils.getOptionIntValue(PermissionUtils.getActiveContexts(player, playerData, null), player, GPOptions.BLOCKS_ACCRUED_PER_HOUR, 120);
                     if (accrualPerHour > 0) {
                         DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(player);
                         Sponge.getGame().getScheduler().createTaskBuilder().delayTicks(i++).execute(newTask)

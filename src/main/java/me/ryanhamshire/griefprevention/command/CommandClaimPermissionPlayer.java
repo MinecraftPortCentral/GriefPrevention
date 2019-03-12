@@ -113,7 +113,7 @@ public class CommandClaimPermissionPlayer implements CommandExecutor {
         }
 
         user.getSubjectData().setPermission(contexts, permission, tristateValue);
-        GriefPreventionPlugin.sendMessage(src, Text.of("Set permission ", TextColors.AQUA, permission, TextColors.WHITE, " to ", TextColors.GREEN, value, TextColors.WHITE, " on user ", TextColors.GOLD, user.getName(), TextColors.WHITE, "."));
+        GriefPreventionPlugin.sendMessage(src, Text.of("Set permission ", TextColors.AQUA, permission, TextColors.WHITE, " to ", TextColors.GREEN, tristateValue, TextColors.WHITE, " on user ", TextColors.GOLD, user.getName(), TextColors.WHITE, "."));
 
         return CommandResult.success();
     }

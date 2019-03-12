@@ -26,11 +26,12 @@ package me.ryanhamshire.griefprevention.util;
 
 import me.ryanhamshire.griefprevention.GPPlayerData;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
-import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.permission.GPPermissions;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.service.permission.Subject;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -80,17 +81,26 @@ public class PermissionUtils {
         return getActiveContexts(subject, null, null);
     }
 
-    public static Set<Context> getActiveContexts(Subject subject, GPPlayerData playerData, Claim claim) {
+    public static Set<Context> getActiveContexts(Subject subject, GPPlayerData playerData, String flag) {
+        if (flag != null && flag.startsWith(GPPermissions.COMMAND_EXECUTE)) {
+            return new HashSet<>(subject.getActiveContexts());
+        }
         if (playerData != null) {
             playerData.ignoreActiveContexts = true;
         }
         Set<Context> activeContexts = new HashSet<>(subject.getActiveContexts());
-        if (playerData != null && claim != null) {
-            final Claim parent = claim.getParent().orElse(null);
-            if (parent != null && claim.getData().doesInheritParent()) {
-                activeContexts.remove(parent.getContext());
-            } else {
-                activeContexts.remove(claim.getContext());
+        if (playerData != null) {
+            // If we are ignoring active contexts then we must remove all
+            // contexts with gp_claim to avoid permissions returning wrong result.
+            // For ex. a player using nucleus's tpa command will end up
+            // with the current claim context being added to all active contexts
+            // causing our permission checks to not be accurate.
+            final Iterator<Context> iterator = activeContexts.iterator();
+            while (iterator.hasNext()) {
+                final Context context = iterator.next();
+                if (context.getKey().contains("gp_claim")) {
+                    iterator.remove();
+                }
             }
         }
         return activeContexts;
