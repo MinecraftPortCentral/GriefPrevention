@@ -26,8 +26,8 @@ package me.ryanhamshire.griefprevention.configuration;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.configuration.type.ConfigBase;
-import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
+import ninja.leaping.configurate.Types;
 import ninja.leaping.configurate.ValueType;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -35,12 +35,12 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.util.ConfigurationNodeWalker;
-import org.spongepowered.common.SpongeImpl;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 public class GriefPreventionConfig<T extends ConfigBase> {
@@ -53,7 +53,7 @@ public class GriefPreventionConfig<T extends ConfigBase> {
     /**
      * The parent configuration - values are inherited from this
      */
-    private final GriefPreventionConfig parent;
+    private final GriefPreventionConfig<?> parent;
 
     /**
      * The loader (mapped to a file) used to read/write the config to disk
@@ -75,7 +75,7 @@ public class GriefPreventionConfig<T extends ConfigBase> {
      */
     private ObjectMapper<T>.BoundInstance configMapper;
 
-    public GriefPreventionConfig(Class<T> clazz, Path path, GriefPreventionConfig parent) {
+    public GriefPreventionConfig(Class<T> clazz, Path path, GriefPreventionConfig<?> parent) {
         this.parent = parent;
         this.path = path;
 
@@ -88,10 +88,17 @@ public class GriefPreventionConfig<T extends ConfigBase> {
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
             this.configMapper = ObjectMapper.forClass(clazz).bindToNew();
 
-            reload();
-            save();
+            load();
+            // In order for the removeDuplicates method to function properly, it is extremely
+            // important to avoid running save on parent BEFORE children save. Doing so will
+            // cause duplicate nodes to not be removed properly as parent would have cleaned up
+            // all duplicates prior.
+            // To handle the above issue, we only call save for world configs during init.
+            if (parent != null && parent.parent != null) {
+                save();
+            }
         } catch (Exception e) {
-            SpongeImpl.getLogger().error("Failed to initialize configuration", e);
+            GriefPreventionPlugin.instance.getLogger().error("Failed to load configuration at path " + path.toAbsolutePath(), e);
         }
     }
 
@@ -110,11 +117,17 @@ public class GriefPreventionConfig<T extends ConfigBase> {
                 removeDuplicates(saveNode);
             }
 
-            // merge the values we need to write with the ones already declared in the file
-            saveNode.mergeValuesFrom(this.fileData);
-
             // save the data to disk
             this.loader.save(saveNode);
+
+            // In order for the removeDuplicates method to function properly, it is extremely
+            // important to avoid running save on parent BEFORE children save. Doing so will
+            // cause duplicate nodes to not be removed as parent would have cleaned up
+            // all duplicates prior.
+            // To handle the above issue, we save AFTER saving child config.
+            if (this.parent != null) {
+                this.parent.save();
+            }
             return true;
         } catch (IOException | ObjectMappingException e) {
             GriefPreventionPlugin.instance.getLogger().error("Failed to save configuration", e);
@@ -122,77 +135,28 @@ public class GriefPreventionConfig<T extends ConfigBase> {
         }
     }
 
-    public void reload() {
-        try {
-            // load settings from file
-            CommentedConfigurationNode loadedNode = this.loader.load();
+    public void load() throws IOException, ObjectMappingException {
+        // load settings from file
+        CommentedConfigurationNode loadedNode = this.loader.load();
 
-            // attempt to strip duplicate settings from the file
-            // (this only happens on the first pass of the file - see javadocs below)
-            if (cleanupConfig(loadedNode)) {
-                this.loader.save(loadedNode);
-            }
+        // store "what's in the file" separately in memory
+        this.fileData = loadedNode;
 
-            // store "what's in the file" separately in memory
-            this.fileData = loadedNode;
+        // make a copy of the file data
+        this.data = this.fileData.copy();
 
-            // make a copy of the file data
-            this.data = this.fileData.copy();
-
-            // merge with settings from parent
-            if (this.parent != null) {
-                this.parent.reload();
-                this.data.mergeValuesFrom(this.parent.data);
-            }
-
-            // populate the config object
-            populateInstance();
-        } catch (Exception e) {
-            GriefPreventionPlugin.instance.getLogger().error("Failed to load configuration", e);
+        // merge with settings from parent
+        if (this.parent != null) {
+            this.parent.load();
+            this.data.mergeValuesFrom(this.parent.data);
         }
+
+        // populate the config object
+        populateInstance();
     }
 
     private void populateInstance() throws ObjectMappingException {
         this.configMapper.populate(this.data.getNode(GriefPreventionPlugin.MOD_ID));
-    }
-
-    /**
-     * Performs a cleanup operation on the given configuration node, taking into
-     * account the legacy 'config-enabled' setting.
-     *
-     * @param root The node to cleanup
-     * @return If the cleanup was able to occur, depending on the state of the 'config-enabled' setting
-     */
-    private boolean cleanupConfig(CommentedConfigurationNode root) {
-        // we can't strip values from the global config, there won't be any duplicates there
-        if (this.parent == null) {
-            return false;
-        }
-
-        ConfigurationNode configEnabled = root.getNode(GriefPreventionPlugin.MOD_ID, "config-enabled");
-
-        // if the node is missing, don't strip anything from the file
-        // (this ensures the migration only happens on the first pass)
-        if (configEnabled.isVirtual()) {
-            return false;
-        }
-
-        boolean enabled = configEnabled.getBoolean(true);
-
-        // remove the enabled property so migration doesn't happen again
-        configEnabled.setValue(null);
-
-        if (!enabled) {
-            // config wasn't enabled, just clear it
-            // (we don't wish to take account for any of the settings defined here)
-            root.getNode(GriefPreventionPlugin.MOD_ID).setValue(null);
-        } else {
-            // config was enabled, but we want to strip out duplicated values
-            // but keep any overrides
-            removeDuplicates(root);
-        }
-
-        return true;
     }
 
     /**
@@ -228,6 +192,26 @@ public class GriefPreventionConfig<T extends ConfigBase> {
             CommentedConfigurationNode parentValue = this.parent.data.getNode(next.getPath().getArray());
             if (Objects.equals(node.getValue(), parentValue.getValue())) {
                 node.setValue(null);
+            } else {
+                // Fix list bug
+                if (parentValue.getValue() == null) {
+                    if (node.getValueType() == ValueType.LIST) {
+                        final List<?> nodeList = (List<?>) node.getValue();
+                        if (nodeList.isEmpty()) {
+                            node.setValue(null);
+                        }
+                        continue;
+                    }
+                }
+                // Fix double bug
+                final Double nodeVal = node.getValue(Types::asDouble);
+                if (nodeVal != null) {
+                    Double parentVal = parentValue.getValue(Types::asDouble);
+                    if (parentVal == null && nodeVal.doubleValue() == 0 || (parentVal != null && nodeVal.doubleValue() == parentVal.doubleValue())) {
+                        node.setValue(null);
+                        continue;
+                    }
+                }
             }
         }
     }
