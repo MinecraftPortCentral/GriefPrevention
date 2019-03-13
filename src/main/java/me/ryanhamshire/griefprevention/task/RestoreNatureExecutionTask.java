@@ -112,7 +112,7 @@ class RestoreNatureExecutionTask implements Runnable {
                     // for players, always ensure there's air where the player is standing
                     else {
                         entity.getLocation().setBlock(BlockTypes.AIR.getDefaultState());
-                        entity.getLocation().getRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState());
+                        entity.getLocation().getBlockRelative(Direction.UP).setBlock(BlockTypes.AIR.getDefaultState());
                     }
                 }
             }

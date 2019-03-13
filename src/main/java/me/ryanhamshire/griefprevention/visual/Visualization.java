@@ -506,9 +506,9 @@ public class Visualization {
 
         while (location.getPosition().getY() >= 1 &&
                 location.getPosition().getY() < world.getDimension().getBuildHeight() - 1 &&
-                (!isTransparent(location.getRelative(Direction.UP).getBlock(), waterIsTransparent)
+                (!isTransparent(location.getBlockRelative(Direction.UP).getBlock(), waterIsTransparent)
                         || isTransparent(location.getBlock(), waterIsTransparent))) {
-            location = location.getRelative(direction);
+            location = location.getBlockRelative(direction);
         }
 
         return location;

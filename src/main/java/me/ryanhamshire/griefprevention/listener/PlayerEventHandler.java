@@ -1970,7 +1970,7 @@ public class PlayerEventHandler {
                     else if (location.getBlock().getType() == BlockTypes.FLOWING_WATER || location.getBlock().getType() == BlockTypes.WATER) {
                         BlockType newBlockType = location.getBlock().getType();
                         while (newBlockType != BlockTypes.FLOWING_WATER && newBlockType != BlockTypes.WATER) {
-                            newBlockType = location.getRelative(Direction.DOWN).getBlockType();
+                            newBlockType = location.getBlockRelative(Direction.DOWN).getBlockType();
                         }
                         if (allowedFillBlocks.contains(newBlockType)) {
                             defaultFiller = newBlockType;
@@ -1992,10 +1992,10 @@ public class PlayerEventHandler {
 
                             // otherwise look to neighbors for an appropriate fill block
                             else {
-                                Location<World> eastBlock = block.getLocation().get().getRelative(Direction.EAST);
-                                Location<World> westBlock = block.getLocation().get().getRelative(Direction.WEST);
-                                Location<World> northBlock = block.getLocation().get().getRelative(Direction.NORTH);
-                                Location<World> southBlock = block.getLocation().get().getRelative(Direction.SOUTH);
+                                Location<World> eastBlock = block.getLocation().get().getBlockRelative(Direction.EAST);
+                                Location<World> westBlock = block.getLocation().get().getBlockRelative(Direction.WEST);
+                                Location<World> northBlock = block.getLocation().get().getBlockRelative(Direction.NORTH);
+                                Location<World> southBlock = block.getLocation().get().getBlockRelative(Direction.SOUTH);
 
                                 // first, check lateral neighbors (ideally, want to keep natural layers)
                                 if (allowedFillBlocks.contains(eastBlock.getBlockType())) {

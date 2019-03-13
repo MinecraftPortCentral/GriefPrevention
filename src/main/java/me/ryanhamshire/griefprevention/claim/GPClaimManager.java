@@ -486,7 +486,7 @@ public class GPClaimManager implements ClaimManager {
                 for (Direction direction : BlockUtils.ORDINAL_SET) {
                     Location<World> currentLocation = location;
                     for (int i = 0; i < borderBlockRadius; i++) { // Handle depth
-                        currentLocation = currentLocation.getRelative(direction); 
+                        currentLocation = currentLocation.getBlockRelative(direction); 
                         Set<Claim> relativeClaims = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(currentLocation.getBlockX() >> 4, currentLocation.getBlockZ() >> 4));
                         if (relativeClaims != null) {
                             if (claimsInChunk == null) {
