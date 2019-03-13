@@ -94,7 +94,6 @@ import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.common.SpongeImpl;
-import org.spongepowered.common.SpongeImplHooks;
 
 import java.io.File;
 import java.io.IOException;
@@ -611,20 +610,24 @@ public class GPClaim implements Claim {
 
     @Override
     public boolean contains(Location<World> location, boolean excludeChildren) {
+        return this.contains(location, excludeChildren, null, false);
+    }
+
+    public boolean contains(Location<World> location, GPPlayerData playerData, boolean useBorderBlockRadius) {
+        return this.contains(location, false, playerData, useBorderBlockRadius);
+    }
+
+    public boolean contains(Location<World> location, boolean excludeChildren, GPPlayerData playerData, boolean useBorderBlockRadius) {
         int x = location.getBlockX();
         int y = location.getBlockY();
         int z = location.getBlockZ();
 
-        int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
-        if (borderBlockRadius > 0 && SpongeImplHooks.isMainThread()) {
-            final User user = Sponge.getCauseStackManager().getCurrentCause().first(User.class).orElse(null);
-            if (user == null || (this.claimData != null && !this.isUserTrusted(user, TrustType.BUILDER))) {
-                if (user != null) {
-                    final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(this.world, user.getUniqueId());
-                    if (playerData.ignoreBorderCheck) {
-                        borderBlockRadius = 0;
-                    }
-                }
+        // Only apply to top level claims
+        int borderBlockRadius = 0;
+        if (useBorderBlockRadius && (playerData != null && !playerData.ignoreBorderCheck)) {
+            final int borderRadiusConfig = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
+            if (borderRadiusConfig > 0 && !this.isUserTrusted((User) playerData.getPlayerSubject(), TrustType.BUILDER)) {
+                borderBlockRadius = borderRadiusConfig;
             }
         }
         // main check

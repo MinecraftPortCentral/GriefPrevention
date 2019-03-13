@@ -1802,10 +1802,9 @@ public class PlayerEventHandler {
                 : blockSnapshot != BlockSnapshot.NONE ? blockSnapshot.getLocation().get() 
                         : interactPoint != null ? new Location<World>(world, interactPoint) 
                                 : player.getLocation();
-        final GPClaim claim = this.dataStore.getClaimAt(location, true);
 
         final String ITEM_PERMISSION = primaryEvent ? GPPermissions.INTERACT_ITEM_PRIMARY : GPPermissions.INTERACT_ITEM_SECONDARY;
-
+        final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         if (!itemInHand.isEmpty() && (itemInHand.getType().equals(GriefPreventionPlugin.instance.modificationTool) ||
                 itemInHand.getType().equals(GriefPreventionPlugin.instance.investigationTool))) {
             GPPermissionHandler.addEventLogEntry(event, location, itemInHand, blockSnapshot == null ? entity : blockSnapshot, player, ITEM_PERMISSION, null, Tristate.TRUE);
@@ -1813,11 +1812,11 @@ public class PlayerEventHandler {
                 return event;
             }
 
-            final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
             onPlayerHandleShovelAction(event, blockSnapshot, player,  ((HandInteractEvent) event).getHandType(), playerData);
             return event;
         }
 
+        final GPClaim claim = this.dataStore.getClaimAtPlayer(location, playerData, true);
         if (GPPermissionHandler.getClaimPermission(event, location, claim, ITEM_PERMISSION, player, itemType, player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
             Text message = GriefPreventionPlugin.instance.messageData.permissionInteractItem
                     .apply(ImmutableMap.of(
@@ -1887,7 +1886,7 @@ public class PlayerEventHandler {
             }
 
             // if the clicked block is in a claim, visualize that claim and deliver an error message
-            final GPClaim claim = this.dataStore.getClaimAt(location, true);
+            final GPClaim claim = this.dataStore.getClaimAtPlayer(location, playerData, true);
             if (!claim.isWilderness()) {
                 final Text message = GriefPreventionPlugin.instance.messageData.blockClaimed
                         .apply(ImmutableMap.of(
@@ -2185,7 +2184,7 @@ public class PlayerEventHandler {
         // otherwise, since not currently resizing a claim, must be starting
         // a resize, creating a new claim, town, or creating a subdivision
 
-        GPClaim claim = this.dataStore.getClaimAt(location, true);
+        GPClaim claim = this.dataStore.getClaimAtPlayer(location, playerData, true);
         // if within an existing claim, he's not creating a new one
         if (!claim.isWilderness()) {
             // if the player has permission to edit the claim or subdivision
@@ -2304,7 +2303,7 @@ public class PlayerEventHandler {
                     // subdivision by setting the other boundary corner
                     else if (playerData.claimSubdividing != null) {
                         // Validate second clicked corner is within claim being sub divided
-                        final GPClaim clickedClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location, true);
+                        final GPClaim clickedClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(location, playerData, true);
                         if (clickedClaim == null || !playerData.claimSubdividing.getUniqueId().equals(clickedClaim.getUniqueId())) {
                             if (clickedClaim != null) {
                                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
@@ -2468,8 +2467,8 @@ public class PlayerEventHandler {
                 return;
             }
 
-            final GPClaim firstClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(playerData.lastShovelLocation, true);
-            final GPClaim clickedClaim = GriefPreventionPlugin.instance.dataStore.getClaimAt(location, true);
+            final GPClaim firstClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(playerData.lastShovelLocation, playerData, true);
+            final GPClaim clickedClaim = GriefPreventionPlugin.instance.dataStore.getClaimAtPlayer(location, playerData, true);
             if (!firstClaim.equals(clickedClaim)) {
                 final GPClaim overlapClaim = firstClaim.isWilderness() ? clickedClaim : firstClaim;
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
@@ -2599,7 +2598,7 @@ public class PlayerEventHandler {
                 return false;
             }
         } else {
-            claim = this.dataStore.getClaimAt(clickedBlock.getLocation().get(), true);
+            claim = this.dataStore.getClaimAtPlayer(clickedBlock.getLocation().get(), playerData, true);
             if (claim.isWilderness()) {
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.blockNotClaimed.toText());
                 GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();

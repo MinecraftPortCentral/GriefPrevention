@@ -815,7 +815,7 @@ public class BlockEventHandler {
                 continue;
             }
 
-            targetClaim = this.dataStore.getClaimAt(location, targetClaim, true);
+            targetClaim = this.dataStore.getClaimAtPlayer(location, targetClaim, playerData, true);
             if (locatable != null && targetClaim.isWilderness()) {
                 continue;
             }

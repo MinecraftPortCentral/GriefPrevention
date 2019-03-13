@@ -563,19 +563,19 @@ public abstract class DataStore {
         return (GPClaim) claimManager.getClaimAtPlayer(location, playerData);
     }
 
-    public GPClaim getClaimAt(Location<World> location, boolean useBorderBlockRadius) {
+    public GPClaim getClaimAtPlayer(Location<World> location, GPPlayerData playerData, boolean useBorderBlockRadius) {
         GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAt(location, useBorderBlockRadius);
+        return (GPClaim) claimManager.getClaimAt(location, null, playerData, useBorderBlockRadius);
+    }
+
+    public GPClaim getClaimAtPlayer(Location<World> location, GPClaim cachedClaim, GPPlayerData playerData, boolean useBorderBlockRadius) {
+        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
+        return (GPClaim) claimManager.getClaimAt(location, cachedClaim, playerData, useBorderBlockRadius);
     }
 
     public GPClaim getClaimAt(Location<World> location, GPClaim cachedClaim) {
         GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
         return (GPClaim) claimManager.getClaimAt(location, cachedClaim, null, false);
-    }
-
-    public GPClaim getClaimAt(Location<World> location, GPClaim cachedClaim, boolean useBlockBorderRadius) {
-        GPClaimManager claimManager = this.getClaimWorldManager(location.getExtent().getProperties());
-        return (GPClaim) claimManager.getClaimAt(location, cachedClaim, null, useBlockBorderRadius);
     }
 
     public GPPlayerData getPlayerData(World world, UUID playerUniqueId) {
@@ -654,7 +654,6 @@ public abstract class DataStore {
         CLAIM_FLAG_DEFAULTS.put(ClaimType.WILDERNESS, wildernessDefaults);
         this.setFlagDefaultPermissions(contexts, wildernessDefaults);
         this.setOptionDefaultPermissions();
-        activeConfig.save();
     }
 
     private void setFlagDefaultPermissions(Set<Context> contexts, Map<String, Boolean> defaultFlags) {

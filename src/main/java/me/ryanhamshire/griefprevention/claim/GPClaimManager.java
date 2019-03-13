@@ -479,7 +479,7 @@ public class GPClaimManager implements ClaimManager {
         }
 
         Set<Claim> claimsInChunk = this.getInternalChunksToClaimsMap().get(ChunkPos.asLong(location.getBlockX() >> 4, location.getBlockZ() >> 4));
-        if (useBorderBlockRadius && (playerData == null || !playerData.ignoreBorderCheck)) {
+        if (useBorderBlockRadius && (playerData != null && !playerData.ignoreBorderCheck)) {
             final int borderBlockRadius = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
             // if borderBlockRadius > 0, check surrounding chunks
             if (borderBlockRadius > 0) {
@@ -506,7 +506,7 @@ public class GPClaimManager implements ClaimManager {
         // TODO change to check deepest level and work its way up to root
         for (Claim claim : claimsInChunk) {
             final GPClaim gpClaim = (GPClaim) claim;
-            if (gpClaim.contains(location)) {
+            if (gpClaim.contains(location, playerData, useBorderBlockRadius)) {
                 // when we find a top level claim, if the location is in one of its children,
                 // return the child claim, not the top level claim
                 for (int i = 0; i < gpClaim.children.size(); i++) {
@@ -515,19 +515,19 @@ public class GPClaimManager implements ClaimManager {
                     for (int j = 0; j < child.children.size(); j++) {
                         GPClaim innerChild = (GPClaim) child.children.get(j);
                         for (int k = 0; k < innerChild.children.size(); k++) {
-                            Claim subChild = innerChild.children.get(k);
-                            if (subChild.contains(location)) {
+                            GPClaim subChild = (GPClaim) innerChild.children.get(k);
+                            if (subChild.contains(location, playerData, useBorderBlockRadius)) {
                                // GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                                 return subChild;
                             }
                         }
 
-                        if (innerChild.contains(location)) {
+                        if (innerChild.contains(location, playerData, useBorderBlockRadius)) {
                             //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                             return innerChild;
                         }
                     }
-                    if (child.contains(location)) {
+                    if (child.contains(location, playerData, useBorderBlockRadius)) {
                         //GPTimings.CLAIM_GETCLAIM.stopTimingIfSync();
                         return child;
                     }
