@@ -2166,7 +2166,7 @@ public class PlayerEventHandler {
                         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimResizeOverlap.toText());
                         List<Claim> claims = new ArrayList<>();
                         claims.add(overlapClaim);
-                        CommandHelper.showClaims(player, claims, location.getBlockY(), true);
+                        CommandHelper.showOverlapClaims(player, claims, location.getBlockY());
                     } else {
                         if (!claimResult.getMessage().isPresent()) {
                             GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimNotYours.toText());
@@ -2338,7 +2338,7 @@ public class PlayerEventHandler {
                                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
                                     List<Claim> claims = new ArrayList<>();
                                     claims.add(gpClaim);
-                                    CommandHelper.showClaims(player, claims, location.getBlockY(), true);
+                                    CommandHelper.showOverlapClaims(player, claims, location.getBlockY());
                                 }
                                 event.setCancelled(true);
                                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
@@ -2508,7 +2508,7 @@ public class PlayerEventHandler {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
                     List<Claim> claims = new ArrayList<>();
                     claims.add(overlapClaim);
-                    CommandHelper.showClaims(player, claims, location.getBlockY(), true);
+                    CommandHelper.showOverlapClaims(player, claims, location.getBlockY());
                 }
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 return;

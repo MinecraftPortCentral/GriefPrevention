@@ -280,17 +280,9 @@ public class FlatFileDataStore extends DataStore {
 
             try {
                this.loadClaim(file, worldProperties, claimId);
-            }
-
-            // if there's any problem with the file's content, log an error message and skip it
-            catch (Exception e) {
-                if (e.getMessage() != null && e.getMessage().contains("World not found")) {
-                    file.delete();
-                } else {
-                    StringWriter errors = new StringWriter();
-                    e.printStackTrace(new PrintWriter(errors));
-                    GriefPreventionPlugin.addLogEntry(file.getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
-                }
+            } catch (Exception e) {
+                GriefPreventionPlugin.instance.getLogger().error(file.getAbsolutePath() + " failed to load.");
+                e.printStackTrace();
             }
         }
     }
@@ -419,6 +411,9 @@ public class FlatFileDataStore extends DataStore {
                 parentClaim = (GPClaim) claimManager.getClaimByUUID(parent).orElse(null);
             } catch (Throwable t) {
                 t.printStackTrace();
+            }
+            if (parentClaim == null) {
+                throw new Exception("Required parent claim '" + parent + " no longer exists. Skipping...");
             }
             claim.parent = parentClaim;
         }

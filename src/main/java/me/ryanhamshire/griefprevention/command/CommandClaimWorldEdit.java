@@ -102,7 +102,7 @@ public class CommandClaimWorldEdit implements CommandExecutor {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
                     List<Claim> claims = new ArrayList<>();
                     claims.add(result.getClaim().get());
-                    CommandHelper.showClaims(player, claims, 0, true);
+                    CommandHelper.showOverlapClaims(player, claims, 0);
                     GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                 }
             }

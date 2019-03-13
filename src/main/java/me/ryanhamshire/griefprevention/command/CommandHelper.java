@@ -540,11 +540,18 @@ public class CommandHelper {
         showClaims(src, claims, 0, false);
     }
 
+    public static void showOverlapClaims(CommandSource src, List<Claim> claims, int height) {
+        showClaims(src, claims, height, true, true);
+    }
+
     public static void showClaims(CommandSource src, List<Claim> claims, int height, boolean visualizeClaims) {
+        showClaims(src, claims, height, visualizeClaims, false);
+    }
+
+    public static void showClaims(CommandSource src, List<Claim> claims, int height, boolean visualizeClaims, boolean overlap) {
         final String worldName = src instanceof Player ? ((Player) src).getWorld().getName() : Sponge.getServer().getDefaultWorldName();
         final boolean canListOthers = src.hasPermission(GPPermissions.LIST_OTHER_CLAIMS);
-        List<Text> claimsTextList = generateClaimTextList(new ArrayList<Text>(), claims, worldName, null, src, createShowClaimsConsumer(src, claims, height, visualizeClaims), canListOthers, false);
-
+        List<Text> claimsTextList = generateClaimTextList(new ArrayList<Text>(), claims, worldName, null, src, createShowClaimsConsumer(src, claims, height, visualizeClaims), canListOthers, false, overlap);
         if (visualizeClaims && src instanceof Player) {
             Player player = (Player) src;
             final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
@@ -574,15 +581,19 @@ public class CommandHelper {
     }
 
     public static List<Text> generateClaimTextList(List<Text> claimsTextList, List<Claim> claimList, String worldName, User user, CommandSource src, Consumer<CommandSource> returnCommand, boolean canListOthers, boolean listChildren) {
+        return generateClaimTextList(claimsTextList, claimList, worldName, user, src, returnCommand, canListOthers, listChildren, false);
+    }
+
+    public static List<Text> generateClaimTextList(List<Text> claimsTextList, List<Claim> claimList, String worldName, User user, CommandSource src, Consumer<CommandSource> returnCommand, boolean canListOthers, boolean listChildren, boolean overlap) {
         final User sourceUser = src instanceof User ? (User) src : null;
         if (claimList.size() > 0) {
             for (Claim playerClaim : claimList) {
                 GPClaim claim = (GPClaim) playerClaim;
-                if (!listChildren && claim.isSubdivision() && !claim.getData().getEconomyData().isForSale()) {
+                if (!overlap && !listChildren && claim.isSubdivision() && !claim.getData().getEconomyData().isForSale()) {
                     continue;
                 }
-                // Only list claims trusted
-                if (sourceUser != null && !claim.isUserTrusted(sourceUser, TrustType.ACCESSOR) && !canListOthers) {
+                // Only list claims trusted if not an overlap claim
+                if (!overlap && sourceUser != null && !claim.isUserTrusted(sourceUser, TrustType.ACCESSOR) && !canListOthers) {
                     continue;
                 }
 
