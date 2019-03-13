@@ -109,6 +109,8 @@ public class CommandClaimList implements CommandExecutor {
             return CommandResult.success();
         }
 
+        // Always reset
+        this.displayOwned = true;
         String arguments = "";
         if (user != null) {
             arguments = user.getName();
@@ -138,6 +140,7 @@ public class CommandClaimList implements CommandExecutor {
             // load the target player's data
             final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
             List<Claim> claimList = null;
+            int count = 0;
             if (this.displayOwned) {
                 claimList = playerData.getClaims();
             } else {
@@ -147,7 +150,12 @@ public class CommandClaimList implements CommandExecutor {
                     claimList = BlockUtils.getNearbyClaims(src.getLocation(), sourcePlayerData.optionRadiusClaimList);
                 }
             }
+            final int claimListMax = GriefPreventionPlugin.getActiveConfig(world.getProperties()).getConfig().claim.claimListMax;
             for (Claim claim : claimList) {
+                // Make sure not to show too many claims or client will time out
+                if (!this.displayOwned && claimListMax > 0 && count == claimListMax) {
+                    break;
+                }
                 if (claims.contains(claim)) {
                     continue;
                 }
@@ -155,13 +163,16 @@ public class CommandClaimList implements CommandExecutor {
                 if (user != null && this.displayOwned) {
                     if (user.getUniqueId().equals(claim.getOwnerUniqueId())) {
                         claims.add(claim);
+                        count++;
                     }
                 } else if (type != null) {
                     if (claim.getType() == type) {
                         claims.add(claim);
+                        count++;
                     }
                 } else {
                     claims.add(claim);
+                    count++;
                 }
             }
         }

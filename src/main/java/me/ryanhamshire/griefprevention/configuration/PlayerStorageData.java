@@ -40,8 +40,7 @@ import java.nio.file.Path;
 public class PlayerStorageData {
 
     private HoconConfigurationLoader loader;
-    private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
+    private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults());
     private ObjectMapper<PlayerDataConfig>.BoundInstance configMapper;
     private PlayerDataConfig configBase;
 
@@ -57,7 +56,7 @@ public class PlayerStorageData {
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(PlayerDataConfig.class).bindToNew();
 
-            reload();
+            load();
             save();
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
@@ -82,27 +81,12 @@ public class PlayerStorageData {
         }
     }
 
-    public void reload() {
+    public void load() {
         try {
-            this.root = this.loader.load(ConfigurationOptions.defaults()
-                    .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
+            this.root = this.loader.load(ConfigurationOptions.defaults());
             this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
-        }
-    }
-
-    public CommentedConfigurationNode getRootNode() {
-        return this.root.getNode(GriefPreventionPlugin.MOD_ID);
-    }
-
-    public CommentedConfigurationNode getSetting(String key) {
-        if (!key.contains(".") || key.indexOf('.') == key.length() - 1) {
-            return null;
-        } else {
-            String category = key.substring(0, key.indexOf('.'));
-            String prop = key.substring(key.indexOf('.') + 1);
-            return getRootNode().getNode(category).getNode(prop);
         }
     }
 }

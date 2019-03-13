@@ -71,7 +71,6 @@ public class FlatFileDataStore extends DataStore {
     public final static Path claimTemplatePath = claimDataPath.resolve("Templates");
     public final static Path worldClaimDataPath = Paths.get("GriefPreventionData", "WorldClaim");
     public final static Path playerDataPath = Paths.get("GriefPreventionData", "PlayerData");
-    public final static Path polisDataPath = GriefPreventionPlugin.instance.getConfigPath().getParent().resolve("polis").resolve("data");
     public final static Path redProtectDataPath = GriefPreventionPlugin.instance.getConfigPath().getParent().resolve("RedProtect").resolve("data");
     public final static Map<UUID, Task> cleanupClaimTasks = Maps.newHashMap();
     private final Path rootConfigPath = GriefPreventionPlugin.instance.getConfigPath().resolve("worlds");
@@ -382,13 +381,6 @@ public class FlatFileDataStore extends DataStore {
             throw new Exception("Claim file '" + claimFile.getName() + "' has corrupted data and cannot be loaded. Skipping...");
         }
 
-        // Validate Y values for older builds which would set both lesser and greater Y to same value
-        if (!cuboid && GriefPreventionPlugin.getGlobalConfig().getConfig().migrator.classicMigrator) {
-            // fix Y boundaries
-            lesserCorner = new Vector3i(lesserCorner.getX(), 0, lesserCorner.getZ());
-            greaterCorner = new Vector3i(greaterCorner.getX(), world.getDimension().getBuildHeight() - 1, greaterCorner.getZ());
-            writeToStorage = true;
-        }
         Location<World> lesserBoundaryCorner = new Location<World>(world, lesserCorner);
         Location<World> greaterBoundaryCorner = new Location<World>(world, greaterCorner);
 
@@ -419,10 +411,6 @@ public class FlatFileDataStore extends DataStore {
         }
 
         claimManager.addClaim(claim, writeToStorage);
-        if (!claim.isWilderness()) {
-            claimStorage.migrateSubdivision(claim);
-        }
-
         this.claimLoadCount++;
         return claim;
     }

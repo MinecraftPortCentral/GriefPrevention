@@ -24,11 +24,8 @@
  */
 package me.ryanhamshire.griefprevention.configuration;
 
-import com.flowpowered.math.vector.Vector3i;
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
-import me.ryanhamshire.griefprevention.claim.GPClaim;
-import me.ryanhamshire.griefprevention.claim.GPClaimManager;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
@@ -36,26 +33,17 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMapper;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.util.Functional;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
 import org.spongepowered.common.SpongeImpl;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
 
 public class ClaimStorageData {
 
     protected HoconConfigurationLoader loader;
-    private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-            .setHeader(GriefPreventionPlugin.CONFIG_HEADER));
+    private CommentedConfigurationNode root = SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults());
     protected ObjectMapper<ClaimDataConfig>.BoundInstance configMapper;
     protected ClaimDataConfig configBase;
     public Path filePath;
@@ -120,7 +108,7 @@ public class ClaimStorageData {
             this.configMapper.getInstance().setType(type);
             this.configMapper.getInstance().setCuboid(cuboid);
             this.configMapper.getInstance().setClaimStorageData(this);
-            reload();
+            load();
             ((EconomyDataConfig) this.configMapper.getInstance().getEconomyData()).activeConfig = GriefPreventionPlugin.getActiveConfig(Sponge.getServer().getWorld(worldUniqueId).get().getProperties());
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
@@ -140,7 +128,7 @@ public class ClaimStorageData {
             this.loader = HoconConfigurationLoader.builder().setPath(path).build();
             this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bind(claimData);
             this.configMapper.getInstance().setClaimStorageData(this);
-            reload();
+            load();
             ((EconomyDataConfig) this.configMapper.getInstance().getEconomyData()).activeConfig = GriefPreventionPlugin.getActiveConfig(worldUniqueId);
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
@@ -165,7 +153,7 @@ public class ClaimStorageData {
                 this.configMapper = (ObjectMapper.BoundInstance) ObjectMapper.forClass(ClaimDataConfig.class).bindToNew();
             }
             this.configMapper.getInstance().setClaimStorageData(this);
-            reload();
+            load();
             ((EconomyDataConfig) this.configMapper.getInstance().getEconomyData()).activeConfig = GriefPreventionPlugin.getActiveConfig(worldUniqueId);
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to initialize configuration", e);
@@ -178,8 +166,6 @@ public class ClaimStorageData {
 
     public void save() {
         try {
-            // subdivisions are stored in their own claim files
-            this.root.getNode(GriefPreventionPlugin.MOD_ID).removeChild("subdivisions");
             this.configMapper.serialize(this.root.getNode(GriefPreventionPlugin.MOD_ID));
             this.loader.save(this.root);
             this.configBase.setRequiresSave(false);
@@ -188,101 +174,12 @@ public class ClaimStorageData {
         }
     }
 
-    public void reload() {
+    public void load() {
         try {
-            this.root = this.loader.load(ConfigurationOptions.defaults().setHeader(GriefPreventionPlugin.CONFIG_HEADER));
+            this.root = this.loader.load(ConfigurationOptions.defaults());
             this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
         } catch (Exception e) {
             SpongeImpl.getLogger().error("Failed to load configuration", e);
-        }
-    }
-
-    public void migrateSubdivision(GPClaim parent) throws Exception {
-        try {
-            for (Map.Entry<Object, ? extends CommentedConfigurationNode> mapEntry : this.root.getNode(GriefPreventionPlugin.MOD_ID).getChildrenMap().entrySet()) {
-                CommentedConfigurationNode node = (CommentedConfigurationNode) mapEntry.getValue();
-                String key = "";
-                if (node.getKey() instanceof String) {
-                    key = (String) node.getKey();
-                }
-                if (key.equalsIgnoreCase("subdivisions") && node.getValue() != null) {
-                    // move subdivision data to children node
-                    final Path path = this.filePath.getParent().resolve("subdivision");
-                    Map<String, LinkedHashMap<String, Object>> subMap = (Map<String, LinkedHashMap<String, Object>>) node.getValue();
-                    if (subMap.isEmpty()) {
-                        continue;
-                    }
-
-                    for (Map.Entry<String, LinkedHashMap<String, Object>> subEntry : subMap.entrySet()) {
-                        ClaimDataConfig claimData = new ClaimDataConfig(subEntry.getValue());
-                        final UUID claimId = UUID.fromString(subEntry.getKey());
-                        try {
-                            Files.createDirectories(path);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        final File claimFile = new File(path + File.separator + claimId);
-                        final ClaimStorageData claimStorage = new ClaimStorageData(claimFile.toPath(), parent.getWorldUniqueId(), claimData);
-        
-                        // boundaries
-                        Vector3i lesserCorner = claimStorage.getConfig().getLesserBoundaryCornerPos();
-                        Vector3i greaterCorner = claimStorage.getConfig().getGreaterBoundaryCornerPos();
-                        if (lesserCorner == null || greaterCorner == null) {
-                            throw new Exception("Claim file '" + claimFile.getName() + "' has corrupted data and cannot be loaded. Skipping...");
-                        }
-                        Vector3i lesserBoundaryCornerPos = lesserCorner;
-                        Vector3i greaterBoundaryCornerPos = greaterCorner;
-                        Location<World> lesserBoundaryCorner = new Location<World>(parent.getWorld(), lesserBoundaryCornerPos);
-                        Location<World> greaterBoundaryCorner = new Location<World>(parent.getWorld(), greaterBoundaryCornerPos);
-        
-                        // owner
-                        UUID ownerID = parent.getOwnerUniqueId();
-                        if (ownerID == null) {
-                            GriefPreventionPlugin.addLogEntry("Error - this is not a valid UUID: " + ownerID + ".");
-                            continue;
-                        }
-        
-                        // instantiate
-                        GPClaim subdivision = new GPClaim(lesserBoundaryCorner, greaterBoundaryCorner, claimId, ClaimType.SUBDIVISION, ownerID, claimData.isCuboid());
-                        subdivision.parent = parent;
-                        subdivision.setClaimStorage(claimStorage);
-                        subdivision.setClaimData(claimData);
-                        claimData.setParent(parent.id);
-                        GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(parent.getWorld().getProperties());
-                        claimManager.addClaim(subdivision, true);
-                    }
-                    node.getParent().removeChild(key);
-                    parent.getInternalClaimData().setRequiresSave(true);
-                    parent.getClaimStorage().save();
-                    return;
-                }
-            }
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-    }
-
-    public CompletableFuture<CommentedConfigurationNode> updateSetting(String key, Object value) {
-        return Functional.asyncFailableFuture(() -> {
-            CommentedConfigurationNode upd = getSetting(key);
-            upd.setValue(value);
-            this.configBase = this.configMapper.populate(this.root.getNode(GriefPreventionPlugin.MOD_ID));
-            this.loader.save(this.root);
-            return upd;
-        }, ForkJoinPool.commonPool());
-    }
-
-    public CommentedConfigurationNode getRootNode() {
-        return this.root.getNode(GriefPreventionPlugin.MOD_ID);
-    }
-
-    public CommentedConfigurationNode getSetting(String key) {
-        if (!key.contains(".") || key.indexOf('.') == key.length() - 1) {
-            return null;
-        } else {
-            String category = key.substring(0, key.indexOf('.'));
-            String prop = key.substring(key.indexOf('.') + 1);
-            return getRootNode().getNode(category).getNode(prop);
         }
     }
 }

@@ -40,6 +40,8 @@ public class ClaimCategory extends ConfigCategory {
     @Setting(value = "border-block-radius", comment = "Set claim border of specified radius (in blocks), centered on claim. If set to 1, adds an additional 1 block protected radius around claim.\n" + 
             "Note: It is not recommended to set this value too high as performance can degrade due to deeper claim searches.")
     public int borderBlockRadius = 0;
+    @Setting(value = "claim-list-max", comment = "Controls the max displayed claims when using the '/claimlist' command. Default: 200")
+    public int claimListMax = 200;
     @Setting(value = "expiration-cleanup-interval", comment = "The interval in minutes for cleaning up expired claims. Default: 0. Set to 0 to disable.")
     public int expirationCleanupInterval = 0;
     @Setting(value = "deliver-manuals", comment = "Send players manuals on claim creation.")
