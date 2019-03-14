@@ -622,7 +622,6 @@ public class GPClaim implements Claim {
         int y = location.getBlockY();
         int z = location.getBlockZ();
 
-        // Only apply to top level claims
         int borderBlockRadius = 0;
         if (useBorderBlockRadius && (playerData != null && !playerData.ignoreBorderCheck)) {
             final int borderRadiusConfig = GriefPreventionPlugin.getActiveConfig(location.getExtent().getUniqueId()).getConfig().claim.borderBlockRadius;
@@ -1072,8 +1071,10 @@ public class GPClaim implements Claim {
                     return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
                 }
                 if (childClaim.isInside(this)) {
-                    if (this.type.equals(childClaim.type)) {
-                        return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    if (!this.isAdminClaim() && !childClaim.isAdminClaim()) {
+                        if (this.type.equals(childClaim.type)) {
+                            return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                        }
                     }
                     if (!this.isSubdivision()) {
                         claimsInArea.add(childClaim);
@@ -1116,8 +1117,10 @@ public class GPClaim implements Claim {
                 return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
             }
             if (childClaim.isInside(this)) {
-                if (this.type.equals(childClaim.type)) {
-                    return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                if (!this.isAdminClaim() && !childClaim.isAdminClaim()) {
+                    if (this.type.equals(childClaim.type)) {
+                        return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    }
                 }
             } else {
                 // child is no longer within parent
@@ -1146,6 +1149,9 @@ public class GPClaim implements Claim {
             for (Claim chunkClaim : claimsInChunk) {
                 final GPClaim gpChunkClaim = (GPClaim) chunkClaim;
                 if (gpChunkClaim.equals(this)) {
+                    continue;
+                }
+                if (this.isAdminClaim() && gpChunkClaim.isAdminClaim() && gpChunkClaim.parent != null && gpChunkClaim.parent.equals(this)) {
                     continue;
                 }
 
