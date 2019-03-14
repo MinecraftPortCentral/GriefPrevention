@@ -538,7 +538,7 @@ public class Visualization {
             if (!gpClaim.children.isEmpty()) {
                 fromClaims(gpClaim.children, height, locality, playerData, visualization);
             }
-            if (gpClaim.visualization != null) {
+            if (gpClaim.visualization != null && !gpClaim.visualization.elements.isEmpty()) {
                 visualization.elements.addAll(gpClaim.getVisualizer().elements);
             } else {
                 visualization.createClaimBlockVisualWithType(gpClaim, height, locality, playerData, Visualization.getVisualizationType(gpClaim));
