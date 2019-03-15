@@ -1160,8 +1160,10 @@ public class GPClaim implements Claim {
                     return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
                 }
                 if (gpChunkClaim.isInside(this)) {
-                    if (this.type.equals(gpChunkClaim.type)) {
-                        return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    if (!this.isAdminClaim() && !gpChunkClaim.isAdminClaim()) {
+                        if (this.type.equals(gpChunkClaim.type)) {
+                            return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                        }
                     }
                     if (!this.canEnclose(gpChunkClaim)) {
                         return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
@@ -1180,11 +1182,15 @@ public class GPClaim implements Claim {
         if (claim.isWilderness()) {
             return false;
         }
+        if (this.isAdminClaim()) {
+            // admin claims can enclose any type
+            return true;
+        }
         if (this.isSubdivision()) {
             return false;
         }
         if (this.isBasicClaim()) {
-            if (!this.isSubdivision()) {
+            if (!claim.isSubdivision()) {
                 return false;
             }
             return true;
@@ -1194,11 +1200,6 @@ public class GPClaim implements Claim {
                 return false;
             }
             return true;
-        }
-        if (this.isAdminClaim()) {
-            if (claim.isAdminClaim()) {
-                return false;
-            }
         }
         return true;
     }
