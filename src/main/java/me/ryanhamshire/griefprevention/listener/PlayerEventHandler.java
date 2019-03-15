@@ -169,7 +169,6 @@ public class PlayerEventHandler {
     private final BanService banService;
     private int lastInteractItemPrimaryTick = -1;
     private int lastInteractItemSecondaryTick = -1;
-    private boolean lastInteractItemCancelled = false;
 
     // list of temporarily banned ip's
     private ArrayList<IpBanInfo> tempBannedIps = new ArrayList<IpBanInfo>();
@@ -1635,10 +1634,8 @@ public class PlayerEventHandler {
             }
 
             // Don't send a deny message if the player is holding an investigation tool
-            if (!lastInteractItemCancelled) {
-                if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
-                    this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
-                }
+            if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
+                this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
             }
             event.setCancelled(true);
             GPTimings.PLAYER_INTERACT_BLOCK_PRIMARY_EVENT.stopTimingIfSync();
@@ -1705,10 +1702,8 @@ public class PlayerEventHandler {
                     }
                 }
                 // Don't send a deny message if the player is holding an investigation tool
-                if (!lastInteractItemCancelled) {
-                    if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
-                        this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
-                    }
+                if (!PlayerUtils.hasItemInOneHand(player, GriefPreventionPlugin.instance.investigationTool)) {
+                    this.sendInteractBlockDenyMessage(itemInHand, clickedBlock, claim, player, playerData, handType);
                 }
                 if (!SpongeImplHooks.isFakePlayer(((EntityPlayerMP) player)) && handType == HandTypes.MAIN_HAND) {
                     ((EntityPlayerMP) player).closeScreen();
@@ -1829,7 +1824,6 @@ public class PlayerEventHandler {
                 }
             }
             event.setCancelled(true);
-            lastInteractItemCancelled = true;
         }
         return event;
     }
