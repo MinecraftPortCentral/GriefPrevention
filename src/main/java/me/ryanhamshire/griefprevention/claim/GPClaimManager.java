@@ -284,31 +284,12 @@ public class GPClaimManager implements ClaimManager {
                 continue;
             }
 
-            GPClaim childClaim = (GPClaim) child;
-            ((GPClaim) claim).children.remove(childClaim);
-            childClaim.parent = gpClaim.parent;
-            String fileName = childClaim.getClaimStorage().filePath.getFileName().toString();
-            final Path newPath = gpClaim.getClaimStorage().filePath.getParent().getParent().resolve(childClaim.getType().name().toLowerCase()).resolve(fileName);
-            try {
-                Files.createDirectories(newPath.getParent());
-                Files.move(childClaim.getClaimStorage().filePath, newPath);
-                childClaim.setClaimStorage(new ClaimStorageData(newPath, this.getWorldProperties().getUniqueId(), (ClaimDataConfig) childClaim.getInternalClaimData()));
-                if (childClaim.parent == null) {
-                    this.addClaim(childClaim, false);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            final GPClaim parentClaim = (GPClaim) claim;
+            final GPClaim childClaim = (GPClaim) child;
+            migrateParent(parentClaim, childClaim);
         }
 
-        // player may be offline so check is needed
-        GPPlayerData playerData = this.getPlayerDataMap().get(claim.getOwnerUniqueId());
-        if (playerData != null) {
-            playerData.getInternalClaims().remove(claim);
-            if (playerData.lastClaim != null) {
-                playerData.lastClaim.clear();
-            }
-        }
+        resetPlayerClaimVisuals(claim);
         // transfer bank balance to owner
         final Account bankAccount = claim.getEconomyAccount().orElse(null);
         if (bankAccount != null) {
@@ -330,7 +311,41 @@ public class GPClaimManager implements ClaimManager {
             gpClaim.parent.children.remove(claim);
         }
 
-        // revert visuals for all players watching this claim
+        DATASTORE.deleteClaimFromSecondaryStorage((GPClaim) claim);
+    }
+
+    private void migrateParent(GPClaim parentClaim, GPClaim childClaim) {
+        for (Claim child : childClaim.children) {
+            migrateParent(childClaim, (GPClaim) child);
+        }
+        parentClaim.children.remove(childClaim);
+        childClaim.parent = parentClaim.parent;
+        String fileName = childClaim.getClaimStorage().filePath.getFileName().toString();
+        final Path newPath = parentClaim.getClaimStorage().folderPath.getParent().resolve(childClaim.getType().name().toLowerCase()).resolve(fileName);
+        try {
+            Files.createDirectories(newPath.getParent());
+            Files.move(childClaim.getClaimStorage().filePath, newPath);
+            childClaim.setClaimStorage(new ClaimStorageData(newPath, this.getWorldProperties().getUniqueId(), (ClaimDataConfig) childClaim.getInternalClaimData()));
+            parentClaim.children.add(childClaim);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (parentClaim.parent == null) {
+            this.addClaim(childClaim, false);
+        }
+    }
+
+    private void resetPlayerClaimVisuals(Claim claim) {
+        // player may be offline so check is needed
+        GPPlayerData playerData = this.getPlayerDataMap().get(claim.getOwnerUniqueId());
+        if (playerData != null) {
+            playerData.getInternalClaims().remove(claim);
+            if (playerData.lastClaim != null) {
+                playerData.lastClaim.clear();
+            }
+        }
+
+        // reset visuals for all players watching this claim
         List<UUID> playersWatching = new ArrayList<>(((GPClaim) claim).playersWatching);
         for (UUID playerUniqueId : playersWatching) {
             Player player = Sponge.getServer().getPlayer(playerUniqueId).orElse(null);
@@ -345,8 +360,6 @@ public class GPClaimManager implements ClaimManager {
                 }
             }
         }
-
-        DATASTORE.deleteClaimFromSecondaryStorage((GPClaim) claim);
     }
 
     private void deleteChunkHashes(GPClaim claim) {

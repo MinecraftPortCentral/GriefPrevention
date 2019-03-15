@@ -101,9 +101,9 @@ public class GPOptions {
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Y = 256;
     public static final int DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z = 1000;
     public static final int DEFAULT_MIN_CLAIM_LEVEL = 0;
-    public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_X= 10;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_X= 5;
     public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Y = 5;
-    public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Z = 10;
+    public static final int DEFAULT_MIN_CLAIM_SIZE_BASIC_Z = 5;
     public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_X= 32;
     public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_Y = 32;
     public static final int DEFAULT_MIN_CLAIM_SIZE_TOWN_Z = 32;
@@ -171,11 +171,11 @@ public class GPOptions {
         DEFAULT_OPTIONS.put(MAX_CLAIM_SIZE_SUBDIVISION_Z, (double) GPOptions.DEFAULT_MAX_CLAIM_SIZE_SUBDIVISION_Z);
         // The min level where a claim can be created.
         DEFAULT_OPTIONS.put(MIN_CLAIM_LEVEL, (double) GPOptions.DEFAULT_MIN_CLAIM_LEVEL);
-        // The min size of x, in blocks, that a basic claim can be, 10 by default.
+        // The min size of x, in blocks, that a basic claim can be, 5 by default.
         DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_X, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_X);
-        // The min size of y, in blocks, that a basic claim can be, 10 by default.
+        // The min size of y, in blocks, that a basic claim can be, 5 by default.
         DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Y, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Y);
-        // The min size of z, in blocks, that a basic claim can be, 10 by default.
+        // The min size of z, in blocks, that a basic claim can be, 5 by default.
         DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_BASIC_Z, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_BASIC_Z);
         // The min size of x, in blocks, that a town can be, 32 by default.
         DEFAULT_OPTIONS.put(MIN_CLAIM_SIZE_TOWN_X, (double) GPOptions.DEFAULT_MIN_CLAIM_SIZE_TOWN_X);
