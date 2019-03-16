@@ -48,7 +48,9 @@ import org.spongepowered.api.service.permission.Subject;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class CommandTrustAll implements CommandExecutor {
@@ -85,7 +87,7 @@ public class CommandTrustAll implements CommandExecutor {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        List<Claim> claimList = null;
+        Set<Claim> claimList = null;
         if (playerData != null) {
             claimList = playerData.getInternalClaims();
         }
@@ -99,7 +101,7 @@ public class CommandTrustAll implements CommandExecutor {
             try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
                 Sponge.getCauseStackManager().pushCause(player);
                 GPUserTrustClaimEvent.Add
-                    event = new GPUserTrustClaimEvent.Add(claimList, ImmutableList.of(user.getUniqueId()), TrustType.NONE);
+                    event = new GPUserTrustClaimEvent.Add(new ArrayList<>(claimList), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,
@@ -121,7 +123,7 @@ public class CommandTrustAll implements CommandExecutor {
                 final Subject subject = PermissionUtils.getGroupSubject(group);
                 Sponge.getCauseStackManager().pushCause(player);
                 GPGroupTrustClaimEvent.Add
-                    event = new GPGroupTrustClaimEvent.Add(claimList, ImmutableList.of(group), TrustType.NONE);
+                    event = new GPGroupTrustClaimEvent.Add(new ArrayList<>(claimList), ImmutableList.of(group), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,

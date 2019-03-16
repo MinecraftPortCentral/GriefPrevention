@@ -144,7 +144,7 @@ public class GPClaim implements Claim {
     private IClaimData claimData;
 
     public GPClaim parent = null;
-    public ArrayList<Claim> children = new ArrayList<>();
+    public Set<Claim> children = new HashSet<>();
     public Visualization visualization;
     public List<UUID> playersWatching = new ArrayList<>();
 
@@ -1052,61 +1052,7 @@ public class GPClaim implements Claim {
         claimsInArea.add(this);
 
         if (this.parent != null) {
-            if (this.isClaimOnBorder(this.parent)) {
-                return new GPClaimResult(this.parent, ClaimResultType.OVERLAPPING_CLAIM);
-            }
-            final GPClaim parentClaim = (GPClaim) this.parent;
-            // 1 - Make sure new claim is inside parent
-            if (!this.isInside(parentClaim)) {
-                return new GPClaimResult(parentClaim, ClaimResultType.OVERLAPPING_CLAIM);
-            }
-
-            // 2 - Check parent children
-            for (Claim child : parentClaim.children) {
-                final GPClaim childClaim = (GPClaim) child;
-                if (this.equals(child)) {
-                    continue;
-                }
-                if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
-                    return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
-                }
-                if (childClaim.isInside(this)) {
-                    if (!this.isAdminClaim() && !childClaim.isAdminClaim()) {
-                        if (this.type.equals(childClaim.type)) {
-                            return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
-                        }
-                    }
-                    if (!this.isSubdivision()) {
-                        claimsInArea.add(childClaim);
-                    }
-                }
-                // ignore claims not inside
-            }
-
-            if (resize) {
-                // Make sure children are still within their parent
-                final List<Claim> claimsToMigrate = new ArrayList<>();
-                for (Claim child : this.children) {
-                    GPClaim childClaim = (GPClaim) child;
-                    if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
-                        return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
-                    }
-                    if (!childClaim.isInside(this)) {
-                        if (this.parent != null) {
-                            claimsToMigrate.add(childClaim);
-                        } else {
-                            childClaim.parent = null;
-                            this.children.remove(childClaim);
-                            final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-                            claimWorldManager.addClaim(childClaim, true);
-                        }
-                    }
-                }
-                if (!claimsToMigrate.isEmpty()) {
-                    this.parent.migrateClaims(claimsToMigrate);
-                }
-            }
-            return new GPClaimResult(claimsInArea, ClaimResultType.SUCCESS);
+            return checkAreaParent(claimsInArea, resize);
         }
 
         final List<Claim> claimsToMigrate = new ArrayList<>();
@@ -1117,8 +1063,8 @@ public class GPClaim implements Claim {
                 return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
             }
             if (childClaim.isInside(this)) {
-                if (!this.isAdminClaim() && !childClaim.isAdminClaim()) {
-                    if (this.type.equals(childClaim.type)) {
+                if (!this.isAdminClaim()) {
+                    if (this.type.equals(childClaim.type) || childClaim.isAdminClaim()) {
                         return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
                     }
                 }
@@ -1148,20 +1094,20 @@ public class GPClaim implements Claim {
             }
             for (Claim chunkClaim : claimsInChunk) {
                 final GPClaim gpChunkClaim = (GPClaim) chunkClaim;
-                if (gpChunkClaim.equals(this)) {
+                if (gpChunkClaim.equals(this) || claimsInArea.contains(gpChunkClaim)) {
                     continue;
                 }
                 if (this.isAdminClaim() && gpChunkClaim.isAdminClaim() && gpChunkClaim.parent != null && gpChunkClaim.parent.equals(this)) {
                     continue;
                 }
 
-                // First check if newly resized claim is crossing another
+                // First check if new claim is crossing another
                 if (this.isBandingAcross(gpChunkClaim) || gpChunkClaim.isBandingAcross(this)) {
                     return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
                 }
                 if (gpChunkClaim.isInside(this)) {
-                    if (!this.isAdminClaim() && !gpChunkClaim.isAdminClaim()) {
-                        if (this.type.equals(gpChunkClaim.type)) {
+                    if (!this.isAdminClaim()) {
+                        if (this.type.equals(gpChunkClaim.type) || gpChunkClaim.isAdminClaim()) {
                             return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
                         }
                     }
@@ -1175,6 +1121,64 @@ public class GPClaim implements Claim {
             }
         }
 
+        return new GPClaimResult(claimsInArea, ClaimResultType.SUCCESS);
+    }
+
+    public ClaimResult checkAreaParent(List<Claim> claimsInArea, boolean resize) {
+        if (this.isClaimOnBorder(this.parent)) {
+            return new GPClaimResult(this.parent, ClaimResultType.OVERLAPPING_CLAIM);
+        }
+        final GPClaim parentClaim = (GPClaim) this.parent;
+        // 1 - Make sure new claim is inside parent
+        if (!this.isInside(parentClaim)) {
+            return new GPClaimResult(parentClaim, ClaimResultType.OVERLAPPING_CLAIM);
+        }
+
+        // 2 - Check parent children
+        for (Claim child : parentClaim.children) {
+            final GPClaim childClaim = (GPClaim) child;
+            if (this.equals(child)) {
+                continue;
+            }
+            if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
+                return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+            }
+            if (childClaim.isInside(this)) {
+                if (!this.isAdminClaim()) {
+                    if (this.type.equals(childClaim.type) || childClaim.isAdminClaim()) {
+                        return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    }
+                }
+                if (!this.isSubdivision()) {
+                    claimsInArea.add(childClaim);
+                }
+            }
+            // ignore claims not inside
+        }
+
+        if (resize) {
+            // Make sure children are still within their parent
+            final List<Claim> claimsToMigrate = new ArrayList<>();
+            for (Claim child : this.children) {
+                GPClaim childClaim = (GPClaim) child;
+                if (this.isBandingAcross(childClaim) || childClaim.isBandingAcross(this)) {
+                    return new GPClaimResult(childClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                }
+                if (!childClaim.isInside(this)) {
+                    if (this.parent != null) {
+                        claimsToMigrate.add(childClaim);
+                    } else {
+                        childClaim.parent = null;
+                        this.children.remove(childClaim);
+                        final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
+                        claimWorldManager.addClaim(childClaim, true);
+                    }
+                }
+            }
+            if (!claimsToMigrate.isEmpty()) {
+                this.parent.migrateClaims(claimsToMigrate);
+            }
+        }
         return new GPClaimResult(claimsInArea, ClaimResultType.SUCCESS);
     }
 
@@ -1794,6 +1798,22 @@ public class GPClaim implements Claim {
         return ImmutableList.copyOf(this.children);
     }
 
+    public Set<Claim> getInternalChildren(boolean recursive) {
+        if (recursive) {
+            Set<Claim> claimList = new HashSet<>(this.children);
+            List<Claim> subChildren = new ArrayList<>();
+            for (Claim child : claimList) {
+                GPClaim childClaim = (GPClaim) child;
+                if (!childClaim.children.isEmpty()) {
+                    subChildren.addAll(childClaim.getChildren(true));
+                }
+            }
+            claimList.addAll(subChildren);
+            return claimList;
+        }
+        return new HashSet<>(this.children);
+    }
+
     @Override
     public List<Claim> getParents(boolean recursive) {
         List<Claim> parents = new ArrayList<>();
@@ -1917,13 +1937,13 @@ public class GPClaim implements Claim {
 
         // If switched to admin or new owner, remove from player claim list
         if (type == ClaimType.ADMIN || !this.ownerUniqueId.equals(newOwnerUUID)) {
-            final List<Claim> currentPlayerClaims = claimWorldManager.getInternalPlayerClaims(this.ownerUniqueId);
+            final Set<Claim> currentPlayerClaims = claimWorldManager.getInternalPlayerClaims(this.ownerUniqueId);
             if (currentPlayerClaims != null) {
                 currentPlayerClaims.remove(this);
             }
         }
         if (type != ClaimType.ADMIN) {
-            final List<Claim> newPlayerClaims = claimWorldManager.getInternalPlayerClaims(newOwnerUUID);
+            final Set<Claim> newPlayerClaims = claimWorldManager.getInternalPlayerClaims(newOwnerUUID);
             if (newPlayerClaims != null && !newPlayerClaims.contains(this)) {
                 newPlayerClaims.add(this);
             }
@@ -2900,51 +2920,43 @@ public class GPClaim implements Claim {
     }
 
     public boolean migrateClaims(List<Claim> claims) {
+        GPClaim parentClaim = this;
         for (Claim child : claims) {
             if (child.equals(this)) {
                 continue;
             }
 
-            GPClaim childClaim = (GPClaim) child;
-            final String fileName = childClaim.getClaimStorage().filePath.getFileName().toString();
-            if (childClaim.parent != null) {
-                childClaim.parent.children.remove(child);
-            }
-            Path newPath = null;
-            if (this.isWilderness()) {
-                childClaim.parent = null;
-                childClaim.getClaimStorage().getConfig().setParent(null);
-                newPath = this.getClaimStorage().filePath.getParent().getParent().resolve(child.getType().name().toLowerCase()).resolve(fileName);
-            } else {
-                childClaim.parent = this;
-                childClaim.getClaimStorage().getConfig().setParent(this.getUniqueId());
-                this.children.add(child);
-                newPath = this.getClaimStorage().filePath.getParent().resolve(child.getType().name().toLowerCase()).resolve(fileName);
-            }
-
-            try {
-                Files.createDirectories(newPath.getParent());
-                Files.move(childClaim.getClaimStorage().filePath, newPath);
-                childClaim.setClaimStorage(new ClaimStorageData(newPath, this.getWorldUniqueId(), (ClaimDataConfig) childClaim.getInternalClaimData()));
-                childClaim.getClaimStorage().save();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
-
-            final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(this.world.getProperties());
-            if (!this.isWilderness()) {
-                claimWorldManager.removeClaimData(childClaim);
-            } else {
-                claimWorldManager.updateChunkHashes(childClaim);
-            }
-            // migrate admin children
-            if (!childClaim.children.isEmpty()) {
-                childClaim.migrateClaims(new ArrayList<>(childClaim.children));
-            }
+            moveChildToParent(parentClaim, (GPClaim) child);
         }
 
         return true;
+    }
+
+    private void moveChildToParent(GPClaim parentClaim, GPClaim childClaim) {
+        // Remove child from current parent if available
+        if (childClaim.parent != null && childClaim.parent != parentClaim) {
+            childClaim.parent.children.remove(childClaim);
+        }
+        childClaim.parent = parentClaim;
+        String fileName = childClaim.getClaimStorage().filePath.getFileName().toString();
+        Path newPath = parentClaim.getClaimStorage().folderPath.resolve(childClaim.getType().name().toLowerCase()).resolve(fileName);
+        try {
+            Files.createDirectories(newPath.getParent());
+            Files.move(childClaim.getClaimStorage().filePath, newPath);
+            if (childClaim.getClaimStorage().folderPath.toFile().listFiles().length == 0) {
+                Files.delete(childClaim.getClaimStorage().folderPath);
+            }
+            childClaim.setClaimStorage(new ClaimStorageData(newPath, this.getWorldUniqueId(), (ClaimDataConfig) childClaim.getInternalClaimData()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Make sure to update new parent in storage
+        childClaim.getInternalClaimData().setParent(parentClaim.getUniqueId());
+        this.worldClaimManager.addClaim(childClaim, true);
+        for (Claim child : childClaim.children) {
+            moveChildToParent(childClaim, (GPClaim) child);
+        }
     }
 
     @Override

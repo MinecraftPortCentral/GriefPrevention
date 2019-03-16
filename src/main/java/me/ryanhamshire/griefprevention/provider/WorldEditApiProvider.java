@@ -48,6 +48,7 @@ import org.spongepowered.api.world.Location;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class WorldEditApiProvider {
@@ -149,10 +150,10 @@ public class WorldEditApiProvider {
         actor.dispatchCUIEvent(new MultiSelectionGridEvent(10));
     }
 
-    public void visualizeClaims(List<Claim> claims, Player player, GPPlayerData playerData, boolean investigating) {
+    public void visualizeClaims(Set<Claim> claims, Player player, GPPlayerData playerData, boolean investigating) {
         for (Claim claim : claims) {
             if (((GPClaim) claim).children.size() > 0) {
-                visualizeClaims(claim.getChildren(true), player, playerData, investigating);
+                visualizeClaims(((GPClaim) claim).getInternalChildren(true), player, playerData, investigating);
             }
             final LocalSession session = this.getLocalSession(player.getName());
             if (session == null || !session.hasCUISupport()) {

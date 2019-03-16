@@ -532,7 +532,7 @@ public class CommandHelper {
         }
     }
 
-    public static void showClaims(CommandSource src, List<Claim> claims) {
+    public static void showClaims(CommandSource src, Set<Claim> claims) {
         if (claims.isEmpty()) {
             // do nothing
             return;
@@ -540,15 +540,15 @@ public class CommandHelper {
         showClaims(src, claims, 0, false);
     }
 
-    public static void showOverlapClaims(CommandSource src, List<Claim> claims, int height) {
+    public static void showOverlapClaims(CommandSource src, Set<Claim> claims, int height) {
         showClaims(src, claims, height, true, true);
     }
 
-    public static void showClaims(CommandSource src, List<Claim> claims, int height, boolean visualizeClaims) {
+    public static void showClaims(CommandSource src, Set<Claim> claims, int height, boolean visualizeClaims) {
         showClaims(src, claims, height, visualizeClaims, false);
     }
 
-    public static void showClaims(CommandSource src, List<Claim> claims, int height, boolean visualizeClaims, boolean overlap) {
+    public static void showClaims(CommandSource src, Set<Claim> claims, int height, boolean visualizeClaims, boolean overlap) {
         final String worldName = src instanceof Player ? ((Player) src).getWorld().getName() : Sponge.getServer().getDefaultWorldName();
         final boolean canListOthers = src.hasPermission(GPPermissions.LIST_OTHER_CLAIMS);
         List<Text> claimsTextList = generateClaimTextList(new ArrayList<Text>(), claims, worldName, null, src, createShowClaimsConsumer(src, claims, height, visualizeClaims), canListOthers, false, overlap);
@@ -562,9 +562,11 @@ public class CommandHelper {
                 Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
                 visualization.apply(player);
             } else {
-                GPClaim gpClaim = (GPClaim) claims.get(0);
-                gpClaim.getVisualizer().createClaimBlockVisuals(height, player.getLocation(), playerData);
-                gpClaim.getVisualizer().apply(player);
+                for (Claim claim : claims) {
+                    final GPClaim gpClaim = (GPClaim) claim;
+                    gpClaim.getVisualizer().createClaimBlockVisuals(height, player.getLocation(), playerData);
+                    gpClaim.getVisualizer().apply(player);
+                }
             }
         }
 
@@ -574,17 +576,17 @@ public class CommandHelper {
         paginationBuilder.sendTo(src);
     }
 
-    private static Consumer<CommandSource> createShowClaimsConsumer(CommandSource src, List<Claim> claims, int height, boolean visualizeClaims) {
+    private static Consumer<CommandSource> createShowClaimsConsumer(CommandSource src, Set<Claim> claims, int height, boolean visualizeClaims) {
         return consumer -> {
             showClaims(src, claims, height, visualizeClaims);
         };
     }
 
-    public static List<Text> generateClaimTextList(List<Text> claimsTextList, List<Claim> claimList, String worldName, User user, CommandSource src, Consumer<CommandSource> returnCommand, boolean canListOthers, boolean listChildren) {
+    public static List<Text> generateClaimTextList(List<Text> claimsTextList, Set<Claim> claimList, String worldName, User user, CommandSource src, Consumer<CommandSource> returnCommand, boolean canListOthers, boolean listChildren) {
         return generateClaimTextList(claimsTextList, claimList, worldName, user, src, returnCommand, canListOthers, listChildren, false);
     }
 
-    public static List<Text> generateClaimTextList(List<Text> claimsTextList, List<Claim> claimList, String worldName, User user, CommandSource src, Consumer<CommandSource> returnCommand, boolean canListOthers, boolean listChildren, boolean overlap) {
+    public static List<Text> generateClaimTextList(List<Text> claimsTextList, Set<Claim> claimList, String worldName, User user, CommandSource src, Consumer<CommandSource> returnCommand, boolean canListOthers, boolean listChildren, boolean overlap) {
         final User sourceUser = src instanceof User ? (User) src : null;
         if (claimList.size() > 0) {
             for (Claim playerClaim : claimList) {
@@ -643,7 +645,7 @@ public class CommandHelper {
 
                 List<Text> childrenTextList = new ArrayList<>();
                 if (!listChildren) {
-                    childrenTextList = generateClaimTextList(new ArrayList<Text>(), claim.getChildren(true), worldName, user, src, returnCommand, canListOthers, true);
+                    childrenTextList = generateClaimTextList(new ArrayList<Text>(), claim.getInternalChildren(true), worldName, user, src, returnCommand, canListOthers, true);
                 }
                 final Player player = src instanceof Player ? (Player) src : null;
                 Text buyClaim = Text.of();

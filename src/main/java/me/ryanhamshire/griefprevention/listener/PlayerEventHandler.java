@@ -1476,7 +1476,7 @@ public class PlayerEventHandler {
         GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
         Location<World> location = player.getLocation();
         GPClaim claim = this.dataStore.getClaimAtPlayer(playerData, location);
-        if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_PICKUP, player, event.getTargetEntity(), player, true) == Tristate.FALSE) {
+        if (GPPermissionHandler.getClaimPermission(event, location, claim, GPPermissions.ITEM_PICKUP, player, event.getTargetEntity(), player, TrustType.ACCESSOR, true) == Tristate.FALSE) {
             event.setCancelled(true);
             GPTimings.PLAYER_PICKUP_ITEM_EVENT.stopTimingIfSync();
             return;
@@ -2158,7 +2158,7 @@ public class PlayerEventHandler {
                     if (claimResult.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
                         GPClaim overlapClaim = (GPClaim) claimResult.getClaim().get();
                         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimResizeOverlap.toText());
-                        List<Claim> claims = new ArrayList<>();
+                        Set<Claim> claims = new HashSet<>();
                         claims.add(overlapClaim);
                         CommandHelper.showOverlapClaims(player, claims, location.getBlockY());
                     } else {
@@ -2247,7 +2247,7 @@ public class PlayerEventHandler {
                         || ((claim.isTown() || claim.isAdminClaim()) && (playerData.lastShovelLocation == null || playerData.claimSubdividing != null)) && playerData.shovelMode != ShovelMode.Town)) {
                     if (claim.getTownClaim() != null && playerData.shovelMode == ShovelMode.Town) {
                         GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
-                        List<Claim> claims = new ArrayList<>();
+                        Set<Claim> claims = new HashSet<>();
                         claims.add(claim);
                         CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                         GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
@@ -2302,7 +2302,7 @@ public class PlayerEventHandler {
                             if (clickedClaim != null) {
                                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
                                 final GPClaim overlapClaim = playerData.claimSubdividing;
-                                List<Claim> claims = new ArrayList<>();
+                                Set<Claim> claims = new HashSet<>();
                                 claims.add(overlapClaim);
                                 CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                             }
@@ -2330,7 +2330,7 @@ public class PlayerEventHandler {
                             if (!result.successful()) {
                                 if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
                                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
-                                    List<Claim> claims = new ArrayList<>();
+                                    Set<Claim> claims = new HashSet<>();
                                     claims.add(gpClaim);
                                     CommandHelper.showOverlapClaims(player, claims, location.getBlockY());
                                 }
@@ -2363,7 +2363,7 @@ public class PlayerEventHandler {
                 // also advise him to consider /abandonclaim or resizing the existing claim
                 else {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlap.toText());
-                    List<Claim> claims = new ArrayList<>();
+                    Set<Claim> claims = new HashSet<>();
                     claims.add(claim);
                     CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                 }
@@ -2379,7 +2379,7 @@ public class PlayerEventHandler {
                 Visualization visualization = new Visualization(claim, VisualizationType.ERROR);
                 visualization.createClaimBlockVisuals(location.getBlockY(), player.getLocation(), playerData);
                 visualization.apply(player);
-                List<Claim> claims = new ArrayList<>();
+                Set<Claim> claims = new HashSet<>();
                 claims.add(claim);
                 CommandHelper.showClaims(player, claims);
             }
@@ -2466,7 +2466,7 @@ public class PlayerEventHandler {
             if (!firstClaim.equals(clickedClaim)) {
                 final GPClaim overlapClaim = firstClaim.isWilderness() ? clickedClaim : firstClaim;
                 GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
-                List<Claim> claims = new ArrayList<>();
+                Set<Claim> claims = new HashSet<>();
                 claims.add(overlapClaim);
                 CommandHelper.showClaims(player, claims, location.getBlockY(), true);
                 GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
@@ -2500,7 +2500,7 @@ public class PlayerEventHandler {
                 if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
                     GPClaim overlapClaim = (GPClaim) result.getClaim().get();
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
-                    List<Claim> claims = new ArrayList<>();
+                    Set<Claim> claims = new HashSet<>();
                     claims.add(overlapClaim);
                     CommandHelper.showOverlapClaims(player, claims, location.getBlockY());
                 }
@@ -2566,7 +2566,7 @@ public class PlayerEventHandler {
 
                 // find nearby claims
                 Location<World> nearbyLocation = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation : player.getLocation();
-                List<Claim> claims = BlockUtils.getNearbyClaims(nearbyLocation, playerData.optionRadiusClaimInspect);
+                Set<Claim> claims = BlockUtils.getNearbyClaims(nearbyLocation, playerData.optionRadiusClaimInspect);
                 int height = playerData.lastValidInspectLocation != null ? playerData.lastValidInspectLocation.getBlockY() : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY();
                 Visualization visualization = Visualization.fromClaims(claims, playerData.optionClaimCreateMode == 1 ? height : player.getProperty(EyeLocationProperty.class).get().getValue().getFloorY(), player.getLocation(), playerData, null);
                 visualization.apply(player);
@@ -2581,7 +2581,7 @@ public class PlayerEventHandler {
                         worldEditProvider.revertVisuals(player, playerData, null);
                         worldEditProvider.visualizeClaims(claims, player, playerData, true);
                     }
-                    CommandHelper.showClaims(player, new ArrayList<Claim>(claims));
+                    CommandHelper.showClaims(player, claims);
                 }
                 GPTimings.PLAYER_INVESTIGATE_CLAIM.stopTimingIfSync();
                 return true;
@@ -2609,7 +2609,7 @@ public class PlayerEventHandler {
             if (this.worldEditProvider != null) {
                 worldEditProvider.visualizeClaim(claim, player, playerData, true);
             }
-            List<Claim> claims = new ArrayList<>();
+            Set<Claim> claims = new HashSet<>();
             claims.add(claim);
             CommandHelper.showClaims(player, claims);
         }

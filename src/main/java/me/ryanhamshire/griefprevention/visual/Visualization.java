@@ -48,6 +48,7 @@ import org.spongepowered.api.world.World;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 //represents a visualization sent to a player
 //FEATURE: to show players visually where claim boundaries are, we send them fake block change packets
@@ -215,6 +216,7 @@ public class Visualization {
         playerData.visualBlocks = null;
         if (playerData.visualRevertTask != null) {
             playerData.visualRevertTask.cancel();
+            playerData.visualRevertTask = null;
         }
     }
 
@@ -528,7 +530,7 @@ public class Visualization {
         return !iblockstate.isOpaqueCube();
     }
 
-    public static Visualization fromClaims(List<Claim> claims, int height, Location<World> locality, GPPlayerData playerData, Visualization visualization) {
+    public static Visualization fromClaims(Set<Claim> claims, int height, Location<World> locality, GPPlayerData playerData, Visualization visualization) {
         if (visualization == null) {
             visualization = new Visualization(VisualizationType.CLAIM);
         }

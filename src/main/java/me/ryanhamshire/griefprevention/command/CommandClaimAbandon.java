@@ -47,7 +47,9 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class CommandClaimAbandon implements CommandExecutor {
@@ -95,7 +97,7 @@ public class CommandClaimAbandon implements CommandExecutor {
             return CommandResult.empty();
         } else {
             if (this.abandonTopClaim && (claim.isTown() || claim.isAdminClaim()) && claim.children.size() > 0) {
-                List<Claim> invalidClaims = new ArrayList<>();
+                Set<Claim> invalidClaims = new HashSet<>();
                 for (Claim child : claim.getChildren(true)) {
                     if (child.getOwnerUniqueId() == null || !child.getOwnerUniqueId().equals(ownerId)) {
                         //return CommandResult.empty();

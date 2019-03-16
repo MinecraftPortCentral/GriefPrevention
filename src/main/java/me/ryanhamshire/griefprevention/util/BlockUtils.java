@@ -62,6 +62,7 @@ import org.spongepowered.common.interfaces.world.gen.IMixinChunkProviderServer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -453,12 +454,12 @@ public class BlockUtils {
         return false;
     }
 
-    public static List<Claim> getNearbyClaims(Location<World> location) {
+    public static Set<Claim> getNearbyClaims(Location<World> location) {
         return getNearbyClaims(location, 50);
     }
 
-    public static List<Claim> getNearbyClaims(Location<World> location, int blockDistance) {
-        List<Claim> claims = new ArrayList<>();
+    public static Set<Claim> getNearbyClaims(Location<World> location, int blockDistance) {
+        Set<Claim> claims = new HashSet<>();
         GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(location.getExtent().getProperties());
         if (claimWorldManager == null) {
             return claims;

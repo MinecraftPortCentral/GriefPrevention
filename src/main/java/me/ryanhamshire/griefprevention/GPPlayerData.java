@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.data.PlayerData;
@@ -56,6 +57,7 @@ import org.spongepowered.common.SpongeImpl;
 
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -72,7 +74,7 @@ public class GPPlayerData implements PlayerData {
     private WeakReference<Subject> playerSubject;
 
     // the player's claims
-    private List<Claim> claimList;
+    private Set<Claim> claimList;
 
     private PlayerStorageData playerStorage;
 
@@ -253,7 +255,7 @@ public class GPPlayerData implements PlayerData {
     public boolean showVisualFillers = true;
     private boolean checkedDimensionHeight = false;
 
-    public GPPlayerData(WorldProperties worldProperties, UUID playerUniqueId, PlayerStorageData playerStorage, GriefPreventionConfig<?> activeConfig, List<Claim> claims) {
+    public GPPlayerData(WorldProperties worldProperties, UUID playerUniqueId, PlayerStorageData playerStorage, GriefPreventionConfig<?> activeConfig, Set<Claim> claims) {
         this.worldProperties = worldProperties;
         this.playerID = playerUniqueId;
         this.playerStorage = playerStorage;
@@ -346,6 +348,7 @@ public class GPPlayerData implements PlayerData {
     public void revertActiveVisual(Player player) {
         if (this.visualRevertTask != null) {
             this.visualRevertTask.cancel();
+            this.visualRevertTask = null;
         }
 
         if (this.visualClaimId != null) {
@@ -551,10 +554,10 @@ public class GPPlayerData implements PlayerData {
     }
 
     public List<Claim> getClaims() {
-        return ImmutableList.copyOf(this.claimList);
+        return new ArrayList<>(this.claimList);
     }
 
-    public List<Claim> getInternalClaims() {
+    public Set<Claim> getInternalClaims() {
         return this.claimList;
     }
 

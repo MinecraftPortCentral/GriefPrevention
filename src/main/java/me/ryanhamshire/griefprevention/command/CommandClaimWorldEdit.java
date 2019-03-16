@@ -50,7 +50,9 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class CommandClaimWorldEdit implements CommandExecutor {
 
@@ -100,7 +102,7 @@ public class CommandClaimWorldEdit implements CommandExecutor {
             } else {
                 if (result.getResultType() == ClaimResultType.OVERLAPPING_CLAIM) {
                     GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateOverlapShort.toText());
-                    List<Claim> claims = new ArrayList<>();
+                    Set<Claim> claims = new HashSet<>();
                     claims.add(result.getClaim().get());
                     CommandHelper.showOverlapClaims(player, claims, 0);
                     GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();

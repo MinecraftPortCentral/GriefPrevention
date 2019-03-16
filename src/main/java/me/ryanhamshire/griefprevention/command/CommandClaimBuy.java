@@ -44,7 +44,9 @@ import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.format.TextStyles;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class CommandClaimBuy implements CommandExecutor {
 
@@ -73,7 +75,7 @@ public class CommandClaimBuy implements CommandExecutor {
             return CommandResult.success();
         }
 
-        List<Claim> claimsForSale = new ArrayList<>();
+        Set<Claim> claimsForSale = new HashSet<>();
         GPClaimManager claimManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(player.getWorld().getProperties());
         for (Claim worldClaim : claimManager.getWorldClaims()) {
             if (worldClaim.isWilderness()) {

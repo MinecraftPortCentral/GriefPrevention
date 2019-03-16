@@ -491,9 +491,9 @@ public abstract class DataStore {
         }
 
         for (GPClaimManager claimWorldManager : this.claimWorldManagers.values()) {
-            List<Claim> claims = claimWorldManager.getInternalPlayerClaims(playerID);
+            Set<Claim> claims = claimWorldManager.getInternalPlayerClaims(playerID);
             if (playerID == null) {
-                claims = claimWorldManager.getWorldClaims();
+                claims = claimWorldManager.getInternalWorldClaims();
             }
             if (claims == null) {
                 continue;

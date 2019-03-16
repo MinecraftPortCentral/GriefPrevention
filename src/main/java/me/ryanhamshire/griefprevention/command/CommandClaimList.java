@@ -53,7 +53,9 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -129,7 +131,7 @@ public class CommandClaimList implements CommandExecutor {
 
     private void showClaimList(Player src, User user, ClaimType type, WorldProperties worldProperties) {
         List<Text> claimsTextList = new ArrayList<>();
-        List<Claim> claims = new ArrayList<>();
+        Set<Claim> claims = new HashSet<>();
         final GPPlayerData sourcePlayerData = GriefPreventionPlugin.instance.dataStore.getPlayerData(worldProperties, src.getUniqueId());
         for (World world : Sponge.getServer().getWorlds()) {
             if (!this.displayOwned && !world.getProperties().getUniqueId().equals(worldProperties.getUniqueId())) {
@@ -139,13 +141,13 @@ public class CommandClaimList implements CommandExecutor {
             final GPClaimManager claimWorldManager = GriefPreventionPlugin.instance.dataStore.getClaimWorldManager(world.getProperties());
             // load the target player's data
             final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(world, user.getUniqueId());
-            List<Claim> claimList = null;
+            Set<Claim> claimList = null;
             int count = 0;
             if (this.displayOwned) {
-                claimList = playerData.getClaims();
+                claimList = playerData.getInternalClaims();
             } else {
                 if (sourcePlayerData.optionRadiusClaimList <= 0) {
-                    claimList = claimWorldManager.getWorldClaims();
+                    claimList = claimWorldManager.getInternalWorldClaims();
                 } else {
                     claimList = BlockUtils.getNearbyClaims(src.getLocation(), sourcePlayerData.optionRadiusClaimList);
                 }

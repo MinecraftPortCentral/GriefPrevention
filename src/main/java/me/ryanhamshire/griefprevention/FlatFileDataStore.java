@@ -436,6 +436,9 @@ public class FlatFileDataStore extends DataStore {
     public void deleteClaimFromSecondaryStorage(GPClaim claim) {
         try {
             Files.delete(claim.getClaimStorage().filePath);
+            if (claim.getClaimStorage().folderPath.toFile().listFiles().length == 0) {
+                Files.delete(claim.getClaimStorage().folderPath);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             GriefPreventionPlugin.addLogEntry("Error: Unable to delete claim file \"" + claim.getClaimStorage().filePath + "\".");

@@ -51,6 +51,7 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -88,7 +89,7 @@ public class CommandUntrustAll implements CommandExecutor {
         }
 
         GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        List<Claim> claimList = null;
+        Set<Claim> claimList = null;
         if (playerData != null) {
             claimList = playerData.getInternalClaims();
         }
@@ -102,7 +103,7 @@ public class CommandUntrustAll implements CommandExecutor {
             Sponge.getCauseStackManager().pushCause(player);
             if (user != null) {
                 GPUserTrustClaimEvent.Remove
-                    event = new GPUserTrustClaimEvent.Remove(claimList, ImmutableList.of(user.getUniqueId()), TrustType.NONE);
+                    event = new GPUserTrustClaimEvent.Remove(new ArrayList<>(claimList), ImmutableList.of(user.getUniqueId()), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,
@@ -121,7 +122,7 @@ public class CommandUntrustAll implements CommandExecutor {
 
                 final Subject subject = PermissionUtils.getGroupSubject(group);
                 GPGroupTrustClaimEvent.Remove
-                    event = new GPGroupTrustClaimEvent.Remove(claimList, ImmutableList.of(group), TrustType.NONE);
+                    event = new GPGroupTrustClaimEvent.Remove(new ArrayList<>(claimList), ImmutableList.of(group), TrustType.NONE);
                 Sponge.getEventManager().post(event);
                 if (event.isCancelled()) {
                     player.sendMessage(Text.of(TextColors.RED,
