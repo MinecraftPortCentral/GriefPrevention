@@ -237,6 +237,10 @@ public class BlockEventHandler {
                         continue;
                     }
                 }
+                if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
+                    continue;
+                }
+
                 final BlockState blockState = location.getBlock();
                 targetClaim = this.dataStore.getClaimAt(location, targetClaim);
                 if (user != null && targetClaim.isUserTrusted(user, TrustType.BUILDER)) {
@@ -305,6 +309,9 @@ public class BlockEventHandler {
                     if (location.getPosition().equals(tileEntity.getLocation().getPosition())) {
                         continue;
                     }
+                }
+                if (GriefPreventionPlugin.isTargetIdBlacklisted(ClaimFlag.BLOCK_BREAK.toString(), location.getBlock(), world.getProperties())) {
+                    continue;
                 }
 
                 final BlockState blockState = location.getBlock();
