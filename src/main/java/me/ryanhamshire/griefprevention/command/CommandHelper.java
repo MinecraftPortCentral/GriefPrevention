@@ -1111,9 +1111,21 @@ public class CommandHelper {
             if (!playerData.canIgnoreClaim(gpClaim) && !playerData.canManageAdminClaims) {
                 // if not owner of claim, validate perms
                 if (!player.getUniqueId().equals(claim.getOwnerUniqueId())) {
-                    if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS) && !gpClaim.isUserTrusted(player, TrustType.ACCESSOR)) {
+                    if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_OTHERS)) {
                         player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in this claim.")); 
                         return;
+                    }
+                    if (!gpClaim.isUserTrusted(player, TrustType.ACCESSOR)) {
+                        if (GriefPreventionPlugin.instance.economyService.isPresent()) {
+                            // Allow non-trusted to TP to claims for sale
+                            if (!gpClaim.getEconomyData().isForSale()) {
+                                player.sendMessage(Text.of(TextColors.RED, "You are not trusted to use the teleport feature in this claim.")); 
+                                return;
+                            }
+                        } else {
+                            player.sendMessage(Text.of(TextColors.RED, "You are not trusted to use the teleport feature in this claim.")); 
+                            return;
+                        }
                     }
                 } else if (!player.hasPermission(GPPermissions.COMMAND_CLAIM_INFO_TELEPORT_BASE)) {
                     player.sendMessage(Text.of(TextColors.RED, "You do not have permission to use the teleport feature in your claim.")); 
