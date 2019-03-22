@@ -92,7 +92,11 @@ public class EconomyDataConfig extends ConfigCategory implements EconomyData {
 
     @Override
     public void setTaxPastDueDate(Instant date) {
-        this.taxPastDueDate = date.toString();
+        if (date == null) {
+            this.taxPastDueDate = null;
+        } else {
+            this.taxPastDueDate = date.toString();
+        }
     }
 
     @Override
