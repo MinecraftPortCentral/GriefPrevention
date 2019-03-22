@@ -1025,20 +1025,20 @@ public class GriefPreventionPlugin {
                 .description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission(GPPermissions.COMMAND_DELETE_CLAIM_BASE)
                 .executor(new CommandClaimDelete(false))
-                .build(), "deleteclaim", "dc");
+                .build(), "deleteclaim");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Deletes the claim you're standing in, even if it's not your claim"))
                 .permission(GPPermissions.COMMAND_DELETE_CLAIM_BASE)
                 .executor(new CommandClaimDelete(true))
-                .build(), "deletetopclaim", "dtc");
+                .build(), "deletetopclaim");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Delete all of another player's claims"))
                 .permission(GPPermissions.COMMAND_DELETE_CLAIMS)
                 .arguments(user(Text.of("player")))
                 .executor(new CommandClaimDeleteAll())
-                .build(), "deleteallclaims", "dac");
+                .build(), "deleteallclaims");
 
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .description(Text.of("Deletes all administrative claims"))
