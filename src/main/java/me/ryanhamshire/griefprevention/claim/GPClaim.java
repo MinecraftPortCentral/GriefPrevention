@@ -1300,24 +1300,16 @@ public class GPClaim implements Claim {
         Location<World> newGreaterCorner = new Location<World>(this.world, bigX, bigY, bigZ);
 
         // check player has enough claim blocks
-        if ((this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
+        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.AREA && playerData != null && (this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
             final int newCost = BlockUtils.getClaimBlockCost(this.world, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition(), this.cuboid);
             final int currentCost = BlockUtils.getClaimBlockCost(this.world, currentLesserCorner.getBlockPosition(), currentGreaterCorner.getBlockPosition(), this.cuboid);
             if (newCost > currentCost) {
                 final int remainingClaimBlocks = this.ownerPlayerData.getRemainingClaimBlocks() - (newCost - currentCost);
                 if (remainingClaimBlocks < 0) {
                     if (player != null) {
-                        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME) {
-                            final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
-                            final Map<String, ?> params = ImmutableMap.of(
-                                    "chunks", Math.round(claimableChunks * 100.0)/100.0,
-                                    "blocks", Math.abs(remainingClaimBlocks));
-                            GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks3d, params);
-                        } else {
-                            final Map<String, ?> params = ImmutableMap.of(
-                                    "blocks", Math.abs(remainingClaimBlocks));
-                            GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_2D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks2d, params);
-                        }
+                        final Map<String, ?> params = ImmutableMap.of(
+                                "blocks", Math.abs(remainingClaimBlocks));
+                        GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_2D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks2d, params);
                     }
                     playerData.lastShovelLocation = null;
                     playerData.claimResizing = null;
@@ -1451,6 +1443,30 @@ public class GPClaim implements Claim {
         Location<World> currentGreaterCorner = this.greaterBoundaryCorner;
         Location<World> newLesserCorner = new Location<World>(this.world, smallX, smallY, smallZ);
         Location<World> newGreaterCorner = new Location<World>(this.world, bigX, bigY, bigZ);
+
+        // check player has enough claim blocks
+        if (GriefPreventionPlugin.CLAIM_BLOCK_SYSTEM == ClaimBlockSystem.VOLUME && playerData != null && (this.isBasicClaim() || this.isTown()) && this.claimData.requiresClaimBlocks()) {
+            final int newCost = BlockUtils.getClaimBlockCost(this.world, newLesserCorner.getBlockPosition(), newGreaterCorner.getBlockPosition(), this.cuboid);
+            final int currentCost = BlockUtils.getClaimBlockCost(this.world, currentLesserCorner.getBlockPosition(), currentGreaterCorner.getBlockPosition(), this.cuboid);
+            if (newCost > currentCost) {
+                final int remainingClaimBlocks = this.ownerPlayerData.getRemainingClaimBlocks() - (newCost - currentCost);
+                if (remainingClaimBlocks < 0) {
+                    if (player != null) {
+                        final double claimableChunks = Math.abs(remainingClaimBlocks / 65536.0);
+                        final Map<String, ?> params = ImmutableMap.of(
+                                "chunks", Math.round(claimableChunks * 100.0)/100.0,
+                                "blocks", Math.abs(remainingClaimBlocks));
+                        GriefPreventionPlugin.sendMessage(player, MessageStorage.CLAIM_SIZE_NEED_BLOCKS_3D, GriefPreventionPlugin.instance.messageData.claimSizeNeedBlocks3d, params);
+                    }
+                    playerData.lastShovelLocation = null;
+                    playerData.claimResizing = null;
+                    this.lesserBoundaryCorner = currentLesserCorner;
+                    this.greaterBoundaryCorner = currentGreaterCorner;
+                    return new GPClaimResult(ClaimResultType.INSUFFICIENT_CLAIM_BLOCKS);
+                }
+            }
+        }
+
         this.lesserBoundaryCorner = newLesserCorner;
         this.greaterBoundaryCorner = newGreaterCorner;
 
