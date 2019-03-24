@@ -196,7 +196,7 @@ public class MessageDataConfig extends ConfigCategory {
     public TextTemplate claimSizeTooSmall = TextTemplate.of(TextColors.RED, "The selected claim size of ", TextTemplate.arg("width"), "x", TextTemplate.arg("length"), " would be too small. A claim must be at least ", TextTemplate.arg("minimum-width"), "x", TextTemplate.arg("minimum-length"), " in size.");
 
     @Setting("claim-create-failed-claim-limit")
-    public TextTemplate claimCreateFailedLimit = TextTemplate.of(TextColors.RED, "You've reached your limit on land claims.  Use /AbandonClaim to remove one before creating another.");
+    public TextTemplate claimCreateFailedLimit = TextTemplate.of(TextColors.RED, "You've reached your limit of ", TextTemplate.arg("limit").color(TextColors.GREEN), " for ", TextTemplate.arg("type").color(TextColors.GREEN)," claims.\nUse /AbandonClaim to remove one before creating another.\nSee /playerinfo for current limits.");
 
     @Setting(MessageStorage.CLAIM_CREATE_INSUFFICIENT_BLOCKS_2D)
     public TextTemplate claimCreateInsufficientBlocks2d = TextTemplate.of(TextColors.RED, "You don't have enough blocks to claim this area.\nYou need ", TextTemplate.arg("remaining-blocks").color(TextColors.GOLD), " more blocks.");

@@ -2835,9 +2835,13 @@ public class GPClaim implements Claim {
                 final User user = GriefPreventionPlugin.getOrCreateUser(this.ownerUniqueId);
                 if (this.createLimitRestrictions && !user.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
                     final Double createClaimLimit = GPOptionHandler.getClaimOptionDouble(user, claim, GPOptions.Type.CLAIM_LIMIT, playerData);
-                    if (createClaimLimit != null && createClaimLimit > 0 && (playerData.getInternalClaims().size() + 1) > createClaimLimit.intValue()) {
+                    if (createClaimLimit != null && createClaimLimit > 0 && (playerData.getClaimTypeCount(claim.getType()) + 1) > createClaimLimit.intValue()) {
                         if (player != null) {
-                            GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit.toText());
+                            final Text message = GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit
+                                    .apply(ImmutableMap.of(
+                                    "limit", createClaimLimit,
+                                    "type", claim.getType().name())).build();
+                            GriefPreventionPlugin.sendMessage(player, message);
                         }
                         return new GPClaimResult(claim, ClaimResultType.EXCEEDS_MAX_CLAIM_LIMIT, GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit.toText());
                     }

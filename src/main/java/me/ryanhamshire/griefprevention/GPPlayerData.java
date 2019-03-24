@@ -561,6 +561,16 @@ public class GPPlayerData implements PlayerData {
         return this.claimList;
     }
 
+    public int getClaimTypeCount(ClaimType type) {
+        int count = 0;
+        for (Claim claim : this.claimList) {
+            if (claim.getType() == type) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     public void setLastCollideEntityData(int entityId, boolean result) {
         this.lastCollideEntityId = entityId;
         this.lastCollideEntityResult = result;

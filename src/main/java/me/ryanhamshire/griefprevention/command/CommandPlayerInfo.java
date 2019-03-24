@@ -111,6 +111,10 @@ public class CommandPlayerInfo implements CommandExecutor {
                 TextColors.GRAY, "BASIC", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateBasic, 
                 TextColors.GRAY, " SUB", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionTaxRateSubdivision);
         Text currentTaxRateText = Text.of(TextColors.YELLOW, "Current Claim Tax Rate", TextColors.WHITE, " : ", TextColors.RED, "N/A");
+        Text claimCreateLimits = Text.of(
+                TextColors.GRAY, "TOWN", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionCreateClaimLimitTown, 
+                TextColors.GRAY, " BASIC", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionCreateClaimLimitBasic, 
+                TextColors.GRAY, " SUB", TextColors.WHITE, " : ", TextColors.GREEN, playerData.optionCreateClaimLimitSubdivision);
         if (src instanceof Player) {
             Player player = (Player) src;
             if (player.getUniqueId().equals(user.getUniqueId())) {
@@ -128,13 +132,13 @@ public class CommandPlayerInfo implements CommandExecutor {
         final Text uuidText = Text.of(TextColors.YELLOW, "UUID", WHITE_SEMI_COLON, TextColors.GRAY, user.getUniqueId());
         final Text worldText = Text.of(TextColors.YELLOW, "World", WHITE_SEMI_COLON, TextColors.GRAY, worldProperties.getWorldName());
         final Text sizeLimitText = Text.of(TextColors.YELLOW, "Claim Size Limits", WHITE_SEMI_COLON, claimSizeLimit);
+        final Text createLimitText = Text.of(TextColors.YELLOW, "Claim Create Limits", WHITE_SEMI_COLON, claimCreateLimits);
         final Text initialBlockText = Text.of(TextColors.YELLOW, "Initial Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionInitialClaimBlocks);
         final Text accruedBlockText = Text.of(TextColors.YELLOW, "Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAccruedClaimBlocks(), TextColors.GRAY, " (", TextColors.LIGHT_PURPLE, playerData.optionBlocksAccruedPerHour, TextColors.WHITE, " per hour", TextColors.GRAY, ")");
         final Text maxAccruedBlockText = Text.of(TextColors.YELLOW, "Max Accrued Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.optionMaxAccruedBlocks);
         final Text bonusBlockText = Text.of(TextColors.YELLOW, "Bonus Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getBonusClaimBlocks());
         final Text remainingBlockText = Text.of(TextColors.YELLOW, "Remaining Blocks", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getRemainingClaimBlocks());
-        final Text minLevelText = Text.of(TextColors.YELLOW, "Minimum Claim Level", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getMinClaimLevel());
-        final Text maxLevelText = Text.of(TextColors.YELLOW, "Maximum Claim Level", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getMaxClaimLevel());
+        final Text minMaxLevelText = Text.of(TextColors.YELLOW, "Min/Max Claim Level", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getMinClaimLevel() + "-" + playerData.getMaxClaimLevel());
         final Text abandonRatioText = Text.of(TextColors.YELLOW, "Abandoned Return Ratio", WHITE_SEMI_COLON, TextColors.GREEN, playerData.getAbandonedReturnRatio());
         final Text globalTownTaxText = Text.of(TextColors.YELLOW, "Global Town Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, townTaxRate);
         final Text globalClaimTaxText = Text.of(TextColors.YELLOW, "Global Claim Tax Rate", WHITE_SEMI_COLON, TextColors.GREEN, claimTaxRate);
@@ -147,13 +151,13 @@ public class CommandPlayerInfo implements CommandExecutor {
         claimsTextList.add(uuidText);
         claimsTextList.add(worldText);
         claimsTextList.add(sizeLimitText);
+        claimsTextList.add(createLimitText);
         claimsTextList.add(initialBlockText);
         claimsTextList.add(accruedBlockText);
         claimsTextList.add(maxAccruedBlockText);
         claimsTextList.add(bonusBlockText);
         claimsTextList.add(remainingBlockText);
-        claimsTextList.add(minLevelText);
-        claimsTextList.add(maxLevelText);
+        claimsTextList.add(minMaxLevelText);
         claimsTextList.add(abandonRatioText);
         if (GriefPreventionPlugin.getGlobalConfig().getConfig().claim.bankTaxSystem) {
             claimsTextList.add(currentTaxRateText);

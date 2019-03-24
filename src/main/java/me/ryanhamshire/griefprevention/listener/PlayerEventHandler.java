@@ -1872,6 +1872,7 @@ public class PlayerEventHandler {
         // if the player is in restore nature mode, do only that
         UUID playerID = player.getUniqueId();
         playerData = this.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        final ClaimType shovelClaimType = PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode);
         if (playerData.shovelMode == ShovelMode.RestoreNature || playerData.shovelMode == ShovelMode.RestoreNatureAggressive) {
             if (true) {
                 player.sendMessage(Text.of(TextColors.RED, "This mode is currently disabled until further notice."));
@@ -2272,6 +2273,17 @@ public class PlayerEventHandler {
                             return;
                         }
 
+                        if (!player.hasPermission(GPPermissions.OVERRIDE_CLAIM_LIMIT)) {
+                            if (playerData.optionCreateClaimLimitSubdivision > 0 && (playerData.getClaimTypeCount(shovelClaimType) + 1) > playerData.optionCreateClaimLimitSubdivision) {
+                                final Text message = GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit
+                                        .apply(ImmutableMap.of(
+                                        "limit", playerData.optionCreateClaimLimitSubdivision,
+                                        "type", shovelClaimType.name())).build();
+                                GriefPreventionPlugin.sendMessage(player, message);
+                                GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
+                                return;
+                            }
+                        }
                         // if the clicked claim was a subdivision, tell him
                         // he can't start a new subdivision here
                         if (claim.isSubdivision()) {
@@ -2322,7 +2334,7 @@ public class PlayerEventHandler {
                             Sponge.getCauseStackManager().pushCause(player);
                             Sponge.getCauseStackManager().addContext(EventContextKeys.PLUGIN, GriefPreventionPlugin.instance.pluginContainer);
                             ClaimResult result = this.dataStore.createClaim(player.getWorld(),
-                                    lesserBoundaryCorner, greaterBoundaryCorner, PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode),
+                                    lesserBoundaryCorner, greaterBoundaryCorner, shovelClaimType,
                                     player.getUniqueId(), playerData.optionClaimCreateMode == 1, playerData.claimSubdividing);
 
                             GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
@@ -2409,9 +2421,12 @@ public class PlayerEventHandler {
                     createClaimLimit = playerData.optionCreateClaimLimitSubdivision;
                 }
 
-                if (createClaimLimit > 0 &&
-                        (playerData.getInternalClaims().size() + 1) > playerData.optionCreateClaimLimitBasic) {
-                    GriefPreventionPlugin.sendMessage(player, GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit.toText());
+                if (createClaimLimit > 0 && (playerData.getClaimTypeCount(shovelClaimType) + 1) > createClaimLimit) {
+                    final Text message = GriefPreventionPlugin.instance.messageData.claimCreateFailedLimit
+                            .apply(ImmutableMap.of(
+                            "limit", createClaimLimit,
+                            "type", shovelClaimType.name())).build();
+                    GriefPreventionPlugin.sendMessage(player, message);
                     GPTimings.PLAYER_HANDLE_SHOVEL_ACTION.stopTimingIfSync();
                     return;
                 }
@@ -2491,7 +2506,7 @@ public class PlayerEventHandler {
                         player.getWorld(),
                         lesserBoundary,
                         greaterBoundary,
-                        PlayerUtils.getClaimTypeFromShovel(playerData.shovelMode), player.getUniqueId(), cuboid);
+                        shovelClaimType, player.getUniqueId(), cuboid);
             }
 
             GPClaim gpClaim = (GPClaim) result.getClaim().orElse(null);
