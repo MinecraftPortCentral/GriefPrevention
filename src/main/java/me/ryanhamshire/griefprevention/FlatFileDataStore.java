@@ -45,7 +45,7 @@ import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
-import org.spongepowered.common.interfaces.world.IMixinDimensionType;
+import org.spongepowered.common.bridge.world.DimensionTypeBridge;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -117,7 +117,7 @@ public class FlatFileDataStore extends DataStore {
 
     public void registerWorld(WorldProperties worldProperties) {
         DimensionType dimType = worldProperties.getDimensionType();
-        Path dimPath = rootConfigPath.resolve(((IMixinDimensionType) dimType).getModId()).resolve(((IMixinDimensionType) dimType).getEnumName());
+        Path dimPath = rootConfigPath.resolve(((DimensionTypeBridge) dimType).getModId()).resolve(((DimensionTypeBridge) dimType).getEnumName());
         if (!Files.exists(dimPath.resolve(worldProperties.getWorldName()))) {
             try {
                 Files.createDirectories(dimPath.resolve(worldProperties.getWorldName()));
@@ -161,7 +161,7 @@ public class FlatFileDataStore extends DataStore {
     public void loadWorldData(World world) {
         final WorldProperties worldProperties = world.getProperties();
         final DimensionType dimType = worldProperties.getDimensionType();
-        final Path dimPath = rootConfigPath.resolve(((IMixinDimensionType) dimType).getModId()).resolve(((IMixinDimensionType) dimType).getEnumName());
+        final Path dimPath = rootConfigPath.resolve(((DimensionTypeBridge) dimType).getModId()).resolve(((DimensionTypeBridge) dimType).getEnumName());
         final Path newWorldDataPath = dimPath.resolve(worldProperties.getWorldName());
         GPClaimManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
         if (claimWorldManager == null) {

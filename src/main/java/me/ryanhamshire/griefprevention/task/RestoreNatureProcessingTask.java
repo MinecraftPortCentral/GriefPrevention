@@ -27,6 +27,7 @@ package me.ryanhamshire.griefprevention.task;
 
 import me.ryanhamshire.griefprevention.GriefPreventionPlugin;
 import me.ryanhamshire.griefprevention.util.BlockUtils;
+import net.minecraft.block.state.IBlockState;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
@@ -39,7 +40,6 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.biome.BiomeType;
 import org.spongepowered.api.world.biome.BiomeTypes;
-import org.spongepowered.common.interfaces.block.IMixinBlockState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -486,7 +486,7 @@ public class RestoreNatureProcessingTask implements Runnable {
                     BlockSnapshot block = this.snapshots[x][y][z];
                     BlockSnapshot underBlock = this.snapshots[x][y - 1][z];
                     if (block.getState().getType() == BlockTypes.WATER || block.getState().getType() == BlockTypes.LAVA) {
-                        if (underBlock.getState().getType() == BlockTypes.AIR || ((((IMixinBlockState) underBlock.getState()).getStateMeta()) != 0)) {
+                        if (underBlock.getState().getType() == BlockTypes.AIR || (((IBlockState) underBlock.getState()).getBlock().getMetaFromState((IBlockState) underBlock.getState()) != 0)) {
                             this.snapshots[x][y][z] = block.withState(BlockTypes.AIR.getDefaultState());
                         }
                     }
@@ -504,7 +504,7 @@ public class RestoreNatureProcessingTask implements Runnable {
 
                         // only consider air blocks and flowing water blocks for upgrade to water source blocks
                         if (block.getState().getType() == BlockTypes.AIR || (block.getState().getType() == BlockTypes.WATER
-                                && (((IMixinBlockState) block.getState()).getStateMeta()) != 0)) {
+                                && (((IBlockState) block.getState()).getBlock().getMetaFromState((IBlockState) block.getState())) != 0)) {
                             BlockSnapshot leftBlock = this.snapshots[x + 1][y][z];
                             BlockSnapshot rightBlock = this.snapshots[x - 1][y][z];
                             BlockSnapshot upBlock = this.snapshots[x][y][z + 1];
@@ -513,25 +513,25 @@ public class RestoreNatureProcessingTask implements Runnable {
 
                             // block underneath MUST be source water
                             if (underBlock.getState().getType() != BlockTypes.WATER
-                                    || (((IMixinBlockState) underBlock.getState()).getStateMeta()) != 0) {
+                                    || (((IBlockState) underBlock.getState()).getBlock().getMetaFromState((IBlockState) underBlock.getState())) != 0) {
                                 continue;
                             }
 
                             // count adjacent source water blocks
                             byte adjacentSourceWaterCount = 0;
                             if (leftBlock.getState().getType() == BlockTypes.WATER
-                                    && (((IMixinBlockState) leftBlock.getState()).getStateMeta()) == 0) {
+                                    && (((IBlockState) leftBlock.getState()).getBlock().getMetaFromState((IBlockState) leftBlock.getState())) == 0) {
                                 adjacentSourceWaterCount++;
                             }
                             if (rightBlock.getState().getType() == BlockTypes.WATER
-                                    && (((IMixinBlockState) rightBlock.getState()).getStateMeta()) == 0) {
+                                    && (((IBlockState) rightBlock.getState()).getBlock().getMetaFromState((IBlockState) rightBlock.getState())) == 0) {
                                 adjacentSourceWaterCount++;
                             }
-                            if (upBlock.getState().getType() == BlockTypes.WATER && (((IMixinBlockState) upBlock.getState()).getStateMeta()) == 0) {
+                            if (upBlock.getState().getType() == BlockTypes.WATER && (((IBlockState) upBlock.getState()).getBlock().getMetaFromState((IBlockState) upBlock.getState())) == 0) {
                                 adjacentSourceWaterCount++;
                             }
                             if (downBlock.getState().getType() == BlockTypes.WATER
-                                    && (((IMixinBlockState) downBlock.getState()).getStateMeta()) == 0) {
+                                    && (((IBlockState) downBlock.getState()).getBlock().getMetaFromState((IBlockState) downBlock.getState())) == 0) {
                                 adjacentSourceWaterCount++;
                             }
 

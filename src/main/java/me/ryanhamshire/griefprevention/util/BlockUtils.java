@@ -57,8 +57,8 @@ import org.spongepowered.api.util.blockray.BlockRayHit;
 import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-import org.spongepowered.common.interfaces.IMixinChunk;
-import org.spongepowered.common.interfaces.world.gen.IMixinChunkProviderServer;
+import org.spongepowered.common.bridge.world.ServerChunkProviderBridge;
+import org.spongepowered.common.bridge.world.chunk.ChunkBridge;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -265,18 +265,18 @@ public class BlockUtils {
         }
 
         chunkProviderServer.id2ChunkMap.remove(ChunkPos.asLong(chunk.x, chunk.z));
-        ((IMixinChunk) chunk).setScheduledForUnload(-1);
+        ((ChunkBridge) chunk).setScheduledForUnload(-1);
         org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
         for (Direction direction : CARDINAL_SET) {
             Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
-            IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) mcWorld.getChunkProvider();
+            ServerChunkProviderBridge spongeChunkProvider = (ServerChunkProviderBridge) mcWorld.getChunkProvider();
             net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
                     (neighborPosition.getX(), neighborPosition.getZ());
             if (neighbor != null) {
                 int neighborIndex = directionToIndex(direction);
                 int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
-                ((IMixinChunk) spongeChunk).setNeighborChunk(neighborIndex, null);
-                ((IMixinChunk) neighbor).setNeighborChunk(oppositeNeighborIndex, null);
+                ((ChunkBridge) spongeChunk).setNeighborChunk(neighborIndex, null);
+                ((ChunkBridge) neighbor).setNeighborChunk(oppositeNeighborIndex, null);
             }
         }
 
@@ -285,7 +285,7 @@ public class BlockUtils {
 
     public static boolean createFillerChunk(GPPlayerData playerData, WorldServer world, int chunkX, int chunkZ) {
         ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
-        Chunk chunk = ((IMixinChunkProviderServer) chunkProviderServer).getLoadedChunkWithoutMarkingActive(chunkX, chunkZ);
+        Chunk chunk = ((ServerChunkProviderBridge) chunkProviderServer).getLoadedChunkWithoutMarkingActive(chunkX, chunkZ);
         if (chunk == null) {
             return false;
         }
@@ -313,14 +313,14 @@ public class BlockUtils {
             org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
             for (Direction direction : CARDINAL_SET) {
                 Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
-                IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) world.getChunkProvider();
+                ServerChunkProviderBridge spongeChunkProvider = (ServerChunkProviderBridge) world.getChunkProvider();
                 net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
                         (neighborPosition.getX(), neighborPosition.getZ());
                 if (neighbor != null) {
                     int neighborIndex = directionToIndex(direction);
                     int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
-                    ((IMixinChunk) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
-                    ((IMixinChunk) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
+                    ((ChunkBridge) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
+                    ((ChunkBridge) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
                 }
             }
         }
@@ -346,7 +346,7 @@ public class BlockUtils {
         int x = chunk.x;
         int z = chunk.z;
         WorldServer world = (WorldServer) chunk.getWorld();
-        IMixinChunkProviderServer chunkProviderServer = (IMixinChunkProviderServer) world.getChunkProvider();
+        ServerChunkProviderBridge chunkProviderServer = (ServerChunkProviderBridge) world.getChunkProvider();
         if (chunkProviderServer.getLoadedChunkWithoutMarkingActive(x, z) == null) {
             return false;
         }
@@ -371,14 +371,14 @@ public class BlockUtils {
             org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
             for (Direction direction : CARDINAL_SET) {
                 Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
-                IMixinChunkProviderServer spongeChunkProvider = (IMixinChunkProviderServer) world.getChunkProvider();
+                ServerChunkProviderBridge spongeChunkProvider = (ServerChunkProviderBridge) world.getChunkProvider();
                 net.minecraft.world.chunk.Chunk neighbor = spongeChunkProvider.getLoadedChunkWithoutMarkingActive
                         (neighborPosition.getX(), neighborPosition.getZ());
                 if (neighbor != null) {
                     int neighborIndex = directionToIndex(direction);
                     int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
-                    ((IMixinChunk) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
-                    ((IMixinChunk) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
+                    ((ChunkBridge) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
+                    ((ChunkBridge) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
                 }
             }
 

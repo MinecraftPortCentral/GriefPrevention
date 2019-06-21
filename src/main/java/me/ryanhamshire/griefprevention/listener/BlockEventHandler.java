@@ -86,8 +86,8 @@ import org.spongepowered.api.world.LocatableBlock;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.explosion.Explosion;
-import org.spongepowered.common.interfaces.block.IMixinBlock;
-import org.spongepowered.common.interfaces.world.IMixinLocation;
+import org.spongepowered.common.bridge.block.BlockBridge;
+import org.spongepowered.common.bridge.world.LocationBridge;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -138,7 +138,7 @@ public class BlockEventHandler {
         Location<World> sourceLocation = null;
         boolean isVanillaBlock = true;
         if (!pistonExtend && isBlockEvent) {
-            isVanillaBlock = ((IMixinBlock) eventBlock.getBlockState().getType()).isVanilla();
+            isVanillaBlock = ((BlockBridge) eventBlock.getBlockState().getType()).isVanilla();
             if (isVanillaBlock) {
                 return;
             }
@@ -479,7 +479,7 @@ public class BlockEventHandler {
             return;
         }
 
-        BlockPos collidePos = ((IMixinLocation)(Object) event.getTargetLocation()).getBlockPos();
+        BlockPos collidePos = ((LocationBridge)(Object) event.getTargetLocation()).getBlockPos();
         short shortPos = BlockUtils.blockPosToShort(collidePos);
         int entityId = ((net.minecraft.entity.Entity) source).getEntityId();
         BlockPosCache entityBlockCache = BlockUtils.ENTITY_BLOCK_CACHE.get(entityId);

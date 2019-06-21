@@ -142,7 +142,8 @@ import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.SpongeImplHooks;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.entity.SpongeEntityType;
-import org.spongepowered.common.interfaces.entity.IMixinEntity;
+import org.spongepowered.common.bridge.entity.EntityBridge;
+import org.spongepowered.common.bridge.world.chunk.ActiveChunkReferantBridge;
 
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
@@ -1398,7 +1399,7 @@ public class PlayerEventHandler {
 
         // if entity is living and has an owner, apply special rules
         if (targetEntity instanceof Living) {
-            IMixinEntity spongeEntity = (IMixinEntity) targetEntity;
+            EntityBridge spongeEntity = (EntityBridge) targetEntity;
             Optional<User> owner = spongeEntity.getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
             if (owner.isPresent()) {
                 UUID ownerID = owner.get().getUniqueId();
@@ -1406,17 +1407,17 @@ public class PlayerEventHandler {
                 if (player.getUniqueId().equals(ownerID) || playerData.canIgnoreClaim(claim)) {
                     // if giving away pet, do that instead
                     if (playerData.petGiveawayRecipient != null) {
-                        SpongeEntityType spongeEntityType = ((SpongeEntityType) spongeEntity.getType());
-                        if (spongeEntityType == null || spongeEntityType.equals(EntityTypes.UNKNOWN) || !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
+                        SpongeEntityType spongeEntityType = (SpongeEntityType) ((Entity) spongeEntity).getType();
+                        if (spongeEntityType.equals(EntityTypes.UNKNOWN) || !spongeEntityType.getModId().equalsIgnoreCase("minecraft")) {
                             final Text message = GriefPreventionPlugin.instance.messageData.commandPetInvalid
                                     .apply(ImmutableMap.of(
-                                    "type", spongeEntity.getType().getId())).build();
+                                    "type", spongeEntityType.getId())).build();
                             GriefPreventionPlugin.sendMessage(player, message);
                             playerData.petGiveawayRecipient = null;
                             GPTimings.PLAYER_INTERACT_ENTITY_SECONDARY_EVENT.stopTimingIfSync();
                             return;
                         }
-                        spongeEntity.setCreator(playerData.petGiveawayRecipient.getUniqueId());
+                        ((Entity) spongeEntity).setCreator(playerData.petGiveawayRecipient.getUniqueId());
                         if (targetEntity instanceof EntityTameable) {
                             EntityTameable tameable = (EntityTameable) targetEntity;
                             tameable.setOwnerId(playerData.petGiveawayRecipient.getUniqueId());
@@ -1716,7 +1717,8 @@ public class PlayerEventHandler {
                     mcPlayer.sendContainerToPlayer(mcPlayer.inventoryContainer);
                     if (tileEntity != null) {
                         mcPlayer.connection.sendPacket(((net.minecraft.tileentity.TileEntity) tileEntity).getUpdatePacket());
-                        mcPlayer.connection.sendPacket(new SPacketChunkData(((net.minecraft.world.chunk.Chunk) ((IMixinEntity) player).getActiveChunk()), 1));
+                        mcPlayer.connection.sendPacket(new SPacketChunkData(((net.minecraft.world.chunk.Chunk) ((ActiveChunkReferantBridge) player).bridge$getActiveChunk()),
+                            1));
                     }
                 }
                 // Always cancel if using a mod item in hand due to dupes etc.
