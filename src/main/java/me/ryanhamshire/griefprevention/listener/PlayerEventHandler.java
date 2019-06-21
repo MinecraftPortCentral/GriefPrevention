@@ -140,6 +140,7 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.SpongeImplHooks;
+import org.spongepowered.common.bridge.OwnershipTrackedBridge;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.entity.SpongeEntityType;
 import org.spongepowered.common.bridge.entity.EntityBridge;
@@ -1400,7 +1401,7 @@ public class PlayerEventHandler {
         // if entity is living and has an owner, apply special rules
         if (targetEntity instanceof Living) {
             EntityBridge spongeEntity = (EntityBridge) targetEntity;
-            Optional<User> owner = spongeEntity.getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR);
+            Optional<User> owner = ((OwnershipTrackedBridge) spongeEntity).tracked$getOwnerReference();
             if (owner.isPresent()) {
                 UUID ownerID = owner.get().getUniqueId();
                 // if the player interacting is the owner or an admin in ignore claims mode, always allow

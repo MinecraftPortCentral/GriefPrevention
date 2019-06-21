@@ -93,6 +93,7 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.explosion.Explosion;
 import org.spongepowered.api.world.storage.WorldProperties;
 import org.spongepowered.common.SpongeImplHooks;
+import org.spongepowered.common.bridge.OwnershipTrackedBridge;
 import org.spongepowered.common.data.util.NbtDataUtil;
 import org.spongepowered.common.bridge.entity.EntityBridge;
 
@@ -695,7 +696,7 @@ public class EntityEventHandler {
                 player = (Player) ((net.minecraft.entity.Entity) entity).getControllingPassenger();
                 playerData = this.dataStore.getOrCreatePlayerData(world, player.getUniqueId());
             }
-            owner = ((EntityBridge) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
+            owner = ((OwnershipTrackedBridge) entity).tracked$getOwnerReference().orElse(null);
         }
 
         final Location<World> fromLocation = event.getFromTransform().getLocation();
@@ -913,12 +914,12 @@ public class EntityEventHandler {
 
         GPTimings.ENTITY_TELEPORT_EVENT.startTimingIfSync();
         Player player = null;
-        User user = null;
+        User user;
         if (entity instanceof Player) {
             player = (Player) entity;
             user = player;
         } else {
-            user = ((EntityBridge) entity).getTrackedPlayer(NbtDataUtil.SPONGE_ENTITY_CREATOR).orElse(null);
+            user = ((OwnershipTrackedBridge) entity).tracked$getOwnerReference().orElse(null);
         }
 
         if (user == null) {
