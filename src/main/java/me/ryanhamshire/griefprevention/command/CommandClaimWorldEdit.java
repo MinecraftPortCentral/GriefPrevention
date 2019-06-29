@@ -69,6 +69,11 @@ public class CommandClaimWorldEdit implements CommandExecutor {
             return CommandResult.success();
         }
 
+        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
+        if (!playerData.canCreateClaim(player, true)) {
+            return CommandResult.success();
+        }
+
         RegionSelector regionSelector = null;
         Region region = null;
         try {
@@ -79,7 +84,6 @@ public class CommandClaimWorldEdit implements CommandExecutor {
             return CommandResult.success();
         }
 
-        final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
         final int minY = playerData.optionClaimCreateMode == 1 ? region.getMinimumPoint().getBlockY() : 0;
         final int maxY = playerData.optionClaimCreateMode == 1 ? region.getMaximumPoint().getBlockY() : 255;
         final Vector3i lesser = new Vector3i(region.getMinimumPoint().getBlockX(), minY, region.getMinimumPoint().getBlockZ());
