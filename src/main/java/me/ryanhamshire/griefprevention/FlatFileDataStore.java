@@ -117,7 +117,10 @@ public class FlatFileDataStore extends DataStore {
 
     public void registerWorld(WorldProperties worldProperties) {
         DimensionType dimType = worldProperties.getDimensionType();
-        Path dimPath = rootConfigPath.resolve(((DimensionTypeBridge) dimType).getModId()).resolve(((DimensionTypeBridge) dimType).getEnumName());
+        final String[] parts = ((DimensionTypeBridge) dimType).bridge$getSanitizedId().split(":");
+        final String modId = parts[0];
+        final String name = parts[1];
+        Path dimPath = rootConfigPath.resolve(modId).resolve(name);
         if (!Files.exists(dimPath.resolve(worldProperties.getWorldName()))) {
             try {
                 Files.createDirectories(dimPath.resolve(worldProperties.getWorldName()));
@@ -161,7 +164,10 @@ public class FlatFileDataStore extends DataStore {
     public void loadWorldData(World world) {
         final WorldProperties worldProperties = world.getProperties();
         final DimensionType dimType = worldProperties.getDimensionType();
-        final Path dimPath = rootConfigPath.resolve(((DimensionTypeBridge) dimType).getModId()).resolve(((DimensionTypeBridge) dimType).getEnumName());
+        final String[] parts = ((DimensionTypeBridge) dimType).bridge$getSanitizedId().split(":");
+        final String modId = parts[0].toLowerCase();
+        final String name = parts[1].toLowerCase();
+        final Path dimPath = rootConfigPath.resolve(modId).resolve(name);
         final Path newWorldDataPath = dimPath.resolve(worldProperties.getWorldName());
         GPClaimManager claimWorldManager = this.claimWorldManagers.get(worldProperties.getUniqueId());
         if (claimWorldManager == null) {

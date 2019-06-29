@@ -403,7 +403,7 @@ public class GriefPreventionPlugin {
                 try {
                     SPONGE_VERSION = Sponge.getPlatform().getContainer(Component.IMPLEMENTATION).getVersion().get();
                     String build = SPONGE_VERSION.substring(Math.max(SPONGE_VERSION.length() - 4, 0));
-                    final int minSpongeBuild = 3614;
+                    final int minSpongeBuild = 3830;
                     final int spongeBuild = Integer.parseInt(build);
                     if (spongeBuild < minSpongeBuild) {
                         this.logger.error("Unable to initialize plugin. Detected SpongeForge build " + spongeBuild + " but GriefPrevention requires"
@@ -1387,7 +1387,7 @@ public class GriefPreventionPlugin {
         if (this.worldEditProvider != null) {
             Sponge.getCommandManager().register(this, CommandSpec.builder()
                     .description(Text.of("Uses the worldedit selection to create a claim."))
-                    .permission(GPPermissions.CLAIM_CREATE)
+                    .permission(GPPermissions.COMMAND_CLAIM_WORLDEDIT)
                     .executor(new CommandClaimWorldEdit())
                     .build(), "claim");
         }
@@ -1776,7 +1776,10 @@ public class GriefPreventionPlugin {
             this.maxInspectionDistance = DataStore.globalConfig.getConfig().general.maxClaimInspectionDistance;
             for (World world : Sponge.getGame().getServer().getWorlds()) {
                 DimensionType dimType = world.getProperties().getDimensionType();
-                Path dimPath = rootConfigPath.resolve(((DimensionTypeBridge) dimType).getModId()).resolve(((DimensionTypeBridge) dimType).getEnumName());
+                final String[] parts = ((DimensionTypeBridge) dimType).bridge$getSanitizedId().split(":");
+                final String modId = parts[0];
+                final String name = parts[1];
+                Path dimPath = rootConfigPath.resolve(modId).resolve(name);
                 if (!Files.exists(dimPath.resolve(world.getProperties().getWorldName()))) {
                     try {
                         Files.createDirectories(rootConfigPath.resolve(dimType.getId()).resolve(world.getName()));

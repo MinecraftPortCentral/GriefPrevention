@@ -49,9 +49,7 @@ import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class CommandClaimWorldEdit implements CommandExecutor {
@@ -82,8 +80,10 @@ public class CommandClaimWorldEdit implements CommandExecutor {
         }
 
         final GPPlayerData playerData = GriefPreventionPlugin.instance.dataStore.getOrCreatePlayerData(player.getWorld(), player.getUniqueId());
-        final Vector3i lesser = new Vector3i(region.getMinimumPoint().getBlockX(), region.getMinimumPoint().getBlockY(), region.getMinimumPoint().getBlockZ());
-        final Vector3i greater = new Vector3i(region.getMaximumPoint().getBlockX(), region.getMaximumPoint().getBlockY(), region.getMaximumPoint().getBlockZ());
+        final int minY = playerData.optionClaimCreateMode == 1 ? region.getMinimumPoint().getBlockY() : 0;
+        final int maxY = playerData.optionClaimCreateMode == 1 ? region.getMaximumPoint().getBlockY() : 255;
+        final Vector3i lesser = new Vector3i(region.getMinimumPoint().getBlockX(), minY, region.getMinimumPoint().getBlockZ());
+        final Vector3i greater = new Vector3i(region.getMaximumPoint().getBlockX(), maxY, region.getMaximumPoint().getBlockZ());
         try (final CauseStackManager.StackFrame frame = Sponge.getCauseStackManager().pushCauseFrame()) {
             Sponge.getCauseStackManager().pushCause(player);
             final ClaimResult result = GriefPrevention.getApi().createClaimBuilder()

@@ -333,10 +333,11 @@ public class CommandHelper {
             }
         }
 
-        String basePermission = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
-        int endIndex = basePermission.indexOf(".");
+        final String basePermission = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+        String baseFlagPermission = flagPermission.replace(GPPermissions.FLAG_BASE + ".", "");
+        int endIndex = baseFlagPermission.indexOf(".");
         if (endIndex != -1) {
-            basePermission = basePermission.substring(0, endIndex);
+            baseFlagPermission = baseFlagPermission.substring(0, endIndex);
         }
 
         // Check if player can manage flag
@@ -346,7 +347,7 @@ public class CommandHelper {
             Tristate result = Tristate.UNDEFINED;
             if (playerData.canManageAdminClaims) {
                 result = Tristate.fromBoolean(src.hasPermission(GPPermissions.ADMIN_CLAIM_FLAGS + "." + basePermission));
-            } else if (GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(basePermission)) {
+            } else if (GriefPreventionPlugin.getActiveConfig(player.getWorld().getProperties()).getConfig().flags.getUserClaimFlags().contains(baseFlagPermission)) {
                 result = Tristate.fromBoolean(src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + "." + basePermission));
             }
 

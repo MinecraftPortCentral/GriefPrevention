@@ -138,7 +138,7 @@ public class BlockEventHandler {
         Location<World> sourceLocation = null;
         boolean isVanillaBlock = true;
         if (!pistonExtend && isBlockEvent) {
-            isVanillaBlock = ((BlockBridge) eventBlock.getBlockState().getType()).isVanilla();
+            isVanillaBlock = ((BlockBridge) eventBlock.getBlockState().getType()).bridge$isVanilla();
             if (isVanillaBlock) {
                 return;
             }

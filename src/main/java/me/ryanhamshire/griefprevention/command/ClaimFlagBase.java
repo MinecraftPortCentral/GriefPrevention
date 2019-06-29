@@ -663,6 +663,12 @@ public class ClaimFlagBase {
             if (denyReason != null) {
                 onHoverText = denyReason;
                 hasPermission = false;
+            } else {
+                // check flag perm
+                if (!src.hasPermission(GPPermissions.USER_CLAIM_FLAGS + flagPermission.replace(GPPermissions.FLAG_BASE, ""))) {
+                    onHoverText = Text.of(TextColors.RED, "You do not have permission to change this flag.");
+                    hasPermission = false;
+                }
             }
         }
 

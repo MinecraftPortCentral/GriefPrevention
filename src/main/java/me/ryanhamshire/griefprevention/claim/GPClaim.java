@@ -1117,6 +1117,12 @@ public class GPClaim implements Claim {
                     if (!this.isSubdivision()) {
                         claimsInArea.add(gpChunkClaim);
                     }
+                } else if (this.isInside(gpChunkClaim)) {
+                    // Fix WorldEdit issue
+                    // Make sure to check if chunk claim can enclose newly created claim
+                    if (!gpChunkClaim.canEnclose(this)) {
+                        return new GPClaimResult(gpChunkClaim, ClaimResultType.OVERLAPPING_CLAIM);
+                    }
                 }
             }
         }
@@ -3118,6 +3124,12 @@ public class GPClaim implements Claim {
 
         CompletableFuture<FlagResult> result = new CompletableFuture<>();
         if (flag != ClaimFlag.COMMAND_EXECUTE && flag != ClaimFlag.COMMAND_EXECUTE_PVP) {
+            if (source != null && !source.contains(":")) {
+                source = "minecraft:" + source;
+            }
+            if (target != null && !target.contains(":")) {
+                target = "minecraft:" + target;
+            }
             if (source != null && !source.contains("pixelmon") && !GriefPreventionPlugin.ID_MAP.containsKey(GPPermissionHandler.getIdentifierWithoutMeta(source))) {
                 result.complete(new GPFlagResult(FlagResultType.SOURCE_NOT_VALID));
                 return result;

@@ -48,6 +48,7 @@ public class GPPermissions {
     public static final String COMMAND_CLAIM_SPAWN = "griefprevention.user.claim.command.spawn";
     public static final String COMMAND_CLAIM_SET_SPAWN = "griefprevention.user.claim.command.set-spawn";
     public static final String COMMAND_CLAIM_TAX = "griefprevention.user.claim.command.claim.tax";
+    public static final String COMMAND_CLAIM_WORLDEDIT = "griefprevention.user.claim.command.worldedit-claim";
     public static final String COMMAND_SET_CLAIM_NAME = "griefprevention.user.claim.command.name";
     public static final String COMMAND_SET_CLAIM_FAREWELL = "griefprevention.user.claim.command.farewell";
     public static final String COMMAND_SET_CLAIM_GREETING = "griefprevention.user.claim.command.greeting";
