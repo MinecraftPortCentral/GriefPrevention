@@ -479,7 +479,7 @@ public class BlockEventHandler {
             return;
         }
 
-        BlockPos collidePos = ((LocationBridge)(Object) event.getTargetLocation()).getBlockPos();
+        BlockPos collidePos = ((LocationBridge)(Object) event.getTargetLocation()).bridge$getBlockPos();
         short shortPos = BlockUtils.blockPosToShort(collidePos);
         int entityId = ((net.minecraft.entity.Entity) source).getEntityId();
         BlockPosCache entityBlockCache = BlockUtils.ENTITY_BLOCK_CACHE.get(entityId);
