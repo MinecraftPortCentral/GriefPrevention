@@ -847,9 +847,9 @@ public class PlayerEventHandler {
         // remember the player's ip address
         final WorldProperties worldProperties = event.getToTransform().getExtent().getProperties();
         final UUID playerUniqueId = player.getUniqueId();
-        // Always recreate playerdata on login in case a server is sharing data across servers
-        this.dataStore.removePlayerData(worldProperties, playerUniqueId);
         final GPPlayerData playerData = this.dataStore.getOrCreatePlayerData(worldProperties, playerUniqueId);
+        // Always reload playerdata storage on login in case a server is sharing data across servers
+        playerData.getStorageData().load();
         playerData.receivedDropUnlockAdvertisement = false;
         playerData.ipAddress = ipAddress;
         final GPClaimManager claimWorldManager = this.dataStore.getClaimWorldManager(worldProperties);
