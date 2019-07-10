@@ -57,7 +57,9 @@ public class ClaimTemplateStorage {
     public ClaimTemplateStorage(Path path) {
         this.filePath = path;
         try {
-            Files.createDirectories(path.getParent());
+            if (Files.notExists(path.getParent())) {
+                Files.createDirectories(path.getParent());
+            }
             if (Files.notExists(path)) {
                 Files.createFile(path);
             }
@@ -76,7 +78,9 @@ public class ClaimTemplateStorage {
     public ClaimTemplateStorage(String templateName, Optional<String> description, IClaimData claimData, UUID creator) {
         this.filePath = FlatFileDataStore.rootWorldSavePath.resolve(FlatFileDataStore.claimTemplatePath.resolve(UUID.randomUUID().toString()));
         try {
-            Files.createDirectories(this.filePath.getParent());
+            if (Files.notExists(this.filePath.getParent())) {
+                Files.createDirectories(this.filePath.getParent());
+            }
             if (Files.notExists(this.filePath)) {
                 Files.createFile(this.filePath);
             }

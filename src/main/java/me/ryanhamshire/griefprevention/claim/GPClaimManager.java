@@ -337,7 +337,9 @@ public class GPClaimManager implements ClaimManager {
         }
 
         try {
-            Files.createDirectories(newPath.getParent());
+            if (Files.notExists(newPath.getParent())) {
+                Files.createDirectories(newPath.getParent());
+            }
             Files.move(childClaim.getClaimStorage().filePath, newPath);
             if (childClaim.getClaimStorage().folderPath.toFile().listFiles().length == 0) {
                 Files.delete(childClaim.getClaimStorage().folderPath);

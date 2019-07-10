@@ -121,7 +121,7 @@ public class FlatFileDataStore extends DataStore {
         final String modId = parts[0];
         final String name = parts[1];
         Path dimPath = rootConfigPath.resolve(modId).resolve(name);
-        if (!Files.exists(dimPath.resolve(worldProperties.getWorldName()))) {
+        if (Files.notExists(dimPath.resolve(worldProperties.getWorldName()))) {
             try {
                 Files.createDirectories(dimPath.resolve(worldProperties.getWorldName()));
             } catch (IOException e) {
@@ -142,17 +142,17 @@ public class FlatFileDataStore extends DataStore {
 
         try {
             // Create data folders if they do not exist
-            if (!Files.exists(newWorldDataPath.resolve("ClaimData"))) {
+            if (Files.notExists(newWorldDataPath.resolve("ClaimData"))) {
                 Files.createDirectories(newWorldDataPath.resolve("ClaimData"));
             }
-            if (!Files.exists(newWorldDataPath.resolve("ClaimData").resolve("wilderness"))) {
+            if (Files.notExists(newWorldDataPath.resolve("ClaimData").resolve("wilderness"))) {
                 Files.createDirectories(newWorldDataPath.resolve("ClaimData").resolve("wilderness"));
             }
             if (DataStore.USE_GLOBAL_PLAYER_STORAGE) {
-                if (!globalPlayerDataPath.toFile().exists()) {
+                if (Files.notExists(globalPlayerDataPath)) {
                     Files.createDirectories(globalPlayerDataPath);
                 }
-            } else if (!Files.exists(newWorldDataPath.resolve("PlayerData"))) {
+            } else if (Files.notExists(newWorldDataPath.resolve("PlayerData"))) {
                 Files.createDirectories(newWorldDataPath.resolve("PlayerData"));
             }
         } catch (Exception e) {
@@ -365,7 +365,9 @@ public class FlatFileDataStore extends DataStore {
 
         if (claimFile.getParentFile().getName().equalsIgnoreCase("claimdata")) {
             final Path newPath = claimStorage.filePath.getParent().resolve(type.name().toLowerCase());
-            Files.createDirectories(newPath);
+            if (Files.notExists(newPath)) {
+                Files.createDirectories(newPath);
+            }
             Files.move(claimStorage.filePath, newPath.resolve(fileName));
             claimStorage.filePath = newPath.resolve(fileName);
             claimStorage = new ClaimStorageData(claimStorage.filePath, worldProperties.getUniqueId());

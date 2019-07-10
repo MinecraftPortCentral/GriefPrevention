@@ -263,7 +263,7 @@ public class BlockUtils {
         }
 
         chunkProviderServer.id2ChunkMap.remove(ChunkPos.asLong(chunk.x, chunk.z));
-        ((ChunkBridge) chunk).setScheduledForUnload(-1);
+        ((ChunkBridge) chunk).bridge$setScheduledForUnload(-1);
         org.spongepowered.api.world.Chunk spongeChunk = (org.spongepowered.api.world.Chunk) chunk;
         for (Direction direction : CARDINAL_SET) {
             Vector3i neighborPosition = spongeChunk.getPosition().add(direction.asBlockOffset());
@@ -273,8 +273,8 @@ public class BlockUtils {
             if (neighbor != null) {
                 int neighborIndex = directionToIndex(direction);
                 int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
-                ((ChunkBridge) spongeChunk).setNeighborChunk(neighborIndex, null);
-                ((ChunkBridge) neighbor).setNeighborChunk(oppositeNeighborIndex, null);
+                ((ChunkBridge) spongeChunk).bridge$setNeighborChunk(neighborIndex, null);
+                ((ChunkBridge) neighbor).bridge$setNeighborChunk(oppositeNeighborIndex, null);
             }
         }
 
@@ -317,8 +317,8 @@ public class BlockUtils {
                 if (neighbor != null) {
                     int neighborIndex = directionToIndex(direction);
                     int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
-                    ((ChunkBridge) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
-                    ((ChunkBridge) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
+                    ((ChunkBridge) spongeChunk).bridge$setNeighborChunk(neighborIndex, neighbor);
+                    ((ChunkBridge) neighbor).bridge$setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
                 }
             }
         }
@@ -374,8 +374,8 @@ public class BlockUtils {
                 if (neighbor != null) {
                     int neighborIndex = directionToIndex(direction);
                     int oppositeNeighborIndex = directionToIndex(direction.getOpposite());
-                    ((ChunkBridge) spongeChunk).setNeighborChunk(neighborIndex, neighbor);
-                    ((ChunkBridge) neighbor).setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
+                    ((ChunkBridge) spongeChunk).bridge$setNeighborChunk(neighborIndex, neighbor);
+                    ((ChunkBridge) neighbor).bridge$setNeighborChunk(oppositeNeighborIndex, (net.minecraft.world.chunk.Chunk)(Object) chunk);
                 }
             }
 

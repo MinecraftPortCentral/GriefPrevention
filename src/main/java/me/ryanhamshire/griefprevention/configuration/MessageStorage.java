@@ -77,7 +77,9 @@ public class MessageStorage {
     public MessageStorage(Path path) {
 
         try {
-            Files.createDirectories(path.getParent());
+            if (Files.notExists(path.getParent())) {
+                Files.createDirectories(path.getParent());
+            }
             if (Files.notExists(path)) {
                 Files.createFile(path);
             }

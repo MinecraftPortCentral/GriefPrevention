@@ -92,7 +92,9 @@ public class ClaimStorageData {
         this.filePath = path;
         this.folderPath = path.getParent();
         try {
-            Files.createDirectories(path.getParent());
+            if (Files.notExists(path.getParent())) {
+                Files.createDirectories(path.getParent());
+            }
             if (Files.notExists(path)) {
                 Files.createFile(path);
             }
@@ -120,7 +122,9 @@ public class ClaimStorageData {
         this.filePath = path;
         this.folderPath = path.getParent();
         try {
-            Files.createDirectories(path.getParent());
+            if (Files.notExists(path.getParent())) {
+                Files.createDirectories(path.getParent());
+            }
             if (Files.notExists(path)) {
                 Files.createFile(path);
             }
@@ -141,7 +145,9 @@ public class ClaimStorageData {
         this.filePath = path;
         this.folderPath = path.getParent();
         try {
-            Files.createDirectories(path.getParent());
+            if (Files.notExists(path.getParent())) {
+                Files.createDirectories(path.getParent());
+            }
             if (Files.notExists(path)) {
                 Files.createFile(path);
             }

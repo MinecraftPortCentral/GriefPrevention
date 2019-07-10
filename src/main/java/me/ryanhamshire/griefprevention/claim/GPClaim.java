@@ -254,7 +254,9 @@ public class GPClaim implements Claim {
             claimDataFolderPath = DataStore.worldConfigMap.get(this.world.getUniqueId()).getPath().getParent().resolve("ClaimData").resolve(this.type.name().toLowerCase());
         }
         try {
-            Files.createDirectories(claimDataFolderPath);
+            if (Files.notExists(claimDataFolderPath)) {
+                Files.createDirectories(claimDataFolderPath);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1957,7 +1959,9 @@ public class GPClaim implements Claim {
         final String fileName = this.getClaimStorage().filePath.getFileName().toString();
         final Path newPath = this.getClaimStorage().folderPath.getParent().resolve(type.name().toLowerCase()).resolve(fileName);
         try {
-            Files.createDirectories(newPath.getParent());
+            if (Files.notExists(newPath.getParent())) {
+                Files.createDirectories(newPath.getParent());
+            }
             Files.move(this.getClaimStorage().filePath, newPath);
             if (type == ClaimType.TOWN) {
                 this.setClaimStorage(new TownStorageData(newPath, this.getWorldUniqueId(), newOwnerUUID, this.cuboid));
@@ -2981,7 +2985,9 @@ public class GPClaim implements Claim {
         String fileName = childClaim.getClaimStorage().filePath.getFileName().toString();
         Path newPath = parentClaim.getClaimStorage().folderPath.resolve(childClaim.getType().name().toLowerCase()).resolve(fileName);
         try {
-            Files.createDirectories(newPath.getParent());
+            if (Files.notExists(newPath.getParent())) {
+                Files.createDirectories(newPath.getParent());
+            }
             Files.move(childClaim.getClaimStorage().filePath, newPath);
             if (childClaim.getClaimStorage().folderPath.toFile().listFiles().length == 0) {
                 Files.delete(childClaim.getClaimStorage().folderPath);

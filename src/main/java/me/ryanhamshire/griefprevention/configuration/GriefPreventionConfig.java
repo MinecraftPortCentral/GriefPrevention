@@ -80,7 +80,9 @@ public class GriefPreventionConfig<T extends ConfigBase> {
         this.path = path;
 
         try {
-            Files.createDirectories(path.getParent());
+            if (Files.notExists(path.getParent())) {
+                Files.createDirectories(path.getParent());
+            }
             if (Files.notExists(path)) {
                 Files.createFile(path);
             }
